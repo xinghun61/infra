@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"infra/monitoring/analyzer"
+	"infra/monitoring/client"
 	testclient "infra/monitoring/client/test"
 	"infra/monitoring/messages"
 
@@ -26,17 +27,21 @@ func TestMainLoop(t *testing.T) {
 			"chromium": true,
 		}
 
+		mc := &testclient.MockReader{}
+		ctx := client.WithReader(context.Background(), mc)
+
 		t := http.DefaultTransport
-		err := mainLoop(context.Background(), a, trees, t)
+		err := mainLoop(ctx, a, trees, t)
 		So(err, ShouldBeNil)
 	})
 
 	Convey("run", t, func() {
 		reader := testclient.MockReader{}
+		ctx := client.WithReader(context.Background(), reader)
 		gks := []*messages.GatekeeperConfig{}
 		gkts := map[string][]messages.TreeMasterConfig{}
 
-		err := run(context.Background(), http.DefaultTransport, time.Second, time.Second, reader, gks, gkts)
+		err := run(ctx, http.DefaultTransport, time.Second, time.Second, gks, gkts)
 		So(err, ShouldBeNil)
 	})
 }

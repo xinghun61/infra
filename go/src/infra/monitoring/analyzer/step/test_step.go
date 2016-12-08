@@ -9,6 +9,8 @@ import (
 	"sort"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
 )
@@ -54,11 +56,11 @@ func (t *testFailure) Title(bses []*messages.BuildStep) string {
 
 // testFailureAnalyzer analyzes steps to see if there is any data in the tests
 // server which corresponds to the failure.
-func testFailureAnalyzer(reader client.Reader, fs []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
 	results := make([]messages.ReasonRaw, len(fs))
 
 	for i, f := range fs {
-		rslt, err := testAnalyzeFailure(reader, f)
+		rslt, err := testAnalyzeFailure(ctx, f)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -84,13 +86,13 @@ func (slice tests) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
 }
 
-func testAnalyzeFailure(reader client.Reader, f *messages.BuildStep) (messages.ReasonRaw, error) {
-	suiteName, failedTests, err := getTestNames(reader, f)
+func testAnalyzeFailure(ctx context.Context, f *messages.BuildStep) (messages.ReasonRaw, error) {
+	suiteName, failedTests, err := getTestNames(ctx, f)
 	if err != nil {
 		return nil, err
 	}
 
-	testsWithFinditResults, err := getFinditResultsForTests(reader, f, failedTests)
+	testsWithFinditResults, err := getFinditResultsForTests(ctx, f, failedTests)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +138,7 @@ func getStepName(name string) string {
 	return stepName
 }
 
-func getTestNames(reader client.Reader, f *messages.BuildStep) (string, []string, error) {
+func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string, error) {
 	name := getStepName(f.Step.Name)
 	if name == "" {
 		return "", nil, nil
@@ -144,7 +146,7 @@ func getTestNames(reader client.Reader, f *messages.BuildStep) (string, []string
 
 	failedTests := []string{}
 
-	testResults, err := reader.TestResults(f.Master, f.Build.BuilderName, name, f.Build.Number)
+	testResults, err := client.TestResults(ctx, f.Master, f.Build.BuilderName, name, f.Build.Number)
 	if err != nil {
 		return name, failedTests, fmt.Errorf("Error fetching test results: %v", err)
 	}
@@ -193,7 +195,7 @@ func getTestNames(reader client.Reader, f *messages.BuildStep) (string, []string
 }
 
 // Read Findit results and get suspected cls or check if flaky for each test.
-func getFinditResultsForTests(reader client.Reader, f *messages.BuildStep, failedTests []string) ([]testWithResult, error) {
+func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failedTests []string) ([]testWithResult, error) {
 	TestsWithFinditResults := []testWithResult{}
 
 	if failedTests == nil || len(failedTests) == 0 {
@@ -205,7 +207,7 @@ func getFinditResultsForTests(reader client.Reader, f *messages.BuildStep, faile
 		return nil, nil
 	}
 
-	finditResults, err := reader.Findit(f.Master, f.Build.BuilderName, f.Build.Number, []string{name})
+	finditResults, err := client.Findit(ctx, f.Master, f.Build.BuilderName, f.Build.Number, []string{name})
 	if err != nil {
 		return nil, fmt.Errorf("while getting findit results: %s", err)
 	}

@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"infra/libs/testing/ansidiff"
 	"infra/monitoring/analyzer/regrange"
 	analyzertest "infra/monitoring/analyzer/test"
@@ -62,11 +64,11 @@ func (f *fakeReasonRaw) Severity() messages.Severity {
 type fakeAnalyzer struct {
 }
 
-func (f *fakeAnalyzer) Analyze(reader client.Reader, failures []*messages.BuildStep) []messages.ReasonRaw {
-	return fakeFinder(reader, failures)
+func (f *fakeAnalyzer) Analyze(ctx context.Context, failures []*messages.BuildStep) []messages.ReasonRaw {
+	return fakeFinder(ctx, failures)
 }
 
-func fakeFinder(Reader client.Reader, failures []*messages.BuildStep) []messages.ReasonRaw {
+func fakeFinder(ctx context.Context, failures []*messages.BuildStep) []messages.ReasonRaw {
 	raws := make([]messages.ReasonRaw, len(failures))
 	for i := range failures {
 		raws[i] = &fakeReasonRaw{}
@@ -74,8 +76,8 @@ func fakeFinder(Reader client.Reader, failures []*messages.BuildStep) []messages
 	return raws
 }
 
-func newTestAnalyzer(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
-	a := New(c, minBuilds, maxBuilds)
+func newTestAnalyzer(minBuilds, maxBuilds int) *Analyzer {
+	a := New(minBuilds, maxBuilds)
 	a.reasonFinder = fakeFinder
 	a.regrangeFinder = regrange.Default
 	return a
@@ -134,11 +136,13 @@ func TestMasterAlerts(t *testing.T) {
 		},
 	}
 
-	a := newTestAnalyzer(&clientTest.MockReader{}, 0, 10)
+	mc := &clientTest.MockReader{}
+	a := newTestAnalyzer(0, 10)
+	ctx := client.WithReader(context.Background(), mc)
 
 	for _, test := range tests {
 		a.Now = fakeNow(test.t)
-		got := a.MasterAlerts(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, &test.be)
+		got := a.MasterAlerts(ctx, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, &test.be)
 		if !reflect.DeepEqual(got, test.want) {
 			t.Errorf("%s failed. Got %+v, want: %+v\nDiff: %v", test.name, got, test.want,
 				ansidiff.Diff(got, test.want))
@@ -187,11 +191,13 @@ func TestBuilderAlerts(t *testing.T) {
 		},
 	}
 
-	a := newTestAnalyzer(&clientTest.MockReader{}, 0, 10)
+	mc := &clientTest.MockReader{}
+	a := newTestAnalyzer(0, 10)
+	ctx := client.WithReader(context.Background(), mc)
 
 	for _, test := range tests {
 		a.Now = fakeNow(test.t)
-		got := a.BuilderAlerts("tree", &messages.MasterLocation{URL: *urlParse(test.url, t)}, &test.be)
+		got := a.BuilderAlerts(ctx, "tree", &messages.MasterLocation{URL: *urlParse(test.url, t)}, &test.be)
 		if !reflect.DeepEqual(got, test.wantBuilders) {
 			t.Errorf("%s failed. Got %+v, want: %+v", test.name, got, test.wantBuilders)
 		}
@@ -367,17 +373,18 @@ func TestLittleBBuilderAlerts(t *testing.T) {
 			},
 		}
 
-		a := newTestAnalyzer(nil, 0, 10)
+		ctx := context.Background()
+		a := newTestAnalyzer(0, 10)
 
 		for _, test := range tests {
 			test := test
 			Convey(test.name, func() {
 				a.Now = fakeNow(test.time)
-				a.Reader = clientTest.MockReader{
+				ctx = client.WithReader(ctx, clientTest.MockReader{
 					Builds: test.builds,
-				}
+				})
 
-				gotAlerts, gotErrs := a.builderAlerts("tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, &test.b)
+				gotAlerts, gotErrs := a.builderAlerts(ctx, "tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, &test.b)
 				So(gotAlerts, ShouldResemble, test.wantAlerts)
 				So(gotErrs, ShouldResemble, test.wantErrs)
 			})
@@ -818,10 +825,11 @@ func TestBuilderStepAlerts(t *testing.T) {
 			},
 		}
 
-		a := newTestAnalyzer(nil, 0, 10)
+		a := newTestAnalyzer(0, 10)
 
 		for _, test := range tests {
 			test := test
+			ctx := context.Background()
 			Convey(test.name, func() {
 				a.Now = fakeNow(time.Unix(0, 0))
 				var builds map[string]*messages.Build
@@ -829,10 +837,10 @@ func TestBuilderStepAlerts(t *testing.T) {
 					builds = test.testData.Builds
 				}
 
-				a.Reader = clientTest.MockReader{
+				ctx = client.WithReader(ctx, clientTest.MockReader{
 					Builds:        builds,
 					FinditResults: test.finditData,
-				}
+				})
 
 				So(test.buildsAtFault, ShouldHaveLength, len(test.wantAlerts))
 				So(test.stepsAtFault, ShouldHaveLength, len(test.wantAlerts))
@@ -847,7 +855,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				}
 				test.wantAlerts = newAlerts
 
-				gotAlerts, gotErrs := a.builderStepAlerts("tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
+				gotAlerts, gotErrs := a.builderStepAlerts(ctx, "tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
 
 				sort.Sort(sortAlerts(gotAlerts))
 				sort.Sort(sortAlerts(test.wantAlerts))
@@ -1086,7 +1094,7 @@ func TestMergeAlertsByReason(t *testing.T) {
 			},
 		}
 
-		a := newTestAnalyzer(&clientTest.MockReader{}, 0, 10)
+		a := newTestAnalyzer(0, 10)
 		for _, test := range tests {
 			test := test
 			Convey(test.name, func() {
@@ -1152,14 +1160,15 @@ func TestStepFailures(t *testing.T) {
 		}
 
 		mc := &clientTest.MockReader{}
-		a := newTestAnalyzer(mc, 0, 10)
+		ctx := client.WithReader(context.Background(), mc)
+		a := newTestAnalyzer(0, 10)
 
 		for _, test := range tests {
 			test := test
 			Convey(test.name, func() {
 				mc.BuildValue = test.b
 				mc.BCache = test.bCache
-				got, err := a.stepFailures(&messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.buildNum)
+				got, err := a.stepFailures(ctx, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.buildNum)
 				So(got, ShouldResemble, test.want)
 				So(err, ShouldResemble, test.wantErr)
 			})
@@ -1310,14 +1319,16 @@ func TestStepFailureAlerts(t *testing.T) {
 		}
 
 		mc := &clientTest.MockReader{}
-		a := newTestAnalyzer(mc, 0, 10)
+		ctx := client.WithReader(context.Background(), mc)
+
+		a := newTestAnalyzer(0, 10)
 		a.Now = fakeNow(time.Unix(0, 0))
 
 		for _, test := range tests {
 			test := test
 			Convey(test.name, func() {
 				mc.TestResultsValue = &test.testResults
-				alerts, err := a.stepFailureAlerts("tree", test.failures, []*messages.FinditResult{})
+				alerts, err := a.stepFailureAlerts(ctx, "tree", test.failures, []*messages.FinditResult{})
 				So(alerts, ShouldResemble, test.alerts)
 				So(err, ShouldResemble, test.err)
 			})
@@ -1447,7 +1458,7 @@ func TestLatestBuildStep(t *testing.T) {
 		},
 	}
 
-	a := newTestAnalyzer(&clientTest.MockReader{}, 0, 10)
+	a := newTestAnalyzer(0, 10)
 	a.Now = fakeNow(time.Unix(0, 0))
 	for _, test := range tests {
 		gotStep, gotUpdate, gotErr := a.latestBuildStep(&test.b)
@@ -1644,7 +1655,7 @@ func TestExcludeFailure(t *testing.T) {
 		},
 	}
 
-	a := newTestAnalyzer(&clientTest.MockReader{}, 0, 10)
+	a := newTestAnalyzer(0, 10)
 	for _, test := range tests {
 		a.Gatekeeper = NewGatekeeperRules([]*messages.GatekeeperConfig{&test.gk}, test.gkt)
 		got := a.Gatekeeper.ExcludeFailure(test.tree, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.step)

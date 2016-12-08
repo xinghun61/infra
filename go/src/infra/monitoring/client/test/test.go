@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"infra/monitoring/messages"
 )
 
@@ -29,7 +31,7 @@ type MockReader struct {
 }
 
 // Build implements the Reader interface.
-func (m MockReader) Build(master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
+func (m MockReader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	if m.BuildValue != nil {
 		return m.BuildValue, m.BuildFetchError
 	}
@@ -42,41 +44,41 @@ func (m MockReader) Build(master *messages.MasterLocation, builder string, build
 }
 
 // LatestBuilds implements the Reader interface.
-func (m MockReader) LatestBuilds(master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
+func (m MockReader) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
 	return m.LatestBuildsValue[*master][builder], nil
 }
 
 // TestResults implements the Reader interface.
-func (m MockReader) TestResults(master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+func (m MockReader) TestResults(ctx context.Context, master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
 	return m.TestResultsValue, m.StepFetchError
 }
 
 // BuildExtract implements the Reader interface.
-func (m MockReader) BuildExtract(url *messages.MasterLocation) (*messages.BuildExtract, error) {
+func (m MockReader) BuildExtract(ctx context.Context, url *messages.MasterLocation) (*messages.BuildExtract, error) {
 	return nil, nil
 }
 
 // StdioForStep implements the Reader interface.
-func (m MockReader) StdioForStep(master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
+func (m MockReader) StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
 	return m.StdioForStepValue, m.StdioForStepError
 }
 
 // JSON implements the Reader interface.
-func (m MockReader) JSON(url string, v interface{}) (int, error) {
+func (m MockReader) JSON(ctx context.Context, url string, v interface{}) (int, error) {
 	return 0, nil // Not actually used.
 }
 
 // PostAlerts implements the Reader interface.
-func (m MockReader) PostAlerts(alerts *messages.Alerts) error {
+func (m MockReader) PostAlerts(ctx context.Context, alerts *messages.Alerts) error {
 	return nil
 }
 
 // CrbugItems implements the Reader interface.
-func (m MockReader) CrbugItems(tree string) ([]messages.CrbugItem, error) {
+func (m MockReader) CrbugItems(ctx context.Context, tree string) ([]messages.CrbugItem, error) {
 	return nil, nil
 }
 
 // Findit implements the Reader interface.
-func (m MockReader) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
+func (m MockReader) Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
 	return m.FinditResults, nil
 }

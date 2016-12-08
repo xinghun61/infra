@@ -10,11 +10,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"golang.org/x/net/context"
+
 	"infra/monitoring/messages"
+
+	"github.com/luci/luci-go/common/logging"
 )
 
 // NewSnapshot returns a client which will record responses to baseDir for later replay.
-func NewSnapshot(wrapped Reader, baseDir string) Reader {
+func NewSnapshot(wrapped readerType, baseDir string) readerType {
 	sc := &snapshot{
 		wrapped: wrapped,
 		baseDir: baseDir,
@@ -24,13 +28,13 @@ func NewSnapshot(wrapped Reader, baseDir string) Reader {
 
 type snapshot struct {
 	baseDir string
-	wrapped Reader
+	wrapped readerType
 }
 
 // Build fetches the build summary for master master, builder builder and build id buildNum
 // from build.chromium.org.
-func (c *snapshot) Build(master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
-	b, err := c.wrapped.Build(master, builder, buildNum)
+func (c *snapshot) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
+	b, err := c.wrapped.Build(ctx, master, builder, buildNum)
 	if err != nil {
 		return nil, err
 	}
@@ -38,8 +42,8 @@ func (c *snapshot) Build(master *messages.MasterLocation, builder string, buildN
 	return b, err
 }
 
-func (c *snapshot) LatestBuilds(master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
-	bs, err := c.wrapped.LatestBuilds(master, builder)
+func (c *snapshot) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
+	bs, err := c.wrapped.LatestBuilds(ctx, master, builder)
 	if err != nil {
 		return nil, err
 	}
@@ -57,8 +61,8 @@ func (c *snapshot) LatestBuilds(master *messages.MasterLocation, builder string)
 }
 
 // TestResults fetches the results of a step failure's test run.
-func (c *snapshot) TestResults(master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
-	r, err := c.wrapped.TestResults(master, builderName, stepName, buildNumber)
+func (c *snapshot) TestResults(ctx context.Context, master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+	r, err := c.wrapped.TestResults(ctx, master, builderName, stepName, buildNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -68,22 +72,22 @@ func (c *snapshot) TestResults(master *messages.MasterLocation, builderName, ste
 
 // BuildExtracts fetches build information for masters from CBE in parallel.
 // Returns a map of url to error for any requests that had errors.
-func (c *snapshot) BuildExtract(master *messages.MasterLocation) (*messages.BuildExtract, error) {
-	m, err := c.wrapped.BuildExtract(master)
+func (c *snapshot) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
+	m, err := c.wrapped.BuildExtract(ctx, master)
 	if err != nil {
 		return nil, err
 	}
 	err = write(filepath.Join(c.baseDir, "buildextracts", master.Name()), m)
 	if err != nil {
-		errLog.Printf("Error snapshotting build extract: %v", err)
+		logging.Errorf(ctx, "Error snapshotting build extract: %v", err)
 	}
 	return m, err
 }
 
 // StdioForStep fetches the standard output for a given build step, and an error if any
 // occurred.
-func (c *snapshot) StdioForStep(master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
-	s, err := c.wrapped.StdioForStep(master, builder, step, buildNum)
+func (c *snapshot) StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
+	s, err := c.wrapped.StdioForStep(ctx, master, builder, step, buildNum)
 	if err != nil {
 		return nil, err
 	}
@@ -91,27 +95,27 @@ func (c *snapshot) StdioForStep(master *messages.MasterLocation, builder, step s
 	return s, err
 }
 
-func (c *snapshot) CrbugItems(label string) ([]messages.CrbugItem, error) {
-	items, err := c.wrapped.CrbugItems(label)
+func (c *snapshot) CrbugItems(ctx context.Context, label string) ([]messages.CrbugItem, error) {
+	items, err := c.wrapped.CrbugItems(ctx, label)
 	if err != nil {
 		return nil, err
 	}
 	err = write(filepath.Join(c.baseDir, "crbugitems", label), items)
 	if err != nil {
-		errLog.Printf("Error snapshotting crbug items: %v", err)
+		logging.Errorf(ctx, "Error snapshotting crbug items: %v", err)
 	}
 	return items, err
 }
 
-func (c *snapshot) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
-	items, err := c.wrapped.Findit(master, builder, buildNum, failedSteps)
+func (c *snapshot) Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
+	items, err := c.wrapped.Findit(ctx, master, builder, buildNum, failedSteps)
 	if err != nil {
 		return nil, err
 	}
 	// Ignore failedSteps since we assume only one call per build
 	err = write(filepath.Join(c.baseDir, "findit", master.Name(), builder, fmt.Sprintf("%d", buildNum)), items)
 	if err != nil {
-		errLog.Printf("Error snapshotting findit: %v", err)
+		logging.Errorf(ctx, "Error snapshotting findit: %v", err)
 	}
 	return items, err
 }

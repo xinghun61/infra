@@ -10,18 +10,22 @@ import (
 	"expvar"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"infra/monitoring/messages"
+
+	"github.com/luci/luci-go/common/logging"
 )
+
+type contextKey string
 
 const (
 	maxRetries = 3
@@ -30,13 +34,21 @@ const (
 	timeout = 5 * time.Second
 
 	chromeBuildExtractURL = "https://chrome-build-extract.appspot.com"
+	clientReaderKey       = contextKey("infra-client-reader")
 )
 
 var (
-	errLog  = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
-	infoLog = log.New(os.Stdout, "", log.Lshortfile|log.Ltime)
 	expvars = expvar.NewMap("client")
 )
+
+// WithReader returns a context with its reader set to r.
+func WithReader(ctx context.Context, r readerType) context.Context {
+	return context.WithValue(ctx, clientReaderKey, r)
+}
+
+func getReader(ctx context.Context) readerType {
+	return ctx.Value(clientReaderKey).(readerType)
+}
 
 // BuilderURL returns the builder URL for the given master and builder.
 func BuilderURL(master *messages.MasterLocation, builder string) *url.URL {
@@ -61,37 +73,66 @@ func StepURL(master *messages.MasterLocation, builder, step string, buildNum int
 }
 
 // Reader provides access to read status information from various parts of chrome
-// developer infrastructure.
-type Reader interface {
-	// Build fetches the build summary for master, builder and buildNum
-	// from build.chromium.org.
-	Build(master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error)
+// developer infrastructure. TODO(seanmccullough): Change all of these to start lowercase
+// now that the type isn't exported.
+type readerType interface {
+	Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error)
 
-	// LatestBuilds fetches a list of recent build summaries for master and builder
-	// from build.chromium.org.
-	LatestBuilds(master *messages.MasterLocation, build string) ([]*messages.Build, error)
+	LatestBuilds(ctx context.Context, master *messages.MasterLocation, build string) ([]*messages.Build, error)
 
-	// TestResults fetches the results of a step failure's test run.
-	TestResults(masterName *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error)
+	TestResults(ctx context.Context, masterName *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error)
 
-	// BuildExtract fetches build information for master from CBE.
-	BuildExtract(master *messages.MasterLocation) (*messages.BuildExtract, error)
+	BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error)
 
-	// StdioForStep fetches the standard output for a given build step, and an error if any
-	// occurred.
-	StdioForStep(master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error)
+	StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error)
 
-	// CrbugItems fetches a list of open issues from crbug matching the given label.
-	CrbugItems(label string) ([]messages.CrbugItem, error)
+	CrbugItems(ctx context.Context, label string) ([]messages.CrbugItem, error)
 
-	// Findit fetches items from the findit service, which identifies possible culprit CLs for a failed build.
-	Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error)
+	Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error)
 }
 
 // Writer writes out data to other services, most notably sheriff-o-matic.
 type Writer interface {
 	// PostAlerts posts alerts to Sheriff-o-Matic.
-	PostAlerts(alerts *messages.AlertsSummary) error
+	PostAlerts(ctx context.Context, alerts *messages.AlertsSummary) error
+}
+
+// Build fetches the build summary for master, builder and buildNum
+// from build.chromium.org.
+func Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
+	return getReader(ctx).Build(ctx, master, builder, buildNum)
+}
+
+// LatestBuilds fetches a list of recent build summaries for master and builder
+// from build.chromium.org.
+func LatestBuilds(ctx context.Context, master *messages.MasterLocation, build string) ([]*messages.Build, error) {
+	return getReader(ctx).LatestBuilds(ctx, master, build)
+}
+
+// TestResults fetches the results of a step failure's test run.
+func TestResults(ctx context.Context, masterName *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+	return getReader(ctx).TestResults(ctx, masterName, builderName, stepName, buildNumber)
+}
+
+// BuildExtract fetches build information for master from CBE.
+func BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
+	return getReader(ctx).BuildExtract(ctx, master)
+}
+
+// StdioForStep fetches the standard output for a given build step, and an error if any
+// occurred.
+func StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
+	return getReader(ctx).StdioForStep(ctx, master, builder, step, buildNum)
+}
+
+// CrbugItems fetches a list of open issues from crbug matching the given label.
+func CrbugItems(ctx context.Context, label string) ([]messages.CrbugItem, error) {
+	return getReader(ctx).CrbugItems(ctx, label)
+}
+
+// Findit fetches items from the findit service, which identifies possible culprit CLs for a failed build.
+func Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
+	return getReader(ctx).Findit(ctx, master, builder, buildNum, failedSteps)
 }
 
 type trackingHTTPClient struct {
@@ -118,9 +159,9 @@ type writer struct {
 	alertsBase string
 }
 
-// NewReader returns a new Reader, which will read data from various chrome infra
+// NewReader returns a new default reader implementation, which will read data from various chrome infra
 // data sources.
-func NewReader() Reader {
+func NewReader() readerType {
 	return &reader{
 		hc: &trackingHTTPClient{
 			c: http.DefaultClient,
@@ -134,7 +175,7 @@ func cacheKeyForBuild(master *messages.MasterLocation, builder string, number in
 		fmt.Sprintf("%s/%s/%d.json", url.QueryEscape(master.String()), url.QueryEscape(builder), number))
 }
 
-func (r *reader) Build(master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
+func (r *reader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	// TODO: get this from cache.
 	r.bLock.Lock()
 	build, ok := r.bCache[cacheKeyForBuild(master, builder, buildNum)]
@@ -149,7 +190,7 @@ func (r *reader) Build(master *messages.MasterLocation, builder string, buildNum
 
 	expvars.Add("Build", 1)
 	defer expvars.Add("Build", -1)
-	code, err := r.hc.getJSON(URL, build)
+	code, err := r.hc.getJSON(ctx, URL, build)
 
 	if code == 404 {
 		// FIXME: Don't directly poll so many builders.
@@ -157,22 +198,22 @@ func (r *reader) Build(master *messages.MasterLocation, builder string, buildNum
 		defer expvars.Add("DirectPoll", -1)
 		URL = fmt.Sprintf("%s/json/builders/%s/builds/%d",
 			master, builder, buildNum)
-		if code, err := r.hc.getJSON(URL, build); err != nil {
-			errLog.Printf("Error (%d) fetching %s: %v", code, master.String(), err)
+		if code, err := r.hc.getJSON(ctx, URL, build); err != nil {
+			logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, master.String(), err)
 			return nil, err
 		}
 		return build, nil
 	}
 
 	if err != nil {
-		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 
 	return build, nil
 }
 
-func (r *reader) LatestBuilds(master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
+func (r *reader) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
 	v := url.Values{}
 	v.Add("master", master.Name())
 	v.Add("builder", builder)
@@ -184,8 +225,8 @@ func (r *reader) LatestBuilds(master *messages.MasterLocation, builder string) (
 
 	expvars.Add("LatestBuilds", 1)
 	defer expvars.Add("LatestBuilds", -1)
-	if code, err := r.hc.getJSON(URL, &res); err != nil {
-		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+	if code, err := r.hc.getJSON(ctx, URL, &res); err != nil {
+		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 
@@ -200,7 +241,7 @@ func (r *reader) LatestBuilds(master *messages.MasterLocation, builder string) (
 	return res.Builds, nil
 }
 
-func (r *reader) TestResults(master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+func (r *reader) TestResults(ctx context.Context, master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
 	v := url.Values{}
 	v.Add("name", "full_results.json")
 	v.Add("master", master.Name())
@@ -213,52 +254,52 @@ func (r *reader) TestResults(master *messages.MasterLocation, builderName, stepN
 
 	expvars.Add("TestResults", 1)
 	defer expvars.Add("TestResults", -1)
-	if code, err := r.hc.getJSON(URL, tr); err != nil {
-		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+	if code, err := r.hc.getJSON(ctx, URL, tr); err != nil {
+		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 
 	return tr, nil
 }
 
-func (r *reader) BuildExtract(masterURL *messages.MasterLocation) (*messages.BuildExtract, error) {
+func (r *reader) BuildExtract(ctx context.Context, masterURL *messages.MasterLocation) (*messages.BuildExtract, error) {
 	URL := fmt.Sprintf("%s/get_master/%s", chromeBuildExtractURL, masterURL.Name())
 	ret := &messages.BuildExtract{}
 
 	expvars.Add("BuildExtract", 1)
 	defer expvars.Add("BuildExtract", -1)
-	code, err := r.hc.getJSON(URL, ret)
+	code, err := r.hc.getJSON(ctx, URL, ret)
 
 	if code == 404 {
 		// FIXME: Don't directly poll so many builders.
 		URL = fmt.Sprintf("%s/json", masterURL.String())
 		expvars.Add("DirectPoll", 1)
 		defer expvars.Add("DirectPoll", -1)
-		if code, err := r.hc.getJSON(URL, ret); err != nil {
-			errLog.Printf("Error (%d) fetching %s: %v", code, masterURL.String(), err)
+		if code, err := r.hc.getJSON(ctx, URL, ret); err != nil {
+			logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, masterURL.String(), err)
 			return nil, err
 		}
 		return ret, nil
 	}
 
 	if err != nil {
-		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 
 	return ret, nil
 }
 
-func (r *reader) StdioForStep(master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
+func (r *reader) StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
 	URL := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, buildNum, step)
 
 	expvars.Add("StdioForStep", 1)
 	defer expvars.Add("StdioForStep", -1)
-	res, _, err := r.hc.getText(URL)
+	res, _, err := r.hc.getText(ctx, URL)
 	return strings.Split(res, "\n"), err
 }
 
-func (r *reader) CrbugItems(label string) ([]messages.CrbugItem, error) {
+func (r *reader) CrbugItems(ctx context.Context, label string) ([]messages.CrbugItem, error) {
 	v := url.Values{}
 	v.Add("can", "open")
 	v.Add("maxResults", "100")
@@ -268,8 +309,8 @@ func (r *reader) CrbugItems(label string) ([]messages.CrbugItem, error) {
 	expvars.Add("CrbugIssues", 1)
 	defer expvars.Add("CrbugIssues", -1)
 	res := &messages.CrbugSearchResults{}
-	if code, err := r.hc.getJSON(URL, res); err != nil {
-		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+	if code, err := r.hc.getJSON(ctx, URL, res); err != nil {
+		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 
@@ -280,7 +321,7 @@ type finditAPIResponse struct {
 	Results []*messages.FinditResult `json:"results"`
 }
 
-func (r *reader) Findit(master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
+func (r *reader) Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
 	// TODO(martiniss): Remove once perf is supported by findit
 	if strings.Contains(master.Name(), "perf") {
 		return []*messages.FinditResult{}, nil
@@ -308,8 +349,8 @@ func (r *reader) Findit(master *messages.MasterLocation, builder string, buildNu
 	expvars.Add("Findit", 1)
 	defer expvars.Add("Findit", -1)
 	res := &finditAPIResponse{}
-	if code, err := r.hc.postJSON(URL, b.Bytes(), res); err != nil {
-		errLog.Printf("Error (%d) fetching %s: %v", code, URL, err)
+	if code, err := r.hc.postJSON(ctx, URL, b.Bytes(), res); err != nil {
+		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
 	}
 
@@ -329,9 +370,9 @@ func NewWriter(alertsBase string, transport http.RoundTripper) Writer {
 	}, alertsBase: alertsBase}
 }
 
-func (w *writer) PostAlerts(alerts *messages.AlertsSummary) error {
+func (w *writer) PostAlerts(ctx context.Context, alerts *messages.AlertsSummary) error {
 	return w.hc.trackRequestStats(func() (length int64, err error) {
-		infoLog.Printf("POSTing alerts to %s", w.alertsBase)
+		logging.Infof(ctx, "POSTing alerts to %s", w.alertsBase)
 		expvars.Add("PostAlerts", 1)
 		defer expvars.Add("PostAlerts", -1)
 		b, err := json.Marshal(alerts)
@@ -371,21 +412,21 @@ func (hc *trackingHTTPClient) trackRequestStats(cb func() (int64, error)) error 
 	return err
 }
 
-func (hc *trackingHTTPClient) attemptJSONGet(url string, v interface{}) (bool, int, int64, error) {
+func (hc *trackingHTTPClient) attemptJSONGet(ctx context.Context, url string, v interface{}) (bool, int, int64, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		errLog.Printf("error while creating request: %q, possibly retrying.", err.Error())
+		logging.Errorf(ctx, "error while creating request: %q, possibly retrying.", err.Error())
 		return false, 0, 0, err
 	}
 
-	return hc.attemptReq(req, v)
+	return hc.attemptReq(ctx, req, v)
 }
 
-func (hc *trackingHTTPClient) attemptReq(r *http.Request, v interface{}) (bool, int, int64, error) {
+func (hc *trackingHTTPClient) attemptReq(ctx context.Context, r *http.Request, v interface{}) (bool, int, int64, error) {
 	r.Header.Set("User-Agent", "Go-http-client/1.1 alerts_dispatcher")
 	resp, err := hc.c.Do(r)
 	if err != nil {
-		errLog.Printf("error: %q, possibly retrying.", err.Error())
+		logging.Errorf(ctx, "error: %q, possibly retrying.", err.Error())
 		return false, 0, 0, err
 	}
 
@@ -396,7 +437,7 @@ func (hc *trackingHTTPClient) attemptReq(r *http.Request, v interface{}) (bool, 
 	}
 
 	if err = json.NewDecoder(resp.Body).Decode(v); err != nil {
-		errLog.Printf("Error decoding response: %v", err)
+		logging.Errorf(ctx, "Error decoding response: %v", err)
 		return false, status, 0, err
 	}
 	ct := strings.ToLower(resp.Header.Get("Content-Type"))
@@ -405,7 +446,7 @@ func (hc *trackingHTTPClient) attemptReq(r *http.Request, v interface{}) (bool, 
 		err = fmt.Errorf("unexpected Content-Type, expected \"%s\", got \"%s\": %s", expected, ct, r.URL)
 		return false, status, 0, err
 	}
-	infoLog.Printf("Fetched(%d) json: %s", status, r.URL)
+	logging.Infof(ctx, "Fetched(%d) json: %s", status, r.URL)
 
 	return true, status, resp.ContentLength, err
 }
@@ -413,7 +454,7 @@ func (hc *trackingHTTPClient) attemptReq(r *http.Request, v interface{}) (bool, 
 // postJSON does a simple HTTP POST on a endpoint, with retries and backoff.
 //
 // Returns the status code and the error, if any.
-func (hc *trackingHTTPClient) postJSON(url string, data []byte, v interface{}) (status int, err error) {
+func (hc *trackingHTTPClient) postJSON(ctx context.Context, url string, data []byte, v interface{}) (status int, err error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	req.Header.Set("User-Agent", "Go-http-client/1.1 alerts_dispatcher")
 	req.Header.Set("Content-Type", "application/json")
@@ -424,19 +465,19 @@ func (hc *trackingHTTPClient) postJSON(url string, data []byte, v interface{}) (
 	err = hc.trackRequestStats(func() (length int64, err error) {
 		attempts := 0
 		for {
-			infoLog.Printf("Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
-			done, tStatus, length, err := hc.attemptReq(req, v)
+			logging.Infof(ctx, "Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
+			done, tStatus, length, err := hc.attemptReq(ctx, req, v)
 			status = tStatus
 			if done {
 				return length, err
 			}
 			if err != nil {
-				errLog.Printf("Error attempting fetch: %v", err)
+				logging.Errorf(ctx, "Error attempting fetch: %v", err)
 			}
 
 			attempts++
 			if attempts > maxRetries {
-				return 0, fmt.Errorf("Error fetching %s, max retries exceeded.", url)
+				return 0, fmt.Errorf("error fetching %s, max retries exceeded", url)
 			}
 
 			if status >= 400 && status < 500 {
@@ -453,23 +494,23 @@ func (hc *trackingHTTPClient) postJSON(url string, data []byte, v interface{}) (
 // getJSON does a simple HTTP GET on a getJSON endpoint.
 //
 // Returns the status code and the error, if any.
-func (hc *trackingHTTPClient) getJSON(url string, v interface{}) (status int, err error) {
+func (hc *trackingHTTPClient) getJSON(ctx context.Context, url string, v interface{}) (status int, err error) {
 	err = hc.trackRequestStats(func() (length int64, err error) {
 		attempts := 0
 		for {
-			infoLog.Printf("Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
-			done, tStatus, length, err := hc.attemptJSONGet(url, v)
+			logging.Infof(ctx, "Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
+			done, tStatus, length, err := hc.attemptJSONGet(ctx, url, v)
 			status = tStatus
 			if done {
 				return length, err
 			}
 			if err != nil {
-				errLog.Printf("Error attempting fetch: %v", err)
+				logging.Errorf(ctx, "Error attempting fetch: %v", err)
 			}
 
 			attempts++
 			if attempts > maxRetries {
-				return 0, fmt.Errorf("Error fetching %s, max retries exceeded.", url)
+				return 0, fmt.Errorf("error fetching %s, max retries exceeded", url)
 			}
 
 			if status >= 400 && status < 500 {
@@ -486,10 +527,10 @@ func (hc *trackingHTTPClient) getJSON(url string, v interface{}) (status int, er
 // getText does a simple HTTP GET on a text endpoint.
 //
 // Returns the status code and the error, if any.
-func (hc *trackingHTTPClient) getText(url string) (ret string, status int, err error) {
+func (hc *trackingHTTPClient) getText(ctx context.Context, url string) (ret string, status int, err error) {
 	err = hc.trackRequestStats(func() (length int64, err error) {
 
-		infoLog.Printf("Fetching text (%d): %s", hc.currReqs, url)
+		logging.Infof(ctx, "Fetching text (%d): %s", hc.currReqs, url)
 		resp, err := hc.c.Get(url)
 		if err != nil {
 			err = fmt.Errorf("couldn't resolve %s: %s", url, err)
@@ -511,7 +552,7 @@ func (hc *trackingHTTPClient) getText(url string) (ret string, status int, err e
 		ret = string(b)
 		length = resp.ContentLength
 
-		infoLog.Printf("Fetched(%d) text: %s", resp.StatusCode, url)
+		logging.Infof(ctx, "Fetched(%d) text: %s", resp.StatusCode, url)
 		return length, err
 	})
 	return ret, status, nil

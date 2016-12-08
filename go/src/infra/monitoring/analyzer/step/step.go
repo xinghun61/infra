@@ -2,10 +2,11 @@ package step
 
 import (
 	"fmt"
-	"log"
-	"os"
 
-	"infra/monitoring/client"
+	"golang.org/x/net/context"
+
+	"github.com/luci/luci-go/common/logging"
+
 	"infra/monitoring/messages"
 )
 
@@ -19,7 +20,6 @@ var (
 		testFailureAnalyzer,
 		deviceAnalyzer,
 	}
-	errLog = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
 )
 
 // Analyzer reasons about a BuildStep and produces a set of reasons for the
@@ -28,19 +28,19 @@ var (
 // If the analyzer returns errors, the reasons provided by it are only
 // considered invalid for the build steps which the analyzer had errors
 // processing.
-type Analyzer func(client.Reader, []*messages.BuildStep) ([]messages.ReasonRaw, []error)
+type Analyzer func(ctx context.Context, failures []*messages.BuildStep) ([]messages.ReasonRaw, []error)
 
 // ReasonFinder is a function which finds reasons for a set of build steps.
-type ReasonFinder func(Reader client.Reader, failures []*messages.BuildStep) []messages.ReasonRaw
+type ReasonFinder func(ctx context.Context, failures []*messages.BuildStep) []messages.ReasonRaw
 
 // ReasonsForFailures is the default reason finder for package step.
-func ReasonsForFailures(Reader client.Reader, failures []*messages.BuildStep) []messages.ReasonRaw {
+func ReasonsForFailures(ctx context.Context, failures []*messages.BuildStep) []messages.ReasonRaw {
 	reasons := make([]messages.ReasonRaw, len(failures))
 
 	for _, fa := range analyzers {
-		res, errs := fa(Reader, failures)
+		res, errs := fa(ctx, failures)
 		if errs != nil {
-			errLog.Printf("Got errors while analyzing with %v: %s", fa, errs)
+			logging.Errorf(ctx, "Got errors while analyzing with %v: %s", fa, errs)
 		}
 
 		if res != nil {
@@ -81,7 +81,7 @@ func (b *basicFailure) Title(bses []*messages.BuildStep) string {
 	return fmt.Sprintf("%s failing on %d builders", f.Step.Name, len(bses))
 }
 
-func basicAnalyzer(reader client.Reader, fs []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+func basicAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
 	results := make([]messages.ReasonRaw, len(fs))
 
 	for i, f := range fs {

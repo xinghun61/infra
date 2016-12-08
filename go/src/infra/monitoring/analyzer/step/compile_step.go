@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
 )
@@ -47,11 +49,11 @@ func (c *compileFailure) Title(bses []*messages.BuildStep) string {
 // compileFailureAnalyzer finds compile failures. The current logic for finding
 // compile failures isn't all that sophisticated, but it could be improved in
 // the future.
-func compileFailureAnalyzer(reader client.Reader, fs []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+func compileFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
 	results := make([]messages.ReasonRaw, len(fs))
 
 	for i, f := range fs {
-		rslt, err := compileAnalyzeFailure(reader, f)
+		rslt, err := compileAnalyzeFailure(ctx, f)
 		if err != nil {
 			return nil, []error{err}
 		}
@@ -62,12 +64,12 @@ func compileFailureAnalyzer(reader client.Reader, fs []*messages.BuildStep) ([]m
 	return results, nil
 }
 
-func compileAnalyzeFailure(reader client.Reader, f *messages.BuildStep) (messages.ReasonRaw, error) {
+func compileAnalyzeFailure(ctx context.Context, f *messages.BuildStep) (messages.ReasonRaw, error) {
 	if f.Step.Name != "compile" {
 		return nil, nil
 	}
 
-	stdio, err := reader.StdioForStep(f.Master, f.Build.BuilderName, f.Step.Name, f.Build.Number)
+	stdio, err := client.StdioForStep(ctx, f.Master, f.Build.BuilderName, f.Step.Name, f.Build.Number)
 	if err != nil {
 		return nil, fmt.Errorf("Couldn't get stdio for %s.%s.%s: %v", f.Master.Name(), f.Build.BuilderName, f.Step.Name, err)
 	}

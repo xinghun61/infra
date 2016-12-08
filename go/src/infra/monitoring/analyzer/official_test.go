@@ -3,8 +3,11 @@ package analyzer
 import (
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"infra/monitoring/messages"
 
+	"infra/monitoring/client"
 	clientTest "infra/monitoring/client/test"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -65,10 +68,11 @@ func TestOfficialImportantFailures(t *testing.T) {
 				},
 			},
 		}
-		a := newTestAnalyzer(mr, 0, 10)
+		a := newTestAnalyzer(0, 10)
+		ctx := client.WithReader(context.Background(), mr)
 
 		Convey("basic", func() {
-			failures, err := a.officialImportantFailures(nil, "", []int64{1})
+			failures, err := a.officialImportantFailures(ctx, nil, "", []int64{1})
 			So(err, ShouldBeNil)
 			So(failures, ShouldResemble, []*messages.BuildStep{
 				{

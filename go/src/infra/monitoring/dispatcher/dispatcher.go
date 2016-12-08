@@ -14,7 +14,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -77,8 +76,6 @@ var (
 	gkts             = map[string][]messages.TreeMasterConfig{}
 	filteredFailures = uint64(0)
 	expvars          = expvar.NewMap("dispatcher")
-	errLog           = log.New(os.Stderr, "", log.Lshortfile|log.Ltime)
-	infoLog          = log.New(os.Stdout, "", log.Lshortfile|log.Ltime)
 
 	// tsmon metrics
 	iterations = metric.NewCounter("alerts_dispatcher/iterations",
@@ -102,12 +99,12 @@ func init() {
 }
 
 func analyzeBuildExtract(ctx context.Context, a *analyzer.Analyzer, tree string, masterURL *messages.MasterLocation, b *messages.BuildExtract) []messages.Alert {
-	ret := a.MasterAlerts(masterURL, b)
+	ret := a.MasterAlerts(ctx, masterURL, b)
 	if *mastersOnly {
 		return ret
 	}
-	infoLog.Printf("getting builder alerts for %s (tree %s)", masterURL, tree)
-	return append(ret, a.BuilderAlerts(tree, masterURL, b)...)
+	logging.Infof(ctx, "getting builder alerts for %s (tree %s)", masterURL, tree)
+	return append(ret, a.BuilderAlerts(ctx, tree, masterURL, b)...)
 }
 
 // readJSONFile reads a file and decode it as JSON.
@@ -128,7 +125,7 @@ func masterFromURL(masterURL *url.URL) string {
 	return parts[len(parts)-1]
 }
 
-func fetchBuildExtracts(ctx context.Context, c client.Reader, masters []messages.MasterLocation) map[messages.MasterLocation]*messages.BuildExtract {
+func fetchBuildExtracts(ctx context.Context, masters []messages.MasterLocation) map[messages.MasterLocation]*messages.BuildExtract {
 	bes := map[messages.MasterLocation]*messages.BuildExtract{}
 	type beResp struct {
 		master *messages.MasterLocation
@@ -143,9 +140,9 @@ func fetchBuildExtracts(ctx context.Context, c client.Reader, masters []messages
 			r := beResp{
 				master: &master,
 			}
-			r.be, r.err = c.BuildExtract(&master)
+			r.be, r.err = client.BuildExtract(ctx, &master)
 			if r.err != nil {
-				errLog.Printf("Error reading build extract from %s : %s", r.master.Name(), r.err)
+				logging.Errorf(ctx, "Error reading build extract from %s : %s", r.master.Name(), r.err)
 			}
 			res <- r
 		}()
@@ -176,7 +173,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 		go func() {
 			expvars.Add(fmt.Sprintf("Tree-%s", tree), 1)
 			defer expvars.Add(fmt.Sprintf("Tree-%s", tree), -1)
-			infoLog.Printf("Checking tree: %s", tree)
+			logging.Infof(ctx, "Checking tree: %s", tree)
 			masters := []messages.MasterLocation{}
 
 			for _, t := range gkts[tree] {
@@ -187,9 +184,8 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 				}
 			}
 
-			// TODO(seanmccullough): Plumb ctx through the rest of these calls.
-			bes := fetchBuildExtracts(ctx, a.Reader, masters)
-			infoLog.Printf("Build Extracts read: %d", len(bes))
+			bes := fetchBuildExtracts(ctx, masters)
+			logging.Infof(ctx, "Build Extracts read: %d", len(bes))
 
 			alerts := &messages.AlertsSummary{
 				RevisionSummaries: map[string]messages.RevisionSummary{},
@@ -207,7 +203,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 					for _, r := range bf.RegressionRanges {
 						revs, err := a.GetRevisionSummaries(r.Revisions)
 						if err != nil {
-							errLog.Printf("Couldn't get revision summaries: %v", err)
+							logging.Errorf(ctx, "Couldn't get revision summaries: %v", err)
 							continue
 						}
 						for _, rev := range revs {
@@ -220,34 +216,34 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 			alertCount.Set(ctx, int64(len(alerts.Alerts)), tree)
 
 			if *alertsBaseURL == "" {
-				infoLog.Printf("No data_url provided. Writing to %s-alerts.json", tree)
+				logging.Infof(ctx, "No data_url provided. Writing to %s-alerts.json", tree)
 
 				abytes, err := json.MarshalIndent(alerts, "", "\t")
 				if err != nil {
-					errLog.Printf("Couldn't marshal alerts json: %v", err)
+					logging.Errorf(ctx, "Couldn't marshal alerts json: %v", err)
 					errs <- err
 					return
 				}
 
 				if err := ioutil.WriteFile(fmt.Sprintf("%s-alerts.json", tree), abytes, 0644); err != nil {
-					errLog.Printf("Couldn't write to alerts.json: %v", err)
+					logging.Errorf(ctx, "Couldn't write to alerts.json: %v", err)
 					errs <- err
 					return
 				}
 			} else {
 				alertsURL := fmt.Sprintf("%s/%s", *alertsBaseURL, tree)
 				w := client.NewWriter(alertsURL, transport)
-				infoLog.Printf("Posting alerts to %s", alertsURL)
-				err := w.PostAlerts(alerts)
+				logging.Errorf(ctx, "Posting alerts to %s", alertsURL)
+				err := w.PostAlerts(ctx, alerts)
 				if err != nil {
-					errLog.Printf("Couldn't post alerts: %v", err)
+					logging.Errorf(ctx, "Couldn't post alerts: %v", err)
 					postErrors.Add(ctx, 1)
 					errs <- err
 					return
 				}
 			}
 
-			infoLog.Printf("Filtered failures: %v", filteredFailures)
+			logging.Infof(ctx, "Filtered failures: %v", filteredFailures)
 			done <- nil
 		}()
 	}
@@ -279,12 +275,12 @@ func main() {
 	flag.Parse()
 
 	if *snapshot != "" && *replay != "" {
-		errLog.Printf("Cannot use snapshot and replay flags at the same time.")
+		logging.Errorf(ctx, "Cannot use snapshot and replay flags at the same time.")
 		os.Exit(1)
 	}
 
 	if err := tsmon.InitializeFromFlags(ctx, &tsFlags); err != nil {
-		errLog.Printf("tsmon couldn't initialize from flags: %v", err)
+		logging.Errorf(ctx, "tsmon couldn't initialize from flags: %v", err)
 		os.Exit(1)
 	}
 
@@ -292,21 +288,21 @@ func main() {
 	go func() {
 		listener, err := net.Listen("tcp", "127.0.0.1:0")
 		if err != nil {
-			errLog.Printf("Listen: %s", err)
+			logging.Errorf(ctx, "Listen: %s", err)
 			os.Exit(1)
 		}
 
-		infoLog.Printf("expvars listening on %v", listener.Addr())
+		logging.Infof(ctx, "expvars listening on %v", listener.Addr())
 
 		err = http.Serve(listener, nil)
 		if err != nil {
-			errLog.Printf("http.Serve: %s", err)
+			logging.Errorf(ctx, "http.Serve: %s", err)
 			os.Exit(1)
 		}
 	}()
 
 	if err := loadConfigsAndRun(ctx); err != nil {
-		errLog.Printf("Error loading configs and/or running: %v", err)
+		logging.Errorf(ctx, "Error loading configs and/or running: %v", err)
 	}
 }
 
@@ -327,9 +323,9 @@ func loadConfigsAndRun(ctx context.Context) error {
 
 	transport, err := auth.NewAuthenticator(ctx, mode, authOptions).Transport()
 	if err != nil {
-		errLog.Printf("AuthenticatedTransport: %v", err)
+		logging.Errorf(ctx, "AuthenticatedTransport: %v", err)
 		if !*login {
-			errLog.Printf("Consider re-running with -login")
+			logging.Errorf(ctx, "Consider re-running with -login")
 		}
 		return err
 	}
@@ -337,13 +333,13 @@ func loadConfigsAndRun(ctx context.Context) error {
 
 	duration, err := time.ParseDuration(*durationStr)
 	if err != nil {
-		errLog.Printf("Error parsing duration: %v", err)
+		logging.Errorf(ctx, "Error parsing duration: %v", err)
 		return err
 	}
 
 	cycle, err := time.ParseDuration(*cycleStr)
 	if err != nil {
-		errLog.Printf("Error parsing cycle: %v", err)
+		logging.Errorf(ctx, "Error parsing cycle: %v", err)
 		return err
 	}
 
@@ -351,7 +347,7 @@ func loadConfigsAndRun(ctx context.Context) error {
 		gk := messages.GatekeeperConfig{}
 		err = readJSONFile(gkFile, &gk)
 		if err != nil {
-			errLog.Printf("Error reading gatekeeper json: %v", err)
+			logging.Errorf(ctx, "Error reading gatekeeper json: %v", err)
 			return err
 		}
 
@@ -362,7 +358,7 @@ func loadConfigsAndRun(ctx context.Context) error {
 		tree := make(map[string]messages.TreeMasterConfig)
 		err = readJSONFile(treeFile, &tree)
 		if err != nil {
-			errLog.Printf("Error reading gatekeeper trees json: %v", err)
+			logging.Errorf(ctx, "Error reading gatekeeper trees json: %v", err)
 			return err
 		}
 
@@ -381,15 +377,15 @@ func loadConfigsAndRun(ctx context.Context) error {
 		r = client.NewReplay(*replay)
 	}
 
-	return run(ctx, transport, cycle, duration, r, gks, gkts)
+	return run(ctx, transport, cycle, duration, gks, gkts)
 }
 
-func run(ctx context.Context, transport http.RoundTripper, cycle, duration time.Duration, r client.Reader, gks []*messages.GatekeeperConfig, gkts map[string][]messages.TreeMasterConfig) error {
-	a := analyzer.New(r, 5, 100)
+func run(ctx context.Context, transport http.RoundTripper, cycle, duration time.Duration, gks []*messages.GatekeeperConfig, gkts map[string][]messages.TreeMasterConfig) error {
+	a := analyzer.New(5, 100)
 	if *replayTime != "" {
 		t, err := time.Parse(time.RFC3339, *replayTime)
 		if err != nil {
-			errLog.Printf("Couldn't parse replay-time: %s", err)
+			logging.Errorf(ctx, "Couldn't parse replay-time: %s", err)
 			return err
 		}
 		start := time.Now()
@@ -401,12 +397,12 @@ func run(ctx context.Context, transport http.RoundTripper, cycle, duration time.
 		f, err := os.Open(*replay)
 		defer f.Close()
 		if err != nil {
-			errLog.Printf("Couldn't open replay dir: %s", err)
+			logging.Errorf(ctx, "Couldn't open replay dir: %s", err)
 			return err
 		}
 		stat, err := f.Stat()
 		if err != nil {
-			errLog.Printf("Couldn't stat replay dir: %s", err)
+			logging.Errorf(ctx, "Couldn't stat replay dir: %s", err)
 			return err
 		}
 		start := time.Now()

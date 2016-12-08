@@ -8,26 +8,28 @@ import (
 	"errors"
 	"testing"
 
-	"infra/monitoring/client"
+	"golang.org/x/net/context"
+
 	"infra/monitoring/messages"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func makeFakeAnalyzer(data []messages.ReasonRaw, errs []error) Analyzer {
-	return func(client.Reader, []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+	return func(context.Context, []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
 		return data, errs
 	}
 }
 
 func TestReasonsForFailures(t *testing.T) {
 	t.Parallel()
+	ctx := context.Background()
 	Convey("ReasonsForFailure", t, func() {
 		Convey("one analyzer", func() {
 			Convey("nil", func() {
 				analyzers = []Analyzer{makeFakeAnalyzer(nil, nil)}
 
-				So(ReasonsForFailures(nil, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
 					nil,
 				})
 			})
@@ -39,7 +41,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}, nil),
 				}
 
-				So(ReasonsForFailures(nil, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 				})
 			})
@@ -52,7 +54,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}, nil),
 				}
 
-				So(ReasonsForFailures(nil, []*messages.BuildStep{nil, nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 					nil,
 				})
@@ -69,7 +71,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}),
 				}
 
-				So(ReasonsForFailures(nil, []*messages.BuildStep{nil, nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 					nil,
 				})
@@ -86,7 +88,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}),
 				}
 
-				So(ReasonsForFailures(nil, []*messages.BuildStep{nil, nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil, nil}), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 					nil,
 				})
@@ -103,7 +105,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}, nil),
 				}
 
-				So(ReasonsForFailures(nil, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "baz"},
 				})
 			})
@@ -120,7 +122,7 @@ func TestReasonsForFailures(t *testing.T) {
 					}),
 				}
 
-				So(ReasonsForFailures(nil, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
+				So(ReasonsForFailures(ctx, []*messages.BuildStep{nil}), ShouldResemble, []messages.ReasonRaw{
 					&basicFailure{Name: "foo"},
 				})
 			})

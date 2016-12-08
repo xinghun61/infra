@@ -6,7 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"infra/monitoring/client"
+	"golang.org/x/net/context"
+
 	"infra/monitoring/messages"
 )
 
@@ -76,7 +77,7 @@ func (p *deviceFailure) Title(bses []*messages.BuildStep) string {
 }
 
 // deviceAnalyzer looks for perf device failures.
-func deviceAnalyzer(reader client.Reader, failures []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
+func deviceAnalyzer(ctx context.Context, failures []*messages.BuildStep) ([]messages.ReasonRaw, []error) {
 	if len(failures) == 0 {
 		return []messages.ReasonRaw{}, nil
 	}

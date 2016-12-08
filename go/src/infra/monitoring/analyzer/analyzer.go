@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"infra/monitoring/analyzer/regrange"
 	"infra/monitoring/analyzer/step"
 	"infra/monitoring/client"
@@ -51,9 +53,6 @@ type Analyzer struct {
 
 	// MinRecentBuilds is the minimum number of recent builds to check, per builder.
 	MinRecentBuilds int
-
-	// Reader is the Reader implementation for fetching json from CBE, builds, etc.
-	Reader client.Reader
 
 	// HungBuilerThresh is the maxumum length of time a builder may be in state "building"
 	// before triggering a "hung builder" alert.
@@ -93,13 +92,8 @@ type Analyzer struct {
 
 // New returns a new Analyzer. If client is nil, it assigns a default implementation.
 // maxBuilds is the maximum number of builds to check, per builder.
-func New(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
-	if c == nil {
-		c = client.NewReader()
-	}
-
+func New(minBuilds, maxBuilds int) *Analyzer {
 	return &Analyzer{
-		Reader:                 c,
 		MaxRecentBuilds:        maxBuilds,
 		MinRecentBuilds:        minBuilds,
 		HungBuilderThresh:      3 * time.Hour,
@@ -118,7 +112,7 @@ func New(c client.Reader, minBuilds, maxBuilds int) *Analyzer {
 }
 
 // MasterAlerts returns alerts generated from the master.
-func (a *Analyzer) MasterAlerts(master *messages.MasterLocation, be *messages.BuildExtract) []messages.Alert {
+func (a *Analyzer) MasterAlerts(ctx context.Context, master *messages.MasterLocation, be *messages.BuildExtract) []messages.Alert {
 	ret := []messages.Alert{}
 
 	// Copied logic from builder_messages.
@@ -151,7 +145,7 @@ func (a *Analyzer) MasterAlerts(master *messages.MasterLocation, be *messages.Bu
 }
 
 // BuilderAlerts returns alerts generated from builders connected to the master.
-func (a *Analyzer) BuilderAlerts(tree string, master *messages.MasterLocation, be *messages.BuildExtract) []messages.Alert {
+func (a *Analyzer) BuilderAlerts(ctx context.Context, tree string, master *messages.MasterLocation, be *messages.BuildExtract) []messages.Alert {
 
 	// TODO: Collect activeBuilds from be.Slaves.RunningBuilds
 	type r struct {
@@ -181,7 +175,7 @@ func (a *Analyzer) BuilderAlerts(tree string, master *messages.MasterLocation, b
 			// Each call to builderAlerts may trigger blocking json fetches,
 			// but it has a data dependency on the above cache-warming call, so
 			// the logic remains serial.
-			out.alerts, out.err = a.builderAlerts(tree, master, builderName, &b)
+			out.alerts, out.err = a.builderAlerts(ctx, tree, master, builderName, &b)
 		}(builderName, builder)
 	}
 
@@ -244,14 +238,14 @@ func (a *Analyzer) latestBuildStep(b *messages.Build) (lastStep string, lastUpda
 
 // lastBuild returns the last build (which may or may not have completed) and the last completed build (which may be
 // the same as the last build), and any error that occurred while finding them.
-func (a *Analyzer) lastBuilds(master *messages.MasterLocation, builderName string, recentBuildIDs []int64) (lastBuild, lastCompletedBuild *messages.Build, err error) {
+func (a *Analyzer) lastBuilds(ctx context.Context, master *messages.MasterLocation, builderName string, recentBuildIDs []int64) (lastBuild, lastCompletedBuild *messages.Build, err error) {
 	// Check for stale/idle/offline builders.  Latest build is the first in the list.
 
 	for i, buildNum := range recentBuildIDs {
 		infoLog.Printf("Checking last %s/%s build ID: %d", master.Name(), builderName, buildNum)
 
 		var build *messages.Build
-		build, err = a.Reader.Build(master, builderName, buildNum)
+		build, err = client.Build(ctx, master, builderName, buildNum)
 		if err != nil {
 			return
 		}
@@ -272,7 +266,7 @@ func (a *Analyzer) lastBuilds(master *messages.MasterLocation, builderName strin
 
 // TODO: also check the build slaves to see if there are alerts for currently running builds that
 // haven't shown up in CBE yet.
-func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, builderName string, b *messages.Builder) ([]messages.Alert, []error) {
+func (a *Analyzer) builderAlerts(ctx context.Context, tree string, master *messages.MasterLocation, builderName string, b *messages.Builder) ([]messages.Alert, []error) {
 	if len(b.CachedBuilds) == 0 {
 		// TODO: Make an alert for this?
 		return nil, []error{errNoRecentBuilds}
@@ -287,7 +281,7 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 
 	alerts, errs := []messages.Alert{}, []error{}
 
-	lastBuild, lastCompletedBuild, err := a.lastBuilds(master, builderName, recentBuildIDs)
+	lastBuild, lastCompletedBuild, err := a.lastBuilds(ctx, master, builderName, recentBuildIDs)
 	if err != nil {
 		errs = append(errs, err)
 		return nil, errs
@@ -365,7 +359,7 @@ func (a *Analyzer) builderAlerts(tree string, master *messages.MasterLocation, b
 			mostRecentComplete = i
 		}
 	}
-	as, es := a.builderStepAlerts(tree, master, builderName, recentBuildIDs[mostRecentComplete:])
+	as, es := a.builderStepAlerts(ctx, tree, master, builderName, recentBuildIDs[mostRecentComplete:])
 	alerts = append(alerts, as...)
 	errs = append(errs, es...)
 
@@ -544,7 +538,7 @@ func (a *Analyzer) GetRevisionSummaries(hashes []string) ([]messages.RevisionSum
 // We assume the first build in the list of recent build IDs is the most recent;
 // this build is used to select the steps which we think are still failing and
 // should show up as alerts.
-func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocation, builderName string, recentBuildIDs []int64) (alerts []messages.Alert, errs []error) {
+func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *messages.MasterLocation, builderName string, recentBuildIDs []int64) (alerts []messages.Alert, errs []error) {
 	if len(recentBuildIDs) == 0 {
 		return nil, nil
 	}
@@ -554,9 +548,9 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 	// once we've scanned everything.
 	stepAlertsByKey := map[string][]messages.Alert{}
 
-	importantFailures, err := a.findImportantFailures(master, builderName, recentBuildIDs)
+	importantFailures, err := a.findImportantFailures(ctx, master, builderName, recentBuildIDs)
 
-	importantAlerts, err := a.stepFailureAlerts(tree, importantFailures, []*messages.FinditResult{})
+	importantAlerts, err := a.stepFailureAlerts(ctx, tree, importantFailures, []*messages.FinditResult{})
 	if err != nil {
 		return nil, []error{err}
 	}
@@ -578,16 +572,17 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 		stepNames[i] = f.Step.Name
 	}
 	latestBuild := recentBuildIDs[0]
+
 	// NOTE: we only use the most recent build ID now, because currently the only
 	// time we would need to check multiple builds is for official builds, which
 	// right now are internal and not supported by findit.
-	finditResults, err := a.Reader.Findit(master, builderName, latestBuild, stepNames)
+	finditResults, err := client.Findit(ctx, master, builderName, latestBuild, stepNames)
 	if err != nil {
 		errLog.Printf("while getting findit results for build: %s", err)
 	}
 
 	for _, buildNum := range recentBuildIDs {
-		failures, err := a.stepFailures(master, builderName, buildNum)
+		failures, err := a.stepFailures(ctx, master, builderName, buildNum)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -601,14 +596,14 @@ func (a *Analyzer) builderStepAlerts(tree string, master *messages.MasterLocatio
 			fResults = finditResults
 		} else {
 			// Get findit results for other build.
-			f, err := a.Reader.Findit(master, builderName, buildNum, []string{})
+			f, err := client.Findit(ctx, master, builderName, buildNum, []string{})
 			if err != nil {
 				errLog.Printf("while getting findit results for build: %s", err)
 			} else {
 				fResults = f
 			}
 		}
-		as, err := a.stepFailureAlerts(tree, failures, fResults)
+		as, err := a.stepFailureAlerts(ctx, tree, failures, fResults)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -718,10 +713,10 @@ func uniques(s []string) []string {
 	return ret
 }
 
-func (a *Analyzer) findImportantFailures(master *messages.MasterLocation, builderName string, recentBuildIDs []int64) ([]*messages.BuildStep, error) {
+func (a *Analyzer) findImportantFailures(ctx context.Context, master *messages.MasterLocation, builderName string, recentBuildIDs []int64) ([]*messages.BuildStep, error) {
 	if !strings.HasPrefix(master.Name(), "official") {
 		latestBuild := recentBuildIDs[0]
-		importantFailures, err := a.stepFailures(master, builderName, latestBuild)
+		importantFailures, err := a.stepFailures(ctx, master, builderName, latestBuild)
 		if err != nil {
 			return nil, err
 		}
@@ -732,13 +727,13 @@ func (a *Analyzer) findImportantFailures(master *messages.MasterLocation, builde
 		return importantFailures, nil
 	}
 
-	return a.officialImportantFailures(master, builderName, recentBuildIDs)
+	return a.officialImportantFailures(ctx, master, builderName, recentBuildIDs)
 }
 
 // stepFailures returns the steps that have failed recently on builder builderName.
-func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName string, bID int64) ([]*messages.BuildStep, error) {
+func (a *Analyzer) stepFailures(ctx context.Context, master *messages.MasterLocation, builderName string, bID int64) ([]*messages.BuildStep, error) {
 	var err error // To avoid re-scoping b in the nested conditional below with a :=.
-	b, err := a.Reader.Build(master, builderName, bID)
+	b, err := client.Build(ctx, master, builderName, bID)
 	if err != nil || b == nil {
 		errLog.Printf("Error fetching build %s/%s/%d: %v", master, builderName, bID, err)
 		return nil, err
@@ -774,7 +769,7 @@ func (a *Analyzer) stepFailures(master *messages.MasterLocation, builderName str
 
 // stepFailureAlerts returns alerts generated from step failures. It applies filtering
 // logic specified in the gatekeeper config to ignore some failures.
-func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep, finditResults []*messages.FinditResult) ([]messages.Alert, error) {
+func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures []*messages.BuildStep, finditResults []*messages.FinditResult) ([]messages.Alert, error) {
 	filteredFailures := []*messages.BuildStep{}
 
 	for _, failure := range failures {
@@ -799,7 +794,7 @@ func (a *Analyzer) stepFailureAlerts(tree string, failures []*messages.BuildStep
 
 	// Might not need full capacity buffer, since some failures are ignored below.
 	rs := make(chan res, len(filteredFailures))
-	reasons := a.reasonFinder(a.Reader, filteredFailures)
+	reasons := a.reasonFinder(ctx, filteredFailures)
 
 	scannedFailures := []*messages.BuildStep{}
 	for i, failure := range filteredFailures {

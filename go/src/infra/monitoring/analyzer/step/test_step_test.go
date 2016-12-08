@@ -8,6 +8,9 @@ import (
 	"net/url"
 	"testing"
 
+	"golang.org/x/net/context"
+
+	"infra/monitoring/client"
 	"infra/monitoring/client/test"
 	"infra/monitoring/messages"
 
@@ -247,13 +250,14 @@ func TestTestStepFailureAlerts(t *testing.T) {
 			}
 
 			mc := &test.MockReader{}
+			ctx := client.WithReader(context.Background(), mc)
 
 			for _, test := range tests {
 				test := test
 				Convey(test.name, func() {
 					mc.TestResultsValue = test.testResults
 					mc.FinditResults = test.finditResults
-					gotResult, gotErr := testFailureAnalyzer(mc, test.failures)
+					gotResult, gotErr := testFailureAnalyzer(ctx, test.failures)
 					So(gotErr, ShouldEqual, test.wantErr)
 					So(gotResult, ShouldResemble, test.wantResult)
 				})

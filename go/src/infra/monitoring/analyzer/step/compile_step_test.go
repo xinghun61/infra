@@ -9,6 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/net/context"
+
+	"infra/monitoring/client"
 	"infra/monitoring/client/test"
 	"infra/monitoring/messages"
 
@@ -109,12 +112,13 @@ extern const DECLSPEC_SELECTANY CD3D11_VIDEO_DEFAULT D3D11_VIDEO_DEFAULT;
 			}
 
 			mc := &test.MockReader{}
+			ctx := client.WithReader(context.Background(), mc)
 
 			for _, test := range tests {
 				test := test
 				Convey(test.name, func() {
 					mc.StdioForStepValue = strings.Split(test.stdio, "\n")
-					gotResult, gotErr := compileFailureAnalyzer(mc, test.failures)
+					gotResult, gotErr := compileFailureAnalyzer(ctx, test.failures)
 					So(gotErr, ShouldEqual, test.wantErr)
 					So(gotResult, ShouldResemble, test.wantResult)
 				})
