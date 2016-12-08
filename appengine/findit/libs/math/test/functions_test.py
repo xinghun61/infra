@@ -58,5 +58,5 @@ class FunctionsTest(unittest.TestCase):
     f = MemoizedFunction(_F)
     f(5)
     f._f = _G
-    f._ClearMemos()
+    f.ClearMemos()
     self.assertEqual(_G(5), f(5))

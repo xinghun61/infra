@@ -44,7 +44,7 @@ class MemoizedFunction(Function):
     super(MemoizedFunction, self).__init__(f)
     self._memos = {}
 
-  def _ClearMemos(self):
+  def ClearMemos(self):
     """Discard all memoized results of this function."""
     self._memos = {}
 

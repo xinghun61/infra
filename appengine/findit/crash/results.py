@@ -4,6 +4,9 @@
 
 from collections import namedtuple
 
+
+# TODO(wrengr): we should change things to use integers with None as
+# \"infinity\", rather than using floats.
 # TODO(http://crbug.com/644476): this class needs a better name.
 class AnalysisInfo(namedtuple('AnalysisInfo',
     ['min_distance', 'min_distance_frame'])):
@@ -144,7 +147,7 @@ def _DistanceBetweenLineRanges((start1, end1), (start2, end2)):
 
 
 class MatchResults(dict):
-  """A dict indexing MatchResult with its revision."""
+  """A map from revisions to the MatchResult object for that revision."""
 
   def __init__(self, ignore_cls=None):
     super(MatchResults, self).__init__()
@@ -152,7 +155,7 @@ class MatchResults(dict):
 
   def GenerateMatchResults(self, file_path, dep_path,
                            stack_infos, changelogs, blame):
-    """Generates match results.
+    """Compute match results from a list of CLs, and store them.
 
     Match results are generated based on newly found file path, its stack_infos,
     and all the changelogs that touched this file in the dep in regression
