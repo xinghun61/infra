@@ -84,7 +84,12 @@ func update(c context.Context) error {
 	}
 
 	file, status, err := loadFile(c, filepath.Join(usr.HomeDir, fileName))
-	metricReadStatus.Set(c, status)
+	metricReadStatus.Set(c, string(status))
+	if status == notFound {
+		// Don't log an error message if the file wasn't found - this is the
+		// usual case on most machines.
+		return nil
+	}
 	if err != nil {
 		return err
 	}

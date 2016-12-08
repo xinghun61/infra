@@ -14,11 +14,19 @@ import (
 	"golang.org/x/net/context"
 )
 
+type status string
+
 const (
 	fileVersion         = 1
 	previousFileVersion = fileVersion - 1
 	fileName            = "android_device_status.json"
 	maxStaleness        = time.Second * 160
+
+	notFound       status = "not_found"
+	invalidJSON           = "invalid_json"
+	invalidVersion        = "invalid_version"
+	staleFile             = "stale_file"
+	good                  = "good"
 )
 
 // deviceStatusFile is the contents of a ~/android_device_status.json file, but
@@ -85,29 +93,29 @@ type temperature struct {
 	EMMCTherm float64 `json:"emmc_therm"`
 }
 
-func loadFile(c context.Context, path string) (deviceStatusFile, string, error) {
+func loadFile(c context.Context, path string) (deviceStatusFile, status, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return deviceStatusFile{}, "not_found", err
+		return deviceStatusFile{}, notFound, err
 	}
 
 	var ret deviceStatusFile
 	err = json.Unmarshal(data, &ret)
 	if err != nil {
-		return deviceStatusFile{}, "invalid_json", err
+		return deviceStatusFile{}, invalidJSON, err
 	}
 
 	if ret.Version != fileVersion && ret.Version != previousFileVersion {
-		return deviceStatusFile{}, "invalid_version", fmt.Errorf(
+		return deviceStatusFile{}, invalidVersion, fmt.Errorf(
 			"android device file %s is version %d, not %d", path, ret.Version, fileVersion)
 	}
 
 	ts := time.Unix(0, int64(ret.Timestamp*float64(time.Second)))
 	now := clock.Now(c)
 	if ts.Before(now.Add(-maxStaleness)) {
-		return deviceStatusFile{}, "stale_file", fmt.Errorf(
+		return deviceStatusFile{}, staleFile, fmt.Errorf(
 			"android device file %s is %s stale, max %s", path, now.Sub(ts), maxStaleness)
 	}
 
-	return ret, "good", nil
+	return ret, good, nil
 }
