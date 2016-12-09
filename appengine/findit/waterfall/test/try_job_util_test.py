@@ -18,6 +18,11 @@ from waterfall.test import wf_testcase
 
 class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
+  def testShouldBailOutIfBuildHasNoStartTime(self):
+    build = WfBuild.Create('m', 'b', 1)
+    build.start_time = None
+    self.assertTrue(try_job_util._ShouldBailOutForOutdatedBuild(build))
+
   def testShouldBailOutforOutdatedBuild(self):
     yesterday = datetime.utcnow() - timedelta(days=1)
     build = WfBuild.Create('m', 'b', 1)

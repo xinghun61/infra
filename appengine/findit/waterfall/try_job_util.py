@@ -19,7 +19,8 @@ from waterfall import waterfall_config
 
 
 def _ShouldBailOutForOutdatedBuild(build):
-  return (time_util.GetUTCNow() - build.start_time).days > 0
+  return (build.start_time is None or
+          (time_util.GetUTCNow() - build.start_time).days > 0)
 
 
 def _BlameListsIntersection(blame_list_1, blame_list_2):
