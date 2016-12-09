@@ -25,7 +25,7 @@ from waterfall.test import wf_testcase
 
 class CheckFlakeTest(wf_testcase.WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/waterfall/check-flake', check_flake.CheckFlake),
+      ('/waterfall/flake', check_flake.CheckFlake),
   ], debug=True)
 
   def testCorpUserCanScheduleANewAnalysis(self):
@@ -41,7 +41,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     self.mock_current_user(user_email='test@google.com')
 
-    response = self.test_app.get('/waterfall/check-flake', params={
+    response = self.test_app.get('/waterfall/flake', params={
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': build_number,
@@ -62,7 +62,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         re.compile('.*401 Unauthorized.*',
                    re.MULTILINE | re.DOTALL),
         self.test_app.get,
-        '/waterfall/check-flake',
+        '/waterfall/flake',
         params={
             'master_name': master_name,
             'builder_name': builder_name,
@@ -94,7 +94,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.algorithm_parameters = {'iterations_to_rerun': 100}
     analysis.Save()
 
-    response = self.test_app.get('/waterfall/check-flake', params={
+    response = self.test_app.get('/waterfall/flake', params={
         'key': analysis.key.urlsafe(),
         'format': 'json'})
 
@@ -137,7 +137,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         webtest.app.AppError,
         re.compile('.*401 Unauthorized.*', re.MULTILINE | re.DOTALL),
         self.test_app.get,
-        '/waterfall/check-flake',
+        '/waterfall/flake',
         params={
             'master_name': master_name,
             'builder_name': builder_name,
@@ -181,7 +181,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     previous_request.analyses.append(previous_analysis.key)
     previous_request.Save()
 
-    response = self.test_app.get('/waterfall/check-flake', params={
+    response = self.test_app.get('/waterfall/flake', params={
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': build_number,
@@ -234,7 +234,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         webtest.app.AppError,
         re.compile('.*not supported.*', re.MULTILINE | re.DOTALL),
         self.test_app.get,
-        '/waterfall/check-flake',
+        '/waterfall/flake',
         params={
             'master_name': master_name,
             'builder_name': builder_name,
@@ -262,7 +262,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.UpdateTriageResult(
         triage_result, {'build_number': suspected_flake_build_number}, 'test')
 
-    response = self.test_app.get('/waterfall/check-flake', params={
+    response = self.test_app.get('/waterfall/flake', params={
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': build_number,

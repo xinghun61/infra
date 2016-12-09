@@ -33,7 +33,7 @@ def _UpdateBugWithResult(analysis, queue_name):
   Findit has generated the flakiness trend for this flake in the test config
   "%s / %s / %s" by rerunning the test %s times on Swarming with build artifacts
   from Waterfall. Please visit
-    https://findit-for-me.appspot.com/waterfall/check-flake?key=%s\n
+    https://findit-for-me.appspot.com/waterfall/flake?key=%s\n
   Automatically posted by the findit-for-me app (https://goo.gl/YTKnaU).
   This feature is in alpha version. Feedback is welcome using component
   Tools>Test>FindIt>Flakiness !""") % (

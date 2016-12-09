@@ -15,18 +15,25 @@ import cloudstorage as gcs
 from waterfall.build_info import BuildInfo
 
 
-_HOST_NAME_PATTERN = r'build\.chromium\.org|uberchromegw\.corp\.google\.com'
+_HOST_NAME_PATTERN = (
+    r'https?://(?:build\.chromium\.org/p|uberchromegw\.corp\.google\.com/i)')
 
-_MASTER_URL_PATTERN = re.compile(r'^https?://(?:%s)/[pi]/([^/]+)(/.*)?$' %
-                                 _HOST_NAME_PATTERN)
+_MASTER_URL_PATTERN = re.compile(
+    r'^%s/([^/]+)(?:/.*)?$' % _HOST_NAME_PATTERN)
 
-_BUILD_URL_PATTERN = re.compile(r'^https?://(?:%s)/[pi]/([^/]+)/builders/'
-                                '([^/]+)/builds/([\d]+)(/.*)?$' %
-                                _HOST_NAME_PATTERN)
+_MILO_MASTER_URL_PATTERN = re.compile(
+    r'^https?://luci-milo\.appspot\.com/([^/]+)(?:/.*)?$')
 
-_STEP_URL_PATTERN = re.compile(r'^https?://(?:%s)/[pi]/([^/]+)/builders/'
-                               '([^/]+)/builds/([\d]+)/steps/([^/]+)(/.*)?$' %
-                               _HOST_NAME_PATTERN)
+_BUILD_URL_PATTERN = re.compile(
+    r'^%s/([^/]+)/builders/([^/]+)/builds/([\d]+)(?:/.*)?$' %
+    _HOST_NAME_PATTERN)
+
+_MILO_BUILD_URL_PATTERN = re.compile(
+    r'^https?://luci-milo\.appspot\.com/([^/]+)/([^/]+)/([^/]+)(?:/.*)?$')
+
+_STEP_URL_PATTERN = re.compile(
+    r'^%s/([^/]+)/builders/([^/]+)/builds/([\d]+)/steps/([^/]+)(/.*)?$' %
+    _HOST_NAME_PATTERN)
 
 # These values are buildbot constants used for Build and BuildStep.
 # This line was copied from buildbot/master/buildbot/status/results.py.
@@ -56,7 +63,7 @@ def GetMasterNameFromUrl(url):
   if not url:
     return None
 
-  match = _MASTER_URL_PATTERN.match(url)
+  match = _MASTER_URL_PATTERN.match(url) or _MILO_MASTER_URL_PATTERN.match(url)
   if not match:
     return None
   return match.group(1)
@@ -71,11 +78,11 @@ def ParseBuildUrl(url):
   if not url:
     return None
 
-  match = _BUILD_URL_PATTERN.match(url)
+  match = _BUILD_URL_PATTERN.match(url) or _MILO_BUILD_URL_PATTERN.match(url)
   if not match:
     return None
 
-  master_name, builder_name, build_number, _ = match.groups()
+  master_name, builder_name, build_number = match.groups()
   builder_name = urllib.unquote(builder_name)
   return master_name, builder_name, int(build_number)
 

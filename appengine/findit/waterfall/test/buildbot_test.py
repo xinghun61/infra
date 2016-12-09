@@ -67,6 +67,8 @@ class BuildBotTest(unittest.TestCase):
         'https://unknown.host/p/chromium': None,
         'http://build.chromium.org/p/chromium': 'chromium',
         'http://build.chromium.org/p/chromium/builders/Linux': 'chromium',
+        'https://uberchromegw.corp.google.com/i/m1/builders/Linux': 'm1',
+        'https://luci-milo.appspot.com/m2/b/123': 'm2',
     }
 
     for url, expected_result in cases.iteritems():
@@ -84,8 +86,9 @@ class BuildBotTest(unittest.TestCase):
         ('http://build.chromium.org/p/chromium.win/builders/'
          'Win7%20Tests%20%281%29/builds/33911'): (
              'chromium.win', 'Win7 Tests (1)', 33911),
-        'https://uberchromegw.corp.google.com/i/m/builders/Linux/builds/234':
-            ('m', 'Linux', 234),
+        'https://uberchromegw.corp.google.com/i/m1/builders/b1/builds/234':
+            ('m1', 'b1', 234),
+        'https://luci-milo.appspot.com/m2/b2/123': ('m2', 'b2', 123),
     }
 
     for url, expected_result in cases.iteritems():

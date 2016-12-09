@@ -5,88 +5,150 @@
   <meta charset="utf-8">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <script>
+  function parseInputURL(url) {
+    url = decodeURI(url);
+    url = url.trim();
+    if (!url)
+      return;
+
+    var buildbotBuildRegex = /^(?:https?\:\/\/)(?:build\.chromium\.org\/p|uberchromegw\.corp\.google\.com\/i)\/([^\/]+)\/builders\/([^\/]+)\/builds\/([^\/]+)(.*$)/;
+    var miloBuildRegex = /^https?\:\/\/luci-milo\.appspot\.com\/buildbot\/([^\/]+)\/([^\/]+)\/([^\/]+)$/;
+    var groups = url.match(buildbotBuildRegex) || url.match(miloBuildRegex);
+    if (!groups) {
+      alert('Unrecognized build url!');
+      return;
+    }
+
+    var info = {
+      'masterName': groups[1],
+      'builderName': groups[2],
+      'buildNumber': groups[3],
+    };
+    var remaining = groups[4] || '';
+
+    var stepTestRegex = /^\/steps\/([^\/]+)\/logs\/([^\/]+)$/;
+    groups = remaining.match(stepTestRegex);
+    if (!groups || groups[2] == 'stdio')
+      return info;
+
+    info['stepName'] = groups[1];
+    info['testName'] = groups[2];
+
+    // Example: DetailsPanel_FileManagerDetailsPanelBrowserTest.Test_1 should be
+    // DetailsPanel/FileManagerDetailsPanelBrowserTest.Test/1 instead.
+    var encodedTestNameRegex = /^[^\.\_]+\_[^\.]+\.[^\.]+\_\d+$/;
+    if (info['testName'].match(encodedTestNameRegex))
+      info['realTestName'] = info['testName'].replace(/\_/g, '/');
+
+    return info;
+  }
+
+  function processInputURL() {
+    var info = parseInputURL($('#input-url').val());
+    if (!info)
+      return;
+
+    // Waterfall failure.
+    if (!info['stepName'] || !info['testName']) {
+      $('#url').val($('#input-url').val());
+      $('#failure').submit();
+      return;
+    }
+
+    // Flaky test.
+    $('#master-name').val(info['masterName']);
+    $('#builder-name').val(info['builderName']);
+    $('#build-number').val(info['buildNumber']);
+    $('#step-name').val(info['stepName']);
+    if (!info['realTestName']) {
+      $('#test-name').val(info['testName']);
+      $('#test-info').hide();
+    } else {
+      // Request user confirm test name.
+      $('#test-name-1-label').val(info['realTestName']);
+      $('#test-name-2-label').val(info['testName']);
+      $('#test-info').show();
+    }
+    $('#flake-info').show();
+    $('#input-bug-id').focus();
+  }
+
+  function submitFlakeForm() {
+    if ($('#test-info').is(':visible')) {
+      var testNameLabel = $('input:radio[name=real-test-name]:checked').val();
+      var testName = $('#' + testNameLabel).val().trim();
+      if (!testName) {
+        alert('Test name should not be empty!');
+        return;
+      }
+      $('#test-name').val(testName);
+    }
+    if (!$('#input-bug-id').val().trim()) {
+      alert('Bug number is required!');
+      return;
+    }
+    if (!$('#input-bug-id').val().trim().match(/^\d+$/)) {
+      alert('Bug should be a number!');
+      return;
+    }
+    $('#bug-id').val($('#input-bug-id').val().trim());
+    $('#flake').submit();
+  }
+
   $(document).ready(function() {
-      var testUrlRegexOnBuildbot = /^https?\:\/\/build\.chromium\.org\/p\/([^\/]+)\/builders\/([^\/]+)\/builds\/([\d]+)\/steps\/([^\/]+)\/logs\/([^\/]+)$/;
-      var testUrlRegexOnUberProxy = /^https?\:\/\/uberchromegw\.corp\.google\.com\/i\/([^\/]+)\/builders\/([^\/]+)\/builds\/([\d]+)\/steps\/([^\/]+)\/logs\/([^\/]+)$/;
+    $('#input-url').on('keyup', function(e) {
+      if (e.keyCode != 13) {  // ENTER
+        $('#flake-info').hide();
+        return;
+      }
 
-    $('#test-url').on("change paste keyup", function() {
-      var url = $('#test-url').val().trim();
-      if (!url)
+      processInputURL();
+    });
+
+    $('#input-url').on('change paste', function() {
+      $('#flake-info').hide();
+    });
+
+    $('#submit').on('click', submitFlakeForm);
+
+    $('#input-bug-id').on('keyup', function(e) {
+      if (e.keyCode != 13)  // ENTER
         return;
 
-      url = decodeURI(url);
-      var groups = url.match(testUrlRegexOnBuildbot);
-      if (!groups)
-        groups = url.match(testUrlRegexOnUberProxy);
-      if (!groups)
-        return;
-
-      $('#master_name').val(groups[1]);
-      $('#builder_name').val(groups[2]);
-      $('#build_number').val(groups[3]);
-      $('#step_name').val(groups[4]);
-      $('#test_name').val(groups[5]);
+      submitFlakeForm();
     });
   });
   </script>
 </head>
 <body>
-  <ul>
-    <li> <b>What's the flaky Swarmed gtest?</b> (<a href="/waterfall/list-flakes">previous analyses</a>)
+  <form id="failure" action="/waterfall/failure" method="GET" style="display:none">
+    <input type="text" name="url" id="url"/>
+  </form>
+  <form id="flake" action="/waterfall/flake" method="GET" style="display:none">
+    <input type="hidden" name="master_name" id="master-name"/>
+    <input type="hidden" name="builder_name" id="builder-name"/>
+    <input type="hidden" name="build_number" id="build-number"/>
+    <input type="hidden" name="step_name" id="step-name"/>
+    <input type="hidden" name="test_name" id="test-name"/>
+    <input type="hidden" name="bug_id" id="bug-id"/>
+  </form>
+  <div id="initial-input">
+    Paste the URL to either a failed Waterfall build or the log of a flaky gtest, and then press ENTER:
+    <ul>For example:
+      <li>Waterfall test/compile failures: https://build.chromium.org/p/chromium.linux/builders/Linux%20Tests/builds/44306</li>
+      <li>Flaky gtest on Waterfall/CQ: https://build.chromium.org/p/chromium.linux/builders/Linux%20Tests/builds/49779/steps/browser_side_navigation_unit_tests/logs/RecentTabsSubMenuModelTest.MaxWidth</li>
+    </ul>
+    URL: <input type="url" id="input-url" size="200" placeholder="paste URL here and press ENTER to continue"/>
+  </div>
+  <div id="flake-info" style="display:none">
+    <div id="test-info" style="display:none">
       <br>
-      <br>
-      <div>
-        <form method="get" action="/waterfall/check-flake">
-          <div style="margin-left:30px">
-            URL to the test log: <input type="text" id="test-url" placeholder="https://build.chromium.org/p/chromium.mac/builders/Mac10.11%20Tests/builds/3379/steps/browser_tests%20on%20Mac-10.11/logs/WorkerDevToolsSanityTest.PauseInSharedWorkerInitialization" size="200"/>
-          </div>
-          Or:
-          <div style="margin-left:30px">
-            <table>
-              <tr>
-                <td style="text-align:right">Master:</td>
-                <td><input type="text" name="master_name" id="master_name" size="100" placeholder="chromium.mac"/></td>
-              </tr>
-              <tr>
-                <td style="text-align:right">Builder:</td>
-                <td><input type="text" name="builder_name" id="builder_name" size="100" placeholder="Mac10.11 Tests"/></td>
-              </tr>
-              <tr>
-                <td style="text-align:right">Build:</td>
-                <td><input type="text" name="build_number" id="build_number" size="100" placeholder="3379 (The build number)"/></td>
-              </tr>
-              <tr>
-                <td style="text-align:right">Step:</td>
-                <td><input type="text" name="step_name" id="step_name" size="100" placeholder="browser_tests on Mac-10.11 (Should be the full step name on build page)"/></td>
-              </tr>
-              <tr>
-                <td style="text-align:right">Test:</td>
-                <td><input type="text" name="test_name" id="test_name" size="100" placeholder="WorkerDevToolsSanityTest.PauseInSharedWorkerInitialization"/></td>
-              </tr>
-            </table>
-          </div>
-          <br>
-          Bug (optional): <input type="text" name="bug_id" id="bug_id" size="100" placeholder="123456 (Bug number on Monorail for Findit to notify with findings)"/><br>
-          <br>
-          <input type="submit" value="Find Regression Range">
-        </form>
-      </div>
-    </li>
+      Confirm/edit the test name:<br>
+      <input type="radio" checked name="real-test-name" id="test-name-1" value="test-name-1-label"/><input type="text" disabled id="test-name-1-label" size="100"><br>
+      <input type="radio" name="real-test-name" id="test-name-2" value="test-name-2-label"/><input type="text" id="test-name-2-label" size="100">
+    </div>
     <br>
-    <br>
-    <br>
-    <br>
-    <li> <b>What's the failed Waterfall build?</b> (<a href="/waterfall/list-analyses">previous analyses</a>)
-      <br>
-      <br>
-      <div>
-        <form method="get" action="/waterfall/build-failure">
-          URL to the build:
-          <input type="text" name="url" id="build-url" size="200" placeholder="https://build.chromium.org/p/chromium.linux/builders/Linux%20Builder/builds/63971"><br>
-          <br>
-          <input type="submit" value="Find Culprit">
-        </form>
-      </div>
-    </li>
-  </ul>
+    BUG: <input type="text" id="input-bug-id" size="100" placeholder="123456 (Bug number to notify findings, search crbug.com with test name before creating a new bug)"/><br>
+    <input type="button" id="submit" value="Find Regression Range">
+  </div>
 </body>

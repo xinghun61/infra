@@ -128,7 +128,7 @@ SAMPLE_HEURISTIC_TRY_JOB = ConfidenceInformation(
 
 class BuildFailureTest(wf_testcase.WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
-      ('/build-failure', build_failure.BuildFailure),
+      ('/failure', build_failure.BuildFailure),
   ], debug=True)
 
   def setUp(self):
@@ -217,7 +217,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         re.compile('.*501 Not Implemented.*Url &#34;%s&#34; '
                    'is not pointing to a build.*' % build_url,
                    re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/build-failure', params={'url': build_url})
+        self.test_app.get, '/failure', params={'url': build_url})
 
   def testNonAdminCanViewAnalysisOfFailureOnUnsupportedMaster(self):
     master_name = 'm2'
@@ -238,7 +238,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.put()
 
-    response = self.test_app.get('/build-failure',
+    response = self.test_app.get('/failure',
                                  params={'url': build_url})
     self.assertEquals(200, response.status_int)
     self.assertEqual(0, len(self.taskqueue_stub.get_filtered_tasks()))
@@ -255,7 +255,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         re.compile('.*501 Not Implemented.*Master &#34;%s&#34; '
                    'is not supported yet.*' % master_name,
                    re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/build-failure', params={'url': build_url})
+        self.test_app.get, '/failure', params={'url': build_url})
 
   def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self):
     master_name = 'm2'
@@ -266,7 +266,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
-    response = self.test_app.get('/build-failure', params={'url': build_url})
+    response = self.test_app.get('/failure', params={'url': build_url})
     self.assertEquals(200, response.status_int)
 
     self.assertEqual(1, len(self.taskqueue_stub.get_filtered_tasks()))
@@ -278,7 +278,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     build_url = buildbot.CreateBuildUrl(
         master_name, builder_name, build_number)
 
-    response = self.test_app.get('/build-failure', params={'url': build_url})
+    response = self.test_app.get('/failure', params={'url': build_url})
     self.assertEquals(200, response.status_int)
 
     self.assertEqual(1, len(self.taskqueue_stub.get_filtered_tasks()))
@@ -865,7 +865,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     ]
 
     build_url = buildbot.CreateBuildUrl('m', 'b', 123)
-    response = self.test_app.get('/build-failure',
+    response = self.test_app.get('/failure',
                                  params={'url': build_url, 'format': 'json'})
 
     self.assertEquals(200, response.status_int)
