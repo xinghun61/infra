@@ -17,7 +17,6 @@ import (
 	"infra/monitoring/messages"
 
 	"github.com/luci/gae/service/datastore"
-	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
@@ -164,29 +163,13 @@ type masterState struct {
 }
 
 func getRestartingMasters(c context.Context, treeName string) (map[string]masterState, error) {
-	item, err := memcache.GetKey(c, masterStateKey)
-	if err != nil && err != memcache.ErrCacheMiss {
-		return nil, err
-	}
-
-	var b []byte
-	if err == memcache.ErrCacheMiss {
-		b, err = getGitiles(c, masterStateURL)
-		if err != nil {
-			return nil, err
-		}
-		item = memcache.NewItem(c, masterStateKey).SetValue(b).SetExpiration(5 * time.Minute)
-		if err = memcache.Set(c, item); err != nil {
-			return nil, err
-		}
-	}
-
+	b, err := getGitilesCached(c, masterStateURL)
 	if err != nil {
 		return nil, err
 	}
 
 	ms := &desiredMasterStates{}
-	if err := json.Unmarshal(item.Value(), ms); err != nil {
+	if err := json.Unmarshal(b, ms); err != nil {
 		return nil, err
 	}
 
@@ -195,38 +178,46 @@ func getRestartingMasters(c context.Context, treeName string) (map[string]master
 		return nil, err
 	}
 
-	cfgs := []*messages.TreeMasterConfig{}
-
-	if treeName != "trooper" {
-		cfg, ok := trees[treeName]
-		if !ok {
-			return nil, ErrUnrecognizedTree
-		}
-		cfgs = append(cfgs, cfg)
-	} else {
-		for _, cfg := range trees {
-			cfgs = append(cfgs, cfg)
-		}
-	}
-
 	now := time.Now().UTC()
 
 	ret := map[string]masterState{}
-	for _, treeCfg := range cfgs {
-		for masterLoc := range treeCfg.Masters {
-			for _, ds := range ms.MasterStates["master."+masterLoc.Name()] {
-				tt, err := time.Parse(time.RFC3339Nano, ds.TransitionTime)
-				if err != nil {
-					return nil, err
-				}
-
-				// TODO: make this warning window configurable. This logic will include a
-				// master if it is scheduled to restart at any time later than two
-				// hours ago. This handles both recent and future restarts.
-				if now.Sub(tt) < 2*time.Hour {
-					ret[masterLoc.Name()] = ds
-				}
+	var filter = func(masterName string, masterStates []masterState) error {
+		for _, state := range masterStates {
+			tt, err := time.Parse(time.RFC3339Nano, state.TransitionTime)
+			if err != nil {
+				return err
 			}
+
+			// TODO: make this warning window configurable. This logic will include a
+			// master if it is scheduled to restart at any time later than two
+			// hours ago. This handles both recent and future restarts.
+
+			if now.Sub(tt) < 2*time.Hour {
+				ret[masterName] = state
+			}
+		}
+		return nil
+	}
+
+	// For troopers, just display all of the pending restarts.
+	if treeName == "trooper" {
+		for masterName, states := range ms.MasterStates {
+			if err := filter(masterName, states); err != nil {
+				return nil, err
+			}
+		}
+		return ret, nil
+	}
+
+	// For specific trees, filter to master specified in the config.
+	cfg, ok := trees[treeName]
+	if !ok {
+		return nil, ErrUnrecognizedTree
+	}
+
+	for masterLoc := range cfg.Masters {
+		if err := filter(masterLoc.Name(), ms.MasterStates["master."+masterLoc.Name()]); err != nil {
+			return nil, err
 		}
 	}
 	return ret, nil

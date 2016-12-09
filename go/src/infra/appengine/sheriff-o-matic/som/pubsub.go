@@ -12,14 +12,12 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
 )
 
 const (
-	gatekeeperTreesKey = "gatekeeper_trees.json"
-	gkTreesURL         = "https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_trees.json?format=text"
+	gkTreesURL = "https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_trees.json?format=text"
 )
 
 // This is what we get from the Data field of the pubsub push request body.
@@ -128,25 +126,13 @@ func getPubSubAlertsHandler(ctx *router.Context) {
 // TODO(seanmccullough): Replace this urlfetch/memcache code with a luci-config reader.
 // Blocked on https://bugs.chromium.org/p/chromium/issues/detail?id=658270
 var getGatekeeperTrees = func(c context.Context) (map[string]*messages.TreeMasterConfig, error) {
-	item, err := memcache.GetKey(c, gatekeeperTreesKey)
-	if err != nil && err != memcache.ErrCacheMiss {
-		return nil, err
-	}
-
-	var b []byte
-	if err == memcache.ErrCacheMiss {
-		b, err = getGitiles(c, gkTreesURL)
-		item = memcache.NewItem(c, gatekeeperTreesKey).SetValue(b)
-		err = memcache.Set(c, item)
-	}
-
+	gkBytes, err := getGitilesCached(c, gkTreesURL)
 	if err != nil {
 		return nil, err
 	}
 
 	ret := make(map[string]*messages.TreeMasterConfig)
-
-	if err := json.Unmarshal(item.Value(), &ret); err != nil {
+	if err := json.Unmarshal(gkBytes, &ret); err != nil {
 		return nil, err
 	}
 
