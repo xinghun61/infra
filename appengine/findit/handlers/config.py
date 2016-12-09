@@ -198,7 +198,9 @@ def _ValidateCheckFlakeSettings(settings):
           isinstance(settings.get('iterations_to_rerun'), int) and
           isinstance(settings.get('max_build_numbers_to_look_back'), int) and
           isinstance(settings.get('use_nearby_neighbor'), bool) and
-          isinstance(settings.get('update_monorail_bug'), bool))
+          isinstance(settings.get('update_monorail_bug'), bool) and
+          isinstance(settings.get('max_dive_in_a_row'), int) and
+          isinstance(settings.get('dive_rate_threshold'), float))
 
 
 # Maps config properties to their validation functions.

@@ -328,9 +328,12 @@ def _GetNextBuildNumber(data_points, flake_settings):
   upper_flake_threshold = flake_settings.get('upper_flake_threshold')
   max_stable_in_a_row = flake_settings.get('max_stable_in_a_row')
   max_flake_in_a_row = flake_settings.get('max_flake_in_a_row')
+  max_dive_in_a_row = flake_settings.get('max_dive_in_a_row')
+  dive_rate_threshold = flake_settings.get('dive_rate_threshold')
 
   stables_in_a_row = 0
   flakes_in_a_row = 0
+  dives_in_a_row = 0
   stables_happened = False
   flakes_first = 0
   flaked_out = False
@@ -350,14 +353,15 @@ def _GetNextBuildNumber(data_points, flake_settings):
     elif _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
       stables_in_a_row += 1
       flakes_in_a_row = 0
+      dives_in_a_row = 0
       stables_happened = True
+
       # TODO (crbug.com/670888): Pin point a stable build rather than looking
       # for stable region to further narrow down the sequential search range.
       if stables_in_a_row <= max_stable_in_a_row:
         # No stable region yet, keep searching.
         next_build_number = build_number - 1
         continue
-
       # Stable region found.
       if not flaked_out and not flakes_first:
         # Already stabled_out but no flake region yet, no findings.
@@ -377,14 +381,51 @@ def _GetNextBuildNumber(data_points, flake_settings):
       flakes_in_a_row += 1
       stables_in_a_row = 0
 
+      if flakes_in_a_row > max_flake_in_a_row:  # Identified a flaky region.
+        flaked_out = True
+
       if not stables_happened:
         # No stables yet.
         flakes_first += 1
 
-      if flakes_in_a_row > max_flake_in_a_row:  # Identified a flaky region.
-        flaked_out = True
+      # Check the pass_rate of previous run, if this is the first data_point,
+      # consider the virtual previous run is stable.
+      previous_pass_rate = data_points[i - 1].pass_rate if i > 0 else 0
+      if _IsStable(
+          previous_pass_rate, lower_flake_threshold, upper_flake_threshold):
+        next_build_number = build_number - flakes_in_a_row
+        continue
 
-      next_build_number = build_number - flakes_in_a_row
+      # Checks for dives. A dive is a sudden drop in pass rate.
+      if pass_rate - previous_pass_rate > dive_rate_threshold:
+        # Possibly a dive just happened.
+        # Set dives_in_a_row to one since this is the first sign of diving.
+        # For cases where we have pass rates like 0.1, 0.51, 0.92, we will use
+        # the earliest dive.
+        dives_in_a_row = 1
+      elif previous_pass_rate - pass_rate > dive_rate_threshold:
+        # A rise just happened, sets dives_in_a_row back to 0.
+        dives_in_a_row = 0
+      else:
+        # Two last results are close, increases dives_in_a_row if not 0.
+        dives_in_a_row = dives_in_a_row + 1 if dives_in_a_row else 0
+
+      if dives_in_a_row <= max_dive_in_a_row:
+        step_size = 1 if dives_in_a_row else flakes_in_a_row
+        next_build_number = build_number - step_size
+        continue
+
+      # Dived out.
+      # Flake region must have been found, ready for sequential search.
+      lower_boundary_index = i - dives_in_a_row + 1
+      lower_boundary = data_points[lower_boundary_index].build_number
+      build_after_lower_boundary = (
+          data_points[lower_boundary_index - 1].build_number)
+      if build_after_lower_boundary == lower_boundary + 1:
+        # Sequential search is Done.
+        return _NO_BUILD_NUMBER, build_after_lower_boundary
+      # Sequential search.
+      return lower_boundary + 1, _NO_BUILD_NUMBER
 
   return next_build_number, _NO_BUILD_NUMBER
 

@@ -196,42 +196,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
       recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
   @mock.patch(
       'waterfall.flake.recursive_flake_pipeline.RecursiveFlakePipeline')
-  def testNextBuildPipelineForNewRecursionLessThanLastBuildNumber(
-      self, mocked_pipeline, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    self._CreateAndSaveFlakeSwarmingTask(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.pass_rate = .5
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
-    analysis.put()
-
-    NextBuildNumberPipeline.run(
-        NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name, test_name,
-        analysis.version_number)
-    mocked_pipeline.assert_not_called()
-
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  @mock.patch.object(
-      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
-  @mock.patch(
-      'waterfall.flake.recursive_flake_pipeline.RecursiveFlakePipeline')
   def testNextBuildPipelineForFailedSwarmingTask(self, mocked_pipeline, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -433,6 +397,45 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
     self.assertEqual(-1, result)
     self.assertEqual(61, next_run)
+
+  def testNextBuildWhenDiveHappened(self):
+    data_points = self._GenerateDataPoints(
+        pass_rates=[0.3, 0.8], build_numbers=[100, 80])
+
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(-1, result)
+    self.assertEqual(79, next_run)
+
+  def testNextBuildWhenRiseHappened(self):
+    data_points = self._GenerateDataPoints(
+        pass_rates=[0.3, 0.8, 0.3], build_numbers=[100, 99, 98])
+
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(-1, result)
+    self.assertEqual(95, next_run)
+
+  def testNextBuildWhenDivedOut(self):
+    data_points = self._GenerateDataPoints(
+        pass_rates=[0.3, 0.8, 0.8, 0.7, 0.8, 0.9],
+        build_numbers=[100, 99, 98, 97, 96, 95])
+
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEquals(100, result)
+    self.assertEqual(-1, next_run)
+
+
+  def testNextBuildWhenDivedOutSequence(self):
+    data_points = self._GenerateDataPoints(
+        pass_rates=[0.3, 0.2, 0.8, 0.7, 0.8, 0.9, 0.8],
+        build_numbers=[100, 99, 97, 96, 05, 94, 93])
+
+    next_run, result = _GetNextBuildNumber(
+        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+    self.assertEqual(-1, result)
+    self.assertEqual(98, next_run)
 
   def testNextBuildNumberIsSmallerThanLastBuildNumber(self):
     master_name = 'm'
