@@ -20,6 +20,16 @@ class IssueListCSVTest(unittest.TestCase):
     self.servlet = issuelistcsv.IssueListCsv(
         'req', 'res', services=self.services)
 
+  def testGatherPageData_AnonUsers(self):
+    """Anonymous users cannot download the issue list."""
+    mr = testing_helpers.MakeMonorailRequest()
+    mr.auth.user_id = 0
+    self.assertRaises(permissions.PermissionException,
+                      self.servlet.GatherPageData, mr)
+
+
+class IssueListCSVFunctionsTest(unittest.TestCase):
+
   def testRewriteColspec(self):
     self.assertEqual('', issuelistcsv._RewriteColspec(''))
 
@@ -34,10 +44,25 @@ class IssueListCSVTest(unittest.TestCase):
     self.assertEqual('OwnerModified OwnerModifiedTimestamp',
                      issuelistcsv._RewriteColspec('OwnerModified'))
 
+  def testEscapeCSV(self):
+    self.assertEqual('', issuelistcsv.EscapeCSV(None))
+    self.assertEqual('0', issuelistcsv.EscapeCSV(0))
+    self.assertEqual('', issuelistcsv.EscapeCSV(''))
+    self.assertEqual('hello', issuelistcsv.EscapeCSV('hello'))
+    self.assertEqual('hello', issuelistcsv.EscapeCSV('  hello '))
 
-  def testGatherPageData_AnonUsers(self):
-    """Anonymous users cannot download the issue list."""
-    mr = testing_helpers.MakeMonorailRequest()
-    mr.auth.user_id = 0
-    self.assertRaises(permissions.PermissionException,
-                      self.servlet.GatherPageData, mr)
+    # Double quotes are escaped as two double quotes.
+    self.assertEqual("say 'hello'", issuelistcsv.EscapeCSV("say 'hello'"))
+    self.assertEqual('say ""hello""', issuelistcsv.EscapeCSV('say "hello"'))
+
+    # Things that look like formulas are prefixed with a single quote because
+    # some formula functions can have side-effects.  See:
+    # https://www.contextis.com/resources/blog/comma-separated-vulnerabilities/
+    self.assertEqual("'=2+2", issuelistcsv.EscapeCSV('=2+2'))
+    self.assertEqual("'=CMD| del *.*", issuelistcsv.EscapeCSV('=CMD| del *.*'))
+
+    # Some spreadsheets apparently allow formula cells that start with
+    # plus, minus, and at-signs.
+    self.assertEqual("'+2+2", issuelistcsv.EscapeCSV('+2+2'))
+    self.assertEqual("'-2+2", issuelistcsv.EscapeCSV('-2+2'))
+    self.assertEqual("'@2+2", issuelistcsv.EscapeCSV('@2+2'))

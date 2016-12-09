@@ -56,6 +56,12 @@ class IssueListCsv(issuelist.IssueList):
           mr, urls.ISSUE_LIST_CSV, start=pagination.last)
       page_data['item_count'] = pagination.last - pagination.start + 1
 
+    # Escape values to prevent exploits in a spreadsheet app.
+    for row in page_data['table_data']:
+      for cell in row.cells:
+        for value in cell.values:
+          value.item = EscapeCSV(value.item)
+
     return page_data
 
   def GetCellFactories(self):
@@ -86,3 +92,17 @@ def _RewriteColspec(col_spec):
     new_cols.extend(rewriten_cols)
 
   return ' '.join(new_cols)
+
+
+def EscapeCSV(s):
+  """Return a version of string S that is safe as part of a CSV file."""
+  if s is None:
+    return ''
+  s = str(s).strip().replace('"', '""')
+  # Prefix any formula cells because some spreadsheets have built-in
+  # formila functions that can actually have side-effects on the user's
+  # computer.
+  if s.startswith(('=', '-', '+', '@')):
+    s = "'" + s
+  return s
+

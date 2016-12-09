@@ -302,16 +302,6 @@ def TimeStringForCSV(timestamp):
   return time.strftime(CSV_DATE_TIME_FMT, time.gmtime(timestamp))
 
 
-class TableCellSummaryCSV(table_view_helpers.TableCell):
-  """TableCell subclass for showing issue summaries escaped for CSV."""
-
-  def __init__(self, issue, non_col_labels=None, **_kw):
-    escaped_summary = issue.summary.replace('"', '""')
-    table_view_helpers.TableCell.__init__(
-        self, table_view_helpers.CELL_TYPE_SUMMARY, [escaped_summary],
-        non_column_labels=non_col_labels)
-
-
 class TableCellOpenedCSV(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue opened date."""
 
@@ -454,7 +444,6 @@ class TableCellOwnerLastVisitDaysAgo(table_view_helpers.TableCell):
 # summary cell to properly escape the data for CSV files.
 CSV_CELL_FACTORIES = CELL_FACTORIES.copy()
 CSV_CELL_FACTORIES.update({
-    'summary': TableCellSummaryCSV,
     'opened': TableCellOpenedCSV,
     'openedtimestamp': TableCellOpenedTimestamp,
     'closed': TableCellClosedCSV,
