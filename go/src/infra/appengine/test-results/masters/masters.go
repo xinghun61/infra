@@ -97,6 +97,16 @@ var Known = []*Master{
 		Groups:     []string{"@ToT WebRTC"},
 	},
 	{
+		Name:       "WebRTCFYI",
+		Identifier: "client.webrtc.fyi",
+		Groups:     []string{},
+	},
+	{
+		Name:       "WebRTCTryServer",
+		Identifier: "tryserver.webrtc",
+		Groups:     []string{},
+	},
+	{
 		Name:       "BlinkTryServer",
 		Identifier: "tryserver.blink",
 		Groups:     []string{"Unused"},
