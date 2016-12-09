@@ -107,7 +107,7 @@ class StartTryJobOnDemandPipeline(BasePipeline):
       reliable_tests = []
       for step_name, step_failure in failure_info['failed_steps'].iteritems():
         step_has_first_time_failure = _HasFirstTimeFailure(
-            step_failure['tests'], build_number)
+            step_failure.get('tests', {}), build_number)
         if not step_has_first_time_failure:
           continue
         task_result = yield ProcessSwarmingTaskResultPipeline(
