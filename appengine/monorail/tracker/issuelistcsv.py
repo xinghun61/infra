@@ -5,7 +5,10 @@
 
 """Implemention of the issue list output as a CSV file."""
 
+import types
+
 import settings
+
 from framework import framework_helpers
 from framework import permissions
 from framework import urls
@@ -98,11 +101,13 @@ def EscapeCSV(s):
   """Return a version of string S that is safe as part of a CSV file."""
   if s is None:
     return ''
-  s = str(s).strip().replace('"', '""')
-  # Prefix any formula cells because some spreadsheets have built-in
-  # formila functions that can actually have side-effects on the user's
-  # computer.
-  if s.startswith(('=', '-', '+', '@')):
-    s = "'" + s
+  if isinstance(s, types.StringTypes):
+    s = s.strip().replace('"', '""')
+    # Prefix any formula cells because some spreadsheets have built-in
+    # formila functions that can actually have side-effects on the user's
+    # computer.
+    if s.startswith(('=', '-', '+', '@')):
+      s = "'" + s
+
   return s
 

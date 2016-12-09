@@ -46,7 +46,7 @@ class IssueListCSVFunctionsTest(unittest.TestCase):
 
   def testEscapeCSV(self):
     self.assertEqual('', issuelistcsv.EscapeCSV(None))
-    self.assertEqual('0', issuelistcsv.EscapeCSV(0))
+    self.assertEqual(0, issuelistcsv.EscapeCSV(0))
     self.assertEqual('', issuelistcsv.EscapeCSV(''))
     self.assertEqual('hello', issuelistcsv.EscapeCSV('hello'))
     self.assertEqual('hello', issuelistcsv.EscapeCSV('  hello '))
@@ -66,3 +66,7 @@ class IssueListCSVFunctionsTest(unittest.TestCase):
     self.assertEqual("'+2+2", issuelistcsv.EscapeCSV('+2+2'))
     self.assertEqual("'-2+2", issuelistcsv.EscapeCSV('-2+2'))
     self.assertEqual("'@2+2", issuelistcsv.EscapeCSV('@2+2'))
+
+    self.assertEqual(
+      u'division\xc3\xb7sign',
+      issuelistcsv.EscapeCSV(u'division\xc3\xb7sign'))
