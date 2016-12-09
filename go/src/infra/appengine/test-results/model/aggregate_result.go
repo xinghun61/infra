@@ -56,7 +56,7 @@ type AggregateResult struct {
 type BuilderInfo struct {
 	// SecondsEpoch is the start time of tests expressed in seconds from
 	// the Unix epoch.
-	SecondsEpoch []int64 `json:"secondsSinceEpoch"`
+	SecondsEpoch []float64 `json:"secondsSinceEpoch"`
 
 	// BlinkRevs is list of Blink revisions.
 	BlinkRevs []Number `json:"blinkRevision"`

@@ -16,7 +16,7 @@ type FullResult struct {
 	Version        int            `json:"version"`
 	Builder        string         `json:"builder_name"`
 	BuildNumber    Number         `json:"build_number"`
-	SecondsEpoch   int64          `json:"seconds_since_epoch"`
+	SecondsEpoch   float64        `json:"seconds_since_epoch"`
 	Tests          FullTest       `json:"tests"`
 	FailuresByType map[string]int `json:"num_failures_by_type"`
 
@@ -67,7 +67,7 @@ func (fr *FullResult) AggregateResult() (AggregateResult, error) {
 		Version: ResultsVersion,
 		Builder: fr.Builder,
 		BuilderInfo: &BuilderInfo{
-			SecondsEpoch:   []int64{fr.SecondsEpoch},
+			SecondsEpoch:   []float64{fr.SecondsEpoch},
 			BuildNumbers:   []Number{fr.BuildNumber},
 			ChromeRevs:     cRev,
 			Tests:          tests,

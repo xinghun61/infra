@@ -10,7 +10,7 @@
     "version": 4,
     "builder_name": "test-builder",
     "blink_revision": "12345",
-    "seconds_since_epoch": 1406123456,
+    "seconds_since_epoch": 1406123456.0,
     "num_failures_by_type": {
         "FAIL": 0,
         "SKIP": 0,

@@ -109,13 +109,13 @@ func TestUploadAndGetHandlers(t *testing.T) {
 				Version: model.ResultsVersion,
 				Builder: "test-builder",
 				BuilderInfo: &model.BuilderInfo{
-					SecondsEpoch: []int64{1406123456},
+					SecondsEpoch: []float64{1406123456},
 					BuildNumbers: []model.Number{123},
 					ChromeRevs:   []string{"67890"},
 					Tests: model.AggregateTest{
 						"Test1.testproc1": &model.AggregateTestLeaf{
-							Results:  []model.ResultSummary{{1, "Q"}},
-							Runtimes: []model.RuntimeSummary{{1, 1}},
+							Results:  []model.ResultSummary{{Count: 1, Type: "Q"}},
+							Runtimes: []model.RuntimeSummary{{Count: 1, Runtime: 1}},
 						},
 					},
 					FailuresByType: map[string][]int{

@@ -304,7 +304,7 @@ func updateFullResults(c context.Context, data io.Reader) error {
 			TestType    string       `json:"test_type"`
 			//Interrupted  *bool        `json:"interrupted,omitempty"`
 			//Version      int          `json:"version"`
-			//SecondsEpoch int64        `json:"seconds_since_epoch"`
+			//SecondsEpoch float64      `json:"seconds_since_epoch"`
 			//FlatTests    model.FlatTest `json:"flat_tests"`
 		}{
 			Master:      p.Master,

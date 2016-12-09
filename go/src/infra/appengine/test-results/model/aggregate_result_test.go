@@ -180,7 +180,7 @@ func TestAggregateResult(t *testing.T) {
 					"version": 4,
 					"foo_builder": map[string]interface{}{
 						"blinkRevision":     []string{"100", "200", "0", "-50"},
-						"secondsSinceEpoch": []int64{40 << 20, 4 << 20, 400 << 2, -42},
+						"secondsSinceEpoch": []float64{40 << 20, 4 << 20, 400 << 2, -42},
 						"chromeRevision": []string{
 							"10", "40", "900", "65536", "afd807a", "88da8f4",
 						},
@@ -692,7 +692,7 @@ func TestMerge(t *testing.T) {
 					Version: ResultsVersion,
 					Builder: "foo_builder",
 					BuilderInfo: &BuilderInfo{
-						SecondsEpoch: []int64{1, 2},
+						SecondsEpoch: []float64{1, 2},
 						BlinkRevs:    []Number{3, 4},
 						BuildNumbers: []Number{5, 6},
 						ChromeRevs:   []string{"a", "1"},
@@ -714,7 +714,7 @@ func TestMerge(t *testing.T) {
 				x := &AggregateResult{
 					Builder: "foo_builder",
 					BuilderInfo: &BuilderInfo{
-						SecondsEpoch: []int64{10, 20},
+						SecondsEpoch: []float64{10, 20},
 						BlinkRevs:    []Number{30, 40},
 						BuildNumbers: []Number{50, 60},
 						ChromeRevs:   []string{"b", "c"},
@@ -737,7 +737,7 @@ func TestMerge(t *testing.T) {
 					Version: ResultsVersion,
 					Builder: "foo_builder",
 					BuilderInfo: &BuilderInfo{
-						SecondsEpoch: []int64{10, 20, 1, 2},
+						SecondsEpoch: []float64{10, 20, 1, 2},
 						BlinkRevs:    []Number{30, 40, 3, 4},
 						BuildNumbers: []Number{50, 60, 5, 6},
 						ChromeRevs:   []string{"b", "c", "a", "1"},

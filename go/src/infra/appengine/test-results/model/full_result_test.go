@@ -160,7 +160,7 @@ func TestFullResult(t *testing.T) {
 					Version: ResultsVersion,
 					Builder: fr.Builder,
 					BuilderInfo: &BuilderInfo{
-						SecondsEpoch: []int64{6400000000},
+						SecondsEpoch: []float64{6400000000},
 						BuildNumbers: []Number{1000},
 						FailureMap:   FailureLongNames,
 						Tests: AggregateTest{

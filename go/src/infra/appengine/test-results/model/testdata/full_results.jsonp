@@ -1,5 +1,5 @@
 ADD_RESULTS({
-    "seconds_since_epoch": 1368146629,
+    "seconds_since_epoch": 1368146629.0,
     "tests": {
         "media": {
             "encrypted-media": {

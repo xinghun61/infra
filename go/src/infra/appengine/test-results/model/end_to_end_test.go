@@ -47,7 +47,7 @@ func TestEndToEnd(t *testing.T) {
 						"TIMEOUT":    {16},
 						"LEAK":       {1},
 					},
-					SecondsEpoch: []int64{1368146629},
+					SecondsEpoch: []float64{1368146629},
 					Tests: AggregateTest{
 						"media": AggregateTest{
 							"W3C": AggregateTest{
