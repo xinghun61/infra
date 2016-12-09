@@ -200,10 +200,10 @@ def _ParseIssueRequestAttachments(post_data):
 
 def _ParseIssueRequestKeptAttachments(post_data):
   """Extract attachment ids for attachments kept when updating description
-  
+
   Args:
     post_data: dict w/ values from the user's HTTP POST form data.
-    
+
   Returns:
     a list of attachment ids for kept attachments
   """

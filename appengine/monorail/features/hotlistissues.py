@@ -5,6 +5,7 @@
 
 """Classes that implement the hotlistissues page and related forms."""
 
+import logging
 from third_party import ezt
 
 import settings
@@ -16,10 +17,15 @@ from framework import servlet
 from framework import sorting
 from framework import permissions
 from framework import framework_helpers
+from framework import paginate
+from framework import framework_constants
+from framework import framework_views
+from framework import grid_view_helpers
 from framework import template_helpers
 from framework import urls
 from framework import xsrf
 from services import features_svc
+from tracker import tracker_bizobj
 
 
 class HotlistIssues(servlet.Servlet):
@@ -52,14 +58,20 @@ class HotlistIssues(servlet.Servlet):
       if mr.hotlist_id is None:
         self.abort(404, 'no hotlist specified')
 
-    page_data = self.GetTableViewData(mr)
+    if mr.mode == 'grid':
+      page_data = self.GetGridViewData(mr)
+    else:
+      page_data = self.GetTableViewData(mr)
 
     with self.profiler.Phase('making page perms'):
       owner_permissions = permissions.CanAdministerHotlist(
           mr.auth.effective_ids, mr.hotlist)
       editor_permissions = permissions.CanEditHotlist(
           mr.auth.effective_ids, mr.hotlist)
-      page_perms = template_helpers.EZTItem(EditIssue=None)
+      # TODO(jojwang): each issue should have an individual
+      # SetStar status based on its project
+      page_perms = template_helpers.EZTItem(
+          EditIssue=None, SetStar=mr.auth.user_id)
 
     allow_rerank = (not mr.group_by_spec and mr.sort_spec.startswith(
         'rank') and (owner_permissions or editor_permissions))
@@ -68,17 +80,18 @@ class HotlistIssues(servlet.Servlet):
     page_data.update({'owner_permissions': owner_permissions,
                       'editor_permissions': editor_permissions,
                       'issue_tab_mode': 'issueList',
-                      'grid_mode': ezt.boolean(False),
+                      'grid_mode': ezt.boolean(mr.mode == 'grid'),
                       'set_star_token': xsrf.GenerateToken(
                           mr.auth.user_id, '/u/%s/hotlsits/%d%s.do' % (
                               mr.viewed_username, mr.hotlist_id,
                               urls.ISSUE_SETSTAR_JSON)),
                       'page_perms': page_perms,
                       'colspec': mr.col_spec,
-                      'allow_rerank': ezt.boolean(allow_rerank),})
+                      'allow_rerank': ezt.boolean(allow_rerank),
+                      'csv_link': '', # TODO(jojwang): fill in when
+                      # CSV for hotlists is complete
+                      'is_hotlist': ezt.boolean(True)})
     return page_data
-  # TODO(jojwang): implement grid_mode and update page_date; grid_mode will not
-  # always be False
   # TODO(jojwang): implement peek issue on hover, implement starring issues
 
   def _GetHotlist(self, mr):
@@ -112,7 +125,7 @@ class HotlistIssues(servlet.Servlet):
         'preview': mr.preview,
         'default_colspec': features_constants.DEFAULT_COL_SPEC,
         'default_results_per_page': 10,
-        'csv_link': framework_helpers.FormatURL(mr, 'csv'),
+        'csv_link': '', # TODO(jojwang): fill in when done w/ hotlists CSV
         'preview_on_hover': (
             settings.enable_quick_edit and mr.auth.user_pb.preview_on_hover),
         'remove_issues_token': xsrf.GenerateToken(
@@ -159,3 +172,42 @@ class HotlistIssues(servlet.Servlet):
     return framework_helpers.FormatAbsoluteURL(
           mr, '/u/%s/hotlists/%s' % (mr.auth.user_id, mr.hotlist_id),
           saved=1, ts=int(time.time()), include_project=False)
+
+  def GetGridViewData(self, mr):
+    """EZT template values to render a Table View of issues.
+
+    Args:
+      mr: commonly used info parsed from the request.
+
+    Returns:
+      Dictionary of page data for rendering of the Table View.
+    """
+    mr.ComputeColSpec(mr.hotlist)
+    starred_iid_set = set(self.services.issue_star.LookupStarredItemIDs(
+        mr.cnxn, mr.auth.user_id))
+    issues_list = self.services.issue.GetIssues(
+        mr.cnxn,
+        [hotlist_issue.issue_id for hotlist_issue
+         in mr.hotlist.iid_rank_pairs])
+    allowed_issues = hotlist_helpers.FilterIssues(
+        mr, issues_list, self.services)
+    users_by_id = framework_views.MakeAllUserViews(
+        mr.cnxn, self.services.user,
+        tracker_bizobj.UsersInvolvedInIssues(allowed_issues or []))
+    hotlist_issues_project_ids = hotlist_helpers.GetAllProjectsOfIssues(
+        [issue for issue in issues_list])
+    config_list = hotlist_helpers.GetAllConfigsOfProjects(
+        mr.cnxn, hotlist_issues_project_ids, self.services)
+    harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
+    limit = settings.max_issues_in_grid
+    grid_limited = len(allowed_issues) > limit
+    grid_view_data = grid_view_helpers.GetGridViewData(
+        mr, allowed_issues, harmonized_config,
+        users_by_id, starred_iid_set, grid_limited)
+
+    grid_view_data.update({'pagination': paginate.ArtifactPagination(
+          mr, allowed_issues, features_constants.DEFAULT_RESULTS_PER_PAGE,
+          total_count=len(allowed_issues),
+          list_page_url=urls.HOTLIST_ISSUES)})
+
+    return grid_view_data

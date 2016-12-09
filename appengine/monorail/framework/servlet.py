@@ -544,6 +544,8 @@ class Servlet(webapp2.RequestHandler):
       # TODO(jrobbins): should this be a ProjectView?
       project_view = template_helpers.PBProxy(mr.project)
 
+    grid_x_attr = None
+    grid_y_attr = None
     hotlist_view = None
     if mr.hotlist:
       users_by_id = framework_views.MakeAllUserViews(
@@ -555,6 +557,8 @@ class Servlet(webapp2.RequestHandler):
       # TODO(jojwang): when friendly url is added, loop through hotlist_view's
       # friendly_url and url and decide if hotlist should have
       # view.url = view.friendly_url or view.url = the url with ID
+      grid_x_attr = mr.x.lower()
+      grid_y_attr = mr.y.lower()
 
     app_version = os.environ.get('CURRENT_VERSION_ID')
 
@@ -562,8 +566,6 @@ class Servlet(webapp2.RequestHandler):
     if mr.viewed_user_auth.user_view:
       viewed_username = mr.viewed_user_auth.user_view.username
 
-    grid_x_attr = None
-    grid_y_attr = None
     canned_query_views = []
     issue_entry_url = 'entry'
     config = None

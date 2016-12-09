@@ -17,21 +17,21 @@
     <td class="vt hoverTarget [is grid_cell_mode "tiles"][else]idcount[end]">
      [for grid_data.cells_in_row.tiles]
       [is grid_cell_mode "tiles"]
-       [include "issue-grid-tile.ezt" grid_data.cells_in_row.tiles.starred grid_data.cells_in_row.tiles.local_id grid_data.cells_in_row.tiles.status grid_data.cells_in_row.tiles.summary]
+       [include "issue-grid-tile.ezt" grid_data.cells_in_row.tiles.starred grid_data.cells_in_row.tiles.local_id grid_data.cells_in_row.tiles.status grid_data.cells_in_row.tiles.summary grid_data.cells_in_row.tiles.issue_url]
       [end]
       [is grid_cell_mode "ids"]
        <a title="[grid_data.cells_in_row.tiles.summary]"
-          href="detail?id=[grid_data.cells_in_row.tiles.local_id]">[grid_data.cells_in_row.tiles.local_id]</a>
+          href=[grid_data.cells_in_row.tiles.issue_url]>[if-any is_hotlist][grid_data.cells_in_row.tiles.issue_ref][else][grid_data.cells_in_row.tiles.local_id][end]</a>
       [end]
      [end]
      [is grid_cell_mode "counts"]
       [is grid_data.cells_in_row.count "0"]
       [else]
        [is grid_data.cells_in_row.count "1"]
-        <a href="detail?id=[for grid_data.cells_in_row.tiles][grid_data.cells_in_row.tiles.local_id][end]"
+        <a href=[for grid_data.cells_in_row.tiles][grid_data.cells_in_row.tiles.issue_url][end]
            >[grid_data.cells_in_row.count] item</a>
        [else]
-        <a href="list?can=[can]&amp;q=[grid_data.cells_in_row.drill_down][query]">[grid_data.cells_in_row.count] items</a>
+        <a href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[grid_data.cells_in_row.drill_down][query]">[grid_data.cells_in_row.count] items</a>
        [end]
       [end]
 

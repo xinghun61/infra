@@ -27,10 +27,6 @@ class IssueListUnitTest(unittest.TestCase):
     # TODO(jrobbins): write tests for this method.
     pass
 
-  def testGetGridViewData(self):
-    # TODO(jrobbins): write tests for this method.
-    pass
-
   def testGetTableViewData(self):
     # TODO(jrobbins): write tests for this method.
     pass

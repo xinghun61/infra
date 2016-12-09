@@ -13,7 +13,6 @@ import logging
 from third_party import ezt
 
 import settings
-from framework import framework_constants
 from framework import framework_helpers
 from framework import framework_views
 from framework import grid_view_helpers
@@ -32,7 +31,6 @@ from tracker import tablecell
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
-from tracker import tracker_views
 
 
 class IssueList(servlet.Servlet):
@@ -119,7 +117,7 @@ class IssueList(servlet.Servlet):
 
     with self.profiler.Phase('building table/grid'):
       if pipeline.grid_mode:
-        page_data = self.GetGridViewData(
+        page_data = grid_view_helpers.GetGridViewData(
             mr, pipeline.allowed_results or [], config, pipeline.users_by_id,
             starred_iid_set, pipeline.grid_limited)
       else:
@@ -165,6 +163,7 @@ class IssueList(servlet.Servlet):
             mr.auth.user_id, '/p/%s%s.do' % (
                 mr.project_name, urls.ISSUE_SETSTAR_JSON)),
         'search_error_message': search_error_message,
+        'is_hotlist': ezt.boolean(False),
         # last three are needed by templates for hotlists
         'owner_permissions': ezt.boolean(False),
         'editor_permissions': ezt.boolean(False),
@@ -172,97 +171,6 @@ class IssueList(servlet.Servlet):
     })
 
     return page_data
-
-  def GetGridViewData(
-      self, mr, results, config, users_by_id, starred_iid_set, grid_limited):
-    """EZT template values to render a Grid View of issues.
-
-    Args:
-      mr: commonly used info parsed from the request.
-      results: The Issue PBs that are the search results to be displayed.
-      config: The ProjectConfig PB for the project this view is in.
-      users_by_id: A dictionary {user_id: user_view,...} for all the users
-          involved in results.
-      starred_iid_set: Set of issues that the user has starred.
-      grid_limited: True if the results were limited to fit within the grid.
-
-    Returns:
-      Dictionary for EZT template rendering of the Grid View.
-    """
-    # We need ordered_columns because EZT loops have no loop-counter available.
-    # And, we use column number in the Javascript to hide/show columns.
-    columns = mr.col_spec.split()
-    ordered_columns = [template_helpers.EZTItem(col_index=i, name=col)
-                       for i, col in enumerate(columns)]
-    unshown_columns = table_view_helpers.ComputeUnshownColumns(
-        results, columns, config, tracker_constants.OTHER_BUILT_IN_COLS)
-
-    grid_x_attr = (mr.x or config.default_x_attr or '--').lower()
-    grid_y_attr = (mr.y or config.default_y_attr or '--').lower()
-    all_label_values = {}
-    for art in results:
-      all_label_values[art.local_id] = (
-          grid_view_helpers.MakeLabelValuesDict(art))
-
-    if grid_x_attr == '--':
-      grid_x_headings = ['All']
-    else:
-      grid_x_items = table_view_helpers.ExtractUniqueValues(
-          [grid_x_attr], results, users_by_id, config)
-      grid_x_headings = grid_x_items[0].filter_values
-      if grid_view_helpers.AnyArtifactHasNoAttr(
-          results, grid_x_attr, users_by_id, all_label_values, config):
-        grid_x_headings.append(framework_constants.NO_VALUES)
-      grid_x_headings = grid_view_helpers.SortGridHeadings(
-          grid_x_attr, grid_x_headings, users_by_id, config,
-          tracker_helpers.SORTABLE_FIELDS)
-
-    if grid_y_attr == '--':
-      grid_y_headings = ['All']
-    else:
-      grid_y_items = table_view_helpers.ExtractUniqueValues(
-          [grid_y_attr], results, users_by_id, config)
-      grid_y_headings = grid_y_items[0].filter_values
-      if grid_view_helpers.AnyArtifactHasNoAttr(
-          results, grid_y_attr, users_by_id, all_label_values, config):
-        grid_y_headings.append(framework_constants.NO_VALUES)
-      grid_y_headings = grid_view_helpers.SortGridHeadings(
-          grid_y_attr, grid_y_headings, users_by_id, config,
-          tracker_helpers.SORTABLE_FIELDS)
-
-    logging.info('grid_x_headings = %s', grid_x_headings)
-    logging.info('grid_y_headings = %s', grid_y_headings)
-    grid_data = _MakeGridData(
-        results, starred_iid_set, grid_x_attr, grid_x_headings,
-        grid_y_attr, grid_y_headings, users_by_id, all_label_values,
-        config)
-
-    grid_axis_choice_dict = {}
-    for oc in ordered_columns:
-      grid_axis_choice_dict[oc.name] = True
-    for uc in unshown_columns:
-      grid_axis_choice_dict[uc] = True
-    for bad_axis in tracker_constants.NOT_USED_IN_GRID_AXES:
-      if bad_axis in grid_axis_choice_dict:
-        del grid_axis_choice_dict[bad_axis]
-    grid_axis_choices = grid_axis_choice_dict.keys()
-    grid_axis_choices.sort()
-
-    grid_cell_mode = mr.cells
-    if len(results) > settings.max_tiles_in_grid and mr.cells == 'tiles':
-      grid_cell_mode = 'ids'
-
-    grid_view_data = {
-        'grid_limited': ezt.boolean(grid_limited),
-        'grid_shown': len(results),
-        'grid_x_headings': grid_x_headings,
-        'grid_y_headings': grid_y_headings,
-        'grid_data': grid_data,
-        'grid_axis_choices': grid_axis_choices,
-        'grid_cell_mode': grid_cell_mode,
-        'results': results,  # Really only useful in if-any.
-        }
-    return grid_view_data
 
   def GetCellFactories(self):
     return tablecell.CELL_FACTORIES
@@ -400,29 +308,6 @@ def _MakeTableData(
         art.project_name, urls.ISSUE_DETAIL, id=art.local_id)
 
   return table_data
-
-
-def _MakeGridData(
-    allowed_results, starred_iid_set, x_attr,
-    grid_col_values, y_attr, grid_row_values, users_by_id, all_label_values,
-    config):
-  """Return all data needed for EZT to render the body of the grid view."""
-
-  def IssueViewFactory(issue):
-    return template_helpers.EZTItem(
-      summary=issue.summary, local_id=issue.local_id, issue_id=issue.issue_id,
-      status=issue.status or issue.derived_status, starred=None)
-
-  grid_data = grid_view_helpers.MakeGridData(
-      allowed_results, x_attr, grid_col_values, y_attr, grid_row_values,
-      users_by_id, IssueViewFactory, all_label_values, config)
-  for grid_row in grid_data:
-    for grid_cell in grid_row.cells_in_row:
-      for tile in grid_cell.tiles:
-        if tile.issue_id in starred_iid_set:
-          tile.starred = ezt.boolean(True)
-
-  return grid_data
 
 
 def _GetStarredIssues(cnxn, logged_in_user_id, services):

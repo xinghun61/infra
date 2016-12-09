@@ -41,24 +41,38 @@
        [# TODO(jojwang): when friendly urls are implemented, change this to accomodate]
   <input type="hidden"  id="can" value="[can]"></span>
 
-  [include "../tracker/issue-list-controls-top.ezt"]
+  [if-any grid_mode]
+    [include "../tracker/issue-grid-controls-top.ezt"]
+  [else]
+    [include "../tracker/issue-list-controls-top.ezt"]
+  [end]
 
   [include "../tracker/issue-hovercard.ezt"] [# TODO(jojwang): no hovercard appears right now]
 
   <div id="cursorarea">
   <table cellspacing="0" cellpadding="2" border="0" class="results striped drag_container" id="resultstable" width="100%">
-    [include "hotlist-issues-body.ezt"]
+    [if-any grid_mode]
+      [include "../tracker/issue-grid-body.ezt"]
+     [else]
+      [include "hotlist-issues-body.ezt"]
+    [end]
   </table>
   </div>
 
-  [include "../tracker/issue-list-controls-bottom.ezt"]
-  [for panels]
-    [include "../tracker/issue-list-menus.ezt"]
+  [if-any grid_mode]
+    [include "../tracker/issue-grid-controls-bottom.ezt"]
+  [else]
+    [include "../tracker/issue-list-controls-bottom.ezt"]
+    [for panels]
+      [include "../tracker/issue-list-menus.ezt"]
+    [end]
   [end]
 </div>
 
 [include "../framework/footer-script.ezt"]
-[include "../tracker/issue-list-js.ezt"]
+[if-any grid_mode][else]
+  [include "../tracker/issue-list-js.ezt"]
+[end]
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {

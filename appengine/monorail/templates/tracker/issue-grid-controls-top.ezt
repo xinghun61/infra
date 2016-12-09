@@ -1,6 +1,6 @@
 <div class="list">
 <div style="float:right; margin-left:2em; font-size:95%">
- <a class="buttonify capsule_left" href="list?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]">List</a><span
+ <a class="buttonify capsule_left" href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]">List</a><span
  class="buttonify capsule_right mode_button_active">Grid</span>
 </div>
 
@@ -17,7 +17,7 @@
  [end]
 [end]
 
- <form id="colspecform" action="list" method="GET" style="display:inline">
+ <form id="colspecform" action="[if-any is_hotlist][else]list[end]" method="GET" style="display:inline">
   <input type="hidden" name="can" value="[can]">
   <input type="hidden" name="q" value="[query]">
   <input type="hidden" name="colspec" id="colspec" value="[colspec]">

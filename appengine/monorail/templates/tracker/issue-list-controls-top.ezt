@@ -1,7 +1,7 @@
 <div class="list">
   <div style="float:right; margin-left:2em; font-size:95%">
    <span class="buttonify mode_button_active capsule_left">List</span><a
-   class="buttonify capsule_right" href="list?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]&amp;mode=grid">Grid</a>
+   class="buttonify capsule_right" href="[if-any is_hotlist][else]list[end]?can=[can]&amp;q=[query]&amp;colspec=[format "url"][colspec][end]&amp;groupby=[format "url"][groupby][end]&amp;sort=[format "url"][sortspec][end]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;cells=[grid_cell_mode]&amp;mode=grid">Grid</a>
   </div>
 
    [include "../framework/artifact-list-pagination-part.ezt"]
