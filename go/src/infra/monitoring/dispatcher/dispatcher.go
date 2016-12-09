@@ -329,7 +329,6 @@ func loadConfigsAndRun(ctx context.Context) error {
 		}
 		return err
 	}
-	ctx = context.Background()
 
 	duration, err := time.ParseDuration(*durationStr)
 	if err != nil {
@@ -377,6 +376,7 @@ func loadConfigsAndRun(ctx context.Context) error {
 		r = client.NewReplay(*replay)
 	}
 
+	ctx = client.WithReader(ctx, r)
 	return run(ctx, transport, cycle, duration, gks, gkts)
 }
 
