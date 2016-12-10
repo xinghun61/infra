@@ -393,7 +393,7 @@ class MonorailApi(remote.Service):
       updates_dict['cc_add'], updates_dict['cc_remove'] = (
           api_pb2_v1_helpers.split_remove_add(request.updates.cc))
       updates_dict['cc_add'] = self._services.user.LookupUserIDs(
-          mar.cnxn, updates_dict['cc_add']).values()
+          mar.cnxn, updates_dict['cc_add'], autocreate=True).values()
       updates_dict['cc_remove'] = self._services.user.LookupUserIDs(
           mar.cnxn, updates_dict['cc_remove']).values()
       updates_dict['labels_add'], updates_dict['labels_remove'] = (
@@ -633,7 +633,8 @@ class MonorailApi(remote.Service):
     cc_ids = []
     if request.cc:
       cc_ids = self._services.user.LookupUserIDs(
-          mar.cnxn, [ap.name for ap in request.cc]).values()
+          mar.cnxn, [ap.name for ap in request.cc],
+          autocreate=True).values()
     comp_ids = api_pb2_v1_helpers.convert_component_ids(
         mar.config, request.components)
     fields_add, _, _, fields_labels, _ = (
@@ -842,11 +843,11 @@ class MonorailApi(remote.Service):
       self._services.usergroup.RemoveMembers(
           mar.cnxn, group_id, owner_ids + member_ids)
       owners_dict = self._services.user.LookupUserIDs(
-          mar.cnxn, request.groupOwners, True)
+          mar.cnxn, request.groupOwners, autocreate=True)
       self._services.usergroup.UpdateMembers(
           mar.cnxn, group_id, owners_dict.values(), 'owner')
       members_dict = self._services.user.LookupUserIDs(
-          mar.cnxn, request.groupMembers, True)
+          mar.cnxn, request.groupMembers, autocreate=True)
       self._services.usergroup.UpdateMembers(
           mar.cnxn, group_id, members_dict.values(), 'member')
 
@@ -1022,11 +1023,11 @@ class MonorailApi(remote.Service):
         new_docstring = update.description
       elif update.field == api_pb2_v1.ComponentUpdateFieldID.ADMIN:
         user_ids_dict = self._services.user.LookupUserIDs(
-            mar.cnxn, list(update.admin), autocreate=False)
+            mar.cnxn, list(update.admin), autocreate=True)
         new_admin_ids = [user_ids_dict[email] for email in update.admin]
       elif update.field == api_pb2_v1.ComponentUpdateFieldID.CC:
         user_ids_dict = self._services.user.LookupUserIDs(
-            mar.cnxn, list(update.cc), autocreate=False)
+            mar.cnxn, list(update.cc), autocreate=True)
         new_cc_ids = [user_ids_dict[email] for email in update.cc]
         update_filterrule = True
       elif update.field == api_pb2_v1.ComponentUpdateFieldID.DEPRECATED:
