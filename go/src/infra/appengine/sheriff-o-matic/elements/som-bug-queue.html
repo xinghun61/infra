@@ -58,27 +58,15 @@
         last-error="{{_bugQueueJsonError}}"
         last-response="{{_bugQueueJson}}"
         debounce-duration="300"></iron-ajax>
-      <iron-ajax
-          id="assignedBugsAjax"
-          url="/api/v1/bugqueue/[[bugQueueLabel]]/owned"
-          handle-as="json"
-          last-error="{{_assignedBugsJsonError}}"
-          last-response="{{_assignedBugsJson}}"
-          debounce-duration="300"></iron-ajax>
     <div id="main" hidden$="[[_hideBugQueue]]">
       <h2 hidden$="[[_isTrooperQueue]]">[[treeDisplayName]] Bug Queue (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues" target="_blank">Help?</a>)</h2>
       <h2 hidden$="[[!_isTrooperQueue]]">Trooper Queue (<a href="http://go/trooper-queue" target="_blank">View in Monorail</a>)</h2>
       <div id="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
         Error fetching bug queue: [[_bugQueueJsonError.error]]
       </div>
-      <div id="error" hidden$="[[_haveNoErrors(_assignedBugsJsonError)]]">
-        Error fetching assigned bugs: [[_assignedBugsJsonError.error]]
-      </div>
-      <div id="loadingBugs" hidden$="[[!_showBugsLoading(_bugsLoaded, _bugQueueJsonError)]]">
-        <paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bugs...
-      </div>
+      <div id="loadingBugs" hidden$="[[!_showBugsLoading(_bugsLoaded, _bugQueueJsonError)]]"><paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bug Queue... </div>
       <div id="noBugs" hidden$="[[!_showNoBugs]]">No bugs in the queue!</div>
-      <template is="dom-repeat" items="[[_sortBugs(_bugs)]]" as="bug">
+      <template is="dom-repeat" items="[[_sortBugs(_bugQueueJson.items)]]" as="bug">
         <div class="bug">
           <div class="summary-box">
             <a href="http://crbug.com/[[bug.id]]" target="_blank" title="[[bug.summary]]" class="summary">[[bug.summary]]</a>
@@ -108,18 +96,6 @@
         bugQueueLabel: {
           type: String,
           observer: '_changeBugQueueLabel',
-        },
-        _assignedBugsJson: {
-          type: Object,
-          value: null,
-        },
-        _assignedBugsJsonError: {
-          type: Object,
-          value: null,
-        },
-        _bugs: {
-          type: Array,
-          computed: '_computeBugs(_bugQueueJson, _assignedBugsJson)',
         },
         _bugQueueJson: {
           type: Object,
@@ -154,32 +130,9 @@
         if (this._hideBugQueue) {
           return;
         }
-        let assignedBugsLoaded = !this._isTrooperQueue;
-        let bugsLoaded = false;
-
         this.$.bugQueueAjax.generateRequest().completes.then((reponse) => {
-          bugsLoaded = true;
-          this._bugsLoaded = assignedBugsLoaded;
+          this._bugsLoaded = true;
         });
-        if (this._isTrooperQueue) {
-          this.$.assignedBugsAjax.generateRequest().completes.then((reponse) => {
-            assignedBugsLoaded = true;
-            this._bugsLoaded = bugsLoaded;
-          });
-        }
-      },
-
-      _computeBugs: function(bugQueueJson, assignedBugsJson) {
-        if (!bugQueueJson && !assignedBugsJson) {
-          return [];
-        }
-        if (!assignedBugsJson) {
-          return bugQueueJson.items;
-        }
-        if (!bugQueueJson) {
-          return assignedBugsJson.items;
-        }
-        return bugQueueJson.items.concat(assignedBugsJson.items);
       },
 
       _computeHideBugQueue: function(bugQueueLabel) {
@@ -215,9 +168,6 @@
         this._bugQueueJson = null;
         this._bugQueueJsonError = null;
         this._bugsLoaded = false;
-
-        this._assignedBugsJson = null;
-        this._assignedBugsJsonError = null;
         this.refresh();
       },
 

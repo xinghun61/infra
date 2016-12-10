@@ -215,6 +215,10 @@
           return obj.date == datestamp;
         })[0];
 
+        if (!dateData || !dateData['participants']) {
+          return null;
+        }
+
         let sheriffs = dateData['participants'][i];
 
         let sheriffMap = sheriffs.reduce((map, s) => {

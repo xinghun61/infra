@@ -61,45 +61,13 @@
       };
       element._bugsLoaded = true;
 
-      assert.equal(false, element._haveNoBugs(element._bugs));
+      assert.equal(false, element._haveNoBugs(element._bugQueueJson));
 
       flush( () => {
         assert.equal(false, element.$.main.hidden);
         assert.equal(2, element.$.main.querySelectorAll('.bug').length);
         done();
       });
-    });
-
-    test('_computeBugs', function() {
-      let bugQueueJson = {
-        items: [
-          { summary: 'foo', status: 'bar', id: 123 },
-          { summary: 'baz', status: 'zippy', id: 456 },
-        ],
-      };
-      let assignedBugsJson = {
-        items: [
-          { summary: 'hello', status: 'world', id: 555 },
-          { summary: 'let us', status: 'test', id: 987 },
-        ],
-      };
-
-      assert.deepEqual([
-        { summary: 'foo', status: 'bar', id: 123 },
-        { summary: 'baz', status: 'zippy', id: 456 },
-      ], element._computeBugs(bugQueueJson, null));
-
-      assert.deepEqual([
-        { summary: 'hello', status: 'world', id: 555 },
-        { summary: 'let us', status: 'test', id: 987 },
-      ], element._computeBugs(null, assignedBugsJson));
-
-      assert.deepEqual([
-        { summary: 'foo', status: 'bar', id: 123 },
-        { summary: 'baz', status: 'zippy', id: 456 },
-        { summary: 'hello', status: 'world', id: 555 },
-        { summary: 'let us', status: 'test', id: 987 },
-      ], element._computeBugs(bugQueueJson, assignedBugsJson));
     });
 
     test('compute priority', function() {
