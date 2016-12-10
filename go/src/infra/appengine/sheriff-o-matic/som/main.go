@@ -34,6 +34,7 @@ import (
 
 const (
 	authGroup           = "sheriff-o-matic-access"
+	annotationsCacheKey = "annotation-metadata"
 	bugQueueCacheFormat = "bugqueue-%s"
 	settingsKey         = "tree"
 	// annotations will expire after this amount of time
@@ -386,6 +387,7 @@ func init() {
 	// Non-public endpoints.
 	r.GET("/_cron/refresh/bugqueue/:label", basemw, refreshBugQueueHandler)
 	r.GET("/_cron/annotations/flush_old/", basemw, flushOldAnnotationsHandler)
+	r.GET("/_cron/annotations/refresh/", basemw, refreshAnnotationsHandler)
 	r.POST("/_/clientmon", basemw, postClientMonHandler)
 	r.POST("/_ah/push-handlers/milo", basemw, postMiloPubSubHandler)
 

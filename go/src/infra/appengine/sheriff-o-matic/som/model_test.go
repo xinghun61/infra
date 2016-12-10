@@ -53,19 +53,18 @@ func TestAnnotation(t *testing.T) {
 			Convey("number", func() {
 				res, err := validBug("123123")
 				So(err, ShouldBeNil)
-				So(res, ShouldEqual, "https://crbug.com/123123")
+				So(res, ShouldEqual, "123123")
 			})
 
 			Convey("bugs.chromium.org", func() {
-				res, err := validBug("bugs.chromium.org/aasasnans")
-				So(err, ShouldBeNil)
-				So(res, ShouldEqual, "https://bugs.chromium.org/aasasnans")
+				_, err := validBug("bugs.chromium.org/aasasnans")
+				So(err, ShouldNotBeNil)
 			})
 
 			Convey("crbug.com", func() {
 				res, err := validBug("crbug.com/123123")
 				So(err, ShouldBeNil)
-				So(res, ShouldEqual, "https://crbug.com/123123")
+				So(res, ShouldEqual, "123123")
 			})
 
 			Convey("invalid", func() {
@@ -95,7 +94,7 @@ func TestAnnotation(t *testing.T) {
 
 						So(err, ShouldBeNil)
 						So(ann.SnoozeTime, ShouldEqual, 0)
-						So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123"})
+						So(ann.Bugs, ShouldResemble, []string{"123123"})
 						So(ann.ModificationTime, ShouldResemble, cl.Now())
 
 						Convey("duplicate bugs", func() {
@@ -104,7 +103,7 @@ func TestAnnotation(t *testing.T) {
 							So(err, ShouldBeNil)
 
 							So(ann.SnoozeTime, ShouldEqual, 0)
-							So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123"})
+							So(ann.Bugs, ShouldResemble, []string{"123123"})
 							So(ann.Comments, ShouldBeNil)
 							So(ann.ModificationTime, ShouldResemble, cl.Now())
 						})
@@ -151,7 +150,7 @@ func TestAnnotation(t *testing.T) {
 				t := cl.Now()
 				comments := []Comment{{"hello", "", t}, {"world", "", t}, {"hehe", "", t}}
 				ann.SnoozeTime = 100
-				ann.Bugs = []string{"https://crbug.com/123123", "bug2"}
+				ann.Bugs = []string{"123123", "bug2"}
 				ann.Comments = comments
 
 				Convey("time", func() {
@@ -160,7 +159,7 @@ func TestAnnotation(t *testing.T) {
 
 					So(err, ShouldBeNil)
 					So(ann.SnoozeTime, ShouldEqual, 0)
-					So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123", "bug2"})
+					So(ann.Bugs, ShouldResemble, []string{"123123", "bug2"})
 					So(ann.Comments, ShouldResemble, comments)
 					So(ann.ModificationTime, ShouldResemble, cl.Now())
 				})
@@ -182,7 +181,7 @@ func TestAnnotation(t *testing.T) {
 
 						So(err, ShouldNotBeNil)
 						So(ann.SnoozeTime, ShouldEqual, 100)
-						So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123", "bug2"})
+						So(ann.Bugs, ShouldResemble, []string{"123123", "bug2"})
 						So(ann.Comments, ShouldResemble, comments)
 						So(ann.ModificationTime, ShouldResemble, cl.Now().Add(-time.Hour))
 					})
@@ -195,7 +194,7 @@ func TestAnnotation(t *testing.T) {
 
 						So(err, ShouldBeNil)
 						So(ann.SnoozeTime, ShouldEqual, 100)
-						So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123", "bug2"})
+						So(ann.Bugs, ShouldResemble, []string{"123123", "bug2"})
 						So(ann.Comments, ShouldResemble, []Comment{{"hello", "", t}, {"hehe", "", t}})
 						So(ann.ModificationTime, ShouldResemble, cl.Now())
 					})
@@ -205,7 +204,7 @@ func TestAnnotation(t *testing.T) {
 
 						So(err, ShouldNotBeNil)
 						So(ann.SnoozeTime, ShouldEqual, 100)
-						So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123", "bug2"})
+						So(ann.Bugs, ShouldResemble, []string{"123123", "bug2"})
 						So(ann.Comments, ShouldResemble, comments)
 						So(ann.ModificationTime, ShouldResemble, cl.Now().Add(-time.Hour))
 					})
@@ -216,7 +215,7 @@ func TestAnnotation(t *testing.T) {
 
 						So(err, ShouldNotBeNil)
 						So(ann.SnoozeTime, ShouldEqual, 100)
-						So(ann.Bugs, ShouldResemble, []string{"https://crbug.com/123123", "bug2"})
+						So(ann.Bugs, ShouldResemble, []string{"123123", "bug2"})
 						So(ann.Comments, ShouldResemble, comments)
 						So(ann.ModificationTime, ShouldResemble, cl.Now().Add(-time.Hour))
 					})

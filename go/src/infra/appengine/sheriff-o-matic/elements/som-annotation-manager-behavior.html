@@ -36,11 +36,15 @@
       }
 
       if (ann && ann.bugs != undefined)  {
-        returnVal.bugs = ann.bugs
+        returnVal.bugs = ann.bugs;
+      }
+
+      if (ann && ann.bug_data != undefined)  {
+        returnVal.bugData = ann.bug_data;
       }
 
       if (ann && ann.comments != undefined)  {
-        returnVal.comments = ann.comments
+        returnVal.comments = ann.comments;
       }
 
       returnVal.opened = (ann && ann.opened ) || false;

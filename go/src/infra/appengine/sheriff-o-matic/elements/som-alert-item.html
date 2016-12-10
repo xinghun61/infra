@@ -140,7 +140,8 @@
               <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links self-center flex">
                 <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
                   <div class="bug">
-                    <a target="_blank" href$="[[bug]]">[[_bugLabel(bug)]]</a>
+                    <a target="_blank" href="[[_bugUrl(bug)]]">[[_bugLabel(bug)]]</a>
+                    [[_bugSummary(bug, annotation.bugData)]]
                     <paper-icon-button icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></paper-icon-button>
                   </div>
                 </template>
@@ -262,10 +263,28 @@
         useCompactView: Boolean,
       },
 
-      _bugLabel: function(bugUrl) {
-        let bugId = bugLinkRegExp.exec(bugUrl);
+      _bugLabel: function(bug) {
+        let bugId = bugLinkRegExp.exec(bug);
 
-        return !!bugId[0] ? `Bug ${bugId[0]}` : bugUrl;
+        return !!bugId[0] ? `Bug ${bugId[0]}` : bug;
+      },
+
+      _bugSummary: function(bug, bugData) {
+        for (let i in bugData) {
+          if (bug == bugData[i].id) {
+            return bugData[i].summary;
+          }
+        }
+        return '';
+      },
+
+      // This is for backwards compatibility with old bug data that is stored as
+      // URLs rather than ids.
+      _bugUrl: function(bug) {
+        if (bug.indexOf('http') == 0) {
+          return bug;
+        }
+        return 'https://crbug.com/' + bug;
       },
 
       _calculateDuration(alert) {

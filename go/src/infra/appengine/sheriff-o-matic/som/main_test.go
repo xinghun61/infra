@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"infra/monorail"
+
 	"golang.org/x/net/context"
 
 	"github.com/julienschmidt/httprouter"
@@ -341,10 +343,11 @@ func TestMain(t *testing.T) {
 					ann := &Annotation{
 						KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),
 						Key:              "foobar",
-						Bugs:             []string{"hi", "bugz"},
+						Bugs:             []string{"111", "222"},
 						SnoozeTime:       123123,
 						ModificationTime: datastore.RoundTime(clock.Now(c).Add(4 * time.Hour)),
 					}
+
 					So(datastore.Put(c, ann), ShouldBeNil)
 					datastore.GetTestable(c).CatchupIndexes()
 
@@ -563,62 +566,85 @@ func TestMain(t *testing.T) {
 			})
 
 			Convey("/bugqueue", func() {
-				// Bug queue is weird to test because it relies on network requests.
-				Convey("get bug queue handler", func() {
-					getBugQueueHandler(&router.Context{
-						Context: c,
-						Writer:  w,
-						Request: makeGetRequest(),
-					})
-
-					_, err := ioutil.ReadAll(w.Body)
-					So(err, ShouldBeNil)
-					So(w.Code, ShouldEqual, 500)
-				})
-
-				Convey("refresh bug queue handler", func() {
-					refreshBugQueueHandler(&router.Context{
-						Context: c,
-						Writer:  w,
-						Request: makeGetRequest(),
-					})
-
-					_, err := ioutil.ReadAll(w.Body)
-					So(err, ShouldBeNil)
-					So(w.Code, ShouldEqual, 500)
-				})
-
-				Convey("refresh bug queue", func() {
-					// HACK:
+				Convey("getBugsFromMonorail", func() {
+					// HACK
 					oldOAClient := getOAuthClient
 					getOAuthClient = func(c context.Context) (*http.Client, error) {
 						return &http.Client{}, nil
 					}
-
-					_, err := refreshBugQueue(c, "label")
+					_, err = getBugsFromMonorail(c, "label:test", 0)
 					So(err, ShouldNotBeNil)
 					getOAuthClient = oldOAClient
 				})
 
-				Convey("get owned bugs", func() {
-					getOwnedBugsHandler(&router.Context{
-						Context: c,
-						Writer:  w,
-						Request: makeGetRequest(),
-						Params:  makeParams("label", "infra-troopers"),
+				Convey("mock getBugsFromMonorail", func() {
+					getBugsFromMonorail = func(c context.Context, q string,
+						can monorail.IssuesListRequest_CannedQuery) (*monorail.IssuesListResponse, error) {
+						res := &monorail.IssuesListResponse{
+							Items:        []*monorail.Issue{},
+							TotalResults: 0,
+						}
+						return res, nil
+					}
+					Convey("get bug queue handler", func() {
+						getBugQueueHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+						})
+
+						b, err := ioutil.ReadAll(w.Body)
+						So(err, ShouldBeNil)
+						So(w.Code, ShouldEqual, 200)
+						So(string(b), ShouldEqual, "{}")
 					})
 
-					_, err := ioutil.ReadAll(w.Body)
-					So(err, ShouldBeNil)
-					So(w.Code, ShouldEqual, 200)
-				})
+					Convey("refresh bug queue handler", func() {
+						refreshBugQueueHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+						})
 
-				Convey("get alternate email", func() {
-					e := getAlternateEmail("test@chromium.org")
-					So(e, ShouldEqual, "test@google.com")
+						b, err := ioutil.ReadAll(w.Body)
+						So(err, ShouldBeNil)
+						So(w.Code, ShouldEqual, 200)
+						So(string(b), ShouldEqual, "{}")
+					})
 
-					e = getAlternateEmail("test@google.com")
-					So(e, ShouldEqual, "test@chromium.org")
+					Convey("refresh bug queue", func() {
+						// HACK:
+						oldOAClient := getOAuthClient
+						getOAuthClient = func(c context.Context) (*http.Client, error) {
+							return &http.Client{}, nil
+						}
+
+						_, err := refreshBugQueue(c, "label")
+						So(err, ShouldBeNil)
+						getOAuthClient = oldOAClient
+					})
+
+					Convey("get owned bugs", func() {
+						getOwnedBugsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+							Params:  makeParams("label", "infra-troopers"),
+						})
+
+						b, err := ioutil.ReadAll(w.Body)
+						So(err, ShouldBeNil)
+						So(w.Code, ShouldEqual, 200)
+						So(string(b), ShouldEqual, "{}")
+					})
+
+					Convey("get alternate email", func() {
+						e := getAlternateEmail("test@chromium.org")
+						So(e, ShouldEqual, "test@google.com")
+
+						e = getAlternateEmail("test@google.com")
+						So(e, ShouldEqual, "test@chromium.org")
+					})
 				})
 			})
 		})
@@ -695,6 +721,19 @@ func TestMain(t *testing.T) {
 
 					flushOldAnnotationsHandler(ctx)
 				})
+			})
+
+			Convey("refreshAnnotations", func() {
+				refreshAnnotationsHandler(&router.Context{
+					Context: c,
+					Writer:  w,
+					Request: makeGetRequest(),
+				})
+
+				b, err := ioutil.ReadAll(w.Body)
+				So(err, ShouldBeNil)
+				So(w.Code, ShouldEqual, 200)
+				So(string(b), ShouldEqual, "{}")
 			})
 		})
 

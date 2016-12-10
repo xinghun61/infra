@@ -68,12 +68,9 @@ type annotationRemove struct {
 	Comments []int    `json:"comments"`
 }
 
+// Extracts the bug id from a URL or returns the input if the user entered a
+// number.
 func validBug(bug string) (string, error) {
-	asInt, err := strconv.Atoi(bug)
-	if err == nil {
-		return fmt.Sprintf("https://crbug.com/%d", asInt), nil
-	}
-
 	urlBug := bug
 	if !strings.HasPrefix(bug, "https://") {
 		urlBug = "https://" + urlBug
@@ -81,10 +78,24 @@ func validBug(bug string) (string, error) {
 
 	parsed, err := url.Parse(urlBug)
 	if err == nil {
-		if strings.Contains(parsed.Host, "bugs.chromium.org") ||
-			strings.Contains(parsed.Host, "crbug.com") {
-			return urlBug, nil
+		// Example: bugs.chromium.org?id=123
+		if strings.Contains(parsed.Host, "bugs.chromium.org") {
+			params, err := url.ParseQuery(parsed.RawQuery)
+			if err == nil {
+				if id, ok := params["id"]; ok {
+					bug = id[0]
+				}
+			}
 		}
+		// Example: crbug.com/123
+		if strings.Contains(parsed.Host, "crbug.com") {
+			bug = strings.Replace(parsed.Path, "/", "", -1)
+		}
+	}
+
+	_, err = strconv.Atoi(bug)
+	if err == nil {
+		return bug, nil
 	}
 
 	return "", fmt.Errorf("Invalid bug '%s'", bug)
@@ -146,14 +157,6 @@ func (a *Annotation) remove(c context.Context, r io.Reader) error {
 	err := json.NewDecoder(r).Decode(change)
 	if err != nil {
 		return err
-	}
-
-	for i, bug := range change.Bugs {
-		newBug, err := validBug(bug)
-		if err != nil {
-			return err
-		}
-		change.Bugs[i] = newBug
 	}
 
 	modified := false

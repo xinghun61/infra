@@ -12,23 +12,53 @@ import (
 	"fmt"
 	"net/http"
 
+	"infra/monorail"
+
 	"golang.org/x/net/context"
 
 	"github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
 )
 
+// AnnotationResponse ... The Annotation object extended with cached bug data.
+type AnnotationResponse struct {
+	Annotation
+	BugData map[string]monorail.Issue `json:"bug_data"`
+}
+
+func makeAnnotationResponse(a *Annotation, meta map[string]monorail.Issue) *AnnotationResponse {
+	bugs := make(map[string]monorail.Issue)
+	for _, b := range a.Bugs {
+		if bugData, ok := meta[b]; ok {
+			bugs[b] = bugData
+		}
+	}
+	return &AnnotationResponse{*a, bugs}
+}
+
 func getAnnotationsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
 	q := datastore.NewQuery("Annotation")
-	results := []*Annotation{}
-	datastore.GetAll(c, q, &results)
+	annotations := []*Annotation{}
+	datastore.GetAll(c, q, &annotations)
 
-	data, err := json.Marshal(results)
+	meta, err := getAnnotationsMetaData(c)
+
+	if err != nil {
+		logging.Errorf(c, "while fetching annotation metadata")
+	}
+
+	output := make([]*AnnotationResponse, len(annotations))
+	for i, a := range annotations {
+		output[i] = makeAnnotationResponse(a, meta)
+	}
+
+	data, err := json.Marshal(output)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
@@ -36,6 +66,94 @@ func getAnnotationsHandler(ctx *router.Context) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+}
+
+func getAnnotationsMetaData(c context.Context) (map[string]monorail.Issue, error) {
+	item, err := memcache.GetKey(c, annotationsCacheKey)
+	val := make(map[string]monorail.Issue)
+
+	if err == memcache.ErrCacheMiss {
+		logging.Debugf(c, "No annotation metadata in memcache, refreshing...")
+		val, err = refreshAnnotations(c, nil)
+
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		if err = json.Unmarshal(item.Value(), &val); err != nil {
+			logging.Errorf(c, "while unmarshaling metadata in getAnnotationsMetaData")
+			return nil, err
+		}
+	}
+
+	return val, nil
+}
+
+func refreshAnnotationsHandler(ctx *router.Context) {
+	c, w := ctx.Context, ctx.Writer
+
+	bugMap, err := refreshAnnotations(c, nil)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	data, err := json.Marshal(bugMap)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+// Update the cache for annotation bug data.
+func refreshAnnotations(c context.Context, a *Annotation) (map[string]monorail.Issue, error) {
+	q := datastore.NewQuery("Annotation")
+	results := []*Annotation{}
+	datastore.GetAll(c, q, &results)
+
+	// Monorail takes queries of the format id:1,2,3 (gets bugs with those ids).
+	mq := "id:"
+
+	if a != nil {
+		results = append(results, a)
+	}
+
+	for _, ann := range results {
+		for _, b := range ann.Bugs {
+			mq = fmt.Sprintf("%s%s,", mq, b)
+		}
+	}
+
+	issues, err := getBugsFromMonorail(c, mq, monorail.IssuesListRequest_ALL)
+	if err != nil {
+		return nil, err
+	}
+
+	// Turn the bug data into a map with the bug id as a key for easier searching.
+	m := make(map[string]monorail.Issue)
+
+	for _, b := range issues.Items {
+		key := fmt.Sprintf("%d", b.Id)
+		m[key] = *b
+	}
+
+	bytes, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+
+	item := memcache.NewItem(c, annotationsCacheKey).SetValue(bytes)
+
+	err = memcache.Set(c, item)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
 }
 
 type postRequest struct {
@@ -77,8 +195,8 @@ func postAnnotationsHandler(ctx *router.Context) {
 		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("Annotation %s not found", annKey))
 		return
 	}
-	// The annotation probably doesn't exist if we're adding something
 
+	// The annotation probably doesn't exist if we're adding something.
 	data := bytes.NewReader([]byte(*req.Data))
 	if action == "add" {
 		err = annotation.add(c, data)
@@ -103,7 +221,14 @@ func postAnnotationsHandler(ctx *router.Context) {
 		return
 	}
 
-	resp, err := json.Marshal(annotation)
+	// Refresh the annotation cache on a write. Note that we want the rest of the
+	// code to still run even if this fails.
+	m, err := refreshAnnotations(c, annotation)
+	if err != nil {
+		logging.Errorf(c, "while refreshing annotation cache on post: %s", err)
+	}
+
+	resp, err := json.Marshal(makeAnnotationResponse(annotation, m))
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return

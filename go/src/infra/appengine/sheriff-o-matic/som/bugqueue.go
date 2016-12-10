@@ -22,7 +22,9 @@ import (
 	"github.com/luci/luci-go/server/router"
 )
 
-func getBugsFromMonorail(c context.Context, q string) (*monorail.IssuesListResponse, error) {
+// A bit of a hack to let us mock getBugsFromMonorail.
+var getBugsFromMonorail = func(c context.Context, q string,
+	can monorail.IssuesListRequest_CannedQuery) (*monorail.IssuesListResponse, error) {
 	// Get authenticated monorail client.
 	ctx, _ := context.WithDeadline(c, clock.Now(c).Add(time.Second*30))
 
@@ -38,9 +40,10 @@ func getBugsFromMonorail(c context.Context, q string) (*monorail.IssuesListRespo
 	// object
 	req := &monorail.IssuesListRequest{
 		ProjectId: "chromium",
-		Can:       monorail.IssuesListRequest_OPEN,
 		Q:         q,
 	}
+
+	req.Can = can
 
 	before := clock.Now(c)
 
@@ -87,7 +90,7 @@ func getOwnedBugsHandler(ctx *router.Context) {
 	email := getAlternateEmail(user.Email())
 	q := fmt.Sprintf("label:%[1]s owner:%s OR owner:%s label:%[1]s", label, user.Email(), email)
 
-	bugs, err := getBugsFromMonorail(c, q)
+	bugs, err := getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
 
 	out, err := json.Marshal(bugs)
 	if err != nil {
@@ -109,7 +112,7 @@ func refreshBugQueue(c context.Context, label string) (memcache.Item, error) {
 		q = fmt.Sprintf("%s -has:owner", q)
 	}
 
-	res, err := getBugsFromMonorail(c, q)
+	res, err := getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
 	if err != nil {
 		return nil, err
 	}

@@ -11,6 +11,10 @@ cron:
   url: /_cron/refresh/bugqueue/infra-troopers
   schedule: every 1 minutes
 
+- description: Update cached annotation metadata
+  url: /_cron/annotations/refresh/
+  schedule: every 15 minutes
+
 - description: Delete old annotations
   url: /_cron/annotations/flush_old/
   schedule: every 1 hours
