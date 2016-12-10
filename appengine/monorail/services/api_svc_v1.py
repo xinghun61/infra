@@ -83,7 +83,6 @@ def monorail_api_method(
         auth_client_ids, auth_emails = (
             client_config_svc.GetClientConfigSvc().GetClientIDEmails())
         auth_client_ids.append(endpoints.API_EXPLORER_CLIENT_ID)
-        logging.info('Whitelist ID %r email %r', auth_client_ids, auth_emails)
         if self._services is None:
           self._set_services(service_manager.set_up_services())
         c_id, c_email = api_base_checks(
@@ -105,6 +104,7 @@ def monorail_api_method(
       except (permissions.BannedUserException,
               permissions.PermissionException) as e:
         approximate_http_status = 403
+        logging.info('Whitelist ID %r email %r', auth_client_ids, auth_emails)
         raise endpoints.ForbiddenException(str(e))
       except endpoints.BadRequestException:
         approximate_http_status = 400
