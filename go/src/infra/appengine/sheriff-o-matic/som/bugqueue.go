@@ -122,13 +122,9 @@ func refreshBugQueue(c context.Context, label string) (memcache.Item, error) {
 		return nil, err
 	}
 
-	key := fmt.Sprintf(bugQueueCacheFormat, label)
+	item := memcache.NewItem(c, fmt.Sprintf(bugQueueCacheFormat, label)).SetValue(bytes)
 
-	item := memcache.NewItem(c, key).SetValue(bytes)
-
-	err = memcache.Set(c, item)
-
-	if err != nil {
+	if err = memcache.Set(c, item); err != nil {
 		return nil, err
 	}
 

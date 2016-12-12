@@ -127,6 +127,81 @@ func TestPostMiloPubSubHandler(t *testing.T) {
 	Convey("good message non-empty build extract", t, func() {
 		c := gaetesting.TestingContext()
 		w := httptest.NewRecorder()
+		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+			return giMock{dummy.Info(), "", time.Now(), nil}
+		})
+		c = urlfetch.Set(c, &mockGitilesTransport{
+			map[string]string{
+				gkTreesURL: `{    "chromium": {
+        "build-db": "waterfall_build_db.json",
+        "masters": {
+            "https://build.chromium.org/p/chromium": ["*"],
+            "https://build.chromium.org/p/chromium.android": [
+              "Android N5X Swarm Builder"
+            ],
+            "https://build.chromium.org/p/chromium.chrome": ["*"],
+            "https://build.chromium.org/p/chromium.chromiumos": ["*"],
+            "https://build.chromium.org/p/chromium.gpu": ["*"],
+            "https://build.chromium.org/p/chromium.infra.cron": ["*"],
+            "https://build.chromium.org/p/chromium.linux": ["*"],
+            "https://build.chromium.org/p/chromium.mac": ["*"],
+            "https://build.chromium.org/p/chromium.memory": ["*"],
+            "https://build.chromium.org/p/chromium.webkit": ["*"],
+            "https://build.chromium.org/p/chromium.win": ["*"]
+        },
+        "open-tree": true,
+        "password-file": "/creds/gatekeeper/chromium_status_password",
+        "revision-properties": "got_revision_cp",
+        "set-status": true,
+        "status-url": "https://chromium-status.appspot.com",
+        "track-revisions": true
+    }}`,
+				gkConfigInternalURL: `
+{
+  "comment": ["This is a configuration file for gatekeeper_ng.py",
+              "Look at that for documentation on this file's format."],
+  "masters": {
+    "https://build.chromium.org/p/chromium": [
+      {
+        "categories": [
+          "chromium_tree_closer"
+        ],
+        "builders": {
+          "Win": {
+            "categories": [
+              "chromium_windows"
+            ]
+          },
+          "*": {}
+        }
+      }
+    ]
+   }
+}`,
+				gkConfigURL: `
+{
+  "comment": ["This is a configuration file for gatekeeper_ng.py",
+              "Look at that for documentation on this file's format."],
+  "masters": {
+    "https://build.chromium.org/p/chromium": [
+      {
+        "categories": [
+          "chromium_tree_closer"
+        ],
+        "builders": {
+          "Win": {
+            "categories": [
+              "chromium_windows"
+            ]
+          },
+          "*": {}
+        }
+      }
+    ]
+   }
+}`,
+			},
+		})
 
 		bf := testhelper.NewBuilderFaker("fake.master", "fake.builder")
 		bf.Build(0).Step("steps").Results(0).BuildFaker.Step("compile").Results(0)

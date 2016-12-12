@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"infra/monitoring/analyzer"
 	"infra/monitoring/messages"
 	sompubsub "infra/monitoring/pubsubalerts"
 
@@ -17,7 +18,11 @@ import (
 )
 
 const (
-	gkTreesURL = "https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_trees.json?format=text"
+	// TODO(seanmccullough): Add corp trees and configs too.
+	gkConfigURL         = "https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper.json?format=text"
+	gkTreesURL          = "https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_trees.json?format=text"
+	gkTreesInternalURL  = "https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/+/master/gatekeeper_trees_internal.json?format=text"
+	gkConfigInternalURL = "https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/+/master/gatekeeper_internal.json?format=text"
 )
 
 // This is what we get from the Data field of the pubsub push request body.
@@ -67,7 +72,16 @@ func postMiloPubSubHandler(ctx *router.Context) {
 	}
 
 	store := sompubsub.NewAlertStore()
-	miloPubSubHandler := &sompubsub.BuildHandler{Store: store}
+	gkRules, err := getGatekeeperRules(c)
+	if err != nil {
+		logging.Errorf(c, "error getting gatekeeper rules: %v", err)
+		return
+	}
+
+	miloPubSubHandler := &sompubsub.BuildHandler{
+		Store:           store,
+		GatekeeperRules: gkRules,
+	}
 
 	for _, b := range extract.Builds {
 		if err := miloPubSubHandler.HandleBuild(c, b); err != nil {
@@ -121,6 +135,44 @@ func getPubSubAlertsHandler(ctx *router.Context) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(b)
+}
+
+func getGatekeeperRules(c context.Context) (*analyzer.GatekeeperRules, error) {
+	cfgs, err := getGatekeeperConfigs(c)
+	if err != nil {
+		return nil, err
+	}
+
+	trees, err := getGatekeeperTrees(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(seanmccullough): Clean up this API.
+	adjustedTrees := map[string][]messages.TreeMasterConfig{}
+	for treeName, cfg := range trees {
+		adjustedTrees[treeName] = []messages.TreeMasterConfig{*cfg}
+	}
+
+	return analyzer.NewGatekeeperRules(c, cfgs, adjustedTrees), nil
+}
+
+func getGatekeeperConfigs(c context.Context) ([]*messages.GatekeeperConfig, error) {
+	ret := []*messages.GatekeeperConfig{}
+	for _, URL := range []string{gkConfigURL, gkConfigInternalURL} {
+		b, err := getGitiles(c, URL)
+		if err != nil {
+			return nil, err
+		}
+
+		gk := &messages.GatekeeperConfig{}
+		if err := json.Unmarshal(b, gk); err != nil {
+			return nil, err
+		}
+		ret = append(ret, gk)
+	}
+
+	return ret, nil
 }
 
 // TODO(seanmccullough): Replace this urlfetch/memcache code with a luci-config reader.

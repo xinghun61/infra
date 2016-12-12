@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/url"
 
+	"infra/monitoring/analyzer"
 	"infra/monitoring/messages"
 
 	"github.com/luci/gae/service/datastore"
@@ -157,7 +158,8 @@ func analyzeSteps(b *messages.Build) ([]*messages.BuildStep, []*messages.BuildSt
 
 // BuildHandler associates an AlertStore implementation with the HandleBuild function.
 type BuildHandler struct {
-	Store AlertStore
+	Store           AlertStore
+	GatekeeperRules *analyzer.GatekeeperRules
 }
 
 func buildOrder(a, b StoredBuild) bool {
