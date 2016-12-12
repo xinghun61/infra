@@ -172,8 +172,8 @@
           if (loadingGroups) {
             return 'Loading...'
           }
-          return 'Please enter search term e.g. team name, test suite name ' +
-            ', dir name or any part of the test name';
+          return 'Please enter search term e.g. team name, test suite name, ' +
+            'dir name or any part of the test name';
         },
 
         _getTestResultsUrl: function(test) {
@@ -206,15 +206,15 @@
         _labelForGroup: function(group) {
           switch (group.kind) {
             case GroupKind.TEAM:
-              return 'Team "' + group.name + '"';
+              return 'team:' + group.name;
             case GroupKind.DIR:
-              return 'Directory "' + group.name + '"';
+              return 'dir:' + group.name;
             case GroupKind.UNKNOWN_TEAM:
-              return 'Tests with unknown owner';
+              return 'team:unknown';
             case GroupKind.UNKNOWN_DIR:
-              return 'Tests with unknown directory';
+              return 'dir:unknown';
             case GroupKind.TEST_SUITE:
-              return 'Test Suite "' + group.name + '"';
+              return 'test-suite:' + group.name;
             default:
               console.error('Unexpected group kind:', group.kind);
           }
@@ -272,12 +272,12 @@
 
         _selectGroup: function(ev) {
           // TODO(sergiyb): When the user selects an element from the
-          // autocompletion list (e.g. Test Suite "LoaderTest"), then places the
+          // autocompletion list (e.g. test-suite:LoaderTest), then places the
           // cursor into the input field, makes no changes and hits Enter, the
           // app treats this as a custom input and navigates to
-          // /flakiness/search/Test%2520Suite%2520%2522LoaderTest%2522, which
-          // returns no results. It's confusing and we should instead detect
-          // this and search for selected item: /flakiness/test-suite/LoaderTest
+          // /flakiness/search/test-suite:LoaderTest, which returns no results.
+          // It's confusing and we should instead detect this and search for
+          // selected item: /flakiness/test-suite/LoaderTest.
           if (this._ignoreGroupChange) {
             this._ignoreGroupChange = false;
             return;
