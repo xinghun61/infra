@@ -22,30 +22,48 @@ import (
 )
 
 const teamsQuery = `
-  SELECT layout_test_team
-  FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
-  GROUP BY layout_test_team;`
+  SELECT
+    layout_test_team
+  FROM
+    plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
+  GROUP BY
+    layout_test_team;`
 
 const dirsQuery = `
-  SELECT layout_test_dir
-  FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
-  GROUP BY layout_test_dir;`
+  SELECT
+    layout_test_dir
+  FROM
+    plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
+  GROUP BY
+    layout_test_dir;`
 
 const suitesQuery = `
   SELECT
     if(regexp_contains(test_name, r'^org\..*#.*$'),
        regexp_extract(test_name, r'^(org\..*)#.*$'),
        regexp_extract(test_name, r'^([^\.\/]+)\.[^\/]+(?:\/[^\.]+)?$')) as suite
-  FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
-  GROUP BY suite
-  HAVING suite is not Null;`
+  FROM
+    plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
+  GROUP BY
+    suite
+  HAVING
+    suite is not Null;`
 
 const flakesQuery = `
-  SELECT test_name, normalized_step_name, flakiness, runs
-  FROM plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
-  WHERE %s
-  ORDER BY flakiness DESC
-  LIMIT 1000;`
+  SELECT
+    test_name,
+    normalized_step_name,
+    total_flaky_failures,
+    total_tries,
+    flakiness
+  FROM
+    plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
+  WHERE
+    %s
+  ORDER BY
+    flakiness DESC
+  LIMIT
+    1000;`
 
 const bqProjectID = "test-results-hrd"
 
@@ -78,8 +96,8 @@ type Flakiness struct {
 	TestName           string  `json:"test_name"`
 	Flakiness          float64 `json:"flakiness"`
 	NormalizedStepName string  `json:"normalized_step_name"`
-	FalseRejections    uint64  `json:"false_rejections"`
-	Runs               uint64  `json:"runs"`
+	TotalFlakyFailures uint64  `json:"total_flaky_failures"`
+	TotalTries         uint64  `json:"total_tries"`
 }
 
 // Group represents infromation about flakiness of a group of tests.
@@ -156,24 +174,34 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 			return nil, errors.New("query returned non-string value for normalized_step_name column")
 		}
 
-		flakinessStr, ok := row.F[2].V.(string)
+		totalFlakyFailuresStr, ok := row.F[2].V.(string)
 		if !ok {
-			return nil, errors.New("query returned non-string value for flakiness column")
+			return nil, errors.New("query returned non-string value for total_flaky_failures column")
+		}
+
+		totalFlakyFailures, err := strconv.ParseUint(totalFlakyFailuresStr, 10, 64)
+		if err != nil {
+			return nil, errors.Annotate(err).Reason("Failed to convert total_flaky_failures value to uint64").Err()
+		}
+
+		totalTriesStr, ok := row.F[3].V.(string)
+		if !ok {
+			return nil, errors.New("query returned non-string value for total_tries column")
+		}
+
+		totalTries, err := strconv.ParseUint(totalTriesStr, 10, 64)
+		if err != nil {
+			return nil, errors.Annotate(err).Reason("Failed to convert total_tries value to uint64").Err()
+		}
+
+		flakinessStr, ok := row.F[4].V.(string)
+		if !ok {
+			return nil, errors.New("query returned non-string value for string column")
 		}
 
 		flakiness, err := strconv.ParseFloat(flakinessStr, 64)
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("Failed to convert flakiness value to float").Err()
-		}
-
-		runsStr, ok := row.F[3].V.(string)
-		if !ok {
-			return nil, errors.New("query returned non-string value for runs column")
-		}
-
-		runs, err := strconv.ParseUint(runsStr, 10, 64)
-		if err != nil {
-			return nil, errors.Annotate(err).Reason("Failed to convert runs value to uint64").Err()
+			return nil, errors.Annotate(err).Reason("Failed to convert flakiness value to float64").Err()
 		}
 
 		// TODO(sergiyb): Add number of false rejections per test.
@@ -181,7 +209,8 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 			TestName:           name,
 			NormalizedStepName: normalizedStepName,
 			Flakiness:          flakiness,
-			Runs:               runs,
+			TotalTries:         totalTries,
+			TotalFlakyFailures: totalFlakyFailures,
 		})
 	}
 
