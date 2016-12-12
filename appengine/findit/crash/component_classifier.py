@@ -78,7 +78,8 @@ class ComponentClassifier(object):
     if results:
       classes = map(self.GetClassFromResult, results[:self.top_n])
     else:
-      classes = map(self.GetClassFromStackFrame, crash_stack[:self.top_n])
+      classes = map(self.GetClassFromStackFrame,
+          crash_stack.frames[:self.top_n])
 
     return RankByOccurrence(classes, 2)
 

@@ -58,14 +58,10 @@ class ChromeCrashParserTest(StacktraceTestSuite):
 
     stacktrace = parser.Parse(stacktrace_string, deps)
 
-    expected_callstack = CallStack(0)
-    expected_callstack.extend(
-        [StackFrame(0, 'src/', 'a::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
-         StackFrame(1, 'src/', 'a::d(a* c)', 'f1.cc', 'src/f1.cc', [227]),
-         StackFrame(2, 'src/', 'a::e(int)', 'f2.cc', 'src/f2.cc', [87, 88])])
-
-    expected_stacktrace = Stacktrace()
-    expected_stacktrace.append(expected_callstack)
+    expected_stacktrace = Stacktrace([CallStack(0, frame_list=[
+        StackFrame(0, 'src/', 'a::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
+        StackFrame(1, 'src/', 'a::d(a* c)', 'f1.cc', 'src/f1.cc', [227]),
+        StackFrame(2, 'src/', 'a::e(int)', 'f2.cc', 'src/f2.cc', [87, 88])])])
 
     self._VerifyTwoStacktracesEqual(stacktrace, expected_stacktrace)
 
@@ -83,19 +79,17 @@ class ChromeCrashParserTest(StacktraceTestSuite):
 
     stacktrace = parser.Parse(stacktrace_string, deps)
 
-    expected_callstack = CallStack(0, language_type=CallStackLanguageType.JAVA)
-    expected_callstack.extend(
-        [StackFrame(0, '', 'a.f0.c', 'a/f0.java', 'a/f0.java', [177]),
-         StackFrame(
-             1, 'src/', 'org.chromium.chrome.browser.a.f1.d',
-             'chrome/android/java/src/org/chromium/chrome/browser/a/f1.java',
-             'src/chrome/android/java/src/org/chromium/chrome/'
-             'browser/a/f1.java',
-             [227]),
-         StackFrame(2, '', 'a.f2.e', 'a/f2.java', 'a/f2.java', [87, 88])])
-
-    expected_stacktrace = Stacktrace()
-    expected_stacktrace.append(expected_callstack)
+    expected_stacktrace = Stacktrace([CallStack(0,
+        language_type=CallStackLanguageType.JAVA,
+        frame_list=[
+            StackFrame(0, '', 'a.f0.c', 'a/f0.java', 'a/f0.java', [177]),
+            StackFrame(
+                1, 'src/', 'org.chromium.chrome.browser.a.f1.d',
+                'chrome/android/java/src/org/chromium/chrome/browser/a/f1.java',
+                'src/chrome/android/java/src/org/chromium/chrome/'
+                'browser/a/f1.java',
+                [227]),
+            StackFrame(2, '', 'a.f2.e', 'a/f2.java', 'a/f2.java', [87, 88])])])
 
     self._VerifyTwoStacktracesEqual(stacktrace, expected_stacktrace)
 
@@ -116,19 +110,16 @@ class ChromeCrashParserTest(StacktraceTestSuite):
 
     stacktrace = parser.Parse(stacktrace_string, deps)
 
-    expected_callstack0 = CallStack(0)
-    expected_callstack0.extend(
-        [StackFrame(0, 'src/', 'a::b::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
-         StackFrame(1, 'src/', 'a::b::d(a* c)', 'f1.cc', 'src/f1.cc', [227])])
+    expected_callstack0 = CallStack(0, frame_list=[
+        StackFrame(0, 'src/', 'a::b::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
+        StackFrame(1, 'src/', 'a::b::d(a* c)', 'f1.cc', 'src/f1.cc', [227])])
 
-    expected_callstack1 = CallStack(0)
-    expected_callstack1.extend(
-        [StackFrame(
+    expected_callstack1 = CallStack(0, frame_list=[
+        StackFrame(
             0, 'src/', 'e::f::g(p* &d)', 'f.cc', 'src/f.cc', [20, 21, 22]),
-         StackFrame(
-             1, 'src/', 'h::i::j(p* &d)', 'ff.cc', 'src/ff.cc', [9, 10])])
+        StackFrame(
+            1, 'src/', 'h::i::j(p* &d)', 'ff.cc', 'src/ff.cc', [9, 10])])
 
-    expected_stacktrace = Stacktrace()
-    expected_stacktrace.extend([expected_callstack0, expected_callstack1])
+    expected_stacktrace = Stacktrace([expected_callstack0, expected_callstack1])
 
     self._VerifyTwoStacktracesEqual(stacktrace, expected_stacktrace)

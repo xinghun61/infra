@@ -16,6 +16,7 @@ class Predator(object): # pragma: no cover
   def FindCulprit(self, report):
     """Given a CrashReport, return a Culprit."""
     suspected_cls = self.cl_classifier(report)
+    assert suspected_cls is not None
 
     suspected_project = self.project_classifier.Classify(
         suspected_cls, report.stacktrace.crash_stack)

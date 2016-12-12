@@ -11,6 +11,7 @@ from common import chrome_dependency_fetcher
 from crash import changelist_classifier
 from crash.crash_report import CrashReport
 from crash.results import AnalysisInfo
+from crash.results import StackInfo
 from crash.results import MatchResult
 from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
@@ -152,12 +153,10 @@ class ChangelistClassifierTest(CrashTestSuite):
                      expected_regression_deps_rolls)
 
   def testGetDepsInCrashStack(self):
-    crash_stack = CallStack(0)
-    crash_stack.extend([
+    crash_stack = CallStack(0, frame_list=[
         StackFrame(0, 'src/', 'func0', 'f0.cc', 'src/f0.cc', [1]),
         StackFrame(1, 'src/', 'func1', 'f1.cc', 'src/f1.cc', [2, 3]),
-        StackFrame(1, '', 'func2', 'f2.cc', 'src/f2.cc', [2, 3]),
-    ])
+        StackFrame(1, '', 'func2', 'f2.cc', 'src/f2.cc', [2, 3])])
     crash_deps = {'src/': Dependency('src/', 'https://chromium_repo', '1'),
                   'src/v8/': Dependency('src/v8/', 'https://v8_repo', '2')}
 
@@ -209,18 +208,16 @@ class ChangelistClassifierTest(CrashTestSuite):
     self.assertSetEqual(ignore_cls, set(['1']))
 
   def testGetStackInfosForFilesGroupedByDeps(self):
-    main_stack = CallStack(0)
-    main_stack.extend(
-        [StackFrame(0, 'src/', 'c(p* &d)', 'a.cc', 'src/a.cc', [177]),
-         StackFrame(1, 'src/', 'd(a* c)', 'a.cc', 'src/a.cc', [227, 228, 229]),
-         StackFrame(2, 'src/v8/', 'e(int)', 'b.cc', 'src/v8/b.cc', [89, 90])])
+    main_stack = CallStack(0, frame_list=[
+        StackFrame(0, 'src/', 'c(p* &d)', 'a.cc', 'src/a.cc', [177]),
+        StackFrame(1, 'src/', 'd(a* c)', 'a.cc', 'src/a.cc', [227, 228, 229]),
+        StackFrame(2, 'src/v8/', 'e(int)', 'b.cc', 'src/v8/b.cc', [89, 90])])
 
-    low_priority_stack = CallStack(1)
-    low_priority_stack.append(
-        StackFrame(0, 'src/dummy/', 'c(p* &d)', 'd.cc', 'src/dummy/d.cc', [17]))
+    low_priority_stack = CallStack(1, frame_list=[
+        StackFrame(0, 'src/dummy/', 'c(p* &d)', 'd.cc', 'src/dummy/d.cc',
+            [17])])
 
-    stacktrace = Stacktrace()
-    stacktrace.extend([main_stack, low_priority_stack])
+    stacktrace = Stacktrace(stack_list=[main_stack, low_priority_stack])
 
     crashed_deps = {'src/': Dependency('src/', 'https//repo', '2'),
                     'src/v8/': Dependency('src/v8', 'https//repo', '1')}
@@ -228,13 +225,13 @@ class ChangelistClassifierTest(CrashTestSuite):
     expected_dep_file_to_stack_infos = {
         'src/': {
             'a.cc': [
-                (main_stack[0], 0),
-                (main_stack[1], 0),
+                StackInfo(main_stack.frames[0], 0),
+                StackInfo(main_stack.frames[1], 0),
             ],
         },
         'src/v8/': {
             'b.cc': [
-                (main_stack[2], 0),
+                StackInfo(main_stack.frames[2], 0),
             ]
         }
     }
@@ -268,11 +265,14 @@ class ChangelistClassifierTest(CrashTestSuite):
     dep_file_to_stack_infos = {
         'src/': {
             'a.cc': [
-                (StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1]), 0),
-                (StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0),
+                StackInfo(StackFrame(
+                    0, 'src/', 'func', 'a.cc', 'src/a.cc', [1]), 0),
+                StackInfo(StackFrame(
+                    1, 'src/', 'func', 'a.cc', 'src/a.cc', [7]), 0),
             ],
             'b.cc': [
-                (StackFrame(2, 'src/', 'func', 'b.cc', 'src/b.cc', [36]), 0),
+                StackInfo(StackFrame(
+                    2, 'src/', 'func', 'b.cc', 'src/b.cc', [36]), 0),
             ]
         }
     }
@@ -334,7 +334,7 @@ class ChangelistClassifierTest(CrashTestSuite):
       frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1])
       frame2 = StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
       match_result1.file_to_stack_infos = {
-          'a.cc': [(frame1, 0), (frame2, 0)]
+          'a.cc': [StackInfo(frame1, 0), StackInfo(frame2, 0)]
       }
       match_result1.file_to_analysis_info = {
           'a.cc': AnalysisInfo(min_distance=0, min_distance_frame=frame1)
@@ -343,7 +343,7 @@ class ChangelistClassifierTest(CrashTestSuite):
       match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
       frame3 = StackFrame(5, 'src/', 'func', 'f.cc', 'src/f.cc', [1])
       match_result2.file_to_stack_infos = {
-          'f.cc': [(frame3, 0)]
+          'f.cc': [StackInfo(frame3, 0)]
       }
       match_result2.file_to_analysis_info = {
           'a.cc': AnalysisInfo(min_distance=20, min_distance_frame=frame3)
@@ -381,7 +381,7 @@ class ChangelistClassifierTest(CrashTestSuite):
       frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1])
       frame2 = StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
       match_result1.file_to_stack_infos = {
-          'a.cc': [(frame1, 0), (frame2, 0)]
+          'a.cc': [StackInfo(frame1, 0), StackInfo(frame2, 0)]
       }
       match_result1.file_to_analysis_info = {
           'a.cc': AnalysisInfo(min_distance=1, min_distance_frame=frame1)
@@ -390,7 +390,7 @@ class ChangelistClassifierTest(CrashTestSuite):
       match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
       frame3 = StackFrame(15, 'src/', 'func', 'f.cc', 'src/f.cc', [1])
       match_result2.file_to_stack_infos = {
-          'f.cc': [(frame3, 0)]
+          'f.cc': [StackInfo(frame3, 0)]
       }
       match_result2.file_to_analysis_info = {
           'f.cc': AnalysisInfo(min_distance=20, min_distance_frame=frame3)
@@ -399,7 +399,7 @@ class ChangelistClassifierTest(CrashTestSuite):
       match_result3 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
       frame4 = StackFrame(3, 'src/', 'func', 'ff.cc', 'src/ff.cc', [1])
       match_result3.file_to_stack_infos = {
-          'f.cc': [(frame4, 0)]
+          'f.cc': [StackInfo(frame4, 0)]
       }
       match_result3.file_to_analysis_info = {
           'f.cc': AnalysisInfo(min_distance=60, min_distance_frame=frame4)
@@ -446,7 +446,7 @@ class ChangelistClassifierTest(CrashTestSuite):
       frame1 = StackFrame(20, 'src/', '', 'func', 'a.cc', [1])
       frame2 = StackFrame(21, 'src/', '', 'func', 'a.cc', [7])
       match_result1.file_to_stack_infos = {
-          'a.cc': [(frame1, 0), (frame2, 0)]
+          'a.cc': [StackInfo(frame1, 0), StackInfo(frame2, 0)]
       }
       match_result1.file_to_analysis_info = {
           'a.cc': AnalysisInfo(min_distance=1, min_distance_frame=frame1)
@@ -455,7 +455,7 @@ class ChangelistClassifierTest(CrashTestSuite):
       match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
       frame3 = StackFrame(15, 'src/', '', 'func', 'f.cc', [1])
       match_result2.file_to_stack_infos = {
-          'f.cc': [(frame3, 0)]
+          'f.cc': [StackInfo(frame3, 0)]
       }
       match_result2.min_distance = 20
       match_result2.file_to_analysis_info = {

@@ -2,10 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import math
 import re
 
 from crash.callstack_filters import FilterInlineFunctionFrames
 from crash.stacktrace import CallStack
+from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
 from crash.stacktrace_parser import StacktraceParser
 from crash.type_enums import CallStackFormatType, CallStackLanguageType
@@ -19,32 +21,40 @@ class ChromeCrashParser(StacktraceParser):
 
   def Parse(self, stacktrace_string, deps, signature=None):
     """Parse fracas stacktrace string into Stacktrace instance."""
-    stacktrace = Stacktrace()
+    callstacks = []
     # TODO(http://crbug.com/644441): testing against infinity is confusing.
-    callstack = CallStack(float('inf'))
+    stack_priority = float('inf')
+    format_type = None
+    language_type = None
+    frame_list = []
 
     for line in stacktrace_string.splitlines():
-      is_new_callstack, stack_priority, format_type, language_type = (
+      is_new_callstack, this_priority, this_format_type, this_language_type = (
           self._IsStartOfNewCallStack(line))
 
       if is_new_callstack:
         # If the callstack is not the initial one or empty, add it
         # to stacktrace.
-        if callstack.priority != float('inf') and callstack:
-          stacktrace.append(callstack)
+        if not math.isinf(stack_priority) and frame_list:
+          callstacks.append(CallStack(stack_priority, format_type=format_type,
+              language_type=language_type, frame_list=frame_list))
 
-        callstack = CallStack(stack_priority, format_type, language_type)
+        stack_priority = this_priority
+        format_type = this_format_type
+        language_type = this_language_type
+        frame_list = []
       else:
-        callstack.ParseLine(line, deps)
+        frame = StackFrame.Parse(language_type, format_type, line, deps,
+            len(frame_list))
+        if frame is not None:
+          frame_list.append(frame)
 
-    if callstack.priority != float('inf') and callstack:
-      stacktrace.append(callstack)
+    if not math.isinf(stack_priority) and frame_list:
+      callstacks.append(CallStack(stack_priority, format_type=format_type,
+          language_type=language_type, frame_list=frame_list))
 
     # Filter all the frames before signature frame.
-    if stacktrace:
-      stacktrace = Stacktrace(map(FilterInlineFunctionFrames, stacktrace))
-
-    return stacktrace
+    return Stacktrace(map(FilterInlineFunctionFrames, callstacks))
 
   def _IsStartOfNewCallStack(self, line):
     """Determine whether a line is a start of a callstack or not.

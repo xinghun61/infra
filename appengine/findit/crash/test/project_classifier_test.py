@@ -63,12 +63,10 @@ class ProjectClassifierTest(CrashTestCase):
   def testClassifyCrashStack(self):
     classifier = ProjectClassifier()
 
-    crash_stack = CallStack(0)
-    crash_stack.extend([
+    crash_stack = CallStack(0, frame_list=[
         StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]),
         StackFrame(1, 'src/', 'ff', 'comp1.cc', 'src/comp1.cc', [21]),
-        StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])
-    ])
+        StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])])
 
     self.assertEqual(classifier.Classify([], crash_stack), 'chromium')
 
@@ -105,15 +103,16 @@ class ProjectClassifierTest(CrashTestCase):
   def testClassifyForJavaRankFunction(self):
     classifier = ProjectClassifier()
 
-    crash_stack = CallStack(0)
-    crash_stack.language_type = CallStackLanguageType.JAVA
+    crash_stack = CallStack(0, language_type=CallStackLanguageType.JAVA)
 
-    crash_stack.extend([
-        StackFrame(0, '', 'android.a.f', 'android/a/cc',
-                   'android/a.java', [2]),
-        StackFrame(1, '', 'org.chromium.c', 'org/chromium/c.java',
-                   'org/chromium/c.java', [8])
-    ])
+    crash_stack = CallStack(0,
+        language_type=CallStackLanguageType.JAVA,
+        frame_list=[
+            StackFrame(0, '', 'android.a.f', 'android/a/cc',
+                       'android/a.java', [2]),
+            StackFrame(1, '', 'org.chromium.c', 'org/chromium/c.java',
+                       'org/chromium/c.java', [8])
+        ])
 
     self.assertEqual(classifier.Classify([], crash_stack),
                      'chromium')
@@ -129,12 +128,10 @@ class ProjectClassifierTest(CrashTestCase):
     crash_config.project_classifier = {}
     crash_config.put()
 
-    crash_stack = CallStack(0)
-    crash_stack.extend([
+    crash_stack = CallStack(0, frame_list=[
         StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]),
         StackFrame(1, 'src/', 'ff', 'comp1.cc', 'src/comp1.cc', [21]),
-        StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])
-    ])
+        StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])])
 
     result1 = Result(self.GetDummyChangeLog(), 'src/')
     result1.file_to_stack_infos = {

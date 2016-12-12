@@ -29,7 +29,8 @@ class DummyClassifier(object):
     if results:
       classes = map(self.GetClassFromResult, results[:top_n_frames])
     else:
-      classes = map(self.GetClassFromStackFrame, crash_stack[:top_n_frames])
+      classes = map(self.GetClassFromStackFrame,
+          crash_stack.frames[:top_n_frames])
 
     class_list = RankByOccurrence(classes, 1)
     if class_list:
@@ -52,18 +53,17 @@ class ClassifierTest(CrashTestCase):
     crash_stack = CallStack(0)
     self.assertEqual(dummy_classifier.Classify([], crash_stack), '')
 
-    crash_stack.extend(
-        [StackFrame(0, 'src/', 'a::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
-         StackFrame(1, 'src/', 'a::d(a* c)', 'f1.cc', 'src/f1.cc', [227]),
-         StackFrame(2, 'src/dummy', 'a::e(int)', 'f2.cc', 'src/f2.cc', [87])])
+    crash_stack = CallStack(0, frame_list=[
+        StackFrame(0, 'src/', 'a::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
+        StackFrame(1, 'src/', 'a::d(a* c)', 'f1.cc', 'src/f1.cc', [227]),
+        StackFrame(2, 'src/dummy', 'a::e(int)', 'f2.cc', 'src/f2.cc', [87])])
 
     self.assertEqual(dummy_classifier.Classify([], crash_stack), 'class_1')
 
-    crash_stack = CallStack(0)
-    crash_stack.extend(
-        [StackFrame(0, 'src/', 'a::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
-         StackFrame(1, 'src/dummy', 'a::d(a* c)', 'f1.cc', 'src/f1.cc', [227]),
-         StackFrame(2, 'src/dummy', 'a::e(int)', 'f2.cc', 'src/f2.cc', [87])])
+    crash_stack = CallStack(0, frame_list=[
+        StackFrame(0, 'src/', 'a::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
+        StackFrame(1, 'src/dummy', 'a::d(a* c)', 'f1.cc', 'src/f1.cc', [227]),
+        StackFrame(2, 'src/dummy', 'a::e(int)', 'f2.cc', 'src/f2.cc', [87])])
 
     self.assertEqual(dummy_classifier.Classify([], crash_stack), 'class_2')
 

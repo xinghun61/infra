@@ -107,7 +107,8 @@ class ProjectClassifier(object):
     if results:
       classes = map(self.GetClassFromResult, results[:top_n_frames])
     else:
-      classes = map(self.GetClassFromStackFrame, crash_stack[:top_n_frames])
+      classes = map(self.GetClassFromStackFrame,
+          crash_stack.frames[:top_n_frames])
 
     # Since we're only going to return the highest-ranked class, might
     # as well set ``max_classes`` to 1.

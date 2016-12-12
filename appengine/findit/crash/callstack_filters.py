@@ -30,4 +30,4 @@ def FilterInlineFunctionFrames(callstack):
   return CallStack(callstack.priority,
                    callstack.format_type,
                    callstack.language_type,
-                   filter(_IsNonInlineFunctionFrame, callstack))
+                   filter(_IsNonInlineFunctionFrame, callstack.frames))

@@ -64,12 +64,10 @@ class ComponentClassifierTest(CrashTestCase):
     self.assertEqual(self.cccc.GetClassFromResult(result), 'Comp1>Dummy')
 
   def testClassifyCrashStack(self):
-    crash_stack = CallStack(0)
-    crash_stack.extend([
+    crash_stack = CallStack(0, frame_list=[
         StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]),
         StackFrame(1, 'src/', 'ff', 'comp1.cc', 'src/comp1.cc', [21]),
-        StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])
-    ])
+        StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])])
 
     self.assertEqual(self.cccc.Classify([], crash_stack),
                      ['Comp1>Dummy', 'Comp2>Dummy'])
@@ -91,12 +89,10 @@ class ComponentClassifierTest(CrashTestCase):
     # N.B., we must construct a new cccc here, becasue we changed CrashConfig.
     self.cccc = CrashConfigComponentClassifier()
 
-    crash_stack = CallStack(0)
-    crash_stack.extend([
+    crash_stack = CallStack(0, frame_list=[
         StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]),
         StackFrame(1, 'src/', 'ff', 'comp1.cc', 'src/comp1.cc', [21]),
-        StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])
-    ])
+        StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])])
 
     result = Result(self.GetDummyChangeLog(), 'src/')
     result.file_to_stack_infos = {

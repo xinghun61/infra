@@ -58,12 +58,8 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
         last_good_version, first_bad_version)
 
     # Restrict analysis to just the top n frames in each callstack.
-    # TODO(wrengr): move this to be a Stacktrace method?
     stacktrace = Stacktrace([
-        CallStack(stack.priority,
-                  format_type=stack.format_type,
-                  language_type=stack.language_type,
-                  frame_list=stack[:self.top_n_frames])
+        stack.SliceFrames(None, self.top_n_frames)
         for stack in report.stacktrace])
 
     # We are only interested in the deps in crash stack (the callstack that
