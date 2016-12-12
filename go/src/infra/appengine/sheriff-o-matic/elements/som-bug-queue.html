@@ -70,7 +70,7 @@
         <div class="bug">
           <div class="summary-box">
             <a href="http://crbug.com/[[bug.id]]" target="_blank" title="[[bug.summary]]" class="summary">[[bug.summary]]</a>
-            <template is="dom-repeat" items="[[_filterBugLabels(bug.labels)]]" as="label">
+            <template is="dom-repeat" items="[[_filterBugLabels(bug.labels, bugQueueLabel)]]" as="label">
               <a href="https://bugs.chromium.org/p/chromium/issues/list?q=label:[[label]]"
                 class="bug-label" target="_blank">[[label]]</a>
             </template>
@@ -171,12 +171,12 @@
         this.refresh();
       },
 
-      _filterBugLabels: function(labels) {
+      _filterBugLabels: function(labels, bugQueueLabel) {
         if (!labels) {
           return [];
         }
         return labels.filter((label) => {
-          return label.toLowerCase() != this.bugQueueLabel.toLowerCase()
+          return label.toLowerCase() != bugQueueLabel.toLowerCase()
             && !label.match(/^Pri-(\d)$/);
         });
       },
