@@ -107,6 +107,9 @@ DUMMY_CHANGELOG3 = ChangeLog.FromDict({
 # CrashReport directly and pulls out the revision_range and platform
 # itself; that way ChangelistClassifier.__call__ needn't worry about it,
 # allowing us to clean up the tests here.
+# TODO(wrengr): this empty stacktrace causes the unittests to emit
+# logging warnings about the fact that we can't get the crash_stack. Would
+# be nice to avoid that.
 DUMMY_REPORT = CrashReport(None, None, None, Stacktrace(), (None, None))
 
 class ChangelistClassifierTest(CrashTestSuite):

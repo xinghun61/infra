@@ -259,7 +259,8 @@ class CallStack(namedtuple('CallStack',
 # used as a key in a dict. Because we want to usecallstacks as keys (for
 # memoization) we has-a tuple rather than is-a list.
 # TODO(http://crbug.com/644476): this class needs a better name.
-class Stacktrace(object):
+class Stacktrace(namedtuple('Stacktrace',
+    ['stacks', 'crash_stack', 'signature_parts'])):
   """A collection of callstacks which together provide a trace of what happened.
 
   For instance, when doing memory debugging we will have callstacks for
@@ -267,58 +268,58 @@ class Stacktrace(object):
   was allocated, (3) when the object causing the crash was freed (for
   use-after-free crashes), etc. What callstacks are included in the
   trace is unspecified, since this differs for different tools."""
-  def __init__(self, stack_list=None, signature=None):
-    self.stacks = stack_list or []
-    self._crash_stack = None
-    self._signature_parts = None
+  __slots__ = ()
+
+  def __new__(cls, stack_list=None, signature=None):
+    stacks = tuple(stack_list or [])
+
+    parts = None
     if signature:
       # Filter out the types of signature, for example [Out of Memory].
       signature = re.sub('[[][^]]*[]]\s*', '', signature)
       # For clusterfuzz crash, the signature is crash state. It is
       # usually the top 3 important stack frames separated by '\n'.
-      self._signature_parts = signature.split('\n')
+      parts = signature.split('\n')
 
-  def __getitem__(self, i): # pragma: no cover
-    return self.stacks[i]
+    # Get the callstack with the highest priority (i.e., whose priority
+    # field is numerically the smallest) in the stacktrace.
+    crash_stack = None
+    if not stacks:
+      logging.warning('Cannot get crash stack for empty stacktrace '
+          '(with signature: %s)' % signature)
+    else:
+      if parts:
+        def _IsSignatureCallstack(callstack):
+          for index, frame in enumerate(callstack):
+            for signature_part in parts:
+              if signature_part in frame.function:
+                return True, index
+
+          return False, 0
+
+        # Set the crash stack using signature callstack.
+        for callstack in stacks:
+          is_signature_callstack, index = _IsSignatureCallstack(callstack)
+          if is_signature_callstack:
+            # Filter all the stack frames before signature.
+            crash_stack = callstack.SliceFrames(index, None)
+            break
+
+      # If there is no signature callstack, fall back to set crash stack using
+      # the first least priority callstack.
+      if crash_stack is None:
+        crash_stack = sorted(stacks, key=lambda stack: stack.priority)[0]
+
+    return super(cls, Stacktrace).__new__(cls, stacks, crash_stack, parts)
 
   def __len__(self):
+    """Returns the number of stacks in this trace."""
     return len(self.stacks)
 
   def __bool__(self): # pragma: no cover
+    """Returns whether this trace is empty."""
     return bool(self.stacks)
 
   def __iter__(self):
+    """Iterator over the stacks in this trace."""
     return iter(self.stacks)
-
-  @property
-  def crash_stack(self):
-    """Get the callstack with the highest priority (i.e., whose priority
-    field is numerically the smallest) in the stacktrace."""
-    if not self.stacks:
-      logging.warning('Cannot get crash stack for empty stacktrace: %s', self)
-      return None
-
-    if self._crash_stack is None and self._signature_parts:
-      def _IsSignatureCallstack(callstack):
-        for index, frame in enumerate(callstack):
-          for signature_part in self._signature_parts:
-            if signature_part in frame.function:
-              return True, index
-
-        return False, 0
-
-      # Set the crash stack using signature callstack.
-      for callstack in self.stacks:
-        is_signature_callstack, index = _IsSignatureCallstack(callstack)
-        if is_signature_callstack:
-          # Filter all the stack frames before signature.
-          self._crash_stack = callstack.SliceFrames(index, None)
-          break
-
-    # If there is no signature callstack, fall back to set crash stack using
-    # the first least priority callstack.
-    if self._crash_stack is None:
-      self._crash_stack = sorted(self.stacks,
-          key=lambda stack: stack.priority)[0]
-
-    return self._crash_stack

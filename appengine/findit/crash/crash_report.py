@@ -35,8 +35,7 @@ class CrashReport(namedtuple('CrashReport',
 
   def __new__(cls, crashed_version, signature, platform, stacktrace,
       regression_range):
-    # TODO: should raise a TypeError rather than an AssertionError
-    assert isinstance(stacktrace, Stacktrace), (
+    assert isinstance(stacktrace, Stacktrace), TypeError(
         'In the fourth argument to CrashReport constructor, '
         'expected Stacktrace object, but got %s object instead.'
         % stacktrace.__class__.__name__)
