@@ -87,7 +87,8 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
         sorted_issues, starred_iid_set, mr.col_spec.lower().split(),
         mr.group_by_spec.lower().split(), issues_users_by_id,
         tablecell.CELL_FACTORIES,
-        related_issues, harmonized_config, context_for_all_issues)
+        related_issues, harmonized_config,
+        context_for_all_issues, mr.hotlist_id)
 
   column_values = table_view_helpers.ExtractUniqueValues(
       mr.col_spec.lower().split(), sorted_issues, issues_users_by_id,
@@ -108,7 +109,7 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
 
 def _MakeTableData(issues, starred_iid_set, lower_columns,
                    lower_group_by, users_by_id, cell_factories,
-                   related_issues, config, context_for_all_issues):
+                   related_issues, config, context_for_all_issues, hotlist_id):
   """Returns data from MakeTableData after adding additional information."""
   table_data = table_view_helpers.MakeTableData(
       issues, starred_iid_set, lower_columns, lower_group_by,
@@ -121,7 +122,8 @@ def _MakeTableData(issues, starred_iid_set, lower_columns,
     row.project_name = art.project_name
     row.issue_ref = '%s:%d' % (art.project_name, art.local_id)
     row.issue_url = tracker_helpers.FormatRelativeIssueURL(
-        art.project_name, urls.ISSUE_DETAIL, id=art.local_id)
+        art.project_name, urls.ISSUE_DETAIL,
+        id=art.local_id, hotlist_id=hotlist_id)
 
   return table_data
 

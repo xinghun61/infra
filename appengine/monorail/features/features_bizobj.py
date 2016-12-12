@@ -36,6 +36,12 @@ def UserOwnsHotlist(hotlist, effective_ids):
   return not effective_ids.isdisjoint(hotlist.owner_ids or set())
 
 
+def IssueIsInHotlist(hotlist, issue_id):
+  """Returns T/F if the issue is in the hotlist."""
+  return any(issue_id == hotlist_issue.issue_id
+             for hotlist_issue in hotlist.iid_rank_pairs)
+
+
 def UserIsInHotlist(hotlist, effective_ids):
   """Returns T/F if the user is involved/not involved in the hotlist."""
   return (UserOwnsHotlist(hotlist, effective_ids) or
@@ -66,3 +72,34 @@ def SplitHotlistIssueRanks(target_iid, split_above, iid_rank_pairs):
       'Target issue %r was not found in the list of issue_id rank pairs',
                 target_iid)
   return iid_rank_pairs, []
+
+
+def DetermineHotlistIssuePosition(issue, iid_rank_pairs):
+  """Find position of an issue in a hotlist for a flipper.
+
+  Args:
+    issue: The issue PB currently being viewed
+    iid_rank_pairs: list of HotlistIssue PBs that the flipper
+      should flip through
+
+  Returns:
+    A 3-tuple (prev_iid, index, next_iid) where prev_iid is the
+    IID of the previous issue in the total ordering (or None),
+    index is the index that the current issue has in the sorted
+    list of issues in the hotlist,
+    next_iid is the next issue (or None).
+  """
+
+  iid_rank_pairs_sorted = sorted(
+          iid_rank_pairs, key=lambda pair: pair.rank)
+  prev_iid, next_iid = None, None
+  total_issues = len(iid_rank_pairs)
+  for i, pair in enumerate(iid_rank_pairs_sorted):
+    if pair.issue_id == issue.issue_id:
+      index = i
+      if i < total_issues - 1:
+        next_iid = iid_rank_pairs_sorted[i + 1].issue_id
+      if i > 0:
+        prev_iid = iid_rank_pairs_sorted[i - 1].issue_id
+      return prev_iid, index, next_iid
+  return None, None, None

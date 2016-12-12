@@ -34,7 +34,8 @@ RANDOM_KEY_CHARACTERS = string.ascii_letters + string.digits
 
 # params recognized by FormatURL, in the order they will appear in the url
 RECOGNIZED_PARAMS = ['can', 'start', 'num', 'q', 'colspec', 'groupby', 'sort',
-                     'show', 'format', 'me', 'table_title', 'projects']
+                     'show', 'format', 'me', 'table_title', 'projects',
+                     'hotlist_id']
 
 
 def retry(tries, delay=1, backoff=2):

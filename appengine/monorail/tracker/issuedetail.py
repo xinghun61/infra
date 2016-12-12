@@ -18,7 +18,9 @@ import time
 from third_party import ezt
 
 import settings
+from features import features_bizobj
 from features import notify
+from features import hotlist_helpers
 from framework import actionlimit
 from framework import framework_bizobj
 from framework import framework_constants
@@ -36,6 +38,7 @@ from framework import urls
 from framework import xsrf
 from proto import user_pb2
 from search import frontendsearchpipeline
+from services import features_svc
 from services import issue_svc
 from services import tracker_fulltext
 from tracker import field_helpers
@@ -90,6 +93,37 @@ class IssueDetail(issuepeek.IssuePeek):
         'delete_form_token': delete_form_token,
      }
 
+  def _GetFlipper(self, mr, issue):
+    """Decides which flipper class to use.
+
+    Args:
+      mr: commonly used info parsed from the request.
+      issue: the issue of the current page.
+
+    Returns:
+      The appropriate _Flipper object
+    """
+    # do not assign self.hotlist_id to hotlist_id until we are
+    # sure the hotlist/issue pair is valid.
+    # pylint: disable=attribute-defined-outside-init
+    self.hotlist_id = None
+    hotlist_id = mr.GetIntParam('hotlist_id')
+    if hotlist_id:
+      try:
+        hotlist = self.services.features.GetHotlist(
+            mr.cnxn, hotlist_id)
+      except features_svc.NoSuchHotlistException:
+        pass
+      else:
+        if (features_bizobj.IssueIsInHotlist(hotlist, issue.issue_id) and
+            permissions.CanViewHotlist(mr.auth.effective_ids, hotlist)):
+          self.hotlist_id = hotlist_id
+          return _HotlistFlipper(self.services, hotlist)
+
+    # if not hotlist/hotlist_id return a _TrackerFlipper
+    # The flipper is not itself a Promise, but it contains Promises.
+    return _TrackerFlipper(mr, self.services, self.profiler)
+
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page.
 
@@ -102,9 +136,6 @@ class IssueDetail(issuepeek.IssuePeek):
     with self.profiler.Phase('getting project issue config'):
       config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
 
-    # The flipper is not itself a Promise, but it contains Promises.
-    flipper = _Flipper(mr, self.services, self.profiler)
-
     if mr.local_id is None:
       return self._GetMissingIssuePageData(mr, issue_not_specified=True)
     with self.profiler.Phase('finishing getting issue'):
@@ -112,6 +143,8 @@ class IssueDetail(issuepeek.IssuePeek):
         issue = self._GetIssue(mr)
       except issue_svc.NoSuchIssueException:
         issue = None
+
+    flipper = self._GetFlipper(mr, issue)
 
     # Show explanation of skipped issue local IDs or deleted issues.
     if issue is None or issue.deleted:
@@ -191,7 +224,7 @@ class IssueDetail(issuepeek.IssuePeek):
       issue_spam_hist_cnxn = sql.MonorailConnection()
       issue_spam_hist_promise = framework_helpers.Promise(
           self.services.spam.LookupIssueVerdictHistory, issue_spam_hist_cnxn,
-          [issue.issue_id])     
+          [issue.issue_id])
 
     with self.profiler.Phase('finishing getting comments and pagination'):
       (descriptions, visible_comments,
@@ -228,7 +261,7 @@ class IssueDetail(issuepeek.IssuePeek):
     # Check whether to allow attachments from the details page
     allow_attachments = tracker_helpers.IsUnderSoftAttachmentQuota(mr.project)
     mr.ComputeColSpec(config)
-    back_to_list_url = _ComputeBackToListURL(mr, issue, config)
+    back_to_list_url = _ComputeBackToListURL(mr, issue, config, self.hotlist_id)
     flipper.SearchForIIDs(mr, issue)
     restrict_to_known = config.restrict_to_known
     field_name_set = {fd.field_name.lower() for fd in config.field_defs
@@ -856,8 +889,12 @@ def _Redirect(
   return url
 
 
-def _ComputeBackToListURL(mr, issue, config):
+def _ComputeBackToListURL(mr, issue, config, hotlist_id):
   """Construct a URL to return the user to the place that they came from."""
+  if hotlist_id:
+    return framework_helpers.FormatAbsoluteURL(
+        mr, '/u/%s/hotlists/%s' % (mr.auth.user_id, hotlist_id),
+        include_project=False)
   back_to_list_url = None
   if not tracker_constants.JUMP_RE.match(mr.query):
     back_to_list_url = tracker_helpers.FormatIssueListURL(
@@ -1029,57 +1066,35 @@ def _ShouldShowFlipper(mr, services):
 
 
 class _Flipper(object):
-  """Helper class for user to flip among issues within a search result."""
+  """Helper class for user to flip among issues within a context."""
 
-  def __init__(self, mr, services, prof):
+  def __init__(self, services):
     """Store info for issue flipper widget (prev & next navigation).
 
     Args:
-      mr: commonly used info parsed from the request.
       services: connections to backend services.
-      prof: a Profiler for the sevlet's handling of the current request.
     """
-
-    if not _ShouldShowFlipper(mr, services):
-      self.show = ezt.boolean(False)
-      self.pipeline = None
-      return
-
-    self.pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-        mr, services, prof, None)
-
     self.services = services
 
-  def SearchForIIDs(self, mr, issue):
-    """Do the next step of searching for issue IDs for the flipper.
+  def SearchForIIDs(self, _mr, _issue):
+    """Override this method to implement getting ids for prev, cur, and next.
 
     Args:
-      mr: commonly used info parsed from the request.
+      mr: common information parsed from the HTTP request.
       issue: the currently viewed issue.
     """
-    if not self.pipeline:
-      return
+    raise servlet.MethodNotSupportedError()
 
-    if not mr.errors.AnyErrors():
-      # Only do the search if the user's query parsed OK.
-      self.pipeline.SearchForIIDs()
-
-    # Note: we never call MergeAndSortIssues() because we don't need a unified
-    # sorted list, we only need to know the position on such a list of the
-    # current issue.
-    prev_iid, cur_index, next_iid = self.pipeline.DetermineIssuePosition(issue)
-
-    logging.info('prev_iid, cur_index, next_iid is %r %r %r',
-                 prev_iid, cur_index, next_iid)
+  def AssignFlipperValues(self, mr, prev_iid, cur_index, next_iid, total_count):
     # pylint: disable=attribute-defined-outside-init
-    if cur_index is None or self.pipeline.total_count == 1:
+    if cur_index is None or total_count == 1:
       # The user probably edited the URL, or bookmarked an issue
       # in a search context that no longer matches the issue.
       self.show = ezt.boolean(False)
     else:
       self.show = True
       self.current = cur_index + 1
-      self.total_count = self.pipeline.total_count
+      self.total_count = total_count
       self.next_id = None
       self.next_project_name = None
       self.prev_url = ''
@@ -1106,6 +1121,97 @@ class _Flipper(object):
           self.current, self.total_count, self.prev_url, self.next_url)
     else:
       return 'invisible flipper(show=%s)' % self.show
+
+
+class _HotlistFlipper(_Flipper):
+  """Helper class for user to flip among issues within a hotlist."""
+
+  def __init__(self, services, hotlist):
+    """Store info for a hotlist's issue flipper widget (prev & next nav.)
+
+    Args:
+      mr: commonly used info parsed from the request.
+      services: connections to backend services.
+      prof: a Profiler for the sevlet's handling of the current request.
+      hotlist: the hotlist this flipper is flipping through.
+    """
+
+    super(_HotlistFlipper, self).__init__(services)
+    self.hotlist = hotlist
+
+  def SearchForIIDs(self, mr, issue):
+    """Do the next step of searching for issue IDs for the flipper.
+
+    Args:
+      mr: commonly used info parsed from the request.
+      issue: the currently viewed issue.
+    """
+    issues_list = self.services.issue.GetIssues(
+        mr.cnxn,
+        [pair.issue_id for pair in self.hotlist.iid_rank_pairs])
+    allowed_issue_ids = [
+        allowed_issue.issue_id for allowed_issue
+        in hotlist_helpers.FilterIssues(mr, issues_list, self.services)]
+    iid_rank_pairs = [pair for pair in self.hotlist.iid_rank_pairs
+                      if pair.issue_id in allowed_issue_ids]
+    # TODO(jojwang): preserve sort order from hotlist
+    # Sort here and pass sorted list to DeterminehotlistIssuePosition
+    (prev_iid, cur_index,
+     next_iid) = features_bizobj.DetermineHotlistIssuePosition(
+        issue, iid_rank_pairs)
+
+    logging.info('prev_iid, cur_index, next_iid is %r %r %r',
+                 prev_iid, cur_index, next_iid)
+
+    self.AssignFlipperValues(
+        mr, prev_iid, cur_index, next_iid, len(iid_rank_pairs))
+
+
+class _TrackerFlipper(_Flipper):
+  """Helper class for user to flip among issues within a search result."""
+
+  def __init__(self, mr, services, prof):
+    """Store info for issue flipper widget (prev & next navigation).
+
+    Args:
+      mr: commonly used info parsed from the request.
+      services: connections to backend services.
+      prof: a Profiler for the sevlet's handling of the current request.
+    """
+
+    super(_TrackerFlipper, self).__init__(services)
+    if not _ShouldShowFlipper(mr, services):
+      self.show = ezt.boolean(False)
+      self.pipeline = None
+      return
+
+    self.pipeline = frontendsearchpipeline.FrontendSearchPipeline(
+        mr, services, prof, None)
+
+  def SearchForIIDs(self, mr, issue):
+    """Do the next step of searching for issue IDs for the flipper.
+
+    Args:
+      mr: commonly used info parsed from the request.
+      issue: the currently viewed issue.
+    """
+    if not self.pipeline:
+      return
+
+    if not mr.errors.AnyErrors():
+      # Only do the search if the user's query parsed OK.
+      self.pipeline.SearchForIIDs()
+
+    # Note: we never call MergeAndSortIssues() because we don't need a unified
+    # sorted list, we only need to know the position on such a list of the
+    # current issue.
+    prev_iid, cur_index, next_iid = self.pipeline.DetermineIssuePosition(issue)
+
+    logging.info('prev_iid, cur_index, next_iid is %r %r %r',
+                 prev_iid, cur_index, next_iid)
+    # pylint: disable=attribute-defined-outside-init
+    self.AssignFlipperValues(
+        mr, prev_iid, cur_index, next_iid, self.pipeline.total_count)
 
 
 class IssueCommentDeletion(servlet.Servlet):

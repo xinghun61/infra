@@ -9,9 +9,43 @@ import unittest
 
 from proto import features_pb2
 from features import features_bizobj
-
+from testing import fake
 
 class FeaturesBizobjTest(unittest.TestCase):
+
+  def setUp(self):
+    self.local_ids = [1L, 2L, 3L, 4L, 5L]
+    self.issues = [fake.MakeTestIssue(1000, local_id, '', 'New', 111L)
+                   for local_id in self.local_ids]
+    self.iid_rank_pairs = [features_pb2.MakeHotlistIssue(
+        issue.issue_id, rank=rank*10) for rank, issue in enumerate(self.issues)]
+
+  def testIssueIsInHotlist(self):
+    hotlist = features_pb2.Hotlist(iid_rank_pairs=self.iid_rank_pairs)
+    for issue in self.issues:
+      self.assertTrue(features_bizobj.IssueIsInHotlist(hotlist, issue.issue_id))
+
+    self.assertFalse(features_bizobj.IssueIsInHotlist(
+        hotlist, fake.MakeTestIssue(1000, 9L, '', 'New', 111L)))
+
+  def testSplitHotlistIssueRanks(self):
+    iid_rank_tuples = [(issue.issue_id, issue.rank)
+                       for issue in self.iid_rank_pairs]
+    iid_rank_tuples.reverse()
+    ret = features_bizobj.SplitHotlistIssueRanks(
+        100003L, False, iid_rank_tuples)
+    self.assertEqual(ret, (iid_rank_tuples[:2], iid_rank_tuples[2:]))
+
+    iid_rank_tuples.reverse()
+    ret = features_bizobj.SplitHotlistIssueRanks(
+        100003L, True, iid_rank_tuples)
+    self.assertEqual(ret, (iid_rank_tuples[:3], iid_rank_tuples[3:]))
+
+    # target issue not found
+    first_pairs, second_pairs = features_bizobj.SplitHotlistIssueRanks(
+        100009L, True, iid_rank_tuples)
+    self.assertEqual(iid_rank_tuples, first_pairs)
+    self.assertEqual(second_pairs, [])
 
   def testUsersInvolvedInHotlists_Empty(self):
     self.assertEqual(set(), features_bizobj.UsersInvolvedInHotlists([]))
@@ -47,3 +81,45 @@ class FeaturesBizobjTest(unittest.TestCase):
 
     # Several irrelevant group memberships
     self.assertFalse(features_bizobj.UserIsInHotlist(h, {10, 11, 12}))
+
+  def testDetermineHotlistIssuePosition(self):
+    # normal
+    prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
+        self.issues[2], self.iid_rank_pairs)
+    self.assertEqual(prev_iid, self.iid_rank_pairs[1].issue_id)
+    self.assertEqual(index, 2)
+    self.assertEqual(next_iid, self.iid_rank_pairs[3].issue_id)
+
+    # end of list
+    prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
+        self.issues[4], self.iid_rank_pairs)
+    self.assertEqual(prev_iid, self.iid_rank_pairs[3].issue_id)
+    self.assertEqual(index, 4)
+    self.assertEqual(next_iid, None)
+
+    # beginning of list
+    prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
+        self.issues[0], self.iid_rank_pairs)
+    self.assertEqual(prev_iid, None)
+    self.assertEqual(index, 0)
+    self.assertEqual(next_iid, self.iid_rank_pairs[1].issue_id)
+
+    # one item in list
+    prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
+        self.issues[2], [self.iid_rank_pairs[2]])
+    self.assertEqual(prev_iid, None)
+    self.assertEqual(index, 0)
+    self.assertEqual(next_iid, None)
+
+    prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
+        self.issues[2], [self.iid_rank_pairs[3]])
+    self.assertEqual(prev_iid, None)
+    self.assertEqual(index, None)
+    self.assertEqual(next_iid, None)
+
+    #none
+    prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
+        self.issues[2], [])
+    self.assertEqual(prev_iid, None)
+    self.assertEqual(index, None)
+    self.assertEqual(next_iid, None)

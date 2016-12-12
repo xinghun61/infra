@@ -8,16 +8,20 @@
 import unittest
 
 from features import hotlist_helpers
+from features import features_constants
 from framework import profiler
+from framework import table_view_helpers
 from framework import sorting
 from services import service_manager
 from testing import testing_helpers
 from testing import fake
+from tracker import tablecell
+from tracker import tracker_bizobj
 from proto import features_pb2
 from proto import tracker_pb2
 
 
-class CreateHotlistTableDataTest(unittest.TestCase):
+class HotlistTableDataTest(unittest.TestCase):
 
   def setUp(self):
     self.services = service_manager.Services(
@@ -78,6 +82,27 @@ class CreateHotlistTableDataTest(unittest.TestCase):
     self.assertEqual(len(table_related_dict['pagination'].visible_results), 3)
 
 
+class MakeTableDataTest(unittest.TestCase):
+
+  def test_MakeTableData(self):
+    issues = [fake.MakeTestIssue(
+        789, 1, 'issue_summary', 'New', 111L, project_name='ProjectName',
+        issue_id=1001)]
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    cell_factories = {
+        'summary': table_view_helpers.TableCellSummary}
+    table_data = hotlist_helpers._MakeTableData(
+        issues, [], ['summary'], [], {} , cell_factories,
+        {}, config, None, 29)
+    self.assertEqual(len(table_data), 1)
+    row = table_data[0]
+    self.assertEqual(row.issue_id, 1001)
+    self.assertEqual(row.local_id, 1)
+    self.assertEqual(row.project_name, 'ProjectName')
+    self.assertEqual(row.issue_ref, 'ProjectName:1')
+    self.assertTrue(row.issue_url.endswith('hotlist_id=29'))
+
+
 class GetAllProjectsOfIssuesTest(unittest.TestCase):
 
   issue_x_1 = tracker_pb2.Issue()
@@ -107,8 +132,7 @@ class GetAllProjectsOfIssuesTest(unittest.TestCase):
 
 class HelpersUnitTest(unittest.TestCase):
 
-  # TODO(jojwang): Write Tests for GetAllProjectsOfIssues,
-  #  GetAllConfigsOfProjects, _MakeTableData
+  # TODO(jojwang): Write Tests for GetAllConfigsOfProjects
   def setUp(self):
     self.services = service_manager.Services(issue=fake.IssueService(),
                                         config=fake.ConfigService(),
