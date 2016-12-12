@@ -616,6 +616,8 @@
                 this.set('_swarmingAlerts', json.swarming);
                 this.set(['_alertsData', this._alertGroupVarName(group)],
                   json.alerts);
+
+                this._alertsTimes = {};
                 this.set(['_alertsTimes', this._alertGroupVarName(group)],
                   json.timestamp);
               }
