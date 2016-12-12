@@ -243,7 +243,7 @@ class Findit(object):
     if result.get('found') and 'suspected_cls' in result:
       for cl in result['suspected_cls']:
         cl['confidence'] = round(cl['confidence'], 2)
-        cl.pop('reason', None)
+        cl.pop('reasons', None)
 
     result = self.ProcessResultForPublishing(result, analysis.key.urlsafe())
     logging.info('Publish result:\n%s',

@@ -263,7 +263,7 @@ class CrashHandlerTest(CrashTestCase):
 
     for cl in processed_analysis_result.get('suspected_cls', []):
       cl['confidence'] = round(cl['confidence'], 2)
-      cl.pop('reason', None)
+      cl.pop('reasons', None)
 
     expected_messages_data = [json.dumps({
             'crash_identifiers': crash_data['crash_identifiers'],
@@ -325,7 +325,7 @@ class CrashHandlerTest(CrashTestCase):
         'found': True,
         'suspected_cls': [
             {'confidence': 0.21434,
-             'reason': ['reason1', 'reason2'],
+             'reasons': ['reason1', 'reason2'],
              'other': 'data'}
         ],
         'other_data': 'data',
