@@ -119,7 +119,7 @@ class IssueList(servlet.Servlet):
       if pipeline.grid_mode:
         page_data = grid_view_helpers.GetGridViewData(
             mr, pipeline.allowed_results or [], config, pipeline.users_by_id,
-            starred_iid_set, pipeline.grid_limited)
+            starred_iid_set, pipeline.grid_limited, related_issues)
       else:
         page_data = self.GetTableViewData(
             mr, pipeline.visible_results or [], config, pipeline.users_by_id,
@@ -207,7 +207,7 @@ class IssueList(servlet.Servlet):
 
     # Used to offer easy filtering of each unique value in each column.
     column_values = table_view_helpers.ExtractUniqueValues(
-        lower_columns, results, users_by_id, config)
+        lower_columns, results, users_by_id, config, related_issues)
 
     table_view_data = {
         'table_data': table_data,

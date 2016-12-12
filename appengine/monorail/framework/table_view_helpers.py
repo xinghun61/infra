@@ -93,7 +93,8 @@ def ComputeUnshownColumns(results, shown_columns, config, built_in_cols):
   return sorted(unshown_list)
 
 
-def ExtractUniqueValues(columns, artifact_list, users_by_id, config):
+def ExtractUniqueValues(columns, artifact_list, users_by_id,
+                        config, related_issues):
   """Build a nested list of unique values so the user can auto-filter.
 
   Args:
@@ -102,6 +103,7 @@ def ExtractUniqueValues(columns, artifact_list, users_by_id, config):
     artifact_list: a list of artifacts in the complete set of search results.
     users_by_id: dict mapping user_ids to UserViews.
     config: ProjectIssueConfig PB for the current project.
+    related_issues: dict {issue_id: issue} of pre-fetched related issues.
 
   Returns:
     [EZTItem(col1, colname1, [val11, val12,...]), ...]
@@ -178,8 +180,21 @@ def ExtractUniqueValues(columns, artifact_list, users_by_id, config):
       if status:
         column_values['status'][status.lower()] = status
 
-  # TODO(jrobbins): merged into, blocked on, and blocking.  And, the ability
-  # to parse a user query on those fields and do a SQL search.
+  if 'project' in column_values:
+    for art in artifact_list:
+      project_name = art.project_name
+      column_values['project'][project_name] = project_name
+
+  if 'mergedinto' in column_values:
+    for art in artifact_list:
+      if art.merged_into and art.merged_into != 0:
+        merged_issue = related_issues[art.merged_into]
+        merged_into = merged_issue.project_name + ':' + str(
+            merged_issue.local_id)
+        column_values['mergedinto'][merged_into] = merged_into
+
+  # TODO(jrobbins): blocked on, and blocking.
+  # And, the ability to parse a user query on those fields and do a SQL search.
 
   if 'attachments' in column_values:
     for art in artifact_list:

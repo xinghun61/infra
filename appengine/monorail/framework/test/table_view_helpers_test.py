@@ -207,13 +207,13 @@ class TableViewHelpersTest(unittest.TestCase):
 
   def testExtractUniqueValues_NoColumns(self):
     column_values = table_view_helpers.ExtractUniqueValues(
-        [], SEARCH_RESULTS_WITH_LABELS, {}, self.config)
+        [], SEARCH_RESULTS_WITH_LABELS, {}, self.config, {})
     self.assertEquals([], column_values)
 
   def testExtractUniqueValues_NoResults(self):
     cols = ['type', 'priority', 'owner', 'status', 'stars', 'attachments']
     column_values = table_view_helpers.ExtractUniqueValues(
-        cols, EMPTY_SEARCH_RESULTS, {}, self.config)
+        cols, EMPTY_SEARCH_RESULTS, {}, self.config, {})
     self.assertEquals(6, len(column_values))
     for index, col in enumerate(cols):
       self.assertEquals(index, column_values[index].col_index)
@@ -226,7 +226,7 @@ class TableViewHelpersTest(unittest.TestCase):
         111L: framework_views.StuffUserView(111, 'foo@example.com', True),
         }
     column_values = table_view_helpers.ExtractUniqueValues(
-        cols, SEARCH_RESULTS_WITH_LABELS, users_by_id, self.config)
+        cols, SEARCH_RESULTS_WITH_LABELS, users_by_id, self.config, {})
     self.assertEquals(len(cols), len(column_values))
 
     self.assertEquals('priority', column_values[0].column_name)
@@ -263,7 +263,7 @@ class TableViewHelpersTest(unittest.TestCase):
 
     column_values = table_view_helpers.ExtractUniqueValues(
         cols, SEARCH_RESULTS_WITH_LABELS + [issue], users_by_id,
-        self.config)
+        self.config, {})
     self.assertEquals(5, len(column_values))
 
     self.assertEquals('priority/pri', column_values[0].column_name)
@@ -301,7 +301,7 @@ class TableViewHelpersTest(unittest.TestCase):
         ]
 
     column_values = table_view_helpers.ExtractUniqueValues(
-        cols, search_results, users_by_id, self.config)
+        cols, search_results, users_by_id, self.config, {})
     self.assertEquals(4, len(column_values))
 
     self.assertEquals('priority', column_values[0].column_name)
@@ -324,7 +324,7 @@ class TableViewHelpersTest(unittest.TestCase):
         tracker_pb2.Issue(),
         ]
     column_values = table_view_helpers.ExtractUniqueValues(
-        cols, search_results, {}, self.config)
+        cols, search_results, {}, self.config, {})
 
     self.assertEquals(5, len(column_values))
     for col_val in column_values:

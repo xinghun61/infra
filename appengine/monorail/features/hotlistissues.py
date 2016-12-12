@@ -201,9 +201,22 @@ class HotlistIssues(servlet.Servlet):
     harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
     limit = settings.max_issues_in_grid
     grid_limited = len(allowed_issues) > limit
+    lower_cols = mr.col_spec.lower().split()
+    related_iids = set()
+    for issue in allowed_issues:
+      if 'blockedon' in lower_cols:
+        related_iids.update(issue.blocked_on_iids)
+      if 'blocking' in lower_cols:
+        related_iids.update(issue.blocking_iids)
+      if 'mergedinto' in lower_cols:
+        related_iids.add(issue.merged_into)
+    related_issues_list = self.services.issue.GetIssues(
+        mr.cnxn, list(related_iids))
+    related_issues = {issue.issue_id: issue for issue in related_issues_list}
+
     grid_view_data = grid_view_helpers.GetGridViewData(
         mr, allowed_issues, harmonized_config,
-        users_by_id, starred_iid_set, grid_limited)
+        users_by_id, starred_iid_set, grid_limited, related_issues)
 
     grid_view_data.update({'pagination': paginate.ArtifactPagination(
           mr, allowed_issues, features_constants.DEFAULT_RESULTS_PER_PAGE,

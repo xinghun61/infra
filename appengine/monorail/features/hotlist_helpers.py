@@ -66,8 +66,6 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
 
   with profiler.Phase("getting related issues"):
     related_iids = set()
-    # TODO(jojwang): if in grid_mode
-    # results_needing_related = allowed_issues or []
     results_needing_related = sorted_issues
     lower_cols = mr.col_spec.lower().split()
     for issue in results_needing_related:
@@ -93,7 +91,7 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
 
   column_values = table_view_helpers.ExtractUniqueValues(
       mr.col_spec.lower().split(), sorted_issues, issues_users_by_id,
-      harmonized_config)
+      harmonized_config, related_issues)
   unshown_columns = table_view_helpers.ComputeUnshownColumns(
       sorted_issues, mr.col_spec.split(), harmonized_config,
       features_constants.OTHER_BUILT_IN_COLS)

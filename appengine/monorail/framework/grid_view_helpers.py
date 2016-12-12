@@ -86,7 +86,7 @@ def _WKSortingValue(value, well_known_list):
 
 def MakeGridData(
     artifacts, x_attr, x_headings, y_attr, y_headings, users_by_id,
-    artifact_view_factory, all_label_values, config):
+    artifact_view_factory, all_label_values, config, related_issues):
   """Return a list of grid row items for display by EZT.
 
   Args:
@@ -100,6 +100,7 @@ def MakeGridData(
     all_label_values: pre-parsed dictionary of values from the key-value
         labels on each issue: {issue_id: {key: [val,...], ...}, ...}
     config: ProjectIssueConfig PB for the current project.
+    related_issues: dict {issue_id: issue} of pre-fetched related issues.
 
   Returns:
     A list of EZTItems, each representing one grid row, and each having
@@ -120,9 +121,9 @@ def MakeGridData(
   for art in artifacts:
     label_value_dict = all_label_values[art.local_id]
     x_vals = GetArtifactAttr(
-        art, x_attr, users_by_id, label_value_dict, config)
+        art, x_attr, users_by_id, label_value_dict, config, related_issues)
     y_vals = GetArtifactAttr(
-        art, y_attr, users_by_id, label_value_dict, config)
+        art, y_attr, users_by_id, label_value_dict, config, related_issues)
     tile = artifact_view_factory(art)
 
     # Put the current issue into each cell where it belongs, which will usually
@@ -196,7 +197,8 @@ def MakeLabelValuesDict(art):
 
 
 def GetArtifactAttr(
-    art, attribute_name, users_by_id, label_attr_values_dict, config):
+    art, attribute_name, users_by_id, label_attr_values_dict,
+    config, related_issues):
   """Return the requested attribute values of the given artifact.
 
   Args:
@@ -205,6 +207,7 @@ def GetArtifactAttr(
     users_by_id: dictionary of UserViews already created.
     label_attr_values_dict: dictionary {'key': [value, ...], }.
     config: ProjectIssueConfig PB for the current project.
+    related_issues: dict {issue_id: issue} of pre-fetched related issues.
 
   Returns:
     A list of string attribute values, or [framework_constants.NO_VALUES]
@@ -222,7 +225,16 @@ def GetArtifactAttr(
     return [art.star_count]
   if attribute_name == 'attachments':
     return [art.attachment_count]
-  # TODO(jrobbins): support blocked on, blocking, and mergedinto.
+  # TODO(jrobbins): support blocked on, blocking
+  if attribute_name == 'project':
+    return [art.project_name]
+  if attribute_name == 'mergedinto':
+    if art.merged_into and art.merged_into != 0:
+      return [
+          related_issues[art.merged_into].project_name +
+          ':' + str(related_issues[art.merged_into].local_id)]
+    else:
+      return [framework_constants.NO_VALUES]
   if attribute_name == 'reporter':
     return [users_by_id[art.reporter_id].display_name]
   if attribute_name == 'owner':
@@ -268,14 +280,15 @@ def GetArtifactAttr(
 
 
 def AnyArtifactHasNoAttr(
-    artifacts, attr_name, users_by_id, all_label_values, config):
+    artifacts, attr_name, users_by_id, all_label_values, config,
+    related_issues):
   """Return true if any artifact does not have a value for attr_name."""
   # TODO(jrobbins): all_label_values needs to be keyed by issue_id to allow
   # cross-project grid views.
   for art in artifacts:
     vals = GetArtifactAttr(
         art, attr_name.lower(), users_by_id, all_label_values[art.local_id],
-        config)
+        config, related_issues)
     if framework_constants.NO_VALUES in vals:
       return True
 
@@ -283,7 +296,8 @@ def AnyArtifactHasNoAttr(
 
 
 def GetGridViewData(
-    mr, results, config, users_by_id, starred_iid_set, grid_limited):
+    mr, results, config, users_by_id, starred_iid_set,
+    grid_limited, related_issues):
   """EZT template values to render a Grid View of issues.
   Args:
     mr: commonly used info parsed from the request.
@@ -293,6 +307,7 @@ def GetGridViewData(
         involved in results.
     starred_iid_set: Set of issues that the user has starred.
     grid_limited: True if the results were limited to fit within the grid.
+    related_issues: dict {issue_id: issue} of pre-fetched related issues.
 
   Returns:
     Dictionary for EZT template rendering of the Grid View.
@@ -316,10 +331,11 @@ def GetGridViewData(
     grid_x_headings = ['All']
   else:
     grid_x_items = table_view_helpers.ExtractUniqueValues(
-        [grid_x_attr], results, users_by_id, config)
+        [grid_x_attr], results, users_by_id, config, related_issues)
     grid_x_headings = grid_x_items[0].filter_values
     if AnyArtifactHasNoAttr(
-        results, grid_x_attr, users_by_id, all_label_values, config):
+        results, grid_x_attr, users_by_id, all_label_values,
+        config, related_issues):
       grid_x_headings.append(framework_constants.NO_VALUES)
     grid_x_headings = SortGridHeadings(
         grid_x_attr, grid_x_headings, users_by_id, config,
@@ -329,10 +345,11 @@ def GetGridViewData(
     grid_y_headings = ['All']
   else:
     grid_y_items = table_view_helpers.ExtractUniqueValues(
-        [grid_y_attr], results, users_by_id, config)
+        [grid_y_attr], results, users_by_id, config, related_issues)
     grid_y_headings = grid_y_items[0].filter_values
     if AnyArtifactHasNoAttr(
-        results, grid_y_attr, users_by_id, all_label_values, config):
+        results, grid_y_attr, users_by_id, all_label_values,
+        config, related_issues):
       grid_y_headings.append(framework_constants.NO_VALUES)
     grid_y_headings = SortGridHeadings(
         grid_y_attr, grid_y_headings, users_by_id, config,
@@ -343,7 +360,7 @@ def GetGridViewData(
   grid_data = PrepareForMakeGridData(
       results, starred_iid_set, grid_x_attr, grid_x_headings,
       grid_y_attr, grid_y_headings, users_by_id, all_label_values,
-      config)
+      config, related_issues)
 
   grid_axis_choice_dict = {}
   for oc in ordered_columns:
@@ -376,7 +393,7 @@ def GetGridViewData(
 def PrepareForMakeGridData(
     allowed_results, starred_iid_set, x_attr,
     grid_col_values, y_attr, grid_row_values, users_by_id, all_label_values,
-    config):
+    config, related_issues):
   """Return all data needed for EZT to render the body of the grid view."""
 
   def IssueViewFactory(issue):
@@ -386,7 +403,7 @@ def PrepareForMakeGridData(
 
   grid_data = MakeGridData(
       allowed_results, x_attr, grid_col_values, y_attr, grid_row_values,
-      users_by_id, IssueViewFactory, all_label_values, config)
+      users_by_id, IssueViewFactory, all_label_values, config, related_issues)
   issue_dict = {issue.issue_id: issue for issue in allowed_results}
   for grid_row in grid_data:
     for grid_cell in grid_row.cells_in_row:

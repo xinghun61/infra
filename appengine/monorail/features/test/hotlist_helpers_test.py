@@ -9,6 +9,7 @@ import unittest
 
 from features import hotlist_helpers
 from framework import profiler
+from framework import sorting
 from services import service_manager
 from testing import testing_helpers
 from testing import fake
@@ -25,7 +26,8 @@ class CreateHotlistTableDataTest(unittest.TestCase):
         issue_star=fake.AbstractStarService(),
         config=fake.ConfigService(),
         project=fake.ProjectService(),
-        user=fake.UserService())
+        user=fake.UserService(),
+        cache_manager=fake.CacheManager())
     self.services.project.TestAddProject('ProjectName', project_id = 001)
 
     self.services.user.TestAddUser('annajowang@email.com', 111L)
@@ -54,6 +56,7 @@ class CreateHotlistTableDataTest(unittest.TestCase):
     self.services.user.TestAddUser('annajo@email.com', 148L)
     self.mr.auth.effective_ids = {148L}
     self.mr.col_spec = 'ID Summary Modified'
+    sorting.InitializeArtValues(self.services)
 
   def testCreateHotlistTableData(self):
     self.setUp()

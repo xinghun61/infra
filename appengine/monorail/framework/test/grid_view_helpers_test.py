@@ -75,47 +75,51 @@ class GridViewHelpersTest(unittest.TestCase):
     label_values = grid_view_helpers.MakeLabelValuesDict(self.art2)
 
     id_vals = grid_view_helpers.GetArtifactAttr(
-        self.art2, 'id', self.users_by_id, label_values, self.config)
+        self.art2, 'id', self.users_by_id, label_values, self.config, {})
     self.assertEqual([1], id_vals)
     summary_vals = grid_view_helpers.GetArtifactAttr(
-        self.art2, 'summary', self.users_by_id, label_values, self.config)
+        self.art2, 'summary', self.users_by_id, label_values, self.config, {})
     self.assertEqual(['a summary'], summary_vals)
     status_vals = grid_view_helpers.GetArtifactAttr(
-        self.art2, 'status', self.users_by_id, label_values, self.config)
+        self.art2, 'status', self.users_by_id, label_values, self.config, {})
     self.assertEqual(['New'], status_vals)
     stars_vals = grid_view_helpers.GetArtifactAttr(
-        self.art2, 'stars', self.users_by_id, label_values, self.config)
+        self.art2, 'stars', self.users_by_id, label_values, self.config, {})
     self.assertEqual([12], stars_vals)
     owner_vals = grid_view_helpers.GetArtifactAttr(
-        self.art2, 'owner', self.users_by_id, label_values, self.config)
+        self.art2, 'owner', self.users_by_id, label_values, self.config, {})
     self.assertEqual(['f...@example.com'], owner_vals)
     priority_vals = grid_view_helpers.GetArtifactAttr(
-        self.art2, 'priority', self.users_by_id, label_values, self.config)
+        self.art2, 'priority', self.users_by_id, label_values, self.config, {})
     self.assertEqual(['Medium'], priority_vals)
     mstone_vals = grid_view_helpers.GetArtifactAttr(
-        self.art2, 'mstone', self.users_by_id, label_values, self.config)
+        self.art2, 'mstone', self.users_by_id, label_values, self.config, {})
     self.assertEqual(['1', '2'], mstone_vals)
     foo_vals = grid_view_helpers.GetArtifactAttr(
-        self.art2, 'foo', self.users_by_id, label_values, self.config)
+        self.art2, 'foo', self.users_by_id, label_values, self.config, {})
     self.assertEqual([framework_constants.NO_VALUES], foo_vals)
-    # merged_into_vals = grid_view_helpers.GetArtifactAttr(
-    #    self.art2, 'mergedinto', self.users_by_id, label_values,
-    #    self.config)
-    # self.assertEqual(['other-project:1'], merged_into_vals)
+    art3 = fake.MakeTestIssue(
+        987, 5, 'unecessary summary', 'New', 111L, star_count=12,
+        issue_id=200001, project_name='other-project')
+    related_issues = {200001: art3}
+    merged_into_vals = grid_view_helpers.GetArtifactAttr(
+        self.art2, 'mergedinto', self.users_by_id, label_values,
+        self.config, related_issues)
+    self.assertEqual(['other-project:5'], merged_into_vals)
 
-  def testGetArtifactAttr_Dervied(self):
+  def testGetArtifactAttr_Derived(self):
     label_values = grid_view_helpers.MakeLabelValuesDict(self.art1)
     status_vals = grid_view_helpers.GetArtifactAttr(
-        self.art1, 'status', self.users_by_id, label_values, self.config)
+        self.art1, 'status', self.users_by_id, label_values, self.config, {})
     self.assertEqual(['Overdue'], status_vals)
     owner_vals = grid_view_helpers.GetArtifactAttr(
-        self.art1, 'owner', self.users_by_id, label_values, self.config)
+        self.art1, 'owner', self.users_by_id, label_values, self.config, {})
     self.assertEqual(['f...@example.com'], owner_vals)
     priority_vals = grid_view_helpers.GetArtifactAttr(
-        self.art1, 'priority', self.users_by_id, label_values, self.config)
+        self.art1, 'priority', self.users_by_id, label_values, self.config, {})
     self.assertEqual(['Medium'], priority_vals)
     mstone_vals = grid_view_helpers.GetArtifactAttr(
-        self.art1, 'mstone', self.users_by_id, label_values, self.config)
+        self.art1, 'mstone', self.users_by_id, label_values, self.config, {})
     self.assertEqual(['1', '2'], mstone_vals)
 
   def testMakeLabelValuesDict_Empty(self):
@@ -156,7 +160,7 @@ class GridViewHelpersTest(unittest.TestCase):
     all_label_values = {}
     self.assertFalse(grid_view_helpers.AnyArtifactHasNoAttr(
         artifacts, 'milestone', self.users_by_id, all_label_values,
-        self.config))
+        self.config, {}))
 
   def testAnyArtifactHasNoAttr(self):
     artifacts = [self.art1]
@@ -164,10 +168,11 @@ class GridViewHelpersTest(unittest.TestCase):
         self.art1.local_id: grid_view_helpers.MakeLabelValuesDict(self.art1),
         }
     self.assertFalse(grid_view_helpers.AnyArtifactHasNoAttr(
-        artifacts, 'mstone', self.users_by_id, all_label_values, self.config))
+        artifacts, 'mstone', self.users_by_id, all_label_values,
+        self.config, {}))
     self.assertTrue(grid_view_helpers.AnyArtifactHasNoAttr(
         artifacts, 'milestone', self.users_by_id, all_label_values,
-        self.config))
+        self.config, {}))
 
   def testGetGridViewData(self):
     # TODO(jojwang): write this test
