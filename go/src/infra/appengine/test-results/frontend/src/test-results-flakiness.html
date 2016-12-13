@@ -250,7 +250,9 @@
 
           this.$.omnibox.items = suggestions;
           if (this._group) {
-            if (this._group.kind === 'search') {
+            if (this._group.kind === 'all') {
+              // Do nothing. Leave search box empty.
+            } else if (this._group.kind === 'search') {
               this._updateSelectedGroup(this._group.name)
             } else {
               this._updateSelectedGroup(selectedValue);
@@ -362,7 +364,8 @@
           if (this._group) {
             this._loadData();
           } else {
-            this._data = [];
+            this._group = {kind: 'all', name: 'all'}
+            this._loadData();
             this._updateSelectedGroup('');
           }
 

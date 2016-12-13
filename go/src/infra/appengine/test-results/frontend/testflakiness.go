@@ -58,8 +58,7 @@ const flakesQuery = `
     flakiness
   FROM
     plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
-  WHERE
-    %s
+  %s
   ORDER BY
     flakiness DESC
   LIMIT
@@ -89,6 +88,9 @@ const (
 
 	// Represents a group of tests containing substring specified as name.
 	SearchKind = "search"
+
+	// Represents group of all tests. Practically will show 1000 most flaky tests.
+	AllKind = "all"
 )
 
 // Flakiness represents infromation about a single flaky test.
@@ -134,17 +136,19 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 	case TeamKind:
 		// TODO(sergiyb): Change this when we have a way to detect which team owns a
 		// given test (other than layout test).
-		filter = "layout_test_team = @groupname"
+		filter = "WHERE layout_test_team = @groupname"
 	case DirKind:
-		filter = "layout_test_dir = @groupname"
+		filter = "WHERE layout_test_dir = @groupname"
 	case UnknownTeamKind:
-		filter = "layout_test_team is Null"
+		filter = "WHERE layout_test_team is Null"
 	case UnknownDirKind:
-		filter = "layout_test_dir is Null"
+		filter = "WHERE layout_test_dir is Null"
 	case TestSuiteKind:
-		filter = "regexp_contains(test_name, concat('^', @groupname, '[.#]'))"
+		filter = "WHERE regexp_contains(test_name, concat('^', @groupname, '[.#]'))"
 	case SearchKind:
-		filter = "strpos(test_name, @groupname) != 0"
+		filter = "WHERE strpos(test_name, @groupname) != 0"
+	case AllKind:
+		filter = ""
 	default:
 		return nil, errors.New("unknown group kind " + group.Kind)
 	}
@@ -156,6 +160,7 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 			ParameterValue: &bigquery.QueryParameterValue{Value: group.Name},
 		},
 	}
+
 	rows, err := executeBQQuery(
 		ctx, bq, fmt.Sprintf(flakesQuery, filter), queryParams)
 	if err != nil {
@@ -227,7 +232,7 @@ func testFlakinessHandler(ctx *router.Context) {
 		return
 	}
 
-	if kind != UnknownDirKind && kind != UnknownTeamKind && name == "" {
+	if name == "" {
 		writeError(ctx, nil, "testFlakinessHandler", "missing groupName parameter")
 		return
 	}

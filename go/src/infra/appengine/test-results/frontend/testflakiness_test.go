@@ -217,7 +217,7 @@ func TestGetFlakinessData(t *testing.T) {
 
 		Convey("for tests in a dir", func() {
 			handler.ExpectedRequests[0].Query =
-				fmt.Sprintf(flakesQuery, "layout_test_dir = @groupname")
+				fmt.Sprintf(flakesQuery, "WHERE layout_test_dir = @groupname")
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"foo"}}]`
@@ -243,7 +243,7 @@ func TestGetFlakinessData(t *testing.T) {
 
 		Convey("for tests in a team", func() {
 			handler.ExpectedRequests[0].Query =
-				fmt.Sprintf(flakesQuery, "layout_test_team = @groupname")
+				fmt.Sprintf(flakesQuery, "WHERE layout_test_team = @groupname")
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"foo"}}]`
@@ -253,27 +253,29 @@ func TestGetFlakinessData(t *testing.T) {
 
 		Convey("for tests in unknown dir", func() {
 			handler.ExpectedRequests[0].Query =
-				fmt.Sprintf(flakesQuery, "layout_test_dir is Null")
+				fmt.Sprintf(flakesQuery, "WHERE layout_test_dir is Null")
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
-					`"parameterValue":{}}]`
-			_, err := getFlakinessData(ctx, bq, Group{Kind: UnknownDirKind})
+					`"parameterValue":{"value":"unknown-dir"}}]`
+			_, err := getFlakinessData(
+				ctx, bq, Group{Name: UnknownDirKind, Kind: UnknownDirKind})
 			So(err, ShouldBeNil)
 		})
 
 		Convey("for tests owned by an unknown team", func() {
 			handler.ExpectedRequests[0].Query =
-				fmt.Sprintf(flakesQuery, "layout_test_team is Null")
+				fmt.Sprintf(flakesQuery, "WHERE layout_test_team is Null")
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
-					`"parameterValue":{}}]`
-			_, err := getFlakinessData(ctx, bq, Group{Kind: UnknownTeamKind})
+					`"parameterValue":{"value":"unknown-team"}}]`
+			_, err := getFlakinessData(
+				ctx, bq, Group{Name: UnknownTeamKind, Kind: UnknownTeamKind})
 			So(err, ShouldBeNil)
 		})
 
 		Convey("for tests in a particular test suite", func() {
 			handler.ExpectedRequests[0].Query =
-				fmt.Sprintf(flakesQuery, "regexp_contains(test_name, concat('^', @groupname, '[.#]'))")
+				fmt.Sprintf(flakesQuery, "WHERE regexp_contains(test_name, concat('^', @groupname, '[.#]'))")
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"FooBar"}}]`
@@ -284,12 +286,22 @@ func TestGetFlakinessData(t *testing.T) {
 
 		Convey("for tests containing a substring", func() {
 			handler.ExpectedRequests[0].Query =
-				fmt.Sprintf(flakesQuery, "strpos(test_name, @groupname) != 0")
+				fmt.Sprintf(flakesQuery, "WHERE strpos(test_name, @groupname) != 0")
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"FooBar"}}]`
 			_, err := getFlakinessData(
 				ctx, bq, Group{Name: "FooBar", Kind: SearchKind})
+			So(err, ShouldBeNil)
+		})
+
+		Convey("for all tests", func() {
+			handler.ExpectedRequests[0].Query = fmt.Sprintf(flakesQuery, "")
+			handler.ExpectedRequests[0].Params =
+				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
+					`"parameterValue":{"value":"all"}}]`
+			_, err := getFlakinessData(
+				ctx, bq, Group{Name: AllKind, Kind: AllKind})
 			So(err, ShouldBeNil)
 		})
 	})
