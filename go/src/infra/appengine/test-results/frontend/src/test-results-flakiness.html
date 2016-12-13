@@ -154,7 +154,7 @@
             type: Array,
             value: function() { return []; },
           },
-          _ignoreGroupChange: {
+          _ignoreGroupChangeOnce: {
             type: Boolean,
             value: false,
           },
@@ -260,26 +260,21 @@
 
         _updateSelectedGroup: function(value) {
           if (value !== this.$.omnibox.value) {
-            this._ignoreGroupChange = true;
+            this._ignoreGroupChangeOnce = true;
             this.$.omnibox.value = value;
           }
         },
 
         _navigateTo: function(group) {
           let path = group ? '/' + group.kind + '/' + group.name : '';
-          this.set('route.path', path);
+          if (this.route.path != path) {
+            this.set('route.path', path);
+          }
         },
 
         _selectGroup: function(ev) {
-          // TODO(sergiyb): When the user selects an element from the
-          // autocompletion list (e.g. test-suite:LoaderTest), then places the
-          // cursor into the input field, makes no changes and hits Enter, the
-          // app treats this as a custom input and navigates to
-          // /flakiness/search/test-suite:LoaderTest, which returns no results.
-          // It's confusing and we should instead detect this and search for
-          // selected item: /flakiness/test-suite/LoaderTest.
-          if (this._ignoreGroupChange) {
-            this._ignoreGroupChange = false;
+          if (this._ignoreGroupChangeOnce) {
+            this._ignoreGroupChangeOnce = false;
             return;
           }
 
@@ -291,6 +286,18 @@
           if (typeof value === 'number') {
             this._navigateTo(this._groups[value - 1]);
           } else if (typeof value === 'string') {
+            // Detect when the user selects an element from the autocompletion
+            // list (e.g. test-suite:LoaderTest), then places the cursor into
+            // the input field, makes no changes and hits Enter. The vaadin-
+            // combo-box treats this as a custom value, but we should find the
+            // matching item in the list and mark it as selected instead.
+            for (let i in this.$.omnibox.items) {
+              if (this.$.omnibox.items[i].label == value) {
+                self._updateSelectedGroup(this.$.ominibox.items[i].value)
+                return;
+              }
+            }
+
             this._navigateTo({kind: 'search', name: value});
           } else {
             console.error('Unexpected value type for selected group');
