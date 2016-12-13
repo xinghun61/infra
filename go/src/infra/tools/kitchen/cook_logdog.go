@@ -40,11 +40,12 @@ import (
 type runCmdFunc func(ctx context.Context, env environ.Env) (*exec.Cmd, error)
 
 type cookLogDogParams struct {
-	host    string
-	project string
-	prefix  types.StreamName
-	annotee bool
-	tee     bool
+	host             string
+	project          string
+	prefix           types.StreamName
+	annotee          bool
+	tee              bool
+	stripAnnotations bool
 
 	filePath               string
 	serviceAccountJSONPath string
@@ -77,6 +78,11 @@ func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
 		"logdog-tee",
 		true,
 		"Tee bootstrapped STDOUT and STDERR through Kitchen. If false, these will only be sent as LogDog streams")
+	fs.BoolVar(
+		&p.stripAnnotations,
+		"logdog-strip-annotations",
+		true,
+		"Don't include annotation data in the LogDog stream output.")
 	fs.StringVar(
 		&p.filePath,
 		"logdog-debug-out-file",
@@ -248,6 +254,12 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env en
 		BufferLogs:   true,
 		MaxBufferAge: butler.DefaultMaxBufferAge,
 	}
+	if !c.logdog.tee {
+		// If we're not teeing, we need to issue keepalives so Swarming doesn't
+		// kill us due to lack of I/O.
+		butlerCfg.IOKeepAliveInterval = 5 * time.Minute
+		butlerCfg.IOKeepAliveWriter = os.Stderr
+	}
 
 	// If we're teeing and we're not using Annotee, tee our subprocess' STDOUT
 	// and STDERR through Kitchen's STDOUT/STDERR.
@@ -326,6 +338,8 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env en
 			Base:                   "recipes",
 			Client:                 streamclient.NewLocal(b),
 			Execution:              annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir),
+			TeeText:                c.logdog.tee,
+			TeeAnnotations:         c.logdog.tee,
 			MetadataUpdateInterval: 30 * time.Second,
 			Offline:                false,
 			CloseSteps:             true,
@@ -344,13 +358,13 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env en
 				Reader:           stdout,
 				Name:             annotee.STDOUT,
 				Annotate:         true,
-				StripAnnotations: !c.logdog.tee,
+				StripAnnotations: c.logdog.stripAnnotations,
 			},
 			{
 				Reader:           stderr,
 				Name:             annotee.STDERR,
 				Annotate:         true,
-				StripAnnotations: !c.logdog.tee,
+				StripAnnotations: c.logdog.stripAnnotations,
 			},
 		}
 		if c.logdog.tee {
