@@ -209,7 +209,7 @@
                 For additional guidance, see: <a href="http://go/trooper" target="_blank">The Trooper Playbook</a>
               </div>
             </div>
-            <som-bug-queue id="bugQueue" bug-queue-label="[[_bugQueueLabel]]" tree-display-name="[[_treeDisplayName]]"></som-bug-queue>
+            <som-bug-queue id="bugQueue" bugs="{{_bugs}}" bug-queue-label="[[_bugQueueLabel]]" tree-display-name="[[_treeDisplayName]]"></som-bug-queue>
             <template is="dom-if" if="[[_showSwarmingAlerts]]">
               <h2 class="header">Swarming Bots (<a target="_blank" href="https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/troopers/playbook.md#Swarming">Help?</a>)</h2>
               <som-swarming-bots bots="[[_swarmingAlerts]]"></som-swarming-bots>
@@ -301,7 +301,6 @@
           type: Array,
           value: function() { return []; },
           computed: '_computeAlerts(_alertsData.*, annotations, showInfraFailures, _isTrooperPage)',
-          observer: '_alertsChanged',
         },
         // Map of stream to data, timestamp of latest updated data.
         _alertsData: {
@@ -322,6 +321,7 @@
           type: Date,
           computed: '_computeLastUpdated(_alertsTimes.*)',
         },
+        _bugs: Array,
         _bugQueueLabel: {
           type: Array,
           computed: '_computeBugQueueLabel(_tree, _trees)',
@@ -346,6 +346,11 @@
           value: false,
         },
         logoutUrl: String,
+        _pageTitleCount: {
+          type: Number,
+          computed: '_computePageTitleCount(_alerts, _bugs, _isTrooperPage)',
+          observer: '_pageTitleCountChanged',
+        },
         _path: {
           type: String,
         },
@@ -440,14 +445,6 @@
 
       ////////////////////// Alerts and path ///////////////////////////
 
-      _alertsChanged: function(alerts) {
-        if (alerts && alerts.length > 0) {
-          document.title = '(' + alerts.length + ') Sheriff-o-Matic';
-        } else {
-          document.title = 'Sheriff-o-Matic';
-        }
-      },
-
       _computeBugQueueLabel: function(tree, trees) {
         if (tree in trees) {
           return trees[tree].bug_queue_label;
@@ -464,6 +461,23 @@
 
       _computeIsTrooperPage: function(tree) {
         return tree === 'trooper';
+      },
+
+      _pageTitleCountChanged: function(count) {
+        if (count > 0) {
+          document.title = '(' + count + ') Sheriff-o-Matic';
+        } else {
+          document.title = 'Sheriff-o-Matic';
+        }
+      },
+
+      _computePageTitleCount: function(alerts, bugs, isTrooperPage) {
+        if (isTrooperPage && bugs) {
+          return bugs.length;
+        } else if (!isTrooperPage && alerts) {
+          return alerts.length;
+        }
+        return 0;
       },
 
       _computeShowSwarmingAlerts: function(swarming, isTrooperPage) {
