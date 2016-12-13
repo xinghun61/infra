@@ -221,7 +221,7 @@ func TestMain(t *testing.T) {
 						datastore.Put(c, &AlertsJSON{
 							ID:       1,
 							Tree:     datastore.MakeKey(c, "Tree", "chromium"),
-							Contents: []byte("{}"),
+							Contents: []byte(`{"timestamp":1}`),
 						})
 						ta.CatchupIndexes()
 
@@ -236,7 +236,7 @@ func TestMain(t *testing.T) {
 						So(err, ShouldBeNil)
 						body := string(r)
 						So(w.Code, ShouldEqual, 200)
-						So(body, ShouldEqual, `{"alerts":[],"date":"0001-01-01T00:00:00Z","revision_summaries":null,"swarming":{"dead":null,"quarantined":null,"errors":["auth: the library is not properly configured"]},"timestamp":0}`)
+						So(body, ShouldEqual, `{"alerts":[],"date":"0001-01-01T00:00:00Z","revision_summaries":null,"swarming":{"dead":null,"quarantined":null,"errors":["auth: the library is not properly configured"]},"timestamp":1}`)
 					})
 
 					Convey("getSwarmingAlerts", func() {

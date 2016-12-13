@@ -47,6 +47,9 @@ func getTrooperAlerts(c context.Context) ([]byte, error) {
 	result := make(map[string]interface{})
 	alerts := []*TrooperAlert{}
 
+	// Assume that none of the timestamps will be from after right now.
+	timestamp := messages.EpochTime(time.Now().Unix())
+
 	for _, t := range trees {
 		q := datastore.NewQuery("AlertsJSON")
 		q = q.Ancestor(datastore.MakeKey(c, "Tree", t.Name))
@@ -62,16 +65,20 @@ func getTrooperAlerts(c context.Context) ([]byte, error) {
 		if len(alertsJSON) > 0 {
 			data := alertsJSON[0].Contents
 
-			alertsSummary := &messages.AlertsSummary{}
-
-			result["timestamp"] = alertsSummary.Timestamp
-			result["revision_summaries"] = alertsSummary.RevisionSummaries
 			result["date"] = alertsJSON[0].Date
+
+			alertsSummary := &messages.AlertsSummary{}
 
 			err = json.Unmarshal(data, alertsSummary)
 			if err != nil {
 				return nil, err
 			}
+
+			newTime := alertsSummary.Timestamp
+			if newTime > 0 && newTime < timestamp {
+				timestamp = newTime
+			}
+			result["revision_summaries"] = alertsSummary.RevisionSummaries
 
 			for _, a := range alertsSummary.Alerts {
 				if a.Type == messages.AlertInfraFailure {
@@ -82,6 +89,7 @@ func getTrooperAlerts(c context.Context) ([]byte, error) {
 		}
 	}
 
+	result["timestamp"] = timestamp
 	result["alerts"] = alerts
 	result["swarming"] = <-swarmAlerts
 
