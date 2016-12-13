@@ -168,11 +168,13 @@
         var itemData = item.series.data[item.dataIndex];
         var buildNumber = itemData[0];
         var passRate = itemData[1];
-        var taskUrl = itemData[2];
+        var swarmingTaskId = itemData[2];
 
         var tooltipStr = 'Build #: <a href="https://build.chromium.org/p/' + findit.masterName + '/builders/' + findit.builderName + '/builds/' + buildNumber + '" target="_blank">' + buildNumber + '</a><br> Pass rate: ' + passRate + '%';
-        if (taskUrl) {
-          tooltipStr += '<br>Task: <a href="' + taskUrl +'" target="_blank">link</a>';
+        if (swarmingTaskId) {
+          tooltipStr += '<br>Swarming Task: <a href="https://chromium-swarm.appspot.com/task?id=' + swarmingTaskId + '" target="_blank">' + swarmingTaskId +'</a>';
+        } else {
+          tooltipStr += '<br>Swarming Task: N/A';
         }
 
         $("#tooltip").html(tooltipStr).css({top: item.pageY + 5, left: item.pageX + 5}).show();

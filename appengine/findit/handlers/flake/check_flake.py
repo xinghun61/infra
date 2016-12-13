@@ -19,9 +19,6 @@ from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
 
 
-SWARMING_TASK_BASE_URL = 'https://chromium-swarm.appspot.com'
-
-
 def _GetSuspectedFlakeAnalysisAndTriageResult(analysis):
   if analysis.suspected_flake_build_number is not None:
     return {
@@ -187,14 +184,8 @@ class CheckFlake(BaseHandler):
 
     coordinates = []
     for data_point in analysis.data_points:
-      if data_point.task_id:
-        task_url = '%s/task?id=%s' % (
-            SWARMING_TASK_BASE_URL, data_point.task_id)
-        coordinates.append([
-            data_point.build_number, data_point.pass_rate, task_url])
-      else:
-        coordinates.append([
-            data_point.build_number, data_point.pass_rate, None])
+      coordinates.append([
+          data_point.build_number, data_point.pass_rate, data_point.task_id])
 
     # Order by build number from earliest to latest.
     coordinates.sort(key=lambda x: x[0])
