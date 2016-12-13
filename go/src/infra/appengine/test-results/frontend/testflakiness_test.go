@@ -32,7 +32,7 @@ type expectedRequest struct {
 
 type fakeBQHandler struct {
 	C                C
-	ExpectedRequests []expectedRequest
+	ExpectedRequests []*expectedRequest
 	Mutex            sync.Mutex
 }
 
@@ -86,8 +86,17 @@ func (h *fakeBQHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	panic(fmt.Sprintf("Unexpected request: %#v %#v %#v %#v\nExpected: %#v", path,
-		query, params, pageToken, h.ExpectedRequests))
+	errMsg := fmt.Sprintf(
+		"Unexpected request: %#v %#v %#v %#v\n", path, query, params, pageToken)
+	detailedMsg := errMsg + "Expected requests:\n"
+	for _, er := range h.ExpectedRequests {
+		if !er.Processed {
+			detailedMsg += fmt.Sprintf(
+				" - %#v %#v %#v %#v\n", er.Path, er.Query, er.Params, er.PageToken)
+		}
+	}
+	h.C.Print(detailedMsg)
+	h.C.So(errMsg, ShouldBeEmpty)
 }
 
 func TestWriteErrorAndResponse(t *testing.T) {
@@ -127,7 +136,7 @@ func TestGetFlakinessGroups(t *testing.T) {
 	Convey("getFlakinessGroups", t, func(c C) {
 		handler := fakeBQHandler{
 			C: c,
-			ExpectedRequests: []expectedRequest{
+			ExpectedRequests: []*expectedRequest{
 				{
 					Path:  "/projects/test-results-hrd/queries",
 					Query: teamsQuery,
@@ -183,7 +192,7 @@ func TestGetFlakinessData(t *testing.T) {
 	Convey("getFlakinessData", t, func(c C) {
 		handler := fakeBQHandler{
 			C: c,
-			ExpectedRequests: []expectedRequest{
+			ExpectedRequests: []*expectedRequest{
 				{
 					Path: "/projects/test-results-hrd/queries",
 					Response: `{"totalRows": "2",

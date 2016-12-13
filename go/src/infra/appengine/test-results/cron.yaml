@@ -2,3 +2,9 @@ cron:
   - description: tsmon house keeping
     url: /internal/cron/ts_mon/housekeeping
     schedule: every 1 minutes
+  - description: refresh list of test flakiness groups
+    url: /test_flakiness_groups
+    schedule: every 1 hours
+  - description: refresh list of top flaky tests
+    url: /test_flakiness?groupKind=all&groupName=all
+    schedule: every 1 hours

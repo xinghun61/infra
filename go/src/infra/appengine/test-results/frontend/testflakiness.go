@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
@@ -91,6 +93,11 @@ const (
 
 	// Represents group of all tests. Practically will show 1000 most flaky tests.
 	AllKind = "all"
+)
+
+const (
+	flakinessGroupsKey       = "flakinessGroups"
+	flakinessDataKeyTemplate = "flakinessData-%s-%s"
 )
 
 // Flakiness represents infromation about a single flaky test.
@@ -237,6 +244,20 @@ func testFlakinessHandler(ctx *router.Context) {
 		return
 	}
 
+	// Check if we have recent results in memcache.
+	var data []Flakiness
+	key := fmt.Sprintf(flakinessDataKeyTemplate, kind, name)
+	memcacheItem, err := memcache.GetKey(ctx.Context, key)
+	if err == nil {
+		if err = json.Unmarshal(memcacheItem.Value(), &data); err != nil {
+			logging.Fields{logging.ErrorKey: err, "item": memcacheItem}.Warningf(
+				ctx.Context, "Failed to unmarshal cached results as JSON")
+		} else {
+			writeResponse(ctx, "testFlakinessHandler", data)
+			return
+		}
+	}
+
 	aeCtx := appengine.NewContext(ctx.Request)
 	bq, err := createBQService(aeCtx)
 	if err != nil {
@@ -244,10 +265,22 @@ func testFlakinessHandler(ctx *router.Context) {
 		return
 	}
 
-	data, err := getFlakinessData(aeCtx, bq, Group{Name: name, Kind: kind})
+	data, err = getFlakinessData(aeCtx, bq, Group{Name: name, Kind: kind})
 	if err != nil {
 		writeError(ctx, err, "testFlakinessHandler", "failed to get flakiness data")
 		return
+	}
+
+	// Store results in memcache for 1 hour.
+	if dataStr, err := json.Marshal(data); err == nil {
+		memcacheItem.SetValue(dataStr).SetExpiration(time.Hour)
+		if err = memcache.Set(ctx.Context, memcacheItem); err != nil {
+			logging.WithError(err).Warningf(
+				ctx.Context, "Failed to store query results in memcache")
+		}
+	} else {
+		logging.WithError(err).Warningf(
+			ctx.Context, "Failed to marshal query results as JSON: %#v", data)
 	}
 
 	writeResponse(ctx, "testFlakinessHandler", data)
@@ -372,19 +405,42 @@ func getFlakinessGroups(ctx context.Context, bq *bigquery.Service) ([]Group, err
 }
 
 func testFlakinessGroupsHandler(ctx *router.Context) {
-	aeCtx := appengine.NewContext(ctx.Request)
+	// Check if we have recent results in memcache.
+	var groups []Group
+	memcacheItem, err := memcache.GetKey(ctx.Context, flakinessGroupsKey)
+	if err == nil {
+		if err = json.Unmarshal(memcacheItem.Value(), &groups); err != nil {
+			logging.Fields{logging.ErrorKey: err, "item": memcacheItem}.Warningf(
+				ctx.Context, "Failed to unmarshal cached results as JSON")
+		} else {
+			writeResponse(ctx, "testFlakinessGroupsHandler", groups)
+			return
+		}
+	}
 
-	// TODO(sergiyb): Add a layer of caching results using memcache.
+	aeCtx := appengine.NewContext(ctx.Request)
 	bq, err := createBQService(aeCtx)
 	if err != nil {
 		writeError(ctx, err, "testFlakinessGroupsHandler", "failed create BigQuery client")
 		return
 	}
 
-	groups, err := getFlakinessGroups(aeCtx, bq)
+	groups, err = getFlakinessGroups(aeCtx, bq)
 	if err != nil {
 		writeError(ctx, err, "testFlakinessGroupsHandler", "failed to get flakiness groups")
 		return
+	}
+
+	// Store results in memcache for 1 hour.
+	if groupsStr, err := json.Marshal(groups); err == nil {
+		memcacheItem.SetValue(groupsStr).SetExpiration(time.Hour)
+		if err = memcache.Set(ctx.Context, memcacheItem); err != nil {
+			logging.WithError(err).Warningf(
+				ctx.Context, "Failed to store query results in memcache")
+		}
+	} else {
+		logging.WithError(err).Warningf(
+			ctx.Context, "Failed to marshal query results as JSON: %#v", groups)
 	}
 
 	writeResponse(ctx, "testFlakinessGroupsHandler", groups)
