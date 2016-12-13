@@ -194,7 +194,7 @@ func (r *reader) Build(ctx context.Context, master *messages.MasterLocation, bui
 
 	// TODO(martiniss): Remove this, and replace with milo access with correct
 	// credentials.
-	if code == 404 || code == 403 {
+	if code == 404 || code == 403 || code == 401 {
 		// FIXME: Don't directly poll so many builders.
 		expvars.Add("DirectPoll", 1)
 		defer expvars.Add("DirectPoll", -1)
@@ -272,7 +272,7 @@ func (r *reader) BuildExtract(ctx context.Context, masterURL *messages.MasterLoc
 	defer expvars.Add("BuildExtract", -1)
 	code, err := r.hc.getJSON(ctx, URL, ret)
 
-	if code == 404 {
+	if code == 404 || code == 403 || code == 401 {
 		// FIXME: Don't directly poll so many builders.
 		URL = fmt.Sprintf("%s/json", masterURL.String())
 		expvars.Add("DirectPoll", 1)
