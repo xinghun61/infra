@@ -135,10 +135,15 @@ func uploadHandler(ctx *router.Context) {
 
 	for _, fh := range fileheaders {
 		if err := doFileUpload(c, fh); err != nil {
-			logging.WithError(err).Errorf(c, "uploadHandler")
+			msg := logging.WithError(err)
 			code := http.StatusInternalServerError
 			if se, ok := err.(statusError); ok {
 				code = se.code
+			}
+			if code >= http.StatusInternalServerError {
+				msg.Errorf(c, "uploadHandler")
+			} else {
+				msg.Warningf(c, "uploadHandler")
 			}
 			http.Error(w, err.Error(), code)
 			return
@@ -279,10 +284,15 @@ func updateFullResults(c context.Context, data io.Reader) error {
 		return statusError{err, http.StatusBadRequest}
 	}
 	if err := updateIncremental(c, &incr); err != nil {
-		logging.WithError(err).Errorf(c, "updateFullResults: updateIncremental")
+		msg := logging.WithError(err)
 		code := http.StatusInternalServerError
 		if se, ok := err.(statusError); ok {
 			code = se.code
+			if code >= http.StatusInternalServerError {
+				msg.Errorf(c, "updateFullResults: updateIncremental")
+			} else {
+				msg.Warningf(c, "updateFullResults: updateIncremental")
+			}
 		}
 		return statusError{err, code}
 	}
@@ -432,11 +442,14 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 		var e error
 		for _, err := range errs {
 			if err != nil {
-				logging.WithError(err).Errorf(c, "updateIncremental: inside transaction")
+				msg := logging.WithError(err)
 				se, ok := err.(statusError)
-				if ok && se.code == http.StatusInternalServerError {
+				if ok && se.code >= http.StatusInternalServerError {
+					msg.Errorf(c, "updateIncremental: inside transaction")
 					return se
 				}
+
+				msg.Warningf(c, "updateIncremental: inside transaction")
 				e = err
 			}
 		}
