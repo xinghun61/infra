@@ -487,13 +487,16 @@ func updateAggregate(c context.Context, tf *model.TestFile, aggr, incr *model.Ag
 		aggr = incr
 	} else {
 		if err := aggr.Merge(incr); err != nil {
-			logging.WithError(err).Errorf(c, "updateAggregate: merge")
+			msg := logging.WithError(err)
 			switch err {
 			case model.ErrBuilderNameConflict:
+				msg.Warningf(c, "updateAggregate: merge")
 				return statusError{err, http.StatusBadRequest}
 			case model.ErrBuildNumberConflict:
+				msg.Warningf(c, "updateAggregate: merge")
 				return statusError{err, http.StatusConflict}
 			default:
+				msg.Errorf(c, "updateAggregate: merge")
 				return statusError{err, http.StatusInternalServerError}
 			}
 		}
