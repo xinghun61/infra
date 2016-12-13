@@ -192,7 +192,9 @@ func (r *reader) Build(ctx context.Context, master *messages.MasterLocation, bui
 	defer expvars.Add("Build", -1)
 	code, err := r.hc.getJSON(ctx, URL, build)
 
-	if code == 404 {
+	// TODO(martiniss): Remove this, and replace with milo access with correct
+	// credentials.
+	if code == 404 || code == 403 {
 		// FIXME: Don't directly poll so many builders.
 		expvars.Add("DirectPoll", 1)
 		defer expvars.Add("DirectPoll", -1)
