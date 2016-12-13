@@ -162,7 +162,7 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 	case "incremental_results.json":
 		var incr model.AggregateResult
 		if err := json.NewDecoder(file).Decode(&incr); err != nil {
-			logging.WithError(err).Errorf(c, "doFileUpload: incremental_results.json: unmarshal JSON")
+			logging.WithError(err).Warningf(c, "doFileUpload: incremental_results.json: unmarshal JSON")
 			return statusError{err, http.StatusBadRequest}
 		}
 		return updateIncremental(c, &incr)
@@ -222,10 +222,12 @@ func extractBuildNumber(data io.Reader) (int, io.Reader, error) {
 func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 	bn, data, err := extractBuildNumber(data)
 	if err != nil {
-		logging.Fields{logging.ErrorKey: err, "filename": filename}.Errorf(c, "uploadTestFile")
+		msg := logging.Fields{logging.ErrorKey: err, "filename": filename}
 		if err == ErrInvalidBuildNumber {
+			msg.Warningf(c, "uploadTestFile")
 			return statusError{err, http.StatusBadRequest}
 		}
+		msg.Errorf(c, "uploadTestFile")
 		return statusError{err, http.StatusInternalServerError}
 	}
 
@@ -391,8 +393,8 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 			}
 			var a model.AggregateResult
 			if err := json.NewDecoder(reader).Decode(&a); err != nil {
-				logging.WithError(err).Errorf(c, "updateIncremental: unmarshal TestFile data")
-				files[i].err = err
+				logging.WithError(err).Warningf(c, "updateIncremental: unmarshal TestFile data")
+				files[i].err = statusError{err, 400}
 				return
 			}
 			files[i].tf = tf
