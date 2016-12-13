@@ -202,6 +202,10 @@ class HotlistIssues(servlet.Servlet):
     limit = settings.max_issues_in_grid
     grid_limited = len(allowed_issues) > limit
     lower_cols = mr.col_spec.lower().split()
+    grid_x = (mr.x or harmonized_config.default_x_attr or '--').lower()
+    grid_y = (mr.y or harmonized_config.default_y_attr or '--').lower()
+    lower_cols.append(grid_x)
+    lower_cols.append(grid_y)
     related_iids = set()
     for issue in allowed_issues:
       if 'blockedon' in lower_cols:

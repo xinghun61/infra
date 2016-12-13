@@ -104,6 +104,10 @@ class IssueList(servlet.Servlet):
       else:
         results_needing_related = pipeline.visible_results or []
       lower_cols = mr.col_spec.lower().split()
+      grid_x = (mr.x or config.default_x_attr or '--').lower()
+      grid_y = (mr.y or config.default_y_attr or '--').lower()
+      lower_cols.append(grid_x)
+      lower_cols.append(grid_y)
       for issue in results_needing_related:
         if 'blockedon' in lower_cols:
           related_iids.update(issue.blocked_on_iids)
