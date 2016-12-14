@@ -108,44 +108,63 @@
   },
   {
     "cmd": [
-      "git",
-      "remote",
-      "remove",
-      "destination_repo"
-    ],
-    "cwd": "[HACK]/foo_builder",
-    "name": "git remote"
-  },
-  {
-    "cmd": [
-      "git",
-      "remote",
-      "add",
-      "destination_repo",
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[START_DIR]/overlay",
+      "--url",
       "https://chromium.googlesource.com/chromium/src/codesearch"
     ],
-    "cwd": "[HACK]/foo_builder",
-    "name": "git remote (2)"
+    "name": "git setup (2)"
   },
   {
     "cmd": [
       "git",
+      "retry",
       "fetch",
-      "destination_repo",
-      "+refs/heads/master"
+      "origin",
+      "master"
     ],
-    "cwd": "[HACK]/foo_builder",
+    "cwd": "[START_DIR]/overlay",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
+    },
     "name": "git fetch (2)"
   },
   {
     "cmd": [
       "git",
-      "rev-parse",
-      "FETCH_HEAD^"
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
     ],
-    "cwd": "[HACK]/foo_builder",
-    "name": "git rev-parse",
-    "stdout": "/path/to/tmp/"
+    "cwd": "[START_DIR]/overlay",
+    "name": "git checkout (2)"
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[START_DIR]/overlay",
+    "name": "read revision (2)",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[START_DIR]/overlay",
+    "name": "git clean (2)"
   },
   {
     "cmd": [
@@ -153,13 +172,13 @@
       "RECIPE_MODULE[infra::sync_submodules]/resources/deps2submodules.py",
       "--path-prefix",
       "src/",
-      "DEPS",
+      "[HACK]/foo_builder/DEPS",
       "--extra-submodule",
       "src/foo=https://www.foo.com",
       "--extra-submodule",
       "src/bar=http://www.bar.com"
     ],
-    "cwd": "[HACK]/foo_builder",
+    "cwd": "[START_DIR]/overlay",
     "name": "deps2submodules"
   },
   {
@@ -169,17 +188,17 @@
       "-m",
       "Update submodule references.\n\nThis is an artificial commit to make dependencies specified in the DEPS file\nvisible to Codesearch.\nThis commit does not exist in the underlying repository."
     ],
-    "cwd": "[HACK]/foo_builder",
+    "cwd": "[START_DIR]/overlay",
     "name": "git commit"
   },
   {
     "cmd": [
       "git",
       "push",
-      "destination_repo",
-      "+HEAD:refs/heads/master"
+      "origin",
+      "HEAD:refs/heads/master"
     ],
-    "cwd": "[HACK]/foo_builder",
+    "cwd": "[START_DIR]/overlay",
     "name": "git push"
   },
   {

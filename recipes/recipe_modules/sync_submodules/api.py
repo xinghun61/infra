@@ -75,36 +75,26 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
             self.m.raw_io.test_api.stream_output('/foo')).stdout.strip()
 
     # Checkout the source repository.
-    source_hash = self.m.git.checkout(
+    self.m.git.checkout(
         mirror_dir, ref=source_ref, dir_path=checkout_dir, submodules=False)
 
-    # Replace the remote, removing any old one that's still present.
-    self.m.git('remote', 'remove', 'destination_repo', can_fail_build=False)
-    self.m.git('remote', 'add', 'destination_repo', dest)
-
-    # Fetch the destination ref.
-    self.m.git('fetch', 'destination_repo', '+%s' % dest_ref)
-    previous_hash = self.m.git(
-        'rev-parse', 'FETCH_HEAD^',
-        stdout=self.m.raw_io.output(),
-        step_test_data=lambda:
-            self.m.raw_io.test_api.stream_output('aabbccddee')).stdout.strip()
-
-    # If we're up to date, don't do anything else.
-    if previous_hash == source_hash:  # pragma: no cover
-      return
+    # Checkout the gitlink overlay repository.
+    overlay_repo_dir = self.m.path['start_dir'].join('overlay')
+    self.m.git.checkout(
+        dest, ref='master', dir_path=overlay_repo_dir, submodules=False)
 
     # Create submodule references.
     deps2submodules_cmd = [
         'python',
         self.resource('deps2submodules.py'),
         '--path-prefix', '%s/' % Humanish(source),
-        'DEPS',
+        self.m.path.join(checkout_dir, 'DEPS'),
     ]
     for extra_submodule in extra_submodules:
       deps2submodules_cmd.extend(['--extra-submodule', extra_submodule])
-    self.m.step('deps2submodules', deps2submodules_cmd, cwd=checkout_dir)
+    self.m.step('deps2submodules', deps2submodules_cmd, cwd=overlay_repo_dir)
 
     # Commit and push to the destination ref.
-    self.m.git('commit', '-m', COMMIT_MESSAGE)
-    self.m.git('push', 'destination_repo', '+HEAD:%s' % dest_ref)
+    self.m.git('commit', '-m', COMMIT_MESSAGE, cwd=overlay_repo_dir)
+    self.m.git('push', 'origin', 'HEAD:%s' % dest_ref,
+               cwd=overlay_repo_dir)
