@@ -98,22 +98,23 @@
       let res1 = new window.Response('token expired', { status: 403 });
       let res2 = new window.Response(JSON.stringify({
         token: 'tok',
-      }, {
+      }), {
         status: 200,
         headers: {
           'Content-type': 'application/json',
         }
-      }));
+      });
       let res3 = new window.Response('resp', { status: 200 });
 
       window.fetch.onCall(0).returns(Promise.resolve(res1));
       window.fetch.onCall(1).returns(Promise.resolve(res2));
       window.fetch.onCall(2).returns(Promise.resolve(res3));
 
-      let promise = element.postJSON('/url', {
-        foo: "bar"
-      });
+      element.xsrfToken = 'xr';
 
+      let promise = element.postJSON('/url', {
+        foo: 'bar'
+      });
       flush(() => {
         assert.equal(window.fetch.callCount, 3);
         let args = window.fetch.firstCall.args;
@@ -123,9 +124,9 @@
         parsed.body = JSON.parse(parsed.body);
         assert.deepEqual(parsed, {
           body: {
-            xsrf_token: "xr",
+            xsrf_token: 'xr',
             data: {
-              foo: "bar"
+              foo: 'bar'
             }
           },
           method: 'POST',
@@ -142,14 +143,15 @@
         parsed.body = JSON.parse(parsed.body);
         assert.deepEqual(parsed, {
           body: {
-            xsrf_token: "tok",
+            xsrf_token: 'tok',
             data: {
-              foo: "bar"
+              foo: 'bar'
             }
           },
           method: 'POST',
           credentials: 'include',
         });
+        done();
       });
     });
   });
@@ -275,6 +277,11 @@
 
     test('save bug saves an annotation', function() {
       let sendStub = sinon.stub(element, 'sendAnnotation');
+      sendStub.onCall(0).returns({
+          then: (f) => {
+            f({key: 'foo'});
+          }
+      });
 
       element.$.bug.value = 'bar';
       element._bugModel = {key: 'foo'};
@@ -330,7 +337,6 @@
 
     test('removing comment sends an annotations', function(done) {
       let sendStub = sinon.stub(element, 'sendAnnotation');
-
       element._commentsModel = {key: 'commentkey'};
 
       element._removeComment({model: {index: 1}});
@@ -348,6 +354,11 @@
 
     test('add comment saves an annotation', function(done) {
       let sendStub = sinon.stub(element, 'sendAnnotation');
+      sendStub.onCall(0).returns({
+          then: (f) => {
+            f({key: 'commentKey'});
+          }
+      });
 
       element.$.commentText.value = 'fake comment';
       element._commentsModel = {key: 'commentkey'};

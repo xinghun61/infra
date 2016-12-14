@@ -240,15 +240,13 @@
 
       // FIXME: Move to common behavior if other code does POST requests.
       postJSON: function(url, data, options) {
-        options = Object.assign({
-          body: JSON.stringify({
+          options = options || {};
+          options.body = JSON.stringify({
             xsrf_token: this.xsrfToken,
             data: data,
-          }),
-          method:'POST',
-          credentials: 'include'
-        }, options || {});
-
+          });
+          options.method = 'POST';
+          options.credentials = 'include';
         return new Promise((resolve, reject) => {
           window.fetch(url, options).then((value) => {
             if (!value.ok) {
@@ -262,12 +260,15 @@
                 window.fetch('/api/v1/xsrf_token', {credentials: 'include'}).then((respData) => {
                   return respData.json();
                 }).then((jsonData) => {
+                  // Clone options because sinon.spy args from different calls
+                  // to window.fetch clobber each other in this scenario.
+                  let opts = JSON.parse(JSON.stringify(options));
                   this.xsrfToken = jsonData['token'];
-                  options.body = JSON.stringify({
+                  opts.body = JSON.stringify({
                     xsrf_token: this.xsrfToken,
                     data: data,
                   });
-                  window.fetch(url, options).then(resolve, reject);
+                  window.fetch(url, opts).then(resolve, reject);
                 });
               });
               return;
