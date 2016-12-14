@@ -56,16 +56,16 @@ class FindItAPITestCase(testing.AppengineTestCase):
     occ1 = FlakyRun(
         failure_run=br_f0, success_run=br_s0, failure_run_time_started=ts,
         failure_run_time_finished=tf, flakes=[
-          FlakeOccurrence(name='step1', failure='step1'),
+          FlakeOccurrence(name='step1', failure='testX'),
         ])
     occ2 = FlakyRun(
         failure_run=br_f1, success_run=br_s0, failure_run_time_started=ts,
         failure_run_time_finished=tf, flakes=[
           FlakeOccurrence(name='step2', failure='testX'),
-          FlakeOccurrence(name='step3', failure='testY'),
+          FlakeOccurrence(name='step3', failure='step3'),
         ])
     f = Flake(
-        name='foo', count_day=10, occurrences=[occ1.put(), occ2.put()],
+        name='testX', count_day=10, occurrences=[occ1.put(), occ2.put()],
         is_step=True, issue_id=123456)
     return f, [occ1, occ2]
 
@@ -75,7 +75,7 @@ class FindItAPITestCase(testing.AppengineTestCase):
     api.flake(flake, occurrences)
     self.assertEquals(self.client.flake.call_count, 1)
     self.assertDictEqual(self.client.flake.call_args[1]['body'], {
-      'name': 'foo',
+      'name': 'testX',
       'is_step': True,
       'bug_id': 123456,
       'build_steps': [
@@ -91,12 +91,6 @@ class FindItAPITestCase(testing.AppengineTestCase):
           'build_number': 20,
           'step_name': 'step2'
         },
-        {
-          'master_name': 'tryserver.bar',
-          'builder_name': 'baz',
-          'build_number': 20,
-          'step_name': 'step3'
-        }
       ]
     })
 

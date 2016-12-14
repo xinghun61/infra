@@ -37,10 +37,11 @@ class FindItAPI(object):
       failure_run = flaky_run.failure_run.get()
       patchset_build_run = flaky_run.failure_run.parent().get()
       for occurrence in flaky_run.flakes:
-        body['build_steps'].append({
-          'master_name': patchset_build_run.master,
-          'builder_name': patchset_build_run.builder,
-          'build_number': failure_run.buildnumber,
-          'step_name': occurrence.name
-        })
+        if occurrence.failure == flake.name:
+          body['build_steps'].append({
+            'master_name': patchset_build_run.master,
+            'builder_name': patchset_build_run.builder,
+            'build_number': failure_run.buildnumber,
+            'step_name': occurrence.name
+          })
     endpoints.retry_request(self.client.flake(body=body))
