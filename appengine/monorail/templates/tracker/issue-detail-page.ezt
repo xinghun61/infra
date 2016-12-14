@@ -152,6 +152,7 @@
  <input type="hidden" name="mode" value="">
  <input type="hidden" name="id" value="[issue.local_id]">
  <input type="hidden" name="token" value="[delComment_form_token]">
+<input type="hidden" name="hotlist_id" value="[if-any flipper.is_hotlist_flipper][flipper_hotlist_id][end]">
 </form>
 
 [# Form used to flag/unflag comments as spam.]

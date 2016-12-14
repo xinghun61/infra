@@ -79,8 +79,7 @@ def DetermineHotlistIssuePosition(issue, iid_rank_pairs):
 
   Args:
     issue: The issue PB currently being viewed
-    iid_rank_pairs: list of HotlistIssue PBs that the flipper
-      should flip through
+    iid_rank_pairs: list of (issue_id, rank) tuples
 
   Returns:
     A 3-tuple (prev_iid, index, next_iid) where prev_iid is the
@@ -90,16 +89,14 @@ def DetermineHotlistIssuePosition(issue, iid_rank_pairs):
     next_iid is the next issue (or None).
   """
 
-  iid_rank_pairs_sorted = sorted(
-          iid_rank_pairs, key=lambda pair: pair.rank)
   prev_iid, next_iid = None, None
   total_issues = len(iid_rank_pairs)
-  for i, pair in enumerate(iid_rank_pairs_sorted):
-    if pair.issue_id == issue.issue_id:
+  for i, (issue_id, _) in enumerate(iid_rank_pairs):
+    if issue_id == issue.issue_id:
       index = i
       if i < total_issues - 1:
-        next_iid = iid_rank_pairs_sorted[i + 1].issue_id
+        next_iid = iid_rank_pairs[i + 1][0]
       if i > 0:
-        prev_iid = iid_rank_pairs_sorted[i - 1].issue_id
+        prev_iid = iid_rank_pairs[i - 1][0]
       return prev_iid, index, next_iid
   return None, None, None

@@ -32,6 +32,7 @@ from framework import paginate
 from framework import permissions
 from framework import servlet
 from framework import servlet_helpers
+from framework import sorting
 from framework import sql
 from framework import template_helpers
 from framework import urls
@@ -260,7 +261,10 @@ class IssueDetail(issuepeek.IssuePeek):
 
     # Check whether to allow attachments from the details page
     allow_attachments = tracker_helpers.IsUnderSoftAttachmentQuota(mr.project)
-    mr.ComputeColSpec(config)
+    if flipper.is_hotlist_flipper:
+      mr.ComputeColSpec(flipper.hotlist)
+    else:
+      mr.ComputeColSpec(config)
     back_to_list_url = _ComputeBackToListURL(mr, issue, config, self.hotlist_id)
     flipper.SearchForIIDs(mr, issue)
     restrict_to_known = config.restrict_to_known
@@ -322,6 +326,7 @@ class IssueDetail(issuepeek.IssuePeek):
             len(comment_views), issue.star_count)),
 
         'flipper': flipper,
+        'flipper_hotlist_id': self.hotlist_id,
         'cmnt_pagination': cmnt_pagination,
         'searchtip': 'You can jump to any issue by number',
         'starred': ezt.boolean(starred),
@@ -882,9 +887,12 @@ def _Redirect(
 
   # format a redirect url
   next_id = post_data.get('next_id', '')
+  next_project = post_data.get('next_project', '')
+  hotlist_id = post_data.get('hotlist_id', None)
   url = _ChooseNextPage(
       mr, local_id, config, moved_to_project_name_and_local_id,
-      copied_to_project_name_and_local_id, after_issue_update, next_id)
+      copied_to_project_name_and_local_id, after_issue_update, next_id,
+      next_project=next_project, hotlist_id=hotlist_id)
   logging.debug('Redirecting user to: %s', url)
   return url
 
@@ -960,7 +968,8 @@ def _FieldEditPermitted(
 
 def _ChooseNextPage(
     mr, local_id, config, moved_to_project_name_and_local_id,
-    copied_to_project_name_and_local_id, after_issue_update, next_id):
+    copied_to_project_name_and_local_id, after_issue_update, next_id,
+    next_project=None, hotlist_id=None):
   """Choose the next page to show the user after an issue update.
 
   Args:
@@ -973,11 +982,16 @@ def _ChooseNextPage(
       issue was copied to and the local id in that project.
     after_issue_update: user pref on where to go next.
     next_id: string local ID of next issue at the time the form was generated.
+    next_project: project name of the next issue's project, None if next
+      issue's project is the same as the current's project (before any changes)
+    hotlist_id: optional hotlist_id for when an issue is visited via a hotlist
 
   Returns:
     String absolute URL of next page to view.
   """
   issue_ref_str = '%s:%d' % (mr.project_name, local_id)
+  if next_project is None:
+    next_project = mr.project_name
   kwargs = {
     'ts': int(time.time()),
     'cursor': issue_ref_str,
@@ -991,20 +1005,31 @@ def _ChooseNextPage(
     kwargs['copied_to_id'] = copied_to_project_name_and_local_id[1]
   else:
     kwargs['updated'] = local_id
-  url = tracker_helpers.FormatIssueListURL(
-      mr, config, **kwargs)
+  # if issue is being visited via a hotlist and it gets moved to another
+  # project, going to issue list should mean going to hotlistissues list.
+  issue_kwargs = {}
+  if hotlist_id:
+    url = framework_helpers.FormatAbsoluteURL(
+        mr, '/u/%s/hotlists/%s' % (mr.auth.user_id, hotlist_id),
+        include_project=False, **kwargs)
+    issue_kwargs['hotlist_id'] = hotlist_id
+  else:
+    url = tracker_helpers.FormatIssueListURL(
+        mr, config, **kwargs)
 
   if after_issue_update == user_pb2.IssueUpdateNav.STAY_SAME_ISSUE:
     # If it was a move request then will have to switch to the new project to
     # stay on the same issue.
     if moved_to_project_name_and_local_id:
       mr.project_name = moved_to_project_name_and_local_id[0]
+    issue_kwargs['id'] = local_id
     url = framework_helpers.FormatAbsoluteURL(
-        mr, urls.ISSUE_DETAIL, id=local_id)
+        mr, urls.ISSUE_DETAIL, **issue_kwargs)
   elif after_issue_update == user_pb2.IssueUpdateNav.NEXT_IN_LIST:
     if next_id:
+      issue_kwargs['id'] = next_id
       url = framework_helpers.FormatAbsoluteURL(
-          mr, urls.ISSUE_DETAIL, id=next_id)
+          mr, urls.ISSUE_DETAIL, project_name=next_project, **issue_kwargs)
 
   return url
 
@@ -1075,6 +1100,7 @@ class _Flipper(object):
       services: connections to backend services.
     """
     self.services = services
+    self.is_hotlist_flipper = False
 
   def SearchForIIDs(self, _mr, _issue):
     """Override this method to implement getting ids for prev, cur, and next.
@@ -1099,6 +1125,7 @@ class _Flipper(object):
       self.next_project_name = None
       self.prev_url = ''
       self.next_url = ''
+      self.next_project = ''
 
       if prev_iid:
         prev_issue = self.services.issue.GetIssue(mr.cnxn, prev_iid)
@@ -1113,6 +1140,7 @@ class _Flipper(object):
         next_path = '/p/%s%s' % (next_issue.project_name, urls.ISSUE_DETAIL)
         self.next_url = framework_helpers.FormatURL(
             mr, next_path, id=next_issue.local_id)
+        self.next_project = next_issue.project_name
 
   def DebugString(self):
     """Return a string representation useful in debugging."""
@@ -1138,33 +1166,51 @@ class _HotlistFlipper(_Flipper):
 
     super(_HotlistFlipper, self).__init__(services)
     self.hotlist = hotlist
+    self.is_hotlist_flipper = True
 
-  def SearchForIIDs(self, mr, issue):
+  def SearchForIIDs(self, mr, current_issue):
     """Do the next step of searching for issue IDs for the flipper.
 
     Args:
       mr: commonly used info parsed from the request.
-      issue: the currently viewed issue.
+      current_issue: the currently viewed issue.
     """
+    # TODO(jojwang): The process of getting a sorted list can be
+    # refactored. Eg. create a new function in hotlist_helpers
+    # and call it here.
     issues_list = self.services.issue.GetIssues(
         mr.cnxn,
         [pair.issue_id for pair in self.hotlist.iid_rank_pairs])
-    allowed_issue_ids = [
-        allowed_issue.issue_id for allowed_issue
-        in hotlist_helpers.FilterIssues(mr, issues_list, self.services)]
-    iid_rank_pairs = [pair for pair in self.hotlist.iid_rank_pairs
-                      if pair.issue_id in allowed_issue_ids]
-    # TODO(jojwang): preserve sort order from hotlist
-    # Sort here and pass sorted list to DeterminehotlistIssuePosition
+    issue_rank_dict = {issue.issue_id: issue.rank for issue
+                       in self.hotlist.iid_rank_pairs}
+
+    allowed_issues = hotlist_helpers.FilterIssues(
+        mr, issues_list, self.services)
+    users_by_id = framework_views.MakeAllUserViews(
+        mr.cnxn, self.services.user,
+        tracker_bizobj.UsersInvolvedInIssues(allowed_issues or []))
+    project_ids = hotlist_helpers.GetAllProjectsOfIssues(
+        [issue for issue in issues_list])
+    config_list = hotlist_helpers.GetAllConfigsOfProjects(
+        mr.cnxn, project_ids, self.services)
+    harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
+    sortable_fields = tracker_helpers.SORTABLE_FIELDS.copy()
+    sortable_fields.update(
+        {'rank': lambda issue: issue_rank_dict[issue.issue_id]})
+    sorted_issues = sorting.SortArtifacts(
+        mr, allowed_issues, harmonized_config, sortable_fields,
+        tracker_helpers.SORTABLE_FIELDS_POSTPROCESSORS,
+        users_by_id=users_by_id, tie_breakers=['rank', 'id'])
     (prev_iid, cur_index,
      next_iid) = features_bizobj.DetermineHotlistIssuePosition(
-        issue, iid_rank_pairs)
+         current_issue, [(issue.issue_id, issue_rank_dict[issue.issue_id]) for
+                         issue in sorted_issues])
 
     logging.info('prev_iid, cur_index, next_iid is %r %r %r',
                  prev_iid, cur_index, next_iid)
 
     self.AssignFlipperValues(
-        mr, prev_iid, cur_index, next_iid, len(iid_rank_pairs))
+        mr, prev_iid, cur_index, next_iid, len(allowed_issues))
 
 
 class _TrackerFlipper(_Flipper):
@@ -1231,6 +1277,7 @@ class IssueCommentDeletion(servlet.Servlet):
     local_id = int(post_data['id'])
     sequence_num = int(post_data['sequence_num'])
     delete = (post_data['mode'] == '1')
+    hotlist_id = post_data.get('hotlist_id', None)
 
     issue = self.services.issue.GetIssueByLocalID(
         mr.cnxn, mr.project_id, local_id)
@@ -1254,9 +1301,11 @@ class IssueCommentDeletion(servlet.Servlet):
     self.services.issue.SoftDeleteComment(
         mr.cnxn, mr.project_id, local_id, sequence_num,
         mr.auth.user_id, self.services.user, delete=delete)
-
+    kwargs = {'id': local_id}
+    if hotlist_id:
+      kwargs['hotlist_id'] = hotlist_id
     return framework_helpers.FormatAbsoluteURL(
-        mr, urls.ISSUE_DETAIL, id=local_id)
+        mr, urls.ISSUE_DETAIL, **kwargs)
 
 
 class IssueDeleteForm(servlet.Servlet):

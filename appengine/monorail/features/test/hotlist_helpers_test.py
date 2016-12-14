@@ -93,14 +93,15 @@ class MakeTableDataTest(unittest.TestCase):
         'summary': table_view_helpers.TableCellSummary}
     table_data = hotlist_helpers._MakeTableData(
         issues, [], ['summary'], [], {} , cell_factories,
-        {}, config, None, 29)
+        {}, config, None, 29, 'stars')
     self.assertEqual(len(table_data), 1)
     row = table_data[0]
     self.assertEqual(row.issue_id, 1001)
     self.assertEqual(row.local_id, 1)
     self.assertEqual(row.project_name, 'ProjectName')
     self.assertEqual(row.issue_ref, 'ProjectName:1')
-    self.assertTrue(row.issue_url.endswith('hotlist_id=29'))
+    self.assertTrue('hotlist_id=29' in row.issue_url)
+    self.assertTrue('sort=stars' in row.issue_url)
 
 
 class GetAllProjectsOfIssuesTest(unittest.TestCase):
