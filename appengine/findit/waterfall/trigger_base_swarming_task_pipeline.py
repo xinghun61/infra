@@ -10,6 +10,7 @@ from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from libs import time_util
 from model import analysis_status
+from waterfall import monitoring
 from waterfall import swarming_util
 from waterfall import waterfall_config
 
@@ -199,7 +200,11 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     swarming_task_items = swarming_util.ListSwarmingTasksDataByTags(
         master_name, builder_name, build_number, http_client,
         {'stepname': step_name})
-    assert len(swarming_task_items) > 0, 'No Swarming task was run.'
+    if len(swarming_task_items) < 1:
+      monitoring.swarming_tasks.increment(
+          {'operation': 'refer', 'category': 'copy-settings-and-parameters'})
+      raise Exception('No Swarming task was run at %s, %s, %s' % (
+          master_name, builder_name, build_number))
     ref_task_id = swarming_task_items[0]['task_id']
 
     # 1. Retrieve Swarming task parameters from a given Swarming task id.
