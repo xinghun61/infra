@@ -1,3 +1,41 @@
+# Release Notes sheriff-o-matic 2016-12-13
+
+- 13 commits, 8 bugs affected since 30d0695 (2016-12-07T00:42:54Z)
+- 3 Authors:
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+  - martiniss@chromium.org
+
+## Changes in this release
+
+- [SoM: Fix getting owned trooper bugs + make trooper page title count based on trooper queue.](https://chromium-review.googlesource.com/419778) (zhangtiff@google.com)
+- [SoM: Fix trooper timestamp.](https://chromium-review.googlesource.com/419118) (zhangtiff@google.com)
+- [SoM: Make lastUpdated time update properly on tree switch.](https://chromium-review.googlesource.com/419098) (zhangtiff@google.com)
+- [[som] Pubsub support: read gatekeeper configs from gitiles.](https://chromium-review.googlesource.com/418411) (seanmccullough@chromium.org)
+- [SOM: Fix bug queue missing dependency in computed property](https://chromium-review.googlesource.com/419137) (martiniss@chromium.org)
+- [SoM: Move swarming bots above alerts and show them only on the trooper page.](https://chromium-review.googlesource.com/417134) (zhangtiff@google.com)
+- [SoM: Update haveNoBugs for bug queue + misc fixes.](https://chromium-review.googlesource.com/418700) (zhangtiff@google.com)
+- [SoM: Add bug summary to linked bug labels.](https://chromium-review.googlesource.com/416299) (zhangtiff@google.com)
+- [[som] Show internal master restarts on /trooper page](https://chromium-review.googlesource.com/418475) (seanmccullough@chromium.org)
+- [SoM: Enable caching for trooper queue by getting bugs in two steps.](https://chromium-review.googlesource.com/417106) (zhangtiff@google.com)
+- [[som] Update WCT dependency](https://chromium-review.googlesource.com/417065) (seanmccullough@chromium.org)
+- [SoM: Change pulling sheriffs to account for timezones.](https://chromium-review.googlesource.com/417405) (zhangtiff@google.com)
+- [SoM: Update release notes.](https://chromium-review.googlesource.com/417399) (zhangtiff@google.com)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/413053](https://crbug.com/413053)
+  -  [https://crbug.com/658270](https://crbug.com/658270)
+  -  [https://crbug.com/672265](https://crbug.com/672265)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/637006](https://crbug.com/637006)
+  -  [https://crbug.com/639396](https://crbug.com/639396)
+  -  [https://crbug.com/649220](https://crbug.com/649220)
+  -  [https://crbug.com/666169](https://crbug.com/666169)
+  -  [https://crbug.com/672974](https://crbug.com/672974)
+
 # Release Notes sheriff-o-matic 2016-12-06
 
 - 7 commits, 3 bugs affected since 6131c01 (2016-11-29T23:49:37Z)
