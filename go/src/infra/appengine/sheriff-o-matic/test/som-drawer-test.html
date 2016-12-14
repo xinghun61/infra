@@ -14,6 +14,7 @@
   'use strict';
 
   suite('basic tests', function() {
+    var clock;
     var element;
     var server;
     var responseHeaders = {
@@ -24,6 +25,8 @@
     setup(function() {
       element = fixture('basic');
       server = sinon.fakeServer.create();
+
+      clock = sinon.useFakeTimers();
 
       server.respondWith(
         'GET',
@@ -67,24 +70,24 @@
     });
 
     test('computes sheriffs from JSON', function(done) {
-      // TODO(zhangtiff): Figure out a better way to test dates.
-      let date = new Date();
-      let dateString = date.toISOString().substring(0, 10);
+      // 12/14/2016 10:34pm UTC.
+      let unixTime = 1481754863;
+      clock.tick(unixTime * 1000);
+
+      let pstTime = unixTime - 8 * 60 * 60;
 
       element.tree = 'chromium';
       element._sheriffRotations = {
         'rotations': ['chrome'],
         'calendar': [
           {'date': 'fakedate', 'participants': [['no one']]},
-          {'date': dateString, 'participants': [['someone']]}
+          {'date': '2016-12-14', 'participants': [['someone']]}
         ],
       };
       flush(function () {
         assert.equal(1, element._sheriffs.length);
-        assert.equal({
-          'username': 'someone',
-          'endDate': date,
-        }, element._sheriffs[0]);
+        assert.equal('someone', element._sheriffs[0].username);
+        assert.deepEqual(new Date(pstTime * 1000), element._sheriffs[0].endDate);
         done();
       });
     });
