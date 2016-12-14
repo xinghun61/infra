@@ -205,7 +205,7 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
   flake_source = 'cq' if request.on_cq else 'waterfall'
 
   for build_step in request.build_steps:
-    step_mapper.FindMatchingWaterfallStep(build_step)
+    step_mapper.FindMatchingWaterfallStep(build_step, request.name)
 
   version_number, build_step = _CheckForNewAnalysis(request)
   if version_number and build_step:

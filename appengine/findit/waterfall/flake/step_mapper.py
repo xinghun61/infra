@@ -112,7 +112,7 @@ def _GetMatchingWaterfallBuildStep(
   return no_matching_result
 
 
-def FindMatchingWaterfallStep(build_step):  # pragma: no cover.
+def FindMatchingWaterfallStep(build_step, test_name):  # pragma: no cover.
   """Finds the matching Waterfall step and checks whether it is supported.
 
   Only Swarmed and gtest-based steps are supported at the moment.
@@ -121,6 +121,7 @@ def FindMatchingWaterfallStep(build_step):  # pragma: no cover.
     build_step (BuildStep): A build step on Waterfall or Commit Queue. It
         will be updated with the matching Waterfall step and whether it is
         Swarmed and supported.
+    test_name (str): The name of the test.
   """
   # TODO (chanli): re-implement this hack after step metadata is added.
 
@@ -166,6 +167,7 @@ def FindMatchingWaterfallStep(build_step):  # pragma: no cover.
       build_step.supported = (
           isinstance(output, dict) and
           isinstance(output.get('all_tests'), list) and
+          test_name in output.get('all_tests', []) and
           isinstance(output.get('per_iteration_data'), list) and
           all(isinstance(i, dict) for i in output.get('per_iteration_data'))
       )
