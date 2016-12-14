@@ -6,6 +6,11 @@
 <dom-module id="test-results-flakiness">
   <template>
     <style>
+      :host {
+        display: block;
+        padding: 10px;
+        width: 100%;
+      }
       .loading {
         text-align: center;
         margin: 20px 0;
@@ -60,7 +65,17 @@
           opacity: 0.7;
         }
       }
+      .notice {
+        margin: 0;
+      }
     </style>
+
+    <p class="notice">
+      This section of the app is currently in fishfood phase and should only
+      be used by teams whom we've asked to do so explicitly. Expect significant
+      changes as we will incorporate the feedback. We will also notify you when
+      it becomes available more widely.
+    </p>
 
     <!-- Omnibox selector for test group -->
     <div class="error" hidden$="[[!_errorGroups]]">[[_errorGroups.error]]</div>
