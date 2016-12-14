@@ -12,7 +12,6 @@ class WCTApi(recipe_api.RecipeApi):
     super(WCTApi, self).__init__(*args, **kwargs)
 
   def install(self):
-    self.m.cipd.install_client('install cipd')
     cipd_root = self.m.path['start_dir'].join('packages', 'wct')
     wct_package_name = 'infra/testing/wct/%s' % self.m.cipd.platform_suffix()
     node_package_name = ('infra/nodejs/nodejs/%s' %

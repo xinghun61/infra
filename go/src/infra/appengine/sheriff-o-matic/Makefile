@@ -21,6 +21,8 @@ test: deps
 	cd som && go test
 	xvfb-run -a $(WCT_PATH)
 
+bower-cipd: deps
+	cipd create -pkg-def ../../../../../build/packages/sheriff-o-matic.yaml -pkg-var platform:linux-amd64
 
 # In the future we can add different commends for prod and staging.
 deploy-prod: build
