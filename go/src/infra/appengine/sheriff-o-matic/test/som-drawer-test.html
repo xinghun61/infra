@@ -43,7 +43,7 @@
       element._trooper = 'faketrooper';
       flush(function () {
         assert.equal('faketrooper',
-          element.$.currentTroopers.childNodes[0].text);
+          element.$.currentTroopers.textContent.trim());
         done();
       });
     });
@@ -75,8 +75,8 @@
       element._sheriffRotations = {
         'rotations': ['chrome'],
         'calendar': [
-          {'date': 'fakedate', 'participants': ['no one']},
-          {'date': dateString, 'participants': ['someone']}
+          {'date': 'fakedate', 'participants': [['no one']]},
+          {'date': dateString, 'participants': [['someone']]}
         ],
       };
       flush(function () {
