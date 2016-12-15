@@ -451,7 +451,7 @@ func testFlakinessGroupsHandler(ctx *router.Context) {
 		}
 	}
 
-	aeCtx := appengine.NewContext(ctx.Request)
+	aeCtx := appengine.WithContext(ctx.Context, ctx.Request)
 	bq, err := createBQService(aeCtx)
 	if err != nil {
 		writeError(ctx, err, "testFlakinessGroupsHandler", "failed create BigQuery client")
