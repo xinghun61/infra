@@ -33,7 +33,7 @@ var history = history || {};
 
 history.DEFAULT_CROSS_DASHBOARD_STATE_VALUES = {
     showAllRuns: false,
-    testType: 'webkit_tests',
+    testType: 'browser_tests',
     useTestData: false,
 }
 

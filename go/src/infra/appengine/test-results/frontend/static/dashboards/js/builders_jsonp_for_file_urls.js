@@ -28,5 +28,5 @@
 
 // In order to allow for easy hacking on the dashboard without needing to run
 // a server, load the builders jsonp from appengine if loading from a file url.
-if (location.protocol == "file:")
+if (location.protocol == "file:" || location.host.match(/^localhost(:\d+)?$/))
     document.write('<script src="https://test-results.appspot.com/builders?callback=LOAD_BUILDBOT_DATA"></scr' + 'ipt>');
