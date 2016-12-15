@@ -24,7 +24,7 @@ deps = {
 
   "infra/go/src/github.com/luci/luci-go":
     ("https://chromium.googlesource.com/external/github.com/luci/luci-go"
-     "@9fc61077e677ff5ec4839a55cade3e4e53ee3db0"),
+     "@e12a0eab1173a25e29ec650b4b2a424557742cb4"),
 
   "infra/go/src/github.com/luci/gae":
     ("https://chromium.googlesource.com/external/github.com/luci/gae"
