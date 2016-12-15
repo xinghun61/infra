@@ -127,7 +127,7 @@ def post_to_perf_dashboard(api, taken_seconds, revision, tstamp_iso_str,
     # 'a_infra_uri': '[Overview](link/to/foo.html)'.
   }
   api.perf_dashboard.set_default_config()
-  api.perf_dashboard.post([point])
+  api.perf_dashboard.add_point([point])
   api.perf_dashboard.add_dashboard_link(
       api.step.active_result.presentation,
       PERF_DASHBOARD_KEY,
