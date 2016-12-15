@@ -19,6 +19,10 @@ class DataPoint(ndb.Model):
   build_number = ndb.IntegerProperty(indexed=False)
   pass_rate = ndb.FloatProperty(indexed=False)
   task_id = ndb.StringProperty(indexed=False)
+  commit_position = ndb.IntegerProperty(indexed=False)
+  git_hash = ndb.StringProperty(indexed=False)
+  previous_build_commit_position = ndb.IntegerProperty(indexed=False)
+  previous_build_git_hash = ndb.StringProperty(indexed=False)
 
 
 class MasterFlakeAnalysis(

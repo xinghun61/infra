@@ -35,6 +35,9 @@ _STEP_URL_PATTERN = re.compile(
     r'^%s/([^/]+)/builders/([^/]+)/builds/([\d]+)/steps/([^/]+)(/.*)?$' %
     _HOST_NAME_PATTERN)
 
+_COMMIT_POSITION_PATTERN = re.compile(
+    r'refs/heads/master@{#(\d+)}$', re.IGNORECASE)
+
 # These values are buildbot constants used for Build and BuildStep.
 # This line was copied from buildbot/master/buildbot/status/results.py.
 SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, CANCELLED = range(7)
@@ -221,6 +224,14 @@ def GetBuildResult(build_data_json):
   return build_data_json.get('results')
 
 
+def _GetCommitPosition(commit_position_line):
+  if commit_position_line:
+    match = _COMMIT_POSITION_PATTERN.match(commit_position_line)
+    if match:
+      return int(match.group(1))
+  return None
+
+
 def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   """Extracts and returns build information as an instance of BuildInfo."""
   build_info = BuildInfo(master_name, builder_name, build_number)
@@ -228,10 +239,13 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   data_json = json.loads(build_data)
   chromium_revision = GetBuildProperty(
       data_json.get('properties', []), 'got_revision')
+  commit_position_line = GetBuildProperty(
+      data_json.get('properties', []), 'got_revision_cp')
 
   build_info.build_start_time = GetBuildStartTime(data_json)
   build_info.build_end_time = GetBuildEndTime(data_json)
   build_info.chromium_revision = chromium_revision
+  build_info.commit_position = _GetCommitPosition(commit_position_line)
   build_info.completed = data_json.get('currentStep') is None
   build_info.result = GetBuildResult(data_json)
 

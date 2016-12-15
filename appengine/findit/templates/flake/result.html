@@ -86,13 +86,18 @@
       var not_run_data = [];
       var run_data = [];
       $.each(findit.passRates, function(index, value) {
-        // Convert pass rate from [0, 1] to a percentage.
-        var rate = (value[1] * 100).toFixed(0);
-        // -1 means that the test doesn't exist or is disabled at the build.
-        if (rate < 0) {
-          not_run_data.push([value[0], 100, value[2]]);
+        // Convert pass rate from [0, 1] to a percentage. Include information about each point in the format:
+        // [this build commit position, pass rate, swarming task url, build number,
+        //  this build's git hash, previous build's commit position,
+        //  previous build's git hash].
+        var pass_rate = (value[1] * 100).toFixed(0);
+
+        if (pass_rate < 0) {
+          // -1 means that the test doesn't exist or is disabled at the build.
+          // We consider that a 100% pass rate.
+          not_run_data.push([value[0], 100, value[2], value[3], value[4], value[5], value[6]]);
         } else {
-          run_data.push([value[0], rate, value[2]]);
+          run_data.push([value[0], pass_rate, value[2], value[3], value[4], value[5], value[6]]);
         }
       });
 
@@ -166,11 +171,25 @@
 
       function showTooltipForDataPoint(item) {
         var itemData = item.series.data[item.dataIndex];
-        var buildNumber = itemData[0];
+        var thisBuildCommitPosition = itemData[0];
         var passRate = itemData[1];
         var swarmingTaskId = itemData[2];
+        var buildNumber = itemData[3];
+        var thisBuildGitHash = itemData[4];
+        var previousBuildCommitPosition = itemData[5];
+        var previousBuildGitHash = itemData[6];
 
-        var tooltipStr = 'Build #: <a href="https://build.chromium.org/p/' + findit.masterName + '/builders/' + findit.builderName + '/builds/' + buildNumber + '" target="_blank">' + buildNumber + '</a><br> Pass rate: ' + passRate + '%';
+        var tooltipStr = 'Pass rate: ' + passRate + '%';
+
+        if (previousBuildCommitPosition && previousBuildGitHash && thisBuildCommitPosition && thisBuildGitHash) {
+          tooltipStr += '<br>Range: <a href="https://crrev.com/' + previousBuildGitHash + '..' + thisBuildGitHash + '"target="_blank">' + previousBuildCommitPosition + ':' + thisBuildCommitPosition + '</a>';
+        } else if (thisBuildCommitPosition && thisBuildGitHash) {
+          // Previous information not available, so only show this build.
+          tooltipStr += '<br>Range: <a href="https://crrev.com/' + thisBuildGitHash + '" "target="_blank">' + thisBuildCommitPosition + '</a>';
+        }
+
+        tooltipStr += '<br>Build #: <a href="https://build.chromium.org/p/' + findit.masterName + '/builders/' + findit.builderName + '/builds/' + buildNumber + '" target="_blank">' + buildNumber + '</a>';        
+
         if (swarmingTaskId) {
           tooltipStr += '<br>Swarming Task: <a href="https://chromium-swarm.appspot.com/task?id=' + swarmingTaskId + '" target="_blank">' + swarmingTaskId +'</a>';
         } else {
@@ -181,7 +200,7 @@
       }
 
       var dataPointSelected = false;
-      $("#flake-data").bind("plothover", function (event, pos, item) {
+      $("#flake-data").bind("plothover", function(event, pos, item) {
         if (dataPointSelected)
           return;  // A data point is selected due to a click.
 
@@ -191,7 +210,7 @@
           $("#tooltip").hide();
         }
       });
-      $("#flake-data").bind("plotclick", function (event, pos, item) {
+      $("#flake-data").bind("plotclick", function(event, pos, item) {
         if (item) {
           dataPointSelected = true;  // Set selected data point upon click.
           showTooltipForDataPoint(item);
@@ -202,8 +221,10 @@
       });
 
       $.each(run_data, function(index, value) {
-        if (value[0] == findit.regressedBuildNumber)
+        if (value[3] == findit.regressedBuildNumber) {
+          // value[3] contains the build number.
           plot.highlight(run_data_sery_index, index);
+        }
       });
     }
 
@@ -239,12 +260,18 @@
     Error info: {{ error }}<br>
     {% endif %}
     {% if suspected_flake.build_number %}
-    Flakiness <b>started</b> in Build: <a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake.build_number }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.build_number }}</a>
+      Flakiness <b>started</b> in Build: <a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake.build_number }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.build_number }}</a>
     {% endif %}
+    {% if suspected_flake.commit_position and suspected_flake.git_hash %}
+      <br>
+      Regression Range: <a href="https://crrev.com/{{ suspected_flake.previous_build_git_hash }}..{{ suspected_flake.git_hash }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.previous_build_commit_position }}:{{ suspected_flake.commit_position }}</a>
+      <br>
+    {% endif %}
+
   </div>
   <br>
   <div>
-    <b>Pass Rate by Build:</b><br>
+    <b>Pass Rate by Commit:</b><br>
     <div class="container">
       <div id="flake-data" class="flake-trend"></div>
     </div>

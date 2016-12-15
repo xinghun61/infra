@@ -71,7 +71,16 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'test_name': test_name
         })
 
-  def testAnyoneCanViewScheduledAnalysis(self):
+  @mock.patch.object(check_flake, '_GetSuspectedFlakeInfo',
+                     return_value={
+                         'build_number': 100,
+                         'commit_position': 12345,
+                         'git_hash': 'git_hash_1',
+                         'triage_result': 0})
+  @mock.patch.object(check_flake, '_GetCoordinatesData',
+                     return_value=[[12345, 0.9, '1', 100, 'git_hash_2',
+                                    12344, 'git_hash_1']])
+  def testAnyoneCanViewScheduledAnalysis(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = '123'
@@ -100,7 +109,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     expected_check_flake_result = {
         'key': analysis.key.urlsafe(),
-        'pass_rates': [[int(build_number), success_rate, data_point.task_id]],
+        'pass_rates': [[12345, 0.9, '1', 100, 'git_hash_2', 12344,
+                        'git_hash_1']],
         'analysis_status': STATUS_TO_DESCRIPTION.get(analysis.status),
         'master_name': master_name,
         'builder_name': builder_name,
@@ -115,6 +125,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'duration': '00:59:55',
         'suspected_flake': {
             'build_number': 100,
+            'commit_position': 12345,
+            'git_hash': 'git_hash_1',
             'triage_result': 0
         },
         'version_number': 1,
@@ -146,7 +158,16 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
                      return_value=False)
-  def testRequestExistingAnalysis(self, _):
+  @mock.patch.object(check_flake, '_GetSuspectedFlakeInfo',
+                     return_value={
+                         'build_number': 100,
+                         'commit_position': 12345,
+                         'git_hash': 'a_git_hash',
+                         'triage_result': 0})
+  @mock.patch.object(check_flake, '_GetCoordinatesData',
+                     return_value=[[12345, 0.9, '1', 100, 'git_hash_2',
+                                    12344, 'git_hash_1']])
+  def testRequestExistingAnalysis(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -189,7 +210,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     expected_check_flake_result = {
         'key': previous_analysis.key.urlsafe(),
-        'pass_rates': [[build_number - 1, success_rate, None]],
+        'pass_rates': [[12345, 0.9, '1', 100, 'git_hash_2', 12344,
+                        'git_hash_1']],
         'analysis_status': STATUS_TO_DESCRIPTION.get(previous_analysis.status),
         'master_name': master_name,
         'builder_name': builder_name,
@@ -204,6 +226,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'duration': '00:59:55',
         'suspected_flake': {
             'build_number': 100,
+            'commit_position': 12345,
+            'git_hash': 'a_git_hash',
             'triage_result': 0
         },
         'version_number': 1,
@@ -241,8 +265,17 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'test_name': test_name,
             'format': 'json'})
 
+  @mock.patch.object(check_flake, '_GetSuspectedFlakeInfo',
+                     return_value={
+                         'build_number': 100,
+                         'commit_position': 12345,
+                         'git_hash': 'a_git_hash',
+                         'triage_result': 0})
+  @mock.patch.object(check_flake, '_GetCoordinatesData',
+                     return_value=[[12345, 0.9, '1', 100, 'git_hash_2',
+                                    12344, 'git_hash_1']])
   @mock.patch.object(users, 'is_current_user_admin', return_value=True)
-  def testGetTriageHistory(self, _):
+  def testGetTriageHistory(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = '123'
@@ -311,3 +344,94 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         CheckFlake()._ValidateInput(
             'm', 'b', '1', 's', 't', 'a').get('data', {}).get('error_message'),
         'Bug id (optional) must be an int')
+
+  def testGetSuspectedFlakeInfo(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 123
+    data_point = DataPoint()
+    data_point.build_number = 123
+    data_point.pass_rate = 0.9
+    data_point.commit_position = 2
+    data_point.git_hash = 'git_hash_2'
+    data_point.previous_build_commit_position = 1
+    data_point.previous_build_git_hash = 'git_hash_1'
+    analysis.data_points.append(data_point)
+    analysis.Save()
+
+    expected_result = {
+        'build_number': analysis.suspected_flake_build_number,
+        'commit_position': 2,
+        'git_hash': 'git_hash_2',
+        'previous_build_commit_position': 1,
+        'previous_build_git_hash': 'git_hash_1',
+        'triage_result': 0
+    }
+    self.assertEqual(expected_result,
+                     check_flake._GetSuspectedFlakeInfo(analysis))
+
+  def testGetCoordinatesData(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    success_rate = .9
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    data_point = DataPoint()
+    data_point.build_number = build_number
+    data_point.pass_rate = success_rate
+    data_point.commit_position = 2
+    data_point.git_hash = 'git_hash_2'
+    data_point.previous_build_commit_position = 1
+    data_point.previous_build_git_hash = 'git_hash_1'
+    analysis.data_points.append(data_point)
+    analysis.Save()
+
+    self.assertEqual([[2, success_rate, None, build_number, 'git_hash_2', 1,
+                       'git_hash_1']],
+                     check_flake._GetCoordinatesData(analysis))
+
+  def testFindSuspectedFlakeBuildDataPoint(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    analysis.suspected_flake_build_number = build_number
+    data_point_1 = DataPoint()
+    data_point_1.build_number = build_number - 1
+    data_point_1.pass_rate = 1
+    data_point_1.commit_position = 2
+    data_point_1.git_hash = 'git_hash_2'
+    data_point_1.previous_build_commit_position = 1
+    data_point_1.previous_build_git_hash = 'git_hash_1'
+    analysis.data_points.append(data_point_1)
+    data_point_2 = DataPoint()
+    data_point_2.build_number = build_number
+    data_point_2.pass_rate = 0.9
+    data_point_2.commit_position = 4
+    data_point_2.git_hash = 'git_hash_4'
+    data_point_2.previous_build_commit_position = 3
+    data_point_2.previous_build_git_hash = 'git_hash_3'
+    analysis.data_points.append(data_point_2)
+    analysis.Save()
+
+    self.assertEqual(data_point_2,
+                     check_flake._FindSuspectedFlakeBuildDataPoint(analysis))
+
+  def testFindSuspectedFlakeBuildDataPointNotFound(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    analysis.suspected_flake_build_number = build_number
+    analysis.data_points = []
+    analysis.Save()
+
+    self.assertIsNone(check_flake._FindSuspectedFlakeBuildDataPoint(analysis))

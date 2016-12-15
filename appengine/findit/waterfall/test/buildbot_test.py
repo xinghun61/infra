@@ -289,6 +289,7 @@ class BuildBotTest(unittest.TestCase):
     build_number = 632
     expected_build_start_time = datetime.utcfromtimestamp(1417470720.763887)
     expected_chromium_revision = '449cdbd05616de91fcf7e8b4282e300336d6d7c5'
+    expected_commit_position = 306253
     expected_completed = False
     expected_result = None
     expected_blame_list = [
@@ -385,6 +386,7 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(build_number, build_info.build_number)
     self.assertEqual(expected_build_start_time, build_info.build_start_time)
     self.assertEqual(expected_chromium_revision, build_info.chromium_revision)
+    self.assertEqual(expected_commit_position, build_info.commit_position)
     self.assertEqual(expected_completed, build_info.completed)
     self.assertEqual(expected_result, build_info.result)
     self.assertEqual(expected_blame_list, build_info.blame_list)
@@ -403,6 +405,7 @@ class BuildBotTest(unittest.TestCase):
     build_number = 632
     expected_build_start_time = datetime.utcfromtimestamp(1417470720.763887)
     expected_chromium_revision = '449cdbd05616de91fcf7e8b4282e300336d6d7c5'
+    expected_commit_position = 306253
     expected_completed = True
     expected_result = None
     expected_blame_list = [
@@ -427,6 +430,7 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(build_number, build_info.build_number)
     self.assertEqual(expected_build_start_time, build_info.build_start_time)
     self.assertEqual(expected_chromium_revision, build_info.chromium_revision)
+    self.assertEqual(expected_commit_position, build_info.commit_position)
     self.assertEqual(expected_completed, build_info.completed)
     self.assertEqual(expected_result, build_info.result)
     self.assertEqual(expected_blame_list, build_info.blame_list)
@@ -453,3 +457,10 @@ class BuildBotTest(unittest.TestCase):
         master_name, builder_name, build_number, build_data)
 
     self.assertEqual(expected_blame_list, build_info.blame_list)
+
+  def testGetCommitPosition(self):
+    self.assertIsNone(buildbot._GetCommitPosition(None))
+    self.assertIsNone(buildbot._GetCommitPosition(''))
+    self.assertIsNone(buildbot._GetCommitPosition('not a commit position'))
+    self.assertEqual(
+        438538, buildbot._GetCommitPosition('refs/heads/master@{#438538}'))

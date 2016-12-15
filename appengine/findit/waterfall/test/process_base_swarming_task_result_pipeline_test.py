@@ -10,6 +10,7 @@ from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util
+from waterfall import process_flake_swarming_task_result_pipeline
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
 from waterfall.process_flake_swarming_task_result_pipeline import (
@@ -190,7 +191,10 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
             _SAMPLE_FAILURE_LOG))
     self.assertEqual(_EXPECTED_TESTS_STATUS, tests_statuses)
 
-  def testMonitorSwarmingTaskTimeOut(self):
+  @mock.patch.object(process_flake_swarming_task_result_pipeline,
+                     '_GetCommitPositionAndGitHash',
+                     return_value=(12345, 'git_hash'))
+  def testMonitorSwarmingTaskTimeOut(self, _):
     # Override swarming config settings to force a timeout.
     override_swarming_settings = {
         'task_timeout_hours': -1

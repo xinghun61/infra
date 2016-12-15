@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+
 class BuildInfo(object):  # pragma: no cover
   """Represents a build cycle of a build bot."""
 
@@ -12,6 +13,7 @@ class BuildInfo(object):  # pragma: no cover
     self.build_start_time = None
     self.build_end_time = None
     self.chromium_revision = None
+    self.commit_position = None
     self.completed = False
     self.result = None
     self.blame_list = []
@@ -26,6 +28,7 @@ class BuildInfo(object):  # pragma: no cover
     print 'start time: %s' % self.build_start_time
     print 'end time: %s' % self.build_end_time
     print 'chromium revision: %s' % self.chromium_revision
+    print 'commit position: %s' % self.commit_position
     print 'completed: %s' % self.completed
     print 'result: %s' % self.result
     print 'CLs: %s' % ', '.join(self.blame_list)

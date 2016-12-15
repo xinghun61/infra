@@ -19,16 +19,68 @@ from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
 
 
-def _GetSuspectedFlakeAnalysisAndTriageResult(analysis):
-  if analysis.suspected_flake_build_number is not None:
-    return {
-        'build_number': analysis.suspected_flake_build_number,
-        'triage_result': (
-            analysis.triage_history[-1].triage_result if analysis.triage_history
-            else triage_status.UNTRIAGED)
-    }
+def _FindSuspectedFlakeBuildDataPoint(analysis):
+  for data_point in analysis.data_points:
+    if data_point.build_number == analysis.suspected_flake_build_number:
+      return data_point
 
-  return {}
+  return None
+
+
+def _GetSuspectedFlakeInfo(analysis):
+  """Returns a dict with information about the suspected flake build.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The master flake analysis the suspected
+      flake build is associated with.
+
+  Returns:
+    A dict in the format:
+      {
+          'build_number': int,
+          'commit_position': int,
+          'git_hash': str,
+          'previous_build_commit_position': int,
+          'previous_build_git_hash': str,
+          'triage_result': int (correct, incorrect, etc.)
+      }
+  """
+  if analysis.suspected_flake_build_number is None:
+    return {}
+
+  data_point = _FindSuspectedFlakeBuildDataPoint(analysis)
+  assert data_point
+
+  return {
+      'build_number': analysis.suspected_flake_build_number,
+      'commit_position': data_point.commit_position,
+      'git_hash': data_point.git_hash,
+      'previous_build_commit_position': (
+          data_point.previous_build_commit_position),
+      'previous_build_git_hash': data_point.previous_build_git_hash,
+      'triage_result': (
+          analysis.triage_history[-1].triage_result if analysis.triage_history
+          else triage_status.UNTRIAGED)
+  }
+
+
+def _GetCoordinatesData(analysis):
+  if not analysis or not analysis.data_points:
+    return []
+
+  coordinates = []
+
+  for data_point in analysis.data_points:
+    coordinates.append([
+        data_point.commit_position, data_point.pass_rate,
+        data_point.task_id, data_point.build_number, data_point.git_hash,
+        data_point.previous_build_commit_position,
+        data_point.previous_build_git_hash])
+
+  # Order by build number from earliest to latest.
+  coordinates.sort(key=lambda x: x[0])
+
+  return coordinates
 
 
 class CheckFlake(BaseHandler):
@@ -149,7 +201,7 @@ class CheckFlake(BaseHandler):
               'return_code': 400
           }
 
-    suspected_flake = _GetSuspectedFlakeAnalysisAndTriageResult(analysis)
+    suspected_flake = _GetSuspectedFlakeInfo(analysis)
 
     data = {
         'key': analysis.key.urlsafe(),
@@ -182,15 +234,8 @@ class CheckFlake(BaseHandler):
           analysis.start_time,
           analysis.end_time or time_util.GetUTCNow())
 
-    coordinates = []
-    for data_point in analysis.data_points:
-      coordinates.append([
-          data_point.build_number, data_point.pass_rate, data_point.task_id])
+    data['pass_rates'] = _GetCoordinatesData(analysis)
 
-    # Order by build number from earliest to latest.
-    coordinates.sort(key=lambda x: x[0])
-
-    data['pass_rates'] = coordinates
     return {
         'template': 'flake/result.html',
         'data': data
