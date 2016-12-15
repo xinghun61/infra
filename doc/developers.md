@@ -34,4 +34,4 @@ This section explains some technical choices.
 
 ## For Googlers
 
-See [internal page](http://go/chrome-infra-docs-internal/developers.md).
+See [internal page](http://go/chrome-infra-docs-internal-root/developers.md).
