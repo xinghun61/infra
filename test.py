@@ -114,11 +114,14 @@ if not modules:
     modules.extend(get_modules_with_coveragerc('packages'))
 
   # Test shared GAE code and individual GAE apps only on 64-bit Posix. This
-  # matches GAE environment.
-  test_gae = sys.platform != 'win32' and sys.maxsize == (2 ** 63) - 1
-  if test_gae:
-    modules.append('appengine_module')
-    modules.extend(get_modules_with_coveragerc('appengine'))
+  # matches GAE environment. Skip this if running tests when testing
+  # infra_python CIPD package integrity: the package doesn't have appengine
+  # code in it.
+  if os.path.isdir(os.path.join(INFRA_ROOT, 'appengine')):
+    test_gae = sys.platform != 'win32' and sys.maxsize == (2 ** 63) - 1
+    if test_gae:
+      modules.append('appengine_module')
+      modules.extend(get_modules_with_coveragerc('appengine'))
 
 os.environ['PYTHONPATH'] = ''
 os.chdir(INFRA_ROOT)
