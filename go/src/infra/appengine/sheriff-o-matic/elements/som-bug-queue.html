@@ -165,13 +165,13 @@
       },
 
       _computeBugs: function(bugQueueJson, assignedBugsJson) {
-        if (!bugQueueJson && !assignedBugsJson) {
+        let hasBugJson = bugQueueJson && bugQueueJson.items;
+        let hasAssignedJson = assignedBugsJson && assignedBugsJson.items;
+        if (!hasBugJson && !hasAssignedJson) {
           return [];
-        }
-        if (!assignedBugsJson || !assignedBugsJson.items) {
+        } else if (!hasAssignedJson) {
           return bugQueueJson.items;
-        }
-        if (!bugQueueJson || !bugQueueJson.items) {
+        } else if (!hasBugJson) {
           return assignedBugsJson.items;
         }
         return bugQueueJson.items.concat(assignedBugsJson.items);
@@ -209,10 +209,11 @@
       _changeBugQueueLabel: function() {
         this._bugQueueJson = null;
         this._bugQueueJsonError = null;
-        this._bugsLoaded = false;
 
         this._assignedBugsJson = null;
         this._assignedBugsJsonError = null;
+
+        this._bugsLoaded = false;
 
         this.refresh();
       },
