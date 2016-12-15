@@ -15,9 +15,13 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func noopAlertWriter(ctx context.Context, alerts *messages.AlertsSummary, tree string, transport http.RoundTripper) error {
+	return nil
+}
+
 func TestMainLoop(t *testing.T) {
 	Convey("mainLoop, nulls", t, func() {
-		err := mainLoop(nil, nil, nil, nil)
+		err := mainLoop(nil, nil, nil, nil, noopAlertWriter)
 		So(err, ShouldBeNil)
 	})
 
@@ -31,7 +35,8 @@ func TestMainLoop(t *testing.T) {
 		ctx := client.WithReader(context.Background(), mc)
 
 		t := http.DefaultTransport
-		err := mainLoop(ctx, a, trees, t)
+		err := mainLoop(ctx, a, trees, t, noopAlertWriter)
+
 		So(err, ShouldBeNil)
 	})
 

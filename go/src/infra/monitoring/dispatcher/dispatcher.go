@@ -165,7 +165,9 @@ func (a bySeverity) Less(i, j int) bool {
 	return a[i].Severity < a[j].Severity
 }
 
-func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, transport http.RoundTripper) error {
+type alertWriter func(ctx context.Context, alerts *messages.AlertsSummary, tree string, transport http.RoundTripper) error
+
+func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, transport http.RoundTripper, writeAlerts alertWriter) error {
 	done := make(chan interface{})
 	errs := make(chan error)
 	for treeName := range trees {
@@ -215,32 +217,8 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 			alerts.Timestamp = messages.TimeToEpochTime(time.Now())
 			alertCount.Set(ctx, int64(len(alerts.Alerts)), tree)
 
-			if *alertsBaseURL == "" {
-				logging.Infof(ctx, "No data_url provided. Writing to %s-alerts.json", tree)
-
-				abytes, err := json.MarshalIndent(alerts, "", "\t")
-				if err != nil {
-					logging.Errorf(ctx, "Couldn't marshal alerts json: %v", err)
-					errs <- err
-					return
-				}
-
-				if err := ioutil.WriteFile(fmt.Sprintf("%s-alerts.json", tree), abytes, 0644); err != nil {
-					logging.Errorf(ctx, "Couldn't write to alerts.json: %v", err)
-					errs <- err
-					return
-				}
-			} else {
-				alertsURL := fmt.Sprintf("%s/%s", *alertsBaseURL, tree)
-				w := client.NewWriter(alertsURL, transport)
-				logging.Errorf(ctx, "Posting alerts to %s", alertsURL)
-				err := w.PostAlerts(ctx, alerts)
-				if err != nil {
-					logging.Errorf(ctx, "Couldn't post alerts: %v", err)
-					postErrors.Add(ctx, 1)
-					errs <- err
-					return
-				}
+			if err := writeAlerts(ctx, alerts, tree, transport); err != nil {
+				errs <- err
 			}
 
 			logging.Infof(ctx, "Filtered failures: %v", filteredFailures)
@@ -253,6 +231,35 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 		case err := <-errs:
 			return err
 		case <-done:
+		}
+	}
+
+	return nil
+}
+
+func writeAlerts(ctx context.Context, alerts *messages.AlertsSummary, tree string, transport http.RoundTripper) error {
+	if *alertsBaseURL == "" {
+		logging.Infof(ctx, "No data_url provided. Writing to %s-alerts.json", tree)
+
+		abytes, err := json.MarshalIndent(alerts, "", "\t")
+		if err != nil {
+			logging.Errorf(ctx, "Couldn't marshal alerts json: %v", err)
+			return err
+		}
+
+		if err := ioutil.WriteFile(fmt.Sprintf("%s-alerts.json", tree), abytes, 0644); err != nil {
+			logging.Errorf(ctx, "Couldn't write to alerts.json: %v", err)
+			return err
+		}
+	} else {
+		alertsURL := fmt.Sprintf("%s/%s", *alertsBaseURL, tree)
+		w := client.NewWriter(alertsURL, transport)
+		logging.Errorf(ctx, "Posting alerts to %s", alertsURL)
+		err := w.PostAlerts(ctx, alerts)
+		if err != nil {
+			logging.Errorf(ctx, "Couldn't post alerts: %v", err)
+			postErrors.Add(ctx, 1)
+			return err
 		}
 	}
 
@@ -440,7 +447,7 @@ func run(ctx context.Context, transport http.RoundTripper, cycle, duration time.
 	// This is the polling/analysis/alert posting function, which will run in a loop until
 	// a timeout or max errors is reached.
 	f := func(ctx context.Context) error {
-		err := mainLoop(ctx, a, trees, transport)
+		err := mainLoop(ctx, a, trees, transport, writeAlerts)
 		if err == nil {
 			iterations.Add(ctx, 1, "success")
 		} else {
