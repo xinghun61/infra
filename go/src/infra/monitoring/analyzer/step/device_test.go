@@ -353,8 +353,6 @@ func TestDeviceAnalyzer(t *testing.T) {
 }
 
 func TestPerfDeviceFailure(t *testing.T) {
-	t.Parallel()
-
 	Convey("test", t, func() {
 		Convey("devicesStr", func() {
 			p := &deviceFailure{
@@ -374,8 +372,6 @@ func TestPerfDeviceFailure(t *testing.T) {
 }
 
 func TestGetDeviceAffinity(t *testing.T) {
-	t.Parallel()
-
 	Convey("test", t, func() {
 		Convey("getDeviceAffinity", func() {
 			step := &messages.Step{

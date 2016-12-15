@@ -22,7 +22,6 @@ func makeFakeAnalyzer(data []messages.ReasonRaw, errs []error) Analyzer {
 }
 
 func TestReasonsForFailures(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	Convey("ReasonsForFailure", t, func() {
 		Convey("one analyzer", func() {

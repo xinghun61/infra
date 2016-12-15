@@ -19,8 +19,6 @@ import (
 )
 
 func TestCompileFailureAnalyzer(t *testing.T) {
-	t.Parallel()
-
 	Convey("test CompileFailureAnalyzer", t, func() {
 		Convey("Analyze", func() {
 			tests := []struct {

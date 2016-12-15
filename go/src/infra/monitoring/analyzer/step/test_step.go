@@ -48,10 +48,10 @@ func (t *testFailure) Severity() messages.Severity {
 func (t *testFailure) Title(bses []*messages.BuildStep) string {
 	f := bses[0]
 	if len(bses) == 1 {
-		return fmt.Sprintf("%s failing on %s/%s", f.Step.Name, f.Master.Name(), f.Build.BuilderName)
+		return fmt.Sprintf("%s failing on %s/%s", GetTestSuite(f.Step), f.Master.Name(), f.Build.BuilderName)
 	}
 
-	return fmt.Sprintf("%s failing on %d builders", f.Step.Name, len(bses))
+	return fmt.Sprintf("%s failing on %d builders", GetTestSuite(f.Step), len(bses))
 }
 
 // testFailureAnalyzer analyzes steps to see if there is any data in the tests
@@ -112,19 +112,18 @@ func testAnalyzeFailure(ctx context.Context, f *messages.BuildStep) (messages.Re
 	return nil, nil
 }
 
-func getStepName(name string) string {
-	stepName := name
-	s := strings.Split(name, " ")
+// GetTestSuite returns the name of the test suite executed in a step. Currently, it has
+// a bunch of custom logic to parse through all the suffixes added by various recipe code.
+// Eventually, it should just read something structured from the step.
+// https://bugs.chromium.org/p/chromium/issues/detail?id=674708
+func GetTestSuite(step *messages.Step) string {
+	testSuite := step.Name
+	s := strings.Split(step.Name, " ")
 
-	// Android tests add Instrumentation test as a prefix to the step name :/
-	if len(s) > 2 && s[0] == "Instrumentation" && s[1] == "test" {
-		stepName = s[2]
-		s = []string{name}
-	}
 	// Some test steps have names like "webkit_tests iOS(dbug)" so we look at the first
 	// term before the space, if there is one.
 	if !(strings.HasSuffix(s[0], "tests") || strings.HasSuffix(s[0], "test_apk")) {
-		return ""
+		return testSuite
 	}
 
 	// Recipes add a suffix to steps of the OS that it's run on, when the test
@@ -132,14 +131,14 @@ func getStepName(name string) string {
 	// Added in this code:
 	// https://chromium.googlesource.com/chromium/tools/build/+/9ef66559727c320b3263d7e82fb3fcd1b6a3bd55/scripts/slave/recipe_modules/swarming/api.py#846
 	if len(s) > 2 && s[1] == "on" {
-		stepName = s[0]
+		testSuite = s[0]
 	}
 
-	return stepName
+	return testSuite
 }
 
 func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string, error) {
-	name := getStepName(f.Step.Name)
+	name := GetTestSuite(f.Step)
 	if name == "" {
 		return "", nil, nil
 	}
@@ -151,8 +150,8 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 		return name, failedTests, fmt.Errorf("Error fetching test results: %v", err)
 	}
 
-	if len(testResults.Tests) == 0 {
-		return name, failedTests, fmt.Errorf("No test results for %v", f)
+	if testResults == nil || len(testResults.Tests) == 0 {
+		return name, nil, nil
 	}
 
 	for testName, testResults := range testResults.Tests {
@@ -202,7 +201,7 @@ func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failed
 		return nil, nil
 	}
 
-	name := getStepName(f.Step.Name)
+	name := GetTestSuite(f.Step)
 	if name == "" {
 		return nil, nil
 	}

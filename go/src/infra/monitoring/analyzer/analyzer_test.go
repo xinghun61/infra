@@ -1254,6 +1254,67 @@ func TestStepFailureAlerts(t *testing.T) {
 				},
 			},
 			{
+				name: "single failure (weird test suite name)",
+				failures: []*messages.BuildStep{
+					{
+						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Build: &messages.Build{
+							BuilderName: "fake.builder",
+							Number:      2,
+							Times:       []messages.EpochTime{0, 1},
+						},
+						Step: &messages.Step{
+							Name: "steps",
+						},
+					},
+					{
+						Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+						Build: &messages.Build{
+							BuilderName: "fake.builder",
+							Number:      42,
+							Times:       []messages.EpochTime{0, 1},
+						},
+						Step: &messages.Step{
+							Name: "fake_tests on Intel GPU on Linux on Ubuntu-12.04",
+						},
+					},
+				},
+				testResults: messages.TestResults{},
+				alerts: []messages.Alert{
+					{
+						Key:      "fake.master.fake.builder.fake_tests.",
+						Title:    "fakeTitle",
+						Body:     "",
+						Severity: messages.NewFailure,
+						Type:     messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name:          "fake.builder",
+									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									FirstFailure:  42,
+									LatestFailure: 42,
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							StepAtFault: &messages.BuildStep{
+								Master: &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/fake.master", t)},
+								Build: &messages.Build{
+									BuilderName: "fake.builder",
+									Number:      42,
+									Times:       []messages.EpochTime{0, 1},
+								},
+								Step: &messages.Step{
+									Name: "fake_tests on Intel GPU on Linux on Ubuntu-12.04",
+								},
+							},
+						},
+					},
+				},
+			},
+			{
 				name: "single infra failure",
 				failures: []*messages.BuildStep{
 					{

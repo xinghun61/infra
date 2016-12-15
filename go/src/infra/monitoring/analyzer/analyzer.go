@@ -928,7 +928,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 			}
 
 			alr.Type = messages.AlertBuildFailure
-			alr.Key = alertKey(f.Master.Name(), f.Build.BuilderName, f.Step.Name, "")
+			alr.Key = alertKey(f.Master.Name(), f.Build.BuilderName, step.GetTestSuite(f.Step), "")
 			alr.Extension = bf
 
 			rs <- res{

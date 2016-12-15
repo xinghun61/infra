@@ -267,8 +267,6 @@ func TestTestStepFailureAlerts(t *testing.T) {
 }
 
 func TestUnexpected(t *testing.T) {
-	t.Parallel()
-
 	Convey("unexpected", t, func() {
 		tests := []struct {
 			name                   string
@@ -358,5 +356,20 @@ func TestBasicFailure(t *testing.T) {
 
 		So(bf.Signature(), ShouldEqual, bf.Name)
 		So(bf.Kind(), ShouldEqual, "basic")
+	})
+}
+
+func TestGetTestSuite(t *testing.T) {
+	Convey("GetTestSuite", t, func() {
+		s := &messages.Step{
+			Name: "thing_tests",
+		}
+		Convey("basic", func() {
+			So(GetTestSuite(s), ShouldEqual, "thing_tests")
+		})
+		Convey("with suffixes", func() {
+			s.Name = "thing_tests on Intel GPU on Linux"
+			So(GetTestSuite(s), ShouldEqual, "thing_tests")
+		})
 	})
 }
