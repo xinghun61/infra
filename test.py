@@ -7,10 +7,32 @@
 
 assert __name__ == '__main__'
 
-import itertools
 import os
 import subprocess
 import sys
+
+
+INFRA_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+
+# Whitelist of packages to test on Windows.
+WIN_ENABLED_PACKAGES = [
+  'infra/libs/buildbot',
+  'infra/libs/decorators',
+  'infra/libs/gitiles',
+  'infra/libs/process_invocation',
+  'infra/libs/service_utils',
+  'infra/libs/state_machine',
+
+  'infra/services/service_manager',
+  'infra/services/sysmon',
+
+  'packages/infra_libs/infra_libs/event_mon',
+  'packages/infra_libs/infra_libs/infra_types',
+  'packages/infra_libs/infra_libs/logs',
+  'packages/infra_libs/infra_libs/time_functions',
+  'packages/infra_libs/infra_libs/ts_mon',
+]
 
 
 def usage():
@@ -33,26 +55,16 @@ def usage():
   """ % sys.argv[0]
 
 
-INFRA_ROOT = os.path.dirname(os.path.abspath(__file__))
-
-# Whitelist of packages to test on Windows.
-WIN_ENABLED_PACKAGES = [
-  'infra/libs/buildbot',
-  'infra/libs/decorators',
-  'infra/libs/gitiles',
-  'infra/libs/process_invocation',
-  'infra/libs/service_utils',
-  'infra/libs/state_machine',
-
-  'infra/services/service_manager',
-  'infra/services/sysmon',
-
-  'packages/infra_libs/infra_libs/event_mon',
-  'packages/infra_libs/infra_libs/infra_types',
-  'packages/infra_libs/infra_libs/logs',
-  'packages/infra_libs/infra_libs/time_functions',
-  'packages/infra_libs/infra_libs/ts_mon',
-]
+def get_modules_with_coveragerc(root_module):
+  """Returns submodules that have .coveragerc file present."""
+  root_dir = os.path.join(INFRA_ROOT, root_module.replace('/', os.sep))
+  if not os.path.isdir(root_dir):
+    return []
+  return [
+    '%s/%s' % (root_module, d)
+    for d in os.listdir(root_dir)
+    if os.path.isfile(os.path.join(root_dir, d, '.coveragerc'))
+  ]
 
 
 # Parse command-line arguments
@@ -91,35 +103,22 @@ for arg in args:
 
 # Set up default list of packages/directories if none have been provided.
 if not modules:
+  # On Windows, test only whitelisted subset of 'infra' and 'packages' modules.
   if sys.platform == 'win32':
-    # Only add existing paths.
-    modules.extend(p for p in WIN_ENABLED_PACKAGES
-                   if os.path.isdir(os.path.join(INFRA_ROOT, p)))
+    modules.extend([
+      p for p in WIN_ENABLED_PACKAGES
+      if os.path.isdir(os.path.join(INFRA_ROOT, p))
+    ])
   else:
-    modules.extend(['infra'])  # TODO(pgervais): add 'test/'
-  appengine_dir = os.path.join(INFRA_ROOT, 'appengine')
-  if sys.platform != 'win32' and os.path.isdir(appengine_dir):
-    modules.extend(['appengine_module'])
-    appengine_dirs = [
-      os.path.join('appengine', d)
-      for d in os.listdir(appengine_dir)
-    ]
-    # Use relative paths to shorten the command-line
-    modules.extend(itertools.chain(
-      [d for d in appengine_dirs if os.path.isfile(os.path.join(d,
-          '.coveragerc'))]
-    ))
-  packages_dir = os.path.join(INFRA_ROOT, 'packages')
-  if sys.platform != 'win32' and os.path.isdir(packages_dir):
-    packages_dirs = [
-      os.path.join('packages', d)
-      for d in os.listdir(packages_dir)
-    ]
-    # Use relative paths to shorten the command-line
-    modules.extend(itertools.chain(
-      [d for d in packages_dirs if os.path.isfile(os.path.join(d,
-          '.coveragerc'))]
-    ))
+    modules.extend(['infra'])
+    modules.extend(get_modules_with_coveragerc('packages'))
+
+  # Test shared GAE code and individual GAE apps only on 64-bit Posix. This
+  # matches GAE environment.
+  test_gae = sys.platform != 'win32' and sys.maxsize == (2 ** 63) - 1
+  if test_gae:
+    modules.append('appengine_module')
+    modules.extend(get_modules_with_coveragerc('appengine'))
 
 os.environ['PYTHONPATH'] = ''
 os.chdir(INFRA_ROOT)
@@ -138,11 +137,12 @@ failed_modules = []
 for module in modules:
   print 'Running %s...' % module
   module_flags = flags[:]
-  # Remove any test glob, which comes after semicolon (:).
-  module_path = module.split(':')[0]
-  module_flags.append('--coveragerc=%s' % os.path.join(
-      INFRA_ROOT, module_path, '.coveragerc'))
-  module_flags.append('--html-report-subdir=%s' % module_path)
+  # Remove any test glob, which comes after semicolon (:) and convert to a path.
+  module_path = module.split(':')[0].replace('/', os.sep)
+  module_flags.append(
+      '--coveragerc=%s' % os.path.join(INFRA_ROOT, module_path, '.coveragerc'))
+  module_flags.append(
+      '--html-report-subdir=%s' % module_path)
   cmd = [python_bin, expect_tests_path, command, module] + module_flags
   module_exit_code = subprocess.call(cmd)
   exit_code = module_exit_code or exit_code
@@ -150,6 +150,7 @@ for module in modules:
     failed_modules.append(module)
 
 if exit_code:
+  print
   print 'Tests failed in modules:\n  %s' % '\n  '.join(failed_modules)
   if '--html-report' not in flags:
     print '\nFor detailed coverage report and per-line branch coverage,'
