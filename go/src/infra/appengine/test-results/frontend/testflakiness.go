@@ -68,6 +68,11 @@ const flakesQuery = `
 
 const bqProjectID = "test-results-hrd"
 
+// Set 50 second timeout for the BigQuery queries, which leaves 10 seconds for
+// overhead before HTTP timeout. The query will actually continue to run after
+// the timeout and we wait for results in a loop.
+const bqQueryTimeout = 50 * 1000
+
 // Different kinds of groups to be used for Group struct below.
 const (
 	// Represents group of tests owned a team with specified name.
@@ -292,6 +297,7 @@ func createBQService(aeCtx context.Context) (*bigquery.Service, error) {
 		return nil, errors.Annotate(err).Reason("failed to create http client").Err()
 	}
 
+	hc.Timeout = time.Minute // Increase timeout for BigQuery HTTP requests
 	bq, err := bigquery.New(hc)
 	if err != nil {
 		return nil, errors.Annotate(err).Reason("failed to create service object").Err()
@@ -305,7 +311,7 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 
 	useLegacySQL := false
 	request := bq.Jobs.Query(bqProjectID, &bigquery.QueryRequest{
-		TimeoutMs:       30 * 60 * 1000, // 30 minutes
+		TimeoutMs:       bqQueryTimeout,
 		Query:           query,
 		UseLegacySql:    &useLegacySQL,
 		QueryParameters: params,
@@ -322,14 +328,41 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
 	}
 
+	// Check if BQ has returned results or wait for them in a loop. Unfortunately
+	// we are not able to just use high BigQuery timeout since HTTP(S) requests on
+	// AppEngine are limited to 60 seconds.
+	var rows []*bigquery.TableRow
+	var pageToken string
 	jobID := response.JobReference.JobId
-	if !response.JobComplete {
-		return nil, errors.New("timed out while executing BQ query")
+	if response.JobComplete {
+		// Query returned results immediately.
+		rows = make([]*bigquery.TableRow, 0, response.TotalRows)
+		rows = append(rows, response.Rows...)
+		pageToken = response.PageToken
+	} else {
+		// Query is still running. Wait for results. We do not put a timeout for
+		// this loop since AppEngine will terminate ourselves automatically after
+		// overall request timeout is reached.
+		for {
+			resultsRequest := bq.Jobs.GetQueryResults(bqProjectID, jobID)
+			resultsRequest.TimeoutMs(bqQueryTimeout)
+			var resultsResponse *bigquery.GetQueryResultsResponse
+			err := retry.Retry(ctx, retry.Default, func() error {
+				var err error
+				resultsResponse, err = resultsRequest.Do()
+				return err
+			}, nil)
+			if err != nil {
+				return nil, errors.Annotate(err).Reason("failed to retrieve results").Err()
+			}
+			if resultsResponse.JobComplete {
+				rows = make([]*bigquery.TableRow, 0, resultsResponse.TotalRows)
+				rows = append(rows, resultsResponse.Rows...)
+				pageToken = resultsResponse.PageToken
+				break
+			}
+		}
 	}
-
-	rows := make([]*bigquery.TableRow, 0, response.TotalRows)
-	rows = append(rows, response.Rows...)
-	pageToken := response.PageToken
 
 	// Get additional results if any.
 	for pageToken != "" {
