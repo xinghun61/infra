@@ -37,7 +37,6 @@
      <option value="addissues">Add issues...</option>
      <option value="removeissues">Remove issues...</options>
      <option value="colspec">Change columns...</option>
-     <option value="issuesperpage">Change issues per page...</option>
    </select>
    [end]
 

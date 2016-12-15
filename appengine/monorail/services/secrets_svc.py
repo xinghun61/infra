@@ -46,7 +46,7 @@ class Secrets(ndb.Model):
   recaptcha_public_key = ndb.StringProperty()
   recaptcha_private_key = ndb.StringProperty()
 
-  
+
 def MakeSecrets():
   """Make a new Secrets model with random values for keys."""
   secrets = Secrets(id=GLOBAL_KEY)
@@ -106,5 +106,3 @@ def GetRecaptchaPrivateKey():
     logging.warn('Store it in Cloud Datastore via the Google Cloud Console.')
 
   return result
-
-

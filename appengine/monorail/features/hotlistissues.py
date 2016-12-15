@@ -77,8 +77,8 @@ class HotlistIssues(servlet.Servlet):
         'rank') and (owner_permissions or editor_permissions))
 
     # Note: The HotlistView is created and returned in servlet.py
-    page_data.update({'owner_permissions': owner_permissions,
-                      'editor_permissions': editor_permissions,
+    page_data.update({'owner_permissions': ezt.boolean(owner_permissions),
+                      'editor_permissions': ezt.boolean(editor_permissions),
                       'issue_tab_mode': 'issueList',
                       'grid_mode': ezt.boolean(mr.mode == 'grid'),
                       'set_star_token': xsrf.GenerateToken(
@@ -137,6 +137,9 @@ class HotlistIssues(servlet.Servlet):
     return table_view_data
 
   def ProcessFormData(self, mr, post_data):
+    default_url = framework_helpers.FormatAbsoluteURL(
+          mr, '/u/%s/hotlists/%s' % (mr.auth.user_id, mr.hotlist_id),
+          include_project=False)
     sorting.InvalidateArtValuesKeys(
         mr.cnxn,
         [hotlist_issue.issue_id for hotlist_issue
@@ -146,6 +149,8 @@ class HotlistIssues(servlet.Servlet):
       project_and_local_ids = post_data.get('remove_local_ids')
     else:
       project_and_local_ids = post_data.get('add_local_ids')
+      if not project_and_local_ids:
+        return default_url
 
     issue_refs_tuples = [(pair.split(':')[0].strip(),
                           int(pair.split(':')[1].strip()))
