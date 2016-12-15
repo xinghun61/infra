@@ -317,6 +317,14 @@
       },
 
       _testText: function(tests) {
+        // NOTE: This really shouldn't happen; we should only be calling this function
+        // when tests is actually defined. We are though, for some reason, and it looks
+        // like it might be some weird dom-repeat/Polymer bug. So check that tests is
+        // ok here anyways.
+        if (tests == null) {
+          return '';
+        }
+
         let len = tests.length;
 
         if (len == 1) {
