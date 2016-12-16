@@ -219,6 +219,16 @@
     'rev': 'e0898d97d5951af01ba56e86acaa7530762155c8',
     'implicit': True,  # Required by python_dateutil, webtest, uritemplate.
   },
+  # Uploaded by running "./ingest_pypi_wheels.py scipy 0.18.1"
+  'scipy': {
+    'version': '0.18.1',
+    'build': '0',
+    'gs': 'fcebaa4c8cbbad5db01336948a0d5713a3245891.zip',
+    'only_on': [
+      'linux_x86_64',
+      'macosx_x86_64',
+    ],
+  },
   'testing_support': {
     'version': '0.3.0',
     'build': '0',
