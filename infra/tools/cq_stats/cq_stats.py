@@ -16,20 +16,17 @@ import copy
 import datetime
 import dateutil.parser
 import dateutil.tz
-from xml.etree import ElementTree
 import infra_libs.logs
 import json
 import logging
 from multiprocessing.pool import ThreadPool
 import numbers
-import numpy
-import re
 import simplejson
-import subprocess
 import sys
 import time
 import urllib
 import urllib2
+import math
 import urlparse
 
 import requests
@@ -493,20 +490,33 @@ def organize_stats(stats, init=None):  # pragma: no cover
 def derive_list_stats(series):  # pragma: no cover
   if not series:
     series = [0]
+  floats = sorted(float(f) for f in series)
   return {
-      '10': numpy.percentile(series, 10),
-      '25': numpy.percentile(series, 25),
-      '50': numpy.percentile(series, 50),
-      '75': numpy.percentile(series, 75),
-      '90': numpy.percentile(series, 90),
-      '95': numpy.percentile(series, 95),
-      '99': numpy.percentile(series, 99),
+      '10': _percentile(floats, 0.10),
+      '25': _percentile(floats, 0.25),
+      '50': _percentile(floats, 0.50),
+      '75': _percentile(floats, 0.75),
+      '90': _percentile(floats, 0.90),
+      '95': _percentile(floats, 0.95),
+      '99': _percentile(floats, 0.99),
       'min': min(series),
       'max': max(series),
-      'mean': numpy.mean(series),
+      'mean': sum(floats) / len(floats),
       'size': len(series),
       'raw': series,
   }
+
+
+def _percentile(series, percent):
+  # Based on http://stackoverflow.com/a/2753343.
+  k = (len(series)-1) * percent
+  f = math.floor(k)
+  c = math.ceil(k)
+  if f == c:
+      return series[int(k)]
+  d0 = series[int(f)] * (c-k)
+  d1 = series[int(c)] * (k-f)
+  return d0 + d1
 
 
 def sort_by_count(elements):  # pragma: no cover
