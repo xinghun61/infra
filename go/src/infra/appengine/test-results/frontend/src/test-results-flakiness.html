@@ -68,6 +68,12 @@
       .notice {
         margin: 0;
       }
+      paper-tooltip {
+        --paper-tooltip: {
+          font-size: 12px;
+          line-height: 1.2;
+        }
+      }
     </style>
 
     <p class="notice">
@@ -111,16 +117,22 @@
             Flaky Failures*
           </div>
           <paper-tooltip for="flaky-failures-header" animation-delay="0">
-            This is a lower bound since we ignore runs where all tries fail,
-            because we can not determine whether test failures in them are
-            caused by flaky or realible failures.
+            This column shows a number of flaky failures out of total tries.
+            Note that we only count the failures that are certain to be caused
+            by flakiness, therefore this is a lower-bound. Runs in which the
+            test has failed all tries may be also caused by flakiness, but are
+            also likely to be caused by a reliable test failure on CQ, therefore
+            we ignore them.
           </paper-tooltip>
           <div class="test-stats" id="flakiness-header">
             Flakiness*
           </div>
           <paper-tooltip for="flakiness-header" animation-delay="0">
-            Estimated true flakiness of a test corrected for ignored flaky
-            failures in runs where all tries failed.
+            This is an estimate of the probability of a test to fail. It is
+            based on the number of detected flaky failures in the "Flaky
+            Failures" column, but it is also statistically corrected for
+            undetected flaky failures making it a good approximation of the true
+            test flakiness.
           </paper-tooltip>
         </div>
         <template is="dom-repeat" items="[[_data]]" as="test">
