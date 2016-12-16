@@ -126,15 +126,6 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]\\infra\\recipes\\recipes.py",
-      "lint"
-    ],
-    "name": "recipe lint"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
       "[START_DIR]\\infra\\go\\env.py"
     ],
     "name": "go bootstrap"

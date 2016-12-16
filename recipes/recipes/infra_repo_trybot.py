@@ -44,9 +44,6 @@ def RunSteps(api):
   result.presentation.logs['change list'] = files
 
   with api.step.defer_results():
-    # Rietveld tests.
-    deps_mod = 'DEPS' in files
-
     api.python('python tests', 'test.py', ['test', '--jobs', 1],
                cwd=api.path['checkout'])
 
@@ -56,16 +53,9 @@ def RunSteps(api):
         api.python(
             'recipe tests', api.path['checkout'].join('recipes', 'recipes.py'),
             ['simulation_test', 'test'])
-
-      api.python(
-          'recipe lint', api.path['checkout'].join('recipes', 'recipes.py'),
-          ['lint'])
-
-    # if any(f.startswith('infra/glyco/') for f in files):
-    #   api.python(
-    #     'glyco tests',
-    #     api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
-    #     [], cwd=api.path['checkout'])
+        api.python(
+            'recipe lint', api.path['checkout'].join('recipes', 'recipes.py'),
+            ['lint'])
 
     # Ensure go is bootstrapped as a separate step.
     api.python('go bootstrap', api.path['checkout'].join('go', 'env.py'))
@@ -75,7 +65,7 @@ def RunSteps(api):
         'go tests', api.path['checkout'].join('go', 'env.py'),
         ['python', api.path['checkout'].join('go', 'test.py')])
 
-    if api.platform.is_linux and (deps_mod or
+    if api.platform.is_linux and ('DEPS' in files or
         any(f.startswith('appengine/chromium_rietveld') for f in files)):
       api.step('rietveld tests',
                ['make', '-C', 'appengine/chromium_rietveld', 'test'],
