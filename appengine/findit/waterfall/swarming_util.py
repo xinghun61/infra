@@ -553,3 +553,20 @@ def RetrieveShardedTestResultsFromIsolatedServer(
   if len(list_isolated_data) == 1:
     return shard_results[0]
   return _MergeSwarmingTestShards(shard_results)
+
+
+def GetIsolatedOutputForTask(task_id, http_client):
+  """Get isolated output for a swarming task based on it's id."""
+  json_data, error = GetSwarmingTaskResultById(task_id, http_client)
+  if error or not json_data:
+    return None
+
+  outputs_ref = json_data.get('outputs_ref')
+  if not outputs_ref:
+    return None
+
+  output_json, error = GetSwarmingTaskFailureLog(outputs_ref, http_client)
+
+  if error:
+    return None
+  return output_json

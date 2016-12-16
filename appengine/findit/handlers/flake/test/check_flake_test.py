@@ -28,7 +28,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       ('/waterfall/flake', check_flake.CheckFlake),
   ], debug=True)
 
-  def testCorpUserCanScheduleANewAnalysis(self):
+  @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
+                     return_value=True)
+  def testCorpUserCanScheduleANewAnalysis(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = '123'
@@ -275,6 +277,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
                      return_value=[[12345, 0.9, '1', 100, 'git_hash_2',
                                     12344, 'git_hash_1']])
   @mock.patch.object(users, 'is_current_user_admin', return_value=True)
+  @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
+                     return_value=True)
   def testGetTriageHistory(self, *_):
     master_name = 'm'
     builder_name = 'b'

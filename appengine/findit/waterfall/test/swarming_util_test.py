@@ -686,3 +686,36 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         error['code'], swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
     self.assertTrue(error['retry_timeout'])
+
+  @mock.patch.object(swarming_util, 'GetSwarmingTaskResultById',
+                     return_value=({'outputs_ref': 'ref'}, None))
+  @mock.patch.object(swarming_util, 'GetSwarmingTaskFailureLog',
+                     return_value=(None, 'error'))
+  def testGetIsolatedOutputForTaskIsolatedError(self, *_):
+    self.assertIsNone(swarming_util.GetIsolatedOutputForTask(None, None))
+
+  @mock.patch.object(swarming_util, 'GetSwarmingTaskResultById',
+                     return_value=({'a': []}, None))
+  def testGetIsolatedOutputForTaskNoOutputRef(self, _):
+    self.assertIsNone(swarming_util.GetIsolatedOutputForTask(None, None))
+
+  @mock.patch.object(swarming_util, 'GetSwarmingTaskResultById',
+                     return_value=(None, 'error'))
+  def testGetIsolatedOutputForTaskDataError(self, _):
+    self.assertIsNone(swarming_util.GetIsolatedOutputForTask(None, None))
+
+  def testGetIsolatedOutputForTask(self):
+    task_id = '2944afa502297110'
+    self.http_client._SetResponseForGetRequestSwarmingResult(task_id)
+    self.http_client._SetResponseForPostRequest('shard1_isolated')
+    self.http_client._SetResponseForPostRequest('shard1_url')
+    self.http_client._SetResponseForGetRequestIsolated(
+        'https://%s/default-gzip/shard1' % (
+            waterfall_config.GetSwarmingSettings().get('isolated_storage_url')),
+        'shard1')
+
+    result = swarming_util.GetIsolatedOutputForTask(task_id, self.http_client)
+
+    expected_result = json.loads(zlib.decompress(
+        self.http_client._GetData('isolated', 'shard1')))
+    self.assertEqual(expected_result, result)
