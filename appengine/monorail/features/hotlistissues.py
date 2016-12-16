@@ -69,7 +69,8 @@ class HotlistIssues(servlet.Servlet):
       editor_permissions = permissions.CanEditHotlist(
           mr.auth.effective_ids, mr.hotlist)
       # TODO(jojwang): each issue should have an individual
-      # SetStar status based on its project
+      # SetStar status based on its project to indicate whether or not
+      # the star icon should be shown to the user.
       page_perms = template_helpers.EZTItem(
           EditIssue=None, SetStar=mr.auth.user_id)
 
@@ -81,10 +82,7 @@ class HotlistIssues(servlet.Servlet):
                       'editor_permissions': ezt.boolean(editor_permissions),
                       'issue_tab_mode': 'issueList',
                       'grid_mode': ezt.boolean(mr.mode == 'grid'),
-                      'set_star_token': xsrf.GenerateToken(
-                          mr.auth.user_id, '/u/%s/hotlsits/%d%s.do' % (
-                              mr.viewed_username, mr.hotlist_id,
-                              urls.ISSUE_SETSTAR_JSON)),
+                      'set_star_token': '', # needed for shared ezt templates.
                       'page_perms': page_perms,
                       'colspec': mr.col_spec,
                       'allow_rerank': ezt.boolean(allow_rerank),

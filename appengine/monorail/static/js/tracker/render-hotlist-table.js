@@ -29,10 +29,9 @@ function setAttributes(el, attrs) {
  * @param {dict} tableRow dictionary {'projectName': 'name', .. } of relevant row info.
  * @param {} readOnly.
  * @param {boolean} ownerEditorPerm does current viewer have owner/editor permissions.
- * @param {boolean} isCrossProject are issues in the table from more than one project.
  * @return an element containing the widget elements
  */
-function createWidgets(tableRow, readOnly, ownerEditorPerm, isCrossProject) {
+function createWidgets(tableRow, readOnly, ownerEditorPerm) {
   var widgets = document.createElement('td');
   widgets.setAttribute('class', 'rowwidgets nowrap');
 
@@ -43,6 +42,8 @@ function createWidgets(tableRow, readOnly, ownerEditorPerm, isCrossProject) {
 
   if (!readOnly) {
     if (ownerEditorPerm) {
+      // TODO(jojwang): for bulk edit, only show a checkbox next to an issue that
+      // the user has permission to edit.
         var checkbox = document.createElement('input');
         setAttributes(checkbox, {'name': 'checkRangeSelect',
                                  'id': 'cb_'+tableRow['localID'],
@@ -52,7 +53,7 @@ function createWidgets(tableRow, readOnly, ownerEditorPerm, isCrossProject) {
     var star = document.createElement('a');
     var starColor = tableRow['isStarred'] ? 'cornflowerblue' : 'gray';
     var starred = tableRow['isStarred'] ? 'Un-s' : 'S' ;
-    setAttributes(star, {'name': 'star',
+    setAttributes(star, {'class': 'star',
                          'id': 'star-' + tableRow['projectName'] + tableRow['localID'],
                          'style': 'color:' + starColor,
                          'title': starred + 'tar this issue',
@@ -175,8 +176,7 @@ function renderHotlistRow(tableRow, pageSettings) {
 
   setAttributes(tr, {'data-idx': tableRow['idx'], 'data-id': tableRow['issueID']});
   widgets = createWidgets(tableRow, pageSettings['readOnly'],
-                          ((pageSettings['ownerPerm'] == 'True') || (pageSettings['editorPerm'] == 'True')),
-                          (pageSettings['isCrossProject'] == 'True'));
+                          (pageSettings['ownerPerm'] || pageSettings['editorPerm']));
   tr.appendChild(widgets);
   tableRow['cells'].forEach(function(cell) {
     var td = document.createElement('td');
@@ -275,6 +275,20 @@ function renderHotlistTable(tableData, pageSettings) {
     tbody.appendChild(renderHotlistRow(tableRow, pageSettings));
   });
   table.appendChild(tbody);
+
+  // TODO(jojwang): a starring change on the issuedetails page is not
+  // reflected on hotlist when clicking 'back'. It is only reflected
+  // on the hotlist after a refresh, or when accessing it via a link.
+  var stars = document.getElementsByClassName("star");
+  for (var i = 0; i < stars.length; ++i) {
+    var star = stars[i];
+    star.addEventListener("click", function (event) {
+      var projectName = event.target.getAttribute("data-project-name");
+      var localID = event.target.getAttribute("data-local-id");
+      _TKR_toggleStar(event.target, projectName, localID, null, null);
+    });
+  }
+
 }
 
 
