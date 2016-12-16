@@ -70,3 +70,15 @@ class PaginateTest(unittest.TestCase):
     self.assertEquals(vp.start, 1)
     self.assertEquals(vp.last, 1000)
     self.assertTrue(vp.visible)
+
+    # Test urls for a hotlist pagination
+    mr = testing_helpers.MakeMonorailRequest(path='/hotlists/17?num=5&start=4')
+    mr.hotlist_id = 17
+    mr.auth.user_id = 112
+    vp = paginate.VirtualPagination(mr, 12, 5, list_page_url='hotlist')
+    self.assertEquals(vp.num, 5)
+    self.assertEquals(vp.start, 5)
+    self.assertEquals(vp.last, 9)
+    self.assertTrue(vp.visible)
+    self.assertEqual('/u/112/hotlists/17?num=5&start=9', vp.next_url)
+    self.assertEqual('/u/112/hotlists/17?num=5&start=0', vp.prev_url)

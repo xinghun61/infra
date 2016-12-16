@@ -83,25 +83,24 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
     context_for_all_issues = {issue.issue_id: {
           'issue_rank': issue_ranks[issue.issue_id]}
                                 for issue in sorted_issues}
-    sort_spec = '%s %s %s' % (
-      mr.group_by_spec, mr.sort_spec, harmonized_config.default_sort_spec)
-    table_data = _MakeTableData(
-        sorted_issues, starred_iid_set, mr.col_spec.lower().split(),
-        mr.group_by_spec.lower().split(), issues_users_by_id,
-        tablecell.CELL_FACTORIES,
-        related_issues, harmonized_config,
-        context_for_all_issues, mr.hotlist_id, sort_spec)
 
-  column_values = table_view_helpers.ExtractUniqueValues(
-      mr.col_spec.lower().split(), sorted_issues, issues_users_by_id,
-      harmonized_config, related_issues)
-  unshown_columns = table_view_helpers.ComputeUnshownColumns(
-      sorted_issues, mr.col_spec.split(), harmonized_config,
-      features_constants.OTHER_BUILT_IN_COLS)
-  pagination = paginate.ArtifactPagination(
-        mr, [issue.issue_id for issue in sorted_issues],
-        features_constants.DEFAULT_RESULTS_PER_PAGE,
-        urls.HOTLIST_ISSUES, len(sorted_issues))
+    column_values = table_view_helpers.ExtractUniqueValues(
+        mr.col_spec.lower().split(), sorted_issues, issues_users_by_id,
+        harmonized_config, related_issues)
+    unshown_columns = table_view_helpers.ComputeUnshownColumns(
+        sorted_issues, mr.col_spec.split(), harmonized_config,
+        features_constants.OTHER_BUILT_IN_COLS)
+    pagination = paginate.ArtifactPagination(
+        mr, sorted_issues, mr.num, 'hotlist', len(sorted_issues))
+
+    sort_spec = '%s %s %s' % (
+        mr.group_by_spec, mr.sort_spec, harmonized_config.default_sort_spec)
+
+    table_data = _MakeTableData(
+        pagination.visible_results, starred_iid_set,
+        mr.col_spec.lower().split(), mr.group_by_spec.lower().split(),
+        issues_users_by_id, tablecell.CELL_FACTORIES, related_issues,
+        harmonized_config, context_for_all_issues, mr.hotlist_id, sort_spec)
 
   table_related_dict = {
       'column_values': column_values, 'unshown_columns': unshown_columns,

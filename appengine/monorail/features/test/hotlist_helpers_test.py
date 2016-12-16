@@ -55,15 +55,17 @@ class HotlistTableDataTest(unittest.TestCase):
     self.test_hotlist = self.services.features.TestAddHotlist(
         'hotlist', hotlist_id=123,
         iid_rank_pairs=hotlist_issues)
-    self.mr = testing_helpers.MakeMonorailRequest(
-        hotlist=self.test_hotlist)
+    sorting.InitializeArtValues(self.services)
+    self.mr = None
+
+  def setUpCreateHotlistTableDataTestMR(self, **kwargs):
+    self.mr = testing_helpers.MakeMonorailRequest(**kwargs)
     self.services.user.TestAddUser('annajo@email.com', 148L)
     self.mr.auth.effective_ids = {148L}
     self.mr.col_spec = 'ID Summary Modified'
-    sorting.InitializeArtValues(self.services)
 
   def testCreateHotlistTableData(self):
-    self.setUp()
+    self.setUpCreateHotlistTableDataTestMR()
     table_data, table_related_dict = hotlist_helpers.CreateHotlistTableData(
         self.mr, self.iid_rank_pairs_list, profiler.Profiler(), self.services)
     self.assertEqual(len(table_data), 3)
@@ -80,6 +82,20 @@ class HotlistTableDataTest(unittest.TestCase):
             table_related_dict['unshown_columns']))
     self.assertEqual(table_related_dict['is_cross_project'], False)
     self.assertEqual(len(table_related_dict['pagination'].visible_results), 3)
+
+  def testCreateHotlistTableData_Pagination(self):
+    self.setUpCreateHotlistTableDataTestMR(
+        hotlist=self.test_hotlist, path='/123?num=2')
+    table_data, _ = hotlist_helpers.CreateHotlistTableData(
+        self.mr, self.iid_rank_pairs_list, profiler.Profiler(), self.services)
+    self.assertEqual(len(table_data), 2)
+
+  def testCreateHotlistTableData_EndPagination(self):
+    self.setUpCreateHotlistTableDataTestMR(
+        hotlist=self.test_hotlist, path='/123?num=2&start=2')
+    table_data, _ = hotlist_helpers.CreateHotlistTableData(
+        self.mr, self.iid_rank_pairs_list, profiler.Profiler(), self.services)
+    self.assertEqual(len(table_data), 1)
 
 
 class MakeTableDataTest(unittest.TestCase):

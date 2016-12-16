@@ -59,7 +59,10 @@ class VirtualPagination(object):
       next_start = self.start - self.num
 
     if list_page_url:
-      if mr.project_name:
+      if list_page_url == 'hotlist' and mr.hotlist_id:
+        list_servlet_rel_url = '/u/%s/hotlists/%d' % (
+            mr.auth.user_id, mr.hotlist_id)
+      elif mr.project_name:
         list_servlet_rel_url = '/p/%s%s' % (
             mr.project_name, list_page_url)
       else:
