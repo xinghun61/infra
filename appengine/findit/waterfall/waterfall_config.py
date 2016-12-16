@@ -62,7 +62,7 @@ def GetStepsForMastersRules(settings=None, version=None):
 
 
 def MasterIsSupported(master_name):
-  """Return True if the given master is supported, otherwise False."""
+  """Returns ``True`` if the given master is supported, otherwise ``False``."""
   return master_name in GetStepsForMastersRules()['supported_masters']
 
 

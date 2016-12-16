@@ -21,7 +21,7 @@ class Function(object):
     return self._f(x)
 
   def map(self, g):
-    """Return a new function that applies ``g`` after ``self``.
+    """Returns a new function that applies ``g`` after ``self``.
 
     Args:
       g (callable): the function to post-compose.

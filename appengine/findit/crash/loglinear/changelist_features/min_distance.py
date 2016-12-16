@@ -17,7 +17,7 @@ DEFAULT_MAXIMUM = 50
 
 
 class MinDistanceFeature(Feature):
-  """Return the minimum min_distance scaled exponentially between -inf and 0.
+  """Returns the minimum min_distance scaled between -inf and 0.
 
   That is, the normal-domain value is scaled linearly between 0 and 1,
   but since we want to return a log-domain value we take the logarithm
@@ -50,7 +50,7 @@ class MinDistanceFeature(Feature):
     return "MinDistance"
 
   def __call__(self, report):
-    """Return the scaled minimum ``AnalysisInfo.min_distance`` across all files.
+    """Returns the scaled min ``AnalysisInfo.min_distance`` across all files.
 
     Args:
       report (CrashReport): the crash report being analyzed.

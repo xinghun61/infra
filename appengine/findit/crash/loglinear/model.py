@@ -164,7 +164,7 @@ class UnnormalizedLogLinearModel(object):
     return math.sqrt(self.quadrance)
 
   def Features(self, x):
-    """Return a function mapping ``y`` to its feature vector given ``x``.
+    """Returns a function mapping ``y`` to its feature vector given ``x``.
 
     Args:
       x (X): the value of the independent variable.
@@ -175,7 +175,7 @@ class UnnormalizedLogLinearModel(object):
     return self._features(x)
 
   def Score(self, x):
-    """Return a function mapping ``y`` to its "score" given ``x``.
+    """Returns a function mapping ``y`` to its "score" given ``x``.
 
     Semantically, the "score" of ``y`` given ``x`` is the
     unnormalized log-domain conditional probability of ``y`` given

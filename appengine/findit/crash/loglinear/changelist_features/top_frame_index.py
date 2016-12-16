@@ -14,7 +14,7 @@ _MAX_FRAME_INDEX = 7
 
 
 class TopFrameIndexFeature(Feature):
-  """Return the minimum frame index scaled exponentially between -inf and 0.
+  """Returns the minimum frame index scaled between -inf and 0.
 
   That is, the normal-domain value is scaled linearly between 0 and 1,
   but since we want to return a log-domain value we take the logarithm

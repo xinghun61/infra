@@ -130,7 +130,7 @@ class Findit(object):
     return None
 
   def GetAnalysis(self, crash_identifiers): # pylint: disable=W0613
-    """Return the CrashAnalysis for the ``crash_identifiers``, if one exists.
+    """Returns the CrashAnalysis for the ``crash_identifiers``, if one exists.
 
     Args:
       crash_identifiers (JSON): ??

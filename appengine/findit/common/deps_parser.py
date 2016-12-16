@@ -19,7 +19,7 @@ DEPS_OS_CHOICES = ('win', 'ios', 'mac', 'unix', 'android')
 
 class DEPSLoader(object):
   def Load(self, repo_url, revision, deps_file):
-    """Return the raw content of the DEPS file if it exists, otherwise None.
+    """Returns the raw content of the DEPS file if it exists, otherwise None.
 
     Args:
       repo_url (str): the url to the repo of the dependency. Eg., for skia,
@@ -41,7 +41,7 @@ class VarImpl(object):
 
 
 def ParseDEPSContent(deps_content, keys=('deps', 'deps_os')):
-  """Return dependencies by parsing the content of chromium DEPS file.
+  """Returns dependencies by parsing the content of chromium DEPS file.
 
   Args:
     deps_content (str): the content of a DEPS file. It is assumed to be trusted

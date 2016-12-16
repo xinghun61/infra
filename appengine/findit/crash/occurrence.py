@@ -26,7 +26,7 @@ class Occurrence(list):
 
 
 def GetOccurrences(names):
-  """Return a concordance of elements in a list.
+  """Returns a concordance of elements in a list.
 
   Args:
     names (list): a list of "names". Typically names are strings, but

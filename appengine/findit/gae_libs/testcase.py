@@ -73,5 +73,5 @@ class TestCase(testing.AppengineTestCase):  # pragma: no cover.
     self.mock(time_util, 'GetUTCNowWithTimezone', lambda: mocked_utcnow)
 
   def GetMockHttpClient(self, response_for_url=None):
-    """Return mocked http client class."""
+    """Returns mocked http client class."""
     return MockHttpClient(response_for_url)

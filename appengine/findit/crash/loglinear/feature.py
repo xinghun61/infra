@@ -9,7 +9,7 @@ import libs.math.logarithms as lmath
 
 
 def LinearlyScaled(value, maximum):
-  """Return a value scaled linearly between 0 and 1.
+  """Returns a value scaled linearly between 0 and 1.
 
   Args:
     value (float): the value to be scaled.
@@ -25,7 +25,7 @@ def LinearlyScaled(value, maximum):
 
 
 def LogLinearlyScaled(value, maximum):
-  """Return a value scaled exponentially between -inf and 0.
+  """Returns a value scaled between -inf and 0.
 
   That is, we return the log of ``LinearlyScaled(value, maximum)``. Note
   that because of the behavior of logarithms, if this function is used to
@@ -114,7 +114,7 @@ class Feature(object):
     raise NotImplementedError()
 
   def __call__(self, report):
-    """Return a value for a result given some report.
+    """Returns a value for a result given some report.
 
     The loglinear model this feature is used in will specify some types
     ``X`` and ``Y``, as described in the documentation there. As an

@@ -25,7 +25,7 @@ class Component(namedtuple('Component',
 
 
   def MatchesStackFrame(self, frame):
-    """Return true if this component matches the frame."""
+    """Returns true if this component matches the frame."""
     if not self.path_regex.match(frame.dep_path + frame.file_path):
       return False
 
@@ -36,5 +36,5 @@ class Component(namedtuple('Component',
     return self.function_regex.match(frame.function)
 
   def MatchesFile(self, file_path):
-    """Return true if this component matches file path."""
+    """Returns true if this component matches file path."""
     return self.path_regex.match(file_path)
