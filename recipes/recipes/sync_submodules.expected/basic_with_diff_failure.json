@@ -172,11 +172,7 @@
       "RECIPE_MODULE[infra::sync_submodules]/resources/deps2submodules.py",
       "--path-prefix",
       "src/",
-      "[HACK]/foo_builder/DEPS",
-      "--extra-submodule",
-      "src/foo=https://www.foo.com",
-      "--extra-submodule",
-      "src/bar=http://www.bar.com"
+      "[HACK]/foo_builder/DEPS"
     ],
     "cwd": "[START_DIR]/overlay",
     "name": "deps2submodules"
@@ -190,11 +186,16 @@
       "HEAD"
     ],
     "cwd": "[START_DIR]/overlay",
-    "name": "git diff-index"
+    "name": "git diff-index",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 2",
+      "@@@STEP_EXCEPTION@@@"
+    ]
   },
   {
     "name": "$result",
+    "reason": "Infra Failure: Step('git diff-index') returned 2",
     "recipe_result": null,
-    "status_code": 0
+    "status_code": 2
   }
 ]

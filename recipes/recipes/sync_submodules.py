@@ -22,6 +22,16 @@ def RunSteps(api):
 
 def GenTests(api):
   yield api.test('basic') + api.properties(buildername='foo_builder')
+  yield (
+      api.test('basic_with_diff') +
+      api.properties(buildername='foo_builder') +
+      api.step_data('git diff-index', retcode=1)
+  )
+  yield (
+      api.test('basic_with_diff_failure') +
+      api.properties(buildername='foo_builder') +
+      api.step_data('git diff-index', retcode=2)
+  )
   yield api.test('with_one_extra_submodule') + api.properties(
       buildername='foo_builder',
       extra_submodules='src/out=https://www.example.com')

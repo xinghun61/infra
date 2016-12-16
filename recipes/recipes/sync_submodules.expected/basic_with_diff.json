@@ -172,11 +172,7 @@
       "RECIPE_MODULE[infra::sync_submodules]/resources/deps2submodules.py",
       "--path-prefix",
       "src/",
-      "[HACK]/foo_builder/DEPS",
-      "--extra-submodule",
-      "src/foo=https://www.foo.com",
-      "--extra-submodule",
-      "src/bar=http://www.bar.com"
+      "[HACK]/foo_builder/DEPS"
     ],
     "cwd": "[START_DIR]/overlay",
     "name": "deps2submodules"
@@ -190,7 +186,31 @@
       "HEAD"
     ],
     "cwd": "[START_DIR]/overlay",
-    "name": "git diff-index"
+    "name": "git diff-index",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_EXCEPTION@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "commit",
+      "-m",
+      "Update submodule references.\n\nThis is an artificial commit to make dependencies specified in the DEPS file\nvisible to Codesearch.\nThis commit does not exist in the underlying repository."
+    ],
+    "cwd": "[START_DIR]/overlay",
+    "name": "git commit"
+  },
+  {
+    "cmd": [
+      "git",
+      "push",
+      "origin",
+      "HEAD:refs/heads/master"
+    ],
+    "cwd": "[START_DIR]/overlay",
+    "name": "git push"
   },
   {
     "name": "$result",

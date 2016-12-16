@@ -180,22 +180,13 @@
   {
     "cmd": [
       "git",
-      "commit",
-      "-m",
-      "Update submodule references.\n\nThis is an artificial commit to make dependencies specified in the DEPS file\nvisible to Codesearch.\nThis commit does not exist in the underlying repository."
+      "diff-index",
+      "--quiet",
+      "--cached",
+      "HEAD"
     ],
     "cwd": "[START_DIR]/overlay",
-    "name": "git commit"
-  },
-  {
-    "cmd": [
-      "git",
-      "push",
-      "origin",
-      "HEAD:refs/heads/master"
-    ],
-    "cwd": "[START_DIR]/overlay",
-    "name": "git push"
+    "name": "git diff-index"
   },
   {
     "name": "$result",
