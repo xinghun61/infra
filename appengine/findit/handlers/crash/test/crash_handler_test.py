@@ -17,7 +17,7 @@ from crash import crash_pipeline
 from crash.findit import Findit
 from crash.findit_for_chromecrash import FinditForFracas
 from crash.test.crash_pipeline_test import DummyCrashData
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
 from handlers.crash import crash_handler
 from libs.gitiles import gitiles_repository
@@ -36,7 +36,7 @@ class MockCulprit(object):
     return self._result, self._tags
 
 
-class CrashHandlerTest(CrashTestCase):
+class CrashHandlerTest(PredatorTestCase):
   app_module = webapp2.WSGIApplication([
       ('/_ah/push-handlers/crash/fracas', crash_handler.CrashHandler),
   ], debug=True)

@@ -10,7 +10,7 @@ from crash.occurrence import RankByOccurrence
 from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStack
 from crash.results import Result
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 
 
 class DummyClassifier(object):
@@ -39,7 +39,7 @@ class DummyClassifier(object):
     return ''
 
 
-class ClassifierTest(CrashTestCase):
+class ClassifierTest(PredatorTestCase):
 
   def testDefaultOccurrenceRanking(self):
     self.assertEqual(DefaultOccurrenceRanking(Occurrence('c1', [0])),

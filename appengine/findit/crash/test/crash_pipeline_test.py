@@ -7,7 +7,7 @@ from crash import crash_pipeline
 from crash.culprit import Culprit
 from crash.findit_for_chromecrash import FinditForFracas
 from crash.results import Result
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
 from libs.gitiles.change_log import ChangeLog
 from model import analysis_status
@@ -51,7 +51,7 @@ def DummyCrashData(
   return crash_data
 
 
-class CrashPipelineTest(CrashTestCase):
+class CrashPipelineTest(PredatorTestCase):
   app_module = pipeline_handlers._APP
 
   def testAnalysisAborted(self):

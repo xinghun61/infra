@@ -84,10 +84,10 @@ DUMMY_CHANGELOG = ChangeLog.FromDict({
 
 
 
-class CrashTestCase(TestCase):  # pragma: no cover.
+class PredatorTestCase(TestCase):  # pragma: no cover.
 
   def setUp(self):
-    super(CrashTestCase, self).setUp()
+    super(PredatorTestCase, self).setUp()
     CrashConfig.Get().Update(
         users.User(email='admin@chromium.org'), True, **DEFAULT_CONFIG_DATA)
     gae_ts_mon.reset_for_unittest(disable=True)

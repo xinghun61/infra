@@ -8,7 +8,7 @@ from crash.stacktrace import CallStack
 from crash.component_classifier import Component
 from crash.component_classifier import ComponentClassifier
 from crash.results import Result
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 from model.crash.crash_config import CrashConfig
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.change_log import FileChangeInfo
@@ -31,7 +31,7 @@ class CrashConfigComponentClassifier(ComponentClassifier):
         config.get('top_n', 0))
 
 
-class ComponentClassifierTest(CrashTestCase):
+class ComponentClassifierTest(PredatorTestCase):
 
   def setUp(self):
     super(ComponentClassifierTest, self).setUp()

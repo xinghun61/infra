@@ -23,7 +23,7 @@ from crash.results import MatchResult
 from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
 from crash.test.crash_pipeline_test import DummyCrashData
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
 from libs.gitiles import gitiles_repository
 from model import analysis_status
@@ -69,7 +69,7 @@ def _FinditForFracas():
   return FinditForFracas(MOCK_REPOSITORY)
 
 
-class FinditForChromeCrashTest(CrashTestCase):
+class FinditForChromeCrashTest(PredatorTestCase):
 
   chrome_dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
       gitiles_repository.GitilesRepository(HttpClientAppengine()))
@@ -96,7 +96,7 @@ class FinditForChromeCrashTest(CrashTestCase):
     self.assertIsNone(findit_client.FindCulprit(analysis))
 
 
-class FinditForFracasTest(CrashTestCase):
+class FinditForFracasTest(PredatorTestCase):
 
   def testPlatformRename(self):
     self.assertEqual(_FinditForFracas().RenamePlatform('linux'), 'unix')

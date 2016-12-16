@@ -6,12 +6,12 @@ from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStack
 from crash.project_classifier import ProjectClassifier
 from crash.results import Result
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CallStackLanguageType
 from model.crash.crash_config import CrashConfig
 
 
-class ProjectClassifierTest(CrashTestCase):
+class ProjectClassifierTest(PredatorTestCase):
 
   def testGetProjectNameFromDepPath(self):
     classifier = ProjectClassifier()

@@ -3,10 +3,10 @@
 # found in the LICENSE file.
 
 from crash.culprit import Culprit
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 
 
-class CulpritTest(CrashTestCase):
+class CulpritTest(PredatorTestCase):
 
   def testFieldsProperty(self):
     culprit = Culprit('', ['Blink>DOM'], [], None, 'core_algorithm')

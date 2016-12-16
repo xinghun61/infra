@@ -4,13 +4,13 @@
 
 from datetime import datetime
 
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 from model import analysis_status
 from model import result_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 
-class FracasCrashAnalysisTest(CrashTestCase):
+class FracasCrashAnalysisTest(PredatorTestCase):
 
   def testDoNotUseIdentifiersToSetProperties(self):
     crash_identifiers = {

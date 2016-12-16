@@ -10,7 +10,7 @@ from google.appengine.api import app_identity
 from crash.findit import Findit
 from crash.type_enums import CrashClient
 from crash.test.crash_pipeline_test import DummyCrashData
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 MOCK_REPOSITORY = None
@@ -47,7 +47,7 @@ class MockFindit(Findit):  # pylint: disable = W
     return result
 
 
-class FinditTest(CrashTestCase):
+class FinditTest(PredatorTestCase):
 
   def setUp(self):
     super(FinditTest, self).setUp()

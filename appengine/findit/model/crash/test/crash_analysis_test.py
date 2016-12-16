@@ -6,7 +6,7 @@ import copy
 from datetime import datetime
 
 from crash.type_enums import CrashClient
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 from model import analysis_status
 from model import result_status
 from model import triage_status
@@ -14,7 +14,7 @@ from model.crash.crash_analysis import CrashAnalysis
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 
-class CrashAnalysisTest(CrashTestCase):
+class CrashAnalysisTest(PredatorTestCase):
   def testCrashAnalysisStatusIsCompleted(self):
     for status in (analysis_status.COMPLETED, analysis_status.ERROR):
       analysis = CrashAnalysis()

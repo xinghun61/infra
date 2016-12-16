@@ -4,13 +4,13 @@
 
 from datetime import datetime
 
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 from model import analysis_status
 from model import result_status
 from model.crash.chrome_crash_analysis import ChromeCrashAnalysis
 
 
-class ChromeCrashAnalysisTest(CrashTestCase):
+class ChromeCrashAnalysisTest(PredatorTestCase):
 
   def testDoNotUseIdentifiersToSetProperties(self):
     crash_identifiers = {

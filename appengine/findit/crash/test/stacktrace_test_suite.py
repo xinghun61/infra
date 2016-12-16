@@ -4,10 +4,10 @@
 
 from testing_utils import testing
 
-from crash.test.crash_testcase import CrashTestCase
+from crash.test.predator_testcase import PredatorTestCase
 
 
-class StacktraceTestSuite(CrashTestCase):  #pragma: no cover.
+class StacktraceTestSuite(PredatorTestCase):  #pragma: no cover.
 
   def _VerifyTwoStackFramesEqual(self, frame1, frame2):
     self.assertIsNotNone(frame1, "the first frame is unexpectedly missing")
