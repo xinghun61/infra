@@ -145,6 +145,11 @@ def MergeWithOsDeps(deps, deps_os, target_os_list):
   return new_deps
 
 
+# TODO(crbug.com/674222): this function needs cleaning up. For example,
+# passing all the individual parts of ``root_dep`` to the ``Load``
+# method introduces tight coupling and fragility. Also the way the
+# ``_CreateDependency`` function closes overthings but then needs to patch
+# them up afterwards, rather than just making the changes right away.
 def UpdateDependencyTree(root_dep, target_os_list, deps_loader):
   """Update the given dependency with its whole sub-dependency tree.
 
@@ -165,18 +170,12 @@ def UpdateDependencyTree(root_dep, target_os_list, deps_loader):
   else:
     target_os_list = [_NormalizeTargetOSName(name) for name in target_os_list]
 
-  # TODO(wrengr): why not just pass the deps_loader to a method on
-  # root_dep which returns the deps_content? What's the point in threading
-  # things through like this?
   deps_content = deps_loader.Load(
       root_dep.deps_repo_url, root_dep.deps_repo_revision, root_dep.deps_file)
   deps, deps_os = ParseDEPSContent(deps_content, keys=('deps', 'deps_os'))
 
   all_deps = MergeWithOsDeps(deps, deps_os, target_os_list)
 
-  # TODO(wrengr): why close over root_dep to get at deps_file, but then
-  # force callsers to patch things up after the fact with SetParent? Why
-  # not just call SetParent ourselves?
   def _CreateDependency(path, repo_info):
     if not path.endswith('/'):
       path = path + '/'
@@ -195,9 +194,6 @@ def UpdateDependencyTree(root_dep, target_os_list, deps_loader):
       # The dependency is not needed for all the target os.
       continue
 
-    # TODO(wrengr): why are we doing this? i.e., it looks like we're
-    # allocating a dependency.Dependency object and then just dropping it
-    # on the floor. To what end?
     sub_dep = _CreateDependency(path, repo_info)
     sub_dep.SetParent(root_dep)
 

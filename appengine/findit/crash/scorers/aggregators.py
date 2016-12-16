@@ -35,6 +35,8 @@ class IdentityAggregator(Aggregator):
     return data_list
 
 
+# TODO(crbug.com/674231): DRY vs
+# crash/loglinear/changelist_classifier.py's ``AggregateChangedFiles``.
 class ChangedFilesAggregator(Aggregator):
   """Aggregates a list of changed files got from many scorers.
 

@@ -12,6 +12,10 @@ class AnalysisInfo(namedtuple('AnalysisInfo',
     ['min_distance', 'min_distance_frame'])):
   __slots__ = ()
 
+  def __str__(self): # pragma: no cover
+    return ('AnalysisInfo(min_distance = %d, min_distance_frame = %s)'
+        % (self.min_distance, self.min_distance_frame))
+
 
 # TODO(wrengr): it's not clear why the ``priority`` is stored at all,
 # given that every use in this file discards it. ``Result.file_to_stack_infos``
@@ -22,6 +26,9 @@ class StackInfo(namedtuple('StackInfo', ['frame', 'priority'])):
   """Pair of a frame and the ``priority`` of the ``CallStack`` it came from."""
   __slots__ = ()
 
+  def __str__(self): # pragma: no cover
+    return 'StackInfo(frame = %s, priority = %f)' % (self.frame, self.priority)
+
 
 # TODO(http://crbug.com/644476): this class needs a better name.
 class Result(object):
@@ -29,9 +36,13 @@ class Result(object):
 
   def __init__(self, changelog, dep_path,
                confidence=None, reasons=None, changed_files=None):
+    assert isinstance(confidence, (int, float, type(None))), TypeError(
+        'In the ``confidence`` argument to the Result constructor, '
+        'expected a number or None, but got a %s object instead.'
+        % confidence.__class__.__name__)
     self.changelog = changelog
     self.dep_path = dep_path
-    self.confidence = confidence
+    self.confidence = None if confidence is None else float(confidence)
     self.reasons = reasons
     self.changed_files = changed_files
 
@@ -139,8 +150,10 @@ def _DistanceBetweenLineRanges((start1, end1), (start2, end2)):
     If the end of the earlier range comes before the start of the later
     range, then the difference between those points. Otherwise, returns
     zero (because the ranges overlap)."""
-  assert end1 >= start1
-  assert end2 >= start2
+  assert end1 >= start1, ValueError(
+      'the first range is empty: %d < %d' % (end1, start1))
+  assert end2 >= start2, ValueError(
+      'the second range is empty: %d < %d' % (end2, start2))
   # There are six possible cases, but in all the cases where the two
   # ranges overlap, the latter two differences will be negative.
   return max(0, start2 - end1, start1 - end2)

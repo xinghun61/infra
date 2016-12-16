@@ -4,23 +4,26 @@
 
 import unittest
 
-from libs.math.logarithms import logsumexp
-
+import libs.math.logarithms as lmath
 
 INFINITY = float('inf')
 
 
 class LogarithmsTest(unittest.TestCase):
 
+  def testLogZero(self):
+    """Test that ``lmath.log(0)`` doesn't throw an exception."""
+    self.assertEqual(-INFINITY, lmath.log(0.))
+
   def testLogsumexpEmpty(self):
     """The empty sum is zero, log of zero is negative infinity."""
-    self.assertEqual(-INFINITY, logsumexp([]))
+    self.assertEqual(-INFINITY, lmath.logsumexp([]))
 
   def testLogsumexpInfinite(self):
     """If any summand is infinite, the whole thing is infinite."""
-    self.assertEqual(INFINITY, logsumexp([INFINITY]))
-    self.assertEqual(INFINITY, logsumexp([INFINITY, -INFINITY]))
-    self.assertEqual(INFINITY, logsumexp([0, 1, 2, INFINITY, 9, 8, 7]))
+    self.assertEqual(INFINITY, lmath.logsumexp([INFINITY]))
+    self.assertEqual(INFINITY, lmath.logsumexp([INFINITY, -INFINITY]))
+    self.assertEqual(INFINITY, lmath.logsumexp([0, 1, 2, INFINITY, 9, 8, 7]))
 
   def testLogsumexpCommutative(self):
     """Check that ``log(x+y) == log(y+x)`` as it should."""
@@ -28,4 +31,4 @@ class LogarithmsTest(unittest.TestCase):
     # don't trivially pass the test.
     xs = [0.1, 0.3]
     ys = xs[::-1]
-    self.assertEqual(logsumexp(xs), logsumexp(ys))
+    self.assertEqual(lmath.logsumexp(xs), lmath.logsumexp(ys))

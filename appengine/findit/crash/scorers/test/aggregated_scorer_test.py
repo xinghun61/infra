@@ -5,6 +5,7 @@
 from crash.stacktrace import StackFrame
 from crash.results import AnalysisInfo
 from crash.results import MatchResult
+from crash.results import StackInfo
 from crash.scorers import aggregators
 from crash.scorers.aggregated_scorer import AggregatedScorer
 from crash.scorers.min_distance import MinDistance
@@ -15,11 +16,11 @@ from crash.scorers.top_frame_index import TopFrameIndex
 class AggregatedScorerTest(ScorerTestSuite):
 
   def testScore(self):
-    result = MatchResult(self._GetDummyChangeLog(), 'src/', '')
+    result = MatchResult(self._GetDummyChangeLog(), 'src/')
     frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7],
                        repo_url='https://repo_url')
     result.file_to_stack_infos = {
-        'a.cc': [(frame, 0)]
+        'a.cc': [StackInfo(frame, 0)]
     }
     result.file_to_analysis_info = {
         'a.cc': AnalysisInfo(
@@ -41,7 +42,7 @@ class AggregatedScorerTest(ScorerTestSuite):
                        'file': 'a.cc'}])
 
   def testScoreWithCustomizedAggregators(self):
-    result = MatchResult(self._GetDummyChangeLog(), 'src/', '')
+    result = MatchResult(self._GetDummyChangeLog(), 'src/')
     frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7],
                        repo_url='https://repo_url')
     result.file_to_stack_infos = {

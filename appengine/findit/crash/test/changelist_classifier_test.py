@@ -333,7 +333,7 @@ class ChangelistClassifierTest(CrashTestSuite):
   def testFindItForCrash(self):
 
     def _MockFindMatchResults(*_):
-      match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', '')
+      match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=0.)
       frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1])
       frame2 = StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
       match_result1.file_to_stack_infos = {
@@ -343,7 +343,7 @@ class ChangelistClassifierTest(CrashTestSuite):
           'a.cc': AnalysisInfo(min_distance=0, min_distance_frame=frame1)
       }
 
-      match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
+      match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', confidence=0.)
       frame3 = StackFrame(5, 'src/', 'func', 'f.cc', 'src/f.cc', [1])
       match_result2.file_to_stack_infos = {
           'f.cc': [StackInfo(frame3, 0)]
@@ -380,7 +380,7 @@ class ChangelistClassifierTest(CrashTestSuite):
 
   def testFinditForCrashFilterZeroConfidentResults(self):
     def _MockFindMatchResults(*_):
-      match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', '')
+      match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=0.)
       frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1])
       frame2 = StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
       match_result1.file_to_stack_infos = {
@@ -390,7 +390,7 @@ class ChangelistClassifierTest(CrashTestSuite):
           'a.cc': AnalysisInfo(min_distance=1, min_distance_frame=frame1)
       }
 
-      match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
+      match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', confidence=0.)
       frame3 = StackFrame(15, 'src/', 'func', 'f.cc', 'src/f.cc', [1])
       match_result2.file_to_stack_infos = {
           'f.cc': [StackInfo(frame3, 0)]
@@ -399,7 +399,7 @@ class ChangelistClassifierTest(CrashTestSuite):
           'f.cc': AnalysisInfo(min_distance=20, min_distance_frame=frame3)
       }
 
-      match_result3 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
+      match_result3 = MatchResult(DUMMY_CHANGELOG3, 'src/', confidence=0.)
       frame4 = StackFrame(3, 'src/', 'func', 'ff.cc', 'src/ff.cc', [1])
       match_result3.file_to_stack_infos = {
           'f.cc': [StackInfo(frame4, 0)]
@@ -444,8 +444,16 @@ class ChangelistClassifierTest(CrashTestSuite):
                          expected_match_results)
 
   def testFinditForCrashAllMatchResultsWithZeroConfidences(self):
+    """Test that we filter out results with too-large frame indices.
+
+    In the mock results below we return frames with indices
+    15, 20, 21 which are all larger than the ``max_top_n`` of
+    ``TopFrameIndexScorer``. Therefore we should get a score of zero
+    for that feature, which causes the total score to be zero, and so
+    we should not return these results.
+    """
     def _MockFindMatchResults(*_):
-      match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', '')
+      match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=0.)
       frame1 = StackFrame(20, 'src/', '', 'func', 'a.cc', [1])
       frame2 = StackFrame(21, 'src/', '', 'func', 'a.cc', [7])
       match_result1.file_to_stack_infos = {
@@ -455,7 +463,7 @@ class ChangelistClassifierTest(CrashTestSuite):
           'a.cc': AnalysisInfo(min_distance=1, min_distance_frame=frame1)
       }
 
-      match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', '')
+      match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', confidence=0.)
       frame3 = StackFrame(15, 'src/', '', 'func', 'f.cc', [1])
       match_result2.file_to_stack_infos = {
           'f.cc': [StackInfo(frame3, 0)]

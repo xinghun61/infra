@@ -2,8 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# TODO(http://crbug.com/669639): there are lots of ways to make the code
+# in this file better. We avoid having separate todos per task; instead
+# see that meta-issue ticket.
+
 import math
 import numpy as np
+# N.B., ``np.array`` can't take generators; you must pass explicit lists.
 
 from libs.math.functions import MemoizedFunction
 from libs.math.logarithms import logsumexp
@@ -13,25 +18,23 @@ EPSILON = 0.00001
 
 
 def ToFeatureFunction(fs):
-  """Given an array of scalar-valued functions, return a vector-valued function.
+  """Given an array of scalar-valued functions, return an array-valued function.
 
   Args:
-    fs (iterable): A collection of curried functions ``X -> Y -> float``.
-      That is, given a particular ``x`` they return a function ``Y -> float``.
+    fs (iterable): A collection of curried functions ``X -> Y -> A``.
+      That is, given a particular ``x`` they return a function ``Y -> A``.
 
   Returns:
-    A function ``X -> Y -> list(float)`` where for all ``x``, ``y``, and
+    A function ``X -> Y -> list(A)`` where for all ``x``, ``y``, and
     ``i`` we have that ``ToFeatureFunction(fs)(x)(y)[i] == fs[i](x)(y)``.
   """
   def _FeatureFunction(x):
     fxs = [f(x) for f in fs]
-    # TODO(wrengr): allow ``fx(y)`` to be a list, and flatten everything.
     return lambda y: [fx(y) for fx in fxs]
 
   return _FeatureFunction
 
 
-# TODO(http://crbug.com/669639): lots of ways to make this code better.
 class UnnormalizedLogLinearModel(object):
   """An unnormalized loglinear model.
 
@@ -61,7 +64,7 @@ class UnnormalizedLogLinearModel(object):
     """Construct a new model with the given weights and feature function.
 
     Args:
-      feature_function: A function ``X -> Y -> list(float)``. N.B.,
+      feature_function: A function ``X -> Y -> list(FeatureValue)``. N.B.,
         for all ``x`` and ``y`` the length of ``feature_function(x)(y)``
         must be the same as the length of ``weights``.
       weights (list of float): coefficients for how important we consider
@@ -74,32 +77,34 @@ class UnnormalizedLogLinearModel(object):
     """
     if epsilon is None:
       epsilon = EPSILON
-    # N.B., ``np.array`` can't take generators.
     self._weights = np.array([
-        w if isinstance(w, float) and math.fabs(w) >= epsilon else 0.0
+        w if isinstance(w, float) and math.fabs(w) >= epsilon else 0.
         for w in weights])
 
     self._quadrance = None
 
+    # TODO(crbug.com/674752): we need better names for ``self._features``.
     def _FeaturesMemoizedOnY(x):
       fx = feature_function(x)
-      def _FeaturesCoercedToCovector(y):
-        # N.B., ``np.array`` can't take generators.
-        fxy = np.array(list(fx(y)))
+      def _TypeCheckFeatures(y):
+        fxy = fx(y)
         # N.B., we're assuming that ``len(self.weights)`` is O(1).
         assert len(fxy) == len(self.weights), TypeError(
             "vector length mismatch: %d != %d" % (len(fxy), len(self.weights)))
         return fxy
-      return MemoizedFunction(_FeaturesCoercedToCovector)
+      return MemoizedFunction(_TypeCheckFeatures)
     self._features = MemoizedFunction(_FeaturesMemoizedOnY)
 
+    # TODO(crbug.com/674752): we need better names for ``self._scores``.
     # N.B., this is just the inner product of ``self.weights``
     # against ``self._features(x)``. If we can compute this in some
     # more efficient way, we should. In particular, we will want to
     # make the weights sparse, in which case we need to use a sparse
     # variant of the dot product.
     self._scores = MemoizedFunction(lambda x:
-        self._features(x).map(self.weights.dot))
+        self._features(x).map(lambda fxy:
+            self.weights.dot(np.array(map(lambda feature:
+                feature.value, fxy)))))
 
   def ClearWeightBasedMemos(self):
     """Clear all the memos that depend on the weight covector."""

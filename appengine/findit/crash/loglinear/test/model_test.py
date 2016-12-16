@@ -7,22 +7,23 @@ import numpy as np
 import random
 import unittest
 
-from crash.loglinear import ToFeatureFunction
-from crash.loglinear import LogLinearModel
+from crash.loglinear.feature import FeatureValue
+from crash.loglinear.model import ToFeatureFunction
+from crash.loglinear.model import LogLinearModel
 
 
 # Some arbitrary features.
 # We don't use double lambdas because gpylint complains about that.
 def feature0(x):
-  return lambda y: 1.0 if y == (x > 5) else 0.0
+  return lambda y: FeatureValue('feature0', y == (x > 5), None, None)
 
 
 def feature1(x):
-  return lambda y: 1.0 if y == ((x % 2) == 1) else 0.0
+  return lambda y: FeatureValue('feature1', y == ((x % 2) == 1), None, None)
 
 
 def feature2(x):
-  return lambda y: 1.0 if y == (x <= 7) else 0.0
+  return lambda y: FeatureValue('feature2', y == (x <= 7), None, None)
 
 
 features = [feature0, feature1, feature2]

@@ -13,14 +13,14 @@ class MinDistanceTest(ScorerTestSuite):
 
   def testGetMetric(self):
     dummy_changelog = self._GetDummyChangeLog()
-    match_result = MatchResult(dummy_changelog, 'src/', '')
+    match_result = MatchResult(dummy_changelog, 'src/')
     match_result.file_to_analysis_info = {
         'file': AnalysisInfo(min_distance=0, min_distance_frame=None)
     }
 
     self.assertEqual(MinDistance().GetMetric(match_result), 0)
 
-    result = Result(dummy_changelog, 'src/', '')
+    result = Result(dummy_changelog, 'src/')
     self.assertEqual(MinDistance().GetMetric(result), float('inf'))
 
   def testScore(self):
@@ -36,7 +36,7 @@ class MinDistanceTest(ScorerTestSuite):
 
   def testChangedFiles(self):
     dummy_changelog = self._GetDummyChangeLog()
-    result = MatchResult(dummy_changelog, 'src/', '')
+    result = MatchResult(dummy_changelog, 'src/')
     frame = StackFrame(0, 'src/', 'func', 'f.cc', 'a/b/src/f.cc', [2],
                        repo_url='https://repo_url')
     result.file_to_stack_infos = {
@@ -54,7 +54,7 @@ class MinDistanceTest(ScorerTestSuite):
 
   def testChangedFilesInfMinDistance(self):
     dummy_changelog = self._GetDummyChangeLog()
-    result = MatchResult(dummy_changelog, 'src/', '')
+    result = MatchResult(dummy_changelog, 'src/')
     frame = StackFrame(0, 'src/', 'func', 'f.cc', 'a/b/src/f.cc', [2],
                        repo_url='https://repo_url')
     result.file_to_stack_infos = {
@@ -69,7 +69,7 @@ class MinDistanceTest(ScorerTestSuite):
 
   def testChangedFilesSkipFileInfMinDistance(self):
     dummy_changelog = self._GetDummyChangeLog()
-    result = MatchResult(dummy_changelog, 'src/', '')
+    result = MatchResult(dummy_changelog, 'src/')
     frame0 = StackFrame(0, 'src/', 'func0', 'f0.cc', 'a/b/src/f0.cc', [2],
                         repo_url='https://repo_url')
     frame1 = StackFrame(1, 'src/', 'func1', 'f1.cc', 'a/b/src/f1.cc', [5],

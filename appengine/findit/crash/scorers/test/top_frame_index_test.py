@@ -11,7 +11,7 @@ from crash.scorers.top_frame_index import TopFrameIndex
 class TopFrameIndexTest(ScorerTestSuite):
 
   def testGetMetric(self):
-    result = MatchResult(self._GetDummyChangeLog(), 'src/', '')
+    result = MatchResult(self._GetDummyChangeLog(), 'src/')
     self.assertEqual(TopFrameIndex().GetMetric(result), None)
 
     result.file_to_stack_infos = {
@@ -30,5 +30,5 @@ class TopFrameIndexTest(ScorerTestSuite):
                      None)
 
   def testChangedFiles(self):
-    result = MatchResult(self._GetDummyChangeLog(), 'src/', '')
+    result = MatchResult(self._GetDummyChangeLog(), 'src/')
     self.assertEqual(TopFrameIndex().ChangedFiles(result, 1), None)

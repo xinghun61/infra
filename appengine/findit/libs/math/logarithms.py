@@ -4,8 +4,16 @@
 
 import math
 
+LOG_ZERO = float('-inf')
+LOG_ONE = 0.
 
-_LOG_ZERO = float('-inf')
+
+def log(x):
+  """Correct implementation of logarithms, taking zero to negative infinity."""
+  try:
+    return math.log(x)
+  except ValueError:
+    return LOG_ZERO
 
 
 def logsumexp(xs):
@@ -34,7 +42,7 @@ def logsumexp(xs):
     The log-domain sum of ``xs``.
   """
   if not xs:
-    return _LOG_ZERO
+    return LOG_ZERO
 
   maximum = max(xs)
   if math.isinf(maximum):
