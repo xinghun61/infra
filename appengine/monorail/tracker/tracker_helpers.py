@@ -297,7 +297,7 @@ def _ParseBlockers(cnxn, post_data, services, errors, default_project_name,
 
     ref_projects = services.project.GetProjectsByName(
         cnxn, set([blocker_project_name]))
-    blocker_iid = services.issue.ResolveIssueRefs(
+    blocker_iid, _misses = services.issue.ResolveIssueRefs(
         cnxn, ref_projects, default_project_name, [issue_ref])
     if not blocker_iid:
       if blocker_project_name in settings.recognized_codesite_projects:

@@ -8,6 +8,7 @@
 import logging
 import re
 
+from features import features_constants
 from framework import framework_bizobj
 from framework import framework_helpers
 from framework import permissions
@@ -23,8 +24,7 @@ _MSG_MISSING_HOTLIST_NAME = 'Missing hotlist name'
 _MSG_INVALID_HOTLIST_NAME = 'Invalid hotlist name'
 _MSG_MISSING_HOTLIST_SUMMARY = 'Missing hotlist summary'
 _MSG_INVALID_ISSUES_INPUT = "Issues input is invalid"
-# pylint: disable=line-too-long
-_ISSUE_INPUT_REGEX = "[a-z0-9][-a-z0-9]*[a-z0-9]:\d+(([,]|\s)+[a-z0-9][-a-z0-9]*[a-z0-9]:\d+)*"
+
 
 class HotlistCreate(servlet.Servlet):
   """HotlistCreate shows a simple page with a form to create a hotlist."""
@@ -97,9 +97,9 @@ class HotlistCreate(servlet.Servlet):
     description = post_data.get('description', '')
     issue_refs_string = post_data.get('issues')
     if issue_refs_string:
-      pattern = re.compile(_ISSUE_INPUT_REGEX)
-      if pattern.match(issue_refs_string) is not None:
-        issue_ids = self.ParseIssueRefs(mr, issue_refs_string)
+      pattern = re.compile(features_constants.ISSUE_INPUT_REGEX)
+      if pattern.match(issue_refs_string):
+        issue_ids, _misses = self.ParseIssueRefs(mr, issue_refs_string)
       else:
         mr.errors.issues = _MSG_INVALID_ISSUES_INPUT
 

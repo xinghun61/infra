@@ -11,3 +11,5 @@ OTHER_BUILT_IN_COLS = ['Attachments', 'Stars', 'Opened', 'Closed', 'Modified',
                        'BlockedOn', 'Blocking', 'Blocked', 'MergedInto',
                        'Reporter', 'Cc', 'Project', 'Component',
                        'OwnerModified', 'StatusModified', 'ComponentModified']
+# pylint: disable=line-too-long
+ISSUE_INPUT_REGEX = "[a-z0-9][-a-z0-9]*[a-z0-9]:\d+(([,]|\s)+[a-z0-9][-a-z0-9]*[a-z0-9]:\d+)*"

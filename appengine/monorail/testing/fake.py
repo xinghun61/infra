@@ -1132,6 +1132,7 @@ class IssueService(object):
 
   def ResolveIssueRefs(self, cnxn, ref_projects, default_project_name, refs):
     result = []
+    misses = []
     for project_name, local_id in refs:
       project = ref_projects.get(project_name or default_project_name)
       if not project or project.state == project_pb2.ProjectState.DELETABLE:
@@ -1140,9 +1141,9 @@ class IssueService(object):
         issue = self.GetIssueByLocalID(cnxn, project.project_id, local_id)
         result.append(issue.issue_id)
       except issue_svc.NoSuchIssueException:
-        pass  # ignore any refs to issues that don't exist
+        misses.append((project.project_id, local_id))
 
-    return result
+    return result, misses
 
   def GetAllIssuesInProject(self, _cnxn, project_id, min_local_id=None):
     self.get_all_issues_in_project_called = True

@@ -267,7 +267,7 @@ class IssueServiceTest(unittest.TestCase):
   def testLookupIssueIDs_Hit(self):
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
     self.services.issue.issue_id_2lc.CacheItem((789, 2), 78902)
-    actual = self.services.issue.LookupIssueIDs(
+    actual, _misses = self.services.issue.LookupIssueIDs(
         self.cnxn, [(789, 1), (789, 2)])
     self.assertEqual([78901, 78902], actual)
 
@@ -281,8 +281,9 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.issue_id_2lc.CacheItem((789, 2), 78902)
     prefetched_projects = {'proj': fake.Project('proj', project_id=789)}
     refs = [('proj', 1), (None, 2)]
-    actual = self.services.issue.ResolveIssueRefs(
+    actual, misses = self.services.issue.ResolveIssueRefs(
         self.cnxn, prefetched_projects, 'proj', refs)
+    self.assertEqual(misses, [])
     self.assertEqual([78901, 78902], actual)
 
   ### Issue objects

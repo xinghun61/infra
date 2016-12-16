@@ -53,7 +53,8 @@ class HotlistCreateTest(unittest.TestCase):
         self.issue1_local_id, self.issue2_local_id)
     self.mr.project_name = 'projectname'
     # list of global issue_ids
-    issue_ids = self.servlet.ParseIssueRefs(self.mr, issue_refs_string)
+    issue_ids, misses = self.servlet.ParseIssueRefs(self.mr, issue_refs_string)
+    self.assertEqual(misses, [])
     self.assertIn(self.issue2.issue_id, issue_ids)
     self.assertIn(self.issue1.issue_id, issue_ids)
 

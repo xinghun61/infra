@@ -10,6 +10,7 @@ from third_party import ezt
 
 import settings
 import time
+import re
 
 from features import features_constants
 from features import hotlist_helpers
@@ -27,6 +28,9 @@ from framework import xsrf
 from services import features_svc
 from tracker import tracker_bizobj
 
+_INITIAL_ADD_ISSUES_MESSAGE = 'projectname:localID, projectname:localID, etc.'
+_MSG_INVALID_ISSUES_INPUT = 'invalid input format.'
+_MSG_ISSUES_NOT_FOUND = 'project/issue not found.'
 
 class HotlistIssues(servlet.Servlet):
   """HotlistIssues is a page that shows the issues of one hotlist."""
@@ -128,7 +132,8 @@ class HotlistIssues(servlet.Servlet):
             settings.enable_quick_edit and mr.auth.user_pb.preview_on_hover),
         'remove_issues_token': xsrf.GenerateToken(
             mr.auth.user_id,
-            '/u/%s/hotlists/%s.do' % (mr.auth.user_id, mr.hotlist_id))
+            '/u/%s/hotlists/%s.do' % (mr.auth.user_id, mr.hotlist_id)),
+        'add_local_ids': _INITIAL_ADD_ISSUES_MESSAGE,
         }
     table_view_data.update(table_related_dict)
 
@@ -150,29 +155,41 @@ class HotlistIssues(servlet.Servlet):
       if not project_and_local_ids:
         return default_url
 
-    issue_refs_tuples = [(pair.split(':')[0].strip(),
+    if project_and_local_ids:
+      pattern = re.compile(features_constants.ISSUE_INPUT_REGEX)
+      if pattern.match(project_and_local_ids):
+        issue_refs_tuples = [(pair.split(':')[0].strip(),
                           int(pair.split(':')[1].strip()))
                          for pair in project_and_local_ids.split(',')]
-    project_names = {project_name for (project_name, _) in issue_refs_tuples}
-    projects_dict = self.services.project.GetProjectsByName(
+        project_names = {project_name for (project_name, _) in
+                         issue_refs_tuples}
+        projects_dict = self.services.project.GetProjectsByName(
         mr.cnxn, project_names)
-
-    selected_iids = self.services.issue.ResolveIssueRefs(
+        selected_iids, _misses = self.services.issue.ResolveIssueRefs(
         mr.cnxn, projects_dict, mr.project_name, issue_refs_tuples)
+        if (not selected_iids) or len(issue_refs_tuples) > len(selected_iids):
+          mr.errors.issues = _MSG_ISSUES_NOT_FOUND
+      else:
+        mr.errors.issues = _MSG_INVALID_ISSUES_INPUT
 
-    if post_data.get('remove') == 'true':
-      self.services.features.UpdateHotlistIssues(
-          mr.cnxn, mr.hotlist_id, selected_iids, [])
+    if mr.errors.AnyErrors():
+      self.PleaseCorrect(
+          mr, add_local_ids=project_and_local_ids)
+
     else:
-      iid_rank_pairs_sorted = sorted(
-          mr.hotlist.iid_rank_pairs, key=lambda pair: pair.rank)
-      rank_base = iid_rank_pairs_sorted[-1].rank + 10
-      added_pairs =  [(issue_id, rank_base + multiplier*10)
-                     for (multiplier, issue_id) in enumerate(selected_iids)]
-      self.services.features.UpdateHotlistIssues(
-          mr.cnxn, mr.hotlist_id, [], added_pairs)
+      if post_data.get('remove') == 'true':
+        self.services.features.UpdateHotlistIssues(
+            mr.cnxn, mr.hotlist_id, selected_iids, [])
+      else:
+        iid_rank_pairs_sorted = sorted(
+            mr.hotlist.iid_rank_pairs, key=lambda pair: pair.rank)
+        rank_base = iid_rank_pairs_sorted[-1].rank + 10
+        added_pairs =  [(issue_id, rank_base + multiplier*10)
+                        for (multiplier, issue_id) in enumerate(selected_iids)]
+        self.services.features.UpdateHotlistIssues(
+            mr.cnxn, mr.hotlist_id, [], added_pairs)
 
-    return framework_helpers.FormatAbsoluteURL(
+      return framework_helpers.FormatAbsoluteURL(
           mr, '/u/%s/hotlists/%s' % (mr.auth.user_id, mr.hotlist_id),
           saved=1, ts=int(time.time()), include_project=False)
 

@@ -38,15 +38,15 @@ class HotlistIssuesUnitTest(unittest.TestCase):
         'req', 'res', services=self.services)
     self.user1 = self.services.user.TestAddUser('testuser', 111L)
     self.user2 = self.services.user.TestAddUser('testuser2', 222L)
-    self.services.project.TestAddProject('ProjectName', project_id=001)
+    self.services.project.TestAddProject('project-name', project_id=001)
     self.issue1 = fake.MakeTestIssue(
-        001, 1, 'issue_summary', 'New', 111L, project_name='ProjectName')
+        001, 1, 'issue_summary', 'New', 111L, project_name='project-name')
     self.services.issue.TestAddIssue(self.issue1)
     self.issue2 = fake.MakeTestIssue(
-        001, 2, 'issue_summary2', 'New', 111L, project_name='ProjectName')
+        001, 2, 'issue_summary2', 'New', 111L, project_name='project-name')
     self.services.issue.TestAddIssue(self.issue2)
     self.issue3 = fake.MakeTestIssue(
-        001, 3, 'issue_summary3', 'New', 222L, project_name='ProjectName')
+        001, 3, 'issue_summary3', 'New', 222L, project_name='project-name')
     self.services.issue.TestAddIssue(self.issue3)
     self.issues = [self.issue1, self.issue2, self.issue3]
     self.iid_rank_pairs = [
@@ -123,14 +123,14 @@ class HotlistIssuesUnitTest(unittest.TestCase):
 
   def testProcessFormData_NormalEditIssues(self):
     issue4 = fake.MakeTestIssue(
-        001, 4, 'issue_summary4', 'New', 222L, project_name='ProjectName')
+        001, 4, 'issue_summary4', 'New', 222L, project_name='project-name')
     self.services.issue.TestAddIssue(issue4)
     issue5 = fake.MakeTestIssue(
-        001, 5, 'issue_summary5', 'New', 222L, project_name='ProjectName')
+        001, 5, 'issue_summary5', 'New', 222L, project_name='project-name')
     self.services.issue.TestAddIssue(issue5)
 
     post_data = fake.PostData(remove=['false'],
-                              add_local_ids=['ProjectName:4, ProjectName:5'])
+                              add_local_ids=['project-name:4, project-name:5'])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('u/111/hotlists/123' in url)
     self.assertEqual(len(self.test_hotlist.iid_rank_pairs), 5)
@@ -140,7 +140,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
         self.test_hotlist.iid_rank_pairs[4].issue_id, issue5.issue_id)
 
     post_data = fake.PostData(remove=['true'], remove_local_ids=[
-        'ProjectName:4, ProjectName:1, ProjectName:2'])
+        'project-name:4, project-name:1, project-name:2'])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('u/111/hotlists/123' in url)
     self.assertTrue(len(self.test_hotlist.iid_rank_pairs), 2)

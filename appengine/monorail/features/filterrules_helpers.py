@@ -467,7 +467,7 @@ def _CompareIssueRefs(
   rule_ref_projects_dict = services.project.GetProjectsByName(
       cnxn, rule_ref_project_names)
   rule_ref_projects_dict[project.project_name] = project
-  rule_iids = services.issue.ResolveIssueRefs(
+  rule_iids, _misses = services.issue.ResolveIssueRefs(
       cnxn, rule_ref_projects_dict, project.project_name, rule_refs)
 
   if op == ast_pb2.QueryOp.TEXT_HAS:

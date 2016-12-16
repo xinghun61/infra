@@ -377,18 +377,18 @@ class IssueService(object):
 
   def LookupIssueIDs(self, cnxn, project_local_id_pairs):
     """Find the global issue IDs given the project ID and local ID of each."""
-    issue_id_dict, _misses = self.issue_id_2lc.GetAll(
+    issue_id_dict, misses = self.issue_id_2lc.GetAll(
         cnxn, project_local_id_pairs)
 
     # Put the Issue IDs in the order specified by project_local_id_pairs
     issue_ids = [issue_id_dict[pair] for pair in project_local_id_pairs
                  if pair in issue_id_dict]
 
-    return issue_ids
+    return issue_ids, misses
 
   def LookupIssueID(self, cnxn, project_id, local_id):
     """Find the global issue ID given the project ID and local ID."""
-    issue_ids = self.LookupIssueIDs(cnxn, [(project_id, local_id)])
+    issue_ids, _misses = self.LookupIssueIDs(cnxn, [(project_id, local_id)])
     try:
       return issue_ids[0]
     except IndexError:
@@ -413,7 +413,7 @@ class IssueService(object):
       in deleted projects and any issues not found are simply ignored.
     """
     if not refs:
-      return []
+      return [], []
 
     project_local_id_pairs = []
     for project_name, local_id in refs:
@@ -422,8 +422,7 @@ class IssueService(object):
         continue  # ignore any refs to issues in deleted projects
       project_local_id_pairs.append((project.project_id, local_id))
 
-    issue_ids = self.LookupIssueIDs(cnxn, project_local_id_pairs)
-    return issue_ids
+    return self.LookupIssueIDs(cnxn, project_local_id_pairs)  # tuple
 
   ### Issue objects
 
@@ -660,7 +659,7 @@ class IssueService(object):
       List of Issue PBs for the requested issues.  The result Issues
       will be ordered in the same order as local_id_list.
     """
-    issue_ids_to_fetch = self.LookupIssueIDs(
+    issue_ids_to_fetch, _misses = self.LookupIssueIDs(
         cnxn, [(project_id, local_id) for local_id in local_id_list])
     issues = self.GetIssues(cnxn, issue_ids_to_fetch, shard_id=shard_id)
     return issues

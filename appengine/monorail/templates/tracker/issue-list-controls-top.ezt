@@ -69,9 +69,14 @@
   <span id="addissuesspec" style="display:none; font-size:90%">
     <span>Issues:</span>
     <span id="issues_field"><input type="text" size="60" name="add_local_ids"
-                   value=""></span>
+                   value="[add_local_ids]"></span>
     <input type="submit" name="nobtn" value="Add Issues">
   </span>
+  <div class="fielderror">&nbsp;
+    <span id="add_local_idsfeedback">
+       [if-any errors.add_local_ids][errors.add_local_ids][end]
+    </span>
+  </div>
 </form>
 
 <script type="text/javascript" nonce="[nonce]">

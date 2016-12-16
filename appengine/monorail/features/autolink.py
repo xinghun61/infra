@@ -199,7 +199,7 @@ def CurryGetReferencedIssues(services):
     ref_projects = services.project.GetProjectsByName(
         mr.cnxn,
         [(ref_pn or mr.project_name) for ref_pn, _ in ref_tuples])
-    issue_ids = services.issue.ResolveIssueRefs(
+    issue_ids, _misses = services.issue.ResolveIssueRefs(
         mr.cnxn, ref_projects, mr.project_name, ref_tuples)
     open_issues, closed_issues = (
         tracker_helpers.GetAllowedOpenedAndClosedIssues(

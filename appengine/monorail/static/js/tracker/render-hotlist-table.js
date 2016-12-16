@@ -46,9 +46,9 @@ function createWidgets(tableRow, readOnly, ownerEditorPerm) {
       // the user has permission to edit.
         var checkbox = document.createElement('input');
         setAttributes(checkbox, {'name': 'checkRangeSelect',
-                                 'id': 'cb_'+tableRow['localID'],
+                                 'id': 'cb_' + tableRow['issueRef'],
                                  'type': 'checkbox'});
-        widgets.appendChild(checkbox);
+      widgets.appendChild(checkbox);
     }
     var star = document.createElement('a');
     var starColor = tableRow['isStarred'] ? 'cornflowerblue' : 'gray';

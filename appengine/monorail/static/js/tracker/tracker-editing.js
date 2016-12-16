@@ -1443,11 +1443,13 @@ function TKR_trimCommas() {
 function HTL_removeIssues() {
   var selectedLocalIDs = [];
   for (var i = 0; i < issueRefs.length; i++) {
-    var checkbox = document.getElementById('cb_' + issueRefs[i]['id']);
+    issueRef = issueRefs[i]['project_name']+':'+issueRefs[i]['id'];
+    var checkbox = document.getElementById('cb_' + issueRef);
     if (checkbox && checkbox.checked) {
-      selectedLocalIDs.push(issueRefs[i]['project_name']+':'+issueRefs[i]['id']);
+      selectedLocalIDs.push(issueRef);
     }
   }
+
   if (selectedLocalIDs.length > 0) {
     if (!confirm('Remove all selected issues?')) {
       return;

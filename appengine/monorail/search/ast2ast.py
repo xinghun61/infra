@@ -174,8 +174,9 @@ def _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services):
       project_name = default_project_name
     refs.append((project_name, int(local_id)))
 
-  return services.issue.ResolveIssueRefs(
+  issue_ids, _misses =  services.issue.ResolveIssueRefs(
       cnxn, ref_projects, default_project_name, refs)
+  return issue_ids
 
 
 def _PreprocessStatusCond(
