@@ -16,7 +16,7 @@ import tempfile
 import time
 
 from util import STORAGE_URL, OBJECT_URL, LOCAL_STORAGE_PATH, LOCAL_OBJECT_URL
-from util import read_deps, merge_deps, print_deps, platform_tag
+from util import filter_deps, read_deps, merge_deps, print_deps, platform_tag
 
 LOGGER = logging.getLogger(__name__)
 
@@ -70,9 +70,15 @@ def ls(prefix):
   for entry in entries:
     entry['md5Hash'] = entry['md5Hash'].decode('base64').encode('hex')
     entry['local'] = False
+    entry['link'] = OBJECT_URL.format(entry['name'], entry['md5Hash'])
   # Also look in the local cache
   entries.extend([
-    {'name': fname, 'md5Hash': None, 'local': True}
+    {
+      'name': fname,
+      'md5Hash': None,
+      'local': True,
+      'link': LOCAL_OBJECT_URL.format(fname),
+    }
     for fname in glob.glob(os.path.join(LOCAL_STORAGE_PATH,
                                         prefix.split('/')[-1] + '*'))])
   return entries
@@ -87,54 +93,52 @@ def sha_for(deps_entry):
 
 def get_links(deps):
   import pip.wheel  # pylint: disable=E0611
-  plat_tag = platform_tag()
+  plat_tag = platform_tag()  # this is something like '_Ubuntu_14.04' or ''
 
   links = []
 
   for name, dep in deps.iteritems():
     version, source_sha = dep['version'] , sha_for(dep)
-    prefix = 'wheels/{}-{}-{}_{}'.format(name, version, dep['build'],
-                                         source_sha)
-    generic_link = None
-    binary_link = None
-    local_link = None
+    prefix = '{}-{}-{}_{}'.format(name, version, dep['build'], source_sha)
 
-    for entry in ls(prefix):
+    generic_wheels = []
+    platform_wheels = []
+    local_wheels = []
+
+    for entry in ls('wheels/'+prefix):
       fname = entry['name'].split('/')[-1]
-      md5hash = entry['md5Hash']
       wheel_info = pip.wheel.Wheel.wheel_file_re.match(fname)
       if not wheel_info:
-        LOGGER.warn('Skipping invalid wheel: %r', fname)
+        LOGGER.warning('Skipping invalid wheel: %r', fname)
         continue
 
-      if pip.wheel.Wheel(fname).supported():
-        if entry['local']:
-          link = LOCAL_OBJECT_URL.format(entry['name'])
-          local_link = link
-          continue
-        else:
-          link = OBJECT_URL.format(entry['name'], md5hash)
-        if fname.endswith('none-any.whl'):
-          if generic_link:
-            LOGGER.warning(
-              'Found more than one generic matching wheel for %r: %r',
-              prefix, dep)
-            continue
-          generic_link = link
-        elif plat_tag in fname:
-          if binary_link:
-            LOGGER.warning(
-              'Found more than one binary matching wheel for %r: %r\n'
-              '  Picking:        %s\n'
-              '  Also available: %s\n',
-              prefix, dep, binary_link, link)
-            continue
-          binary_link = link
+      # This check skips all obviously unsupported wheels (like Linux wheels on
+      # Windows).
+      if not pip.wheel.Wheel(fname).supported():
+        continue
 
-    if not binary_link and not generic_link and not local_link:
+      if entry['local']:
+        # A locally built wheel?
+        local_wheels.append(entry)
+      elif plat_tag and fname.startswith(prefix + plat_tag):
+        # A wheel targeting our very specific platform (if any)? This is hit on
+        # different versions of Ubuntu for example.
+        platform_wheels.append(entry)
+      else:
+        # Some more generic wheel (e.g. 'linux1many' or source wheel).
+        generic_wheels.append(entry)
+
+    # Prefer local wheels if have them, then per-platform, then generic.
+    wheel_set = local_wheels or platform_wheels or generic_wheels
+    if not wheel_set:
       raise NoWheelException(name, version, dep['build'], source_sha)
 
-    links.append(local_link or binary_link or generic_link)
+    if len(wheel_set) != 1:
+      LOGGER.warning('Letting pip choose a wheel for "%s":', name)
+      for entry in wheel_set:
+        LOGGER.warning(' * %s', entry['name'])
+
+    links.extend(entry['link'] for entry in wheel_set)
 
   return links
 
@@ -279,8 +283,38 @@ def main(args):
   opts = parser.parse_args(args)
   opts.deps_file = opts.deps_file or [os.path.join(ROOT, 'bootstrap/deps.pyl')]
 
-  deps = merge_deps(opts.deps_file)
+  # Skip deps not available for this flavor of Python interpreter.
+  #
+  # Possible platform names:
+  #   macosx_x86_64
+  #   linux_i686
+  #   linux_x86_64
+  #   windows_i686
+  #   windows_x86_64
+  if sys.platform.startswith('linux'):
+    osname = 'linux'
+  elif sys.platform == 'darwin':
+    osname = 'macosx'
+  elif sys.platform == 'win32':
+    osname = 'windows'
+  else:
+    osname = sys.platform
+  if sys.maxsize == (2 ** 31) - 1:
+    bitness = 'i686'
+  else:
+    bitness = 'x86_64'
+  plat = '%s_%s' % (osname, bitness)
+
+  deps, kicked = filter_deps(merge_deps(opts.deps_file), plat)
   activate_env(opts.env_path, deps, opts.quiet, opts.run_within_virtualenv)
+
+  if not opts.quiet and kicked:
+    print '---------------------------'
+    print 'WARNING! WARNING! WARNING! '
+    print '---------------------------'
+    print 'The following deps were skipped, they are not available on %s' % plat
+    for pkg, dep in sorted(kicked.iteritems()):
+      print '  * %s (%s)' % (pkg, dep['version'])
 
 
 if __name__ == '__main__':

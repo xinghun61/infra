@@ -111,10 +111,15 @@
     'rev': '96c2601faa69f6d0ecb931df837632c7776ed4d4',
   },
   'numpy': {
-    'version': '1.6.1',
+    'version': '1.11.0',
     'build': '0',
-    'repo': 'external/github.com/numpy/numpy',
-    'rev': '68538b74483009c2c2d1644ef00397014f95a696',
+    'gs': 'b6a34c03e3a3cea974e4c0000788d4edc7d43a36.zip',
+    'only_on': [
+      'linux_x86_64',
+      'macosx_x86_64',
+      'windows_i686',
+      'windows_x86_64',
+    ],
     # Required to run/test some appengine apps locally
   },
   'oauth2client': {

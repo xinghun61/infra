@@ -18,15 +18,15 @@ SOURCE_BUCKET = 'gs://chrome-python-wheelhouse/sources'
 WHEELS_BUCKET = 'gs://chrome-python-wheelhouse/wheels'
 
 
-# Python versions + ABIs + Platforms we recognize.
-PLATFORMS = [
-  ('cp27', 'cp27m', 'macosx_10_9_intel'),
-  ('cp27', 'cp27mu', 'manylinux1_i686'),
-  ('cp27', 'cp27mu', 'manylinux1_x86_64'),
-  ('cp27', 'none', 'win32'),
-  ('cp27', 'none', 'win_amd64'),
-  ('py2', 'none', 'any'),
-]
+# Python versions + ABIs + Platforms we recognize => deps.py platform tag.
+PLATFORMS = {
+  ('cp27', 'cp27m', 'macosx_10_9_intel'): 'macosx_x86_64',
+  ('cp27', 'cp27mu', 'manylinux1_i686'): 'linux_i686',
+  ('cp27', 'cp27mu', 'manylinux1_x86_64'): 'linux_x86_64',
+  ('cp27', 'none', 'win32'): 'windows_i686',
+  ('cp27', 'none', 'win_amd64'): 'windows_x86_64',
+  ('py2', 'none', 'any'): 'any',
+}
 
 
 def query_pypi(package, version):
@@ -95,6 +95,7 @@ def main():
 
   # Now find wheels for all platforms we care about.
   wheels = []
+  only_on = set()
   for r in releases:
     if r['packagetype'] != 'bdist_wheel':
       continue
@@ -109,10 +110,11 @@ def main():
       continue
     # See also https://www.python.org/dev/peps/pep-0425/
     py_tag, abi_tag, platform_tag = chunks[-3:]
-    for known_py, known_abi, known_plat in PLATFORMS:
+    for (known_py, known_abi, known_plat), deps_tag in PLATFORMS.iteritems():
       if (py_tag == known_py and
           abi_tag == known_abi and
           known_plat in platform_tag):
+        only_on.add(deps_tag)
         break
     else:
       continue
@@ -125,6 +127,16 @@ def main():
   print 'Going to ingest the following wheels:'
   for r in wheels:
     print '  * %s (%d downloads)' % (r['filename'], r['downloads'])
+  print
+
+  if 'any' in only_on:
+    only_on = []
+    print 'This will make the package available on all platforms.'
+  else:
+    only_on = sorted(only_on)
+    print 'This will make the package available on:'
+    for p in only_on:
+      print '  * %s' % p
   print
 
   if raw_input('Continue? [Y] ') not in ('', 'y', 'Y'):
@@ -151,14 +163,16 @@ def main():
   print 'Done!'
   print
 
+  entry = {
+    'version': version,
+    'build': '0',
+    'gs': src_gs_file,
+  }
+  if only_on:
+    entry['only_on'] = only_on
+
   print 'deps.pyl entry:'
-  print json.dumps({
-    pkg: {
-      'version': version,
-      'build': '0',
-      'gs': src_gs_file,
-    },
-  }, sort_keys=True, indent=2)
+  print json.dumps({pkg: entry}, sort_keys=True, indent=2)
 
 
 if __name__ == '__main__':

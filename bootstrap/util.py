@@ -85,3 +85,15 @@ def merge_deps(paths):
         raise DepsConflictException(key)
     deps.update(d)
   return deps
+
+
+def filter_deps(deps, tag_to_check):
+  out = {}
+  kicked = {}
+  for pkg, dep in deps.iteritems():
+    p = dep.get('only_on', None)
+    if not p or tag_to_check in p:
+      out[pkg] = dep
+    else:
+      kicked[pkg] = dep
+  return out, kicked
