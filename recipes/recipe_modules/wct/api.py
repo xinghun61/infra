@@ -12,7 +12,7 @@ class WCTApi(recipe_api.RecipeApi):
     super(WCTApi, self).__init__(*args, **kwargs)
 
   def install(self):
-    cipd_root = self.m.path['start_dir'].join('packages', 'wct')
+    cipd_root = self.m.path['start_dir'].join('packages')
     wct_package_name = 'infra/testing/wct/%s' % self.m.cipd.platform_suffix()
     node_package_name = ('infra/nodejs/nodejs/%s' %
         self.m.cipd.platform_suffix())
@@ -27,10 +27,10 @@ class WCTApi(recipe_api.RecipeApi):
     if not self.m.platform.is_linux:
       raise recipe_api.StepFailure('WCT only runs on Linux.')
 
-    wct_root = self.m.path['start_dir'].join('packages', 'wct')
+    wct_root = self.m.path['start_dir'].join('packages')
     node_path = self.m.path['start_dir'].join('packages', 'bin')
     env = {
-      'PATH': self.m.path.pathsep.join([str(node_path), '%(PATH)s'])
+      'PATH': self.m.path.pathsep.join([str(node_path)])
     }
     wct_bin = wct_root.join('node_modules', 'web-component-tester', 'bin',
         'wct')

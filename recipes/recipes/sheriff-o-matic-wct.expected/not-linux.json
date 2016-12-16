@@ -113,7 +113,7 @@
       "[START_DIR]\\cipd\\cipd",
       "ensure",
       "--root",
-      "[START_DIR]\\packages\\wct",
+      "[START_DIR]\\packages",
       "--list",
       "infra/nodejs/nodejs/windows-386 node_version:4.5.0\ninfra/testing/wct/windows-386 prod",
       "--json-output",

@@ -113,7 +113,7 @@
       "[START_DIR]/cipd/cipd",
       "ensure",
       "--root",
-      "[START_DIR]/packages/wct",
+      "[START_DIR]/packages",
       "--list",
       "infra/nodejs/nodejs/linux-amd64 node_version:4.5.0\ninfra/testing/wct/linux-amd64 prod",
       "--json-output",
@@ -140,7 +140,7 @@
     "cmd": [
       "xvfb-run",
       "-a",
-      "[START_DIR]/packages/wct/node_modules/web-component-tester/bin/wct",
+      "[START_DIR]/packages/node_modules/web-component-tester/bin/wct",
       "test",
       "--root",
       "[START_DIR]/infra/go/src/infra/appengine/sheriff-o-matic",
@@ -150,7 +150,7 @@
       "chrome"
     ],
     "env": {
-      "PATH": "[START_DIR]/packages/bin:%(PATH)s"
+      "PATH": "[START_DIR]/packages/bin"
     },
     "name": "Run WCT"
   },
