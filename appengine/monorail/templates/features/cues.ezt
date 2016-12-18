@@ -108,6 +108,13 @@
        an issue's owner, status or component were changed.
     [end]
 
+    [# Cue card to remind the user that they have set a vacation message.]
+    [is cue "you_are_on_vacation"]
+       <b>Note:</b>
+       Your <a href="/hosting/settings">vacation message</a> is set to:
+       "[logged_in_user.avail_message_short]".
+    [end]
+
    </span>
     [# Link to dismiss the cue card.]
     [if-any logged_in_user]

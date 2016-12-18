@@ -759,9 +759,17 @@ class Servlet(webapp2.RequestHandler):
     Returns:
       A dict of values to drive on-page user help, to be added to page_data.
     """
-    return {
+    help_data = {
         'cue': None,  # for cues.ezt
         }
+    dismissed = []
+    if mr.auth.user_pb:
+      dismissed = mr.auth.user_pb.dismissed_cues
+    if (mr.auth.user_pb.vacation_message and
+        'you_are_on_vacation' not in dismissed):
+      help_data['cue'] = 'you_are_on_vacation'
+
+    return help_data
 
   def GatherDebugData(self, mr, page_data):
     """Return debugging info for display at the very bottom of the page."""

@@ -223,8 +223,23 @@ class ServletTest(unittest.TestCase):
         path='/p/proj/adminAdvanced.do', project=project)
     self.page_class._CheckForMovedProject(mr, request)
 
-  def testGatherHelpData(self):
-    help_data = self.page_class.GatherHelpData('fake mr', {})
+  def testGatherHelpData_Normal(self):
+    project = fake.Project(project_name='proj')
+    _request, mr = testing_helpers.GetRequestObjects(
+        path='/p/proj', project=project)
+    help_data = self.page_class.GatherHelpData(mr, {})
+    self.assertEqual(None, help_data['cue'])
+
+  def testGatherHelpData_VacationReminder(self):
+    project = fake.Project(project_name='proj')
+    _request, mr = testing_helpers.GetRequestObjects(
+        path='/p/proj', project=project)
+    mr.auth.user_pb.vacation_message = 'Gone skiing'
+    help_data = self.page_class.GatherHelpData(mr, {})
+    self.assertEqual('you_are_on_vacation', help_data['cue'])
+
+    mr.auth.user_pb.dismissed_cues = ['you_are_on_vacation']    
+    help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
 
   def testGatherDebugData_Visibility(self):
