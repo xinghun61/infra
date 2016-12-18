@@ -5,7 +5,7 @@
 
 CODE_REVIEW_SERVER: https://codereview.chromium.org
 BUG_PREFIX: monorail:
-CC_LIST: chromium-reviews@chromium.org, infra-reviews+infra@chromium.org, jrobbins@google.com
+CC_LIST: chromium-reviews@chromium.org, jrobbins@chromium.org, infra-reviews+infra@chromium.org
 GERRIT_HOST: True
 GERRIT_SQUASH_UPLOADS: True
 PROJECT: infra
