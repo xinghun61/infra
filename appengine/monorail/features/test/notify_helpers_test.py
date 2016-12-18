@@ -227,22 +227,22 @@ class MakeEmailWorkItemTest(unittest.TestCase):
     """"An html body is sent with correct <a href>s."""
     email_task = notify_helpers._MakeEmailWorkItem(
         (False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
-        ['reason'], self.issue, 'test <http://google.com> test', 'unused body',
+        ['reason'], self.issue, 'a <http://google.com> z', 'unused body',
         self.project, 'example.com', self.commenter_view, self.detail_url)
 
     expected_html_body = (
         notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % {
             'url': self.detail_url,
             'body': (
-                'test <a href="http://google.com"><http://google.com></a> '
-                'test-- <br/>%s' % self.expected_html_footer)})
+                'a &lt;<a href="http://google.com">http://google.com</a>&gt; '
+                'z-- <br/>%s' % self.expected_html_footer)})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
   def testHtmlBody_EmailWithinTags(self):
     """"An html body is sent with correct <a href>s."""
     email_task = notify_helpers._MakeEmailWorkItem(
         (False, 'a@a.com', self.member, REPLY_NOT_ALLOWED),
-        ['reason'], self.issue, 'test <t@chromium.org> <a@chromium.org> test',
+        ['reason'], self.issue, 'a <t@chromium.org> <a@chromium.org> z',
         'unused body mem', self.project, 'example.com', self.commenter_view,
         self.detail_url)
 
@@ -250,9 +250,9 @@ class MakeEmailWorkItemTest(unittest.TestCase):
         notify_helpers.HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE % {
             'url': self.detail_url,
             'body': (
-                'test <a href="mailto:t@chromium.org"><t@chromium.org></a> '
-                '<a href="mailto:a@chromium.org"><a@chromium.org></a> '
-                'test-- <br/>%s' % self.expected_html_footer)})
+                'a &lt;<a href="mailto:t@chromium.org">t@chromium.org</a>&gt; '
+                '&lt;<a href="mailto:a@chromium.org">a@chromium.org</a>&gt; '
+                'z-- <br/>%s' % self.expected_html_footer)})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
   def testHtmlBody_WithEscapedHtml(self):

@@ -103,6 +103,7 @@ def ComputeIssueChangeAddressPermList(
     REPLY_MAY_UPDATE.
   """
   memb_addr_perm_list = []
+  logging.info('Considering %r ', ids_to_consider)
   for user_id in ids_to_consider:
     if user_id == framework_constants.NO_USER_SPECIFIED:
       continue
@@ -110,6 +111,7 @@ def ComputeIssueChangeAddressPermList(
     # Notify people who have a pref set, or if they have no User PB
     # because the pref defaults to True.
     if user and not pref_check_function(user):
+      logging.info('Not notifying %r: user preference', user.email)
       continue
     # TODO(jrobbins): doing a bulk operation would reduce DB load.
     auth = monorailrequest.AuthData.FromUserID(cnxn, user_id, services)
@@ -121,10 +123,12 @@ def ComputeIssueChangeAddressPermList(
     if not permissions.CanViewIssue(
         auth.effective_ids, perms, project, issue,
         granted_perms=granted_perms):
+      logging.info('Not notifying %r: user cannot view issue', user.email)
       continue
 
     addr = users_by_id[user_id].email
     if addr in omit_addrs:
+      logging.info('Not notifying %r: user already knows', user.email)
       continue
 
     recipient_is_member = bool(framework_bizobj.UserIsInProject(
@@ -317,14 +321,15 @@ def _AddHTMLTags(body):
   # The below regex fixes this specific problem. See
   # https://bugs.chromium.org/p/monorail/issues/detail?id=1007 for more details.
   body = re.sub(r'&lt;<a href="(|mailto:)(.*?)&gt">(.*?)&gt</a>;',
-                r'<a href="\1\2"><\3></a>', body)
+                r'&lt;<a href="\1\2">\3</a>&gt;', body)
 
   # Fix incorrectly split &quot; by urlize
   body = re.sub(r'<a href="(.*?)&quot">(.*?)&quot</a>;',
                 r'<a href="\1&quot;">\2&quot;</a>', body)
 
   # Convert all "\n"s into "<br/>"s.
-  body = body.replace("\n", "<br/>")
+  body = body.replace('\r\n', '<br/>')
+  body = body.replace('\n', '<br/>')
   return body
 
 

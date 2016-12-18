@@ -959,6 +959,8 @@ class OutboundEmailTask(jsonfeed.InternalTask):
         'Email:\n sender: %s\n reply_to: %s\n to: %s\n references: %s\n '
         'subject: %s\n body: %s\n html body: %s',
         sender, reply_to, to, references, subject, body, html_body)
+    if html_body:
+      logging.info('Readable HTML:\n%s', html_body.replace('<br/>', '<br/>\n'))
     message = mail.EmailMessage(
         sender=sender, to=to, subject=subject, body=body)
     if html_body:
