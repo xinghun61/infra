@@ -9,7 +9,7 @@ from collections import namedtuple
 from common import chrome_dependency_fetcher
 from crash import crash_util
 from crash.suspect import Suspect
-from crash.suspect import Suspects
+from crash.suspect import SuspectMap
 from crash.scorers.aggregated_scorer import AggregatedScorer
 from crash.scorers.min_distance import MinDistance
 from crash.scorers.top_frame_index import TopFrameIndex
@@ -286,7 +286,7 @@ def FindSuspects(dep_to_file_to_changelogs,
   Returns:
     A list of ``Suspect`` instances with confidence and reason unset.
   """
-  suspects = Suspects(ignore_cls)
+  suspects = SuspectMap(ignore_cls)
 
   for dep, file_to_stack_infos in dep_to_file_to_stack_infos.iteritems():
     file_to_changelogs = dep_to_file_to_changelogs[dep]

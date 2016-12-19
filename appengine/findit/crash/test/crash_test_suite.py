@@ -43,8 +43,8 @@ class CrashTestSuite(StacktraceTestSuite):  # pragma: no cover.
     self.assertEqual(suspect1.file_to_analysis_info,
                      suspect2.file_to_analysis_info)
 
-  def _VerifyTwoSuspectsEqual(self, suspects1, suspects2):
-    """Assert that two ``Suspects`` objects are equal."""
+  def _VerifyTwoSuspectMapEqual(self, suspects1, suspects2):
+    """Assert that two ``SuspectMap`` objects are equal."""
     self.assertEqual(suspects1._ignore_cls, suspects2._ignore_cls)
 
     self.assertEqual(len(suspects1), len(suspects2))

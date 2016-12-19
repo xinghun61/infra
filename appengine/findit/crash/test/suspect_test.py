@@ -6,7 +6,7 @@ from crash.stacktrace import StackFrame
 from crash.suspect import AnalysisInfo
 from crash.suspect import StackInfo
 from crash.suspect import Suspect
-from crash.suspect import Suspects
+from crash.suspect import SuspectMap
 from crash.suspect import _UpdateSuspect
 from crash.test.crash_test_suite import CrashTestSuite
 from libs.gitiles.blame import Blame
@@ -171,7 +171,7 @@ class SuspectTest(CrashTestSuite):
         {'a.cc': AnalysisInfo(min_distance = 0, min_distance_frame = frame1)})
 
   def testSuspectsGenerateSuspects(self):
-    suspects = Suspects(ignore_cls=set(['2']))
+    suspects = SuspectMap(ignore_cls=set(['2']))
     frame1 = StackFrame(0, 'src/',  'func', 'a.cc', 'src/a.cc', [7])
     frame2 = StackFrame(1, 'src/',  'func', 'b.cc', 'src/b.cc', [11])
     stack_infos1 = [StackInfo(frame1, 0)]
@@ -194,7 +194,7 @@ class SuspectTest(CrashTestSuite):
         'b.cc': AnalysisInfo(min_distance = 3, min_distance_frame = frame2),
     }
 
-    expected_suspects = Suspects(ignore_cls=set(['2']))
+    expected_suspects = SuspectMap(ignore_cls=set(['2']))
     expected_suspects['1'] = expected_suspect
 
-    self._VerifyTwoSuspectsEqual(suspects, expected_suspects)
+    self._VerifyTwoSuspectMapEqual(suspects, expected_suspects)

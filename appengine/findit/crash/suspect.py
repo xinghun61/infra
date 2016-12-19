@@ -166,16 +166,16 @@ def _DistanceBetweenLineRanges((start1, end1), (start2, end2)):
   return max(0, start2 - end1, start1 - end2)
 
 
-class Suspects(dict):
+class SuspectMap(dict):
   """A map from revisions to the ``Suspect`` object for that revision."""
 
   def __init__(self, ignore_cls=None):
-    super(Suspects, self).__init__()
+    super(SuspectMap, self).__init__()
     self._ignore_cls = ignore_cls
 
   def GenerateSuspects(self, file_path, dep_path, stack_infos, changelogs,
       blame):
-    """Compute suspects from a list of CLs, and store them.
+    """Compute suspects from a list of CLs, and store them in this map.
 
     Suspects are generated based on newly found file path, its stack_infos,
     and all the changelogs that touched this file in the dep in regression
