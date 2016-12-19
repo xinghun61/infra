@@ -249,7 +249,6 @@ class GlobalsTest(auto_stub.TestCase):
     self.assertEqual(interface.state.target.network, 'net')
     self.assertEqual(interface.state.target.hostname, 'autogen:host')
 
-
   def test_task_args(self):
     p = argparse.ArgumentParser()
     config.add_argparse_options(p)
@@ -367,6 +366,23 @@ class GlobalsTest(auto_stub.TestCase):
     r.status_code = 404
 
     self.assertEquals('golo', config._default_region('foo.golo'))
+
+  def test_use_new_proto_from_config(self):
+    self.mock(config, 'load_machine_config', lambda x: {
+        'use_new_proto': True})
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args([])
+    config.process_argparse_options(args)
+    self.assertEqual(interface.state.use_new_proto, True)
+
+  def test_use_new_proto_from_arg(self):
+    self.mock(config, 'load_machine_config', lambda x: {})
+    p = argparse.ArgumentParser()
+    config.add_argparse_options(p)
+    args = p.parse_args(['--ts-mon-use-new-proto'])
+    config.process_argparse_options(args)
+    self.assertEqual(interface.state.use_new_proto, True)
 
 
 class ConfigTest(unittest.TestCase):
