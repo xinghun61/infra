@@ -84,16 +84,32 @@ class UnnormalizedLogLinearModel(object):
     self._quadrance = None
 
     # TODO(crbug.com/674752): we need better names for ``self._features``.
-    def _FeaturesMemoizedOnY(x):
+    def _Features(x):
+      """Wrap ``feature_function`` to memoize things and ensure types.
+
+      This outer wrapping takes each ``x`` to a memoized instance of
+      ``_FeaturesGivenX``. That is, for each ``x`` we return a
+      ``MemoizedFunction`` from ``Y`` to ``list(FeatureValue)``.
+      """
       fx = feature_function(x)
-      def _TypeCheckFeatures(y):
+      def _FeaturesGivenX(y):
+        """Wrap ``feature_function(x)`` to ensure appropriate types.
+
+        This inner wrapper ensures that the resulting ``FeatureValue``
+        array has the same length as the weight covector.
+        """
         fxy = fx(y)
         # N.B., we're assuming that ``len(self.weights)`` is O(1).
         assert len(fxy) == len(self.weights), TypeError(
             "vector length mismatch: %d != %d" % (len(fxy), len(self.weights)))
         return fxy
-      return MemoizedFunction(_TypeCheckFeatures)
-    self._features = MemoizedFunction(_FeaturesMemoizedOnY)
+
+      # Memoize on ``Y``, to ensure we don't need to recompute
+      # ``FeatureValue``s nor recheck the lengths.
+      return MemoizedFunction(_FeaturesGivenX)
+
+    # Memoize on ``X``, to ensure we share the memo tables on ``Y``.
+    self._features = MemoizedFunction(_Features)
 
     # TODO(crbug.com/674752): we need better names for ``self._scores``.
     # N.B., this is just the inner product of ``self.weights``
@@ -103,8 +119,7 @@ class UnnormalizedLogLinearModel(object):
     # variant of the dot product.
     self._scores = MemoizedFunction(lambda x:
         self._features(x).map(lambda fxy:
-            self.weights.dot(np.array(map(lambda feature:
-                feature.value, fxy)))))
+            self.weights.dot(np.array([feature.value for feature in fxy]))))
 
   def ClearWeightBasedMemos(self):
     """Clear all the memos that depend on the weight covector."""
