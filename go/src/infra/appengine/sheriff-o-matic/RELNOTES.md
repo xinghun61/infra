@@ -1,3 +1,34 @@
+# Release Notes sheriff-o-matic 2016-12-19
+
+- 7 commits, 4 bugs affected since ead1512 (2016-12-14T00:33:37Z)
+- 3 Authors:
+  - martiniss@chromium.org
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [SOM: Add null check to UI](https://chromium-review.googlesource.com/420807) (martiniss@chromium.org)
+- [SOM: Add memcache to rev range redirects](https://chromium-review.googlesource.com/416233) (martiniss@chromium.org)
+- [SoM: Fix test for computing sheriffs and change to use mocked timers.](https://chromium-review.googlesource.com/420309) (zhangtiff@google.com)
+- [SoM: Fix trooper navigation bug.](https://chromium-review.googlesource.com/419707) (zhangtiff@google.com)
+- [[som] fix som-annotation-tests](https://chromium-review.googlesource.com/419788) (seanmccullough@chromium.org)
+- [[som] Add recipe for running WCT tests for sheriff-o-matic](https://chromium-review.googlesource.com/418058) (seanmccullough@chromium.org)
+- [[som] Repair some test cases in som-drawer-test.html](https://chromium-review.googlesource.com/419786) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- martiniss@chromium.org:
+  -  [https://crbug.com/673979](https://crbug.com/673979)
+  
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/413053](https://crbug.com/413053)
+  -  [https://crbug.com/674205](https://crbug.com/674205)
+  
+- zhangtiff@google.com:
+  -  [https://crbug.com/673969](https://crbug.com/673969)
+  -  [https://crbug.com/674205](https://crbug.com/674205)
+  
 # Release Notes sheriff-o-matic 2016-12-13
 
 - 13 commits, 8 bugs affected since 30d0695 (2016-12-07T00:42:54Z)
