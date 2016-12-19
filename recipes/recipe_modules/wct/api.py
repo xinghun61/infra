@@ -30,7 +30,7 @@ class WCTApi(recipe_api.RecipeApi):
     wct_root = self.m.path['start_dir'].join('packages')
     node_path = self.m.path['start_dir'].join('packages', 'bin')
     env = {
-      'PATH': self.m.path.pathsep.join([str(node_path)])
+      'PATH': self.m.path.pathsep.join([str(node_path), '%(PATH)s'])
     }
     wct_bin = wct_root.join('node_modules', 'web-component-tester', 'bin',
         'wct')

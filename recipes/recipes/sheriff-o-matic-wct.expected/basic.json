@@ -150,7 +150,7 @@
       "chrome"
     ],
     "env": {
-      "PATH": "[START_DIR]/packages/bin"
+      "PATH": "[START_DIR]/packages/bin:%(PATH)s"
     },
     "name": "Run WCT"
   },
