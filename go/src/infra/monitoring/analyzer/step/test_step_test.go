@@ -19,6 +19,7 @@ import (
 
 func TestTestStepFailureAlerts(t *testing.T) {
 	Convey("test TestFailureAnalyzer", t, func() {
+		maxFailedTests = 2
 		Convey("analyze", func() {
 			tests := []struct {
 				name          string
@@ -106,6 +107,98 @@ func TestTestStepFailureAlerts(t *testing.T) {
 											CommitPosition: 1234,
 										},
 									},
+								},
+							},
+						},
+					},
+				},
+				{
+					name: "test step failure (too many failures)",
+					failures: []*messages.BuildStep{
+						{
+							Master: &messages.MasterLocation{URL: url.URL{
+								Scheme: "https",
+								Host:   "build.chromium.org",
+								Path:   "/p/fake.Master",
+							}},
+							Build: &messages.Build{
+								BuilderName: "fake_builder",
+							},
+							Step: &messages.Step{
+								Name: "something_tests",
+							},
+						},
+					},
+					testResults: &messages.TestResults{
+						Tests: map[string]interface{}{
+							"test_a": map[string]interface{}{
+								"expected": "PASS",
+								"actual":   "FAIL",
+							},
+							"test_b": map[string]interface{}{
+								"expected": "PASS",
+								"actual":   "FAIL",
+							},
+							"test_c": map[string]interface{}{
+								"expected": "PASS",
+								"actual":   "FAIL",
+							},
+						},
+					},
+					finditResults: []*messages.FinditResult{
+						{
+							TestName:    "test_a",
+							IsFlakyTest: false,
+							SuspectedCLs: []messages.SuspectCL{
+								{
+									RepoName:       "repo",
+									Revision:       "deadbeef",
+									CommitPosition: 1234,
+								},
+							},
+						},
+						{
+							TestName:    "test_b",
+							IsFlakyTest: false,
+							SuspectedCLs: []messages.SuspectCL{
+								{
+									RepoName:       "repo",
+									Revision:       "deadbeef",
+									CommitPosition: 1234,
+								},
+							},
+						},
+					},
+					wantResult: []messages.ReasonRaw{
+						&testFailure{
+							TestNames: []string{tooManyFailuresText, "test_a", "test_b"},
+							StepName:  "something_tests",
+							Tests: []testWithResult{
+								{
+									TestName: "test_a",
+									IsFlaky:  false,
+									SuspectedCLs: []messages.SuspectCL{
+										{
+											RepoName:       "repo",
+											Revision:       "deadbeef",
+											CommitPosition: 1234,
+										},
+									},
+								},
+								{
+									TestName: "test_b",
+									IsFlaky:  false,
+									SuspectedCLs: []messages.SuspectCL{
+										{
+											RepoName:       "repo",
+											Revision:       "deadbeef",
+											CommitPosition: 1234,
+										},
+									},
+								},
+								{
+									TestName: tooManyFailuresText,
+									IsFlaky:  false,
 								},
 							},
 						},
@@ -361,15 +454,37 @@ func TestBasicFailure(t *testing.T) {
 
 func TestGetTestSuite(t *testing.T) {
 	Convey("GetTestSuite", t, func() {
-		s := &messages.Step{
-			Name: "thing_tests",
+		s := &messages.BuildStep{
+			Step: &messages.Step{
+				Name: "thing_tests",
+			},
+		}
+		url, err := url.Parse("https://build.chromium.org/p/chromium.linux")
+		So(err, ShouldBeNil)
+		s.Master = &messages.MasterLocation{
+			URL: *url,
 		}
 		Convey("basic", func() {
 			So(GetTestSuite(s), ShouldEqual, "thing_tests")
 		})
 		Convey("with suffixes", func() {
-			s.Name = "thing_tests on Intel GPU on Linux"
+			s.Step.Name = "thing_tests on Intel GPU on Linux"
 			So(GetTestSuite(s), ShouldEqual, "thing_tests")
+		})
+		Convey("on perf", func() {
+			url, err := url.Parse("https://build.chromium.org/p/chromium.perf")
+			So(err, ShouldBeNil)
+			s.Master = &messages.MasterLocation{
+				URL: *url,
+			}
+			Convey("with suffixes", func() {
+				s.Step.Name = "battor.power_cases on Intel GPU on Linux"
+				So(GetTestSuite(s), ShouldEqual, "battor.power_cases")
+			})
+			Convey("not a test", func() {
+				s.Step.Name = "something_random"
+				So(GetTestSuite(s), ShouldEqual, "")
+			})
 		})
 	})
 }

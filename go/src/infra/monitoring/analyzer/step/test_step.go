@@ -9,11 +9,19 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/luci/luci-go/common/logging"
+
 	"golang.org/x/net/context"
 
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
 )
+
+// Max number of failed tests to put in resulting json. Needed because of datastore size limits.
+var maxFailedTests = 40
+
+// Text to put in test names indicating results were snipped.
+const tooManyFailuresText = "...... too many results, data snipped...."
 
 type testFailure struct {
 	// Could be more detailed about test failures. For instance, we could
@@ -23,14 +31,6 @@ type testFailure struct {
 	//FIXME: Rename to TestSuite (needs to be synchronized with SOM)
 	StepName string           `json:"step"`
 	Tests    []testWithResult `json:"tests"`
-}
-
-// testWithResult stores the information provided by Findit for a specific test,
-// for example if the test is flaky or is there a culprit for the test failure.
-type testWithResult struct {
-	TestName     string               `json:"test_name"`
-	IsFlaky      bool                 `json:"is_flaky"`
-	SuspectedCLs []messages.SuspectCL `json:"suspected_cls"`
 }
 
 func (t *testFailure) Signature() string {
@@ -48,10 +48,18 @@ func (t *testFailure) Severity() messages.Severity {
 func (t *testFailure) Title(bses []*messages.BuildStep) string {
 	f := bses[0]
 	if len(bses) == 1 {
-		return fmt.Sprintf("%s failing on %s/%s", GetTestSuite(f.Step), f.Master.Name(), f.Build.BuilderName)
+		return fmt.Sprintf("%s failing on %s/%s", GetTestSuite(f), f.Master.Name(), f.Build.BuilderName)
 	}
 
-	return fmt.Sprintf("%s failing on %d builders", GetTestSuite(f.Step), len(bses))
+	return fmt.Sprintf("%s failing on %d builders", GetTestSuite(f), len(bses))
+}
+
+// testWithResult stores the information provided by Findit for a specific test,
+// for example if the test is flaky or is there a culprit for the test failure.
+type testWithResult struct {
+	TestName     string               `json:"test_name"`
+	IsFlaky      bool                 `json:"is_flaky"`
+	SuspectedCLs []messages.SuspectCL `json:"suspected_cls"`
 }
 
 // testFailureAnalyzer analyzes steps to see if there is any data in the tests
@@ -116,13 +124,19 @@ func testAnalyzeFailure(ctx context.Context, f *messages.BuildStep) (messages.Re
 // a bunch of custom logic to parse through all the suffixes added by various recipe code.
 // Eventually, it should just read something structured from the step.
 // https://bugs.chromium.org/p/chromium/issues/detail?id=674708
-func GetTestSuite(step *messages.Step) string {
-	testSuite := step.Name
-	s := strings.Split(step.Name, " ")
+func GetTestSuite(bs *messages.BuildStep) string {
+	testSuite := bs.Step.Name
+	s := strings.Split(bs.Step.Name, " ")
 
-	// Some test steps have names like "webkit_tests iOS(dbug)" so we look at the first
-	// term before the space, if there is one.
-	if !(strings.HasSuffix(s[0], "tests") || strings.HasSuffix(s[0], "test_apk")) {
+	if bs.Master.Name() == "chromium.perf" {
+		// Benchmarks on chromium.perf must have a period in the name. That's how we identify
+		// something to be a test (benchmark, but test is the general term) failure on that waterfall.
+		if !(strings.Contains(s[0], ".")) {
+			return ""
+		}
+	} else if !(strings.HasSuffix(s[0], "tests") || strings.HasSuffix(s[0], "test_apk")) {
+		// Some test steps have names like "webkit_tests iOS(dbug)" so we look at the first
+		// term before the space, if there is one.
 		return testSuite
 	}
 
@@ -138,7 +152,7 @@ func GetTestSuite(step *messages.Step) string {
 }
 
 func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string, error) {
-	name := GetTestSuite(f.Step)
+	name := GetTestSuite(f)
 	if name == "" {
 		return "", nil, nil
 	}
@@ -147,7 +161,10 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 
 	testResults, err := client.TestResults(ctx, f.Master, f.Build.BuilderName, name, f.Build.Number)
 	if err != nil {
-		return name, failedTests, fmt.Errorf("Error fetching test results: %v", err)
+		// Still want to keep on serving some data, even if test results is down. We can also do something
+		// in this analyzer, even if we have no test results.
+		logging.Infof(ctx, "got error fetching test results (ignoring): %s", err)
+		return name, failedTests, nil
 	}
 
 	if testResults == nil || len(testResults.Tests) == 0 {
@@ -185,9 +202,10 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 		failedTests = append(failedTests, ue...)
 	}
 
-	if len(failedTests) > 40 {
-		// FIXME: Log this
-		failedTests = append(failedTests[:40], "...... too many results, data snipped....")
+	if len(failedTests) > maxFailedTests {
+		sort.Strings(failedTests)
+		logging.Errorf(ctx, "Too many failed tests (%d) to put in the resulting json.", len(failedTests))
+		failedTests = append(failedTests[:maxFailedTests], tooManyFailuresText)
 	}
 
 	return name, failedTests, nil
@@ -201,14 +219,15 @@ func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failed
 		return nil, nil
 	}
 
-	name := GetTestSuite(f.Step)
+	name := GetTestSuite(f)
 	if name == "" {
 		return nil, nil
 	}
 
 	finditResults, err := client.Findit(ctx, f.Master, f.Build.BuilderName, f.Build.Number, []string{name})
 	if err != nil {
-		return nil, fmt.Errorf("while getting findit results: %s", err)
+		logging.Warningf(ctx, "ignoring findit error: %s", err)
+		return nil, nil
 	}
 	finditResultsMap := map[string]*messages.FinditResult{}
 	for _, result := range finditResults {
