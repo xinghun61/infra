@@ -40,15 +40,15 @@ class ComponentClassifier(object):
 
     return ''
 
-  # TODO(wrengr): refactor this into a method on Result which returns
+  # TODO(wrengr): refactor this into a method on Suspect which returns
   # the cannonical frame (and documents why it's the one we return).
-  def GetClassFromResult(self, result):
-    """Determine which component is responsible for this result.
+  def GetClassFromSuspect(self, suspect):
+    """Determine which component is responsible for this suspect.
 
-    Note that Findit assumes files that the culprit result touched come from
+    Note that Findit assumes files that the culprit suspect touched come from
     the same component.
     """
-    if result.file_to_stack_infos:
+    if suspect.file_to_stack_infos:
       # file_to_stack_infos is a dict mapping file_path to stack_infos,
       # where stack_infos is a list of (frame, callstack_priority)
       # pairs. So ``.values()`` returns a list of the stack_infos in an
@@ -56,27 +56,27 @@ class ComponentClassifier(object):
       # the second ``[0]`` grabs the first pair from the list; and
       # the third ``[0]`` grabs the ``frame`` from the pair.
       # TODO(wrengr): why is that the right frame to look at?
-      frame = result.file_to_stack_infos.values()[0][0][0]
+      frame = suspect.file_to_stack_infos.values()[0][0][0]
       return self.GetClassFromStackFrame(frame)
 
     return ''
 
   # TODO(http://crbug.com/657177): return the Component objects
   # themselves, rather than strings naming them.
-  def Classify(self, results, crash_stack):
+  def Classify(self, suspects, crash_stack):
     """Classifies component of a crash.
 
     Args:
-      results (list of Result): Culprit results.
+      suspects (list of Suspect): Culprit suspects.
       crash_stack (CallStack): The callstack that caused the crash.
 
     Returns:
       List of top 2 components.
     """
-    # If ``results`` are available, we use the components from there since
+    # If ``suspects`` are available, we use the components from there since
     # they're more reliable than the ones from the ``crash_stack``.
-    if results:
-      classes = map(self.GetClassFromResult, results[:self.top_n])
+    if suspects:
+      classes = map(self.GetClassFromSuspect, suspects[:self.top_n])
     else:
       classes = map(self.GetClassFromStackFrame,
           crash_stack.frames[:self.top_n])

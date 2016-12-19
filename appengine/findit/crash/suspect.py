@@ -30,9 +30,17 @@ class StackInfo(namedtuple('StackInfo', ['frame', 'priority'])):
     return 'StackInfo(frame = %s, priority = %f)' % (self.frame, self.priority)
 
 
-# TODO(http://crbug.com/644476): this class needs a better name.
-class Result(object):
-  """Represents findit culprit result."""
+# TODO(wrengr): break this into separate unanalyzed suspect, and analyzed
+# suspect; so we can distinguish the input to ``ChangelistClassifier``
+# from the output of it (which will amend each suspect with extra metadata
+# like the confidence and reasons).
+class Suspect(object):
+  """A suspected changelog to be classified as a possible ``Culprit``.
+
+  That is, for each ``CrashReport`` the ``Predator.FindCulprit`` method
+  receives, it will generate a bunch of these suspects and then inspect
+  them to determine the ``Culprit`` it returns.
+  """
 
   def __init__(self, changelog, dep_path,
                confidence=None, reasons=None, changed_files=None):
@@ -48,6 +56,7 @@ class Result(object):
 
     # TODO(wrengr): (a) make these two fields private/readonly
     # TODO(wrengr): (b) zip them together.
+    # TODO(wrengr): (c) move them to the relevant features instead.
     self.file_to_stack_infos = {}
     self.file_to_analysis_info = {}
 
@@ -89,52 +98,50 @@ class Result(object):
     return self.ToString()
 
 
-class MatchResult(Result):
-  """Represents findit culprit result got from match algorithm."""
+def _UpdateSuspect(suspect, file_path, stack_infos, blame):
+  """Updates a ``Suspect`` with file path and its stack_infos and blame.
 
-  def Update(self, file_path, stack_infos, blame):
-    """Updates a match result with file path and its stack_infos and blame.
+  When a file_path is found both shown in stacktrace and touched by
+  the revision of this result, update result with the information of
+  this file.
 
-    When a file_path is found both shown in stacktrace and touched by
-    the revision of this result, update result with the information of
-    this file.
+  Inserts the file path and its stack infos, and updates the min distance
+  if less distance is found between touched lines of this result and
+  crashed lines in the file path.
 
-    Inserts the file path and its stack infos, and updates the min distance
-    if less distance is found between touched lines of this result and
-    crashed lines in the file path.
+  Args:
+    suspect (Suspect): the suspect to be updated.
+    file_path (str): File path of the crashed file.
+    stack_infos (list of StackInfo): List of the frames of this file
+      together with their callstack priorities.
+    blame (Blame): Blame oject of this file.
+  """
+  suspect.file_to_stack_infos[file_path] = stack_infos
 
-    Args:
-      file_path (str): File path of the crashed file.
-      stack_infos (list of StackInfo): List of the frames of this file
-        together with their callstack priorities.
-      blame (Blame): Blame oject of this file.
-    """
-    self.file_to_stack_infos[file_path] = stack_infos
+  if not blame:
+    return
 
-    if not blame:
-      return
+  min_distance = float('inf')
+  min_distance_frame = stack_infos[0][0]
+  for region in blame:
+    if region.revision != suspect.changelog.revision:
+      continue
 
-    min_distance = float('inf')
-    min_distance_frame = stack_infos[0][0]
-    for region in blame:
-      if region.revision != self.changelog.revision:
-        continue
+    region_start = region.start
+    region_end = region_start + region.count - 1
+    for frame, _ in stack_infos:
+      frame_start = frame.crashed_line_numbers[0]
+      frame_end = frame.crashed_line_numbers[-1]
+      distance = _DistanceBetweenLineRanges((frame_start, frame_end),
+                                            (region_start, region_end))
+      if distance < min_distance:
+        min_distance = distance
+        min_distance_frame = frame
 
-      region_start = region.start
-      region_end = region_start + region.count - 1
-      for frame, _ in stack_infos:
-        frame_start = frame.crashed_line_numbers[0]
-        frame_end = frame.crashed_line_numbers[-1]
-        distance = _DistanceBetweenLineRanges((frame_start, frame_end),
-                                              (region_start, region_end))
-        if distance < min_distance:
-          min_distance = distance
-          min_distance_frame = frame
-
-    self.file_to_analysis_info[file_path] = AnalysisInfo(
-        min_distance = min_distance,
-        min_distance_frame = min_distance_frame,
-    )
+  suspect.file_to_analysis_info[file_path] = AnalysisInfo(
+      min_distance = min_distance,
+      min_distance_frame = min_distance_frame,
+  )
 
 
 def _DistanceBetweenLineRanges((start1, end1), (start2, end2)):
@@ -159,18 +166,18 @@ def _DistanceBetweenLineRanges((start1, end1), (start2, end2)):
   return max(0, start2 - end1, start1 - end2)
 
 
-class MatchResults(dict):
-  """A map from revisions to the MatchResult object for that revision."""
+class Suspects(dict):
+  """A map from revisions to the ``Suspect`` object for that revision."""
 
   def __init__(self, ignore_cls=None):
-    super(MatchResults, self).__init__()
+    super(Suspects, self).__init__()
     self._ignore_cls = ignore_cls
 
-  def GenerateMatchResults(self, file_path, dep_path,
-                           stack_infos, changelogs, blame):
-    """Compute match results from a list of CLs, and store them.
+  def GenerateSuspects(self, file_path, dep_path, stack_infos, changelogs,
+      blame):
+    """Compute suspects from a list of CLs, and store them.
 
-    Match results are generated based on newly found file path, its stack_infos,
+    Suspects are generated based on newly found file path, its stack_infos,
     and all the changelogs that touched this file in the dep in regression
     ranges, those reverted changelogs should be ignored.
 
@@ -188,7 +195,6 @@ class MatchResults(dict):
         continue
 
       if changelog.revision not in self:
-        self[changelog.revision] = MatchResult(changelog, dep_path)
+        self[changelog.revision] = Suspect(changelog, dep_path)
 
-      match_result = self[changelog.revision]
-      match_result.Update(file_path, stack_infos, blame)
+      _UpdateSuspect(self[changelog.revision], file_path, stack_infos, blame)

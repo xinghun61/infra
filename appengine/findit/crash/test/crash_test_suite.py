@@ -24,30 +24,30 @@ class CrashTestSuite(StacktraceTestSuite):  # pragma: no cover.
   def _VerifyTwoChangeLogsEqual(self, changelog1, changelog2):
     self.assertEqual(changelog1.ToDict(), changelog2.ToDict())
 
-  def _VerifyTwoResultEqual(self, result1, result2):
-    self._VerifyTwoChangeLogsEqual(result1.changelog, result2.changelog)
-    self.assertEqual(result1.dep_path, result2.dep_path)
-    self.assertEqual(result1.confidence, result2.confidence)
-    self.assertEqual(result1.reasons, result2.reasons)
+  def _VerifyTwoSuspectEqual(self, suspect1, suspect2):
+    """Assert that two ``Suspect`` objects are equal."""
+    self._VerifyTwoChangeLogsEqual(suspect1.changelog, suspect2.changelog)
+    self.assertEqual(suspect1.dep_path, suspect2.dep_path)
+    self.assertEqual(suspect1.confidence, suspect2.confidence)
+    self.assertEqual(suspect1.reasons, suspect2.reasons)
 
-    self.assertEqual(result1.file_to_stack_infos.keys(),
-                     result2.file_to_stack_infos.keys())
-    for file_path in result1.file_to_stack_infos.keys():
-      self._VerifyTwoStackInfosEqual(result1.file_to_stack_infos[file_path],
-                                     result2.file_to_stack_infos[file_path])
+    self.assertEqual(suspect1.file_to_analysis_info,
+                     suspect2.file_to_analysis_info)
 
-    self.assertEqual(result1.file_to_analysis_info,
-                     result2.file_to_analysis_info)
+    self.assertEqual(suspect1.file_to_stack_infos.keys(),
+                     suspect2.file_to_stack_infos.keys())
+    for file_path in suspect1.file_to_stack_infos.keys():
+      self._VerifyTwoStackInfosEqual(suspect1.file_to_stack_infos[file_path],
+                                     suspect2.file_to_stack_infos[file_path])
 
-  def _VerifyTwoMatchResultEqual(self, match_result1, match_result2):
-    self.assertEqual(match_result1.file_to_analysis_info,
-                     match_result2.file_to_analysis_info)
-    self._VerifyTwoResultEqual(match_result1, match_result2)
+    self.assertEqual(suspect1.file_to_analysis_info,
+                     suspect2.file_to_analysis_info)
 
-  def _VerifyTwoMatchResultsEqual(self, match_results1, match_results2):
-    self.assertEqual(match_results1._ignore_cls, match_results2._ignore_cls)
+  def _VerifyTwoSuspectsEqual(self, suspects1, suspects2):
+    """Assert that two ``Suspects`` objects are equal."""
+    self.assertEqual(suspects1._ignore_cls, suspects2._ignore_cls)
 
-    self.assertEqual(len(match_results1), len(match_results2))
-    for revision1, match_result1 in match_results1.iteritems():
-      self.assertTrue(revision1 in match_results2)
-      self._VerifyTwoMatchResultEqual(match_result1, match_results2[revision1])
+    self.assertEqual(len(suspects1), len(suspects2))
+    for revision1, suspect1 in suspects1.iteritems():
+      self.assertTrue(revision1 in suspects2)
+      self._VerifyTwoSuspectEqual(suspect1, suspects2[revision1])

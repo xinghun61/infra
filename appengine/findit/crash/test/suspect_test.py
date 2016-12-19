@@ -2,12 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from crash.results import AnalysisInfo
-from crash.results import MatchResult
-from crash.results import MatchResults
-from crash.results import Result
-from crash.results import StackInfo
 from crash.stacktrace import StackFrame
+from crash.suspect import AnalysisInfo
+from crash.suspect import StackInfo
+from crash.suspect import Suspect
+from crash.suspect import Suspects
+from crash.suspect import _UpdateSuspect
 from crash.test.crash_test_suite import CrashTestSuite
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
@@ -79,16 +79,16 @@ DUMMY_BLAME2.AddRegion(
     Region(6, 3, '1', 'e', 'e@chromium.org', 'Thu Mar 31 21:24:43 2016'))
 
 
-class ResultsTest(CrashTestSuite):
+class SuspectTest(CrashTestSuite):
 
-  def testResultToDict(self):
+  def testSuspectToDict(self):
 
-    result = Result(DUMMY_CHANGELOG1, 'src/',
-                    confidence=1, reasons=['MinDistance', 0.5, 'some reason'],
-                    changed_files={'file': 'f', 'blame_url': 'http://b',
-                                   'info': 'min distance (LOC) 5'})
+    suspect = Suspect(DUMMY_CHANGELOG1, 'src/',
+                      confidence=1, reasons=['MinDistance', 0.5, 'some reason'],
+                      changed_files={'file': 'f', 'blame_url': 'http://b',
+                                     'info': 'min distance (LOC) 5'})
 
-    expected_result_json = {
+    expected_suspect_json = {
         'url': DUMMY_CHANGELOG1.commit_url,
         'review_url': DUMMY_CHANGELOG1.code_review_url,
         'revision': DUMMY_CHANGELOG1.revision,
@@ -101,100 +101,100 @@ class ResultsTest(CrashTestSuite):
         'confidence': 1,
     }
 
-    self.assertEqual(result.ToDict(), expected_result_json)
+    self.assertEqual(suspect.ToDict(), expected_suspect_json)
 
-  def testResultToString(self):
+  def testSuspectToString(self):
 
-    result = Result(DUMMY_CHANGELOG1, 'src/', confidence=1)
+    suspect = Suspect(DUMMY_CHANGELOG1, 'src/', confidence=1)
 
-    expected_result_str = ''
-    self.assertEqual(result.ToString(), expected_result_str)
+    expected_str = ''
+    self.assertEqual(suspect.ToString(), expected_str)
 
-    result.file_to_stack_infos = {
+    suspect.file_to_stack_infos = {
         'a.cc': [StackInfo(
             frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', []),
             priority = 0)]
     }
-    expected_result_str = 'Changed file a.cc crashed in frame #0'
+    expected_str = 'Changed file a.cc crashed in frame #0'
 
-    self.assertEqual(str(result), expected_result_str)
+    self.assertEqual(str(suspect), expected_str)
 
-  def testMatchResultUpdate(self):
+  def testSuspectUpdate(self):
     # Touched lines have intersection with crashed lines.
-    result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
+    suspect = Suspect(DUMMY_CHANGELOG1, 'src/', confidence=1)
     stack_infos = [StackInfo(
         frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]),
         priority = 0)]
 
-    result.Update('a.cc', stack_infos, DUMMY_BLAME)
-    self.assertEqual(result.file_to_analysis_info['a.cc'].min_distance, 0)
+    _UpdateSuspect(suspect, 'a.cc', stack_infos, DUMMY_BLAME)
+    self.assertEqual(suspect.file_to_analysis_info['a.cc'].min_distance, 0)
 
     # Touched lines are before crashed lines.
-    result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
+    suspect = Suspect(DUMMY_CHANGELOG1, 'src/', confidence=1)
 
     stack_infos = [StackInfo(
         frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [3]),
         priority = 0)]
 
-    result.Update('a.cc', stack_infos, DUMMY_BLAME)
-    self.assertEqual(result.file_to_analysis_info['a.cc'].min_distance, 3)
+    _UpdateSuspect(suspect, 'a.cc', stack_infos, DUMMY_BLAME)
+    self.assertEqual(suspect.file_to_analysis_info['a.cc'].min_distance, 3)
 
     # Touched lines are after crashed lines.
-    result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
+    suspect = Suspect(DUMMY_CHANGELOG1, 'src/', confidence=1)
 
     stack_infos = [StackInfo(
         frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [10]),
         priority = 0)]
 
-    result.Update('a.cc', stack_infos, DUMMY_BLAME)
-    self.assertEqual(result.file_to_analysis_info['a.cc'].min_distance, 2)
+    _UpdateSuspect(suspect, 'a.cc', stack_infos, DUMMY_BLAME)
+    self.assertEqual(suspect.file_to_analysis_info['a.cc'].min_distance, 2)
 
-  def testMatchResultUpdateWithEmptyBlame(self):
-    result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
+  def testSuspectUpdateWithEmptyBlame(self):
+    suspect = Suspect(DUMMY_CHANGELOG1, 'src/', confidence=1)
     stack_infos = [StackInfo(
         frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]),
         priority = 0)]
 
-    result.Update('a.cc', stack_infos, None)
-    self.assertEqual(result.file_to_stack_infos['a.cc'], stack_infos)
-    self.assertEqual(result.file_to_analysis_info, {})
+    _UpdateSuspect(suspect, 'a.cc', stack_infos, None)
+    self.assertEqual(suspect.file_to_stack_infos['a.cc'], stack_infos)
+    self.assertEqual(suspect.file_to_analysis_info, {})
 
-  def testMatchResultUpdateMinimumDistance(self):
-    result = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=1)
+  def testSuspectUpdateMinimumDistance(self):
+    suspect = Suspect(DUMMY_CHANGELOG1, 'src/', confidence=1)
     frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
     frame2 = StackFrame(2, 'src/', 'func', 'a.cc', 'src/a.cc', [20])
     stack_infos = [StackInfo(frame1, 0), StackInfo(frame2, 0)]
 
-    result.Update('a.cc', stack_infos, DUMMY_BLAME)
-    self.assertEqual(result.file_to_stack_infos['a.cc'], stack_infos)
-    self.assertEqual(result.file_to_analysis_info,
+    _UpdateSuspect(suspect, 'a.cc', stack_infos, DUMMY_BLAME)
+    self.assertEqual(suspect.file_to_stack_infos['a.cc'], stack_infos)
+    self.assertEqual(suspect.file_to_analysis_info,
         {'a.cc': AnalysisInfo(min_distance = 0, min_distance_frame = frame1)})
 
-  def testMatchResultsGenerateMatchResults(self):
-    match_results = MatchResults(ignore_cls=set(['2']))
+  def testSuspectsGenerateSuspects(self):
+    suspects = Suspects(ignore_cls=set(['2']))
     frame1 = StackFrame(0, 'src/',  'func', 'a.cc', 'src/a.cc', [7])
     frame2 = StackFrame(1, 'src/',  'func', 'b.cc', 'src/b.cc', [11])
     stack_infos1 = [StackInfo(frame1, 0)]
     stack_infos2 = [StackInfo(frame2, 0)]
-    match_results.GenerateMatchResults('a.cc', 'src/', stack_infos1,
+    suspects.GenerateSuspects('a.cc', 'src/', stack_infos1,
                                        [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2],
                                        DUMMY_BLAME)
 
-    match_results.GenerateMatchResults('b.cc', 'src/', stack_infos2,
+    suspects.GenerateSuspects('b.cc', 'src/', stack_infos2,
                                        [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2],
                                        DUMMY_BLAME2)
 
-    expected_match_result = MatchResult(DUMMY_CHANGELOG1, 'src/')
-    expected_match_result.file_to_stack_infos = {
+    expected_suspect = Suspect(DUMMY_CHANGELOG1, 'src/')
+    expected_suspect.file_to_stack_infos = {
         'a.cc': stack_infos1,
         'b.cc': stack_infos2,
     }
-    expected_match_result.file_to_analysis_info = {
+    expected_suspect.file_to_analysis_info = {
         'a.cc': AnalysisInfo(min_distance = 0, min_distance_frame = frame1),
         'b.cc': AnalysisInfo(min_distance = 3, min_distance_frame = frame2),
     }
 
-    expected_match_results = MatchResults(ignore_cls=set(['2']))
-    expected_match_results['1'] = expected_match_result
+    expected_suspects = Suspects(ignore_cls=set(['2']))
+    expected_suspects['1'] = expected_suspect
 
-    self._VerifyTwoMatchResultsEqual(match_results, expected_match_results)
+    self._VerifyTwoSuspectsEqual(suspects, expected_suspects)

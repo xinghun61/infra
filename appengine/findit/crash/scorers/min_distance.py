@@ -2,10 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""MinDistance scorer applies to MatchResult objects.
+"""MinDistance scorer applies to Suspect objects.
 
 It represents a heuristic rule:
-  1. Highest score if the result changed the crashed lines.
+  1. Highest score if the suspect changed the crashed lines.
   2. 0 score if changed lines are too far away from crashed lines.
 """
 
@@ -21,9 +21,9 @@ class MinDistance(Scorer):
   def __init__(self, max_distance=_MAX_DISTANCE):
     self.max_distance = max_distance
 
-  def GetMetric(self, result):
+  def GetMetric(self, suspect):
     min_distance = float('inf')
-    for analysis_info in result.file_to_analysis_info.itervalues():
+    for analysis_info in suspect.file_to_analysis_info.itervalues():
       min_distance = min(min_distance, analysis_info.min_distance)
 
     return min_distance
@@ -45,7 +45,7 @@ class MinDistance(Scorer):
 
     return self.name, score, 'Minimum distance is %d' % min_distance
 
-  def ChangedFiles(self, result, score):
+  def ChangedFiles(self, suspect, score):
     """Returns a list of changed file infos related to this scorer.
 
     For example:
@@ -62,7 +62,7 @@ class MinDistance(Scorer):
 
     index_to_changed_files = {}
 
-    for file_path, analysis_info in result.file_to_analysis_info.iteritems():
+    for file_path, analysis_info in suspect.file_to_analysis_info.iteritems():
       file_name = file_path.split('/')[-1]
       frame = analysis_info.min_distance_frame
 
@@ -73,7 +73,7 @@ class MinDistance(Scorer):
 
       index_to_changed_files[frame.index] = {
           'file': file_name,
-          'blame_url': frame.BlameUrl(result.changelog.revision),
+          'blame_url': frame.BlameUrl(suspect.changelog.revision),
           'info': 'Minimum distance (LOC) %d, frame #%d' % (
               analysis_info.min_distance, frame.index)
       }

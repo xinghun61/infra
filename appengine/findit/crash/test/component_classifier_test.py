@@ -7,7 +7,7 @@ from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStack
 from crash.component_classifier import Component
 from crash.component_classifier import ComponentClassifier
-from crash.results import Result
+from crash.suspect import Suspect
 from crash.test.predator_testcase import PredatorTestCase
 from model.crash.crash_config import CrashConfig
 from libs.gitiles.change_log import ChangeLog
@@ -52,16 +52,16 @@ class ComponentClassifierTest(PredatorTestCase):
     frame = StackFrame(0, 'src/', 'func2', 'a.cc', 'src/a.cc', [6])
     self.assertEqual(self.cccc.GetClassFromStackFrame(frame), '')
 
-  def testGetClassFromResult(self):
-    result = Result(self.GetDummyChangeLog(), 'src/')
-    self.assertEqual(self.cccc.GetClassFromResult(result), '')
+  def testGetClassFromSuspect(self):
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
+    self.assertEqual(self.cccc.GetClassFromSuspect(suspect), '')
 
-    result.file_to_stack_infos = {
+    suspect.file_to_stack_infos = {
         'comp1.cc': [
             (StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]), 0)
         ]
     }
-    self.assertEqual(self.cccc.GetClassFromResult(result), 'Comp1>Dummy')
+    self.assertEqual(self.cccc.GetClassFromSuspect(suspect), 'Comp1>Dummy')
 
   def testClassifyCrashStack(self):
     crash_stack = CallStack(0, frame_list=[
@@ -72,15 +72,15 @@ class ComponentClassifierTest(PredatorTestCase):
     self.assertEqual(self.cccc.Classify([], crash_stack),
                      ['Comp1>Dummy', 'Comp2>Dummy'])
 
-  def testClassifyResults(self):
-    result = Result(self.GetDummyChangeLog(), 'src/')
-    result.file_to_stack_infos = {
+  def testClassifySuspects(self):
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect.file_to_stack_infos = {
         'comp1.cc': [
             (StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]), 0)
         ]
     }
 
-    self.assertEqual(self.cccc.Classify([result], CallStack(0)),
+    self.assertEqual(self.cccc.Classify([suspect], CallStack(0)),
                      ['Comp1>Dummy'])
 
   def testClassifierDoNotHaveConfig(self):
@@ -94,14 +94,14 @@ class ComponentClassifierTest(PredatorTestCase):
         StackFrame(1, 'src/', 'ff', 'comp1.cc', 'src/comp1.cc', [21]),
         StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])])
 
-    result = Result(self.GetDummyChangeLog(), 'src/')
-    result.file_to_stack_infos = {
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect.file_to_stack_infos = {
         'comp1.cc': [
             (StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]), 0)
         ]
     }
 
-    self.assertEqual(self.cccc.Classify([result], crash_stack), [])
+    self.assertEqual(self.cccc.Classify([suspect], crash_stack), [])
 
   def testGetClassFromFileChangeInfo(self):
     self.assertEqual(

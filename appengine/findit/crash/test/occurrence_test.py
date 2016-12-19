@@ -9,7 +9,7 @@ from crash.occurrence import DefaultOccurrenceRanking
 from crash.occurrence import RankByOccurrence
 from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStack
-from crash.results import Result
+from crash.suspect import Suspect
 from crash.test.predator_testcase import PredatorTestCase
 
 
@@ -21,13 +21,13 @@ class DummyClassifier(object):
 
     return 'class_2'
 
-  def GetClassFromResult(self, _result):  # pragma: no cover.
+  def GetClassFromSuspect(self, _result):  # pragma: no cover.
     return 'class_3'
 
   def Classify(self, results, crash_stack):
     top_n_frames = 4
     if results:
-      classes = map(self.GetClassFromResult, results[:top_n_frames])
+      classes = map(self.GetClassFromSuspect, results[:top_n_frames])
     else:
       classes = map(self.GetClassFromStackFrame,
           crash_stack.frames[:top_n_frames])
@@ -67,15 +67,15 @@ class ClassifierTest(PredatorTestCase):
 
     self.assertEqual(dummy_classifier.Classify([], crash_stack), 'class_2')
 
-  def testClassifyResults(self):
+  def testClassifySuspects(self):
     dummy_classifier = DummyClassifier()
 
-    result = Result(self.GetDummyChangeLog(), 'src/')
-    result.file_to_stack_infos = {
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect.file_to_stack_infos = {
         'f0.cc': [(StackFrame(
             0, 'src/', 'a::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]), 0)]
     }
 
-    self.assertEqual(dummy_classifier.Classify([result], CallStack(0)),
+    self.assertEqual(dummy_classifier.Classify([suspect], CallStack(0)),
                      'class_3')
 

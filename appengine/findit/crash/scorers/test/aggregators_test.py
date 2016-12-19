@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from crash.stacktrace import StackFrame
-from crash.results import MatchResult
+from crash.suspect import Suspect
 from crash.scorers import aggregators
 from crash.scorers.min_distance import MinDistance
 from crash.scorers.test.scorer_test_suite import ScorerTestSuite

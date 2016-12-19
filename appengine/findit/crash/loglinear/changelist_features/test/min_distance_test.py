@@ -5,10 +5,9 @@
 import unittest
 
 from crash.loglinear.changelist_features import min_distance
-from crash.results import AnalysisInfo
-from crash.results import MatchResult
-from crash.results import Result
-from crash.results import StackInfo
+from crash.suspect import AnalysisInfo
+from crash.suspect import Suspect
+from crash.suspect import StackInfo
 from crash.stacktrace import StackFrame
 from crash.test.predator_testcase import PredatorTestCase
 from libs.gitiles.change_log import ChangeLog
@@ -26,60 +25,60 @@ class MinDistanceTest(PredatorTestCase):
   def _GetDummyReport(self):
     return None
 
-  def _GetMockResult(self, mock_min_distance):
-    """Returns a ``Result`` with the desired min_distance."""
-    result = Result(self.GetDummyChangeLog(), 'src/')
-    result.file_to_analysis_info = {
+  def _GetMockSuspect(self, mock_min_distance):
+    """Returns a ``Suspect`` with the desired min_distance."""
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect.file_to_analysis_info = {
         'file': AnalysisInfo(
             min_distance=mock_min_distance,
             min_distance_frame=_MOCK_FRAME)
     }
-    return result
+    return suspect
 
   def testMinDistanceFeatureNone(self):
     """Test that the feature returns log(0) when there are no frames."""
     report = self._GetDummyReport()
-    result = Result(self.GetDummyChangeLog(), 'src/')
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
     self.assertEqual(lmath.LOG_ZERO,
-        min_distance.MinDistanceFeature()(report)(result).value)
+        min_distance.MinDistanceFeature()(report)(suspect).value)
 
   def testMinDistanceFeatureIsZero(self):
     """Test that the feature returns log(1) when the min_distance is 0."""
     report = self._GetDummyReport()
-    result = self._GetMockResult(0.)
+    suspect = self._GetMockSuspect(0.)
     self.assertEqual(lmath.LOG_ONE,
-        min_distance.MinDistanceFeature()(report)(result).value)
+        min_distance.MinDistanceFeature()(report)(suspect).value)
 
   def testMinDistanceFeatureMiddling(self):
     """Test that the feature returns middling scores for middling distances."""
     report = self._GetDummyReport()
-    result = self._GetMockResult(42.)
+    suspect = self._GetMockSuspect(42.)
     self.assertEqual(
         lmath.log((_MAXIMUM - 42.) / _MAXIMUM),
-        min_distance.MinDistanceFeature()(report)(result).value)
+        min_distance.MinDistanceFeature()(report)(suspect).value)
 
   def testMinDistanceFeatureIsOverMax(self):
     """Test that we return log(0) when the min_distance is too large."""
     report = self._GetDummyReport()
-    result = self._GetMockResult(_MAXIMUM + 1)
+    suspect = self._GetMockSuspect(_MAXIMUM + 1)
     self.assertEqual(lmath.LOG_ZERO,
-        min_distance.MinDistanceFeature()(report)(result).value)
+        min_distance.MinDistanceFeature()(report)(suspect).value)
 
-    result = self._GetMockResult(42.)
+    suspect = self._GetMockSuspect(42.)
     self.assertEqual(lmath.LOG_ZERO,
-        min_distance.MinDistanceFeature(10.)(report)(result).value)
+        min_distance.MinDistanceFeature(10.)(report)(suspect).value)
 
   def testMinDistanceChangedFiles(self):
-    result = MatchResult(self.GetDummyChangeLog(), 'src/')
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
     frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7],
                        repo_url='https://repo_url')
-    result.file_to_stack_infos = {
+    suspect.file_to_stack_infos = {
         'a.cc': [StackInfo(frame, 0)]
     }
-    result.file_to_analysis_info = {
+    suspect.file_to_analysis_info = {
         'a.cc': AnalysisInfo(min_distance=0, min_distance_frame=frame)
     }
-    changed_files = min_distance.MinDistanceFeature()._ChangedFiles(result)
+    changed_files = min_distance.MinDistanceFeature()._ChangedFiles(suspect)
     self.assertListEqual(
         [changed_file.ToDict() for changed_file in changed_files],
         [{'info': 'Minimum distance (LOC) 0, frame #0',

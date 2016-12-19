@@ -9,6 +9,9 @@ class Culprit(namedtuple('Culprit',
     ['project', 'components', 'cls', 'regression_range', 'algorithm'])):
   """The result of successfully identifying the culprit of a crash report.
 
+  That is, this is what ``Predator.FindCultprit`` returns. It encapsulates
+  all the information predator discovered during its various analyses.
+
   Args:
     project (str): the most-suspected project
     components (list of str): the suspected crbug components.
@@ -89,8 +92,6 @@ class Culprit(namedtuple('Culprit',
             'found_suspects': False,
         }
     """
-    # TODO(wrengr): will this auto-dropping of unnecessary fields cause
-    # any issues for JSON serialization?
     result = {}
     result['found'] = (
         bool(self.project) or

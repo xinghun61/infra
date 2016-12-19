@@ -10,9 +10,9 @@ from common.dependency import DependencyRoll
 from common import chrome_dependency_fetcher
 from crash import changelist_classifier
 from crash.crash_report import CrashReport
-from crash.results import AnalysisInfo
-from crash.results import StackInfo
-from crash.results import MatchResult
+from crash.suspect import AnalysisInfo
+from crash.suspect import StackInfo
+from crash.suspect import Suspect
 from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
@@ -100,7 +100,7 @@ DUMMY_CHANGELOG3 = ChangeLog.FromDict({
 # revision_range (even if the versions therein are None), because
 # ChangelistClassifier.__call__ will take it apart in order to call
 # GetDEPSRollsDict; if it can't then it will immediately return the
-# empty list of results, breaking many of the tests here. Of course,
+# empty list of suspects, breaking many of the tests here. Of course,
 # taking revision_range apart isn't actually required for the tests,
 # since we mock GetDEPSRollsDict. So, really what we ought to do in the
 # long run is redesign things so that GetDEPSRollsDict takes the
@@ -139,7 +139,7 @@ class ChangelistClassifierTest(CrashTestSuite):
               _MockGetChangeLogsForFilesGroupedByDeps)
     self.mock(changelist_classifier, 'GetStackInfosForFilesGroupedByDeps',
               lambda *_: {})
-    self.mock(changelist_classifier, 'FindMatchResults', lambda *_: None)
+    self.mock(changelist_classifier, 'FindSuspects', lambda *_: None)
 
     self.changelist_classifier(CrashReport(crashed_version = '5',
                                signature = 'sig',
@@ -256,7 +256,7 @@ class ChangelistClassifierTest(CrashTestSuite):
 
         self._VerifyTwoStackInfosEqual(stack_infos, expected_stack_infos)
 
-  def testFindMatchResults(self):
+  def testFindSuspects(self):
     dep_file_to_changelogs = {
         'src/': {
             'a.cc': [
@@ -292,7 +292,7 @@ class ChangelistClassifierTest(CrashTestSuite):
         'src/': Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
     }
 
-    expected_match_results = [{
+    expected_suspects = [{
         'url': 'https://repo.test/+/1',
         'review_url': 'https://codereview.chromium.org/3281',
         'revision': '1',
@@ -304,11 +304,11 @@ class ChangelistClassifierTest(CrashTestSuite):
         'changed_files': None
     }]
 
-    match_results = changelist_classifier.FindMatchResults(
+    suspects = changelist_classifier.FindSuspects(
         dep_file_to_changelogs, dep_file_to_stack_infos, stack_deps,
         GitilesRepository(self.GetMockHttpClient()))
-    self.assertListEqual([result.ToDict() for result in match_results],
-                         expected_match_results)
+    self.assertListEqual([suspect.ToDict() for suspect in suspects],
+                         expected_suspects)
 
   # TODO(http://crbug.com/659346): why do these mocks give coverage
   # failures? That's almost surely hiding a bug in the tests themselves.
@@ -322,7 +322,7 @@ class ChangelistClassifierTest(CrashTestSuite):
     self.assertListEqual(self.changelist_classifier(report), [])
 
   def testFindItForCrashNoMatchFound(self):
-    self.mock(changelist_classifier, 'FindMatchResults', lambda *_: [])
+    self.mock(changelist_classifier, 'FindSuspects', lambda *_: [])
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependencyRollsDict',
         lambda *_: {'src/': DependencyRoll('src/', 'https://repo', '1', '2')})
@@ -332,36 +332,36 @@ class ChangelistClassifierTest(CrashTestSuite):
 
   def testFindItForCrash(self):
 
-    def _MockFindMatchResults(*_):
-      match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=0.)
+    def _MockFindSuspects(*_):
+      suspect1 = Suspect(DUMMY_CHANGELOG1, 'src/', confidence=0.)
       frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1])
       frame2 = StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
-      match_result1.file_to_stack_infos = {
+      suspect1.file_to_stack_infos = {
           'a.cc': [StackInfo(frame1, 0), StackInfo(frame2, 0)]
       }
-      match_result1.file_to_analysis_info = {
+      suspect1.file_to_analysis_info = {
           'a.cc': AnalysisInfo(min_distance=0, min_distance_frame=frame1)
       }
 
-      match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', confidence=0.)
+      suspect2 = Suspect(DUMMY_CHANGELOG3, 'src/', confidence=0.)
       frame3 = StackFrame(5, 'src/', 'func', 'f.cc', 'src/f.cc', [1])
-      match_result2.file_to_stack_infos = {
+      suspect2.file_to_stack_infos = {
           'f.cc': [StackInfo(frame3, 0)]
       }
-      match_result2.file_to_analysis_info = {
+      suspect2.file_to_analysis_info = {
           'a.cc': AnalysisInfo(min_distance=20, min_distance_frame=frame3)
       }
 
-      return [match_result1, match_result2]
+      return [suspect1, suspect2]
 
-    self.mock(changelist_classifier, 'FindMatchResults', _MockFindMatchResults)
+    self.mock(changelist_classifier, 'FindSuspects', _MockFindSuspects)
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependencyRollsDict',
         lambda *_: {'src/': DependencyRoll('src/', 'https://repo', '1', '2')})
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
-    results = self.changelist_classifier(DUMMY_REPORT)
-    expected_match_results = [
+    suspects = self.changelist_classifier(DUMMY_REPORT)
+    expected_suspects = [
         {
             'reasons': [('TopFrameIndex', 1.0, 'Top frame is #0'),
                         ('MinDistance', 1, 'Minimum distance is 0')],
@@ -375,50 +375,50 @@ class ChangelistClassifierTest(CrashTestSuite):
             'confidence': 1.0, 'revision': '1'
         },
     ]
-    self.assertListEqual([result.ToDict() for result in results],
-                         expected_match_results)
+    self.assertListEqual([suspect.ToDict() for suspect in suspects],
+                         expected_suspects)
 
   def testFinditForCrashFilterZeroConfidentResults(self):
-    def _MockFindMatchResults(*_):
-      match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=0.)
+    def _MockFindSuspects(*_):
+      suspect1 = Suspect(DUMMY_CHANGELOG1, 'src/', confidence=0.)
       frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1])
       frame2 = StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
-      match_result1.file_to_stack_infos = {
+      suspect1.file_to_stack_infos = {
           'a.cc': [StackInfo(frame1, 0), StackInfo(frame2, 0)]
       }
-      match_result1.file_to_analysis_info = {
+      suspect1.file_to_analysis_info = {
           'a.cc': AnalysisInfo(min_distance=1, min_distance_frame=frame1)
       }
 
-      match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', confidence=0.)
+      suspect2 = Suspect(DUMMY_CHANGELOG3, 'src/', confidence=0.)
       frame3 = StackFrame(15, 'src/', 'func', 'f.cc', 'src/f.cc', [1])
-      match_result2.file_to_stack_infos = {
+      suspect2.file_to_stack_infos = {
           'f.cc': [StackInfo(frame3, 0)]
       }
-      match_result2.file_to_analysis_info = {
+      suspect2.file_to_analysis_info = {
           'f.cc': AnalysisInfo(min_distance=20, min_distance_frame=frame3)
       }
 
-      match_result3 = MatchResult(DUMMY_CHANGELOG3, 'src/', confidence=0.)
+      suspect3 = Suspect(DUMMY_CHANGELOG3, 'src/', confidence=0.)
       frame4 = StackFrame(3, 'src/', 'func', 'ff.cc', 'src/ff.cc', [1])
-      match_result3.file_to_stack_infos = {
+      suspect3.file_to_stack_infos = {
           'f.cc': [StackInfo(frame4, 0)]
       }
-      match_result3.file_to_analysis_info = {
+      suspect3.file_to_analysis_info = {
           'f.cc': AnalysisInfo(min_distance=60, min_distance_frame=frame4)
       }
 
-      return [match_result1, match_result2, match_result3]
+      return [suspect1, suspect2, suspect3]
 
-    self.mock(changelist_classifier, 'FindMatchResults', _MockFindMatchResults)
+    self.mock(changelist_classifier, 'FindSuspects', _MockFindSuspects)
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependencyRollsDict',
         lambda *_: {'src/': DependencyRoll('src/', 'https://repo', '1', '2')})
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
 
-    results = self.changelist_classifier(DUMMY_REPORT)
-    expected_match_results = [
+    suspects = self.changelist_classifier(DUMMY_REPORT)
+    expected_suspects = [
         {
             'author': 'r@chromium.org',
             'changed_files': [
@@ -440,42 +440,42 @@ class ChangelistClassifierTest(CrashTestSuite):
             'url': 'https://repo.test/+/1'
         }
     ]
-    self.assertListEqual([result.ToDict() for result in results],
-                         expected_match_results)
+    self.assertListEqual([suspect.ToDict() for suspect in suspects],
+                         expected_suspects)
 
-  def testFinditForCrashAllMatchResultsWithZeroConfidences(self):
-    """Test that we filter out results with too-large frame indices.
+  def testFinditForCrashAllSuspectsWithZeroConfidences(self):
+    """Test that we filter out suspects with too-large frame indices.
 
-    In the mock results below we return frames with indices
+    In the mock suspects below we return frames with indices
     15, 20, 21 which are all larger than the ``max_top_n`` of
     ``TopFrameIndexScorer``. Therefore we should get a score of zero
     for that feature, which causes the total score to be zero, and so
-    we should not return these results.
+    we should not return these suspects.
     """
-    def _MockFindMatchResults(*_):
-      match_result1 = MatchResult(DUMMY_CHANGELOG1, 'src/', confidence=0.)
+    def _MockFindSuspects(*_):
+      suspect1 = Suspect(DUMMY_CHANGELOG1, 'src/', confidence=0.)
       frame1 = StackFrame(20, 'src/', '', 'func', 'a.cc', [1])
       frame2 = StackFrame(21, 'src/', '', 'func', 'a.cc', [7])
-      match_result1.file_to_stack_infos = {
+      suspect1.file_to_stack_infos = {
           'a.cc': [StackInfo(frame1, 0), StackInfo(frame2, 0)]
       }
-      match_result1.file_to_analysis_info = {
+      suspect1.file_to_analysis_info = {
           'a.cc': AnalysisInfo(min_distance=1, min_distance_frame=frame1)
       }
 
-      match_result2 = MatchResult(DUMMY_CHANGELOG3, 'src/', confidence=0.)
+      suspect2 = Suspect(DUMMY_CHANGELOG3, 'src/', confidence=0.)
       frame3 = StackFrame(15, 'src/', '', 'func', 'f.cc', [1])
-      match_result2.file_to_stack_infos = {
+      suspect2.file_to_stack_infos = {
           'f.cc': [StackInfo(frame3, 0)]
       }
-      match_result2.min_distance = 20
-      match_result2.file_to_analysis_info = {
+      suspect2.min_distance = 20
+      suspect2.file_to_analysis_info = {
           'f.cc': AnalysisInfo(min_distance=20, min_distance_frame=frame3)
       }
 
-      return [match_result1, match_result2]
+      return [suspect1, suspect2]
 
-    self.mock(changelist_classifier, 'FindMatchResults', _MockFindMatchResults)
+    self.mock(changelist_classifier, 'FindSuspects', _MockFindSuspects)
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependencyRollsDict',
         lambda *_: {'src/': DependencyRoll('src/', 'https://repo', '1', '2')})

@@ -19,7 +19,7 @@ from crash.culprit import Culprit
 from crash.findit_for_chromecrash import FinditForChromeCrash
 from crash.findit_for_chromecrash import FinditForFracas
 from crash.project_classifier import ProjectClassifier
-from crash.results import MatchResult
+from crash.suspect import Suspect
 from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
 from crash.test.crash_pipeline_test import DummyCrashData
@@ -201,10 +201,10 @@ class FinditForFracasTest(PredatorTestCase):
                 None)
     })
 
-    dummy_match_result = MatchResult(self.GetDummyChangeLog(), 'src/')
+    dummy_suspect = Suspect(self.GetDummyChangeLog(), 'src/')
     self.mock(ChangelistClassifier, '__call__',
         lambda _self, report:
-            [dummy_match_result] if report.regression_range else [])
+            [dummy_suspect] if report.regression_range else [])
 
     self.mock(ComponentClassifier, 'Classify', lambda *_: [])
     self.mock(ProjectClassifier, 'Classify', lambda *_: '')
@@ -212,10 +212,10 @@ class FinditForFracasTest(PredatorTestCase):
     # TODO(wrengr): for both these tests, we should compare Culprit
     # objects directly rather than calling ToDicts and comparing the
     # dictionaries.
-    self._testFindCulpritForChromeCrashSucceeds(dummy_match_result)
+    self._testFindCulpritForChromeCrashSucceeds(dummy_suspect)
     self._testFindCulpritForChromeCrashFails()
 
-  def _testFindCulpritForChromeCrashSucceeds(self, dummy_match_result):
+  def _testFindCulpritForChromeCrashSucceeds(self, dummy_suspect):
     analysis = CrashAnalysis()
     analysis.signature = 'signature'
     analysis.platform = 'win'
@@ -225,11 +225,11 @@ class FinditForFracasTest(PredatorTestCase):
     analysis.regression_range = dummy_regression_range
     culprit = _FinditForChromeCrash().FindCulprit(analysis)
     self.assertIsNotNone(culprit, 'FindCulprit failed unexpectedly')
-    results, tag = culprit.ToDicts()
+    suspects, tag = culprit.ToDicts()
 
-    expected_results = {
+    expected_suspects = {
           'found': True,
-          'suspected_cls': [dummy_match_result.ToDict()],
+          'suspected_cls': [dummy_suspect.ToDict()],
           'regression_range': dummy_regression_range
     }
     expected_tag = {
@@ -240,7 +240,7 @@ class FinditForFracasTest(PredatorTestCase):
           'solution': 'core_algorithm',
     }
 
-    self.assertDictEqual(expected_results, results)
+    self.assertDictEqual(expected_suspects, suspects)
     self.assertDictEqual(expected_tag, tag)
 
   def _testFindCulpritForChromeCrashFails(self):
@@ -249,9 +249,9 @@ class FinditForFracasTest(PredatorTestCase):
     analysis.platform = 'win'
     analysis.stack_trace = 'frame1\nframe2'
     analysis.crashed_version = '50.0.1234.0'
-    results, tag = _FinditForChromeCrash().FindCulprit(analysis).ToDicts()
+    suspects, tag = _FinditForChromeCrash().FindCulprit(analysis).ToDicts()
 
-    expected_results = {'found': False}
+    expected_suspects = {'found': False}
     expected_tag = {
           'found_suspects': False,
           'found_project': False,
@@ -260,7 +260,7 @@ class FinditForFracasTest(PredatorTestCase):
           'solution': 'core_algorithm',
     }
 
-    self.assertDictEqual(expected_results, results)
+    self.assertDictEqual(expected_suspects, suspects)
     self.assertDictEqual(expected_tag, tag)
 
   @mock.patch('google.appengine.ext.ndb.Key.urlsafe')
@@ -276,7 +276,7 @@ class FinditForFracasTest(PredatorTestCase):
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.result = {'other': 'data'}
     findit_object = FinditForFracas(None)
-    expected_processed_result = {
+    expected_processed_suspect = {
         'client_id': findit_object.client_id,
         'crash_identifiers': {'signature': 'sig'},
         'result': {
@@ -289,4 +289,4 @@ class FinditForFracasTest(PredatorTestCase):
 
     self.assertDictEqual(findit_object.GetPublishableResult(crash_identifiers,
                                                             analysis),
-                         expected_processed_result)
+                         expected_processed_suspect)

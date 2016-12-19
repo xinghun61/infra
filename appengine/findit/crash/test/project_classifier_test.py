@@ -5,7 +5,7 @@
 from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStack
 from crash.project_classifier import ProjectClassifier
-from crash.results import Result
+from crash.suspect import Suspect
 from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CallStackLanguageType
 from model.crash.crash_config import CrashConfig
@@ -44,21 +44,21 @@ class ProjectClassifierTest(PredatorTestCase):
     self.assertEqual(
         classifier.GetClassFromStackFrame(frame), '')
 
-  def testGetClassFromResult(self):
+  def testGetClassFromSuspect(self):
     classifier = ProjectClassifier()
 
-    result = Result(self.GetDummyChangeLog(), 'src/')
-    result.file_to_stack_infos = {'a.cc': [(
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect.file_to_stack_infos = {'a.cc': [(
         StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [3]), 0
     )]}
-    self.assertEqual(classifier.GetClassFromResult(result), 'chromium')
+    self.assertEqual(classifier.GetClassFromSuspect(suspect), 'chromium')
 
-    result.file_to_stack_infos = {
+    suspect.file_to_stack_infos = {
         'comp1.cc': [
             (StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]), 0)
         ]
     }
-    self.assertEqual(classifier.GetClassFromResult(result), 'chromium')
+    self.assertEqual(classifier.GetClassFromSuspect(suspect), 'chromium')
 
   def testClassifyCrashStack(self):
     classifier = ProjectClassifier()
@@ -70,34 +70,34 @@ class ProjectClassifierTest(PredatorTestCase):
 
     self.assertEqual(classifier.Classify([], crash_stack), 'chromium')
 
-  def testClassifyResultsEmpty(self):
+  def testClassifyEmpty(self):
     classifier = ProjectClassifier()
-    result = Result(self.GetDummyChangeLog(), '')
-    self.assertEqual(classifier.Classify([result], CallStack(0)), '')
+    suspect = Suspect(self.GetDummyChangeLog(), '')
+    self.assertEqual(classifier.Classify([suspect], CallStack(0)), '')
 
   def testClassifyRankFunction(self):
     classifier = ProjectClassifier()
 
-    result1 = Result(self.GetDummyChangeLog(), 'src/')
-    result1.file_to_stack_infos = {
+    suspect1 = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect1.file_to_stack_infos = {
         'comp1.cc': [
             (StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]), 0)
         ]
     }
 
-    self.assertEqual(classifier.Classify([result1], CallStack(0)), 'chromium')
+    self.assertEqual(classifier.Classify([suspect1], CallStack(0)), 'chromium')
 
-    result2 = Result(self.GetDummyChangeLog(), '')
-    result2.file_to_stack_infos = {
+    suspect2 = Suspect(self.GetDummyChangeLog(), '')
+    suspect2.file_to_stack_infos = {
         'ad.cc': [
             (StackFrame(0, '', 'android.a', 'ad.cc', 'ad.cc', [2]), 0)
         ]
     }
 
-    self.assertEqual(classifier.Classify([result2], CallStack(0)),
+    self.assertEqual(classifier.Classify([suspect2], CallStack(0)),
                      'android_os')
 
-    self.assertEqual(classifier.Classify([result1, result2], CallStack(0)),
+    self.assertEqual(classifier.Classify([suspect1, suspect2], CallStack(0)),
                      'chromium')
 
   def testClassifyForJavaRankFunction(self):
@@ -133,14 +133,14 @@ class ProjectClassifierTest(PredatorTestCase):
         StackFrame(1, 'src/', 'ff', 'comp1.cc', 'src/comp1.cc', [21]),
         StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])])
 
-    result1 = Result(self.GetDummyChangeLog(), 'src/')
-    result1.file_to_stack_infos = {
+    suspect1 = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect1.file_to_stack_infos = {
         'comp1.cc': [
             (StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]), 0)
         ]
     }
 
-    self.assertIsNone(ProjectClassifier().Classify([result1], crash_stack))
+    self.assertIsNone(ProjectClassifier().Classify([suspect1], crash_stack))
 
   def testSortHosts(self):
     host_list = [

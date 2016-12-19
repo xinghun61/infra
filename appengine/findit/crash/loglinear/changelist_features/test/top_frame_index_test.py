@@ -5,8 +5,8 @@
 import unittest
 
 from crash.loglinear.changelist_features import top_frame_index
-from crash.results import Result
-from crash.results import StackInfo
+from crash.suspect import Suspect
+from crash.suspect import StackInfo
 from crash.stacktrace import StackFrame
 from libs.gitiles.change_log import ChangeLog
 import libs.math.logarithms as lmath
@@ -46,11 +46,11 @@ class TopFrameIndexTest(unittest.TestCase):
   def _GetDummyReport(self):
     return None
 
-  def _GetMockResult(self, mock_top_frame_index):
-    """Returns a ``Result`` with the desired top frame index."""
+  def _GetMockSuspect(self, mock_top_frame_index):
+    """Returns a ``Suspect`` with the desired top frame index."""
     dep_path = 'src/'
-    result = Result(self._GetDummyChangeLog(), dep_path)
-    result.file_to_stack_infos = {
+    suspect = Suspect(self._GetDummyChangeLog(), dep_path)
+    suspect.file_to_stack_infos = {
         'a.cc': [StackInfo(
             frame = StackFrame(
                 index = mock_top_frame_index,
@@ -61,37 +61,37 @@ class TopFrameIndexTest(unittest.TestCase):
                 crashed_line_numbers = [7]),
             priority = 0)]
     }
-    return result
+    return suspect
 
   def testTopFrameIndexNone(self):
     """Test that the feature returns log(0) when there are no frames."""
     report = self._GetDummyReport()
-    result = Result(self._GetDummyChangeLog(), 'src/')
+    suspect = Suspect(self._GetDummyChangeLog(), 'src/')
     self.assertEqual(lmath.LOG_ZERO,
-        top_frame_index.TopFrameIndexFeature()(report)(result).value)
+        top_frame_index.TopFrameIndexFeature()(report)(suspect).value)
 
   def testTopFrameIndexIsZero(self):
     """Test that the feature returns log(1) when the top frame index is 0."""
     report = self._GetDummyReport()
-    result = self._GetMockResult(0)
+    suspect = self._GetMockSuspect(0)
     self.assertEqual(lmath.LOG_ONE,
-        top_frame_index.TopFrameIndexFeature()(report)(result).value)
+        top_frame_index.TopFrameIndexFeature()(report)(suspect).value)
 
   def testTopFrameIndexMiddling(self):
     """Test that the feature returns middling scores for middling indices."""
     report = self._GetDummyReport()
-    result = self._GetMockResult(3)
+    suspect = self._GetMockSuspect(3)
     self.assertEqual(
         lmath.log((_MAXIMUM - 3.) / _MAXIMUM),
-        top_frame_index.TopFrameIndexFeature()(report)(result).value)
+        top_frame_index.TopFrameIndexFeature()(report)(suspect).value)
 
   def testTopFrameIndexIsOverMax(self):
     """Test that we return log(0) when the top frame index is too large."""
     report = self._GetDummyReport()
-    result = self._GetMockResult(_MAXIMUM + 1)
+    suspect = self._GetMockSuspect(_MAXIMUM + 1)
     self.assertEqual(lmath.LOG_ZERO,
-        top_frame_index.TopFrameIndexFeature()(report)(result).value)
+        top_frame_index.TopFrameIndexFeature()(report)(suspect).value)
 
-    result = self._GetMockResult(5)
+    suspect = self._GetMockSuspect(5)
     self.assertEqual(lmath.LOG_ZERO,
-        top_frame_index.TopFrameIndexFeature(2)(report)(result).value)
+        top_frame_index.TopFrameIndexFeature(2)(report)(suspect).value)

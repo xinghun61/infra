@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from crash.stacktrace import StackFrame
-from crash.results import MatchResult
+from crash.suspect import Suspect
 from crash.scorers.test.scorer_test_suite import ScorerTestSuite
 from crash.scorers.top_frame_index import TopFrameIndex
 
@@ -11,13 +11,13 @@ from crash.scorers.top_frame_index import TopFrameIndex
 class TopFrameIndexTest(ScorerTestSuite):
 
   def testGetMetric(self):
-    result = MatchResult(self._GetDummyChangeLog(), 'src/')
-    self.assertEqual(TopFrameIndex().GetMetric(result), None)
+    suspect = Suspect(self._GetDummyChangeLog(), 'src/')
+    self.assertEqual(TopFrameIndex().GetMetric(suspect), None)
 
-    result.file_to_stack_infos = {
+    suspect.file_to_stack_infos = {
         'a.cc': [(StackFrame(0, 'src/', '', 'func', 'a.cc', [7]), 0)]
     }
-    self.assertEqual(TopFrameIndex().GetMetric(result), 0)
+    self.assertEqual(TopFrameIndex().GetMetric(suspect), 0)
 
   def testScore(self):
     self.assertEqual(TopFrameIndex().Score(0), 1)
@@ -30,5 +30,5 @@ class TopFrameIndexTest(ScorerTestSuite):
                      None)
 
   def testChangedFiles(self):
-    result = MatchResult(self._GetDummyChangeLog(), 'src/')
-    self.assertEqual(TopFrameIndex().ChangedFiles(result, 1), None)
+    suspect = Suspect(self._GetDummyChangeLog(), 'src/')
+    self.assertEqual(TopFrameIndex().ChangedFiles(suspect, 1), None)

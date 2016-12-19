@@ -8,7 +8,8 @@ from collections import namedtuple
 
 from common import chrome_dependency_fetcher
 from crash import crash_util
-from crash.results import MatchResults
+from crash.suspect import Suspect
+from crash.suspect import Suspects
 from crash.scorers.aggregated_scorer import AggregatedScorer
 from crash.scorers.min_distance import MinDistance
 from crash.scorers.top_frame_index import TopFrameIndex
@@ -26,9 +27,9 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
     """Args:
       repository (Repository): the Git repository for getting CLs to classify.
       top_n_frames (int): how many frames of each callstack to look at.
-      top_n_results (int): maximum number of results to return.
+      top_n_results (int): maximum number of suspects to return.
       confidence_threshold (float): In [0,1], above which we only return
-        the first result.
+        the first suspect.
     """
     return super(cls, ChangelistClassifier).__new__(cls,
         repository, top_n_frames, top_n_results, confidence_threshold)
@@ -47,7 +48,7 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
       report (CrashReport): the report to be analyzed.
 
     Returns:
-      List of Results, sorted by confidence from highest to lowest.
+      List of ``Suspect``s, sorted by confidence from highest to lowest.
     """
     if not report.regression_range:
       logging.warning('ChangelistClassifier.__call__: Missing regression range '
@@ -96,28 +97,27 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
 
     # TODO: argument order is inconsistent from others. Repository should
     # be last argument.
-    results = FindMatchResults(dep_to_file_to_changelogs,
-                               dep_to_file_to_stack_infos,
-                               stack_deps, self.repository, ignore_cls)
-    if not results:
+    suspects = FindSuspects(dep_to_file_to_changelogs,
+                            dep_to_file_to_stack_infos,
+                            stack_deps, self.repository, ignore_cls)
+    if not suspects:
       return []
 
-    # TODO(wrengr): we should be able to do this map/filter/sort in one pass.
-    # Set result.confidence, result.reasons and result.changed_files.
+    # Set confidence, reasons, and changed_files.
     aggregated_scorer = AggregatedScorer([TopFrameIndex(), MinDistance()])
-    map(aggregated_scorer.Score, results)
+    map(aggregated_scorer.Score, suspects)
 
     # Filter all the 0 confidence results.
-    results = filter(lambda r: r.confidence != 0, results)
-    if not results:
+    suspects = filter(lambda suspect: suspect.confidence != 0, suspects)
+    if not suspects:
       return []
 
-    sorted_results = sorted(results, key=lambda r: -r.confidence)
+    suspects.sort(key=lambda suspect: -suspect.confidence)
 
-    max_results = (1 if sorted_results[0].confidence > self.confidence_threshold
+    max_results = (1 if suspects[0].confidence > self.confidence_threshold
       else self.top_n_results)
 
-    return sorted_results[:max_results]
+    return suspects[:max_results]
 
 
 def GetDepsInCrashStack(crash_stack, crash_deps):
@@ -264,11 +264,11 @@ def GetStackInfosForFilesGroupedByDeps(stacktrace, stack_deps):
 
 
 # TODO(katesonia): Remove the repository argument after refatoring cl committed.
-def FindMatchResults(dep_to_file_to_changelogs,
-                     dep_to_file_to_stack_infos,
-                     stack_deps, repository,
-                     ignore_cls=None):
-  """Finds results by matching stacktrace and changelogs in regression range.
+def FindSuspects(dep_to_file_to_changelogs,
+                 dep_to_file_to_stack_infos,
+                 stack_deps, repository,
+                 ignore_cls=None):
+  """Finds suspects by matching stacktrace and changelogs in regression range.
 
   This method only applies to those crashes with regression range.
 
@@ -284,9 +284,9 @@ def FindMatchResults(dep_to_file_to_changelogs,
     ignore_cls (set): Set of reverted revisions.
 
   Returns:
-    A list of MatchResult instances with confidence and reason unset.
+    A list of ``Suspect`` instances with confidence and reason unset.
   """
-  match_results = MatchResults(ignore_cls)
+  suspects = Suspects(ignore_cls)
 
   for dep, file_to_stack_infos in dep_to_file_to_stack_infos.iteritems():
     file_to_changelogs = dep_to_file_to_changelogs[dep]
@@ -300,9 +300,9 @@ def FindMatchResults(dep_to_file_to_changelogs,
         blame = repository.GetBlame(touched_file_path,
                                     stack_deps[dep].revision)
 
-        # Generate/update each result(changelog) in changelogs, blame is used
+        # Generate/update each suspect(changelog) in changelogs, blame is used
         # to calculate distance between touched lines and crashed lines in file.
-        match_results.GenerateMatchResults(
+        suspects.GenerateSuspects(
             touched_file_path, dep, stack_infos, changelogs, blame)
 
-  return match_results.values()
+  return suspects.values()

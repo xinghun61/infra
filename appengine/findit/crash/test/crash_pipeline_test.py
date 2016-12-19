@@ -6,7 +6,7 @@ from common.pipeline_wrapper import pipeline_handlers
 from crash import crash_pipeline
 from crash.culprit import Culprit
 from crash.findit_for_chromecrash import FinditForFracas
-from crash.results import Result
+from crash.suspect import Suspect
 from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
 from libs.gitiles.change_log import ChangeLog
@@ -106,11 +106,11 @@ class CrashPipelineTest(PredatorTestCase):
         'COMMIT_URL',
     )
     dummy_project_path = 'PROJECT_PATH'
-    dummy_result = Result(dummy_cl, dummy_project_path)
+    dummy_suspect = Suspect(dummy_cl, dummy_project_path)
     dummy_culprit = Culprit(
         project = 'PROJECT',
         components = ['COMPONENT_1', 'CPOMPONENT_2'],
-        cls = [dummy_result],
+        cls = [dummy_suspect],
         # N.B., we must use a list here for the assertion to work
         # TODO(wrengr): fix that.
         regression_range = ['VERSION_0', 'VERSION_1'],
@@ -128,5 +128,5 @@ class CrashPipelineTest(PredatorTestCase):
     self.assertTrue(analysis.found_suspects)
     self.assertTrue(analysis.found_project)
     self.assertTrue(analysis.found_components)
-    dummy_result, dummy_tags = dummy_culprit.ToDicts()
-    self.assertDictEqual(analysis.result, dummy_result)
+    dummy_suspect, dummy_tags = dummy_culprit.ToDicts()
+    self.assertDictEqual(analysis.result, dummy_suspect)

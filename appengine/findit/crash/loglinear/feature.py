@@ -90,7 +90,7 @@ class FeatureValue(namedtuple('FeatureValue',
       it is okay to pass an ``int`` or ``bool`` value as well.
     reason (str): some explanation of where the value came from.
     changed_files (list of ChangedFile, or None): A list of files changed
-      by the ``Result`` annotated with reasons why the feature function
+      by the ``Suspect`` annotated with reasons why the feature function
       generating this object blames those changes.
   """
   __slots__ = ()
@@ -114,28 +114,27 @@ class Feature(object):
     raise NotImplementedError()
 
   def __call__(self, report):
-    """Returns a value for a result given some report.
+    """Returns a value for a ``y`` given some ``x``.
 
     The loglinear model this feature is used in will specify some types
     ``X`` and ``Y``, as described in the documentation there. As an
-    example: for the CL classifier, ``X`` is ``CrashReport`` and ``Y``
-    is ``MatchResult``. Given those two types, this method is a curried
-    function of type ``X -> Y -> FeatureValue``. That is, given some ``x``
-    of type ``X``, we return a function of type ``Y -> FeatureValue``,
-    where the final result for each ``y`` of type ``Y`` is the value of
-    that ``y`` given that ``x``.
+    example: for the CL classifier, ``X`` is ``CrashReport`` and ``Y`` is
+    ``Suspect``. Given those two types, this method is a curried function
+    of type ``X -> Y -> FeatureValue``. That is, given some ``x`` of type
+    ``X``, we return a function of type ``Y -> FeatureValue``, where
+    the final result for each ``y`` of type ``Y`` is the value of that
+    ``y`` given that ``x``.
 
     Values closer to zero indicate this feature has less to say about
-    whether the result is to be blamed. Values further from zero indicate
+    whether the ``y`` is to be blamed. Values further from zero indicate
     that this feature has more to say about it. (Whether this feature
-    thinks the result should be blamed or should not be depends on
-    the sign of the value and the sign of the weight given to this
-    feature.) As special cases, a value of negative infinity means
-    "do not blame this ``y`` no matter what any other features say",
-    and a value of positive infinity means "definitely blame this ``y``
-    no matter what any other features say". Both of those special values
-    should be used sparingly, since they override the model's ability
-    to combine multiple sources of information and decide the cuplrit
-    based on all the evidence together.
+    thinks the ``y`` should be blamed or should not be depends on the sign
+    of the value and the sign of the weight given to this feature.) As
+    special cases, a value of negative infinity means "do not blame this
+    ``y`` no matter what any other features say", and a value of positive
+    infinity means "definitely blame this ``y`` no matter what any other
+    features say". Both of those special values should be used sparingly,
+    since they override the model's ability to combine multiple sources of
+    information and decide the cuplrit based on all the evidence together.
     """
     raise NotImplementedError()
