@@ -361,39 +361,58 @@ class CalcDefaultQueryTest(unittest.TestCase):
 class TestMonorailRequestFunctions(unittest.TestCase):
 
   def testExtractPathIdentifiers_ProjectOnly(self):
-    username, project_name, hotlist_id = monorailrequest._ParsePathIdentifiers(
-        '/p/proj/issues/list?q=foo+OR+bar&ts=1234')
+    (username, project_name, hotlist_id,
+     hotlist_name) = monorailrequest._ParsePathIdentifiers(
+         '/p/proj/issues/list?q=foo+OR+bar&ts=1234')
     self.assertIsNone(username)
     self.assertIsNone(hotlist_id)
+    self.assertIsNone(hotlist_name)
     self.assertEquals('proj', project_name)
 
   def testExtractPathIdentifiers_ViewedUserOnly(self):
-    username, project_name, hotlist_id = monorailrequest._ParsePathIdentifiers(
-        '/u/jrobbins@example.com/')
+    (username, project_name, hotlist_id,
+     hotlist_name) = monorailrequest._ParsePathIdentifiers(
+         '/u/jrobbins@example.com/')
     self.assertEquals('jrobbins@example.com', username)
     self.assertIsNone(project_name)
     self.assertIsNone(hotlist_id)
+    self.assertIsNone(hotlist_name)
 
   def testExtractPathIdentifiers_ViewedUserURLSpace(self):
-    username, project_name, hotlist_id = monorailrequest._ParsePathIdentifiers(
-        '/u/jrobbins@example.com/updates')
+    (username, project_name, hotlist_id,
+     hotlist_name) = monorailrequest._ParsePathIdentifiers(
+         '/u/jrobbins@example.com/updates')
     self.assertEquals('jrobbins@example.com', username)
     self.assertIsNone(project_name)
     self.assertIsNone(hotlist_id)
+    self.assertIsNone(hotlist_name)
 
   def testExtractPathIdentifiers_ViewedGroupURLSpace(self):
-    username, project_name, hotlist_id = monorailrequest._ParsePathIdentifiers(
+    (username, project_name, hotlist_id,
+     hotlist_name) = monorailrequest._ParsePathIdentifiers(
         '/g/user-group@example.com/updates')
     self.assertEquals('user-group@example.com', username)
     self.assertIsNone(project_name)
     self.assertIsNone(hotlist_id)
+    self.assertIsNone(hotlist_name)
 
   def testExtractPathIdentifiers_HotlistIssuesURLSpace(self):
-    username, project_name, hotlist_id = monorailrequest._ParsePathIdentifiers(
-        '/u/jrobbins@example.com/hotlists/13124?q=stuff&ts=more')
+    (username, project_name, hotlist_id,
+     hotlist_name) = monorailrequest._ParsePathIdentifiers(
+         '/u/jrobbins@example.com/hotlists/13124?q=stuff&ts=more')
+    self.assertIsNone(hotlist_name)
     self.assertIsNone(project_name)
     self.assertEquals('jrobbins@example.com', username)
     self.assertEquals(13124, hotlist_id)
+
+  def testExtractPathIdentifiers_HotlistIssuesURLSpace(self):
+    (username, project_name, hotlist_id,
+     hotlist_name) = monorailrequest._ParsePathIdentifiers(
+         '/u/jrobbins@example.com/hotlists/testname?q=stuff&ts=more')
+    self.assertIsNone(project_name)
+    self.assertIsNone(hotlist_id)
+    self.assertEquals('jrobbins@example.com', username)
+    self.assertEquals('testname', hotlist_name)
 
   def testParseColSpec(self):
     parse = monorailrequest.ParseColSpec

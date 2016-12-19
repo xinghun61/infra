@@ -96,9 +96,7 @@ class ServletRegistry(object):
 
   _PROJECT_NAME_REGEX = r'[a-z0-9][-a-z0-9]*[a-z0-9]'
   _USERNAME_REGEX = r'[-+\w=.%]+(@([a-z0-9]+\.)*[a-z0-9]+)?'
-  _HOTLIST_ID_REGEX = r'\d+'
-  # TODO(jojwang): use this for friendly url support
-  # framework_bizobj.RE_HOTLIST_NAME_PATTERN
+  _HOTLIST_ID_NAME_REGEX = r'\d+|[a-zA-Z][-0-9a-zA-Z\.]*'
 
   def __init__(self):
     self.routes = []
@@ -152,7 +150,7 @@ class ServletRegistry(object):
     self._SetupServlets(
         spec_dict,
         base ='/u/<viewed_username:%s>/hotlists/<hotlist_id:%s>'
-        % (self._USERNAME_REGEX, self._HOTLIST_ID_REGEX),
+        % (self._USERNAME_REGEX, self._HOTLIST_ID_NAME_REGEX),
         post_does_write=post_does_write)
 
   def Register(self, services):

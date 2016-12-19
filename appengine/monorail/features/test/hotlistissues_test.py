@@ -58,6 +58,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     self.mr = testing_helpers.MakeMonorailRequest(hotlist = self.test_hotlist)
     self.mr.hotlist_id = self.test_hotlist.hotlist_id
     self.mr.auth.user_id = 111
+    self.mr.viewed_user_auth.user_id = 111
     sorting.InitializeArtValues(self.services)
 
   def testAssertBasePermissions(self):

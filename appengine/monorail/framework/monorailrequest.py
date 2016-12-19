@@ -318,6 +318,7 @@ class MonorailRequest(object):
 
     self.hotlist_id = None
     self.hotlist = None
+    self.hotlist_name = None
 
     self.viewed_username = None
     self.viewed_user_auth = AuthData()
@@ -354,7 +355,8 @@ class MonorailRequest(object):
 
     with prof.Phase('path parsing'):
       (viewed_user_val, self.project_name,
-       self.hotlist_id) =_ParsePathIdentifiers(self.request.path)
+       self.hotlist_id, self.hotlist_name) = _ParsePathIdentifiers(
+           self.request.path)
       self.viewed_username = _GetViewedEmail(
           viewed_user_val, self.cnxn, services)
     with prof.Phase('qs parsing'):
@@ -367,14 +369,14 @@ class MonorailRequest(object):
     if self.project_id and services.config:
       self.config = services.config.GetProjectConfig(self.cnxn, self.project_id)
 
-    if not self.hotlist:
-      self._LookupHotlist(services, prof)
-
     if do_user_lookups:
       if self.viewed_username:
         self._LookupViewedUser(services, prof)
       self._LookupLoggedInUser(services, prof)
       # TODO(jrobbins): re-implement HandleLurkerViewingSelf()
+
+    if not self.hotlist:
+      self._LookupHotlist(services, prof)
 
     if self.query is None:
       self.query = self._CalcDefaultQuery()
@@ -545,8 +547,14 @@ class MonorailRequest(object):
   def _LookupHotlist(self, services, prof):
     """Get information about the current hotlist (if any) from the request."""
     with prof.Phase('get current hotlist, if any'):
+      if self.hotlist_name:
+        hotlist_id_dict = services.features.LookupHotlistIDs(
+            self.cnxn, [self.hotlist_name], [self.viewed_user_auth.user_id])
+        self.hotlist_id = hotlist_id_dict[(
+            self.hotlist_name, self.viewed_user_auth.user_id)]
+
       if not self.hotlist_id:
-        logging.info('no hotlist_id, so no hotlist')
+        logging.info('no hotlist_id or bad hotlist_name, so no hotlist')
       else:
         self.hotlist = services.features.GetHotlistByID(
             self.cnxn, self.hotlist_id)
@@ -677,6 +685,7 @@ def _ParsePathIdentifiers(path):
   viewed_user_val = None
   project_name = None
   hotlist_id = None
+  hotlist_name = None
 
   # Strip off any query params
   split_path = path.lstrip('/').split('?')[0].split('/')
@@ -686,15 +695,24 @@ def _ParsePathIdentifiers(path):
     if split_path[0] == 'u':
       viewed_user_val = urllib.unquote(split_path[1])
       if len(split_path) >= 4 and split_path[2] == 'hotlists':
-        #TODO(jojwang): when friendly url, check if hotlist name or id
         try:
-          hotlist_id = int(urllib.unquote(split_path[3].split('.')[0]))
+          hotlist_id = int(
+              urllib.unquote(split_path[3].split('.')[0]))
         except ValueError:
-          raise InputException('Could not parse hotlist id')
+          raw_string = (split_path[3][:-3] if
+                        split_path[3].endswith('.do') else split_path[3])
+          string = urllib.unquote(raw_string)
+          match = framework_bizobj.RE_HOTLIST_NAME.match(
+              string)
+          if not match:
+            raise InputException('Could not parse hotlist id or name')
+          else:
+            hotlist_name = string
+
     if split_path[0] == 'g':
       viewed_user_val = urllib.unquote(split_path[1])
 
-  return viewed_user_val, project_name, hotlist_id
+  return viewed_user_val, project_name, hotlist_id, hotlist_name
 
 
 def _GetViewedEmail(viewed_user_val, cnxn, services):

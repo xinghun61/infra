@@ -141,7 +141,8 @@ class HotlistIssues(servlet.Servlet):
 
   def ProcessFormData(self, mr, post_data):
     default_url = framework_helpers.FormatAbsoluteURL(
-          mr, '/u/%s/hotlists/%s' % (mr.auth.user_id, mr.hotlist_id),
+          mr, '/u/%s/hotlists/%s' % (
+              mr.viewed_user_auth.user_id, mr.hotlist_id),
           include_project=False)
     sorting.InvalidateArtValuesKeys(
         mr.cnxn,
@@ -190,7 +191,8 @@ class HotlistIssues(servlet.Servlet):
             mr.cnxn, mr.hotlist_id, [], added_pairs)
 
       return framework_helpers.FormatAbsoluteURL(
-          mr, '/u/%s/hotlists/%s' % (mr.auth.user_id, mr.hotlist_id),
+          mr, '/u/%s/hotlists/%s' % (
+              mr.viewed_user_auth.user_id, mr.hotlist_id),
           saved=1, ts=int(time.time()), include_project=False)
 
   def GetGridViewData(self, mr):
