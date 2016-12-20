@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Runs delta test on 2 findit versions."""
+"""Runs delta test on two Predator revisions."""
 
 import argparse
 from datetime import date
@@ -35,12 +35,15 @@ CHROMIUM_REPO = 'https://chromium.googlesource.com/chromium/src'
 
 
 def RunDeltaTest():
-  """Runs delta testing between two different Predator versions."""
+  """Runs delta testing between two different Predator revisions."""
   argparser = argparse.ArgumentParser(
-      description='Run delta test between two Predator revisions. Note, since '
-      'the delta test needs to switch on different revisions of predator repo, '
-      'please commit any local change before running delta test, and do not '
-      ' make any new changes while running the delta test.')
+      description=('Delta test is a script to report the differences between '
+                   'analysis results of two local repo revisions. Local git '
+                   'checkouts are used instead of Gitile to avoid quota '
+                   'issue.\nNOTE, since the delta test needs to switch on '
+                   'different revisions of local repo, please commit all local '
+                   'changes before running the script, and do not make any '
+                   'new changes while running it.'))
 
   argparser.add_argument(
       '--revisions',
@@ -57,32 +60,36 @@ def RunDeltaTest():
       '--client',
       '-c',
       default='fracas',
-      help=('Possible values are: fracas, cracas, clusterfuzz. Right now, only '
-            'fracas is supported.'))
+      help=('Type of client data the delta test is running on, '
+            'possible values are: fracas, cracas, clusterfuzz. '
+            'Right now, only fracas data is available'))
 
   argparser.add_argument(
       '--app',
       '-a',
       default=os.getenv('APP_ID', 'findit-for-me-dev'),
       help=('App id of the App engine app that query needs to access. '
-            'Defualts to findit-for-me-dev. You can set enviroment variable by'
-            ' \'export APP_ID=your-app-id\' to replace the default value.'))
+            'Defualts to findit-for-me-dev. You can also set enviroment '
+            'variable by \'export APP_ID=your-app-id\' to replace '
+            'the default value.\nNOTE, only appspot app ids are supported, '
+            'the app_id of googleplex app will have access issues '
+            'due to internal proxy. '))
 
   argparser.add_argument(
       '--since',
       '-s',
       default=_A_YEAR_AGO,
       help=('Query data since this date (including this date). '
-            'Should be in YYYY-MM-DD format. E.g. 2015-09-31. '
-            'Defaults to a year ago.'))
+            'The date should be in YYYY-MM-DD format (e.g. 2015-09-31), '
+            'defaults to a year ago.'))
 
   argparser.add_argument(
       '--until',
       '-u',
       default=_TODAY,
       help=('Query data until this date (not including this date). '
-            'Should be in YYYY-MM-DD format. E.g. 2015-09-31. '
-            'Defaults to today.'))
+            'Should be in YYYY-MM-DD format (e.g. 2015-09-31), '
+            'defaults to today.'))
 
   argparser.add_argument(
       '--batch',
@@ -90,15 +97,15 @@ def RunDeltaTest():
       type=int,
       default=_DEFAULT_BATCH_SIZE,
       help=('The size of batch that can be processed at one time.\n'
-            'Note, the batch size cannot be greater than 1000, or app engine '
-            'APIs would fail.\nDefaults to maximum number 1000.'))
+            'NOTE, the batch size cannot be greater than 1000, or app engine '
+            'APIs would fail, defaults to 1000.'))
 
   argparser.add_argument(
       '--verbose',
       '-v',
       action='store_true',
       default=False,
-      help='Print findit results. Defaults to False.')
+      help='Print Predator results. Defaults to False.')
 
   args = argparser.parse_args()
 
@@ -109,7 +116,7 @@ def RunDeltaTest():
     logging.basicConfig(level=logging.INFO)
 
   if len(args.revisions) > 2:
-    logging.error('Only support delta test between 2 versions.')
+    logging.error('Only support delta test between 2 revisions.')
     sys.exit(1)
 
   if args.batch > _MAX_BATCH_SIZE:
