@@ -535,7 +535,8 @@ function TKR_currentFormValues() {
     // Don't include blank inputs. This prevents a popup if the user
     // clicks "add a row" for new labels but doesn't actually enter any
     // text into them. Also ignore search box contents.
-    if (inputs[i].value && !inputs[i].hasAttribute('ignore-dirty')) {
+    if (inputs[i].value && !inputs[i].hasAttribute('ignore-dirty') &&
+        inputs[i].name != 'token') {
       values.push(inputs[i].value);
     }
   }
