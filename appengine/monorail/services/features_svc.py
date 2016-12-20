@@ -680,8 +680,7 @@ class FeaturesService(object):
             (name.lower(), owner_id) : hotlist_id
             for ((name, owner_id), hotlist_id) in retrieved_dict.items()}
         self.hotlist_names_owner_to_ids.CacheAll(to_cache)
-        id_dict.update(retrieved_dict)
-
+        id_dict.update(to_cache)
     return id_dict
 
   def LookupUserHotlists(self, cnxn, user_ids):

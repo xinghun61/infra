@@ -154,6 +154,7 @@ class HelpersUnitTest(unittest.TestCase):
     self.services = service_manager.Services(issue=fake.IssueService(),
                                         config=fake.ConfigService(),
                                         project=fake.ProjectService(),
+                                        features=fake.FeaturesService(),
                                         user=fake.UserService())
     self.project = self.services.project.TestAddProject(
         'ProjectName', project_id = 001, owner_ids=[111L])
@@ -239,3 +240,18 @@ class HelpersUnitTest(unittest.TestCase):
     self.assertEqual(owners, [2, 3])
     self.assertEqual(editors, [5, 6, 1, 4, 7])
     self.assertEqual(followers, [8, 9])
+
+  def testGetURLOfHotlist(self):
+    cnxn = 'fake cnxn'
+    user = self.services.user.TestAddUser('claremont@email.com', 432L)
+    user.obscure_email = False
+    hotlist1 = self.services.features.TestAddHotlist(
+        'hotlist1', hotlist_id=123, owner_ids=[432L])
+    url = hotlist_helpers.GetURLOfHotlist(
+        cnxn, hotlist1, self.services.user)
+    self.assertEqual('/u/claremont@email.com/hotlists/hotlist1', url)
+
+    user.obscure_email = True
+    url = hotlist_helpers.GetURLOfHotlist(
+        cnxn, hotlist1, self.services.user)
+    self.assertEqual('/u/432/hotlists/hotlist1', url)

@@ -211,3 +211,23 @@ def MembersWithGivenIDs(hotlist, new_member_ids, role):
     raise ValueError()
 
   return owner_ids, editor_ids, follower_ids
+
+
+def GetURLOfHotlist(cnxn, hotlist, user_service):
+    """Determines the url to be used to access the given hotlist.
+
+    Args:
+      cnxn: connection to SQL database
+      hotlist: the hotlist_pb
+      user_service: interface to user data storage
+
+    Returns:
+      The string url to be used when accessing this hotlist.
+    """
+    owner_id = hotlist.owner_ids[0]  # only one owner allowed
+    owner = user_service.GetUser(cnxn, owner_id)
+    if owner.obscure_email:
+      return '/u/%d/hotlists/%s' % (owner_id, hotlist.name)
+    return (
+        '/u/%s/hotlists/%s' % (
+            owner.email, hotlist.name))

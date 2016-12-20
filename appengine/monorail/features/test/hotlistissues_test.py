@@ -12,6 +12,8 @@ from google.appengine.ext import testbed
 from third_party import ezt
 
 from features import hotlistissues
+from features import hotlist_views
+from framework import framework_views
 from framework import permissions
 from framework import sorting
 from services import service_manager
@@ -36,8 +38,8 @@ class HotlistIssuesUnitTest(unittest.TestCase):
         cache_manager=fake.CacheManager())
     self.servlet = hotlistissues.HotlistIssues(
         'req', 'res', services=self.services)
-    self.user1 = self.services.user.TestAddUser('testuser', 111L)
-    self.user2 = self.services.user.TestAddUser('testuser2', 222L)
+    self.user1 = self.services.user.TestAddUser('testuser@gmail.com', 111L)
+    self.user2 = self.services.user.TestAddUser('testuser2@gmail.com', 222L, )
     self.services.project.TestAddProject('project-name', project_id=001)
     self.issue1 = fake.MakeTestIssue(
         001, 1, 'issue_summary', 'New', 111L, project_name='project-name')
@@ -55,11 +57,19 @@ class HotlistIssuesUnitTest(unittest.TestCase):
         'hotlist', hotlist_id=123, owner_ids=[222L], editor_ids=[111L],
         iid_rank_pairs=self.iid_rank_pairs)
     self.hotlistissues = self.test_hotlist.iid_rank_pairs
-    self.mr = testing_helpers.MakeMonorailRequest(hotlist = self.test_hotlist)
+    self.mr = testing_helpers.MakeMonorailRequest(hotlist=self.test_hotlist,
+                                                  path='/u/222/hotlists/123',
+                                                  services = self.services)
     self.mr.hotlist_id = self.test_hotlist.hotlist_id
-    self.mr.auth.user_id = 111
-    self.mr.viewed_user_auth.user_id = 111
+    self.mr.auth.user_id = 111L
+    self.mr.auth.effective_ids = {111L}
+    self.mr.viewed_user_auth.user_id = 111L
     sorting.InitializeArtValues(self.services)
+    users_by_id = {222L: framework_views.UserView(self.user2),
+                   111L: framework_views.UserView(self.user1)}
+    self.hotlist_view = hotlist_views.HotlistView(
+        self.test_hotlist, self.mr.auth, self.mr.viewed_user_auth.user_id,
+        users_by_id)
 
   def testAssertBasePermissions(self):
     private_hotlist = self.services.features.TestAddHotlist(
@@ -117,9 +127,10 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     pass
 
   def testProcessFormData_NoNewIssues(self):
-    post_data = fake.PostData(remove=['false'], add_local_ids=[''])
+    post_data = fake.PostData(remove=['false'], add_local_ids=[''],
+                              hotlist_view_url=[self.hotlist_view.url])
     url = self.servlet.ProcessFormData(self.mr, post_data)
-    self.assertTrue(url.endswith('u/111/hotlists/123'))
+    self.assertTrue(url.endswith('u/222/hotlists/hotlist'))
     self.assertEqual(self.test_hotlist.iid_rank_pairs, self.hotlistissues)
 
   def testProcessFormData_NormalEditIssues(self):
@@ -131,9 +142,10 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     self.services.issue.TestAddIssue(issue5)
 
     post_data = fake.PostData(remove=['false'],
-                              add_local_ids=['project-name:4, project-name:5'])
+                              add_local_ids=['project-name:4, project-name:5'],
+                              hotlist_view_url=[self.hotlist_view.url])
     url = self.servlet.ProcessFormData(self.mr, post_data)
-    self.assertTrue('u/111/hotlists/123' in url)
+    self.assertTrue('u/222/hotlists/hotlist' in url)
     self.assertEqual(len(self.test_hotlist.iid_rank_pairs), 5)
     self.assertEqual(
         self.test_hotlist.iid_rank_pairs[3].issue_id, issue4.issue_id)
@@ -141,9 +153,10 @@ class HotlistIssuesUnitTest(unittest.TestCase):
         self.test_hotlist.iid_rank_pairs[4].issue_id, issue5.issue_id)
 
     post_data = fake.PostData(remove=['true'], remove_local_ids=[
-        'project-name:4, project-name:1, project-name:2'])
+        'project-name:4, project-name:1, project-name:2'],
+                              hotlist_view_url=[self.hotlist_view.url])
     url = self.servlet.ProcessFormData(self.mr, post_data)
-    self.assertTrue('u/111/hotlists/123' in url)
+    self.assertTrue('u/222/hotlists/hotlist' in url)
     self.assertTrue(len(self.test_hotlist.iid_rank_pairs), 2)
     issue_ids = [issue.issue_id for issue in self.test_hotlist.iid_rank_pairs]
     self.assertTrue(issue5.issue_id in issue_ids)

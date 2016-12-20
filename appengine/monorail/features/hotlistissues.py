@@ -132,7 +132,8 @@ class HotlistIssues(servlet.Servlet):
             settings.enable_quick_edit and mr.auth.user_pb.preview_on_hover),
         'remove_issues_token': xsrf.GenerateToken(
             mr.auth.user_id,
-            '/u/%s/hotlists/%s.do' % (mr.auth.user_id, mr.hotlist_id)),
+            hotlist_helpers.GetURLOfHotlist(
+                mr.cnxn, mr.hotlist, self.services.user) + '.do'),
         'add_local_ids': _INITIAL_ADD_ISSUES_MESSAGE,
         }
     table_view_data.update(table_related_dict)
@@ -140,9 +141,10 @@ class HotlistIssues(servlet.Servlet):
     return table_view_data
 
   def ProcessFormData(self, mr, post_data):
+    hotlist_view_url = hotlist_helpers.GetURLOfHotlist(
+        mr.cnxn, mr.hotlist, self.services.user)
     default_url = framework_helpers.FormatAbsoluteURL(
-          mr, '/u/%s/hotlists/%s' % (
-              mr.viewed_user_auth.user_id, mr.hotlist_id),
+          mr, hotlist_view_url,
           include_project=False)
     sorting.InvalidateArtValuesKeys(
         mr.cnxn,
@@ -182,17 +184,19 @@ class HotlistIssues(servlet.Servlet):
         self.services.features.UpdateHotlistIssues(
             mr.cnxn, mr.hotlist_id, selected_iids, [])
       else:
-        iid_rank_pairs_sorted = sorted(
-            mr.hotlist.iid_rank_pairs, key=lambda pair: pair.rank)
-        rank_base = iid_rank_pairs_sorted[-1].rank + 10
+        if mr.hotlist.iid_rank_pairs:
+          iid_rank_pairs_sorted = sorted(
+              mr.hotlist.iid_rank_pairs, key=lambda pair: pair.rank)
+          rank_base = iid_rank_pairs_sorted[-1].rank + 10
+        else:
+          rank_base = 1
         added_pairs =  [(issue_id, rank_base + multiplier*10)
                         for (multiplier, issue_id) in enumerate(selected_iids)]
         self.services.features.UpdateHotlistIssues(
             mr.cnxn, mr.hotlist_id, [], added_pairs)
 
       return framework_helpers.FormatAbsoluteURL(
-          mr, '/u/%s/hotlists/%s' % (
-              mr.viewed_user_auth.user_id, mr.hotlist_id),
+          mr, hotlist_view_url,
           saved=1, ts=int(time.time()), include_project=False)
 
   def GetGridViewData(self, mr):

@@ -699,15 +699,15 @@ def _ParsePathIdentifiers(path):
           hotlist_id = int(
               urllib.unquote(split_path[3].split('.')[0]))
         except ValueError:
-          raw_string = (split_path[3][:-3] if
+          raw_last_path = (split_path[3][:-3] if
                         split_path[3].endswith('.do') else split_path[3])
-          string = urllib.unquote(raw_string)
+          last_path = urllib.unquote(raw_last_path)
           match = framework_bizobj.RE_HOTLIST_NAME.match(
-              string)
+              last_path)
           if not match:
             raise InputException('Could not parse hotlist id or name')
           else:
-            hotlist_name = string
+            hotlist_name = last_path.lower()
 
     if split_path[0] == 'g':
       viewed_user_val = urllib.unquote(split_path[1])

@@ -50,12 +50,15 @@ class HotlistView(template_helpers.PBProxy):
     if not self.visible:
       return
 
-    self.url = (
-        '/u/%d/hotlists/%d' % (hotlist_pb.owner_ids[0], hotlist_pb.hotlist_id))
-    owner_name = users_by_id[hotlist_pb.owner_ids[0]].email
-    self.friendly_url = (
-        '/u/%s/hotlists/%s' % (
-            owner_name, hotlist_pb.name.lower().replace(' ', '-')))
+    owner_id = hotlist_pb.owner_ids[0]  # only one owner allowed
+    owner = users_by_id[owner_id]
+    if owner.obscure_email:
+      self.url = (
+          '/u/%d/hotlists/%s' % (owner_id, hotlist_pb.name))
+    else:
+      self.url = (
+          '/u/%s/hotlists/%s' % (
+              owner.email, hotlist_pb.name))
 
     self.role_name = ''
     if viewed_user_id in hotlist_pb.owner_ids:

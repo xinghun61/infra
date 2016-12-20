@@ -1692,6 +1692,16 @@ class FeaturesService(object):
     hotlists_dict, _ = self.GetHotlistsByID(
         cnxn, [hotlist_id], use_cache=use_cache)
     return hotlists_dict[hotlist_id]
+
+  def UpdateHotlistRoles(
+      self, cnxn, hotlist_id, owner_ids, editor_ids, follower_ids):
+    hotlist = self.hotlists_by_id.get(hotlist_id)
+    if not hotlist:
+      raise features_svc.NoSuchHotlistException(
+          'Hotlist "%s" not found!' % hotlist_id)
+    hotlist.owner_ids = owner_ids
+    hotlist.editor_ids = editor_ids
+    hotlist.follower_ids = follower_ids
   # end of Hotlist functions
 
   def ExpungeSavedQueriesExecuteInProject(self, _cnxn, project_id):

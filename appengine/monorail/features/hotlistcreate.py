@@ -96,6 +96,7 @@ class HotlistCreate(servlet.Servlet):
 
     description = post_data.get('description', '')
     issue_refs_string = post_data.get('issues')
+    issue_ids = []
     if issue_refs_string:
       pattern = re.compile(features_constants.ISSUE_INPUT_REGEX)
       if pattern.match(issue_refs_string):
