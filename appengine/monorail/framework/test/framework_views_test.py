@@ -92,7 +92,13 @@ class StatusViewTest(unittest.TestCase):
 class UserViewTest(unittest.TestCase):
 
   def setUp(self):
-    self.user = user_pb2.User()
+    self.user = user_pb2.User(user_id=111L)
+
+  def testGetAvailablity_Anon(self):
+    self.user.user_id = 0
+    user_view = framework_views.UserView(self.user)
+    self.assertEquals(None, user_view.avail_message)
+    self.assertEquals(None, user_view.avail_class)
 
   def testGetAvailablity_Banned(self):
     self.user.banned = 'spamming'

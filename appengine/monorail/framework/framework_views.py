@@ -104,6 +104,8 @@ class UserView(object):
 
   def GetAvailablity(self, user, is_group):
     """Return (str, str) that explains why the user might not be available."""
+    if not user.user_id:
+      return None, None
     if user.banned:
       return 'Banned', 'banned'
     if user.vacation_message:

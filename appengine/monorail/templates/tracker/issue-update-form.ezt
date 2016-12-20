@@ -75,9 +75,9 @@
 
       [if-any page_perms.EditIssue page_perms.EditIssueStatus]
        <tr><th><label for="statusedit">Status:</label></th><td class="inplace" colspan="2">
-            <input type="text" id="statusedit" style="width: 12em" autocomplete="off"
+            <input type="text" id="statusedit" style="width:16em" autocomplete="off"
                    name="status" value="[initial_status]">
-            <span id="merge_area" style="margin-left:2em;">
+            <span id="merge_area" style="margin-left:1em;">
                Merge into issue:
                <input type="text" id="merge_into" name="merge_into" style="width: 5em"
                       value="[is initial_merge_into "0"][else][initial_merge_into][end]">
@@ -90,10 +90,15 @@
       [end]
 
       [if-any page_perms.EditIssue page_perms.EditIssueOwner]
-       <tr><th><label for="owneredit">Owner:</label></th><td class="inplace">
+       <tr><th><label for="owneredit">Owner:</label></th><td class="inplace" colspan="2">
                <input type="text" id="owneredit" autocomplete="off"
-                      style="width: 12em"
+                      style="width:16em"
                       name="owner" value="[is initial_owner "----"][else][initial_owner][end]">
+                 <span class="availability_[issue.owner.avail_class]"
+                       style="padding-left:1em; [if-any issue.owner.avail_message_short][else]display:none[end]">
+                   &#9608;
+                   <span id="owner_availability">[issue.owner.avail_message_short]</span>
+                 </span>
             [if-any errors.owner]
              <div class="fielderror" id="ownererror">[errors.owner]</div>
             [end]

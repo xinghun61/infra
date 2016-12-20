@@ -6,6 +6,7 @@
 """Unittests for the issueentry servlet."""
 
 import mox
+import time
 import unittest
 
 from google.appengine.ext import testbed
@@ -64,10 +65,11 @@ class IssueEntryTest(unittest.TestCase):
                      issueentry._DiscardUnusedTemplateLabelPrefixes(labels))
 
   def testGatherPageData(self):
+    user = self.services.user.TestAddUser('user@invalid', 100)
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry', services=self.services)
-    mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
-    user = self.services.user.TestAddUser('user@invalid', 100)
+    mr.auth.user_view = framework_views.MakeUserView(
+        'cnxn', self.services.user, 100)
 
     self.mox.StubOutWithMock(self.services.user, 'GetUser')
     self.services.user.GetUser(
@@ -80,6 +82,35 @@ class IssueEntryTest(unittest.TestCase):
     self.assertEqual(page_data['initial_status'], 'New')
     self.assertTrue(page_data['clear_summary_on_click'])
     self.assertTrue(page_data['must_edit_summary'])
+
+  def testGatherPageData_DefaultOwnerAvailability(self):
+    user = self.services.user.TestAddUser('user@invalid', 100)
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', services=self.services)
+    mr.auth.user_view = framework_views.MakeUserView(
+        'cnxn', self.services.user, 100)
+
+    self.mox.StubOutWithMock(self.services.user, 'GetUser')
+    self.services.user.GetUser(
+        mox.IgnoreArg(), mox.IgnoreArg()).MultipleTimes().AndReturn(user)
+    self.mox.ReplayAll()
+
+    page_data = self.servlet.GatherPageData(mr)
+    self.mox.VerifyAll()
+    self.assertEqual(page_data['initial_owner'], 'user@invalid')
+    self.assertEqual(page_data['owner_avail_class'], 'never')
+    self.assertEqual(
+        page_data['owner_avail_message_short'],
+        'User never visited')
+
+    user.last_visit_timestamp = int(time.time())
+    mr.auth.user_view = framework_views.MakeUserView(
+        'cnxn', self.services.user, 100)
+    page_data = self.servlet.GatherPageData(mr)
+    self.mox.VerifyAll()
+    self.assertEqual(page_data['initial_owner'], 'user@invalid')
+    self.assertEqual(page_data['owner_avail_class'], None)
+    self.assertEqual(page_data['owner_avail_message_short'], '')
 
   def testGatherPageData_TemplateAllowsKeepingSummary(self):
     mr = testing_helpers.MakeMonorailRequest(

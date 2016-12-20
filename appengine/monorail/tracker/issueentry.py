@@ -99,11 +99,19 @@ class IssueEntry(servlet.Servlet):
     if wkp.owner_id:
       initial_owner = framework_views.MakeUserView(
           mr.cnxn, self.services.user, wkp.owner_id)
-      initial_owner_name = initial_owner.email
     elif wkp.owner_defaults_to_member and page_perms.EditIssue:
-      initial_owner_name = mr.auth.user_view.email
+      initial_owner = mr.auth.user_view
+    else:
+      initial_owner = None
+
+    if initial_owner:
+      initial_owner_name = initial_owner.email
+      owner_avail_class = initial_owner.avail_class
+      owner_avail_message_short = initial_owner.avail_message_short
     else:
       initial_owner_name = ''
+      owner_avail_class = None
+      owner_avail_message_short = None
 
     # Check whether to allow attachments from the entry page
     allow_attachments = tracker_helpers.IsUnderSoftAttachmentQuota(mr.project)
@@ -148,6 +156,8 @@ class IssueEntry(servlet.Servlet):
         'component_required': ezt.boolean(wkp.component_required),
         'initial_status': initial_status,
         'initial_owner': initial_owner_name,
+        'owner_avail_class': owner_avail_class,
+        'owner_avail_message_short': owner_avail_message_short,
         'initial_components': initial_components,
         'initial_cc': '',
         'initial_blocked_on': '',
