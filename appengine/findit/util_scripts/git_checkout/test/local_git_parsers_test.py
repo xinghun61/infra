@@ -16,7 +16,8 @@ import script_util
 script_util.SetUpSystemPaths()
 
 from git_checkout import local_git_parsers
-from libs.gitiles import blame
+from libs.gitiles.blame import Blame
+from libs.gitiles.blame import Region
 from libs.gitiles import change_log
 
 
@@ -52,16 +53,12 @@ class LocalGitParsersTest(unittest.TestCase):
         """
     )
 
-    expected_regions = [blame.Region(18, 3, 'revision_hash', 'test@google.com',
-                                     'test@google.com',
-                                     datetime(2013, 03, 11, 17, 13, 36)),
-                        blame.Region(29, 2, 'revision_hash', 'test@google.com',
-                                     'test@google.com',
-                                     datetime(2013, 03, 11, 17, 13, 36))]
-    expected_blame = blame.Blame('src/core/SkFont.h', 'rev')
-    # TODO(crbug.com/663445): Add methods in blame for this.
-    for expected_region in expected_regions:
-      expected_blame.AddRegion(expected_region)
+    expected_blame = Blame('src/core/SkFont.h', 'rev')
+    mock_email = 'test@google.com'
+    author_time = datetime(2013, 03, 11, 17, 13, 36)
+    expected_blame.AddRegions([
+        Region(18, 3, 'revision_hash', mock_email, mock_email, author_time),
+        Region(29, 2, 'revision_hash', mock_email, mock_email, author_time)])
 
     blame_result = self.blame_parser(output, 'src/core/SkFont.h', 'rev')
     self.assertTrue(blame_result.revision, expected_blame.revision)

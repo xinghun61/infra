@@ -28,14 +28,23 @@ class BlameTest(unittest.TestCase):
       'author_time': '2014-08-19 19:38:42'
   }
 
+  def testAddRegions(self):
+    blame1 = Blame('def', 'a/c.cc')
+    blame1.AddRegions([self.REGION1, self.REGION2])
+
+    blame2 = Blame('def', 'a/c.cc')
+    blame2.AddRegion(self.REGION1)
+    blame2.AddRegion(self.REGION2)
+
+    self.assertEqual(blame1, blame2)
+
   def testRegionToDict(self):
     self.assertEqual(self.REGION1_EXPECTED_JSON, self.REGION1.ToDict())
     self.assertEqual(self.REGION2_EXPECTED_JSON, self.REGION2.ToDict())
 
   def testBlameToDict(self):
     blame = Blame('def', 'a/c.cc')
-    blame.AddRegion(self.REGION1)
-    blame.AddRegion(self.REGION2)
+    blame.AddRegions([self.REGION1, self.REGION2])
     blame_json = blame.ToDict()
     self.assertEqual(3, len(blame_json))
     self.assertEqual('def', blame_json['revision'])

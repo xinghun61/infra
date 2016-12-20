@@ -33,7 +33,20 @@ class Blame(list):
     self.path = path
 
   def AddRegion(self, region):
+    """Add a single region to this object.
+
+    Args:
+      region (Region): the region to add
+    """
     self.append(region)
+
+  def AddRegions(self, regions):
+    """Add multiple regions to this object.
+
+    Args:
+      regions (iterable of Region): the regions to add.
+    """
+    self.extend(regions)
 
   def ToDict(self):
     regions = []

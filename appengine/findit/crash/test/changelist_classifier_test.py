@@ -281,10 +281,9 @@ class ChangelistClassifierTest(CrashTestSuite):
     }
 
     dummy_blame = Blame('9', 'a.cc')
-    dummy_blame.AddRegion(
-        Region(1, 5, '6', 'a', 'a@chromium.org', 'Thu Mar 31 21:24:43 2016'))
-    dummy_blame.AddRegion(
-        Region(6, 10, '1', 'b', 'b@chromium.org', 'Thu Jun 19 12:11:40 2015'))
+    dummy_blame.AddRegions([
+        Region(1, 5, '6', 'a', 'a@chromium.org', 'Thu Mar 31 21:24:43 2016'),
+        Region(6, 10, '1', 'b', 'b@chromium.org', 'Thu Jun 19 12:11:40 2015')])
 
     self.mock(GitilesRepository, 'GetBlame', lambda *_: dummy_blame)
 

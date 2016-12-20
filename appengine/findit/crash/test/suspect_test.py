@@ -65,18 +65,15 @@ DUMMY_CHANGELOG2 = ChangeLog.FromDict({
 })
 
 DUMMY_BLAME = Blame('4', 'a.cc')
-DUMMY_BLAME.AddRegion(
-    Region(1, 5, '2', 'r', 'r@chromium.org', 'Thu Mar 25 21:24:43 2016'))
-DUMMY_BLAME.AddRegion(
-    Region(6, 3, '1', 'e', 'e@chromium.org', 'Thu Mar 31 21:24:43 2016'))
-DUMMY_BLAME.AddRegion(
-    Region(9, 2, '3', 'k', 'k@chromium.org', 'Thu Apr 1 21:24:43 2016'))
+DUMMY_BLAME.AddRegions([
+    Region(1, 5, '2', 'r', 'r@chromium.org', 'Thu Mar 25 21:24:43 2016'),
+    Region(6, 3, '1', 'e', 'e@chromium.org', 'Thu Mar 31 21:24:43 2016'),
+    Region(9, 2, '3', 'k', 'k@chromium.org', 'Thu Apr 1 21:24:43 2016')])
 
 DUMMY_BLAME2 = Blame('4', 'b.cc')
-DUMMY_BLAME2.AddRegion(
-    Region(1, 5, '2', 'r', 'r@chromium.org', 'Thu Mar 25 21:24:43 2016'))
-DUMMY_BLAME2.AddRegion(
-    Region(6, 3, '1', 'e', 'e@chromium.org', 'Thu Mar 31 21:24:43 2016'))
+DUMMY_BLAME2.AddRegions([
+    Region(1, 5, '2', 'r', 'r@chromium.org', 'Thu Mar 25 21:24:43 2016'),
+    Region(6, 3, '1', 'e', 'e@chromium.org', 'Thu Mar 31 21:24:43 2016')])
 
 
 class SuspectTest(CrashTestSuite):

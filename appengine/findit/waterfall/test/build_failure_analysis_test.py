@@ -89,21 +89,22 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
       return None
     blame = Blame(revision, path)
 
-    blame.AddRegion(Region(1, 2, '7',
-                           u'test3@chromium.org', u'test3@chromium.org',
-                           datetime(2015, 06, 07, 04, 35, 32)))
-    blame.AddRegion(Region(3, 3, '5',
-                           u'test3@chromium.org', u'test3@chromium.org',
-                           datetime(2015, 06, 05, 04, 35, 32)))
-    blame.AddRegion(Region(7, 1, '8',
-                           u'test2@chromium.org', u'test2@chromium.org',
-                           datetime(2015, 06, 8, 04, 35, 32)))
-    blame.AddRegion(Region(8, 1, '7',
-                           u'test3@chromium.org', u'test3@chromium.org',
-                           datetime(2015, 06, 07, 21, 35, 32)))
-    blame.AddRegion(Region(9, 10, '12',
-                           u'test3@chromium.org', u'test3@chromium.org',
-                           datetime(2015, 06, 12, 04, 35, 32)))
+    blame.AddRegions([
+        Region(1, 2, '7',
+               u'test3@chromium.org', u'test3@chromium.org',
+               datetime(2015, 06, 07, 04, 35, 32)),
+        Region(3, 3, '5',
+               u'test3@chromium.org', u'test3@chromium.org',
+               datetime(2015, 06, 05, 04, 35, 32)),
+        Region(7, 1, '8',
+               u'test2@chromium.org', u'test2@chromium.org',
+               datetime(2015, 06, 8, 04, 35, 32)),
+        Region(8, 1, '7',
+               u'test3@chromium.org', u'test3@chromium.org',
+               datetime(2015, 06, 07, 21, 35, 32)),
+        Region(9, 10, '12',
+               u'test3@chromium.org', u'test3@chromium.org',
+               datetime(2015, 06, 12, 04, 35, 32))])
     return blame
 
   def testIsSameFile(self):

@@ -197,12 +197,10 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
         """
     )
     self.mock(script_util, 'GetCommandOutput', lambda *_: output)
-    expected_regions = [blame.Region(18, 3, 'revision_hash', 'test@google.com',
-                                     'test@google.com',
-                                     datetime(2013, 03, 11, 17, 13, 36))]
     expected_blame = blame.Blame('src/core/SkFont.h', 'rev')
-    for expected_region in expected_regions:
-      expected_blame.AddRegion(expected_region)
+    expected_blame.AddRegions([
+      blame.Region(18, 3, 'revision_hash', 'test@google.com', 'test@google.com',
+                   datetime(2013, 03, 11, 17, 13, 36))])
 
     blame_result = self.local_repo.GetBlame('src/core/SkFont.h', 'rev')
     self.assertTrue(blame_result.revision, expected_blame.revision)
