@@ -577,7 +577,12 @@ class TableCellCustom(TableCell):
     for fv in art.field_values:
       # TODO(jrobbins): for cross-project search this could be a list.
       fd = tracker_bizobj.FindFieldDefByID(fv.field_id, config)
-      if fd.field_name.lower() == col:
+      if not fd:
+        # TODO(jrobbins): This can happen if an issue with a custom
+        # field value is moved to a different project.
+        logging.warn('Issue ID %r has undefined field value %r',
+                     art.issue_id, fv)
+      elif fd.field_name.lower() == col:
         val = tracker_bizobj.GetFieldValue(fv, users_by_id)
         if fv.derived:
           derived_values.append(val)

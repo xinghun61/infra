@@ -94,8 +94,6 @@ class IssueList(servlet.Servlet):
 
     with self.profiler.Phase('publishing emails'):
       framework_views.RevealAllEmailsToMembers(mr, pipeline.users_by_id)
-      # TODO(jrobbins): get the configs for all result issues and
-      # harmonize them to get field defs including restrictions.
 
     with self.profiler.Phase('getting related issues'):
       related_iids = set()
@@ -122,12 +120,13 @@ class IssueList(servlet.Servlet):
     with self.profiler.Phase('building table/grid'):
       if pipeline.grid_mode:
         page_data = grid_view_helpers.GetGridViewData(
-            mr, pipeline.allowed_results or [], config, pipeline.users_by_id,
-            starred_iid_set, pipeline.grid_limited, related_issues)
+            mr, pipeline.allowed_results or [], pipeline.harmonized_config,
+            pipeline.users_by_id, starred_iid_set, pipeline.grid_limited,
+            related_issues)
       else:
         page_data = self.GetTableViewData(
-            mr, pipeline.visible_results or [], config, pipeline.users_by_id,
-            starred_iid_set, related_issues)
+            mr, pipeline.visible_results or [], pipeline.harmonized_config,
+            pipeline.users_by_id, starred_iid_set, related_issues)
 
     # We show a special message when no query will every produce any results
     # because the project has no issues in it.
