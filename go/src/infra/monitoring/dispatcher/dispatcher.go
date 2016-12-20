@@ -61,12 +61,13 @@ var (
 	builderOnly         = flag.String("builder", "", "Only check this builder")
 	buildOnly           = flag.Int64("build", 0, "Only check this build")
 	maxErrs             = flag.Int("max-errs", 1, "Max consecutive errors per loop attempt")
-	durationStr         = flag.String("duration", "10s", "Max duration to loop for")
+	durationStr         = flag.String("duration", "5m", "Max duration to loop for")
 	cycleStr            = flag.String("cycle", "1s", "Cycle time for loop")
 	snapshot            = flag.String("record-snapshot", "", "Save a snapshot of infra responses to this path, which will be created if it does not already exist.")
 	replay              = flag.String("replay-snapshot", "", "Replay a snapshot of infra responses from this path, which should have been created previously by running with --record-snapshot.")
 	replayTime          = flag.String("replay-time", "", "Specify a simulated starting time for the replay in RFC3339 format, used with --replay-snapshot.")
 	serviceAccountJSON  = flag.String("service-account", "", "Service account JSON file.")
+	miloHost            = flag.String("milo-host", "", "Hostname of milo service to use instead of buildbot/CBE")
 
 	duration, cycle time.Duration
 
@@ -375,12 +376,13 @@ func loadConfigsAndRun(ctx context.Context) error {
 
 	r := client.NewReader()
 
-	if *snapshot != "" {
+	switch {
+	case *snapshot != "":
 		r = client.NewSnapshot(r, *snapshot)
-	}
-
-	if *replay != "" {
+	case *replay != "":
 		r = client.NewReplay(*replay)
+	case *miloHost != "":
+		r = client.NewMiloReader(*miloHost)
 	}
 
 	ctx = client.WithReader(ctx, r)
