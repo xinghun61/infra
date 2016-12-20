@@ -14,6 +14,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"infra/monitoring/client"
 	"infra/monitoring/messages"
 
 	"github.com/luci/gae/service/datastore"
@@ -163,7 +164,7 @@ type masterState struct {
 }
 
 func getRestartingMasters(c context.Context, treeName string) (map[string]masterState, error) {
-	b, err := getGitilesCached(c, masterStateURL)
+	b, err := client.GetGitilesCached(c, masterStateURL)
 	if err != nil {
 		return nil, err
 	}

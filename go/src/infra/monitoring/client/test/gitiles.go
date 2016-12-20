@@ -1,4 +1,4 @@
-package som
+package test
 
 import (
 	"encoding/base64"
@@ -7,18 +7,20 @@ import (
 	"strings"
 )
 
-type mockGitilesTransport struct {
-	responses map[string]string
+// MockGitilesTransport is a test support type to mock out request/response pairs.
+type MockGitilesTransport struct {
+	Responses map[string]string
 }
 
-func (t mockGitilesTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+// RoundTrip implements http.RoundTripper
+func (t MockGitilesTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	response := &http.Response{
 		Header:     make(http.Header),
 		Request:    req,
 		StatusCode: http.StatusOK,
 	}
 
-	responseBody, ok := t.responses[req.URL.String()]
+	responseBody, ok := t.Responses[req.URL.String()]
 	if !ok {
 		response.StatusCode = http.StatusNotFound
 		return response, nil

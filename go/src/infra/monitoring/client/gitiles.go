@@ -1,4 +1,4 @@
-package som
+package client
 
 import (
 	"encoding/base64"
@@ -21,7 +21,9 @@ var (
 	gitilesCachePrefix = "gitiles:"
 )
 
-func getGitilesCached(c context.Context, URL string) ([]byte, error) {
+// GetGitilesCached fetches gitiles content through memcache. Note that this
+// currently only works from AppEngine due to memcache and gaeauth dependencies.
+func GetGitilesCached(c context.Context, URL string) ([]byte, error) {
 	item, err := memcache.GetKey(c, gitilesCachePrefix+URL)
 	if err != nil && err != memcache.ErrCacheMiss {
 		return nil, err
@@ -29,7 +31,7 @@ func getGitilesCached(c context.Context, URL string) ([]byte, error) {
 
 	var b []byte
 	if err == memcache.ErrCacheMiss {
-		b, err = getGitiles(c, URL)
+		b, err = GetGitiles(c, URL)
 		if err != nil {
 			return nil, err
 		}
@@ -45,8 +47,9 @@ func getGitilesCached(c context.Context, URL string) ([]byte, error) {
 	return item.Value(), nil
 }
 
-// TODO(seanmccullough): refactor this into one of our shared packages.
-func getGitiles(c context.Context, URL string) ([]byte, error) {
+// GetGitiles fetches gitiles raw text content with requried authentication headers.
+// Note that this currently only works from AppEngine due to gaeauth dependencies.
+func GetGitiles(c context.Context, URL string) ([]byte, error) {
 	token, err := client.GetAccessToken(c, []string{gitilesScope})
 	if err != nil {
 		logging.Errorf(c, "getting access token: %v", err)

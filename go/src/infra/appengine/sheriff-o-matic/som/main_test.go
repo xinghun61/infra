@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	client "infra/monitoring/client/test"
 	"infra/monorail"
 
 	"golang.org/x/net/context"
@@ -496,8 +497,8 @@ func TestMain(t *testing.T) {
 					return giMock{dummy.Info(), "", time.Now(), nil}
 				})
 
-				c = urlfetch.Set(c, &mockGitilesTransport{
-					map[string]string{
+				c = urlfetch.Set(c, &client.MockGitilesTransport{
+					Responses: map[string]string{
 						"https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_trees.json?format=text": `{    "chromium": {
         "build-db": "waterfall_build_db.json",
         "masters": {

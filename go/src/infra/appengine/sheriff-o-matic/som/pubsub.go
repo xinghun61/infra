@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"infra/monitoring/analyzer"
+	"infra/monitoring/client"
 	"infra/monitoring/messages"
 	sompubsub "infra/monitoring/pubsubalerts"
 
@@ -160,7 +161,7 @@ func getGatekeeperRules(c context.Context) (*analyzer.GatekeeperRules, error) {
 func getGatekeeperConfigs(c context.Context) ([]*messages.GatekeeperConfig, error) {
 	ret := []*messages.GatekeeperConfig{}
 	for _, URL := range []string{gkConfigURL, gkConfigInternalURL} {
-		b, err := getGitiles(c, URL)
+		b, err := client.GetGitilesCached(c, URL)
 		if err != nil {
 			return nil, err
 		}
@@ -178,7 +179,7 @@ func getGatekeeperConfigs(c context.Context) ([]*messages.GatekeeperConfig, erro
 // TODO(seanmccullough): Replace this urlfetch/memcache code with a luci-config reader.
 // Blocked on https://bugs.chromium.org/p/chromium/issues/detail?id=658270
 var getGatekeeperTrees = func(c context.Context) (map[string]*messages.TreeMasterConfig, error) {
-	gkBytes, err := getGitilesCached(c, gkTreesURL)
+	gkBytes, err := client.GetGitilesCached(c, gkTreesURL)
 	if err != nil {
 		return nil, err
 	}

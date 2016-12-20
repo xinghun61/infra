@@ -13,6 +13,7 @@ import (
 	"golang.org/x/net/context"
 
 	testhelper "infra/monitoring/analyzer/test"
+	client "infra/monitoring/client/test"
 	"infra/monitoring/messages"
 
 	"github.com/luci/gae/impl/dummy"
@@ -130,8 +131,8 @@ func TestPostMiloPubSubHandler(t *testing.T) {
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 			return giMock{dummy.Info(), "", time.Now(), nil}
 		})
-		c = urlfetch.Set(c, &mockGitilesTransport{
-			map[string]string{
+		c = urlfetch.Set(c, &client.MockGitilesTransport{
+			Responses: map[string]string{
 				gkTreesURL: `{    "chromium": {
         "build-db": "waterfall_build_db.json",
         "masters": {
@@ -242,8 +243,8 @@ func TestGetPubSubAlertsHandler(t *testing.T) {
 			return giMock{dummy.Info(), "", time.Now(), nil}
 		})
 
-		c = urlfetch.Set(c, &mockGitilesTransport{
-			map[string]string{
+		c = urlfetch.Set(c, &client.MockGitilesTransport{
+			Responses: map[string]string{
 				"https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_trees.json?format=text": `{    "chromium": {
         "build-db": "waterfall_build_db.json",
         "masters": {
