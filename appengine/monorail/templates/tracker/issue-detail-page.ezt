@@ -263,7 +263,7 @@ runOnLoad(function() {
 
   if ($("star"))
     $("star").addEventListener("click", function (event) {
-       _TKR_toggleStar($("star"), "[projectname]", [issue.local_id], null, "[set_star_token]");
+       _TKR_toggleStar($("star"), "[projectname]", [issue.local_id], null, null, "[set_star_token]");
        _TKR_syncStarIcons($("star"), "star2");
     });
 

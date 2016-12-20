@@ -285,7 +285,7 @@ function renderHotlistTable(tableData, pageSettings) {
     star.addEventListener("click", function (event) {
       var projectName = event.target.getAttribute("data-project-name");
       var localID = event.target.getAttribute("data-local-id");
-      _TKR_toggleStar(event.target, projectName, localID, null, null);
+      _TKR_toggleStar(event.target, projectName, localID, null, null, null);
     });
   }
 

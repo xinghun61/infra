@@ -18,6 +18,7 @@ from framework import sql
 USERSTAR_TABLE_NAME = 'UserStar'
 PROJECTSTAR_TABLE_NAME = 'ProjectStar'
 ISSUESTAR_TABLE_NAME = 'IssueStar'
+HOTLISTSTAR_TABLE_NAME = 'HotlistStar'
 
 # TODO(jrobbins): Consider adding memcache here if performance testing shows
 # that stars are a bottleneck.  Keep in mind that issue star counts are
@@ -158,6 +159,15 @@ class ProjectStarService(AbstractStarService):
     tbl = sql.SQLTableManager(PROJECTSTAR_TABLE_NAME)
     super(ProjectStarService, self).__init__(
         cache_manager, tbl, 'project_id', 'user_id', 'project')
+
+
+class HotlistStarService(AbstractStarService):
+  """Star service for stars on hotlists."""
+
+  def __init__(self, cache_manager):
+    tbl = sql.SQLTableManager(HOTLISTSTAR_TABLE_NAME)
+    super(HotlistStarService, self).__init__(
+        cache_manager, tbl, 'hotlist_id', 'user_id', 'hotlist')
 
 
 class IssueStarService(AbstractStarService):

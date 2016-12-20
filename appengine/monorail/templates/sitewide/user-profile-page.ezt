@@ -13,7 +13,7 @@
             [if-any read_only][else]
              <a id="user_star"
               style="color:[if-any is_user_starred]cornflowerblue[else]gray[end]"
-              title="[if-any is_user_starred]Un-s[else]S[end]tar this project">
+              title="[if-any is_user_starred]Un-s[else]S[end]tar this user">
              [if-any is_user_starred]&#9733;[else]&#9734;[end]
              </a>
             [end]
@@ -270,7 +270,7 @@ runOnLoad(function() {
   if ($("user_star")) {
     [# The user viewing this page wants to star the user *on* this page]
     $("user_star").addEventListener("click", function () {
-       _TKR_toggleStar($("user_star"), null, null, "[viewed_user_id]");
+       _TKR_toggleStar($("user_star"), null, null, "[viewed_user_id]", null, null);
     });
   }
 

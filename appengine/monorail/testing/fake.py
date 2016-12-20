@@ -552,6 +552,10 @@ class ProjectStarService(AbstractStarService):
   pass
 
 
+class HotlistStarService(AbstractStarService):
+  pass
+
+
 class IssueStarService(AbstractStarService):
 
   # pylint: disable=arguments-differ

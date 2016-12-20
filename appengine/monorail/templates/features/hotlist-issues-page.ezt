@@ -7,6 +7,13 @@
 <tbody class="collapse">
   <tr>
     <td nowrap="nowrap" style="min-width:9em" class="issuemetaheader">
+      [if-any read_only][else]
+        <a id="hotlist_star"
+        style="color:[if-any is_hotlist_starred]cornflowerblue[else]gray[end]"
+        title="[if-any is_hotlist_starred]Un-s[else]S[end]tar this hotlist">
+        [if-any is_hotlist_starred]&#9733;[else]&#9734;[end]
+        </a>
+      [end]
       <a href="[viewed_user.profile_url]hotlists/[hotlist_id]">Hotlist [hotlist.name]</a>
     </td>
     <td nowrap="nowrap" width="80%" style="border-right: 2px solid white" class="issueheader">
@@ -77,6 +84,14 @@
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   _onload();
+
+  if ($("hotlist_star")) {
+    [# The user viewing this page wants to star this hotlist]
+    $("hotlist_star").addEventListener("click", function () {
+       _TKR_toggleStar($("hotlist_star"), null, null, null, "[hotlist_id]");
+    });
+  }
+
 });
 </script>
 

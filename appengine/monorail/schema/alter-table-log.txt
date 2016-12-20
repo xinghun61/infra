@@ -1022,3 +1022,17 @@ that column.  This resolves one TODO from 2016-09-21.  Later the
 column itself can be dropped, which is the other TODO from 2016-09-21.
 
 ALTER TABLE CommentContent DROP INDEX comment_id;
+
+================================================================
+2016-12-20: Add a table to keep track of hotlists that users have
+starred.
+
+CREATE TABLE HotlistStar (
+  hotlist_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (hotlist_id, user_id),
+  INDEX (user_id),
+  FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;

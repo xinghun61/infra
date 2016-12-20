@@ -81,6 +81,10 @@ class HotlistIssues(servlet.Servlet):
     allow_rerank = (not mr.group_by_spec and mr.sort_spec.startswith(
         'rank') and (owner_permissions or editor_permissions))
 
+    # TODO(jojwang): get logged_in_user's starring permissions
+    is_hotlist_starred = self._IsHotlistStarred(
+        mr.cnxn, mr.auth.user_id, mr.hotlist_id)
+
     # Note: The HotlistView is created and returned in servlet.py
     page_data.update({'owner_permissions': ezt.boolean(owner_permissions),
                       'editor_permissions': ezt.boolean(editor_permissions),
@@ -90,11 +94,19 @@ class HotlistIssues(servlet.Servlet):
                       'page_perms': page_perms,
                       'colspec': mr.col_spec,
                       'allow_rerank': ezt.boolean(allow_rerank),
+                      'is_hotlist_starred': ezt.boolean(is_hotlist_starred),
                       'csv_link': '', # TODO(jojwang): fill in when
                       # CSV for hotlists is complete
                       'is_hotlist': ezt.boolean(True)})
     return page_data
   # TODO(jojwang): implement peek issue on hover, implement starring issues
+
+  def _IsHotlistStarred(self, cnxn, logged_in_user_id, hotlist_id):
+    """Return whether the logged in user starred the viewed hotlist."""
+    if logged_in_user_id:
+      return self.services.hotlist_star.IsItemStarredBy(
+          cnxn, hotlist_id, logged_in_user_id)
+    return False
 
   def _GetHotlist(self, mr):
     """Retrieve the current hotlist."""

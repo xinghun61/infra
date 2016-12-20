@@ -220,7 +220,7 @@ function TKR_toggleStarArtifactAtCursor(cbCellIndex, set_star_token) {
     if (starIcon) {
       _TKR_toggleStar(
           starIcon, issueRefs[TKR_selected]['project_name'],
-          issueRefs[TKR_selected]['id'], set_star_token);
+          issueRefs[TKR_selected]['id'], null, null, set_star_token);
     }
   }
 }
@@ -397,7 +397,7 @@ function TKR_setupKibblesOnDetailPage(
         's',
          function() {
            var star = document.getElementById('star');
-           TKR_toggleStar(star, projectName, localId, set_star_token);
+           TKR_toggleStar(star, projectName, localId, null, null, set_star_token);
            TKR_syncStarIcons(star, 'star2');
          });
   }

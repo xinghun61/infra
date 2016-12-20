@@ -720,3 +720,14 @@ CREATE TABLE Hotlist2User (
   FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
+
+
+CREATE TABLE HotlistStar (
+  hotlist_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (hotlist_id, user_id),
+  INDEX (user_id),
+  FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;

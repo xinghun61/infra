@@ -12,6 +12,7 @@ from framework import monorailrequest
 
 USER_STARS_SCOPE = 'users'
 PROJECT_STARS_SCOPE = 'projects'
+HOTLIST_STARS_SCOPE = 'hotlists'
 
 
 class SetStarsFeed(jsonfeed.JsonFeed):
@@ -20,7 +21,7 @@ class SetStarsFeed(jsonfeed.JsonFeed):
   def HandleRequest(self, mr):
     """Retrieves the star persistence object and sets a star."""
     starrer_id = mr.auth.user_id
-    item = mr.GetParam('item')  # a project name or a user ID number
+    item = mr.GetParam('item')  # a project name or a user/hotlist ID number
     scope = mr.GetParam('scope')
     starred = bool(mr.GetIntParam('starred'))
     logging.info('Handling user set star request: %r %r %r %r',
@@ -34,6 +35,11 @@ class SetStarsFeed(jsonfeed.JsonFeed):
     elif scope == USER_STARS_SCOPE:
       user_id = int(item)
       self.services.user_star.SetStar(mr.cnxn, user_id, starrer_id, starred)
+
+    elif scope == HOTLIST_STARS_SCOPE:
+      hotlist_id = int(item)
+      self.services.hotlist_star.SetStar(
+          mr.cnxn, hotlist_id, starrer_id, starred)
 
     else:
       raise monorailrequest.InputException('unexpected star scope: %s' % scope)

@@ -34,7 +34,7 @@ var TKR_STAR_OFF = '\u2606';
  * @param {String} projectName number of the user to be starred.
  * @param {string} token The security token.
  */
-function TKR_toggleStar(el, projectName, localId, userId, token) {
+function TKR_toggleStar(el, projectName, localId, userId, hotlistId, token) {
   var starred = (el.textContent.trim() == TKR_STAR_OFF) ? 1 : 0;
   TKR_toggleStarLocal(el);
 
@@ -42,15 +42,22 @@ function TKR_toggleStar(el, projectName, localId, userId, token) {
   if (userId) type = 'users';
   if (projectName) type = 'projects';
   if (projectName && localId) type = 'issues';
+  if (hotlistId) type = 'hotlists';
 
   args = {'starred': starred};
-  if (type == 'users' || type == 'projects') {
-    url = '/hosting/stars.do';
-    args['scope'] = type;
-    args['item'] = type == 'projects' ? projectName : userId;
-  } else {
+  if (type == 'issues') {
     url = '/p/' + projectName + '/issues/setstar.do';
     args['id'] = localId;
+  } else {
+    url = '/hosting/stars.do';
+    args['scope'] = type;
+    if (type == 'hotlists') {
+      args['item'] = hotlistId;
+    } else if (type == 'projects'){
+      args['item'] = projectName;
+    } else {
+      args['item'] =  userId;
+    };
   };
 
   TKR_setStar(el, url, args, token, url);
