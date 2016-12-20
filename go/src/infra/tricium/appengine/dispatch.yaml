@@ -1,0 +1,26 @@
+application: chrome-infra-tricium-dev
+dispatch:
+
+- url: "*/launcher/*"
+  module: launcher
+
+- url: "*/push-handlers/notify"
+  module: driver
+
+- url: "*/driver/*"
+  module: driver
+
+- url: "*/gerrit-poller/*"
+  module: gerrit-poller
+
+- url: "*/gerrit-reporter/*"
+  module: gerrit-reporter
+
+- url: "*/tracker/*"
+  module: tracker
+
+- url: "*/config/*"
+  module: config
+
+- url: "*/*"
+  module: default

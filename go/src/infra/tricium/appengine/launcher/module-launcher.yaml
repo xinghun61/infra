@@ -1,0 +1,10 @@
+application: chrome-infra-tricium-dev
+module: launcher
+runtime: go
+api_version: go1
+
+handlers:
+
+ - url: /launcher/internal/.*
+   script: _go_app
+   login: admin

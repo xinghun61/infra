@@ -1,0 +1,10 @@
+application: chrome-infra-tricium-dev
+module: tracker
+runtime: go
+api_version: go1
+
+handlers:
+
+- url: /tracker/internal/.*
+  script: _go_app
+  login: admin

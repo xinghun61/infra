@@ -1,0 +1,14 @@
+application: chrome-infra-tricium-dev
+module: driver
+runtime: go
+api_version: go1
+
+handlers:
+
+- url: /driver/internal/.*
+  script: _go_app
+  login: admin
+
+- url: /_ah/push-handlers/notify
+  script: _go_app
+  login: admin
