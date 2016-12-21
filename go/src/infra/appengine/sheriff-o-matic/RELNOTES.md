@@ -1,13 +1,16 @@
-# Release Notes sheriff-o-matic 2016-12-19
+# Release Notes sheriff-o-matic 2016-12-20
 
-- 7 commits, 4 bugs affected since ead1512 (2016-12-14T00:33:37Z)
-- 3 Authors:
-  - martiniss@chromium.org
+- 9 commits, 5 bugs affected since ead1512 (2016-12-13)
+- 4 Authors:
   - zhangtiff@google.com
   - seanmccullough@chromium.org
+  - philwright@chromium.org
+  - martiniss@chromium.org
 
 ## Changes in this release
 
+- [[som, a-d] Move gitiles client code from som into infra/monitoring/client](https://chromium-review.googlesource.com/422477) (seanmccullough@chromium.org)
+- [Pushing latest version of SoM as part of PRR deploy and rollback test](https://chromium-review.googlesource.com/422607) (philwright@chromium.org)
 - [SOM: Add null check to UI](https://chromium-review.googlesource.com/420807) (martiniss@chromium.org)
 - [SOM: Add memcache to rev range redirects](https://chromium-review.googlesource.com/416233) (martiniss@chromium.org)
 - [SoM: Fix test for computing sheriffs and change to use mocked timers.](https://chromium-review.googlesource.com/420309) (zhangtiff@google.com)
@@ -20,15 +23,18 @@
 ## Bugs updated, by author
 - martiniss@chromium.org:
   -  [https://crbug.com/673979](https://crbug.com/673979)
-  
+
+- philwright@chromium.org:
+  -  [https://crbug.com/630455](https://crbug.com/630455)
+
 - seanmccullough@chromium.org:
   -  [https://crbug.com/413053](https://crbug.com/413053)
   -  [https://crbug.com/674205](https://crbug.com/674205)
-  
+
 - zhangtiff@google.com:
   -  [https://crbug.com/673969](https://crbug.com/673969)
-  -  [https://crbug.com/674205](https://crbug.com/674205)
-  
+  -  [https://crbug.com/674205](https://crbug.com/674205) 
+
 # Release Notes sheriff-o-matic 2016-12-13
 
 - 13 commits, 8 bugs affected since 30d0695 (2016-12-07T00:42:54Z)
