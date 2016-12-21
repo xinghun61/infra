@@ -6,6 +6,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"os"
 	"os/signal"
 
@@ -18,11 +19,16 @@ import (
 	"github.com/luci/luci-go/common/logging/gologger"
 )
 
-var application = &cli.Application{
+var logConfig = log.Config{
+	Level: log.Info,
+}
+
+var application = cli.Application{
 	Name:  "kitchen",
 	Title: "Kitchen. It can run a recipe.",
 	Context: func(ctx context.Context) context.Context {
 		ctx = gologger.StdConfig.Use(ctx)
+		ctx = logConfig.Set(ctx)
 		return handleInterruption(ctx)
 	},
 	Commands: []*subcommands.Command{
@@ -32,7 +38,10 @@ var application = &cli.Application{
 }
 
 func main() {
-	os.Exit(subcommands.Run(application, os.Args[1:]))
+	logConfig.AddFlags(flag.CommandLine)
+	flag.Parse()
+
+	os.Exit(subcommands.Run(&application, flag.Args()))
 }
 
 func handleInterruption(ctx context.Context) context.Context {

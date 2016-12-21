@@ -22,6 +22,7 @@ import (
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/system/exitcode"
+	grpcLogging "github.com/luci/luci-go/grpc/logging"
 	"github.com/luci/luci-go/logdog/client/annotee"
 	"github.com/luci/luci-go/logdog/client/annotee/annotation"
 	"github.com/luci/luci-go/logdog/client/butler"
@@ -162,6 +163,11 @@ func (p *cookLogDogParams) getPrefix(env environ.Env) (types.StreamName, error) 
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
 func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env environ.Env) (rc int, err error) {
+	// Install a global gRPC logger adapter. This routes gRPC log messages that
+	// are emitted through our logger. We only log gRPC prints if our logger is
+	// configured to log debug-level or lower.
+	grpcLogging.Install(log.Get(ctx), log.IsLogging(ctx, log.Debug))
+
 	// If env is empty (production code), use the system enviornment.
 	if env.Len() == 0 {
 		env = environ.System()

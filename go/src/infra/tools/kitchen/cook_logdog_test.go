@@ -5,16 +5,25 @@
 package main
 
 import (
+	"os/exec"
 	"testing"
 
+	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/logging/memlogger"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/logdog/common/types"
+
+	"golang.org/x/net/context"
+	"google.golang.org/grpc/grpclog"
 
 	. "github.com/luci/luci-go/common/testing/assertions"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestCookLogDogPrefix(t *testing.T) {
+	t.Parallel()
+
 	Convey(`With a fake environment`, t, func() {
 		var (
 			p cookLogDogParams
@@ -59,6 +68,44 @@ func TestCookLogDogPrefix(t *testing.T) {
 
 			_, err := p.getPrefix(env)
 			So(err, ShouldErrLike, "missing or empty SWARMING_TASK_ID")
+		})
+	})
+}
+
+func TestDisableGRPCLogging(t *testing.T) {
+	Convey(`LogDog executions suppress gRPC print-level logging`, t, func() {
+		var (
+			ctx = context.Background()
+			ml  memlogger.MemLogger
+			cr  cookRun
+		)
+
+		// Install our memory logger.
+		ctx = logging.SetFactory(ctx, func(context.Context) logging.Logger { return &ml })
+
+		// Call "runWithLogdogButler". This should fail, but, more importantly for
+		// this test, should also install our gRPC log suppression. Note that this
+		// is GLOBAL, so we cannot run this in parallel.
+		install := func() {
+			_, _ = cr.runWithLogdogButler(ctx, func(context.Context, environ.Env) (*exec.Cmd, error) {
+				return nil, errors.New("not implemented")
+			}, environ.Env{})
+		}
+
+		Convey(`When log level is Info, does not log Prints.`, func() {
+			ctx = logging.SetLevel(ctx, logging.Info)
+			install()
+
+			grpclog.Println("TEST!")
+			So(ml.Messages(), ShouldHaveLength, 0)
+		})
+
+		Convey(`When log level is Debug, does log Prints.`, func() {
+			ctx = logging.SetLevel(ctx, logging.Debug)
+			install()
+
+			grpclog.Println("TEST!")
+			So(ml.Messages(), ShouldHaveLength, 1)
 		})
 	})
 }
