@@ -73,6 +73,7 @@ HOTLISTS = '/hotlists'
 
 # URLS of User hotlist pages
 HOTLIST_ISSUES = ''
+HOTLIST_ISSUES_CSV = '/csv'
 HOTLIST_PEOPLE = '/people'
 HOTLIST_DETAIL = '/details'
 HOTLIST_RERANK_JSON = '/rerank'

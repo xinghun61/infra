@@ -15,6 +15,7 @@ from features import autolink
 from features import hotlistcreate
 from features import hotlistdetails
 from features import hotlistissues
+from features import hotlistissuescsv
 from features import hotlistpeople
 from features import cues
 from features import filterrules
@@ -321,6 +322,7 @@ class ServletRegistry(object):
 
     self._SetupUserHotlistServlets({
         urls.HOTLIST_ISSUES: hotlistissues.HotlistIssues,
+        urls.HOTLIST_ISSUES_CSV: hotlistissuescsv.HotlistIssuesCsv,
         urls.HOTLIST_PEOPLE: hotlistpeople.HotlistPeopleList,
         urls.HOTLIST_DETAIL: hotlistdetails.HotlistDetails,
         urls.HOTLIST_RERANK_JSON: rerankhotlist.RerankHotlistIssue,

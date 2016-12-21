@@ -10,14 +10,14 @@ import unittest
 from framework import permissions
 from services import service_manager
 from testing import testing_helpers
-from tracker import issuelistcsv
+from features import hotlistissuescsv
 
 
-class IssueListCSVTest(unittest.TestCase):
+class HotlistIssuesCsvTest(unittest.TestCase):
 
   def setUp(self):
     self.services = service_manager.Services()
-    self.servlet = issuelistcsv.IssueListCsv(
+    self.servlet = hotlistissuescsv.HotlistIssuesCsv(
         'req', 'res', services=self.services)
 
   def testGatherPageData_AnonUsers(self):
