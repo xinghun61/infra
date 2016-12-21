@@ -14,6 +14,7 @@ import (
 
 	"infra/monitoring/messages"
 
+	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/grpc/prpc"
 	milo "github.com/luci/luci-go/milo/api/proto"
@@ -30,7 +31,7 @@ type miloReader struct {
 }
 
 // NewMiloReader returns a new reader implementation, which will read data from Milo.
-func NewMiloReader(host string) readerType {
+func NewMiloReader(ctx context.Context, host string) readerType {
 	if host == "" {
 		host = miloHost
 	}
@@ -38,7 +39,9 @@ func NewMiloReader(host string) readerType {
 		host: host,
 		reader: reader{
 			hc: &trackingHTTPClient{
-				c: http.DefaultClient,
+				// TODO: Somehow get this transport from ctx instead of hard-coding
+				// to urlfetch, which probably doesn't work outside of appengine.
+				c: &http.Client{Transport: urlfetch.Get(ctx)},
 			},
 			bCache: map[string]*messages.Build{},
 		},
@@ -48,6 +51,7 @@ func NewMiloReader(host string) readerType {
 func (r *miloReader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	miloClient := &prpc.Client{
 		Host: r.host,
+		C:    &http.Client{Transport: urlfetch.Get(ctx)},
 	}
 
 	req := &milo.BuildbotBuildRequest{Master: master.Name(), Builder: builder, BuildNum: buildNum}
@@ -69,6 +73,7 @@ func (r *miloReader) Build(ctx context.Context, master *messages.MasterLocation,
 func (r *miloReader) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
 	miloClient := &prpc.Client{
 		Host: r.host,
+		C:    &http.Client{Transport: urlfetch.Get(ctx)},
 	}
 
 	req := &milo.BuildbotBuildsRequest{Master: master.Name(), Builder: builder, IncludeCurrent: true}
@@ -93,6 +98,7 @@ func (r *miloReader) LatestBuilds(ctx context.Context, master *messages.MasterLo
 func (r *miloReader) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
 	miloClient := &prpc.Client{
 		Host: r.host,
+		C:    &http.Client{Transport: urlfetch.Get(ctx)},
 	}
 
 	req := &milo.MasterRequest{Name: master.Name()}

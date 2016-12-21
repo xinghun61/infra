@@ -28,6 +28,7 @@ type MockReader struct {
 	StepFetchError,
 	StdioForStepError error
 	BuildFetchErrs map[string]error
+	BuildExtracts  map[string]*messages.BuildExtract
 }
 
 // Build implements the Reader interface.
@@ -55,7 +56,10 @@ func (m MockReader) TestResults(ctx context.Context, master *messages.MasterLoca
 
 // BuildExtract implements the Reader interface.
 func (m MockReader) BuildExtract(ctx context.Context, url *messages.MasterLocation) (*messages.BuildExtract, error) {
-	return nil, nil
+	if be, ok := m.BuildExtracts[url.Name()]; ok {
+		return be, nil
+	}
+	return nil, fmt.Errorf("master not found: %s", url.Name())
 }
 
 // StdioForStep implements the Reader interface.

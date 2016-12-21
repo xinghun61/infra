@@ -46,8 +46,12 @@ func WithReader(ctx context.Context, r readerType) context.Context {
 	return context.WithValue(ctx, clientReaderKey, r)
 }
 
-func getReader(ctx context.Context) readerType {
-	return ctx.Value(clientReaderKey).(readerType)
+// GetReader returns the current client.Reader for the context, or nil.
+func GetReader(ctx context.Context) readerType {
+	if reader, ok := ctx.Value(clientReaderKey).(readerType); ok {
+		return reader
+	}
+	return nil
 }
 
 // BuilderURL returns the builder URL for the given master and builder.
@@ -100,39 +104,39 @@ type Writer interface {
 // Build fetches the build summary for master, builder and buildNum
 // from build.chromium.org.
 func Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
-	return getReader(ctx).Build(ctx, master, builder, buildNum)
+	return GetReader(ctx).Build(ctx, master, builder, buildNum)
 }
 
 // LatestBuilds fetches a list of recent build summaries for master and builder
 // from build.chromium.org.
 func LatestBuilds(ctx context.Context, master *messages.MasterLocation, build string) ([]*messages.Build, error) {
-	return getReader(ctx).LatestBuilds(ctx, master, build)
+	return GetReader(ctx).LatestBuilds(ctx, master, build)
 }
 
 // TestResults fetches the results of a step failure's test run.
 func TestResults(ctx context.Context, masterName *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
-	return getReader(ctx).TestResults(ctx, masterName, builderName, stepName, buildNumber)
+	return GetReader(ctx).TestResults(ctx, masterName, builderName, stepName, buildNumber)
 }
 
 // BuildExtract fetches build information for master from CBE.
 func BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
-	return getReader(ctx).BuildExtract(ctx, master)
+	return GetReader(ctx).BuildExtract(ctx, master)
 }
 
 // StdioForStep fetches the standard output for a given build step, and an error if any
 // occurred.
 func StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
-	return getReader(ctx).StdioForStep(ctx, master, builder, step, buildNum)
+	return GetReader(ctx).StdioForStep(ctx, master, builder, step, buildNum)
 }
 
 // CrbugItems fetches a list of open issues from crbug matching the given label.
 func CrbugItems(ctx context.Context, label string) ([]messages.CrbugItem, error) {
-	return getReader(ctx).CrbugItems(ctx, label)
+	return GetReader(ctx).CrbugItems(ctx, label)
 }
 
 // Findit fetches items from the findit service, which identifies possible culprit CLs for a failed build.
 func Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
-	return getReader(ctx).Findit(ctx, master, builder, buildNum, failedSteps)
+	return GetReader(ctx).Findit(ctx, master, builder, buildNum, failedSteps)
 }
 
 type trackingHTTPClient struct {

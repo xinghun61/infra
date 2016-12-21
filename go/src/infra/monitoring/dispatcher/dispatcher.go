@@ -382,7 +382,7 @@ func loadConfigsAndRun(ctx context.Context) error {
 	case *replay != "":
 		r = client.NewReplay(*replay)
 	case *miloHost != "":
-		r = client.NewMiloReader(*miloHost)
+		r = client.NewMiloReader(ctx, *miloHost)
 	}
 
 	ctx = client.WithReader(ctx, r)

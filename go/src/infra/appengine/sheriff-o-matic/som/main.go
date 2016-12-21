@@ -414,6 +414,7 @@ func init() {
 	r.GET("/_cron/refresh/bugqueue/:label", basemw, refreshBugQueueHandler)
 	r.GET("/_cron/annotations/flush_old/", basemw, flushOldAnnotationsHandler)
 	r.GET("/_cron/annotations/refresh/", basemw, refreshAnnotationsHandler)
+	r.GET("/_cron/analyze/:tree", basemw, getAnalyzeHandler)
 	r.POST("/_/clientmon", basemw, postClientMonHandler)
 	r.POST("/_ah/push-handlers/milo", basemw, postMiloPubSubHandler)
 
