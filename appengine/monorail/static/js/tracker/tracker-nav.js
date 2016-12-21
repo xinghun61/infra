@@ -164,7 +164,7 @@ function TKR_addSort(colname, descending) {
   }
 
   var isHotlist = window.location.href.includes('/hotlists/');
-  var url = isHotlist ? ($('hotlist_id').value + '?') : ('list?');
+  var url = isHotlist ? ($('hotlist_name').value + '?') : ('list?');
   url  += ('can='+ $('can').value + '&q=' +
       TKR_getArtifactSearchField().value);
 

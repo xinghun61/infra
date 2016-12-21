@@ -81,10 +81,6 @@ class HotlistIssues(servlet.Servlet):
     allow_rerank = (not mr.group_by_spec and mr.sort_spec.startswith(
         'rank') and (owner_permissions or editor_permissions))
 
-    # TODO(jojwang): get logged_in_user's starring permissions
-    is_hotlist_starred = self._IsHotlistStarred(
-        mr.cnxn, mr.auth.user_id, mr.hotlist_id)
-
     # Note: The HotlistView is created and returned in servlet.py
     page_data.update({'owner_permissions': ezt.boolean(owner_permissions),
                       'editor_permissions': ezt.boolean(editor_permissions),
@@ -94,7 +90,6 @@ class HotlistIssues(servlet.Servlet):
                       'page_perms': page_perms,
                       'colspec': mr.col_spec,
                       'allow_rerank': ezt.boolean(allow_rerank),
-                      'is_hotlist_starred': ezt.boolean(is_hotlist_starred),
                       'csv_link': framework_helpers.FormatURL(
                           mr, '%d/csv' % mr.hotlist_id, num=100),
                       'is_hotlist': ezt.boolean(True)})

@@ -41,7 +41,7 @@
               <a class="star"
                  style="color:[if-any owner_of_hotlists.is_starred]cornflowerblue[else]gray[end]"
                  title="[if-any owner_of_hotlists.is_starred]Un-s][else]S[end]tar this hotlist"
-                 data-hotlist-name="[owner_of_hotlists.name]">
+                 data-hotlist-id="[owner_of_hotlists.hotlist_id]">
              [if-any owner_of_hotlists.is_starred]&#9733;[else]&#9734;[end]
               </a>
             </td>
@@ -60,7 +60,7 @@
               <a class="star"
                  style="color:[if-any editor_of_hotlists.is_starred]cornflowerblue[else]gray[end]"
                  title="[if-any editor_of_hotlists.is_starred]Un-s][else]S[end]tar this hotlist"
-                 data-hotlist-name="[editor_of_hotlists.name]">
+                 data-hotlist-id="[editor_of_hotlists.hotlist_id]">
              [if-any editor_of_hotlists.is_starred]&#9733;[else]&#9734;[end]
             </td>
           [end][end]
@@ -75,7 +75,7 @@
       <td colspan="4"><i>No hotlists.</i></td>
     [end]
     </table>
-    [if-any follower_of_hotlists]
+    [if-any starred_hotlists]
       <div class="list">
         <table style="width:100%;" cellspacing="0" cellpadding="0">
           <tr>
@@ -90,20 +90,20 @@
           <th style="white-space:nowrap; width:10%;">Issues</th>
           <th style="white-space:nowrap; width:57%;">Summary</th>
         </tr>
-        [for follower_of_hotlists]
-          <tr data-url="[follower_of_hotlists.url]">
+        [for starred_hotlists]
+          <tr data-url="[starred_hotlists.url]">
             <td class="rowwidgets">
               <a class="star"
-                 style="color:[if-any follower_of_hotlists.is_starred]cornflowerblue[else]gray[end]"
-                 title="[if-any follower_of_hotlists.is_starred]Un-s][else]S[end]tar this hotlist"
-                 data-hotlist-name="[follower_of_hotlists.name]">
-             [if-any follower_of_hotlists.is_starred]&#9733;[else]&#9734;[end]
+                 style="color:[if-any starred_hotlists.is_starred]cornflowerblue[else]gray[end]"
+                 title="[if-any starred_hotlists.is_starred]Un-s][else]S[end]tar this hotlist"
+                 data-hotlist-id="[starred_hotlists.hotlist_id]">
+             [if-any starred_hotlists.is_starred]&#9733;[else]&#9734;[end]
             </td>
             <td class="id" name="follower">
-              <a href="[follower_of_hotlists.url]">[follower_of_hotlists.name]</a></td>
+              <a href="[starred_hotlists.url]">[starred_hotlists.name]</a></td>
             </td>
-            <td>[follower_of_hotlists.num_issues]</td>
-            <td>[follower_of_hotlists.summary]</td>
+            <td>[starred_hotlists.num_issues]</td>
+            <td>[starred_hotlists.summary]</td>
           </tr>
         [end]
       </table>
@@ -111,5 +111,20 @@
 
   </div>
 </div>
+
+<script type="text/javascript" nonce="[nonce]">
+runOnLoad(function() {
+
+ var stars = document.getElementsByClassName("star");
+  for (var i = 0; i < stars.length; ++i) {
+    var star = stars[[]i];
+    star.addEventListener("click", function (event) {
+        var hotlistID = event.target.getAttribute("data-hotlist-id");
+        _TKR_toggleStar(event.target, null, null, null, hotlistID);
+    });
+  }
+
+});
+</script>
 
 [include "../framework/master-footer.ezt"]

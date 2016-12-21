@@ -16,22 +16,39 @@ class UserHotlists(servlet.Servlet):
   _PAGE_TEMPLATE = 'features/user-hotlists.ezt'
 
   def GatherPageData(self, mr):
-    hotlists = self.services.features.GetHotlistsByUserID(
+    viewed_users_hotlists = self.services.features.GetHotlistsByUserID(
         mr.cnxn, mr.viewed_user_auth.user_id)
+
+    viewed_starred_hids = self.services.hotlist_star.LookupStarredItemIDs(
+        mr.cnxn, mr.viewed_user_auth.user_id)
+    viewed_users_starred_hotlists, _ = self.services.features.GetHotlistsByID(
+        mr.cnxn, viewed_starred_hids)
+
+    viewed_users_relevant_hotlists = viewed_users_hotlists + list(
+        set(viewed_users_starred_hotlists.values()) -
+        set(viewed_users_hotlists))
+
     users_by_id = framework_views.MakeAllUserViews(
         mr.cnxn, self.services.user,
-        features_bizobj.UsersInvolvedInHotlists(hotlists))
+        features_bizobj.UsersInvolvedInHotlists(viewed_users_relevant_hotlists))
+
     views = [hotlist_views.HotlistView(
         hotlist_pb, mr.auth, mr.viewed_user_auth.user_id,
-        users_by_id)
-        for hotlist_pb in hotlists]
+        users_by_id, self.services.hotlist_star.IsItemStarredBy(
+            mr.cnxn, hotlist_pb.hotlist_id, mr.auth.user_id))
+        for hotlist_pb in viewed_users_relevant_hotlists]
+
+    # visible to viewer, not viewed_user
     visible_hotlists = [view for view in views if view.visible]
+
     owner_of_hotlists = [hotlist_view for hotlist_view in visible_hotlists
                          if hotlist_view.role_name == 'owner']
     editor_of_hotlists = [hotlist_view for hotlist_view in visible_hotlists
                           if hotlist_view.role_name == 'editor']
     follower_of_hotlists = [hotlist_view for hotlist_view in visible_hotlists
                          if hotlist_view.role_name == '']
+    starred_hotlists = [hotlist_view for hotlist_view in visible_hotlists
+                        if hotlist_view.hotlist_id in viewed_starred_hids]
 
     viewed_user_display_name = framework_views.GetViewedUserDisplayName(mr)
 
@@ -41,4 +58,5 @@ class UserHotlists(servlet.Servlet):
         'owner_of_hotlists': owner_of_hotlists,
         'editor_of_hotlists': editor_of_hotlists,
         'follower_of_hotlists': follower_of_hotlists,
+        'starred_hotlists': starred_hotlists,
         }

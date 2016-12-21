@@ -12,7 +12,6 @@ from google.appengine.ext import testbed
 from third_party import ezt
 
 from features import hotlistissues
-from features import hotlist_views
 from framework import framework_views
 from framework import permissions
 from framework import sorting
@@ -66,11 +65,6 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     self.mr.auth.effective_ids = {111L}
     self.mr.viewed_user_auth.user_id = 111L
     sorting.InitializeArtValues(self.services)
-    users_by_id = {222L: framework_views.UserView(self.user2),
-                   111L: framework_views.UserView(self.user1)}
-    self.hotlist_view = hotlist_views.HotlistView(
-        self.test_hotlist, self.mr.auth, self.mr.viewed_user_auth.user_id,
-        users_by_id)
 
   def testAssertBasePermissions(self):
     private_hotlist = self.services.features.TestAddHotlist(
@@ -128,8 +122,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     pass
 
   def testProcessFormData_NoNewIssues(self):
-    post_data = fake.PostData(remove=['false'], add_local_ids=[''],
-                              hotlist_view_url=[self.hotlist_view.url])
+    post_data = fake.PostData(remove=['false'], add_local_ids=[''])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue(url.endswith('u/222/hotlists/hotlist'))
     self.assertEqual(self.test_hotlist.iid_rank_pairs, self.hotlistissues)
@@ -143,8 +136,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     self.services.issue.TestAddIssue(issue5)
 
     post_data = fake.PostData(remove=['false'],
-                              add_local_ids=['project-name:4, project-name:5'],
-                              hotlist_view_url=[self.hotlist_view.url])
+                              add_local_ids=['project-name:4, project-name:5'])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('u/222/hotlists/hotlist' in url)
     self.assertEqual(len(self.test_hotlist.iid_rank_pairs), 5)
@@ -154,8 +146,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
         self.test_hotlist.iid_rank_pairs[4].issue_id, issue5.issue_id)
 
     post_data = fake.PostData(remove=['true'], remove_local_ids=[
-        'project-name:4, project-name:1, project-name:2'],
-                              hotlist_view_url=[self.hotlist_view.url])
+        'project-name:4, project-name:1, project-name:2'])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('u/222/hotlists/hotlist' in url)
     self.assertTrue(len(self.test_hotlist.iid_rank_pairs), 2)

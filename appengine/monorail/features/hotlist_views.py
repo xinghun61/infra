@@ -42,7 +42,7 @@ class HotlistView(template_helpers.PBProxy):
 
   def __init__(
       self, hotlist_pb, user_auth=None,
-      viewed_user_id=None, users_by_id=None):
+      viewed_user_id=None, users_by_id=None, is_starred=False):
     super(HotlistView, self).__init__(hotlist_pb)
 
     self.visible = permissions.CanViewHotlist(
@@ -76,7 +76,4 @@ class HotlistView(template_helpers.PBProxy):
     # TODO(jojwang): if hotlist follower's will not be used, perhaps change
     # from is_followed to is_member or just use is_starred
     self.num_followers = len(hotlist_pb.follower_ids)
-    self.is_starred = ezt.boolean(False)
-    # TODO(jojwang): implement starring hotlists, do this in user_id
-    # context not effective_user_ids context, so user can star for only
-    # themselves
+    self.is_starred = ezt.boolean(is_starred)

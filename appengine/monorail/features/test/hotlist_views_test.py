@@ -82,9 +82,10 @@ class HotlistViewTest(unittest.TestCase):
                                 editor_ids=[2, 3])
     hotlist_view = hotlist_views.HotlistView(
         hotlist, self.user_auth, viewed_user_id=2,
-                                             users_by_id=self.users_by_id)
+        users_by_id=self.users_by_id, is_starred=True)
     self.assertTrue(hotlist_view.visible, True)
     self.assertEqual(hotlist_view.role_name, 'editor')
     self.assertEqual(hotlist_view.owners, [self.user1_view])
     self.assertEqual(hotlist_view.editors, [self.user2_view, self.user3_view])
     self.assertEqual(hotlist_view.num_issues, 3)
+    self.assertTrue(hotlist_view.is_starred)

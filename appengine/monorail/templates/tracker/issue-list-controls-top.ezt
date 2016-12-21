@@ -40,7 +40,7 @@
    </select>
    [end]
 
-   <form id="colspecform" action=[if-any hotlist_id]"[hotlist_id]"[else]"list"[end] method="GET" autocomplete="off"
+   <form id="colspecform" action=[if-any hotlist_id]"[hotlist.name]"[else]"list"[end] method="GET" autocomplete="off"
          style="display:inline; margin-left:1em">
     <input type="hidden" name="can" value="[can]">
     <input type="hidden" name="q" value="[query]">
