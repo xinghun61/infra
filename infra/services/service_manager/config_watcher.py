@@ -128,8 +128,7 @@ class ConfigWatcher(object):
 
   def __init__(self, config_directory, config_poll_interval,
                service_poll_interval, state_directory, root_directory,
-               cloudtail_path,
-               _sleep_fn=time.sleep):
+               cloudtail, _sleep_fn=time.sleep):
     """
     Args:
       config_directory(str): Directory containing .json config files to monitor.
@@ -140,15 +139,14 @@ class ConfigWatcher(object):
       state_directory(str): A file will be created in this directory (with the
           same name as the service) when it is running containing its PID and
           starttime.
-      cloudtail_path (str): Path to the cloudtail binary to use for logging, or
-          None if logging is disabled.
+      cloudtail (CloudtailFactory): An object that knows how to start cloudtail.
     """
 
     self._config_glob = os.path.join(config_directory, '*.json')
     self._config_poll_interval = config_poll_interval
     self._service_poll_interval = service_poll_interval
     self._state_directory = state_directory
-    self._cloudtail_path = cloudtail_path
+    self._cloudtail = cloudtail
 
     self._metadata = {}  # Filename -> _Metadata
     self._services = {}  # Service name -> Filename
@@ -225,7 +223,7 @@ class ConfigWatcher(object):
         self._service_poll_interval,
         self._state_directory,
         config,
-        self._cloudtail_path)
+        self._cloudtail)
     thread.start()
     thread.start_service()
     self._metadata[filename] = _Metadata(mtime, config, thread)
@@ -258,7 +256,7 @@ class ConfigWatcher(object):
           self._service_poll_interval,
           self._state_directory,
           metadata.config,
-          self._cloudtail_path)
+          self._cloudtail)
       metadata.thread.start()
       metadata.thread.start_service()
     else:

@@ -186,22 +186,15 @@ class ProcessCreator(object):
     The caller *must* close this file handle after spawning the subprocess.
     """
 
-    if self.service.cloudtail_args is not None:
-      log_r, log_w = os.pipe()
-      try:
-        with open(os.devnull, 'w') as null_fh:
-          subprocess.Popen(
-              self.service.cloudtail_args,
-              stdin=log_r,
-              stdout=null_fh,
-              stderr=null_fh,
-              **popen_kwargs)
-      except OSError:
-        os.close(log_w)
-      else:
-        return os.fdopen(log_w, 'w')
-      finally:
-        os.close(log_r)
+    log_r, log_w = os.pipe()
+    try:
+      self.service.cloudtail.start(self.service.name, log_r, **popen_kwargs)
+    except OSError:
+      os.close(log_w)
+    else:
+      return os.fdopen(log_w, 'w')
+    finally:
+      os.close(log_r)
 
     return open(os.devnull, 'w')
 
@@ -217,7 +210,7 @@ class Service(object):
   condition of a different process reusing the same PID.
   """
 
-  def __init__(self, state_directory, service_config, cloudtail_path,
+  def __init__(self, state_directory, service_config, cloudtail,
                _time_fn=time.time, _sleep_fn=time.sleep):
     """
     Args:
@@ -226,8 +219,7 @@ class Service(object):
           starttime.
       service_config: A dictionary containing the service's config.  See README
           for a description of the fields.
-      cloudtail_path: Path to the cloudtail binary to use for logging, or None
-          if logging is disabled.
+      cloudtail: An object that knows how to start cloudtail.
     """
 
     self.config = service_config
@@ -237,15 +229,7 @@ class Service(object):
 
     self.stop_time = int(service_config.get('stop_time', 10))
 
-    if cloudtail_path is None:
-      self.cloudtail_args = None
-    else:
-      self.cloudtail_args = [
-          cloudtail_path, 'pipe',
-          '--log-id', self.name,
-          '--local-log-level', 'info',
-      ]
-
+    self.cloudtail = cloudtail
     self._state_file = os.path.join(state_directory, self.name)
     self._time_fn = _time_fn
     self._sleep_fn = _sleep_fn

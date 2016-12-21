@@ -11,6 +11,7 @@ import unittest
 
 import mock
 
+from infra.services.service_manager import cloudtail_factory
 from infra.services.service_manager import config_watcher
 from infra.services.service_manager import service
 from infra.services.service_manager import service_thread
@@ -32,6 +33,7 @@ class ConfigWatcherTest(unittest.TestCase):
     self.mock_ownservice = self.mock_ownservice_ctor.return_value
     self.mock_ownservice.start.return_value = True
     self.mock_ownservice.has_version_changed.return_value = False
+    self.mock_cloudtail = cloudtail_factory.DummyCloudtailFactory()
 
     self.cw = config_watcher.ConfigWatcher(
         self.config_directory,
@@ -39,7 +41,7 @@ class ConfigWatcherTest(unittest.TestCase):
         43,
         '/state',
         '/rootdir',
-        '/cloudtail',
+        self.mock_cloudtail,
         _sleep_fn=self.mock_sleep)
 
   def tearDown(self):
@@ -85,7 +87,7 @@ class ConfigWatcherTest(unittest.TestCase):
         43,
         '/state',
         {'name': 'foo', 'root_directory': 'bar', 'cmd': ['baz']},
-        '/cloudtail')
+        self.mock_cloudtail)
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -107,7 +109,7 @@ class ConfigWatcherTest(unittest.TestCase):
         {'name': 'foo',
          'root_directory': 'bar',
          'cmd': cmd},
-        '/cloudtail')
+        self.mock_cloudtail)
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -130,7 +132,7 @@ class ConfigWatcherTest(unittest.TestCase):
         {'name': 'foo',
          'root_directory': 'bar',
          'cmd': cmd},
-        '/cloudtail')
+        self.mock_cloudtail)
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -178,7 +180,7 @@ class ConfigWatcherTest(unittest.TestCase):
         43,
         '/state',
         {'name': 'bar', 'root_directory': 'foo', 'cmd': ['baz']},
-        '/cloudtail')
+        self.mock_cloudtail)
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -212,7 +214,7 @@ class ConfigWatcherTest(unittest.TestCase):
         {'name': 'foo',
          'root_directory': 'whatever',
          'cmd': ['whatever.tool']},
-        '/cloudtail')
+        self.mock_cloudtail)
 
     self._set_config(
       'foo.json',
@@ -274,7 +276,7 @@ class ConfigWatcherTest(unittest.TestCase):
         43,
         '/state',
         {'name': 'foo', 'root_directory': 'bar', 'cmd': ['baz']},
-        '/cloudtail')
+        self.mock_cloudtail)
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -300,7 +302,7 @@ class ConfigWatcherTest(unittest.TestCase):
         43,
         '/state',
         {'name': 'foo', 'root_directory': 'bar', 'cmd': ['baz']},
-        '/cloudtail')
+        self.mock_cloudtail)
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -334,7 +336,7 @@ class ConfigWatcherTest(unittest.TestCase):
          'root_directory': 'bar',
          'cmd': ['baz']
         },
-        '/cloudtail')
+        self.mock_cloudtail)
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -356,7 +358,7 @@ class ConfigWatcherTest(unittest.TestCase):
          'root_directory': 'bar',
          'cmd': ['baz']
         },
-        '/cloudtail')
+        self.mock_cloudtail)
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
@@ -390,7 +392,7 @@ class ConfigWatcherTest(unittest.TestCase):
         43,
         '/state',
         {'name': 'foo', 'root_directory': 'bar', 'cmd': ['baz']},
-        '/cloudtail')
+        self.mock_cloudtail)
 
     def sleep_impl(_duration):
       self.cw.stop()

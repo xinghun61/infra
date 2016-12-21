@@ -47,7 +47,7 @@ class ServiceThread(threading.Thread):
                   'version changed')
 
   def __init__(self, poll_interval, state_directory, service_config,
-               cloudtail_path,
+               cloudtail,
                wait_condition=None):
     """
     Args:
@@ -57,8 +57,7 @@ class ServiceThread(threading.Thread):
           starttime.
       service_config: A dictionary containing the service's config.  See README
           for a description of the fields.
-      cloudtail_path: Path to the cloudtail binary to use for logging, or None
-          if logging is disabled.
+      cloudtail: An object that knows how to start cloudtail.
     """
 
     super(ServiceThread, self).__init__()
@@ -68,10 +67,10 @@ class ServiceThread(threading.Thread):
 
     self._poll_interval = poll_interval
     self._state_directory = state_directory
-    self._cloudtail_path = cloudtail_path
+    self._cloudtail = cloudtail
     self._service = service.Service(self._state_directory,
                                     service_config,
-                                    self._cloudtail_path)
+                                    self._cloudtail)
 
     self._condition = wait_condition  # Protects _state.
     self._state = _State()  # _condition must be held.
@@ -112,7 +111,7 @@ class ServiceThread(threading.Thread):
           self.reconfigs.increment(fields={'service': self._service.name})
           self._service = service.Service(self._state_directory,
                                           state.new_config,
-                                          self._cloudtail_path)
+                                          self._cloudtail)
           self._service.start()
           self._started = True
         elif state.should_run == False:

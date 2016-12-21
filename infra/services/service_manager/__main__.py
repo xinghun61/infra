@@ -9,6 +9,7 @@ import sys
 
 from infra_libs import app
 from infra_libs import experiments
+from infra.services.service_manager import cloudtail_factory
 from infra.services.service_manager import config_watcher
 from infra.services.service_manager import root_setup
 
@@ -64,12 +65,15 @@ class ServiceManager(app.BaseApplication):
     parser.add_argument(
         '--cloudtail-experiment-percent',
         type=int, default=100,
-        help='Probability of tailing log files of started services to cloud '
-             'logging using cloudtail (default %(default)s%%)')
+        help='deprecated and ignored')
     parser.add_argument(
         '--cloudtail-path',
         default=default_cloudtail_path,
-        help='Path to the cloudtail binary (default %(default)s)')
+        help='path to the cloudtail binary (default %(default)s)')
+    parser.add_argument(
+        '--cloudtail-ts-mon-credentials',
+        help='path to a pkcs8 json credential file to pass on to the cloudtail '
+             'binary')
 
     parser.set_defaults(
         ts_mon_target_type='task',
@@ -81,8 +85,12 @@ class ServiceManager(app.BaseApplication):
     if opts.root_setup:
       return root_setup.root_setup()
 
-    cloudtail_active = experiments.is_active_for_host(
-        'cloudtail', opts.cloudtail_experiment_percent)
+    if opts.cloudtail_path:
+      cloudtail = cloudtail_factory.CloudtailFactory(
+          opts.cloudtail_path,
+          opts.cloudtail_ts_mon_credentials)
+    else:
+      cloudtail = cloudtail_factory.DummyCloudtailFactory()
 
     watcher = config_watcher.ConfigWatcher(
         opts.config_directory,
@@ -90,7 +98,7 @@ class ServiceManager(app.BaseApplication):
         opts.service_poll_interval,
         opts.state_directory,
         opts.root_directory,
-        opts.cloudtail_path if cloudtail_active else None)
+        cloudtail)
 
     def sigint_handler(_signal, _frame):
       watcher.stop()

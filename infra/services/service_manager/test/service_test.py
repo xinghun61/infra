@@ -20,6 +20,7 @@ import unittest
 import mock
 
 from infra.libs.service_utils import daemon
+from infra.services.service_manager import cloudtail_factory
 from infra.services.service_manager import config_watcher
 from infra.services.service_manager import service
 from infra.services.service_manager import version_finder
@@ -129,7 +130,7 @@ class ServiceTest(TestBase):
               "environment": {"MY_ENV": "hello"},
               "resources": {"num_files": [8192, 8192]}
           }"""),
-        None,
+        cloudtail_factory.DummyCloudtailFactory(),
         _time_fn=self.mock_time,
         _sleep_fn=self.mock_sleep)
 
@@ -391,79 +392,33 @@ class ServiceTest(TestBase):
     state = service.ProcessState(pid=1234, starttime=5678, version=1)
     self.assertFalse(self.s.has_cmd_changed(state))
 
-  def test_cloudtail_args(self):
-    self.assertIsNone(self.s.cloudtail_args)
-
-    self.s = service.Service(
-        self.state_directory,
-        config_watcher.parse_config(
-          """
-          {
-            "name": "foo",
-            "root_directory": "/rootdir",
-            "cmd": ["bar", "one", "two"],
-            "stop_time": 86
-          }"""),
-        '/cloudtail',
-        _time_fn=self.mock_time,
-        _sleep_fn=self.mock_sleep)
-
-    self.assertIn('/cloudtail', self.s.cloudtail_args)
-    self.assertIn('foo', self.s.cloudtail_args)
-
 
 class ProcessCreatorTest(unittest.TestCase):
   def setUp(self):
-    self.mock_popen = mock.patch('subprocess.Popen', autospec=True).start()
-    self.mock_service = mock.create_autospec('service.Service', instance=True)
+    self.mock_service = mock.create_autospec(service.Service, instance=True)
     self.mock_service.name = 'foo'
+    self.mock_service.cloudtail = mock.create_autospec(
+        cloudtail_factory.CloudtailFactory, instance=True)
     self.c = service.ProcessCreator(self.mock_service)
 
   def tearDown(self):
     mock.patch.stopall()
 
-  def test_open_output_fh_no_cloudtail(self):
-    self.mock_service.cloudtail_args = None
-    fh = self.c._open_output_fh({'foo': 'bar'})
-    try:
-      self.assertFalse(self.mock_popen.called)
-      self.assertEqual(os.devnull, fh.name)
-    finally:
-      fh.close()
-
   def test_open_output_fh(self):
-    self.mock_service.cloudtail_args = [1, 2, 3]
-    self.mock_popen.return_value.pid = 1234
     fh = self.c._open_output_fh({'cwd': 'blah'})
     try:
-      self.assertEquals(1, self.mock_popen.call_count)
-      self.assertEquals([1, 2, 3], self.mock_popen.call_args[0][0])
-      kwargs = self.mock_popen.call_args[1]
-      self.assertIn('cwd', kwargs)
-      self.assertIn('stdin', kwargs)
-      self.assertIn('stdout', kwargs)
-      self.assertIn('stderr', kwargs)
-
-      self.assertEquals(os.devnull, kwargs['stdout'].name)
-      self.assertEquals(os.devnull, kwargs['stderr'].name)
-      self.assertEquals('<fdopen>', fh.name)
-
-      # Clean up the write end of the pipe.
-      kwargs['stdout'].close()
+      self.assertTrue(self.mock_service.cloudtail.start.called)
+      args, kwargs = self.mock_service.cloudtail.start.call_args
+      self.assertEqual('foo', args[0])
+      self.assertEqual({'cwd': 'blah'}, kwargs)
     finally:
       fh.close()
 
   def test_open_output_fh_not_found(self):
-    self.mock_service.cloudtail_args = [1, 2, 3]
-    self.mock_popen.side_effect = OSError()
+    self.mock_service.cloudtail.start.side_effect = OSError()
     fh = self.c._open_output_fh({})
     try:
-      self.assertEquals(1, self.mock_popen.call_count)
-      kwargs = self.mock_popen.call_args[1]
-      self.assertEqual(os.devnull, fh.name)
-
-      # Clean up the write end of the pipe.
-      kwargs['stdout'].close()
+      self.assertTrue(self.mock_service.cloudtail.start.called)
     finally:
       fh.close()
 
