@@ -13,13 +13,22 @@ import (
 	"infra/monitoring/messages"
 
 	"github.com/luci/gae/impl/dummy"
+	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/info"
 	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/appengine/gaetesting"
+	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/server/router"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func newTestContext() context.Context {
+	ctx := gaetesting.TestingContext()
+	ta := datastore.GetTestable(ctx)
+	ta.Consistent(true)
+	return ctx
+}
 
 func setUpGitiles(c context.Context) context.Context {
 	return urlfetch.Set(c, &testhelper.MockGitilesTransport{
@@ -105,7 +114,7 @@ func TestGetAnalyzeHandler(t *testing.T) {
 	})
 
 	Convey("ok request", t, func() {
-		c := gaetesting.TestingContext()
+		c := newTestContext()
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 			return giMock{dummy.Info(), "", time.Now(), nil}
 		})
@@ -127,8 +136,51 @@ func TestGetAnalyzeHandler(t *testing.T) {
 		}
 		getAnalyzeHandler(ctx)
 
-		Printf("w: %v", w)
 		So(w.Code, ShouldEqual, http.StatusOK)
 	})
 
+	Convey("ok request, no gitiles", t, func() {
+		c := newTestContext()
+		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+			return giMock{dummy.Info(), "", time.Now(), nil}
+		})
+		c = urlfetch.Set(c, &testhelper.MockGitilesTransport{})
+
+		c = client.WithReader(c, testhelper.MockReader{
+			BuildExtracts: map[string]*messages.BuildExtract{
+				"chromium": &messages.BuildExtract{},
+			},
+		})
+
+		w := httptest.NewRecorder()
+
+		ctx := &router.Context{
+			Context: c,
+			Writer:  w,
+			Request: makeGetRequest(),
+			Params:  makeParams("tree", "chromium"),
+		}
+		getAnalyzeHandler(ctx)
+
+		So(w.Code, ShouldEqual, http.StatusInternalServerError)
+	})
+}
+
+func TestStoreAlertsSummary(t *testing.T) {
+	Convey("success", t, func() {
+		c := gaetesting.TestingContext()
+		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+			return giMock{dummy.Info(), "", clock.Now(c), nil}
+		})
+		c = setUpGitiles(c)
+		err := storeAlertsSummary(c, nil, "some tree", &messages.AlertsSummary{
+			Alerts: []messages.Alert{
+				{
+					Title:     "foo",
+					Extension: messages.BuildFailure{},
+				},
+			},
+		})
+		So(err, ShouldBeNil)
+	})
 }

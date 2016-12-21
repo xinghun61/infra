@@ -18,3 +18,20 @@ cron:
 - description: Delete old annotations
   url: /_cron/annotations/flush_old/
   schedule: every 1 hours
+
+- description: Update Android alerts
+  url: /_cron/analyze/android
+  schedule: every 5 minutes
+
+- description: Update Chromium alerts
+  url: /_cron/analyze/chromium
+  schedule: every 5 minutes
+
+- description: Update Chromium Perf alerts
+  url: /_cron/analyze/chromium.perf
+  schedule: every 5 minutes
+
+- description: Update iOS alerts
+  url: /_cron/analyze/ios
+  schedule: every 5 minutes
+
