@@ -8,9 +8,10 @@ import mock
 import time
 
 from common.waterfall import buildbucket_client
-from common.waterfall import failure_type
 from common.waterfall import try_job_error
+from common.waterfall import failure_type
 from model import analysis_status
+from model.flake.flake_try_job import FlakeTryJob
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall import monitor_try_job_pipeline
@@ -24,12 +25,6 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   def setUp(self):
     super(MonitorTryJobPipelineTest, self).setUp()
     self.mock(time, 'sleep', lambda x: None)
-
-  def testMicrosecondsToDatetime(self):
-    self.assertEqual(
-        datetime(2016, 2, 1, 22, 59, 34),
-        monitor_try_job_pipeline._MicrosecondsToDatetime(1454367574000000))
-    self.assertIsNone(monitor_try_job_pipeline._MicrosecondsToDatetime(None))
 
   def testDictsAreEqual(self):
     self.assertTrue(monitor_try_job_pipeline._DictsAreEqual(None, None))
@@ -161,8 +156,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = MonitorTryJobPipeline()
     compile_result = pipeline.run(
-        master_name, builder_name, build_number, failure_type.COMPILE,
-        try_job_id)
+        try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
 
     expected_compile_result = {
         'report': {
@@ -275,8 +269,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = MonitorTryJobPipeline()
     test_result = pipeline.run(
-        master_name, builder_name, build_number, failure_type.TEST,
-        try_job_id)
+        try_job.key.urlsafe(), failure_type.TEST, try_job_id)
 
     expected_test_result = {
         'report': {
@@ -311,13 +304,33 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
     try_job_id = '3'
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number).put()
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.put()
 
     pipeline = MonitorTryJobPipeline()
     pipeline._UpdateTryJobResult(
-        buildbucket_client.BuildbucketBuild.STARTED, master_name, builder_name,
-        build_number, failure_type.TEST, try_job_id, 'url')
+        try_job.key.urlsafe(), failure_type.TEST, try_job_id, 'url',
+        buildbucket_client.BuildbucketBuild.STARTED)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
+
+  def testUpdateFlakeTryJobResult(self):
+    master_name = 'm'
+    builder_name = 'b'
+    step_name = 's'
+    test_name = 't'
+    git_hash = 'a1b2c3d4'
+    try_job_id = '2'
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, git_hash)
+    try_job.put()
+
+    pipeline = MonitorTryJobPipeline()
+    pipeline._UpdateTryJobResult(
+        try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id, 'url',
+        buildbucket_client.BuildbucketBuild.STARTED)
+    try_job = FlakeTryJob.Get(
+        master_name, builder_name, step_name, test_name, git_hash)
     self.assertEqual(analysis_status.RUNNING, try_job.status)
 
   def testGetErrorForNoError(self):
@@ -484,7 +497,6 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
     pipeline = MonitorTryJobPipeline()
-    test_result = pipeline.run(
-        master_name, builder_name, build_number, failure_type.TEST,
-        None)
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    test_result = pipeline.run(try_job.key.urlsafe(), failure_type.TEST, None)
     self.assertIsNone(test_result)

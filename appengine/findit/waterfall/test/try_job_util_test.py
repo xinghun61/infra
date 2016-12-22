@@ -32,7 +32,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     build.start_time = yesterday + timedelta(hours=1)
     self.assertFalse(try_job_util._ShouldBailOutForOutdatedBuild(build))
 
-  def testNotNeedANewTryJobIfBuilderIsNotSupportedYet(self):
+  def testNotNeedANewWaterfallTryJobIfBuilderIsNotSupportedYet(self):
     master_name = 'master3'
     builder_name = 'builder3'
     build_number = 223
@@ -69,7 +69,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'failure_type': failure_type.COMPILE
     }
 
-    need_try_job = try_job_util.NeedANewTryJob(
+    need_try_job = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
@@ -91,11 +91,13 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     mock_fn.return_value = False
-
-    need_try_job = try_job_util.NeedANewTryJob(
+    expected_try_job_key = WfTryJob.Create(
+        master_name, builder_name, build_number).key
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
+    self.assertEqual(expected_try_job_key, try_job_key)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
   def testBailOutForTryJobWithOutdatedTimestamp(self, mock_fn):
@@ -124,13 +126,14 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = True
 
-    need_try_job = try_job_util.NeedANewTryJob(
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
+    self.assertIsNone(try_job_key)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
-  def testNotNeedANewTryJobIfNotFirstTimeFailure(self, mock_fn):
+  def testNotNeedANewWaterfallTryJobIfNotFirstTimeFailure(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -168,13 +171,13 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
-
     mock_fn.return_value = False
-
-    need_try_job = try_job_util.NeedANewTryJob(
+    expected_key = WfTryJob.Create(master_name, builder_name, build_number).key
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
+    self.assertEqual(expected_key, try_job_key)
 
   def testBlameListsIntersect(self):
     self.assertFalse(try_job_util._BlameListsIntersection(['0'], ['1']))
@@ -800,7 +803,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
-  def testNotNeedANewTryJobIfOneWithResultExists(self, mock_fn):
+  def testNotNeedANewWaterfallTryJobIfOneWithResultExists(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -834,13 +837,14 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job = try_job_util.NeedANewTryJob(
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
+    self.assertEqual(try_job_key, try_job.key)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
-  def testNeedANewTryJobIfExistingOneHasError(self, mock_fn):
+  def testNeedANewWaterfallTryJobIfExistingOneHasError(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -873,13 +877,13 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job = try_job_util.NeedANewTryJob(
+    need_try_job = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
-  def testNotNeedANewTryJobIfNoNewFailure(self, mock_fn):
+  def testNotNeedANewWaterfallTryJobIfNoNewFailure(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -910,14 +914,17 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     mock_fn.return_value = False
+    expected_try_job_key = WfTryJob.Create(
+        master_name, builder_name, build_number).key
 
-    need_try_job = try_job_util.NeedANewTryJob(
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
+    self.assertEqual(expected_try_job_key, try_job_key)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
-  def testNeedANewTryJobIfTestFailureSwarming(self, mock_fn):
+  def testNeedANewWaterfallTryJobIfTestFailureSwarming(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -993,13 +1000,13 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job = try_job_util.NeedANewTryJob(
+    need_try_job = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
-  def testNeedANewTryJob(self, mock_fn):
+  def testNeedANewWaterfallTryJob(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -1035,13 +1042,13 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job = try_job_util.NeedANewTryJob(
+    need_try_job = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
-  def testNotNeedANewTryJobForOtherType(self, mock_fn):
+  def testNotNeedANewWaterfallTryJobForOtherType(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -1064,14 +1071,17 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     mock_fn.return_value = False
+    expected_try_job_key = WfTryJob.Create(
+        master_name, builder_name, build_number).key
 
-    need_try_job = try_job_util.NeedANewTryJob(
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
+    self.assertEqual(expected_try_job_key, try_job_key)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
-  def testNotNeedANewTryJobForCompileTypeNoFailureInfo(self, mock_fn):
+  def testNotNeedANewWaterfallTryJobForCompileTypeNoFailureInfo(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -1094,11 +1104,13 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     mock_fn.return_value = False
-
-    need_try_job = try_job_util.NeedANewTryJob(
+    expected_try_job_key = WfTryJob.Create(
+        master_name, builder_name, build_number).key
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
+    self.assertEqual(expected_try_job_key, try_job_key)
 
   def testForceTryJob(self):
     master_name = 'm'
@@ -1145,18 +1157,20 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
     analysis.put()
 
-    need_try_job = try_job_util.NeedANewTryJob(
+    need_try_job = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None, True)
 
     self.assertTrue(need_try_job)
 
   def testRemovePlatformFromStepName(self):
     self.assertEqual('a_tests',
-        try_job_util._RemovePlatformFromStepName('a_tests on Platform'))
+                     try_job_util._RemovePlatformFromStepName(
+                         'a_tests on Platform'))
     self.assertEqual('a_tests',
-        try_job_util._RemovePlatformFromStepName('a_tests on Other-Platform'))
+                     try_job_util._RemovePlatformFromStepName(
+                         'a_tests on Other-Platform'))
     self.assertEqual('a_tests',
-        try_job_util._RemovePlatformFromStepName('a_tests'))
+                     try_job_util._RemovePlatformFromStepName('a_tests'))
 
   def testGetSuspectedCLsWithFailuresNoHeuristicResult(self):
     heuristic_result = None

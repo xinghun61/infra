@@ -11,6 +11,7 @@ from datetime import timedelta
 
 
 class DiffTest(unittest.TestCase):
+
   def testRemoveMicrosecondsFromDelta(self):
     date1 = datetime(2016, 5, 1, 1, 1, 1, 1)
     date2 = datetime(2016, 5, 1, 1, 1, 1, 2)
@@ -52,6 +53,12 @@ class DiffTest(unittest.TestCase):
     self.assertIsNone(time_util.FormatDuration(None, date1))
     self.assertIsNone(time_util.FormatDuration(date1, None))
     self.assertEqual('00:01:00', time_util.FormatDuration(date1, date2))
+
+  def testMicrosecondsToDatetime(self):
+    self.assertEqual(
+        datetime(2016, 2, 1, 22, 59, 34),
+        time_util.MicrosecondsToDatetime(1454367574000000))
+    self.assertIsNone(time_util.MicrosecondsToDatetime(None))
 
   def testTimeZoneInfo(self):
     naive_time = datetime(2016, 9, 1, 10, 0, 0)

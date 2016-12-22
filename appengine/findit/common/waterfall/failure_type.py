@@ -3,9 +3,14 @@
 # found in the LICENSE file.
 
 UNKNOWN = 0x00
-INFRA = 0x01
+
+# Reliable failures.
 COMPILE = 0x08
 TEST = 0x10
+
+# Flaky failures.
+INFRA = 0x01
+FLAKY_TEST = 0x12
 
 
 def GetDescriptionForFailureType(failure_type):  # pragma: no cover.
@@ -13,6 +18,7 @@ def GetDescriptionForFailureType(failure_type):  # pragma: no cover.
       UNKNOWN: 'unknown',
       INFRA: 'infra',
       COMPILE: 'compile',
-      TEST: 'test'
+      TEST: 'test',
+      FLAKY_TEST: 'flake',
   }
   return description.get(failure_type, 'No description for %s' % failure_type)

@@ -242,7 +242,7 @@ def _IsBuildFailureUniqueAcrossPlatforms(
 
 
 @ndb.transactional
-def ReviveOrCreateTryJobEntity(
+def _ReviveOrCreateTryJobEntity(
     master_name, builder_name, build_number, force_try_job):
   try_job_entity_revived_or_created = True
   try_job = WfTryJob.Get(master_name, builder_name, build_number)
@@ -257,7 +257,7 @@ def ReviveOrCreateTryJobEntity(
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.put()
 
-  return try_job_entity_revived_or_created
+  return try_job_entity_revived_or_created, try_job.key
 
 
 def _NeedANewCompileTryJob(
@@ -304,7 +304,7 @@ def _NeedANewTestTryJob(
       master_name, builder_name, build_number)
 
 
-def NeedANewTryJob(
+def NeedANewWaterfallTryJob(
     master_name, builder_name, build_number, failure_info, signals,
     heuristic_result, force_try_job=False):
 
@@ -322,7 +322,7 @@ def NeedANewTryJob(
     if _ShouldBailOutForOutdatedBuild(build):
       logging.error('Build time %s is more than 24 hours old. '
                     'Try job will not be triggered.' % build.start_time)
-      return False
+      return False, None
 
   if try_job_type == failure_type.COMPILE:
     need_new_try_job = _NeedANewCompileTryJob(
@@ -341,13 +341,14 @@ def NeedANewTryJob(
   # this group has already completed.
   if need_new_try_job:
     _IsBuildFailureUniqueAcrossPlatforms(
-      master_name, builder_name, build_number, try_job_type,
-      failure_info['builds'][str(build_number)]['blame_list'],
-      failure_info['failed_steps'], signals, heuristic_result)
+        master_name, builder_name, build_number, try_job_type,
+        failure_info['builds'][str(build_number)]['blame_list'],
+        failure_info['failed_steps'], signals, heuristic_result)
 
-  need_new_try_job = need_new_try_job and ReviveOrCreateTryJobEntity(
+  try_job_was_created, try_job_key = _ReviveOrCreateTryJobEntity(
       master_name, builder_name, build_number, force_try_job)
-  return need_new_try_job
+  need_new_try_job = need_new_try_job and try_job_was_created
+  return need_new_try_job, try_job_key
 
 
 def GetFailedTargetsFromSignals(signals, master_name, builder_name):

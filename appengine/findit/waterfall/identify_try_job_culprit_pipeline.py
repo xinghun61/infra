@@ -16,8 +16,8 @@ from model import analysis_approach_type
 from model import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
-from model.wf_try_job_data import WfTryJobData
 from model.wf_try_job import WfTryJob
+from model.wf_try_job_data import WfTryJobData
 from waterfall import suspected_cl_util
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
@@ -78,7 +78,7 @@ def _GetSuspectedCLs(analysis, try_job_type, result, culprits):
         failures = {'compile': []}
       else:
         failures = _GetTestFailureCausedByCL(
-          result.get('report', {}).get('result', {}).get(revision))
+            result.get('report', {}).get('result', {}).get(revision))
       suspected_cl_copy['failures'] = failures
       suspected_cl_copy['top_score'] = None
       suspected_cls.append(suspected_cl_copy)
@@ -278,7 +278,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
         culprit_map[step_name]['tests'] = {}
         for test_name, revision in tests.iteritems():
           culprit_map[step_name]['tests'][test_name] = {
-            'revision': revision
+              'revision': revision
           }
           failed_revisions.add(revision)
       return culprit_map, list(failed_revisions)

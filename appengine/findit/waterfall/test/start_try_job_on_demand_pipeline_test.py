@@ -11,24 +11,25 @@ from waterfall.start_try_job_on_demand_pipeline import (
     StartTryJobOnDemandPipeline)
 from waterfall.test import wf_testcase
 
+
 class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testGetLastPassCurrentBuildIsNotFirstFailure(self):
     failure_info = {
         'failed_steps': {
-          'a': {
-              'first_failure': 1,
-              'last_pass': 0
-          }
+            'a': {
+                'first_failure': 1,
+                'last_pass': 0
+            }
         }
     }
     last_pass = start_try_job_on_demand_pipeline._GetLastPass(
-      2, failure_info, failure_type.COMPILE)
+        2, failure_info, failure_type.COMPILE)
     self.assertIsNone(last_pass)
 
   def testGetLastPassUnknownType(self):
     last_pass = start_try_job_on_demand_pipeline._GetLastPass(
-      1, {}, failure_type.UNKNOWN)
+        1, {}, failure_type.UNKNOWN)
     self.assertIsNone(last_pass)
 
   def testGetLastPassTestNoLastPass(self):
@@ -58,7 +59,7 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     last_pass = start_try_job_on_demand_pipeline._GetLastPass(
-      1, failure_info, try_job_type)
+        1, failure_info, try_job_type)
     self.assertIsNone(last_pass)
 
   def testGetSuspectsFromHeuristicResult(self):
@@ -91,7 +92,7 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
   def testNotScheduleTryJobIfDontNeedTryJob(self, mock_module):
-    mock_module.NeedANewTryJob.return_value = False
+    mock_module.NeedANewWaterfallTryJob.return_value = False, None
     pipeline = start_try_job_on_demand_pipeline.StartTryJobOnDemandPipeline()
     result = pipeline.run(
         'm', 'b', 1, {}, {}, {}, True, False)
@@ -99,7 +100,7 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
   def testNotScheduleTryJobIfUnsupportedFailureType(self, mock_module):
-    mock_module.NeedANewTryJob.return_value = True
+    mock_module.NeedANewWaterfallTryJob.return_value = True, None
     try_job_type = failure_type.UNKNOWN
     failure_info = {
         'failure_type': try_job_type,
@@ -127,7 +128,6 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
   def testCompileTryJob(self, mock_module):
-
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -145,17 +145,18 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
             }
         },
         'failed_steps': {
-          'compile': {
-              'first_failure': 1,
-              'last_pass': 0
-          }
+            'compile': {
+                'first_failure': 1,
+                'last_pass': 0
+            }
         }
     }
     good_revision = 'r1'
     bad_revision = 'r2'
-    WfTryJob.Create('m', 'b', 1).put()
+    try_job = WfTryJob.Create('m', 'b', 1)
+    try_job.put()
 
-    mock_module.NeedANewTryJob.return_value = True
+    mock_module.NeedANewWaterfallTryJob.return_value = True, try_job.key
     mock_module.GetFailedTargetsFromSignals.return_value = {}
 
     self.MockPipeline(
@@ -163,14 +164,12 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
         'try_job_id',
         expected_args=[
             master_name, builder_name, build_number, good_revision,
-           bad_revision, try_job_type, {}, []],
+            bad_revision, try_job_type, {}, []],
         expected_kwargs={})
     self.MockPipeline(
         start_try_job_on_demand_pipeline.MonitorTryJobPipeline,
         'try_job_result',
-        expected_args=[
-            master_name, builder_name, build_number, try_job_type, 'try_job_id'
-        ],
+        expected_args=[try_job.key.urlsafe(), try_job_type, 'try_job_id'],
         expected_kwargs={})
     self.MockPipeline(
         start_try_job_on_demand_pipeline.IdentifyTryJobCulpritPipeline,
@@ -187,7 +186,6 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
   def testTestTryJob(self, mock_module):
-
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -230,8 +228,10 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
     }
     good_revision = 'r1'
     bad_revision = 'r2'
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
 
-    mock_module.NeedANewTryJob.return_value = True
+    mock_module.NeedANewWaterfallTryJob.return_value = (
+        True, try_job.key)
     mock_module.GetFailedTargetsFromSignals.return_value = {}
 
     self.MockPipeline(
@@ -239,14 +239,13 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
         'try_job_id',
         expected_args=[
             master_name, builder_name, build_number, good_revision,
-           bad_revision, try_job_type, 'targeted_tests', []],
+            bad_revision, try_job_type, 'targeted_tests', []],
         expected_kwargs={})
     self.MockPipeline(
         start_try_job_on_demand_pipeline.MonitorTryJobPipeline,
         'try_job_result',
         expected_args=[
-            master_name, builder_name, build_number, try_job_type, 'try_job_id'
-        ],
+            try_job.key.urlsafe(), try_job_type, 'try_job_id'],
         expected_kwargs={})
     self.MockPipeline(
         start_try_job_on_demand_pipeline.IdentifyTryJobCulpritPipeline,
@@ -257,7 +256,6 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={})
 
     pipeline = StartTryJobOnDemandPipeline()
-    result = pipeline.run(
-        'm', 'b', 1, failure_info, {}, {}, True, False)
+    result = pipeline.run('m', 'b', 1, failure_info, {}, {}, True, False)
     WfTryJob.Create('m', 'b', 1).put()
     self.assertNotEqual(list(result), [])

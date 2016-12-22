@@ -72,7 +72,7 @@ class StartTryJobOnDemandPipeline(BasePipeline):
     if not build_completed:  # Only start try-jobs for completed builds.
       return
 
-    need_try_job = try_job_util.NeedANewTryJob(
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, signals,
         heuristic_result, force_try_job)
 
@@ -83,8 +83,8 @@ class StartTryJobOnDemandPipeline(BasePipeline):
     last_pass = _GetLastPass(build_number, failure_info, try_job_type)
     if last_pass is None:  # pragma: no cover
       logging.warning('Couldn"t start try job for build %s, %s, %d because'
-                      ' last_pass is not found.' % (
-                      master_name, builder_name, build_number))
+                      ' last_pass is not found.', master_name, builder_name,
+                      build_number)
       return
 
     blame_list = failure_info['builds'][str(build_number)]['blame_list']
@@ -119,7 +119,7 @@ class StartTryJobOnDemandPipeline(BasePipeline):
           try_job_type, suspected_revisions, *reliable_tests)
 
     try_job_result = yield MonitorTryJobPipeline(
-        master_name, builder_name, build_number, try_job_type, try_job_id)
+        try_job_key.urlsafe(), try_job_type, try_job_id)
     yield IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, blame_list, try_job_type,
         try_job_id, try_job_result)

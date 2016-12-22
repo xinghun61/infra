@@ -24,7 +24,6 @@ class WfTryJob(BaseTryJob, BaseBuildModel):
   #      },
   #      ...
   # ]
-
   compile_results = ndb.JsonProperty(indexed=False, compressed=True)
 
   # A list of dict containing results and urls of each try job for test.

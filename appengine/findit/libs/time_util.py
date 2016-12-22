@@ -4,7 +4,6 @@
 
 import calendar
 from datetime import datetime
-from datetime import time
 from datetime import timedelta
 
 import pytz
@@ -66,6 +65,13 @@ def GetDatetimeInTimezone(timezone_name, date_time):
     A datetime.datetime of the given one in the specified timezone.
   """
   return date_time.astimezone(pytz.timezone(timezone_name))
+
+
+def MicrosecondsToDatetime(microseconds):
+  """Returns a datetime given the number of microseconds, or None."""
+  if microseconds:
+    return datetime.utcfromtimestamp(float(microseconds) / 1000000)
+  return None
 
 
 class TimeZoneInfo(object):

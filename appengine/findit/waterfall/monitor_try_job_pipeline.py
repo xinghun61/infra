@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
 import json
 import time
 
@@ -14,17 +13,10 @@ from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from common.waterfall import try_job_error
 from common.waterfall.buildbucket_client import BuildbucketBuild
+from libs import time_util
 from model import analysis_status
-from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall import waterfall_config
-
-
-def _MicrosecondsToDatetime(microseconds):
-  """Returns a datetime given the number of microseconds, or None."""
-  if microseconds:
-    return datetime.utcfromtimestamp(float(microseconds) / 1000000)
-  return None
 
 
 def _GetError(buildbucket_response, buildbucket_error, timed_out):
@@ -122,10 +114,10 @@ def _UpdateTryJobMetadata(try_job_data, start_time, buildbucket_build,
   if buildbucket_build:
     try_job_data.request_time = (
         try_job_data.request_time or
-        _MicrosecondsToDatetime(buildbucket_build.request_time))
+        time_util.MicrosecondsToDatetime(buildbucket_build.request_time))
     # If start_time is unavailable, fallback to request_time.
     try_job_data.start_time = start_time or try_job_data.request_time
-    try_job_data.end_time = _MicrosecondsToDatetime(
+    try_job_data.end_time = time_util.MicrosecondsToDatetime(
         buildbucket_build.end_time)
     try_job_data.number_of_commits_analyzed = len(
         buildbucket_build.report.get('result', {}))
@@ -186,9 +178,8 @@ class MonitorTryJobPipeline(BasePipeline):
   UNKNOWN = 'UNKNOWN'
 
   @ndb.transactional
-  def _UpdateTryJobResult(
-      self, status, master_name, builder_name, build_number, try_job_type,
-      try_job_id, try_job_url, result_content=None):
+  def _UpdateTryJobResult(self, urlsafe_try_job_key, try_job_type, try_job_id,
+                          try_job_url, status, result_content=None):
     """Updates try job result based on response try job status and result."""
     result = {
         'report': result_content,
@@ -196,28 +187,43 @@ class MonitorTryJobPipeline(BasePipeline):
         'try_job_id': try_job_id,
     }
 
-    try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
-    if try_job_type == failure_type.COMPILE:
-      result_to_update = try_job_result.compile_results
+    try_job = ndb.Key(urlsafe=urlsafe_try_job_key).get()
+
+    if try_job_type == failure_type.FLAKY_TEST:
+      result_to_update = try_job.flake_results
+    elif try_job_type == failure_type.COMPILE:
+      result_to_update = try_job.compile_results
     else:
-      result_to_update = try_job_result.test_results
-    if (result_to_update and
-        result_to_update[-1]['try_job_id'] == try_job_id):
+      result_to_update = try_job.test_results
+
+    if result_to_update and result_to_update[-1]['try_job_id'] == try_job_id:
       result_to_update[-1].update(result)
     else:  # pragma: no cover
-      # Normally result for current try job should've been saved in
+      # Normally result for current try job should have been saved in
       # schedule_try_job_pipeline, so this branch shouldn't be reached.
       result_to_update.append(result)
 
     if status == BuildbucketBuild.STARTED:
-      try_job_result.status = analysis_status.RUNNING
-    try_job_result.put()
+      try_job.status = analysis_status.RUNNING
+
+    try_job.put()
+
     return result_to_update
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   # TODO(chanli): Handle try job for test failures later.
-  def run(
-      self, master_name, builder_name, build_number, try_job_type, try_job_id):
+  def run(self, urlsafe_try_job_key, try_job_type, try_job_id):
+    """Monitors and waits for a try job to complete.
+
+    Args:
+      urlsafe_try_job_key (str): The urlsafe key for the corresponding try job
+        entity.
+      try_job_type (str): The type of the try job.
+      try_job_id (str): The try job id to query buildbucket with.
+
+    Returns:
+      The result of the try job as a dict.
+    """
     if not try_job_id:
       return None
 
@@ -252,8 +258,8 @@ class MonitorTryJobPipeline(BasePipeline):
       elif build.status == BuildbucketBuild.COMPLETED:
         _UpdateTryJobMetadata(try_job_data, start_time, build, error, False)
         result_to_update = self._UpdateTryJobResult(
-            BuildbucketBuild.COMPLETED, master_name, builder_name, build_number,
-            try_job_type, try_job_id, build.url, build.report)
+            urlsafe_try_job_key, try_job_type, try_job_id, build.url,
+            BuildbucketBuild.COMPLETED, build.report)
         return result_to_update[-1]
       else:
         if allowed_response_error_times < max_error_times:
@@ -264,16 +270,16 @@ class MonitorTryJobPipeline(BasePipeline):
           # It is possible this branch is skipped if a fast build goes from
           # 'SCHEDULED' to 'COMPLETED' between queries, so start_time may be
           # unavailable.
-          start_time = _MicrosecondsToDatetime(build.updated_time)
+          start_time = time_util.MicrosecondsToDatetime(build.updated_time)
           self._UpdateTryJobResult(
-              BuildbucketBuild.STARTED, master_name, builder_name, build_number,
-              try_job_type, try_job_id, build.url)
+              urlsafe_try_job_key, try_job_type, try_job_id, build.url,
+              BuildbucketBuild.STARTED)
 
           # Update as much try job metadata as soon as possible to avoid data
           # loss in case of errors.
           try_job_data.start_time = start_time
           try_job_data.request_time = (
-              _MicrosecondsToDatetime(build.request_time))
+              time_util.MicrosecondsToDatetime(build.request_time))
           try_job_data.try_job_url = build.url
           try_job_data.put()
 
