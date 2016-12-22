@@ -230,32 +230,6 @@ class CallStack(namedtuple('CallStack',
     """Iterator over the frames in this stack."""
     return iter(self.frames)
 
-  # TODO(katesonia): Get rid of this method, since we already have
-  # CallStackBuffer and the only use case left is in changelist classifier to
-  # filter top n frames.
-  def SliceFrames(self, low_index, high_index):
-    """Returns a new ``CallStack`` keeping only the specified frames.
-
-    Args:
-      low_index (int or None): the lowest index to keep. If ``None``
-        then defaults to 0.
-      high_index (int or None): the index after the highest one to
-        keep. If ``None`` then defaults to one after the highest index.
-
-    Returns:
-      A new ``CallStack`` instance. If both arguments are ``None`` then
-      we return the original stack object, because they are equal and
-      due to immutability there's no reason to clone the instance.
-    """
-    if low_index is None and high_index is None:
-      return self
-
-    # TODO(wrengr): can we use ``_replace`` without running into TypeErrors?
-    return CallStack(self.priority,
-        format_type=self.format_type,
-        language_type=self.language_type,
-        frame_list=self.frames[low_index:high_index])
-
 
 class CallStackBuffer(object):
   """A Mutable type to simplify constructing ``CallStack`` objects.

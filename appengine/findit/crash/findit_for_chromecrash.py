@@ -22,7 +22,6 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 # TODO(katesonia): Remove the default value after adding validity check to
 # config.
-_DEFAULT_TOP_N = 7
 _FRACAS_FEEDBACK_URL_TEMPLATE = 'https://%s/crash/fracas-result-feedback?key=%s'
 
 # TODO(wrengr): [Note#1] in many places below we have to do some ugly
@@ -55,12 +54,10 @@ class FinditForChromeCrash(Findit):
     component_classifier_config = CrashConfig.Get().component_classifier
 
     self._stacktrace_parser = ChromeCrashParser()
-
-    # For how these two "top n" differ, see http://crbug.com/644476#c4
+    # The top_n is the number of components we should return as
+    # components suggestion results.
     self._predator = Predator(
-        cl_classifier = ChangelistClassifier(
-            repository = repository,
-            top_n_frames = self.config.get('top_n', _DEFAULT_TOP_N)),
+        cl_classifier = ChangelistClassifier(repository = repository),
         component_classifier = ComponentClassifier(
             [Component(component_name, path_regex, function_regex)
             for path_regex, function_regex, component_name

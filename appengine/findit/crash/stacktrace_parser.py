@@ -38,8 +38,19 @@ class StacktraceParser(object):
 
     return stack_buffer
 
-  def Parse(self, stacktrace_string, deps, signature=None):
+  def Parse(self, stacktrace_string, deps, signature=None, top_n_frames=None):
+    """Parses stacktrace_string into ``Stacktrace`` instance.
+
+    Args:
+      stacktrace_string (str): Raw string to be parsed.
+      deps (dict): Dict mapping repository path to ``Dependency`` instance, used
+        to resolve dependency of frames.
+      signature (str): Signature is used to mark signature callstack, signature
+        callstack is the crash stack that causing the crash.
+      top_n_frames (int): Number of top frames to be keep in a callstack.
+    """
     raise NotImplementedError()
 
   def _IsStartOfNewCallStack(self, line):
+    """Determines whether a line is the start of a new callstack or not."""
     raise NotImplementedError()

@@ -46,5 +46,23 @@ class FilterInlineFunction(CallStackFilter):
     return stack_buffer
 
 
-# TODO(katesonia): Add TopNFramesFilter to replace the SliceFrames in changelist
-# classifier.
+class KeepTopNFrames(CallStackFilter):
+  """Keeps top n frames of a ``CallStackBuffer`` instance."""
+
+  def __init__(self, top_n_frames=None):
+    """
+    Args:
+      top_n_frames (int): the number of top frames to keep.
+    """
+    self.top_n_frames = top_n_frames
+
+  def __call__(self, stack_buffer):
+    """Returns stack_buffer with only top n frames.
+
+    If no self.top_n_frames is None, don't do any filtering.
+    """
+    if self.top_n_frames is None:
+      return stack_buffer
+
+    stack_buffer.frames = stack_buffer.frames[:self.top_n_frames]
+    return stack_buffer

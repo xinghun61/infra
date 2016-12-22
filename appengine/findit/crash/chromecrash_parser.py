@@ -16,15 +16,18 @@ from crash.type_enums import LanguageType
 
 FRACAS_CALLSTACK_START_PATTERN = re.compile(r'CRASHED \[(.*) @ 0x(.*)\]')
 JAVA_CALLSTACK_START_PATTERN = re.compile(r'\(JAVA\) CRASHED \[(.*) @ 0x(.*)\]')
+DEFAULT_TOP_N_FRAMES = 7
 
 
 class ChromeCrashParser(StacktraceParser):
 
-  def Parse(self, stacktrace_string, deps, signature=None):
+  def Parse(self, stacktrace_string, deps, signature=None, top_n_frames=None):
     """Parse fracas stacktrace string into Stacktrace instance."""
     stacktrace_buffer = StacktraceBuffer(signature=signature)
     # Filters to filter callstack buffers.
-    filters = [callstack_filters.FilterInlineFunction()]
+    filters = [callstack_filters.FilterInlineFunction(),
+               callstack_filters.KeepTopNFrames(top_n_frames or
+                                                DEFAULT_TOP_N_FRAMES)]
 
     # Initial background callstack which is not to be added into Stacktrace.
     stack_buffer = CallStackBuffer()
@@ -57,6 +60,7 @@ class ChromeCrashParser(StacktraceParser):
 
   def _IsStartOfNewCallStack(self, line):
     """Determine whether a line is a start of a callstack or not.
+
     Returns a tuple - (is_new_callstack, stack_priority, format_type,
     language type).
     """

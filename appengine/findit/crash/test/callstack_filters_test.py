@@ -10,7 +10,8 @@ from crash.test.stacktrace_test_suite import StacktraceTestSuite
 
 class CallStackFiltersTest(StacktraceTestSuite):
 
-  def testInlineFunctionFilter(self):
+  def testFilterInlineFunction(self):
+    """Tests ``FilterInlineFunction`` filters all inline function frames."""
     frame_list = [
         StackFrame(
             0, 'src/', 'normal_func', 'f.cc', 'dummy/src/f.cc', [2]),
@@ -35,3 +36,31 @@ class CallStackFiltersTest(StacktraceTestSuite):
         callstack_filters.FilterInlineFunction()(
             CallStackBuffer(0, frame_list=frame_list)),
         CallStackBuffer(0, frame_list=expected_frame_list))
+
+  def testKeepTopNFrames(self):
+    """Tests ``KeepTopNFrames`` only keeps the top n frames of a callstack."""
+    frame_list = [
+        StackFrame(
+            0, 'src/', 'normal_func', 'f.cc', 'dummy/src/f.cc', [2]),
+        StackFrame(
+            0, 'src/', 'func', 'a.cc', 'a.cc', [1]),
+    ]
+
+    top_n = 1
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.KeepTopNFrames(top_n)(
+            CallStackBuffer(0, frame_list=frame_list)),
+        CallStackBuffer(0, frame_list=frame_list[:top_n]))
+
+  def testKeepTopNFramesDoNothingForNonTopNFrames(self):
+    """Tests ``KeepTopNFrames`` does nothing if top_n_frames is None"""
+    frame_list = [
+        StackFrame(
+            0, 'src/', 'normal_func', 'f.cc', 'dummy/src/f.cc', [2]),
+        StackFrame(
+            0, 'src/', 'func', 'a.cc', 'a.cc', [1]),
+    ]
+
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.KeepTopNFrames()(stack_buffer), stack_buffer)

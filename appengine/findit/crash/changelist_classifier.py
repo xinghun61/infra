@@ -19,30 +19,30 @@ from libs.gitiles.diff import ChangeType
 
 
 class ChangelistClassifier(namedtuple('ChangelistClassifier',
-    ['repository', 'top_n_frames', 'top_n_results', 'confidence_threshold'])):
+    ['repository', 'top_n_results', 'confidence_threshold'])):
   __slots__ = ()
 
-  def __new__(cls, repository,
-      top_n_frames, top_n_results=3, confidence_threshold=0.999):
+  def __new__(cls, repository, top_n_results=3, confidence_threshold=0.999):
     """Args:
       repository (Repository): the Git repository for getting CLs to classify.
-      top_n_frames (int): how many frames of each callstack to look at.
-      top_n_results (int): maximum number of suspects to return.
+      top_n_results (int): maximum number of results to return.
       confidence_threshold (float): In [0,1], above which we only return
         the first suspect.
     """
-    return super(cls, ChangelistClassifier).__new__(cls,
-        repository, top_n_frames, top_n_results, confidence_threshold)
+    return super(cls, ChangelistClassifier).__new__(
+        cls, repository, top_n_results, confidence_threshold)
 
   def __str__(self): # pragma: no cover
-    return ('%s(top_n_frames=%d, top_n_results=%d, confidence_threshold=%g)'
+    return ('%s(top_n_results=%d, confidence_threshold=%g)'
         % (self.__class__.__name__,
-           self.top_n_frames,
            self.top_n_results,
            self.confidence_threshold))
 
   def __call__(self, report):
     """Finds changelists suspected of being responsible for the crash report.
+
+    This function assumes the report's stacktrace has already had any necessary
+    preprocessing (like filtering or truncating) applied.
 
     Args:
       report (CrashReport): the report to be analyzed.
@@ -57,13 +57,6 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
     last_good_version, first_bad_version = report.regression_range
     logging.info('ChangelistClassifier.__call__: Regression range %s:%s',
         last_good_version, first_bad_version)
-
-    # Restrict analysis to just the top n frames in each callstack.
-    # TODO(katesonia): Remove the ``SliceFrames`` here and use TopNFramesFilter
-    # in parsing instead.
-    stacktrace = Stacktrace([
-        stack.SliceFrames(None, self.top_n_frames)
-        for stack in report.stacktrace], report.stacktrace.crash_stack)
 
     # We are only interested in the deps in crash stack (the callstack that
     # caused the crash).
@@ -95,7 +88,7 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
     dep_to_file_to_changelogs, ignore_cls = GetChangeLogsForFilesGroupedByDeps(
         regression_deps_rolls, stack_deps, self.repository)
     dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
-        stacktrace, stack_deps)
+        report.stacktrace, stack_deps)
 
     # TODO: argument order is inconsistent from others. Repository should
     # be last argument.

@@ -206,13 +206,14 @@ class Findit(object):
     Returns:
       On success, returns a Stacktrace object; on failure, returns None.
     """
+    # Use up-to-date ``top_n`` in self.config to filter top n frames.
     stacktrace = self._stacktrace_parser.Parse(
         model.stack_trace,
         chrome_dependency_fetcher.ChromeDependencyFetcher(
             self._repository).GetDependency(
                 model.crashed_version,
                 model.platform),
-        model.signature)
+        model.signature, self.config.get('top_n'))
     if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s', model.stack_trace)
       return None

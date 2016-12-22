@@ -68,9 +68,8 @@ class LogLinearChangelistClassifier(object):
   def _SingleFeatureScore(self, feature_value):
     """Returns the score (aka weighted value) of a ``FeatureValue``.
 
-    This method is a hack for filtering the JSON output ``__call__``
-    returns. If we really really need this, then we should probably move
-    it to the classes defining loglinear models.
+    This function assumes the report's stacktrace has already had any necessary
+    preprocessing (like filtering or truncating) applied.
 
     Args:
       feature_value (FeatureValue): the feature value to check.
@@ -96,11 +95,6 @@ class LogLinearChangelistClassifier(object):
     last_good_version, first_bad_version = report.regression_range
     logging.info('ChangelistClassifier.__call__: Regression range %s:%s',
         last_good_version, first_bad_version)
-
-    # Restrict analysis to just the top n frames in each callstack.
-    stacktrace = Stacktrace([
-        stack.SliceFrames(None, self._top_n_frames)
-        for stack in report.stacktrace], report.stacktrace.crash_stack)
 
     # We are only interested in the deps in crash stack (the callstack that
     # caused the crash).
@@ -134,7 +128,7 @@ class LogLinearChangelistClassifier(object):
             regression_deps_rolls, stack_deps, self._repository))
     dep_to_file_to_stack_infos = (
         changelist_classifier.GetStackInfosForFilesGroupedByDeps(
-            stacktrace, stack_deps))
+            report.stacktrace, stack_deps))
 
     # Get the possible suspects.
     suspects = changelist_classifier.FindSuspects(

@@ -29,25 +29,6 @@ class CallStackTest(StacktraceTestSuite):
     for frame, expected_frame in zip(stack, frame_list):
         self._VerifyTwoStackFramesEqual(frame, expected_frame)
 
-  def testCallStackSliceFrames(self):
-    frames = [
-        StackFrame(0, 'src/', 'func0', 'file0.cc', 'src/file0.cc', [32]),
-        StackFrame(1, 'src/', 'func1', 'file1.cc', 'src/file1.cc', [53]),
-        StackFrame(2, 'src/', 'func2', 'file2.cc', 'src/file2.cc', [3])]
-
-    self._VerifyTwoCallStacksEqual(
-        CallStack(0, frames[2:2], None, None),
-        CallStack(0, frames, None, None).SliceFrames(2, 2))
-    self._VerifyTwoCallStacksEqual(
-        CallStack(0, frames[:2], None, None),
-        CallStack(0, frames, None, None).SliceFrames(None, 2))
-    self._VerifyTwoCallStacksEqual(
-        CallStack(0, frames[2:], None, None),
-        CallStack(0, frames, None, None).SliceFrames(2, None))
-    self._VerifyTwoCallStacksEqual(
-        CallStack(0, frames[:], None, None),
-        CallStack(0, frames, None, None).SliceFrames(None, None))
-
   def testStackFrameToString(self):
     self.assertEqual(
         StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', []).ToString(),
