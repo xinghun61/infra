@@ -1,16 +1,8 @@
-<!DOCTYPE html>
-<title>Tricium</title>
-<head>
-  <link rel="stylesheet" type="text/css" href="/static/style.css"/>
-</head>
-<body>
-<p class="header">Tricium</p>
-<fieldset class="menu">
-<a class="menu-item" href="/">Start</a>
-<a class="menu-item" href="/results">Results</a>
-</fieldset>
+{{define "body"}}
+
 <!-- Analysis request form, filling in example values from a test repository for easier testing -->
   <!-- TODO(emso): replace values with placeholder values -->
+  <!-- TODO(emso): Use XSRF tokens in all form POSTs -->
 <form action="/internal/analyze" method="post">
   <div class="fieldSet">
   <fieldset>
@@ -36,4 +28,5 @@
   </div>
 </form>
 <p class="status">{{.StatusMsg}}</p>
-</body>
+
+{{end}}

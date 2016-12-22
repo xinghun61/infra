@@ -12,8 +12,8 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-querystring/query"
+	"github.com/luci/luci-go/server/router"
 
-	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/taskqueue"
@@ -25,20 +25,25 @@ import (
 )
 
 func init() {
-	http.HandleFunc("/launcher/internal/queue", queueHandler)
+	r := router.New()
+	base := common.MiddlewareForInternal()
+
+	r.POST("/launcher/internal/queue", base, queueHandler)
+
+	http.DefaultServeMux.Handle("/", r)
 }
 
-func queueHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
+func queueHandler(c *router.Context) {
+	ctx := common.NewGAEContext(c)
 
 	// Parse launch request.
-	if err := r.ParseForm(); err != nil {
-		common.ReportServerError(ctx, w, err)
+	if err := c.Request.ParseForm(); err != nil {
+		common.ReportServerError(c, err)
 		return
 	}
-	lr, err := pipeline.ParseLaunchRequest(r.Form)
+	lr, err := pipeline.ParseLaunchRequest(c.Request.Form)
 	if err != nil {
-		common.ReportServerError(ctx, w, err)
+		common.ReportServerError(c, err)
 		return
 	}
 
@@ -73,14 +78,14 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 	m := jsonpb.Marshaler{}
 	wfs, err := m.MarshalToString(&wf)
 	if err != nil {
-		common.ReportServerError(ctx, w, fmt.Errorf("Failed to marshal workflow: %v", err))
+		common.ReportServerError(c, fmt.Errorf("Failed to marshal workflow: %v", err))
 		return
 	}
 	workflowKey := datastore.NewKey(ctx, "Workflow", "", lr.RunID, nil)
 	e := new(common.Entity)
 	e.Value = []byte(wfs)
 	if _, err := datastore.Put(ctx, workflowKey, e); err != nil {
-		common.ReportServerError(ctx, w, fmt.Errorf("Failed to store workflow: %v", err))
+		common.ReportServerError(c, fmt.Errorf("Failed to store workflow: %v", err))
 		return
 	}
 
@@ -98,12 +103,12 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	vr, err := query.Values(rr)
 	if err != nil {
-		common.ReportServerError(ctx, w, errors.New("failed to encode reporter request"))
+		common.ReportServerError(c, errors.New("failed to encode reporter request"))
 		return
 	}
 	tr := taskqueue.NewPOSTTask("/tracker/internal/queue", vr)
 	if _, err := taskqueue.Add(ctx, tr, "tracker-queue"); err != nil {
-		common.ReportServerError(ctx, w, err)
+		common.ReportServerError(c, err)
 		return
 	}
 
@@ -116,12 +121,12 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 		rd.Worker = worker
 		vd, err := query.Values(rd)
 		if err != nil {
-			common.ReportServerError(ctx, w, errors.New("failed to encode launch request"))
+			common.ReportServerError(c, errors.New("failed to encode launch request"))
 			return
 		}
 		td := taskqueue.NewPOSTTask("/driver/internal/queue", vd)
 		if _, err := taskqueue.Add(ctx, td, "driver-queue"); err != nil {
-			common.ReportServerError(ctx, w, err)
+			common.ReportServerError(c, err)
 			return
 		}
 	}

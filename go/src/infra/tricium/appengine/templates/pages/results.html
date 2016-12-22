@@ -1,0 +1,18 @@
+{{define "body"}}
+
+<div style="overflow-x:auto">
+<table class="results">
+<tr>
+  <th><b>Received</b></th>
+  <th><b>State</b></th>
+</tr>
+{{range .Runs}}
+<tr>
+  <td>{{ .Received }}</td>
+  <td>{{ .RunState }}</td>
+</tr>
+{{end}}
+</table>
+</div>
+
+{{end}}

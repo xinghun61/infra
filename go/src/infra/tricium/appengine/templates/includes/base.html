@@ -1,0 +1,23 @@
+{{define "base"}}
+<!DOCTYPE html>
+<title>Tricium</title>
+<head>
+  <link rel="stylesheet" type="text/css" href="/static/style.css"/>
+</head>
+<body>
+  <p class="header">Tricium</p>
+  <fieldset class="menu">
+    <a class="menu-item" href="/">Start</a>
+    <a class="menu-item" href="/results">Results</a>
+  </fieldset>
+  <div>
+    {{template "body" .}}
+  </div>
+  <footer>
+    <hr>
+    <p class="version-footer">
+      <small>Tricium version: <span>{{.AppVersion}}</span></small>
+    </p>
+  </footer>
+</body>
+{{end}}

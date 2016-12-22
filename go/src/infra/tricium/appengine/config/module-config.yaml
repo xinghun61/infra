@@ -7,12 +7,21 @@ handlers:
 
 - url: /projects
   script: _go_app
+  secure: always
 
 - url: /generate
   script: _go_app
+  secure: always
 
 - url: /validate
   script: _go_app
+  secure: always
+
+- url: /internal.*
+  script: _go_app
+  secure: always
+  login: admin
 
 - url: /.*
   script: _go_app
+  secure: always

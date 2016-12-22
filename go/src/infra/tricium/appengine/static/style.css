@@ -40,6 +40,10 @@ p.header {
   color: rgba(84, 179, 43, 1);
   margin: 0 0 0 0;
 }
+p.version-footer {
+  color: #cccccc;
+  text-align: right;
+}
 fieldset.menu {
   background-color: rgba(84, 179, 43, 0.3);
   border: solid thin black;

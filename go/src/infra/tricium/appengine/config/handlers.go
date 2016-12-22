@@ -7,25 +7,35 @@ package config
 
 import (
 	"net/http"
+
+	"github.com/luci/luci-go/server/router"
+
+	"infra/tricium/appengine/common"
 )
 
 func init() {
-	http.HandleFunc("/projects", projectsHandler)
-	http.HandleFunc("/generate", generateHandler)
-	http.HandleFunc("/validate", validateHandler)
+	r := router.New()
+	// TODO(emso): Switch to MiddlewareForREST if endpoints below are API-like.
+	base := common.MiddlewareForUI()
+
+	r.GET("/projects", base, projectsHandler)
+	r.GET("/generate", base, generateHandler)
+	r.GET("/validate", base, validateHandler)
+
+	http.DefaultServeMux.Handle("/", r)
 }
 
-func projectsHandler(w http.ResponseWriter, r *http.Request) {
+func projectsHandler(c *router.Context) {
 	// TODO(emso): Add handler code.
 	// This handler should provide project details for connected projects.
 }
 
-func generateHandler(w http.ResponseWriter, r *http.Request) {
+func generateHandler(c *router.Context) {
 	// TODO(emso): Add handler code.
 	// This handler should generate a workflow configuration.
 }
 
-func validateHandler(w http.ResponseWriter, r *http.Request) {
+func validateHandler(c *router.Context) {
 	// TODO(emso): Add handler code.
 	// This handler should validate the provided Tricium config (project and/or service).
 }

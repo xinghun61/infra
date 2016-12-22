@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/google/go-querystring/query"
+	"github.com/luci/luci-go/server/router"
 
 	"golang.org/x/build/gerrit"
 	"golang.org/x/net/context"
@@ -97,7 +98,12 @@ func (c byUpdatedTime) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 func (c byUpdatedTime) Less(i, j int) bool { return c[i].Updated.Time().Before(c[i].Updated.Time()) }
 
 func init() {
-	http.HandleFunc("/gerrit-poller/internal/poll", pollHandler)
+	r := router.New()
+	base := common.MiddlewareForInternal()
+
+	r.GET("/gerrit-poller/internal/poll", base, pollHandler)
+
+	http.DefaultServeMux.Handle("/", r)
 }
 
 // pollHandler queries Gerrit for changes since the last poll.
@@ -111,15 +117,15 @@ func init() {
 // using the same last poll. This scenario would lead to duplicate tasks in the
 // service queue. This is OK because the service queue handler will check for exisiting
 // active runs for a change before moving tasks further along the pipeline.
-func pollHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
+func pollHandler(c *router.Context) {
+	ctx := common.NewGAEContext(c)
 
 	// TODO(emso): Get project/instance from luci-config
 
 	// Get last poll data for the given instance/project.
 	p, err := readProjectData(ctx, instance, project)
 	if err != nil {
-		common.ReportServerError(ctx, w, err)
+		common.ReportServerError(c, err)
 		return
 	}
 	// If no previous poll, store current time and return.
@@ -131,7 +137,7 @@ func pollHandler(w http.ResponseWriter, r *http.Request) {
 		p.Project = project
 		p.LastPoll = time.Now()
 		if err := storeProjectData(ctx, p); err != nil {
-			common.ReportServerError(ctx, w, err)
+			common.ReportServerError(c, err)
 		}
 		return
 	}
@@ -152,13 +158,13 @@ func pollHandler(w http.ResponseWriter, r *http.Request) {
 	// of results is requested.
 	s := 0
 	for {
-		c, more, err := queryChanges(ctx, p, s)
+		chgs, more, err := queryChanges(ctx, p, s)
 		if err != nil {
-			common.ReportServerError(ctx, w, err)
+			common.ReportServerError(c, err)
 			return
 		}
-		s += len(c)
-		changes = append(changes, c...)
+		s += len(chgs)
+		changes = append(changes, chgs...)
 		// Check if we need to query for more changes, that is, if the
 		// results were truncated.
 		if !more {
@@ -198,7 +204,7 @@ func pollHandler(w http.ResponseWriter, r *http.Request) {
 		changeDetails := convertToChangeDetails(p, uc)
 		return enqueueServiceRequests(ctx, changeDetails)
 	}, nil); err != nil {
-		common.ReportServerError(ctx, w, err)
+		common.ReportServerError(c, err)
 		return
 	}
 	log.Infof(ctx, "Poll done. Processed %d change(s).", len(changes))

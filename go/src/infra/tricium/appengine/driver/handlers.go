@@ -12,36 +12,42 @@ import (
 
 	"github.com/google/go-querystring/query"
 
-	"google.golang.org/appengine"
-	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/taskqueue"
+
+	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/server/router"
 
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/pipeline"
 )
 
 func init() {
-	http.HandleFunc("/driver/internal/queue", queueHandler)
-	http.HandleFunc("/_ah/push-handlers/notify", notifyHandler)
+	r := router.New()
+	base := common.MiddlewareForInternal()
+
+	r.POST("/driver/internal/queue", base, queueHandler)
+	r.POST("/_ah/push-handlers/notify", base, notifyHandler)
+
+	http.DefaultServeMux.Handle("/", r)
 }
 
-func queueHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
+func queueHandler(c *router.Context) {
+	ctx := common.NewGAEContext(c)
 
 	// Parse driver request.
-	if err := r.ParseForm(); err != nil {
-		common.ReportServerError(ctx, w, err)
+	if err := c.Request.ParseForm(); err != nil {
+		common.ReportServerError(c, err)
 		return
 	}
-	dr, err := pipeline.ParseDriverRequest(r.Form)
+	dr, err := pipeline.ParseDriverRequest(c.Request.Form)
 	if err != nil {
-		common.ReportServerError(ctx, w, err)
+		common.ReportServerError(c, err)
 		return
 	}
 
 	switch dr.Kind {
 	case pipeline.DriverTrigger:
-		log.Infof(ctx, "[driver]: Received trigger request (runID: %d, worker: %s)", dr.RunID, dr.Worker)
+		logging.Infof(c.Context, "[driver]: Received trigger request (runID: %d, worker: %s)", dr.RunID, dr.Worker)
 
 		// TODO(emso): Read workflow config.
 		// TODO(emso): Runtime type check.
@@ -62,16 +68,16 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		vr, err := query.Values(rr)
 		if err != nil {
-			common.ReportServerError(ctx, w, errors.New("failed to encode reporter request"))
+			common.ReportServerError(c, errors.New("failed to encode reporter request"))
 			return
 		}
 		tr := taskqueue.NewPOSTTask("/tracker/internal/queue", vr)
 		if _, err := taskqueue.Add(ctx, tr, "tracker-queue"); err != nil {
-			common.ReportServerError(ctx, w, err)
+			common.ReportServerError(c, err)
 			return
 		}
 	case pipeline.DriverCollect:
-		log.Infof(ctx, "[driver]: Received collect request (runID: %d, worker: %s)", dr.RunID, dr.Worker)
+		logging.Infof(c.Context, "[driver]: Received collect request (runID: %d, worker: %s)", dr.RunID, dr.Worker)
 
 		// TODO(emso): Read workflow config.
 		// TODO(emso): Collect results from swarming task, getting actual isolated output and exit code.
@@ -88,12 +94,12 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		vr, err := query.Values(rr)
 		if err != nil {
-			common.ReportServerError(ctx, w, errors.New("failed to encode reporter request"))
+			common.ReportServerError(c, errors.New("failed to encode reporter request"))
 			return
 		}
 		tr := taskqueue.NewPOSTTask("/tracker/internal/queue", vr)
 		if _, err := taskqueue.Add(ctx, tr, "tracker-queue"); err != nil {
-			common.ReportServerError(ctx, w, err)
+			common.ReportServerError(c, err)
 			return
 		}
 
@@ -112,24 +118,24 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			vd, err := query.Values(rd)
 			if err != nil {
-				common.ReportServerError(ctx, w, errors.New("failed to encode launch request"))
+				common.ReportServerError(c, errors.New("failed to encode launch request"))
 				return
 			}
 			td := taskqueue.NewPOSTTask("/driver/internal/queue", vd)
 			if _, err := taskqueue.Add(ctx, td, "driver-queue"); err != nil {
-				common.ReportServerError(ctx, w, err)
+				common.ReportServerError(c, err)
 				return
 			}
 		}
 	default:
-		common.ReportServerError(ctx, w, fmt.Errorf("Unknown kind: %s", dr.Kind))
+		common.ReportServerError(c, fmt.Errorf("Unknown kind: %s", dr.Kind))
 	}
 }
 
-func notifyHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
+func notifyHandler(c *router.Context) {
+	ctx := common.NewGAEContext(c)
 
-	log.Infof(ctx, "[driver]: Received notify")
+	logging.Infof(c.Context, "[driver]: Received notify")
 
 	// TODO(emso): Extract actual run ID, isolated input hash, and worker name from notification details.
 	runID := 1234567
@@ -144,12 +150,12 @@ func notifyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	vd, err := query.Values(rd)
 	if err != nil {
-		common.ReportServerError(ctx, w, errors.New("failed to encode driver request"))
+		common.ReportServerError(c, errors.New("failed to encode driver request"))
 		return
 	}
 	td := taskqueue.NewPOSTTask("/driver/internal/queue", vd)
 	if _, err := taskqueue.Add(ctx, td, "driver-queue"); err != nil {
-		common.ReportServerError(ctx, w, err)
+		common.ReportServerError(c, err)
 		return
 	}
 }

@@ -7,12 +7,21 @@ package handlers
 
 import (
 	"net/http"
+
+	"github.com/luci/luci-go/server/router"
+
+	"infra/tricium/appengine/common"
 )
 
 func init() {
-	http.HandleFunc("/gerrit-reporter/queue", queueHandler)
+	r := router.New()
+	base := common.MiddlewareForInternal()
+
+	r.POST("/gerrit-reporter/queue", base, queueHandler)
+
+	http.DefaultServeMux.Handle("/", r)
 }
 
-func queueHandler(w http.ResponseWriter, r *http.Request) {
+func queueHandler(c *router.Context) {
 	// TODO(emso): Process request and report event to Gerrit
 }

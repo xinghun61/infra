@@ -15,9 +15,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	"google.golang.org/appengine"
 	"google.golang.org/appengine/datastore"
 	"google.golang.org/appengine/log"
+
+	"github.com/luci/luci-go/server/router"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"
@@ -26,20 +27,25 @@ import (
 )
 
 func init() {
-	http.HandleFunc("/tracker/internal/queue", queueHandler)
+	r := router.New()
+	base := common.MiddlewareForInternal()
+
+	r.POST("/tracker/internal/queue", base, queueHandler)
+
+	http.DefaultServeMux.Handle("/", r)
 }
 
-func queueHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
+func queueHandler(c *router.Context) {
+	ctx := common.NewGAEContext(c)
 
 	// Parse track request.
-	if err := r.ParseForm(); err != nil {
-		common.ReportServerError(ctx, w, err)
+	if err := c.Request.ParseForm(); err != nil {
+		common.ReportServerError(c, err)
 		return
 	}
-	rr, err := pipeline.ParseTrackRequest(r.Form)
+	rr, err := pipeline.ParseTrackRequest(c.Request.Form)
 	if err != nil {
-		common.ReportServerError(ctx, w, err)
+		common.ReportServerError(c, err)
 		return
 	}
 
@@ -54,7 +60,7 @@ func queueHandler(w http.ResponseWriter, r *http.Request) {
 		err = fmt.Errorf("Unknown kind: %d", rr.Kind)
 	}
 	if err != nil {
-		common.ReportServerError(ctx, w, fmt.Errorf("Failed to handle track request: %v", err))
+		common.ReportServerError(c, fmt.Errorf("Failed to handle track request: %v", err))
 	}
 }
 

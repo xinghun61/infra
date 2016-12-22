@@ -5,6 +5,12 @@ api_version: go1
 
 handlers:
 
+- url: /internal.*
+  script: _go_app
+  secure: always
+  login: admin
+
 - url: /tracker/internal/.*
   script: _go_app
+  secure: always
   login: admin
