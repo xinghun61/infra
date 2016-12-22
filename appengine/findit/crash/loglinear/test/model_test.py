@@ -4,42 +4,21 @@
 
 import math
 import numpy as np
-import random
-import unittest
 
-from crash.loglinear.feature import FeatureValue
 from crash.loglinear.model import ToFeatureFunction
 from crash.loglinear.model import LogLinearModel
+from crash.loglinear.test.loglinear_testcase import LoglinearTestCase
 
 
-# Some arbitrary features.
-# We don't use double lambdas because gpylint complains about that.
-def feature0(x):
-  return lambda y: FeatureValue('feature0', y == (x > 5), None, None)
-
-
-def feature1(x):
-  return lambda y: FeatureValue('feature1', y == ((x % 2) == 1), None, None)
-
-
-def feature2(x):
-  return lambda y: FeatureValue('feature2', y == (x <= 7), None, None)
-
-
-features = [feature0, feature1, feature2]
-X = range(10)
-Y = [False, True]
-
-
-class LoglinearTest(unittest.TestCase):
+class LoglinearTest(LoglinearTestCase):
 
   def testToFeatureFunction(self):
     """Test that ``ToFeatureFunction`` obeys the equality its docstring says."""
-    f = ToFeatureFunction(features)
-    for x in X:
-      for y in Y:
-        for i in xrange(len(features)):
-          self.assertEqual(features[i](x)(y), f(x)(y)[i])
+    for x in self._X:
+      for y in self._Y:
+        for i in xrange(self._qty_features):
+          self.assertEqual(self._feature_list[i](x)(y),
+                           self._feature_function(x)(y)[i])
 
   def testLogLinearModel(self):
     """An arbitrary test to get 100% code coverage.
@@ -55,18 +34,16 @@ class LoglinearTest(unittest.TestCase):
     guard against. At least this test is good for detecting typo-style
     errors where we try accessing fields/methods that don't exist.
     """
-    weights = [random.random() for _ in features]
-
-    model = LogLinearModel(Y, ToFeatureFunction(features), weights, 0.1)
+    model = LogLinearModel(self._Y, self._feature_function, self._weights, 0.1)
     model.ClearAllMemos()
-    model = LogLinearModel(Y, ToFeatureFunction(features), weights)
-    self.assertListEqual(weights, model.weights.tolist())
+    model = LogLinearModel(self._Y, self._feature_function, self._weights)
+    self.assertListEqual(self._weights, model.weights.tolist())
     self.assertEqual(math.sqrt(model.quadrance), model.l2)
 
-    for x in X:
+    for x in self._X:
       self.assertEqual(math.exp(model.LogZ(x)), model.Z(x))
       model.Expectation(x, lambda y: np.array([1.0]))
-      for y in Y:
+      for y in self._Y:
         model.Features(x)(y)
         model.Score(x)(y)
         self.assertEqual(
