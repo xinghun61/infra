@@ -4,9 +4,6 @@
 
 import re
 
-from crash.stacktrace import CallStack
-
-
 _INLINE_FUNCTION_FILE_PATH_MARKERS = [
     'third_party/llvm-build/Release+Asserts/include/c++/v1/',
     'linux/debian_wheezy_amd64-sysroot/usr/include/c++/4.6/bits/',
@@ -14,20 +11,40 @@ _INLINE_FUNCTION_FILE_PATH_MARKERS = [
 ]
 
 
-def FilterInlineFunctionFrames(callstack):
-  """Filters all the stack frames with inline function file paths.
+class CallStackFilter(object):
+  """Filters frames of a callstack buffer."""
+
+  def __call__(self, stack_buffer):
+    """Returns the stack_buffer with frames filtered.
+
+    Args:
+      stack_buffer (CallStackBuffer): stack buffer to be filtered.
+
+    Return:
+      A new ``CallStackBuffer`` instance.
+    """
+    raise NotImplementedError()
+
+
+class FilterInlineFunction(CallStackFilter):
+  """Filters all the stack frames for inline function file paths.
 
   File paths for inline functions are not the oringinal file paths. They
   should be filtered out.
+
+  Returns stack_buffer with all frames with inline function filtered.
   """
-  def _IsNonInlineFunctionFrame(frame):
-    for path_marker in _INLINE_FUNCTION_FILE_PATH_MARKERS:
-      if path_marker in frame.file_path:
-        return False
+  def __call__(self, stack_buffer):
+    def _IsNonInlineFunctionFrame(frame):
+      for path_marker in _INLINE_FUNCTION_FILE_PATH_MARKERS:
+        if path_marker in frame.file_path:
+          return False
 
-    return True
+      return True
 
-  return CallStack(callstack.priority,
-                   callstack.format_type,
-                   callstack.language_type,
-                   filter(_IsNonInlineFunctionFrame, callstack.frames))
+    stack_buffer.frames = filter(_IsNonInlineFunctionFrame, stack_buffer.frames)
+    return stack_buffer
+
+
+# TODO(katesonia): Add TopNFramesFilter to replace the SliceFrames in changelist
+# classifier.

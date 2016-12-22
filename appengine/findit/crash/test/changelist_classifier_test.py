@@ -17,6 +17,8 @@ from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
 from crash.test.crash_test_suite import CrashTestSuite
+from crash.type_enums import CallStackFormatType
+from crash.type_enums import LanguageType
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs.gitiles.change_log import ChangeLog
@@ -107,10 +109,14 @@ DUMMY_CHANGELOG3 = ChangeLog.FromDict({
 # CrashReport directly and pulls out the revision_range and platform
 # itself; that way ChangelistClassifier.__call__ needn't worry about it,
 # allowing us to clean up the tests here.
-# TODO(wrengr): this empty stacktrace causes the unittests to emit
-# logging warnings about the fact that we can't get the crash_stack. Would
-# be nice to avoid that.
-DUMMY_REPORT = CrashReport(None, None, None, Stacktrace(), (None, None))
+
+DUMMY_CALLSTACKS = [CallStack(0, [],
+                              CallStackFormatType.DEFAULT, LanguageType.CPP),
+                    CallStack(1, [],
+                              CallStackFormatType.DEFAULT, LanguageType.CPP)]
+DUMMY_REPORT = CrashReport(None, None, None, Stacktrace(DUMMY_CALLSTACKS,
+                                                        DUMMY_CALLSTACKS[0]),
+                           (None, None))
 
 class ChangelistClassifierTest(CrashTestSuite):
 
@@ -141,10 +147,11 @@ class ChangelistClassifierTest(CrashTestSuite):
               lambda *_: {})
     self.mock(changelist_classifier, 'FindSuspects', lambda *_: None)
 
+    stack = CallStack(0)
     self.changelist_classifier(CrashReport(crashed_version = '5',
                                signature = 'sig',
                                platform = 'canary',
-                               stacktrace = Stacktrace([CallStack(0)]),
+                               stacktrace = Stacktrace([stack], stack),
                                regression_range = ['4', '5']))
     expected_regression_deps_rolls = copy.deepcopy(dep_rolls)
 
@@ -220,7 +227,7 @@ class ChangelistClassifierTest(CrashTestSuite):
         StackFrame(0, 'src/dummy/', 'c(p* &d)', 'd.cc', 'src/dummy/d.cc',
             [17])])
 
-    stacktrace = Stacktrace(stack_list=[main_stack, low_priority_stack])
+    stacktrace = Stacktrace([main_stack, low_priority_stack], main_stack)
 
     crashed_deps = {'src/': Dependency('src/', 'https//repo', '2'),
                     'src/v8/': Dependency('src/v8', 'https//repo', '1')}

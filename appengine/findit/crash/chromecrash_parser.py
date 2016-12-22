@@ -5,13 +5,14 @@
 import math
 import re
 
-from crash.callstack_filters import FilterInlineFunctionFrames
-from crash.stacktrace import CallStack
+from crash import callstack_filters
+from crash.stacktrace import CallStackBuffer
+from crash.stacktrace import StacktraceBuffer
 from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
 from crash.stacktrace_parser import StacktraceParser
-from crash.type_enums import CallStackFormatType, CallStackLanguageType
-
+from crash.type_enums import CallStackFormatType
+from crash.type_enums import LanguageType
 
 FRACAS_CALLSTACK_START_PATTERN = re.compile(r'CRASHED \[(.*) @ 0x(.*)\]')
 JAVA_CALLSTACK_START_PATTERN = re.compile(r'\(JAVA\) CRASHED \[(.*) @ 0x(.*)\]')
@@ -21,40 +22,38 @@ class ChromeCrashParser(StacktraceParser):
 
   def Parse(self, stacktrace_string, deps, signature=None):
     """Parse fracas stacktrace string into Stacktrace instance."""
-    callstacks = []
-    # TODO(http://crbug.com/644441): testing against infinity is confusing.
-    stack_priority = float('inf')
-    format_type = None
-    language_type = None
-    frame_list = []
+    stacktrace_buffer = StacktraceBuffer(signature=signature)
+    # Filters to filter callstack buffers.
+    filters = [callstack_filters.FilterInlineFunction()]
 
+    # Initial background callstack which is not to be added into Stacktrace.
+    stack_buffer = CallStackBuffer()
     for line in stacktrace_string.splitlines():
-      is_new_callstack, this_priority, this_format_type, this_language_type = (
+      is_new_callstack, priority, format_type, language_type = (
           self._IsStartOfNewCallStack(line))
 
       if is_new_callstack:
-        # If the callstack is not the initial one or empty, add it
-        # to stacktrace.
-        if not math.isinf(stack_priority) and frame_list:
-          callstacks.append(CallStack(stack_priority, format_type=format_type,
-              language_type=language_type, frame_list=frame_list))
+        # TODO(katesonia): Refactor this logic to ``AddFilteredStack`` method
+        # of StacktraceBuffer.
+        stack_buffer = StacktraceParser.FilterStackBuffer(stack_buffer, filters)
+        if stack_buffer:
+          stacktrace_buffer.stacks.append(stack_buffer)
 
-        stack_priority = this_priority
-        format_type = this_format_type
-        language_type = this_language_type
-        frame_list = []
+        stack_buffer = CallStackBuffer(priority=priority,
+                                       format_type=format_type,
+                                       language_type=language_type)
       else:
-        frame = StackFrame.Parse(language_type, format_type, line, deps,
-            len(frame_list))
+        frame = StackFrame.Parse(stack_buffer.language_type,
+                                 stack_buffer.format_type, line, deps,
+                                 len(stack_buffer.frames))
         if frame is not None:
-          frame_list.append(frame)
+          stack_buffer.frames.append(frame)
 
-    if not math.isinf(stack_priority) and frame_list:
-      callstacks.append(CallStack(stack_priority, format_type=format_type,
-          language_type=language_type, frame_list=frame_list))
+    stack_buffer = StacktraceParser.FilterStackBuffer(stack_buffer, filters)
+    if stack_buffer:
+      stacktrace_buffer.stacks.append(stack_buffer)
 
-    # Filter all the frames before signature frame.
-    return Stacktrace(map(FilterInlineFunctionFrames, callstacks))
+    return stacktrace_buffer.ToStacktrace()
 
   def _IsStartOfNewCallStack(self, line):
     """Determine whether a line is a start of a callstack or not.
@@ -63,9 +62,9 @@ class ChromeCrashParser(StacktraceParser):
     """
     if FRACAS_CALLSTACK_START_PATTERN.match(line):
       #Fracas only provide magic signature stack (crash stack).
-      return True, 0, CallStackFormatType.DEFAULT, CallStackLanguageType.CPP
+      return True, 0, CallStackFormatType.DEFAULT, LanguageType.CPP
 
     if JAVA_CALLSTACK_START_PATTERN.match(line):
-      return True, 0, CallStackFormatType.DEFAULT, CallStackLanguageType.JAVA
+      return True, 0, CallStackFormatType.DEFAULT, LanguageType.JAVA
 
     return False, None, None, None

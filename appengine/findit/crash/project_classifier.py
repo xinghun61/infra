@@ -5,8 +5,9 @@
 import logging
 
 from crash.occurrence import RankByOccurrence
-from crash.type_enums import CallStackLanguageType
+from crash.type_enums import LanguageType
 from model.crash.crash_config import CrashConfig
+
 
 class ProjectClassifier(object):
   """Determines the project of a crash - (project_name, project_path).
@@ -86,7 +87,7 @@ class ProjectClassifier(object):
       return None
 
     rank_function = None
-    if crash_stack.language_type == CallStackLanguageType.JAVA:
+    if crash_stack.language_type == LanguageType.JAVA:
       def _RankFunctionForJava(occurrence):
         # TODO(wrengr): why are we weighting by the length, instead of
         # the negative length as we do in the DefaultOccurrenceRanging?

@@ -3,14 +3,14 @@
 # found in the LICENSE file.
 
 from crash.stacktrace import StackFrame
-from crash.stacktrace import CallStack
+from crash.stacktrace import CallStackBuffer
 from crash import callstack_filters
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
 
 
 class CallStackFiltersTest(StacktraceTestSuite):
 
-  def testFilterInlineFunctionFrames(self):
+  def testInlineFunctionFilter(self):
     frame_list = [
         StackFrame(
             0, 'src/', 'normal_func', 'f.cc', 'dummy/src/f.cc', [2]),
@@ -32,6 +32,6 @@ class CallStackFiltersTest(StacktraceTestSuite):
     expected_frame_list = frame_list[:1]
 
     self._VerifyTwoCallStacksEqual(
-        callstack_filters.FilterInlineFunctionFrames(
-            CallStack(0, frame_list=frame_list)),
-        CallStack(0, frame_list=expected_frame_list))
+        callstack_filters.FilterInlineFunction()(
+            CallStackBuffer(0, frame_list=frame_list)),
+        CallStackBuffer(0, frame_list=expected_frame_list))

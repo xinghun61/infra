@@ -4,18 +4,30 @@
 
 from common.dependency import Dependency
 from crash.stacktrace import CallStack
+from crash.stacktrace import CallStackBuffer
 from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
+from crash.stacktrace import StacktraceBuffer
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
 from crash.type_enums import CallStackFormatType
-from crash.type_enums import CallStackLanguageType
+from crash.type_enums import LanguageType
+
 
 class CallStackTest(StacktraceTestSuite):
 
   def testCallStackBool(self):
-    self.assertFalse(CallStack(0))
+    self.assertFalse(CallStack(0, [], None, None))
     frame = StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [])
-    self.assertTrue(CallStack(0, frame_list=[frame]))
+    self.assertTrue(CallStack(0, [frame], None, None))
+
+  def testCallStackIter(self):
+    frame_list = [
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
+        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+
+    stack = CallStack(0, frame_list, None, None)
+    for frame, expected_frame in zip(stack, frame_list):
+        self._VerifyTwoStackFramesEqual(frame, expected_frame)
 
   def testCallStackSliceFrames(self):
     frames = [
@@ -24,17 +36,17 @@ class CallStackTest(StacktraceTestSuite):
         StackFrame(2, 'src/', 'func2', 'file2.cc', 'src/file2.cc', [3])]
 
     self._VerifyTwoCallStacksEqual(
-        CallStack(0, frame_list=frames[2:2]),
-        CallStack(0, frame_list=frames).SliceFrames(2, 2))
+        CallStack(0, frames[2:2], None, None),
+        CallStack(0, frames, None, None).SliceFrames(2, 2))
     self._VerifyTwoCallStacksEqual(
-        CallStack(0, frame_list=frames[:2]),
-        CallStack(0, frame_list=frames).SliceFrames(None, 2))
+        CallStack(0, frames[:2], None, None),
+        CallStack(0, frames, None, None).SliceFrames(None, 2))
     self._VerifyTwoCallStacksEqual(
-        CallStack(0, frame_list=frames[2:]),
-        CallStack(0, frame_list=frames).SliceFrames(2, None))
+        CallStack(0, frames[2:], None, None),
+        CallStack(0, frames, None, None).SliceFrames(2, None))
     self._VerifyTwoCallStacksEqual(
-        CallStack(0, frame_list=frames[:]),
-        CallStack(0, frame_list=frames).SliceFrames(None, None))
+        CallStack(0, frames[:], None, None),
+        CallStack(0, frames, None, None).SliceFrames(None, None))
 
   def testStackFrameToString(self):
     self.assertEqual(
@@ -59,8 +71,8 @@ class CallStackTest(StacktraceTestSuite):
 
   def testCallStackConstructorIsLanguageJavaIfFormatJava(self):
     self.assertEqual(
-        CallStack(0, format_type = CallStackFormatType.JAVA).language_type,
-        CallStackLanguageType.JAVA)
+        CallStack(0, format_type=CallStackFormatType.JAVA).language_type,
+        LanguageType.JAVA)
 
   def testParseStackFrameForJavaCallstackFormat(self):
     language_type = None
@@ -113,7 +125,7 @@ class CallStackTest(StacktraceTestSuite):
 
   def testParseStackFrameForFracasJavaStack(self):
     format_type = CallStackFormatType.DEFAULT
-    language_type = CallStackLanguageType.JAVA
+    language_type = LanguageType.JAVA
 
     frame = StackFrame.Parse(language_type, format_type,
         '#0 0xxx in android.app.func app.java:2450', {})
@@ -124,72 +136,119 @@ class CallStackTest(StacktraceTestSuite):
             'android/app.java', [2450]))
 
 
+class CallStackBufferTest(StacktraceTestSuite):
+
+  def setUp(self):
+    super(CallStackBufferTest, self).setUp()
+    self.stack_buffer = CallStackBuffer(0, frame_list=[
+        StackFrame(0, 'repo/path1', 'func1', 'a/c/f1.cc', 'a/b/f1.cc',
+                   [1, 2], 'https://repo1'),
+        StackFrame(1, 'repo/path2', 'func2', 'a/c/f2.cc', 'a/b/f2.cc',
+                   [11, 12, 13], 'https://repo2')])
+
+  def testCallStackBufferLen(self):
+    """Tests ``len(CallStackBuffer)`` works as expected."""
+    self.assertEqual(len(self.stack_buffer), 2)
+
+  def testCallStackBufferBool(self):
+    """Tests ``bool`` for ``CallStackBuffer`` object works as expected."""
+    self.assertTrue(bool(self.stack_buffer))
+    self.assertFalse(bool(CallStackBuffer(0, frame_list=[])))
+
+  def testCallStackBufferIter(self):
+    """Tests ``iter`` for ``CallStackBuffer`` works as expected."""
+    for index, frame in enumerate(self.stack_buffer):
+      self.assertEqual(index, frame.index)
+
+  def testToCallStackForNonEmptyCallStackBuffer(self):
+    """Tests ``ToCallStack`` for non empty  ``CallStackBuffer`` object."""
+    frame_list=[StackFrame(0, 'repo/path', 'func', 'a/c.cc', 'a/c.cc',
+                           [3, 4], 'https://repo')]
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    expected_callstack = CallStack(stack_buffer.priority,
+                                   tuple(frame_list),
+                                   CallStackFormatType.DEFAULT,
+                                   LanguageType.CPP)
+    self.assertTupleEqual(stack_buffer.ToCallStack(), expected_callstack)
+
+  def testToCallStackForEmptyCallStackBuffer(self):
+    """Tests ``ToCallStack`` for empty  ``CallStackBuffer`` object."""
+    self.assertIsNone(CallStackBuffer(0, frame_list=[]).ToCallStack())
+
+
 class StacktraceTest(StacktraceTestSuite):
 
-  def testCrashStackForStacktraceWithoutSignature(self):
+  def testStacktraceLen(self):
+    """Tests ``len`` for ``Stacktrace`` object."""
     frame_list1 = [
         StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
 
     frame_list2 = [
         StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
 
-    stacktrace = Stacktrace([CallStack(0, frame_list=frame_list1),
-                             CallStack(1, frame_list=frame_list2)])
-    expected_crash_stack = CallStack(0, frame_list=frame_list1)
+    stack1 = CallStack(0, frame_list1, None, None)
+    stack2 = CallStack(1, frame_list2, None, None)
+    stacktrace = Stacktrace((stack1, stack2), stack1)
+    self.assertEqual(len(stacktrace), 2)
 
-    self._VerifyTwoCallStacksEqual(stacktrace.crash_stack, expected_crash_stack)
+  def testStacktraceBool(self):
+    """Tests ``bool`` for ``Stacktrace`` object."""
+    self.assertFalse(bool(Stacktrace([], None)))
 
-  def testFilterFramesBeforeSignatureForCrashStack(self):
     frame_list1 = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
-    ]
-    callstack1 = CallStack(0, frame_list=frame_list1)
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
+    frame_list2 = [
+        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+
+    stack1 = CallStack(0, frame_list1, None, None)
+    stack2 = CallStack(1, frame_list2, None, None)
+
+    self.assertTrue(bool(Stacktrace((stack1, stack2), stack1)))
+
+  def testStacktraceIter(self):
+    """Tests ``iter`` for ``Stacktrace`` object."""
+    frame_list1 = [
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
+    frame_list2 = [
+        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+
+    stack1 = CallStack(0, frame_list1, None, None)
+    stack2 = CallStack(1, frame_list2, None, None)
+    stacktrace = Stacktrace((stack1, stack2), stack1)
+    for stack in stacktrace:
+      self.assertEqual(len(stack), 1)
+
+
+class StacktraceBufferTest(StacktraceTestSuite):
+
+  def testStacktraceBufferWithoutSignature(self):
+    """Tests using least priority stack as crash_stack without  signature."""
+    frame_list1 = [
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
 
     frame_list2 = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
-        StackFrame(1, 'src/', 'signature_func',
-                   'file1.cc', 'src/file1.cc', [53]),
-        StackFrame(2, 'src/', 'funcc', 'file2.cc', 'src/file2.cc', [3])
-    ]
-    callstack2 = CallStack(0, frame_list=frame_list2)
+        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
 
-    stacktrace = Stacktrace([callstack1, callstack2], 'signature')
+    stack1 = CallStackBuffer(0, frame_list=frame_list1)
+    stack2 = CallStackBuffer(1, frame_list=frame_list2)
+    stacktrace = StacktraceBuffer([stack1, stack2]).ToStacktrace()
 
-    expected_frame_list = [
-        StackFrame(
-            1, 'src/', 'signature_func', 'file1.cc', 'src/file1.cc', [53]),
-        StackFrame(
-            2, 'src/', 'funcc', 'file2.cc', 'src/file2.cc', [3])]
-    expected_crash_stack = CallStack(0, frame_list=expected_frame_list)
+    self._VerifyTwoCallStacksEqual(stacktrace.crash_stack, stack1.ToCallStack())
 
-    self._VerifyTwoCallStacksEqual(stacktrace.crash_stack,
-                                   expected_crash_stack)
+  def testStacktraceBufferWithSignature(self):
+    """Tests using stack with signature as crash_stack with signature."""
+    frame_list1 = [
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
 
-  def testNoSignatureMatchForCrashStack(self):
-    frame_list = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
-    ]
-    callstack = CallStack(0, frame_list=frame_list)
+    frame_list2 = [
+        StackFrame(0, 'src/', 'signature_func2', 'f.cc', 'src/f.cc', [32])]
 
-    stacktrace = Stacktrace([callstack], 'signature')
+    stack1 = CallStackBuffer(0, frame_list=frame_list1)
+    stack2 = CallStackBuffer(1, frame_list=frame_list2)
+    stacktrace = StacktraceBuffer([stack1, stack2], 'signature').ToStacktrace()
 
-    expected_frame_list = frame_list
-    expected_crash_stack = CallStack(0, frame_list=expected_frame_list)
+    self._VerifyTwoCallStacksEqual(stacktrace.crash_stack, stack2.ToCallStack())
 
-    self._VerifyTwoCallStacksEqual(stacktrace.crash_stack,
-                                   expected_crash_stack)
-
-  def testCrashStackFallBackToFirstLeastPriorityCallStack(self):
-    stacktrace = Stacktrace()
-    self.assertEqual(stacktrace.crash_stack, None)
-
-    callstack_list = [CallStack(0), CallStack(1)]
-    stacktrace = Stacktrace(stack_list=callstack_list)
-
-    self._VerifyTwoCallStacksEqual(stacktrace.crash_stack,
-                                   callstack_list[0])
-
-  def testInitStacktaceByCopyAnother(self):
-    stack_trace = Stacktrace(stack_list=[CallStack(0), CallStack(1)])
-
-    self._VerifyTwoStacktracesEqual(Stacktrace(stack_trace), stack_trace)
+  def testEmptyStacktraceBufferToStacktrace(self):
+    """Tests ``ToStacktrace`` returns None for empty stacktrace buffer."""
+    self.assertIsNone(StacktraceBuffer([]).ToStacktrace())

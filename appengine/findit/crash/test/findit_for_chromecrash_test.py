@@ -175,7 +175,7 @@ class FinditForFracasTest(PredatorTestCase):
   def testFindCulpritForChromeCrashEmptyStacktrace(self):
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
-    self.mock(ChromeCrashParser, 'Parse', lambda *_: Stacktrace())
+    self.mock(ChromeCrashParser, 'Parse', lambda *_: None)
 
     analysis = CrashAnalysis()
     analysis.signature = 'signature'
@@ -191,7 +191,9 @@ class FinditForFracasTest(PredatorTestCase):
   def testFindCulpritForChromeCrash(self): # pragma: no cover
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', lambda *_: {})
-    self.mock(ChromeCrashParser, 'Parse', lambda *_: Stacktrace([CallStack(0)]))
+    stack = CallStack(0)
+    self.mock(ChromeCrashParser, 'Parse',
+              lambda *_: Stacktrace([stack], stack))
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependencyRollsDict',
         lambda *_: {

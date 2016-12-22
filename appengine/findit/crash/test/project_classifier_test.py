@@ -7,7 +7,7 @@ from crash.stacktrace import CallStack
 from crash.project_classifier import ProjectClassifier
 from crash.suspect import Suspect
 from crash.test.predator_testcase import PredatorTestCase
-from crash.type_enums import CallStackLanguageType
+from crash.type_enums import LanguageType
 from model.crash.crash_config import CrashConfig
 
 
@@ -102,11 +102,8 @@ class ProjectClassifierTest(PredatorTestCase):
 
   def testClassifyForJavaRankFunction(self):
     classifier = ProjectClassifier()
-
-    crash_stack = CallStack(0, language_type=CallStackLanguageType.JAVA)
-
     crash_stack = CallStack(0,
-        language_type=CallStackLanguageType.JAVA,
+        language_type=LanguageType.JAVA,
         frame_list=[
             StackFrame(0, '', 'android.a.f', 'android/a/cc',
                        'android/a.java', [2]),

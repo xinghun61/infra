@@ -100,7 +100,7 @@ class LogLinearChangelistClassifier(object):
     # Restrict analysis to just the top n frames in each callstack.
     stacktrace = Stacktrace([
         stack.SliceFrames(None, self._top_n_frames)
-        for stack in report.stacktrace])
+        for stack in report.stacktrace], report.stacktrace.crash_stack)
 
     # We are only interested in the deps in crash stack (the callstack that
     # caused the crash).

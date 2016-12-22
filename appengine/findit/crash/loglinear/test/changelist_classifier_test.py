@@ -20,6 +20,8 @@ from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
 from crash.test.crash_test_suite import CrashTestSuite
+from crash.type_enums import CallStackFormatType
+from crash.type_enums import LanguageType
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.gitiles_repository import GitilesRepository
 
@@ -97,8 +99,13 @@ DUMMY_CHANGELOG3 = ChangeLog.FromDict({
     'reverted_revision': None
 })
 
-# TODO(crbug.com/674255): clean up the warning about the empty trace.
-DUMMY_REPORT = CrashReport(None, None, None, Stacktrace(), (None, None))
+DUMMY_CALLSTACKS = [CallStack(0, [],
+                              CallStackFormatType.DEFAULT, LanguageType.CPP),
+                    CallStack(1, [],
+                              CallStackFormatType.DEFAULT, LanguageType.CPP)]
+DUMMY_REPORT = CrashReport(None, None, None, Stacktrace(DUMMY_CALLSTACKS,
+                                                        DUMMY_CALLSTACKS[0]),
+                           (None, None))
 
 
 class LogLinearChangelistClassifierTest(CrashTestSuite):
@@ -170,10 +177,11 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
               lambda *_: {})
     self.mock(changelist_classifier, 'FindSuspects', lambda *_: None)
 
+    callstack = CallStack(0)
     self.changelist_classifier(CrashReport(crashed_version = '5',
                                signature = 'sig',
                                platform = 'canary',
-                               stacktrace = Stacktrace([CallStack(0)]),
+                               stacktrace = Stacktrace([callstack], callstack),
                                regression_range = ['4', '5']))
     expected_regression_deps_rolls = copy.deepcopy(dep_rolls)
 

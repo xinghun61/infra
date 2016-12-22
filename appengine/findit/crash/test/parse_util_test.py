@@ -5,7 +5,6 @@
 from common.dependency import Dependency
 from crash import parse_util
 from crash.type_enums import CallStackFormatType
-from crash.type_enums import CallStackLanguageType
 
 from testing_utils import testing
 

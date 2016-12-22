@@ -59,9 +59,11 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
         last_good_version, first_bad_version)
 
     # Restrict analysis to just the top n frames in each callstack.
+    # TODO(katesonia): Remove the ``SliceFrames`` here and use TopNFramesFilter
+    # in parsing instead.
     stacktrace = Stacktrace([
         stack.SliceFrames(None, self.top_n_frames)
-        for stack in report.stacktrace])
+        for stack in report.stacktrace], report.stacktrace.crash_stack)
 
     # We are only interested in the deps in crash stack (the callstack that
     # caused the crash).
