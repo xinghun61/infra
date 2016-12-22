@@ -5,35 +5,53 @@
 from google.appengine.ext import ndb
 
 from model.base_build_model import BaseBuildModel
-from model import analysis_status
+from model.base_try_job import BaseTryJob
 
 
-class WfTryJob(BaseBuildModel):
+class WfTryJob(BaseTryJob, BaseBuildModel):
   """Represents a try job results for a failed build.
 
   'Wf' is short for waterfall.
   """
   # A list of dict containing results and urls of each try job for compile.
+  # For example:
+  # [
+  #      {
+  #           'report': (dict) The 'result' dict of the compile try job,
+  #           'url': (str) The url to the try job,
+  #           'try_job_id': (str) The try job id,
+  #           'culprit': (dict) The culprit info, if identified.
+  #      },
+  #      ...
+  # ]
+
   compile_results = ndb.JsonProperty(indexed=False, compressed=True)
 
   # A list of dict containing results and urls of each try job for test.
+  # For example:
+  # [
+  #      {
+  #           'report': (dict) The 'result' dict of the test try job,
+  #           'url': (str) The url to the try job,
+  #           'try_job_id': (str) The try job id,
+  #           'culprit': (dict) The culprit info, if identified.
+  #      },
+  #      ...
+  # ]
   test_results = ndb.JsonProperty(indexed=False, compressed=True)
 
-  # The status of the try job.
-  status = ndb.IntegerProperty(
-      default=analysis_status.PENDING, indexed=False)
+  # TODO(http://crbug.com/676511): Merge compile_results, test_results, and
+  # flake_results from FlakeTryJob.py into 1 structure in BaseTryJob.
 
-  # A list of try job IDs associated with each try job for collecting metadata.
-  try_job_ids = ndb.JsonProperty(indexed=False, compressed=True)
-
+  # Arguments number differs from overridden method - pylint: disable=W0221
   @staticmethod
-  def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
+  def _CreateKey(master_name, builder_name, build_number):
     return ndb.Key('WfTryJob',
                    BaseBuildModel.CreateBuildId(
                        master_name, builder_name, build_number))
 
   @staticmethod
-  def Create(master_name, builder_name, build_number):  # pragma: no cover
+  def Create(master_name, builder_name, build_number):
     try_job = WfTryJob(
         key=WfTryJob._CreateKey(master_name, builder_name, build_number))
     try_job.compile_results = try_job.compile_results or []
@@ -42,15 +60,6 @@ class WfTryJob(BaseBuildModel):
     return try_job
 
   @staticmethod
-  def Get(master_name, builder_name, build_number):  # pragma: no cover
+  def Get(master_name, builder_name, build_number):
     return WfTryJob._CreateKey(
         master_name, builder_name, build_number).get()
-
-  @property
-  def completed(self):
-    return self.status in (
-        analysis_status.COMPLETED, analysis_status.ERROR)
-
-  @property
-  def failed(self):
-    return self.status == analysis_status.ERROR

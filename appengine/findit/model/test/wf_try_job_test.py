@@ -2,33 +2,28 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import unittest
+from gae_libs.testcase import TestCase
 
-from model import analysis_status
 from model.wf_try_job import WfTryJob
 
 
-class WfTryJobTest(unittest.TestCase):
-  def testWfTryJobStatusIsCompleted(self):
-    for status in (analysis_status.COMPLETED, analysis_status.ERROR):
-      try_job = WfTryJob.Create('m', 'b', 123)
-      try_job.status = status
-      self.assertTrue(try_job.completed)
+class WfTryJobTest(TestCase):
 
-  def testWfTryJobStatusIsNotCompleted(self):
-    for status in (analysis_status.PENDING, analysis_status.RUNNING):
-      try_job = WfTryJob.Create('m', 'b', 123)
-      try_job.status = status
-      self.assertFalse(try_job.completed)
-
-  def testWfTryJobStatusIsFailed(self):
+  def testCreate(self):
     try_job = WfTryJob.Create('m', 'b', 123)
-    try_job.status = analysis_status.ERROR
-    self.assertTrue(try_job.failed)
+    self.assertEqual([], try_job.try_job_ids)
+    self.assertEqual([], try_job.compile_results)
+    self.assertEqual([], try_job.test_results)
 
-  def testWfTryJobStatusIsNotFailed(self):
-    for status in (analysis_status.PENDING, analysis_status.RUNNING,
-                   analysis_status.COMPLETED):
-      try_job = WfTryJob.Create('m', 'b', 123)
-      try_job.status = status
-      self.assertFalse(try_job.failed)
+  def testGet(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    try_job_id = 'try_job_id'
+
+    try_job_before = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job_before.try_job_ids = [try_job_id]
+    try_job_before.put()
+
+    try_job_after = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual([try_job_id], try_job_after.try_job_ids)
