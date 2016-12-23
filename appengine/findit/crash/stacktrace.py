@@ -28,7 +28,7 @@ _DEFAULT_FORMAT_TYPE = CallStackFormatType.DEFAULT
 
 class StackFrame(namedtuple('StackFrame',
     ['index', 'dep_path', 'function', 'file_path', 'raw_file_path',
-    'crashed_line_numbers', 'repo_url'])):
+     'crashed_line_numbers', 'repo_url'])):
   """Represents a frame in a stacktrace.
 
   Attributes:
