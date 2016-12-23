@@ -1,0 +1,25 @@
+<a id="transfer-ownership">Transfer ownership</a>
+<dialog id='transfer-ownership-dialog' [if-any open_dialog]open[end]>
+  <section>
+  Transfer hotlist ownership to: <input name="change-owners" placeholder=[initial_new_owner_username]>
+  [if-any errors.transfer_ownership]
+  <div class="fielderror">[errors.transfer_ownership]</div>
+  [end]
+  </section>
+
+  <section>
+  Would you like to stay on as an editor of this hotlist?
+  <input type="checkbox" name=become-editor checked>
+  </section>
+  <a id="hotlist_star"
+        style="color:[if-any hotlist.is_starred]cornflowerblue[else]gray[end]"
+        title="[if-any hotlist.is_starred]Un-s[else]S[end]tar this hotlist">
+        [if-any hotlist.is_starred]&#9733;[else]&#9734;[end]
+        </a>
+  <menu>
+    <button id="cancel" type="reset">Cancel</button>
+    <button type="submit">Confirm</button>
+  </menu>
+</dialog>
+
+<script type="text/javascript" defer src="/static/js/framework/framework-myhotlists.js?version=[app_version]" nonce="[nonce]"></script>

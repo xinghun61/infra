@@ -39,6 +39,9 @@ class HotlistPeopleList(servlet.Servlet):
     all_members = (mr.hotlist.owner_ids +
                    mr.hotlist.editor_ids + mr.hotlist.follower_ids)
 
+    hotlist_url = hotlist_helpers.GetURLOfHotlist(
+        mr.cnxn, mr.hotlist, self.services.user)
+
     with self.profiler.Phase('gathering members on this page'):
       users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, all_members)
@@ -54,7 +57,8 @@ class HotlistPeopleList(servlet.Servlet):
       all_member_views = owner_views + editor_views + follower_views
 
     pagination = paginate.ArtifactPagination(
-        mr, all_member_views, MEMBERS_PER_PAGE, urls.HOTLIST_PEOPLE)
+        mr, all_member_views, MEMBERS_PER_PAGE,'%s%s' % (
+              hotlist_url, urls.HOTLIST_PEOPLE))
 
     offer_membership_editing = permissions.CanAdministerHotlist(
         mr.auth.effective_ids, mr.hotlist)
@@ -72,9 +76,9 @@ class HotlistPeopleList(servlet.Servlet):
         'newly_added_views': newly_added_views,
         'offer_membership_editing': ezt.boolean(offer_membership_editing),
         'total_num_owners': len(mr.hotlist.owner_ids),
-        'check_abandonment': ezt.boolean(False),
-        # TODO(jojwang): implement ShouldCheckForHotlistAbandonment for
-        # check_abandonment
+        'check_abandonment': ezt.boolean(True),
+        'initial_new_owner_username': 'new-owner-username',
+        'open_dialog': ezt.boolean(False),
         }
 
   def ProcessFormData(self, mr, post_data):
@@ -84,11 +88,15 @@ class HotlistPeopleList(servlet.Servlet):
     if not permit_edit:
       raise permissions.PermissionException(
           'User is not permitted to edit hotlist membership')
+    hotlist_url = hotlist_helpers.GetURLOfHotlist(
+        mr.cnxn, mr.hotlist, self.services.user)
     if 'addbtn' in post_data:
-      return self.ProcessAddMembers(mr, post_data)
+      return self.ProcessAddMembers(mr, post_data, hotlist_url)
     elif 'removebtn' in post_data:
-      return self.ProcessRemoveMembers(mr, post_data)
-    # TODO(jojwang): add changebtn, transferbtn
+      return self.ProcessRemoveMembers(mr, post_data, hotlist_url)
+    elif 'change-owners' in post_data:
+      return self.ProcessChangeOwnership(mr, post_data)
+    # TODO(jojwang): add changebtn
 
   def _MakeMemberViews(self, mr, member_ids):
     """Return a sorted list of MemberViews for display by EZT."""
@@ -99,12 +107,43 @@ class HotlistPeopleList(servlet.Servlet):
     member_views.sort(key=lambda mv: mv.user.email)
     return member_views
 
-  def ProcessAddMembers(self, mr, post_data):
+  def ProcessChangeOwnership(self, mr, post_data):
+    new_owner_id_set = project_helpers.ParseUsernames(
+        mr.cnxn, self.services.user, post_data.get('change-owners'))
+    remain_as_editor = post_data.get('become-editor') == 'on'
+    if len(new_owner_id_set) != 1:
+      mr.errors.transfer_ownership = (
+          'Please add one valid user email.')
+
+    if mr.errors.AnyErrors():
+      self.PleaseCorrect(
+          mr, initial_new_owner_username=post_data.get('change-owners'),
+          open_dialog=ezt.boolean(True))
+    else:
+      new_owner_id = new_owner_id_set.pop()
+      (_, editor_ids, follower_ids) = hotlist_helpers.MembersWithoutGivenIDs(
+          mr.hotlist, [mr.hotlist.owner_ids[0], new_owner_id])
+      if remain_as_editor:
+        editor_ids.append(mr.hotlist.owner_ids[0])
+
+      self.services.features.UpdateHotlistRoles(
+          mr.cnxn, mr.hotlist_id, [new_owner_id], editor_ids, follower_ids)
+
+      # TODO(jojwang): check if mr.hotlist.owner_ids is updated, and use
+      # GetURLOfHotlist instead of the following.
+      return framework_helpers.FormatAbsoluteURL(
+          mr, '/u/%s/hotlists/%s%s' % (
+              new_owner_id, mr.hotlist_id, urls.HOTLIST_PEOPLE),
+          saved=1, ts=int(time.time()),
+          include_project=False)
+
+  def ProcessAddMembers(self, mr, post_data, hotlist_url):
     """Process the user's request to add members.
 
     Args:
       mr: common information parsed from the HTTP request.
       post_data: dictionary of form data
+      hotlist_url: hotlist_url to return to after data has been processed.
 
     Returns:
       String URL to redirect the user to after processing
@@ -112,7 +151,7 @@ class HotlistPeopleList(servlet.Servlet):
     # NOTE: using project_helpers function
     new_member_ids = project_helpers.ParseUsernames(
         mr.cnxn, self.services.user, post_data.get('addmembers'))
-    # add mr.error when email is invalid
+    # TODO(jojwang): add mr.error when email is invalid
     role = post_data['role']
 
     (owner_ids, editor_ids, follower_ids) = hotlist_helpers.MembersWithGivenIDs(
@@ -128,13 +167,13 @@ class HotlistPeopleList(servlet.Servlet):
           mr, initial_add_members=add_members_str, initially_expand_form=True)
     else:
       return framework_helpers.FormatAbsoluteURL(
-          mr, '/u/%s/hotlists/%s%s' % (
-              mr.auth.user_id, mr.hotlist_id, urls.HOTLIST_PEOPLE),
+          mr, '%s%s' % (
+              hotlist_url, urls.HOTLIST_PEOPLE),
           saved=1, ts=int(time.time()),
           new=','.join([str(u) for u in new_member_ids]),
           include_project=False)
 
-  def ProcessRemoveMembers(self, mr, post_data):
+  def ProcessRemoveMembers(self, mr, post_data, hotlist_url):
     """Process the user's request to remove members."""
     remove_strs = post_data.getall('remove')
     logging.info('remove_strs = %r', remove_strs)
@@ -148,9 +187,8 @@ class HotlistPeopleList(servlet.Servlet):
         mr.cnxn, mr.hotlist_id, owner_ids, editor_ids, follower_ids)
 
     return framework_helpers.FormatAbsoluteURL(
-        mr, '/u/%s/hotlists/%s%s' % (
-              mr.auth.user_id, mr.hotlist_id, urls.HOTLIST_PEOPLE),
+        mr, '%s%s' % (
+              hotlist_url, urls.HOTLIST_PEOPLE),
           saved=1, ts=int(time.time()), include_project=False)
 
   # TODO(jojwang): ProcessChangeRoles
-  # TODO(jojwang): ProcessTransferOwnership

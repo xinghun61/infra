@@ -2,6 +2,16 @@
 <tr data-url="[detail_url]">
 
   [if-any offer_membership_editing]
+    [is arg0 "hotlist"][is pagination.visible_results.role "Owner"]
+    <td style="padding-right:2px" class="rowwidgets"></td>
+    [else]
+     <td style="padding-right:2px" class="rowwidgets">
+         <input type="checkbox" name="remove"
+                value="[pagination.visible_results.user.email]"
+                >
+     </td>
+    [end]
+    [else]
      <td style="padding-right:2px" class="rowwidgets">
          <input type="checkbox" name="remove"
                 [is pagination.visible_results.role "Owner"]class="owner"[end]
@@ -11,7 +21,7 @@
                 [end]
                 >
      </td>
-  [end]
+  [end][end]
 
   <td style="white-space:nowrap">
      <a href="[detail_url]"

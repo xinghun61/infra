@@ -774,6 +774,7 @@ class FeaturesService(object):
 
     cnxn.Commit()
     self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
+    self.hotlist_user_to_ids.InvalidateKeys(cnxn, hotlist.owner_ids)
     hotlist.owner_ids = owner_ids
     hotlist.editor_ids = editor_ids
     hotlist.follower_ids = follower_ids

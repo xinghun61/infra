@@ -49,10 +49,6 @@
        as non-members.</label><br>
        [# TODO(jrobbins): custom roles]
     [else][is arg0 "hotlist"]
-       <input type="radio" name="role" value="owner" id="owner">
-       <label for="owner">Owner: may make any change to this
-       hotlist.</label><br>
-
        <input type="radio" name="role" value="editor" id="editor"
               checked="checked">
        <label for="editor">Editor: may add/remove/rank issues.</label><br>

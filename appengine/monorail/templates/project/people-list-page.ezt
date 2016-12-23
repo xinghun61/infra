@@ -30,10 +30,12 @@
      [if-any offer_membership_editing]
      <input type="button" value="Add members" style="font-size:80%"
             id="add_members_button">
-     <input type="submit" value="Remove members" style="font-size:80%; margin-left:1em"
+     <input type="submit" value="Remove members" style="font-size:80%"
             id="removebtn" name="removebtn" disabled="disabled">
      [# TOOD(jrobbins): extra confirmation when removing yourself as owner.]
-     [end]
+     [if-any is_hotlist]
+     [include "../features/transfer-hotlist-form.ezt"]
+     [end][end]
    </div>
 
   <table cellspacing="0" cellpadding="2" border="0" class="results striped vt" id="resultstable" width="100%">
@@ -56,7 +58,7 @@
 
       [for pagination.visible_results]
        [if-any is_hotlist]
-        [include "people-list-row-part.ezt" "hotlist"]
+         [include "people-list-row-part.ezt" "hotlist"]
        [else]
         [include "people-list-row-part.ezt" "project"]
        [end]
@@ -146,6 +148,10 @@ runOnLoad(function() {
    }
    [if-any check_abandonment]
      $("membership_form").addEventListener("submit", _preventAbandonment);
+   [end]
+
+   [if-any is_hotlist]
+   initializeDialogBox("[hotlist_id]");
    [end]
 });
   </script>
