@@ -43,5 +43,5 @@ class LoglinearTestCase(unittest.TestCase): # pragma: no cover
     self._feature_function = ToFeatureFunction(self._feature_list)
     self._qty_features = len(self._feature_list)
     self._X = range(10)
-    self._Y = [False, True]
+    self._Y = lambda _x: [False, True]
     self._weights = [random.random() for _ in xrange(self._qty_features)]

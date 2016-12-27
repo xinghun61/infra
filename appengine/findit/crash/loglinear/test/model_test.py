@@ -15,7 +15,7 @@ class LoglinearTest(LoglinearTestCase):
   def testToFeatureFunction(self):
     """Test that ``ToFeatureFunction`` obeys the equality its docstring says."""
     for x in self._X:
-      for y in self._Y:
+      for y in self._Y(x):
         for i in xrange(self._qty_features):
           self.assertEqual(self._feature_list[i](x)(y),
                            self._feature_function(x)(y)[i])
@@ -43,7 +43,7 @@ class LoglinearTest(LoglinearTestCase):
     for x in self._X:
       self.assertEqual(math.exp(model.LogZ(x)), model.Z(x))
       model.Expectation(x, lambda y: np.array([1.0]))
-      for y in self._Y:
+      for y in self._Y(x):
         model.Features(x)(y)
         model.Score(x)(y)
         self.assertEqual(

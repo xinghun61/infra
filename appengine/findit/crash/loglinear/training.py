@@ -15,12 +15,18 @@ from libs.math.vectors import vsum
 class TrainableLogLinearModel(LogLinearModel):
   """A loglinear model with some labelled data set for training the weights."""
 
-  def __init__(self, Y, training_data, feature_function, initial_weights,
-               epsilon=None):
+  def __init__(self, Y_given_X, training_data, feature_function,
+               initial_weights, epsilon=None):
     """
     Args:
-      Y (iterable): the entire range of values for the independent
-        variable. This is needed for computing the partition function.
+      Y_given_X: a function from ``X`` to an iterable object giving the
+        subset of ``Y`` which has non-zero probability given the
+        ``x``. When in doubt about whether some ``y`` has zero probability
+        or not, it is always safe/correct to return a larger subset of
+        ``Y`` (it'll just take more computation time is all). This is
+        needed for computing the partition function and expectation. N.B.,
+        we do not actually need to know/enumerate of *all* of ``Y``,
+        only the subsets for each ``x``.
       training_data (iterable): a collection of ``(x, y)`` pairs where
         ``y`` is the known-correct label for ``x``.
       feature_function: A function from ``X`` to ``Y`` to a list of
@@ -39,7 +45,7 @@ class TrainableLogLinearModel(LogLinearModel):
         each weight.
     """
     super(TrainableLogLinearModel, self).__init__(
-        Y, feature_function, initial_weights, epsilon)
+        Y_given_X, feature_function, initial_weights, epsilon)
     self._training_data = training_data
 
     self._observed_feature_vector = vsum([

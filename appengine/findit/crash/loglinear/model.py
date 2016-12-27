@@ -51,7 +51,7 @@ class UnnormalizedLogLinearModel(object):
   values for that variable called ``x``. The dependent variable (aka:
   the answers/labels returned by classification) is called ``Y``,
   where particular values for that random variable called ``y``. The
-  partition function is called ``Z``. And, somewhat non-conventionally,
+  partition function is called ``Z``. And (somewhat non-conventionally)
   we will call the log of the partition function ``zeta``.
 
   This class is distinct from ``LogLinearModel`` in that we do not require
@@ -216,14 +216,20 @@ class LogLinearModel(UnnormalizedLogLinearModel):
 
   This class is distinct from ``UnnormalizedLogLinearModel`` in that
   we can provide probabilities (not just scores). However, to do so we
-  require a specification of the entire set ``Y``.
+  require a specification of the subsets of ``Y`` for each ``x``.
   """
-  def __init__(self, Y, feature_function, weights, epsilon=None):
+  def __init__(self, Y_given_X, feature_function, weights, epsilon=None):
     """Construct a new probabilistic model.
 
     Args:
-      Y (iterable): the entire range of values for the independent
-        variable. This is needed for computing the partition function.
+      Y_given_X: a function from ``X`` to an iterable object giving the
+        subset of ``Y`` which has non-zero probability given the
+        ``x``. When in doubt about whether some ``y`` has zero probability
+        or not, it is always safe/correct to return a larger subset of
+        ``Y`` (it'll just take more computation time is all). This is
+        needed for computing the partition function and expectation. N.B.,
+        we do not actually need to know/enumerate of *all* of ``Y``,
+        only the subsets for each ``x``.
       feature_function: A function ``X -> Y -> list(float)``. N.B.,
         for all ``x`` and ``y`` the length of ``feature_function(x)(y)``
         must be the same as the length of ``weights``.
@@ -237,11 +243,11 @@ class LogLinearModel(UnnormalizedLogLinearModel):
     """
     super(LogLinearModel, self).__init__(feature_function, weights, epsilon)
 
-    self._Y = frozenset(Y)
+    self._Y = Y_given_X
 
     def _LogZ(x):
       score_given_x = self._scores(x)
-      return logsumexp([score_given_x(y) for y in self._Y])
+      return logsumexp([score_given_x(y) for y in self._Y(x)])
     self._zetas = MemoizedFunction(_LogZ)
 
   def ClearWeightBasedMemos(self):
@@ -318,5 +324,5 @@ class LogLinearModel(UnnormalizedLogLinearModel):
     # N.B., the ``*`` below is vector scaling! If we want to make this
     # method polymorphic in the return type of ``f`` then we'll need an
     # API that provides both scaling and ``vsum``.
-    return vsum([prob_given_x(y) * f(y) for y in self._Y])
+    return vsum([prob_given_x(y) * f(y) for y in self._Y(x)])
 

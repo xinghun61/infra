@@ -122,7 +122,7 @@ def _UpdateSuspect(suspect, file_path, stack_infos, blame):
     return
 
   min_distance = float('inf')
-  min_distance_frame = stack_infos[0][0]
+  min_distance_frame = stack_infos[0].frame
   for region in blame:
     if region.revision != suspect.changelog.revision:
       continue
