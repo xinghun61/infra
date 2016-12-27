@@ -23,11 +23,11 @@ class ChromeCrashParser(StacktraceParser):
 
   def Parse(self, stacktrace_string, deps, signature=None, top_n_frames=None):
     """Parse fracas stacktrace string into Stacktrace instance."""
-    stacktrace_buffer = StacktraceBuffer(signature=signature)
     # Filters to filter callstack buffers.
     filters = [callstack_filters.FilterInlineFunction(),
                callstack_filters.KeepTopNFrames(top_n_frames or
                                                 DEFAULT_TOP_N_FRAMES)]
+    stacktrace_buffer = StacktraceBuffer(signature=signature, filters=filters)
 
     # Initial background callstack which is not to be added into Stacktrace.
     stack_buffer = CallStackBuffer()
@@ -36,12 +36,7 @@ class ChromeCrashParser(StacktraceParser):
           self._IsStartOfNewCallStack(line))
 
       if is_new_callstack:
-        # TODO(katesonia): Refactor this logic to ``AddFilteredStack`` method
-        # of StacktraceBuffer.
-        stack_buffer = StacktraceParser.FilterStackBuffer(stack_buffer, filters)
-        if stack_buffer:
-          stacktrace_buffer.stacks.append(stack_buffer)
-
+        stacktrace_buffer.AddFilteredStack(stack_buffer)
         stack_buffer = CallStackBuffer(priority=priority,
                                        format_type=format_type,
                                        language_type=language_type)
@@ -52,9 +47,8 @@ class ChromeCrashParser(StacktraceParser):
         if frame is not None:
           stack_buffer.frames.append(frame)
 
-    stack_buffer = StacktraceParser.FilterStackBuffer(stack_buffer, filters)
-    if stack_buffer:
-      stacktrace_buffer.stacks.append(stack_buffer)
+    # Add the last stack to stacktrace.
+    stacktrace_buffer.AddFilteredStack(stack_buffer)
 
     return stacktrace_buffer.ToStacktrace()
 

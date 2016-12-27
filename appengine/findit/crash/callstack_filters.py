@@ -207,5 +207,4 @@ class FilterV8FramesIfV8NotInTopFrames(CallStackFilter):
 
     stack_buffer.frames = filter(
         lambda f: V8_DEP_PATH_MARKER not in f.dep_path, stack_buffer.frames)
-
     return stack_buffer

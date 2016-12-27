@@ -202,11 +202,13 @@ class StacktraceTest(StacktraceTestSuite):
 
 class StacktraceBufferTest(StacktraceTestSuite):
 
+  def _DummyFilter(self, stack_buffer):  # pragma: no cover
+    return stack_buffer
+
   def testStacktraceBufferWithoutSignature(self):
     """Tests using least priority stack as crash_stack without  signature."""
     frame_list1 = [
         StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
-
     frame_list2 = [
         StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
 
@@ -230,6 +232,62 @@ class StacktraceBufferTest(StacktraceTestSuite):
 
     self._VerifyTwoCallStacksEqual(stacktrace.crash_stack, stack2.ToCallStack())
 
+  def testAddFitleredStackWithNoFilters(self):
+    """Tests that ``AddFilteredStack`` returns None if there is no filters."""
+    frame_list = [
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
+        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    stacktrace_buffer = StacktraceBuffer()
+    stacktrace_buffer.AddFilteredStack(stack_buffer)
+    self.assertEqual(len(stacktrace_buffer.stacks), 1)
+
+  def testFilterInfinityPriorityStackBuffer(self):
+    """Tests that ``AddFilteredStack`` returns None for inf priority stack."""
+    stack_buffer = CallStackBuffer(priority=float('inf'))
+    stacktrace_buffer = StacktraceBuffer(filters=[self._DummyFilter])
+    stacktrace_buffer.AddFilteredStack(stack_buffer)
+    self.assertEqual(len(stacktrace_buffer.stacks), 0)
+
+  def testFilterEmptyStackBuffer(self):
+    """Tests that ``AddFilteredStack`` returns None for empty stack buffer."""
+    stack_buffer = CallStackBuffer(frame_list=[])
+    stacktrace_buffer = StacktraceBuffer(filters=[self._DummyFilter])
+    stacktrace_buffer.AddFilteredStack(stack_buffer)
+    self.assertEqual(len(stacktrace_buffer.stacks), 0)
+
+  def testFilterAllFrames(self):
+    """Tests that ``AddFilteredStack`` filters all frames and resturns None."""
+    frame_list = [
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
+        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+
+    def _MockFilterAllFrames(stack_buffer):
+      stack_buffer.frames = None
+      return stack_buffer
+
+    stacktrace_buffer = StacktraceBuffer(filters=[_MockFilterAllFrames])
+    stacktrace_buffer.AddFilteredStack(stack_buffer)
+    self.assertEqual(len(stacktrace_buffer.stacks), 0)
+
+  def testFilterSomeFrames(self):
+    """Tests that ``AddFilteredStack`` filters some frames."""
+    frame_list = [
+        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
+        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+
+    def _MockKeepFirstFrame(stack):
+      stack.frames = stack.frames[:1]
+      return stack
+
+    stacktrace_buffer = StacktraceBuffer(filters=[_MockKeepFirstFrame])
+    stacktrace_buffer.AddFilteredStack(stack_buffer)
+    self._VerifyTwoCallStacksEqual(
+        stacktrace_buffer.stacks[0],
+        CallStackBuffer(stack_buffer.priority, frame_list=frame_list[:1]))
+
   def testEmptyStacktraceBufferToStacktrace(self):
-    """Tests ``ToStacktrace`` returns None for empty stacktrace buffer."""
+    """Tests that ``ToStacktrace`` returns None for empty stacktrace buffer."""
     self.assertIsNone(StacktraceBuffer([]).ToStacktrace())

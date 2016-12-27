@@ -5,6 +5,7 @@
 from collections import namedtuple
 import copy
 import logging
+import math
 import re
 
 from crash import parse_util
@@ -309,18 +310,19 @@ class Stacktrace(namedtuple('Stacktrace', ['stacks', 'crash_stack'])):
 class StacktraceBuffer(object):
   """A Mutable type to simplify constructing ``Stacktrace`` objects.
 
-  The class can be converted to immutable stacktrace.
-  using ``ToStacktrace``.
+  The class can be converted to immutable stacktrace using ``ToStacktrace``.
   Note, to make this class fully mutable, it should contain CallStackBuffer
   list instead of CallStack list.
   """
-  def __init__(self, stacks=None, signature=None):
+  def __init__(self, stacks=None, signature=None, filters=None):
     """Initialize StacktraceBuffer instance.
 
     Args:
       stacks (list of CallStackBuffer): CallStackBuffer objects to
         build stacktrace.
-      signature (str): signagure is used to determine the crash stack.
+      signature (str): The signature is used to determine the crash stack.
+      filters (list of CallStackFilters): List of ``CallStackFilter`` instances,
+        which filter frames if necessary.
     """
     self.stacks = stacks or []
     if signature:
@@ -332,10 +334,26 @@ class StacktraceBuffer(object):
     else:
       self.signature_parts = None
 
+    self.filters = filters
+
   def __nonzero__(self):
     """Returns whether this trace buffer is empty."""
     return bool(self.stacks)
   __bool__ = __nonzero__
+
+  def AddFilteredStack(self, stack_buffer):
+    """Filters stack_buffer and add it to stacks if it's not empty."""
+    # If the callstack is the initial one (infinte priority) or empty, return
+    # None.
+    if math.isinf(stack_buffer.priority) or not stack_buffer.frames:
+      return
+
+    for stack_filter in self.filters or []:
+      stack_buffer = stack_filter(stack_buffer)
+      if not stack_buffer:
+        return
+
+    self.stacks.append(stack_buffer)
 
   def ToStacktrace(self):
     """Converts to ``Stacktrace`` object."""

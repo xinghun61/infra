@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from crash.stacktrace import StackFrame
-from crash.stacktrace import CallStackBuffer
 from crash import callstack_filters
 from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStackBuffer
