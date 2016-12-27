@@ -98,50 +98,50 @@ class Suspect(object):
     return self.ToString()
 
 
-def _UpdateSuspect(suspect, file_path, stack_infos, blame):
-  """Updates a ``Suspect`` with file path and its stack_infos and blame.
+  def _UpdateSuspect(self, file_path, stack_infos, blame):
+    """Updates a ``Suspect`` with file path and its stack_infos and blame.
 
-  When a file_path is found both shown in stacktrace and touched by
-  the revision of this result, update result with the information of
-  this file.
+    When a file_path is found both shown in stacktrace and touched by
+    the revision of this result, update result with the information of
+    this file.
 
-  Inserts the file path and its stack infos, and updates the min distance
-  if less distance is found between touched lines of this result and
-  crashed lines in the file path.
+    Inserts the file path and its stack infos, and updates the min distance
+    if less distance is found between touched lines of this result and
+    crashed lines in the file path.
 
-  Args:
-    suspect (Suspect): the suspect to be updated.
-    file_path (str): File path of the crashed file.
-    stack_infos (list of StackInfo): List of the frames of this file
-      together with their callstack priorities.
-    blame (Blame): Blame oject of this file.
-  """
-  suspect.file_to_stack_infos[file_path] = stack_infos
+    Args:
+      suspect (Suspect): the suspect to be updated.
+      file_path (str): File path of the crashed file.
+      stack_infos (list of StackInfo): List of the frames of this file
+        together with their callstack priorities.
+      blame (Blame): Blame oject of this file.
+    """
+    self.file_to_stack_infos[file_path] = stack_infos
 
-  if not blame:
-    return
+    if not blame:
+      return
 
-  min_distance = float('inf')
-  min_distance_frame = stack_infos[0].frame
-  for region in blame:
-    if region.revision != suspect.changelog.revision:
-      continue
+    min_distance = float('inf')
+    min_distance_frame = stack_infos[0].frame
+    for region in blame:
+      if region.revision != self.changelog.revision:
+        continue
 
-    region_start = region.start
-    region_end = region_start + region.count - 1
-    for frame, _ in stack_infos:
-      frame_start = frame.crashed_line_numbers[0]
-      frame_end = frame.crashed_line_numbers[-1]
-      distance = _DistanceBetweenLineRanges((frame_start, frame_end),
-                                            (region_start, region_end))
-      if distance < min_distance:
-        min_distance = distance
-        min_distance_frame = frame
+      region_start = region.start
+      region_end = region_start + region.count - 1
+      for frame, _ in stack_infos:
+        frame_start = frame.crashed_line_numbers[0]
+        frame_end = frame.crashed_line_numbers[-1]
+        distance = _DistanceBetweenLineRanges((frame_start, frame_end),
+                                              (region_start, region_end))
+        if distance < min_distance:
+          min_distance = distance
+          min_distance_frame = frame
 
-  suspect.file_to_analysis_info[file_path] = AnalysisInfo(
-      min_distance = min_distance,
-      min_distance_frame = min_distance_frame,
-  )
+    self.file_to_analysis_info[file_path] = AnalysisInfo(
+        min_distance = min_distance,
+        min_distance_frame = min_distance_frame,
+    )
 
 
 def _DistanceBetweenLineRanges((start1, end1), (start2, end2)):
@@ -194,7 +194,10 @@ class SuspectMap(dict):
       if self._ignore_cls and changelog.revision in self._ignore_cls:
         continue
 
-      if changelog.revision not in self:
-        self[changelog.revision] = Suspect(changelog, dep_path)
+      try:
+        suspect = self[changelog.revision]
+      except KeyError:
+        suspect = Suspect(changelog, dep_path)
+        self[changelog.revision] = suspect
 
-      _UpdateSuspect(self[changelog.revision], file_path, stack_infos, blame)
+      suspect._UpdateSuspect(file_path, stack_infos, blame)

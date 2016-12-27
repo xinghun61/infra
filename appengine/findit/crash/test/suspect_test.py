@@ -7,7 +7,6 @@ from crash.suspect import AnalysisInfo
 from crash.suspect import StackInfo
 from crash.suspect import Suspect
 from crash.suspect import SuspectMap
-from crash.suspect import _UpdateSuspect
 from crash.test.crash_test_suite import CrashTestSuite
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
@@ -123,7 +122,7 @@ class SuspectTest(CrashTestSuite):
         frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]),
         priority = 0)]
 
-    _UpdateSuspect(suspect, 'a.cc', stack_infos, DUMMY_BLAME)
+    suspect._UpdateSuspect('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(suspect.file_to_analysis_info['a.cc'].min_distance, 0)
 
     # Touched lines are before crashed lines.
@@ -133,7 +132,7 @@ class SuspectTest(CrashTestSuite):
         frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [3]),
         priority = 0)]
 
-    _UpdateSuspect(suspect, 'a.cc', stack_infos, DUMMY_BLAME)
+    suspect._UpdateSuspect('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(suspect.file_to_analysis_info['a.cc'].min_distance, 3)
 
     # Touched lines are after crashed lines.
@@ -143,7 +142,7 @@ class SuspectTest(CrashTestSuite):
         frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [10]),
         priority = 0)]
 
-    _UpdateSuspect(suspect, 'a.cc', stack_infos, DUMMY_BLAME)
+    suspect._UpdateSuspect('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(suspect.file_to_analysis_info['a.cc'].min_distance, 2)
 
   def testSuspectUpdateWithEmptyBlame(self):
@@ -152,7 +151,7 @@ class SuspectTest(CrashTestSuite):
         frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7]),
         priority = 0)]
 
-    _UpdateSuspect(suspect, 'a.cc', stack_infos, None)
+    suspect._UpdateSuspect('a.cc', stack_infos, None)
     self.assertEqual(suspect.file_to_stack_infos['a.cc'], stack_infos)
     self.assertEqual(suspect.file_to_analysis_info, {})
 
@@ -162,7 +161,7 @@ class SuspectTest(CrashTestSuite):
     frame2 = StackFrame(2, 'src/', 'func', 'a.cc', 'src/a.cc', [20])
     stack_infos = [StackInfo(frame1, 0), StackInfo(frame2, 0)]
 
-    _UpdateSuspect(suspect, 'a.cc', stack_infos, DUMMY_BLAME)
+    suspect._UpdateSuspect('a.cc', stack_infos, DUMMY_BLAME)
     self.assertEqual(suspect.file_to_stack_infos['a.cc'], stack_infos)
     self.assertEqual(suspect.file_to_analysis_info,
         {'a.cc': AnalysisInfo(min_distance = 0, min_distance_frame = frame1)})
