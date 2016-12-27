@@ -65,7 +65,7 @@ class ChangeLog(namedtuple('ChangeLog',
     return super(cls, ChangeLog).__new__(cls,
         author_name, author_email, author_time, committer_name,
         committer_email, committer_time, revision, commit_position,
-        message, touched_files, commit_url, code_review_url, 
+        message, touched_files, commit_url, code_review_url,
         reverted_revision)
 
   def ToDict(self):

@@ -2,17 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import namedtuple
 
-class Region(object):
+
+class Region(namedtuple('Region',
+    ['start', 'count', 'revision', 'author_name', 'author_email',
+     'author_time'])):
   """A region of some (unspecified) file at a (known) revision."""
-  def __init__(self, start, count, revision,
-               author_name, author_email, author_time):
-    self.start = start
-    self.count = count
-    self.revision = revision
-    self.author_name = author_name
-    self.author_email = author_email
-    self.author_time = author_time
+  __slots__ = ()
 
   def ToDict(self):
     return {

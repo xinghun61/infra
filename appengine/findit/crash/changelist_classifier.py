@@ -8,6 +8,7 @@ from collections import namedtuple
 
 from common import chrome_dependency_fetcher
 from crash import crash_util
+from crash.suspect import StackInfo
 from crash.suspect import Suspect
 from crash.suspect import SuspectMap
 from crash.scorers.aggregated_scorer import AggregatedScorer
@@ -191,16 +192,11 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
     if not dep_roll:
       continue
 
-    dep_roll = regression_deps_rolls[dep]
-
     repository.repo_url = dep_roll.repo_url
     changelogs = repository.GetChangeLogs(dep_roll.old_revision,
                                           dep_roll.new_revision)
 
-    if not changelogs:
-      continue
-
-    for changelog in changelogs:
+    for changelog in changelogs or []:
       # When someone reverts, we need to skip both the CL doing
       # the reverting as well as the CL that got reverted. If
       # ``reverted_revision`` is true, then this CL reverts another one,
@@ -252,8 +248,8 @@ def GetStackInfosForFilesGroupedByDeps(stacktrace, stack_deps):
       if frame.dep_path not in stack_deps:
         continue
 
-      dep_to_file_to_stack_infos[frame.dep_path][frame.file_path].append((
-          frame, callstack.priority))
+      dep_to_file_to_stack_infos[frame.dep_path][frame.file_path].append(
+          StackInfo(frame, callstack.priority))
 
   return dep_to_file_to_stack_infos
 
