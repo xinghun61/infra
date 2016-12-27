@@ -1034,6 +1034,7 @@ function TKR_handleListActions(actionsMenu) {
     case 'colspec':
       TKR_closeAllPopups(actionsMenu);
       _showID('columnspec');
+      _hideID('addissuesspec');
       break;
     case 'flagspam':
       TKR_flagSpam(true);
@@ -1043,6 +1044,7 @@ function TKR_handleListActions(actionsMenu) {
       break;
     case 'addissues':
       _showID('addissuesspec');
+      _hideID('columnspec');
       break;
     case 'removeissues':
       HTL_removeIssues();

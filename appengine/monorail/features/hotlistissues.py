@@ -29,8 +29,9 @@ from services import features_svc
 from tracker import tracker_bizobj
 
 _INITIAL_ADD_ISSUES_MESSAGE = 'projectname:localID, projectname:localID, etc.'
-_MSG_INVALID_ISSUES_INPUT = 'invalid input format.'
-_MSG_ISSUES_NOT_FOUND = 'project/issue not found.'
+_MSG_INVALID_ISSUES_INPUT = (
+    'Please follow project_name:issue_id, project_name:issue_id..')
+_MSG_ISSUES_NOT_FOUND = 'One or more of your issues were not found.'
 
 class HotlistIssues(servlet.Servlet):
   """HotlistIssues is a page that shows the issues of one hotlist."""
@@ -134,7 +135,6 @@ class HotlistIssues(servlet.Servlet):
         'preview': mr.preview,
         'default_colspec': features_constants.DEFAULT_COL_SPEC,
         'default_results_per_page': 10,
-        'csv_link': '', # TODO(jojwang): fill in when done w/ hotlists CSV
         'preview_on_hover': (
             settings.enable_quick_edit and mr.auth.user_pb.preview_on_hover),
         'remove_issues_token': xsrf.GenerateToken(
@@ -142,6 +142,7 @@ class HotlistIssues(servlet.Servlet):
             hotlist_helpers.GetURLOfHotlist(
                 mr.cnxn, mr.hotlist, self.services.user) + '.do'),
         'add_local_ids': _INITIAL_ADD_ISSUES_MESSAGE,
+        'add_issues_selected': ezt.boolean(False),
         }
     table_view_data.update(table_related_dict)
 
@@ -179,12 +180,14 @@ class HotlistIssues(servlet.Servlet):
         mr.cnxn, projects_dict, mr.project_name, issue_refs_tuples)
         if (not selected_iids) or len(issue_refs_tuples) > len(selected_iids):
           mr.errors.issues = _MSG_ISSUES_NOT_FOUND
+          # TODO(jojwang): give issues that were not found.
       else:
         mr.errors.issues = _MSG_INVALID_ISSUES_INPUT
 
     if mr.errors.AnyErrors():
       self.PleaseCorrect(
-          mr, add_local_ids=project_and_local_ids)
+          mr, add_local_ids=project_and_local_ids,
+          add_issues_selected=ezt.boolean(True))
 
     else:
       if post_data.get('remove') == 'true':
