@@ -129,6 +129,16 @@ EXPECTED_RESULTS_121 = {
 }
 
 
+def _MockGetChangeLog(repo, revision):
+  file_name = os.path.join(
+      os.path.dirname(__file__), 'data', 'help_triage_test_data',
+      'change_log_' + revision)
+  with open(file_name) as f:
+    commit_log = f.read()
+
+  data = json.loads(commit_log[len(')]}\'\n'):])
+  return repo._ParseChangeLogFromLogData(data)
+
 
 class HelpTriageTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication([
@@ -154,23 +164,13 @@ class HelpTriageTest(testing.AppengineTestCase):
     build.put()
     return build
 
-  def _MockDownloadChangeLogData(self, revision):
-    file_name = os.path.join(
-        os.path.dirname(__file__), 'data', 'help_triage_test_data',
-        'change_log_' + revision)
-    with open(file_name) as f:
-      commit_log = f.read()
-    return revision, json.loads(commit_log[len(')]}\'\n'):])
-
   def setUp(self):
     super(HelpTriageTest, self).setUp()
     self.master_name = 'm'
     self.builder_name = 'b'
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    self.mock(build_util, 'DownloadBuildData',
-              self._MockDownloadBuildData)
-    self.mock(GitilesRepository, '_DownloadChangeLogData',
-              self._MockDownloadChangeLogData)
+    self.mock(build_util, 'DownloadBuildData', self._MockDownloadBuildData)
+    self.mock(GitilesRepository, 'GetChangeLog', _MockGetChangeLog)
 
   def _CreateAnalysis(self, build_number, first_failure, last_pass=None):
     analysis = WfAnalysis.Create(

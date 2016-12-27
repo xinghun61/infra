@@ -87,10 +87,6 @@ class GitilesRepository(GitRepository):
 
     return datetime.strptime(datetime_string, date_format)
 
-  def _DownloadChangeLogData(self, revision):
-    url = '%s/+/%s' % (self.repo_url, revision)
-    return url, self._SendRequestForJsonResponse(url)
-
   def _ParseChangeLogFromLogData(self, data):
     commit_position, code_review_url = (
         commit_util.ExtractCommitPositionAndCodeReviewUrl(data['message']))
@@ -121,7 +117,8 @@ class GitilesRepository(GitRepository):
 
   def GetChangeLog(self, revision):
     """Returns the change log of the given revision."""
-    _, data = self._DownloadChangeLogData(revision)
+    url = '%s/+/%s' % (self.repo_url, revision)
+    data = self._SendRequestForJsonResponse(url)
     if not data:
       return None
 
