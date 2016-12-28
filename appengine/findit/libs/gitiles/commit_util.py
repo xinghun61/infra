@@ -69,3 +69,28 @@ def GetRevertedRevision(message):
     reverted_revision_match = REVERTED_REVISION_PATTERN.match(line)
     if reverted_revision_match:
       return reverted_revision_match.group(1)
+
+
+def DistanceBetweenLineRanges((start1, end1), (start2, end2)):
+  """Given two ranges, compute the (unsigned) distance between them.
+
+  Args:
+    start1 (int): the first line included in the first range.
+    end1 (int): the last line included in the first range. Must be
+      greater than or equal to ``start1``.
+    start2 (int): the first line included in the second range.
+    end2 (int): the last line included in the second range. Must be
+      greater than or equal to ``start1``.
+
+  Returns:
+    If the end of the earlier range comes before the start of the later
+    range, then the difference between those points. Otherwise, returns
+    zero (because the ranges overlap).
+  """
+  if end1 < start1:
+    raise ValueError('the first range is empty: %d < %d' % (end1, start1))
+  if end2 < start2:
+    raise ValueError('the second range is empty: %d < %d' % (end2, start2))
+  # There are six possible cases, but in all the cases where the two
+  # ranges overlap, the latter two differences will be negative.
+  return max(0, start2 - end1, start1 - end2)

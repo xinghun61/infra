@@ -4,6 +4,8 @@
 
 from collections import namedtuple
 
+from libs.gitiles.commit_util import DistanceBetweenLineRanges
+
 
 # TODO(wrengr): we should change things to use integers with None as
 # \"infinity\", rather than using floats.
@@ -133,8 +135,8 @@ class Suspect(object):
       for frame, _ in stack_infos:
         frame_start = frame.crashed_line_numbers[0]
         frame_end = frame.crashed_line_numbers[-1]
-        distance = _DistanceBetweenLineRanges((frame_start, frame_end),
-                                              (region_start, region_end))
+        distance = DistanceBetweenLineRanges((frame_start, frame_end),
+                                             (region_start, region_end))
         if distance < min_distance:
           min_distance = distance
           min_distance_frame = frame
@@ -143,28 +145,6 @@ class Suspect(object):
         min_distance = min_distance,
         min_distance_frame = min_distance_frame,
     )
-
-
-def _DistanceBetweenLineRanges((start1, end1), (start2, end2)):
-  """Given two ranges, compute the (unsigned) distance between them.
-
-  Args:
-    start1: the start of the first range
-    end1: the end of the first range. Must be greater than start1.
-    start2: the start of the second range
-    end2: the end of the second range. Must be greater than start2.
-
-  Returns:
-    If the end of the earlier range comes before the start of the later
-    range, then the difference between those points. Otherwise, returns
-    zero (because the ranges overlap)."""
-  assert end1 >= start1, ValueError(
-      'the first range is empty: %d < %d' % (end1, start1))
-  assert end2 >= start2, ValueError(
-      'the second range is empty: %d < %d' % (end2, start2))
-  # There are six possible cases, but in all the cases where the two
-  # ranges overlap, the latter two differences will be negative.
-  return max(0, start2 - end1, start1 - end2)
 
 
 class SuspectMap(dict):

@@ -133,3 +133,22 @@ class CodeReviewUtilTest(testing.AppengineTestCase):
 
     reverted_revision = commit_util.GetRevertedRevision(message)
     self.assertIsNone(reverted_revision)
+
+  def testDistanceBetweenLineRangesErrors(self):
+    self.assertRaises(ValueError, lambda:
+        commit_util.DistanceBetweenLineRanges((1,0), (2,3)))
+    self.assertRaises(ValueError, lambda:
+        commit_util.DistanceBetweenLineRanges((2,3), (1,0)))
+
+  def testDistanceBetweenLineRangesSuccesses(self):
+    tests = [
+        (2, (1,2), (4,5)),
+        (0, (1,3), (2,4)),
+        (0, (1,4), (2,3)),
+    ]
+
+    for expected_distance, range1, range2 in tests:
+      distance12 = commit_util.DistanceBetweenLineRanges(range1, range2)
+      distance21 = commit_util.DistanceBetweenLineRanges(range2, range1)
+      self.assertEqual(distance12, distance21)
+      self.assertEqual(expected_distance, distance12)
