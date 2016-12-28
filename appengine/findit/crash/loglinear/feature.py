@@ -75,8 +75,8 @@ class ChangedFile(namedtuple('ChangedFile',
       }
 
   def __str__(self):
-    return ('ChangedFile(name = %s, blame_url = %s, reasons = %s)'
-        % (self.name, self.blame_url, self.reasons))
+    return ('%s(name = %s, blame_url = %s, reasons = %s)'
+        % (self.__class__.__name__, self.name, self.blame_url, self.reasons))
 
 
 class FeatureValue(namedtuple('FeatureValue',
@@ -100,9 +100,9 @@ class FeatureValue(namedtuple('FeatureValue',
         str(name), float(value), str(reason), changed_files)
 
   def __str__(self):
-    return (
-        'FeatureValue(name = %s, value = %f, reason = %s, changed_files = %s)'
-        % (self.name, self.value, self.reason, self.changed_files))
+    return ('%s(name = %s, value = %f, reason = %s, changed_files = %s)'
+        % (self.__class__.__name__, self.name, self.value, self.reason,
+           self.changed_files))
 
 
 class Feature(object):

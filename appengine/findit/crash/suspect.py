@@ -13,8 +13,8 @@ class AnalysisInfo(namedtuple('AnalysisInfo',
   __slots__ = ()
 
   def __str__(self): # pragma: no cover
-    return ('AnalysisInfo(min_distance = %d, min_distance_frame = %s)'
-        % (self.min_distance, self.min_distance_frame))
+    return ('%s(min_distance = %d, min_distance_frame = %s)'
+        % (self.__class__.__name__, self.min_distance, self.min_distance_frame))
 
 
 # TODO(wrengr): it's not clear why the ``priority`` is stored at all,
@@ -27,7 +27,8 @@ class StackInfo(namedtuple('StackInfo', ['frame', 'priority'])):
   __slots__ = ()
 
   def __str__(self): # pragma: no cover
-    return 'StackInfo(frame = %s, priority = %f)' % (self.frame, self.priority)
+    return ('%s(frame = %s, priority = %f)'
+        % (self.__class__.__name__, self.frame, self.priority))
 
 
 # TODO(wrengr): break this into separate unanalyzed suspect, and analyzed
