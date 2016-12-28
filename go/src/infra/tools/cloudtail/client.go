@@ -42,8 +42,8 @@ type Entry struct {
 	// TextPayload is the log entry payload, represented as a text string.
 	TextPayload string
 
-	// JsonPayload is the log entry payload, represented as a JSONish structure.
-	JsonPayload interface{}
+	// JSONPayload is the log entry payload, represented as a JSONish structure.
+	JSONPayload interface{}
 
 	// ParsedBy is the parser that parsed this line, or nil if it fell through to
 	// the default parser.
@@ -219,7 +219,13 @@ func (c *loggingClient) PushEntries(ctx context.Context, entries []*Entry) error
 			InsertId:    e.InsertID,
 			Severity:    "DEFAULT",
 			TextPayload: e.TextPayload,
-			JsonPayload: e.JsonPayload,
+		}
+		if e.JSONPayload != nil {
+			p, err := json.Marshal(e.JSONPayload)
+			if err != nil {
+				return err
+			}
+			entry.JsonPayload = googleapi.RawMessage(p)
 		}
 		if e.Severity != "" {
 			if err := e.Severity.Validate(); err != nil {

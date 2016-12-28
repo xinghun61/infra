@@ -75,6 +75,41 @@ func (m *IPRange) String() string            { return proto.CompactTextString(m)
 func (*IPRange) ProtoMessage()               {}
 func (*IPRange) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
+func (m *IPRange) GetSite() string {
+	if m != nil {
+		return m.Site
+	}
+	return ""
+}
+
+func (m *IPRange) GetVlanId() uint32 {
+	if m != nil {
+		return m.VlanId
+	}
+	return 0
+}
+
+func (m *IPRange) GetStartIp() string {
+	if m != nil {
+		return m.StartIp
+	}
+	return ""
+}
+
+func (m *IPRange) GetEndIp() string {
+	if m != nil {
+		return m.EndIp
+	}
+	return ""
+}
+
+func (m *IPRange) GetVlanAlias() string {
+	if m != nil {
+		return m.VlanAlias
+	}
+	return ""
+}
+
 type IPRangeStatus struct {
 	Error string `protobuf:"bytes,1,opt,name=error" json:"error,omitempty"`
 }
@@ -83,6 +118,13 @@ func (m *IPRangeStatus) Reset()                    { *m = IPRangeStatus{} }
 func (m *IPRangeStatus) String() string            { return proto.CompactTextString(m) }
 func (*IPRangeStatus) ProtoMessage()               {}
 func (*IPRangeStatus) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+
+func (m *IPRangeStatus) GetError() string {
+	if m != nil {
+		return m.Error
+	}
+	return ""
+}
 
 type IPRangeQuery struct {
 	Site      string `protobuf:"bytes,1,opt,name=site" json:"site,omitempty"`
@@ -97,6 +139,41 @@ func (m *IPRangeQuery) String() string            { return proto.CompactTextStri
 func (*IPRangeQuery) ProtoMessage()               {}
 func (*IPRangeQuery) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
+func (m *IPRangeQuery) GetSite() string {
+	if m != nil {
+		return m.Site
+	}
+	return ""
+}
+
+func (m *IPRangeQuery) GetVlanId() uint32 {
+	if m != nil {
+		return m.VlanId
+	}
+	return 0
+}
+
+func (m *IPRangeQuery) GetLimit() uint32 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+func (m *IPRangeQuery) GetIp() string {
+	if m != nil {
+		return m.Ip
+	}
+	return ""
+}
+
+func (m *IPRangeQuery) GetVlanAlias() string {
+	if m != nil {
+		return m.VlanAlias
+	}
+	return ""
+}
+
 // Keep compatible with IPRangeQuery.
 type IPRangeDelete struct {
 	Site   string `protobuf:"bytes,1,opt,name=site" json:"site,omitempty"`
@@ -107,6 +184,20 @@ func (m *IPRangeDelete) Reset()                    { *m = IPRangeDelete{} }
 func (m *IPRangeDelete) String() string            { return proto.CompactTextString(m) }
 func (*IPRangeDelete) ProtoMessage()               {}
 func (*IPRangeDelete) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
+
+func (m *IPRangeDelete) GetSite() string {
+	if m != nil {
+		return m.Site
+	}
+	return ""
+}
+
+func (m *IPRangeDelete) GetVlanId() uint32 {
+	if m != nil {
+		return m.VlanId
+	}
+	return 0
+}
 
 type IPRangeDeleteList struct {
 	Ranges []*IPRangeDelete `protobuf:"bytes,1,rep,name=ranges" json:"ranges,omitempty"`
@@ -137,6 +228,41 @@ func (m *Host) String() string            { return proto.CompactTextString(m) }
 func (*Host) ProtoMessage()               {}
 func (*Host) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
+func (m *Host) GetSite() string {
+	if m != nil {
+		return m.Site
+	}
+	return ""
+}
+
+func (m *Host) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
+func (m *Host) GetMacAddr() string {
+	if m != nil {
+		return m.MacAddr
+	}
+	return ""
+}
+
+func (m *Host) GetIp() string {
+	if m != nil {
+		return m.Ip
+	}
+	return ""
+}
+
+func (m *Host) GetBootClass() string {
+	if m != nil {
+		return m.BootClass
+	}
+	return ""
+}
+
 type HostList struct {
 	Hosts []*Host `protobuf:"bytes,1,rep,name=hosts" json:"hosts,omitempty"`
 }
@@ -165,6 +291,20 @@ func (m *HostDelete) Reset()                    { *m = HostDelete{} }
 func (m *HostDelete) String() string            { return proto.CompactTextString(m) }
 func (*HostDelete) ProtoMessage()               {}
 func (*HostDelete) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
+
+func (m *HostDelete) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
+func (m *HostDelete) GetMacAddr() string {
+	if m != nil {
+		return m.MacAddr
+	}
+	return ""
+}
 
 // Use the same numbers and fields here than as the 'Host' message, so as to
 // make it a compatible subset of it, in case we want to merge them in the
@@ -206,6 +346,48 @@ func (m *HostQuery) Reset()                    { *m = HostQuery{} }
 func (m *HostQuery) String() string            { return proto.CompactTextString(m) }
 func (*HostQuery) ProtoMessage()               {}
 func (*HostQuery) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
+
+func (m *HostQuery) GetLimit() uint32 {
+	if m != nil {
+		return m.Limit
+	}
+	return 0
+}
+
+func (m *HostQuery) GetSite() string {
+	if m != nil {
+		return m.Site
+	}
+	return ""
+}
+
+func (m *HostQuery) GetHostname() string {
+	if m != nil {
+		return m.Hostname
+	}
+	return ""
+}
+
+func (m *HostQuery) GetMacAddr() string {
+	if m != nil {
+		return m.MacAddr
+	}
+	return ""
+}
+
+func (m *HostQuery) GetIp() string {
+	if m != nil {
+		return m.Ip
+	}
+	return ""
+}
+
+func (m *HostQuery) GetBootClass() string {
+	if m != nil {
+		return m.BootClass
+	}
+	return ""
+}
 
 func init() {
 	proto.RegisterType((*IPRanges)(nil), "crimson.IPRanges")

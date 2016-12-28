@@ -25,6 +25,9 @@ import:
 - package: github.com/luci/gkvlite
   version: master
   repo: https://chromium.googlesource.com/external/github.com/luci/gkvlite.git
+- package: github.com/luci/gtreap
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/luci/gtreap.git
 - package: github.com/luci/go-endpoints
   version: master
   repo: https://chromium.googlesource.com/external/github.com/luci/go-endpoints.git
@@ -119,7 +122,8 @@ import:
   version: master
   repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
   subpackages:
-  - protobuf
+  - googleapis/...
+  - protobuf/...
 - package: google.golang.org/grpc
   version: master
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git

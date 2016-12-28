@@ -147,11 +147,53 @@ func (m *Issue) GetCc() []*AtomPerson {
 	return nil
 }
 
+func (m *Issue) GetDescription() string {
+	if m != nil {
+		return m.Description
+	}
+	return ""
+}
+
+func (m *Issue) GetId() int32 {
+	if m != nil {
+		return m.Id
+	}
+	return 0
+}
+
+func (m *Issue) GetComponents() []string {
+	if m != nil {
+		return m.Components
+	}
+	return nil
+}
+
+func (m *Issue) GetLabels() []string {
+	if m != nil {
+		return m.Labels
+	}
+	return nil
+}
+
 func (m *Issue) GetOwner() *AtomPerson {
 	if m != nil {
 		return m.Owner
 	}
 	return nil
+}
+
+func (m *Issue) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *Issue) GetSummary() string {
+	if m != nil {
+		return m.Summary
+	}
+	return ""
 }
 
 // IssueRef references another issue in the same Monorail instance.
@@ -166,6 +208,20 @@ func (m *IssueRef) Reset()                    { *m = IssueRef{} }
 func (m *IssueRef) String() string            { return proto.CompactTextString(m) }
 func (*IssueRef) ProtoMessage()               {}
 func (*IssueRef) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *IssueRef) GetIssueId() int32 {
+	if m != nil {
+		return m.IssueId
+	}
+	return 0
+}
+
+func (m *IssueRef) GetProjectId() string {
+	if m != nil {
+		return m.ProjectId
+	}
+	return ""
+}
 
 // Request for Monorail.InsertIssue().
 type InsertIssueRequest struct {
@@ -183,11 +239,25 @@ func (m *InsertIssueRequest) String() string            { return proto.CompactTe
 func (*InsertIssueRequest) ProtoMessage()               {}
 func (*InsertIssueRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
+func (m *InsertIssueRequest) GetProjectId() string {
+	if m != nil {
+		return m.ProjectId
+	}
+	return ""
+}
+
 func (m *InsertIssueRequest) GetIssue() *Issue {
 	if m != nil {
 		return m.Issue
 	}
 	return nil
+}
+
+func (m *InsertIssueRequest) GetSendEmail() bool {
+	if m != nil {
+		return m.SendEmail
+	}
+	return false
 }
 
 // Response for Monorail.InsertIssue()
@@ -248,6 +318,13 @@ func (m *InsertCommentRequest_Comment) String() string            { return proto
 func (*InsertCommentRequest_Comment) ProtoMessage()               {}
 func (*InsertCommentRequest_Comment) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4, 0} }
 
+func (m *InsertCommentRequest_Comment) GetContent() string {
+	if m != nil {
+		return m.Content
+	}
+	return ""
+}
+
 func (m *InsertCommentRequest_Comment) GetUpdates() *Update {
 	if m != nil {
 		return m.Updates
@@ -302,6 +379,104 @@ func (m *IssuesListRequest) String() string            { return proto.CompactTex
 func (*IssuesListRequest) ProtoMessage()               {}
 func (*IssuesListRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
 
+func (m *IssuesListRequest) GetProjectId() string {
+	if m != nil {
+		return m.ProjectId
+	}
+	return ""
+}
+
+func (m *IssuesListRequest) GetAdditionalProject() []string {
+	if m != nil {
+		return m.AdditionalProject
+	}
+	return nil
+}
+
+func (m *IssuesListRequest) GetCan() IssuesListRequest_CannedQuery {
+	if m != nil {
+		return m.Can
+	}
+	return IssuesListRequest_ALL
+}
+
+func (m *IssuesListRequest) GetLabel() string {
+	if m != nil {
+		return m.Label
+	}
+	return ""
+}
+
+func (m *IssuesListRequest) GetMaxResults() int32 {
+	if m != nil {
+		return m.MaxResults
+	}
+	return 0
+}
+
+func (m *IssuesListRequest) GetOwner() string {
+	if m != nil {
+		return m.Owner
+	}
+	return ""
+}
+
+func (m *IssuesListRequest) GetPublishedMax() int64 {
+	if m != nil {
+		return m.PublishedMax
+	}
+	return 0
+}
+
+func (m *IssuesListRequest) GetPublishedMin() int64 {
+	if m != nil {
+		return m.PublishedMin
+	}
+	return 0
+}
+
+func (m *IssuesListRequest) GetQ() string {
+	if m != nil {
+		return m.Q
+	}
+	return ""
+}
+
+func (m *IssuesListRequest) GetSort() string {
+	if m != nil {
+		return m.Sort
+	}
+	return ""
+}
+
+func (m *IssuesListRequest) GetStartIndex() int32 {
+	if m != nil {
+		return m.StartIndex
+	}
+	return 0
+}
+
+func (m *IssuesListRequest) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *IssuesListRequest) GetUpdatedMax() int64 {
+	if m != nil {
+		return m.UpdatedMax
+	}
+	return 0
+}
+
+func (m *IssuesListRequest) GetUpdatedMin() int64 {
+	if m != nil {
+		return m.UpdatedMin
+	}
+	return 0
+}
+
 type ErrorMessage struct {
 	Code    int32  `protobuf:"varint,1,opt,name=code" json:"code,omitempty"`
 	Reason  string `protobuf:"bytes,2,opt,name=reason" json:"reason,omitempty"`
@@ -312,6 +487,27 @@ func (m *ErrorMessage) Reset()                    { *m = ErrorMessage{} }
 func (m *ErrorMessage) String() string            { return proto.CompactTextString(m) }
 func (*ErrorMessage) ProtoMessage()               {}
 func (*ErrorMessage) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
+
+func (m *ErrorMessage) GetCode() int32 {
+	if m != nil {
+		return m.Code
+	}
+	return 0
+}
+
+func (m *ErrorMessage) GetReason() string {
+	if m != nil {
+		return m.Reason
+	}
+	return ""
+}
+
+func (m *ErrorMessage) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
 
 type IssuesListResponse struct {
 	Error *ErrorMessage `protobuf:"bytes,1,opt,name=error" json:"error,omitempty"`
@@ -341,6 +537,13 @@ func (m *IssuesListResponse) GetItems() []*Issue {
 	return nil
 }
 
+func (m *IssuesListResponse) GetTotalResults() int32 {
+	if m != nil {
+		return m.TotalResults
+	}
+	return 0
+}
+
 // Defines a mutation to an issue.
 // This message is partial.
 // Derived from Update type in api_pb2_v1.py.
@@ -354,6 +557,13 @@ func (m *Update) String() string            { return proto.CompactTextString(m) 
 func (*Update) ProtoMessage()               {}
 func (*Update) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
 
+func (m *Update) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
 // Identifies a Monorail user.
 type AtomPerson struct {
 	// User email.
@@ -364,6 +574,13 @@ func (m *AtomPerson) Reset()                    { *m = AtomPerson{} }
 func (m *AtomPerson) String() string            { return proto.CompactTextString(m) }
 func (*AtomPerson) ProtoMessage()               {}
 func (*AtomPerson) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
+
+func (m *AtomPerson) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
 
 func init() {
 	proto.RegisterType((*Issue)(nil), "monorail.Issue")
