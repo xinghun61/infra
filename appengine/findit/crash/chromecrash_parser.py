@@ -5,6 +5,7 @@
 import math
 import re
 
+from crash import callstack_detectors
 from crash import callstack_filters
 from crash.stacktrace import CallStackBuffer
 from crash.stacktrace import StacktraceBuffer
@@ -14,8 +15,6 @@ from crash.stacktrace_parser import StacktraceParser
 from crash.type_enums import CallStackFormatType
 from crash.type_enums import LanguageType
 
-FRACAS_CALLSTACK_START_PATTERN = re.compile(r'CRASHED \[(.*) @ 0x(.*)\]')
-JAVA_CALLSTACK_START_PATTERN = re.compile(r'\(JAVA\) CRASHED \[(.*) @ 0x(.*)\]')
 DEFAULT_TOP_N_FRAMES = 7
 
 
@@ -29,17 +28,19 @@ class ChromeCrashParser(StacktraceParser):
                                                 DEFAULT_TOP_N_FRAMES)]
     stacktrace_buffer = StacktraceBuffer(signature=signature, filters=filters)
 
+    stack_detector = callstack_detectors.ChromeCrashStackDetector()
     # Initial background callstack which is not to be added into Stacktrace.
     stack_buffer = CallStackBuffer()
     for line in stacktrace_string.splitlines():
-      is_new_callstack, priority, format_type, language_type = (
-          self._IsStartOfNewCallStack(line))
+      is_new_callstack, priority, format_type, language_type, metadata = (
+          stack_detector.IsStartOfNewCallStack(line))
 
       if is_new_callstack:
         stacktrace_buffer.AddFilteredStack(stack_buffer)
         stack_buffer = CallStackBuffer(priority=priority,
                                        format_type=format_type,
-                                       language_type=language_type)
+                                       language_type=language_type,
+                                       metadata=metadata)
       else:
         frame = StackFrame.Parse(stack_buffer.language_type,
                                  stack_buffer.format_type, line, deps,
@@ -49,20 +50,4 @@ class ChromeCrashParser(StacktraceParser):
 
     # Add the last stack to stacktrace.
     stacktrace_buffer.AddFilteredStack(stack_buffer)
-
     return stacktrace_buffer.ToStacktrace()
-
-  def _IsStartOfNewCallStack(self, line):
-    """Determine whether a line is a start of a callstack or not.
-
-    Returns a tuple - (is_new_callstack, stack_priority, format_type,
-    language type).
-    """
-    if FRACAS_CALLSTACK_START_PATTERN.match(line):
-      #Fracas only provide magic signature stack (crash stack).
-      return True, 0, CallStackFormatType.DEFAULT, LanguageType.CPP
-
-    if JAVA_CALLSTACK_START_PATTERN.match(line):
-      return True, 0, CallStackFormatType.DEFAULT, LanguageType.JAVA
-
-    return False, None, None, None

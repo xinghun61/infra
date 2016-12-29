@@ -118,6 +118,7 @@ DUMMY_REPORT = CrashReport(None, None, None, Stacktrace(DUMMY_CALLSTACKS,
                                                         DUMMY_CALLSTACKS[0]),
                            (None, None))
 
+
 class ChangelistClassifierTest(CrashTestSuite):
 
   def setUp(self):

@@ -50,7 +50,3 @@ class StacktraceParser(object):
       top_n_frames (int): Number of top frames to be keep in a callstack.
     """
     raise NotImplementedError()
-
-  def _IsStartOfNewCallStack(self, line):
-    """Determines whether a line is the start of a new callstack or not."""
-    raise NotImplementedError()

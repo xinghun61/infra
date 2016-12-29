@@ -16,14 +16,6 @@ from crash.type_enums import LanguageType
 
 class ChromeCrashParserTest(StacktraceTestSuite):
 
-  def testChromeCrashParserIsStartOfNewCallSTack(self):
-    parser = ChromeCrashParser()
-    self.assertEqual(parser._IsStartOfNewCallStack('dummy line'),
-                     (False, None, None, None))
-    self.assertEqual(parser._IsStartOfNewCallStack('CRASHED [EXC @ 0x508]'),
-                     (True, 0, CallStackFormatType.DEFAULT,
-                      LanguageType.CPP))
-
   def testReturnEmptyStacktraceForEmptyString(self):
     parser = ChromeCrashParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
