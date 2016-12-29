@@ -7,7 +7,6 @@
       [include "../framework/user-link.ezt" hotlist.owners]
       [end]
       [end]
-[#TODO(jojwang):make sure this looks good with multiple owners]
       </div>
     </td>
   </tr>
@@ -19,7 +18,6 @@
       [include "../framework/user-link.ezt" hotlist.editors]
       [end]
       [end]
-[#TODO(jojwang):add members to a hotlist to make sure this looks good.]
       </div>
     </td>
   </tr>

@@ -96,7 +96,6 @@ class HotlistPeopleList(servlet.Servlet):
       return self.ProcessRemoveMembers(mr, post_data, hotlist_url)
     elif 'change-owners' in post_data:
       return self.ProcessChangeOwnership(mr, post_data)
-    # TODO(jojwang): add changebtn
 
   def _MakeMemberViews(self, mr, member_ids):
     """Return a sorted list of MemberViews for display by EZT."""
@@ -129,11 +128,11 @@ class HotlistPeopleList(servlet.Servlet):
       self.services.features.UpdateHotlistRoles(
           mr.cnxn, mr.hotlist_id, [new_owner_id], editor_ids, follower_ids)
 
-      # TODO(jojwang): check if mr.hotlist.owner_ids is updated, and use
-      # GetURLOfHotlist instead of the following.
+      hotlist = self.services.features.GetHotlist(mr.cnxn, mr.hotlist_id)
+      hotlist_url = hotlist_helpers.GetURLOfHotlist(
+        mr.cnxn, hotlist, self.services.user)
       return framework_helpers.FormatAbsoluteURL(
-          mr, '/u/%s/hotlists/%s%s' % (
-              new_owner_id, mr.hotlist_id, urls.HOTLIST_PEOPLE),
+          mr,'%s%s' % (hotlist_url, urls.HOTLIST_PEOPLE),
           saved=1, ts=int(time.time()),
           include_project=False)
 
@@ -151,7 +150,9 @@ class HotlistPeopleList(servlet.Servlet):
     # NOTE: using project_helpers function
     new_member_ids = project_helpers.ParseUsernames(
         mr.cnxn, self.services.user, post_data.get('addmembers'))
-    # TODO(jojwang): add mr.error when email is invalid
+    if not new_member_ids or not post_data.get('addmembers'):
+      mr.errors.incorrect_email_input = (
+          'Please give full emails seperated by commas.')
     role = post_data['role']
 
     (owner_ids, editor_ids, follower_ids) = hotlist_helpers.MembersWithGivenIDs(
@@ -190,5 +191,3 @@ class HotlistPeopleList(servlet.Servlet):
         mr, '%s%s' % (
               hotlist_url, urls.HOTLIST_PEOPLE),
           saved=1, ts=int(time.time()), include_project=False)
-
-  # TODO(jojwang): ProcessChangeRoles

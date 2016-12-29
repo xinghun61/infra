@@ -276,9 +276,6 @@ function renderHotlistTable(tableData, pageSettings) {
   });
   table.appendChild(tbody);
 
-  // TODO(jojwang): a starring change on the issuedetails page is not
-  // reflected on hotlist when clicking 'back'. It is only reflected
-  // on the hotlist after a refresh, or when accessing it via a link.
   var stars = document.getElementsByClassName("star");
   for (var i = 0; i < stars.length; ++i) {
     var star = stars[i];

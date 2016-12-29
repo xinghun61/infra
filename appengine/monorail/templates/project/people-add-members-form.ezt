@@ -52,6 +52,9 @@
        <input type="radio" name="role" value="editor" id="editor"
               checked="checked">
        <label for="editor">Editor: may add/remove/rank issues.</label><br>
+       [if-any errors.incorrect_email_input]
+       <div class="fielderror">[errors.incorrect_email_input]</div>
+       [end]
     [else]
        <input type="radio" name="role" value="owner" id="owner">
        <label for="owner">Owner: may make any change to this
