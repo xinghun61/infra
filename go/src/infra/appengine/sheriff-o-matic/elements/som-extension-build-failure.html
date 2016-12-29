@@ -72,19 +72,21 @@
     <div>
       <div id="builders" class="section layout horizontal center">
         <template is="dom-if" if="[[_haveBuilders(extension)]]">
-          <div class="header">
-            Builders this step failed on:
-          </div>
           <div>
-            <template is="dom-repeat" items="[[extension.builders]]" as="builder">
-              <span class$="[[_classForBuilder(builder)]]">
-                <a target="_blank" href$="[[_linkify(linkStyle, builder.url)]]" title$="Failing for the last [[_failureCount(builder)]] build(s): [[builder.first_failure]] - [[builder.latest_failure]].">
-                    [[builder.name]]
-                    [[_failureCount(builder)]]
-                </a>
-              </span>
-            </template>
-          </div>
+            <div class="header">
+              Builders this step failed on:
+            </div>
+            <div>
+              <template is="dom-repeat" items="[[extension.builders]]" as="builder">
+                <span class$="[[_classForBuilder(builder)]]">
+                  <a target="_blank" href$="[[_linkify(linkStyle, builder.url)]]" title$="Failing for the last [[_failureCount(builder)]] build(s): [[builder.first_failure]] - [[builder.latest_failure]].">
+                      [[builder.name]]
+                      [[_failureCount(builder)]]
+                  </a>
+                </span>
+              </template>
+            </div>
+           </div>
         </template>
       </div>
       <div class="section">
