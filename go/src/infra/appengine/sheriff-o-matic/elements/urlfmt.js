@@ -1,5 +1,5 @@
 (function(window) {
- 'use strict';
+  'use strict';
   var urlFmt = window.urlFmt || {};
 
   const archivePrefix =
@@ -7,8 +7,7 @@
 
   urlFmt.layoutTestBase = function(builderName, buildNumber) {
     let builderPath = builderName.replace(/[ .()]/g, '_');
-    return archivePrefix +
-        `${builderPath}/${buildNumber}/layout-test-results`;
+    return archivePrefix + `${builderPath}/${buildNumber}/layout-test-results`;
   };
 
   urlFmt.layoutTest = function(builderName, buildNumber, testName) {
@@ -22,8 +21,7 @@
   urlFmt.layoutTestAll = function(builderName, buildNumber) {
     let basePath = urlFmt.layoutTestBase(builderName, buildNumber);
     return `${basePath}/results.html`;
-  }
+  };
 
   window.urlFmt = urlFmt;
 })(window);
-
