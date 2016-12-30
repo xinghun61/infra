@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from common.dependency import Dependency
+from crash.callstack_detectors import StartOfCallStack
 from crash.stacktrace import CallStack
 from crash.stacktrace import CallStackBuffer
 from crash.stacktrace import StackFrame
@@ -155,6 +156,21 @@ class CallStackBufferTest(StacktraceTestSuite):
   def testToCallStackForEmptyCallStackBuffer(self):
     """Tests ``ToCallStack`` for empty  ``CallStackBuffer`` object."""
     self.assertIsNone(CallStackBuffer(0, frame_list=[]).ToCallStack())
+
+  def testFromNoneStartOfCallStack(self):
+    """Tests ``FromStartOfCallStack`` with None input."""
+    self.assertIsNone(CallStackBuffer.FromStartOfCallStack(None))
+
+  def testFromStartOfCallStack(self):
+    """Tests ``FromStartOfCallStack`` with ``StartOfCallStack`` input."""
+    start_of_callstack = StartOfCallStack(0, CallStackFormatType.DEFAULT,
+                                          LanguageType.CPP, {'pid': 123})
+    stack_buffer = CallStackBuffer.FromStartOfCallStack(start_of_callstack)
+    self.assertEqual(stack_buffer.priority, start_of_callstack.priority)
+    self.assertEqual(stack_buffer.format_type, start_of_callstack.format_type)
+    self.assertEqual(stack_buffer.language_type,
+                     start_of_callstack.language_type)
+    self.assertDictEqual(stack_buffer.metadata, start_of_callstack.metadata)
 
 
 class StacktraceTest(StacktraceTestSuite):

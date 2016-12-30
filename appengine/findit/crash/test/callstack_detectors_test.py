@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from crash import callstack_detectors
+from crash.callstack_detectors import StartOfCallStack
 from crash.flag_manager import ParsingFlag
 from crash.flag_manager import FlagManager
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
@@ -20,56 +21,46 @@ class CallStackDetectorTest(StacktraceTestSuite):
                           ParsingFlag('java_main_stack_flag', value=True))
 
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack(
-            'java.lang.IllegalStateException: blabla', flag_manager),
-        (True, 0, CallStackFormatType.JAVA, LanguageType.JAVA, {}))
+        stack_detector('java.lang.IllegalStateException: blabla', flag_manager),
+        StartOfCallStack(0, CallStackFormatType.JAVA, LanguageType.JAVA, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack(
-            'org.chromium.src.BlaBla', flag_manager),
-        (True, 1, CallStackFormatType.JAVA, LanguageType.JAVA, {}))
+        stack_detector('org.chromium.src.BlaBla', flag_manager),
+        StartOfCallStack(1, CallStackFormatType.JAVA, LanguageType.JAVA, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('Caused by:', flag_manager),
-        (True, 1, CallStackFormatType.JAVA, LanguageType.JAVA, {}))
+        stack_detector('Caused by:', flag_manager),
+        StartOfCallStack(1, CallStackFormatType.JAVA, LanguageType.JAVA, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack(
-            'com.google.android.BlaBla', flag_manager),
-        (True, 1, CallStackFormatType.JAVA, LanguageType.JAVA, {}))
-    self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('dummy', flag_manager),
-        (False, None, None, None, None))
+        stack_detector('com.google.android.BlaBla', flag_manager),
+        StartOfCallStack(1, CallStackFormatType.JAVA, LanguageType.JAVA, {}))
+    self.assertIsNone(stack_detector('dummy', flag_manager))
 
   def testSyzyasanDetector(self):
     """Tests that ``SyzyasanDetector`` detects sysyasn callstack."""
     stack_detector = callstack_detectors.SyzyasanDetector()
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('Crash stack:'),
-        (True, 0, CallStackFormatType.SYZYASAN, LanguageType.CPP, {}))
+        stack_detector('Crash stack:'),
+        StartOfCallStack(0, CallStackFormatType.SYZYASAN, LanguageType.CPP, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('A stack:'),
-        (True, 1, CallStackFormatType.SYZYASAN, LanguageType.CPP, {}))
-    self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('dummy'),
-        (False, None, None, None, None))
+        stack_detector('A stack:'),
+        StartOfCallStack(1, CallStackFormatType.SYZYASAN, LanguageType.CPP, {}))
+    self.assertIsNone(stack_detector('dummy'))
 
   def testTsanDetector(self):
     """Tests that ``TsanDetector`` detects thread sanitizer callstack."""
     stack_detector = callstack_detectors.TsanDetector()
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('Read of size 1023:'),
-        (True, 0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+        stack_detector('Read of size 1023:'),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('WARNING: ThreadSanitizer'),
-        (True, 0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+        stack_detector('WARNING: ThreadSanitizer'),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('Previous read of size 102'),
-        (True, 1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+        stack_detector('Previous read of size 102'),
+        StartOfCallStack(1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack(
-            'Location is heap block of size 3543'),
-        (True, 1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
-    self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('dummy'),
-        (False, None, None, None, None))
+        stack_detector('Location is heap block of size 3543'),
+        StartOfCallStack(1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+    self.assertIsNone(stack_detector('dummy'))
 
   def testUbsanDetector(self):
     """Tests that ``UbsanDetector`` detects ubsan callstack."""
@@ -78,74 +69,63 @@ class CallStackDetectorTest(StacktraceTestSuite):
     flag_manager.Register('group',
                           ParsingFlag('is_first_stack_flag', value=True))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('blabla: runtime error: blabla',
-                                             flag_manager),
-        (True, 0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+        stack_detector('blabla: runtime error: blabla', flag_manager),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     # After the ``is_first_stack_flag`` is set to False, the priority will be
     # 1.
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('blabla: runtime error: blabla',
-                                             flag_manager),
-        (True, 1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
-    self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('dummy', flag_manager),
-        (False, None, None, None, None))
+        stack_detector('blabla: runtime error: blabla', flag_manager),
+        StartOfCallStack(1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+    self.assertIsNone(stack_detector('dummy', flag_manager))
 
   def testMsanDetector(self):
     """Tests that ``MsanDetector`` detects memory sanitizer callstack."""
     stack_detector = callstack_detectors.MsanDetector()
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack(
-            'Uninitialized value was created by'),
-        (True, 0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+        stack_detector('Uninitialized value was created by'),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     # After the ``is_first_stack_flag`` is set to False, the priority will be
     # 1.
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack(
-            'Uninitialized value was stored to'),
-        (True, 1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+        stack_detector('Uninitialized value was stored to'),
+        StartOfCallStack(1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack(
-            '==123== ERROR:MemorySanitizer'),
-        (True, 2, CallStackFormatType.DEFAULT, LanguageType.CPP, {'pid': 123}))
-    self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('dummy'),
-        (False, None, None, None, None))
+        stack_detector('==123== ERROR:MemorySanitizer'),
+        StartOfCallStack(2, CallStackFormatType.DEFAULT, LanguageType.CPP,
+                         {'pid': 123}))
+    self.assertIsNone(stack_detector('dummy'))
 
   def testAsanDetector(self):
     """Tests that ``AsanDetector`` detects address sanitizer callstack."""
     stack_detector = callstack_detectors.AsanDetector()
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('==123== ERROR:AddressSanitizer'),
-        (True, 0, CallStackFormatType.DEFAULT, LanguageType.CPP, {'pid': 123}))
+        stack_detector('==123== ERROR:AddressSanitizer'),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP,
+                         {'pid': 123}))
     # After the ``is_first_stack_flag`` is set to False, the priority will be
     # 1.
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('READ of size 32 at backtrace:'),
-        (True, 0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+        stack_detector('READ of size 32 at backtrace:'),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('freed by thread T99 here:'),
-        (True, 1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+        stack_detector('freed by thread T99 here:'),
+        StartOfCallStack(1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack(
-            'previously allocated by thread T1 here:'),
-        (True, 1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+        stack_detector('previously allocated by thread T1 here:'),
+        StartOfCallStack(1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('Thread T9 created by'),
-        (True, 1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
-    self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('dummy'),
-        (False, None, None, None, None))
+        stack_detector('Thread T9 created by'),
+        StartOfCallStack(1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+    self.assertIsNone(stack_detector('dummy'))
 
   def testChromeCrashDetector(self):
     """Tests that ``ChromeCrashDetector`` detects Fracas/Cracas callstack."""
     stack_detector = callstack_detectors.ChromeCrashStackDetector()
 
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('CRASHED [EXC @ 0x508]'),
-        (True, 0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+        stack_detector('CRASHED [EXC @ 0x508]'),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertTupleEqual(
-        stack_detector.IsStartOfNewCallStack('(JAVA) CRASHED [EXC @ 0x508]'),
-        (True, 0, CallStackFormatType.DEFAULT, LanguageType.JAVA, {}))
-    self.assertTupleEqual(stack_detector.IsStartOfNewCallStack('dummy line'),
-                          (False, None, None, None, None))
+        stack_detector('(JAVA) CRASHED [EXC @ 0x508]'),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.JAVA, {}))
+    self.assertIsNone(stack_detector('dummy'))

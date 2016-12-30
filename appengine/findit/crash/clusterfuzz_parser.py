@@ -104,18 +104,13 @@ class ClusterfuzzParser(StacktraceParser):
     for line in stacktrace_string.splitlines():
       # Note, some flags like is_first_stack may be changed inside of stack
       # detector.
-      is_new_callstack, priority, format_type, language_type, metadata = (
-          stack_detector.IsStartOfNewCallStack(line, flags=self.flag_manager))
+      start_of_callstack = stack_detector(line)
 
-      if is_new_callstack:
+      if start_of_callstack:
         stacktrace_buffer.AddFilteredStack(
             self.UpdateMetadataWithFlags(stack_buffer))
-
         # Create new stack and reset callstack scope flags.
-        stack_buffer = CallStackBuffer(priority=priority,
-                                       format_type=format_type,
-                                       language_type=language_type,
-                                       metadata=metadata)
+        stack_buffer = CallStackBuffer.FromStartOfCallStack(start_of_callstack)
         self.flag_manager.ResetGroupFlags(CALLSTACK_FLAG_GROUP)
       else:
         frame = StackFrame.Parse(stack_buffer.language_type,

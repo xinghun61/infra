@@ -32,15 +32,11 @@ class ChromeCrashParser(StacktraceParser):
     # Initial background callstack which is not to be added into Stacktrace.
     stack_buffer = CallStackBuffer()
     for line in stacktrace_string.splitlines():
-      is_new_callstack, priority, format_type, language_type, metadata = (
-          stack_detector.IsStartOfNewCallStack(line))
+      start_of_callstack = stack_detector(line)
 
-      if is_new_callstack:
+      if start_of_callstack:
         stacktrace_buffer.AddFilteredStack(stack_buffer)
-        stack_buffer = CallStackBuffer(priority=priority,
-                                       format_type=format_type,
-                                       language_type=language_type,
-                                       metadata=metadata)
+        stack_buffer = CallStackBuffer.FromStartOfCallStack(start_of_callstack)
       else:
         frame = StackFrame.Parse(stack_buffer.language_type,
                                  stack_buffer.format_type, line, deps,

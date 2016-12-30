@@ -275,6 +275,18 @@ class CallStackBuffer(object):
     return CallStack(self.priority, tuple(self.frames),
                      self.format_type, self.language_type)
 
+  @staticmethod
+  def FromStartOfCallStack(start_of_callstack):
+    """Constructs a ``CallStackBuffer`` from a ``StartOfCallStack``."""
+    if not start_of_callstack:
+      return None
+
+    return CallStackBuffer(
+        priority=start_of_callstack.priority,
+        format_type=start_of_callstack.format_type,
+        language_type=start_of_callstack.language_type,
+        metadata=start_of_callstack.metadata)
+
 
 # N.B., because ``list`` is mutable it isn't hashable, thus cannot be
 # used as a key in a dict. Because we want to usecallstacks as keys (for

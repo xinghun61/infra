@@ -18,7 +18,6 @@ CRASH_FIELDS = ['crashed_version', 'stack_trace', 'signature',
                 'customized_data', 'historical_metadata']
 
 
-
 # TODO(crbug.com/662540): Add unittests.
 class Delta(object):  # pragma: no cover.
   """Stands for delta between two results.
