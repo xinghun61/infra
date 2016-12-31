@@ -94,7 +94,7 @@
                <input type="text" id="owneredit" autocomplete="off"
                       style="width:16em"
                       name="owner" value="[is initial_owner "----"][else][initial_owner][end]">
-                 <span class="availability_[issue.owner.avail_class]"
+                 <span class="availability_[issue.owner.avail_state]"
                        style="padding-left:1em; [if-any issue.owner.avail_message_short][else]display:none[end]">
                    &#9608;
                    <span id="owner_availability">[issue.owner.avail_message_short]</span>

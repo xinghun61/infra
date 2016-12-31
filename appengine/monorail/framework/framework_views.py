@@ -98,7 +98,7 @@ class UserView(object):
     else:
       self.display_name = '%s...@%s' % (self.obscured_username, self.domain)
 
-    self.avail_message, self.avail_class = self.GetAvailablity(user, is_group)
+    self.avail_message, self.avail_state = self.GetAvailablity(user, is_group)
     self.avail_message_short = template_helpers.FitUnsafeText(
         self.avail_message, 35)
 

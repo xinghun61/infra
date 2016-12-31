@@ -4,14 +4,14 @@
 <div class="userlink_avail" title="[arg0.display_name][if-any arg0.avail_message]:
 [arg0.avail_message][end]">
   [if-any arg0.avail_message]
-    <span class="availability_[arg0.avail_class]">&#9608;</span>
+    <span class="availability_[arg0.avail_state]">&#9608;</span>
   [end]
   [if-any arg0.profile_url]
     <a href="[arg0.profile_url]">[arg0.display_name]</a>[else]<a>[arg0.display_name]</a>[end]
 </div>
 [is arg1 "Yes"]
  [if-any arg0.avail_message]
-  <div class="availability_[arg0.avail_class]" title="[arg0.display_name]:
+  <div class="availability_[arg0.avail_state]" title="[arg0.display_name]:
 [arg0.avail_message]"
   >[arg0.avail_message_short]</div>
  [end]

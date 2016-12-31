@@ -106,11 +106,11 @@ class IssueEntry(servlet.Servlet):
 
     if initial_owner:
       initial_owner_name = initial_owner.email
-      owner_avail_class = initial_owner.avail_class
+      owner_avail_state = initial_owner.avail_state
       owner_avail_message_short = initial_owner.avail_message_short
     else:
       initial_owner_name = ''
-      owner_avail_class = None
+      owner_avail_state = None
       owner_avail_message_short = None
 
     # Check whether to allow attachments from the entry page
@@ -156,7 +156,7 @@ class IssueEntry(servlet.Servlet):
         'component_required': ezt.boolean(wkp.component_required),
         'initial_status': initial_status,
         'initial_owner': initial_owner_name,
-        'owner_avail_class': owner_avail_class,
+        'owner_avail_state': owner_avail_state,
         'owner_avail_message_short': owner_avail_message_short,
         'initial_components': initial_components,
         'initial_cc': '',

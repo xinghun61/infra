@@ -89,7 +89,7 @@
         <input type="text" id="ownerenter" autocomplete="off"
                style="width:16em"
 	       name="owner" value="[initial_owner]">
-          <span class="availability_[owner_avail_class]"
+          <span class="availability_[owner_avail_state]"
                 style="padding-left:1em; [if-any owner_avail_message_short][else]display:none[end]">
             &#9608;
             <span id="owner_availability">[owner_avail_message_short]</span>

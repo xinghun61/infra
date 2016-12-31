@@ -98,7 +98,7 @@ class IssueEntryTest(unittest.TestCase):
     page_data = self.servlet.GatherPageData(mr)
     self.mox.VerifyAll()
     self.assertEqual(page_data['initial_owner'], 'user@invalid')
-    self.assertEqual(page_data['owner_avail_class'], 'never')
+    self.assertEqual(page_data['owner_avail_state'], 'never')
     self.assertEqual(
         page_data['owner_avail_message_short'],
         'User never visited')
@@ -109,7 +109,7 @@ class IssueEntryTest(unittest.TestCase):
     page_data = self.servlet.GatherPageData(mr)
     self.mox.VerifyAll()
     self.assertEqual(page_data['initial_owner'], 'user@invalid')
-    self.assertEqual(page_data['owner_avail_class'], None)
+    self.assertEqual(page_data['owner_avail_state'], None)
     self.assertEqual(page_data['owner_avail_message_short'], '')
 
   def testGatherPageData_TemplateAllowsKeepingSummary(self):
