@@ -129,9 +129,9 @@ def ScheduleNewAnalysis(crash_data):
     True if we started a new pipeline; False otherwise.
   """
   client_id = crash_data['client_id']
-  repository = CachedGitilesRepository(HttpClientAppengine())
   # N.B., must call FinditForClientID indirectly, for mock testing.
-  findit_client = crash_pipeline.FinditForClientID(client_id, repository)
+  findit_client = crash_pipeline.FinditForClientID(client_id,
+      CachedGitilesRepository.Factory(HttpClientAppengine()))
 
   # Check policy and modify the crash_data as needed.
   crash_data = findit_client.CheckPolicy(crash_data)

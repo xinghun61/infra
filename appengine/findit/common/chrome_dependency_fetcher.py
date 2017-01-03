@@ -18,31 +18,30 @@ _BUILDSPEC_REPO = ('https://chrome-internal.googlesource.com/chrome/tools/'
 
 def IsChromeVersion(revision):
   """Determines if a revision is a chrome version."""
-  if _CHROME_VERSION_PATTERN.match(revision):
-    return True
-
-  return False
+  return bool(_CHROME_VERSION_PATTERN.match(revision))
 
 
 class DEPSDownloader(deps_parser.DEPSLoader):
   """Downloads DEPS from remote Git repo."""
 
-  def __init__(self, repository):
-    self.repository = repository
+  def __init__(self, get_repository):
+    assert callable(get_repository), (
+        'The ``get_repository`` argument must be callable.')
+    self._get_repository = get_repository
 
   def Load(self, repo_url, revision, deps_file):
-    self.repository.repo_url = repo_url
+    repository = self._get_repository(repo_url)
     content = None
     if deps_file == 'DEPS' and repo_url == _CHROMIUM_REPO_MASTER:
       # Try .DEPS.git instead of DEPS first, for commits during the Git chaos.
-      content = self.repository.GetSource('.DEPS.git', revision)
+      content = repository.GetSource('.DEPS.git', revision)
 
     if content is None:
-      content = self.repository.GetSource(deps_file, revision)
+      content = repository.GetSource(deps_file, revision)
 
     if content is None and deps_file != 'DEPS':
       # Like gclient, fall back to raw 'DEPS' when all else fails.
-      content = self.repository.GetSource('DEPS', revision)
+      content = repository.GetSource('DEPS', revision)
 
     if content is None:
       raise Exception(
@@ -54,8 +53,10 @@ class DEPSDownloader(deps_parser.DEPSLoader):
 
 class ChromeDependencyFetcher(object):
 
-  def __init__(self, repository):
-    self.repository = repository
+  def __init__(self, get_repository):
+    assert callable(get_repository), (
+        'The ``get_repository`` argument must be callable.')
+    self._get_repository = get_repository
 
   def GetDependency(self, revision, platform):
     """Returns all dependencies of Chrome as a dict for given revision and OS.
@@ -82,7 +83,7 @@ class ChromeDependencyFetcher(object):
         _CHROMIUM_ROOT_DIR, _CHROMIUM_REPO_MASTER, revision, **deps_repo_info)
 
     deps_parser.UpdateDependencyTree(
-        root_dep, [platform], DEPSDownloader(self.repository))
+        root_dep, [platform], DEPSDownloader(self._get_repository))
 
     dependencies = {}
 

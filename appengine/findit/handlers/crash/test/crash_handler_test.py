@@ -25,6 +25,9 @@ from model import analysis_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 
+MOCK_GET_REPOSITORY = lambda _: None # pragma: no cover
+
+
 class MockCulprit(object):
   """Construct a fake culprit where ``ToDicts`` returns whatever we please."""
 
@@ -44,7 +47,7 @@ class CrashHandlerTest(PredatorTestCase):
   def testScheduleNewAnalysisWithFailingPolicy(self):
     class _MockFindit(Findit): # pylint: disable=W0223
       def __init__(self):
-        super(_MockFindit, self).__init__(None)
+        super(_MockFindit, self).__init__(MOCK_GET_REPOSITORY)
 
       def CheckPolicy(self, crash_data):
         """This is the same as inherited, but just to be explicit."""
@@ -70,7 +73,7 @@ class CrashHandlerTest(PredatorTestCase):
     testcase = self
     class _MockFindit(Findit): # pylint: disable=W0223
       def __init__(self):
-        super(_MockFindit, self).__init__(None)
+        super(_MockFindit, self).__init__(MOCK_GET_REPOSITORY)
 
       @property
       def config(self):
@@ -119,7 +122,7 @@ class CrashHandlerTest(PredatorTestCase):
         crash_identifiers = {})))
 
   def testScheduleNewAnalysisSkipsIfAlreadyCompleted(self):
-    findit_client = FinditForFracas(None)
+    findit_client = FinditForFracas(MOCK_GET_REPOSITORY)
     crash_data = DummyCrashData(client_id = findit_client.client_id)
     crash_identifiers = crash_data['crash_identifiers']
     analysis = findit_client.CreateAnalysis(crash_identifiers)

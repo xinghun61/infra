@@ -37,7 +37,7 @@ def StoreResults(crash, client_id, app_id, id_to_culprits, lock, verbose=False):
   """Stores findit result of crash into id_to_culprits dict."""
   crash_url = _FRACAS_FEEDBACK_URL_TEMPLATE % (app_id, crash['id'])
   try:
-    findit = FinditForClientID(client_id, LocalGitRepository())
+    findit = FinditForClientID(client_id, LocalGitRepository)
     stacktrace = findit._stacktrace_parser.Parse(
         crash['stack_trace'],
         ChromeDependencyFetcher(findit._repository).GetDependency(

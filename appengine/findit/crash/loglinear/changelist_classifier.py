@@ -18,10 +18,8 @@ from crash.stacktrace import Stacktrace
 class LogLinearChangelistClassifier(object):
   """A ``LogLinearModel``-based implementation of CL classification."""
 
-  def __init__(self, repository, get_repository, weights, top_n_frames=7,
-               top_n_suspects=3):
+  def __init__(self, get_repository, weights, top_n_frames=7, top_n_suspects=3):
     """Args:
-      repository (Repository): the Git repository for getting CLs to classify.
       get_repository (callable): a function from DEP urls to ``Repository``
         objects, so we can get changelogs and blame for each dep. Notably,
         to keep the code here generic, we make no assumptions about
@@ -36,8 +34,7 @@ class LogLinearChangelistClassifier(object):
       top_n_frames (int): how many frames of each callstack to look at.
       top_n_suspects (int): maximum number of suspects to return.
     """
-    self._repository = repository
-    self._dependency_fetcher = ChromeDependencyFetcher(self._repository)
+    self._dependency_fetcher = ChromeDependencyFetcher(get_repository)
     self._get_repository = get_repository
     self._top_n_frames = top_n_frames
     self._top_n_suspects = top_n_suspects
@@ -133,7 +130,7 @@ class LogLinearChangelistClassifier(object):
 
     dep_to_file_to_changelogs, ignore_cls = (
         changelist_classifier.GetChangeLogsForFilesGroupedByDeps(
-            regression_deps_rolls, stack_deps, self._repository))
+            regression_deps_rolls, stack_deps, self._get_repository))
     dep_to_file_to_stack_infos = (
         changelist_classifier.GetStackInfosForFilesGroupedByDeps(
             report.stacktrace, stack_deps))

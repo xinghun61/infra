@@ -11,7 +11,7 @@ from common import chrome_dependency_fetcher
 from common import deps_parser
 from common.dependency import Dependency
 from common.dependency import DependencyRoll
-from gae_libs.http import http_client_appengine
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs.gitiles.git_repository import GitRepository
 from libs.gitiles import gitiles_repository
 from libs.http import retry_http_client
@@ -36,13 +36,23 @@ class MockGitilesRepository(GitRepository):
     return self.RESPONSES.get(path, {}).get(revision, None)
 
 
+def MockGitilesRepositoryFactory(repo_url):
+  """A factory for creating ``MockGitilesRepository`` objects.
+
+  We have this as a standalone function not a classmethod on
+  MockGitilesRepository, so that it has the correct arity in the cplaces
+  where we need to call it.
+  """
+  return MockGitilesRepository(repo_url)
+
+
 class ChromiumDEPSTest(testing.AppengineTestCase):
   DEPS_GIT = '.DEPS.git'
   DEPS = 'DEPS'
   deps_downloader = chrome_dependency_fetcher.DEPSDownloader(
-      MockGitilesRepository())
+      MockGitilesRepositoryFactory)
   chrome_dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
-      MockGitilesRepository())
+      MockGitilesRepositoryFactory)
 
   def testUseDEPS_GIT(self):
     revision = 'abc'
@@ -127,11 +137,9 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     def _MockGet(*_):
       return 200, base64.b64encode('Dummy DEPS content')
 
-    self.mock(http_client_appengine.HttpClientAppengine, '_Get', _MockGet)
-
+    self.mock(HttpClientAppengine, '_Get', _MockGet)
     deps_downloader = chrome_dependency_fetcher.DEPSDownloader(
-        gitiles_repository.GitilesRepository(
-            http_client=http_client_appengine.HttpClientAppengine()))
+        gitiles_repository.GitilesRepository.Factory(HttpClientAppengine()))
     content = deps_downloader.Load(
         'http://chrome-internal', '50.0.1234.0', 'DEPS')
     self.assertEqual(content, 'Dummy DEPS content')

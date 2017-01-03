@@ -13,7 +13,9 @@ from crash.test.crash_pipeline_test import DummyCrashData
 from crash.test.predator_testcase import PredatorTestCase
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
-MOCK_REPOSITORY = None
+
+MOCK_GET_REPOSITORY = lambda _: None # pragma: no cover
+
 
 class UnsupportedClient(Findit): # pylint: disable=W0223
   # TODO(http://crbug.com/659346): this isn't being called for some reason.
@@ -27,7 +29,7 @@ class UnsupportedClient(Findit): # pylint: disable=W0223
     return {}
 
   def __init__(self, client_id=None):
-    super(UnsupportedClient, self).__init__(MOCK_REPOSITORY)
+    super(UnsupportedClient, self).__init__(MOCK_GET_REPOSITORY)
     if client_id is None:
       client_id = 'unsupported_client'
     self._client_id = client_id
@@ -37,7 +39,7 @@ class MockFindit(Findit):  # pylint: disable = W
   """Overwrite abstract method of Findit for testing."""
 
   def __init__(self):
-    super(MockFindit, self).__init__(MOCK_REPOSITORY)
+    super(MockFindit, self).__init__(MOCK_GET_REPOSITORY)
 
   @classmethod
   def _ClientID(cls):

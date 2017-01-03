@@ -38,27 +38,15 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
     self.assertTrue(self.local_repo.repo_url in
                     local_git_repository.LocalGitRepository._updated_repos)
 
-  def testRepoUrlSetter(self):
-    def _MockCloneOrUpdateRepoIfNeeded(*_):
-      if not hasattr(_MockCloneOrUpdateRepoIfNeeded, 'clone_or_update_count'):
-        _MockCloneOrUpdateRepoIfNeeded.clone_or_update_count = 0
-      _MockCloneOrUpdateRepoIfNeeded.clone_or_update_count += 1
-
-    repo = local_git_repository.LocalGitRepository()
-    self.mock(repo, '_CloneOrUpdateRepoIfNeeded',
-              _MockCloneOrUpdateRepoIfNeeded)
-
-    repo.repo_url = 'https://repo/path'
-    self.assertEqual(_MockCloneOrUpdateRepoIfNeeded.clone_or_update_count, 1)
-
-    repo.repo_url = 'https://repo/path'
-    self.assertEqual(_MockCloneOrUpdateRepoIfNeeded.clone_or_update_count, 1)
-
-    repo.repo_url = 'https://repo/path2'
-    self.assertEqual(_MockCloneOrUpdateRepoIfNeeded.clone_or_update_count, 2)
-
-    repo.repo_url = None
+  def testInit(self):
+    repo = local_git_repository.LocalGitRepository(None)
     self.assertIsNone(repo.repo_url)
+
+    repo_url = 'https://repo/path'
+    self.mock(local_git_repository.LocalGitRepository,
+        '_CloneOrUpdateRepoIfNeeded', lambda *_: None)
+    repo = local_git_repository.LocalGitRepository(repo_url)
+    self.assertEqual(repo.repo_url, repo_url)
 
   def testGetChangeLog(self):
     output = textwrap.dedent(
@@ -91,8 +79,8 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
         'https://repo/path/+/revision', None, None)
     self.mock(script_util, 'GetCommandOutput', lambda *_: output)
     # TODO: compare the objects directly, rather than via ToDict
-    self.assertEqual(self.local_repo.GetChangeLog('revision').ToDict(),
-                     expected_changelog.ToDict())
+    self.assertDictEqual(self.local_repo.GetChangeLog('revision').ToDict(),
+                         expected_changelog.ToDict())
 
   def testGetChangeLogNoneCommandOutput(self):
     self.mock(script_util, 'GetCommandOutput', lambda *_: None)

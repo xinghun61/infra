@@ -56,6 +56,8 @@ def ParseGitHash(revision):  # pragma: no cover
 # TODO(crbug.com/662540): Add unittests.
 def EnsureDirExists(path):  # pragma: no cover
   directory = os.path.dirname(path)
+  # TODO: this has a race condition. Should ``try: os.makedirs`` instead,
+  # discarding the error and returning if the directory already exists.
   if os.path.exists(directory):
     return
 

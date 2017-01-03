@@ -9,7 +9,7 @@ import logging
 from google.appengine.ext import ndb
 
 from common import appengine_util
-from common import chrome_dependency_fetcher
+from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from common import constants
 from crash.crash_report import CrashReport
 from libs import time_util
@@ -28,14 +28,21 @@ from model.crash.crash_config import CrashConfig
 # This class should be renamed to avoid confustion between Findit and Predator.
 # Think of a good name (e.g.'PredatorApp') for this class.
 class Findit(object):
-  def __init__(self, repository):
+  def __init__(self, get_repository):
     """
     Args:
-      repository (Repository): the Git repository for getting CLs to classify.
+      get_repository (callable): a function from DEP urls to ``Repository``
+        objects, so we can get changelogs and blame for each dep. Notably,
+        to keep the code here generic, we make no assumptions about
+        which subclass of ``Repository`` this function returns. Thus,
+        it is up to the caller to decide what class to return and handle
+        any other arguments that class may require (e.g., an http client
+        for ``GitilesRepository``).
     """
-    self._repository = repository
+    self._get_repository = get_repository
+    self._dep_fetcher = ChromeDependencyFetcher(get_repository)
     # TODO(http://crbug.com/659354): because self.client is volatile,
-    # we need some way of updating the Azelea instance whenever the
+    # we need some way of updating the Predator instance whenever the
     # config changes. How to do that cleanly?
     self._predator = None
     self._stacktrace_parser = None
@@ -209,11 +216,9 @@ class Findit(object):
     # Use up-to-date ``top_n`` in self.config to filter top n frames.
     stacktrace = self._stacktrace_parser.Parse(
         model.stack_trace,
-        chrome_dependency_fetcher.ChromeDependencyFetcher(
-            self._repository).GetDependency(
-                model.crashed_version,
-                model.platform),
-        model.signature, self.config.get('top_n'))
+        self._dep_fetcher.GetDependency(model.crashed_version, model.platform),
+        model.signature,
+        self.config.get('top_n'))
     if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s', model.stack_trace)
       return None

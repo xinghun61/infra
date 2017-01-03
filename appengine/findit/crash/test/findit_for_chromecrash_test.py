@@ -25,18 +25,18 @@ from crash.test.crash_pipeline_test import DummyCrashData
 from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
 from gae_libs.http.http_client_appengine import HttpClientAppengine
-from libs.gitiles import gitiles_repository
+from libs.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_status
 from model.crash.crash_analysis import CrashAnalysis
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
-MOCK_REPOSITORY = None
+MOCK_GET_REPOSITORY = lambda _: None # pragma: no cover
 
 class _FinditForChromeCrash(FinditForChromeCrash):  # pylint: disable = W
-  # We allow overriding the default MOCK_REPOSITORY because one unittest
+  # We allow overriding the default ``get_repository`` because one unittest
   # needs to.
-  def __init__(self, repository=MOCK_REPOSITORY):
-    super(_FinditForChromeCrash, self).__init__(repository)
+  def __init__(self, get_repository=MOCK_GET_REPOSITORY):
+    super(_FinditForChromeCrash, self).__init__(get_repository)
 
   @classmethod
   def _ClientID(cls): # pragma: no cover
@@ -66,13 +66,10 @@ class _FinditForChromeCrash(FinditForChromeCrash):  # pylint: disable = W
 
 def _FinditForFracas():
   """A helper to pass in the standard pipeline class."""
-  return FinditForFracas(MOCK_REPOSITORY)
+  return FinditForFracas(MOCK_GET_REPOSITORY)
 
 
 class FinditForChromeCrashTest(PredatorTestCase):
-
-  chrome_dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
-      gitiles_repository.GitilesRepository(HttpClientAppengine()))
 
   # TODO(wrengr): what was the purpose of this test? As written it's
   # just testing that mocking works. I'm guessing it was to check that
@@ -91,8 +88,8 @@ class FinditForChromeCrashTest(PredatorTestCase):
     # the client_id?
     analysis.client_id = CrashClient.FRACAS
 
-    findit_client = _FinditForChromeCrash(
-        gitiles_repository.GitilesRepository(HttpClientAppengine()))
+    findit_client = (
+        _FinditForChromeCrash(GitilesRepository.Factory(HttpClientAppengine())))
     self.assertIsNone(findit_client.FindCulprit(analysis))
 
 
@@ -277,7 +274,7 @@ class FinditForFracasTest(PredatorTestCase):
     crash_identifiers = {'signature': 'sig'}
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.result = {'other': 'data'}
-    findit_object = FinditForFracas(None)
+    findit_object = FinditForFracas(MOCK_GET_REPOSITORY)
     expected_processed_suspect = {
         'client_id': findit_object.client_id,
         'crash_identifiers': {'signature': 'sig'},

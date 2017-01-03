@@ -10,7 +10,7 @@ from common.dependency import DependencyRoll
 from common import chrome_dependency_fetcher
 from crash import changelist_classifier
 from crash.crash_report import CrashReport
-import crash.loglinear.changelist_classifier as loglinear_changelist_classifier
+from crash.loglinear.changelist_classifier import LogLinearChangelistClassifier
 from crash.loglinear.feature import ChangedFile
 from crash.loglinear.feature import FeatureValue
 from crash.suspect import AnalysisInfo
@@ -117,23 +117,11 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
         'TopFrameIndex': 1.,
     }
 
-    repository = GitilesRepository(self.GetMockHttpClient())
+    def MockGitilesRepositoryFactory(repo_url): # pragma: no cover
+      return GitilesRepository(self.GetMockHttpClient(), repo_url)
 
-    # TODO(crbug.com/677224): should replace this with an actual factory.
-    def MutateTheRepo(dep_url): # pragma: no cover
-      """A factory function for returning ``Repository`` objects.
-
-      The current definition captures the functionality of before
-      we factored out this factory method. That is, it's not really a
-      "factory" but rather mutates the main repo object in place. In
-      the future this should be changed to do the right thing instead.
-      """
-      repository.repo_url = dep_url
-      return repository
-
-    self.changelist_classifier = (
-        loglinear_changelist_classifier.LogLinearChangelistClassifier(
-            repository, MutateTheRepo, weights))
+    self.changelist_classifier = LogLinearChangelistClassifier(
+        MockGitilesRepositoryFactory, weights)
 
   def testAggregateChangedFilesAggreegates(self):
     """Test that ``AggregateChangedFiles`` does aggregate reasons per file.

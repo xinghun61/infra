@@ -43,8 +43,14 @@ class LocalGitRepository(GitRepository):
   def __init__(self, repo_url=None):
     self._host = None
     self._repo_path = None
-    self._repo_url = None
-    self.repo_url = repo_url
+    self._repo_url = repo_url
+    if repo_url is not None:
+      parsed_url = urlparse(repo_url)
+      self._host = parsed_url.netloc
+      # Remove the / in the front of path.
+      self._repo_path = parsed_url.path[1:]
+      self._CloneOrUpdateRepoIfNeeded()
+
     self.changelog_parser = local_git_parsers.GitChangeLogParser()
     self.changelogs_parser = local_git_parsers.GitChangeLogsParser()
     self.blame_parser = local_git_parsers.GitBlameParser()
@@ -63,22 +69,6 @@ class LocalGitRepository(GitRepository):
   def repo_url(self):
     """Url of remote repository which the local repo checks out from."""
     return self._repo_url
-
-  @repo_url.setter
-  def repo_url(self, repo_url):
-    if self._repo_url == repo_url:
-      return
-
-    self._repo_url = repo_url
-    if not self._repo_url:
-      return
-
-    parsed_url = urlparse(repo_url)
-    self._host = parsed_url.netloc
-    # Remove the / in the front of path.
-    self._repo_path = parsed_url.path[1:]
-
-    self._CloneOrUpdateRepoIfNeeded()
 
   def _CloneOrUpdateRepoIfNeeded(self):
     """Clones repo, or update it if it didn't got updated before."""

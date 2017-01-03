@@ -39,21 +39,33 @@ class GitilesRepository(GitRepository):
 
     self._http_client = http_client
 
+  @classmethod
+  def Factory(cls, http_client): # pragma: no cover
+    """Construct a factory for creating ``GitilesRepository`` instances.
+
+    Args:
+      http_client: the http client to be shared among all created repository
+        instances.
+
+    Returns:
+      A function from repo urls to ``GitilesRepository`` instances. All
+      instances produced by the returned function are novel (i.e., newly
+      allocated), but they all share the same underlying ``http_client``.
+    """
+    return lambda repo_url: cls(http_client, repo_url)
+
   @property
   def repo_url(self):
     return self._repo_url
 
-  @repo_url.setter
-  def repo_url(self, repo_url):
-    self._repo_url = repo_url
+  @property
+  def identifier(self): # pragma: no cover
+    """This is used by ``_DefaultKeyGenerator`` in cache_decorator.py."""
+    return self.repo_url
 
   @property
   def http_client(self):
     return self._http_client
-
-  @property
-  def identifier(self):
-    return self.repo_url
 
   def _SendRequestForJsonResponse(self, url, params=None):
     if params is None:  # pragma: no cover

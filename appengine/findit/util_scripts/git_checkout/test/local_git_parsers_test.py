@@ -122,7 +122,7 @@ class LocalGitParsersTest(unittest.TestCase):
         'c9cc182781484f9010f062859cda048afefefefe')
 
     changelog = local_git_parsers.GitChangeLogParser()(output, 'https://repo')
-    self.assertTrue(expected_changelog.ToDict(), changelog.ToDict())
+    self.assertDictEqual(expected_changelog.ToDict(), changelog.ToDict())
 
   def testGitChangeLogParserParseEmptyOutput(self):
     self.assertIsNone(local_git_parsers.GitChangeLogParser()(None, 'repo'))

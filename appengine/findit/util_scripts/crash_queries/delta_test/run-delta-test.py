@@ -139,6 +139,7 @@ def RunDeltaTest():
                             delta_result_prefix)
 
   # Check if delta results already existed.
+  # TODO: this code has race conditions for interacting with the file system.
   if os.path.exists(delta_csv_path):
     print 'Delta results existed in\n%s' % delta_csv_path
     if not os.path.exists(delta_path):

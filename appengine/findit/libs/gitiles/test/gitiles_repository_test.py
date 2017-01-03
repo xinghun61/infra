@@ -264,13 +264,6 @@ class GitRepositoryTest(TestCase):
     self.git_repo = gitiles_repository.GitilesRepository(
         self.http_client_for_git, self.repo_url)
 
-  def testGitRepositoryPropertySetters(self):
-    git_repo = gitiles_repository.GitilesRepository(self.http_client_for_git)
-    git_repo.repo_url = 'https://repo'
-    self.assertEqual(git_repo.repo_url, 'https://repo')
-    self.assertEqual(git_repo.http_client, self.http_client_for_git)
-    self.assertEqual(git_repo.identifier, 'https://repo')
-
   def testEndingSlashInRepoUrl(self):
     git_repo1 = gitiles_repository.GitilesRepository(
         self.http_client_for_git, self.repo_url)

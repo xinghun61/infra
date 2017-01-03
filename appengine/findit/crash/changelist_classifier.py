@@ -20,14 +20,11 @@ from libs.gitiles.diff import ChangeType
 
 
 class ChangelistClassifier(namedtuple('ChangelistClassifier',
-    ['repository', 'get_repository', 'top_n_results', 'confidence_threshold'])):
+    ['get_repository', 'top_n_results', 'confidence_threshold'])):
   __slots__ = ()
 
-  def __new__(cls, repository, get_repository, top_n_results=3,
-              confidence_threshold=0.999):
+  def __new__(cls, get_repository, top_n_results=3, confidence_threshold=0.999):
     """Args:
-      repository (Repository): the Git repository of the main project
-        we're trying to classify CLs from.
       get_repository (callable): a function from DEP urls to ``Repository``
         objects, so we can get changelogs and blame for each dep. Notably,
         to keep the code here generic, we make no assumptions about
@@ -40,7 +37,7 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
         the first suspect.
     """
     return super(cls, ChangelistClassifier).__new__(
-        cls, repository, get_repository, top_n_results, confidence_threshold)
+        cls, get_repository, top_n_results, confidence_threshold)
 
   def __str__(self): # pragma: no cover
     return ('%s(top_n_results=%d, confidence_threshold=%g)'
@@ -68,7 +65,7 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
     logging.info('ChangelistClassifier.__call__: Regression range %s:%s',
         last_good_version, first_bad_version)
 
-    dependency_fetcher = ChromeDependencyFetcher(self.repository)
+    dependency_fetcher = ChromeDependencyFetcher(self.get_repository)
 
     # We are only interested in the deps in crash stack (the callstack that
     # caused the crash).
@@ -96,7 +93,7 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
       regression_deps_rolls[dep_path] = dep_roll
 
     dep_to_file_to_changelogs, ignore_cls = GetChangeLogsForFilesGroupedByDeps(
-        regression_deps_rolls, stack_deps, self.repository)
+        regression_deps_rolls, stack_deps, self.get_repository)
     dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
         report.stacktrace, stack_deps)
 
@@ -138,7 +135,7 @@ def GetDepsInCrashStack(crash_stack, crash_deps):
 
 # TODO(katesonia): Remove the repository argument after refatoring cl committed.
 def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
-                                       repository):
+                                       get_repository):
   """Gets a dict containing files touched by changelogs for deps in stack_deps.
 
   Regression ranges for each dep is determined by regression_deps_rolls.
@@ -149,7 +146,13 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
       regression range.
     stack_deps (dict): Represents all the dependencies shown in
       the crash stack.
-    repository (Repository): Repository to get changelogs from.
+    get_repository (callable): a function from DEP urls to ``Repository``
+      objects, so we can get changelogs and blame for each dep. Notably,
+      to keep the code here generic, we make no assumptions about
+      which subclass of ``Repository`` this function returns. Thus,
+      it is up to the caller to decide what class to return and handle
+      any other arguments that class may require (e.g., an http client
+      for ``GitilesRepository``).
 
   Returns:
     A tuple (dep_to_file_to_changelogs, reverted_cls).
@@ -199,7 +202,7 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
     if not dep_roll:
       continue
 
-    repository.repo_url = dep_roll.repo_url
+    repository = get_repository(dep_roll.repo_url)
     changelogs = repository.GetChangeLogs(dep_roll.old_revision,
                                           dep_roll.new_revision)
 

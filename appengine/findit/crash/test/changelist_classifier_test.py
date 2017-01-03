@@ -121,25 +121,21 @@ DUMMY_REPORT = CrashReport(None, None, None, Stacktrace(DUMMY_CALLSTACKS,
 
 class ChangelistClassifierTest(CrashTestSuite):
 
+  @property
+  def _mock_http_gitiles_repo_factory(self):
+    # N.B., we must return a lambda rather than taking ``repo_url``
+    # as an additional argument to the method/property, to ensure that
+    # things have the right arity when this is eventually called. That
+    # is, we want a function of ``repo_url`` which closes over ``self``,
+    # rather than a function taking two arguments at once.
+    return lambda repo_url: GitilesRepository(
+        self.GetMockHttpClient(), repo_url)
+
   def setUp(self):
     super(ChangelistClassifierTest, self).setUp()
 
-    repository = GitilesRepository(self.GetMockHttpClient())
-
-    # TODO(crbug.com/677224): should replace this with an actual factory.
-    def MutateTheRepo(dep_url): # pragma: no cover
-      """A factory function for returning ``Repository`` objects.
-
-      The current definition captures the functionality of before
-      we factored out this factory method. That is, it's not really a
-      "factory" but rather mutates the main repo object in place. In
-      the future this should be changed to do the right thing instead.
-      """
-      repository.repo_url = dep_url
-      return repository
-
     self.changelist_classifier = changelist_classifier.ChangelistClassifier(
-        repository, MutateTheRepo, 7)
+        self._mock_http_gitiles_repo_factory, 7)
 
   def testSkipAddedAndDeletedRegressionRolls(self):
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
@@ -215,8 +211,9 @@ class ChangelistClassifierTest(CrashTestSuite):
 
     dep_file_to_changelogs, ignore_cls = (
         changelist_classifier.GetChangeLogsForFilesGroupedByDeps(
-            regression_deps_rolls, stack_deps,
-            GitilesRepository(self.GetMockHttpClient())))
+            regression_deps_rolls,
+            stack_deps,
+            self._mock_http_gitiles_repo_factory))
     dep_file_to_changelogs_json = defaultdict(lambda: defaultdict(list))
     for dep, file_to_changelogs in dep_file_to_changelogs.iteritems():
       for file_path, changelogs in file_to_changelogs.iteritems():
@@ -328,7 +325,7 @@ class ChangelistClassifierTest(CrashTestSuite):
 
     suspects = changelist_classifier.FindSuspects(
         dep_file_to_changelogs, dep_file_to_stack_infos, stack_deps,
-        lambda repo_url: GitilesRepository(self.GetMockHttpClient(), repo_url))
+        self._mock_http_gitiles_repo_factory)
     self.assertListEqual([suspect.ToDict() for suspect in suspects],
                          expected_suspects)
 
