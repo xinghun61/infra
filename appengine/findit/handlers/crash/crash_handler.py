@@ -10,10 +10,10 @@ from common import constants
 from common import appengine_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
-from common.http_client_appengine import HttpClientAppengine
 from crash import crash_pipeline
 from crash.crash_report import CrashReport
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 
 class CrashHandler(BaseHandler):

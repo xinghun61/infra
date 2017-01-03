@@ -7,7 +7,7 @@ import logging
 
 from google.appengine.api import urlfetch
 
-from common import auth_util
+from gae_libs.http import auth_util
 from libs.http.retry_http_client import RetryHttpClient
 
 

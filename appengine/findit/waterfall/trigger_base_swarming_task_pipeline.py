@@ -6,8 +6,8 @@ import copy
 import logging
 import time
 
-from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model import analysis_status
 from waterfall import monitoring
@@ -194,7 +194,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     if not self._NeedANewSwarmingTask(*call_args):
       return self._GetSwarmingTaskId(*call_args)
     assert tests
-    http_client = HttpClient()
+    http_client = HttpClientAppengine()
 
     # 0. Retrieve existing Swarming task ids for the given step.
     swarming_task_items = swarming_util.ListSwarmingTasksDataByTags(

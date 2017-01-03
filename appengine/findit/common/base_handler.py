@@ -10,8 +10,8 @@ from google.appengine.api import users
 import jinja2
 import webapp2
 
-from common import auth_util
 from common import constants
+from gae_libs.http import auth_util
 
 
 JINJA_ENVIRONMENT = jinja2.Environment(

@@ -13,7 +13,7 @@ from google.appengine.api.urlfetch_errors import DeadlineExceededError
 from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.api.urlfetch_errors import ConnectionClosedError
 
-from common.http_client_appengine import HttpClientAppengine as HttpClient
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs.http.retry_http_client import RetryHttpClient
 from model.wf_config import FinditConfig
 from model.wf_step import WfStep
@@ -175,7 +175,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
                      return_value=(None, {'code': 1, 'message': 'error'}))
   def testGetSwarmingTaskRequestError(self, _):
     self.assertIsNone(
-        swarming_util.GetSwarmingTaskRequest('task_id1', HttpClient()))
+        swarming_util.GetSwarmingTaskRequest('task_id1', HttpClientAppengine()))
 
   def testTriggerSwarmingTask(self):
     request = SwarmingTaskRequest()
@@ -233,7 +233,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   def testTriggerSwarmingTaskError(self, _):
     request = SwarmingTaskRequest()
     task_id, error = swarming_util.TriggerSwarmingTask(
-        request, HttpClient())
+        request, HttpClientAppengine())
     self.assertIsNone(task_id)
     self.assertIsNotNone(error)
 
@@ -589,7 +589,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
                      return_value=(None, {'code': 1, 'message': 'error'}))
   def testGetSwarmingTaskResultByIdError(self, _):
     data, error = swarming_util.GetSwarmingTaskResultById(
-        'task_id', HttpClient())
+        'task_id', HttpClientAppengine())
     self.assertEqual({}, data)
     self.assertIsNotNone(error)
 
@@ -645,7 +645,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
       RetryHttpClient, 'Get', side_effect=ConnectionClosedError())
   def testSendRequestToServerConnectionClosedError(self, _):
     content, error = swarming_util._SendRequestToServer(
-        'http://www.someurl.url', HttpClient())
+        'http://www.someurl.url', HttpClientAppengine())
     self.assertIsNone(content)
     self.assertEqual(
         error['code'], swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
@@ -654,7 +654,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
       RetryHttpClient, 'Get', side_effect=DeadlineExceededError())
   def testSendRequestToServerDeadlineExceededError(self, _):
     content, error = swarming_util._SendRequestToServer(
-        'http://www.someurl.com', HttpClient())
+        'http://www.someurl.com', HttpClientAppengine())
     self.assertIsNone(content)
     self.assertEqual(
         error['code'], swarming_util.URLFETCH_DEADLINE_EXCEEDED_ERROR)
@@ -662,7 +662,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(RetryHttpClient, 'Get', side_effect=DownloadError())
   def testSendRequestToServerDownloadError(self, _):
     content, error = swarming_util._SendRequestToServer(
-        'http://www.someurl.com', HttpClient())
+        'http://www.someurl.com', HttpClientAppengine())
     self.assertIsNone(content)
     self.assertEqual(error['code'], swarming_util.URLFETCH_DOWNLOAD_ERROR)
 
@@ -681,7 +681,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.UpdateUnitTestConfigSettings(
         'swarming_settings', override_swarming_settings)
     content, error = swarming_util._SendRequestToServer(
-        'http://www.someurl.com', HttpClient())
+        'http://www.someurl.com', HttpClientAppengine())
     self.assertIsNone(content)
     self.assertEqual(
         error['code'], swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)

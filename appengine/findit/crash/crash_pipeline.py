@@ -10,14 +10,14 @@ from crash import monitoring
 
 from common import appengine_util
 from common import pubsub_util
-from common.http_client_appengine import HttpClientAppengine
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
 from crash import findit_for_chromecrash
 from crash import findit_for_clusterfuzz
 from crash.type_enums import CrashClient
 from libs import time_util
-from gae_libs.gitiles import cached_gitiles_repository
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model import analysis_status
 
 
@@ -93,8 +93,7 @@ class CrashBasePipeline(BasePipeline):
     self._crash_identifiers = crash_identifiers
     self._findit = FinditForClientID(
         client_id,
-        cached_gitiles_repository.CachedGitilesRepository(
-            HttpClientAppengine()))
+        CachedGitilesRepository(HttpClientAppengine()))
 
   @property
   def client_id(self): # pragma: no cover

@@ -5,9 +5,9 @@
 import logging
 
 from common import chrome_dependency_fetcher
-from common.http_client_appengine import HttpClientAppengine
 from common.pipeline_wrapper import BasePipeline
-from gae_libs.gitiles import cached_gitiles_repository
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 
 def _GetOSPlatformName(master_name, builder_name):  # pragma: no cover
@@ -47,7 +47,7 @@ def _GetDependencies(chromium_revision, os_platform):
   """Returns the dependencies used by the specified chromium revision."""
   deps = {}
   dep_fetcher=chrome_dependency_fetcher.ChromeDependencyFetcher(
-      cached_gitiles_repository.CachedGitilesRepository(HttpClientAppengine()))
+      CachedGitilesRepository(HttpClientAppengine()))
   for path, dependency in dep_fetcher.GetDependency(
       chromium_revision, os_platform).iteritems():
     deps[path] = {
@@ -81,7 +81,7 @@ def _DetectDependencyRolls(change_logs, os_platform):
   """
   deps_rolls = {}
   dep_fetcher=chrome_dependency_fetcher.ChromeDependencyFetcher(
-      cached_gitiles_repository.CachedGitilesRepository(HttpClientAppengine()))
+      CachedGitilesRepository(HttpClientAppengine()))
   for revision, change_log in change_logs.iteritems():
     # Check DEPS roll only if the chromium DEPS file is changed by the CL.
     for touched_file in change_log['touched_files']:

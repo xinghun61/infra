@@ -9,9 +9,9 @@ import os
 import urllib
 import zlib
 
-from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import failure_type
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
@@ -433,7 +433,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     pipeline = DetectFirstFailurePipeline()
     pipeline._UpdateFirstFailureOnTestLevel(
         master_name, builder_name, build_number, step_name, failed_step,
-        HttpClient())
+        HttpClientAppengine())
 
     expected_failed_step = {
         'current_failure': 223,
@@ -479,7 +479,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     pipeline = DetectFirstFailurePipeline()
     pipeline._UpdateFirstFailureOnTestLevel(
         master_name, builder_name, build_number, step_name, failed_step,
-        HttpClient())
+        HttpClientAppengine())
 
     expected_failed_step = {
         'current_failure': 223,

@@ -11,7 +11,7 @@ import sys
 
 import google
 
-from common.http_client_appengine import HttpClientAppengine as HttpClient
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from waterfall import buildbot
 from waterfall import swarming_util
 
@@ -305,7 +305,7 @@ def FindMatchingWaterfallStep(build_step, test_name):
   wf_build_number = None
   wf_step_name = None
 
-  http_client = HttpClient()
+  http_client = HttpClientAppengine()
 
   wf_master_name, wf_builder_name, wf_build_number, wf_step_name, metadata = (
       _GetMatchingWaterfallBuildStep(build_step, http_client))

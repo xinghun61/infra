@@ -17,7 +17,7 @@ import re
 import urlparse
 
 from infra_api_clients.codereview import codereview
-from common.http_client_appengine import HttpClientAppengine
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 
 _RIETVELD_ISSUE_NUMBER_RE = re.compile('^/(\d+)/?.*')

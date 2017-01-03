@@ -16,7 +16,7 @@ from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.api.urlfetch_errors import ConnectionClosedError
 from google.appengine.ext import ndb
 
-from common import auth_util
+from gae_libs.http import auth_util
 from model.wf_step import WfStep
 from waterfall import monitoring
 from waterfall import waterfall_config

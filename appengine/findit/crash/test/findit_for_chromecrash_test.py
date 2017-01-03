@@ -6,7 +6,6 @@ import mock
 
 from common import chrome_dependency_fetcher
 from common.dependency import DependencyRoll
-from common.http_client_appengine import HttpClientAppengine
 from crash import chromecrash_parser
 from crash import detect_regression_range
 from crash import findit
@@ -25,6 +24,7 @@ from crash.stacktrace import Stacktrace
 from crash.test.crash_pipeline_test import DummyCrashData
 from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs.gitiles import gitiles_repository
 from model import analysis_status
 from model.crash.crash_analysis import CrashAnalysis

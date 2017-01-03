@@ -7,7 +7,7 @@ import datetime
 import logging
 import time
 
-from common.http_client_appengine import HttpClientAppengine as HttpClient
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from common.pipeline_wrapper import BasePipeline
 from model import analysis_status
 from waterfall import swarming_util
@@ -21,7 +21,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
   generate a dict for statuses for each test run.
   """
 
-  HTTP_CLIENT = HttpClient()
+  HTTP_CLIENT = HttpClientAppengine()
 
   def _CheckTestsRunStatuses(self, output_json, *_):
     """Checks result status for each test run and saves the numbers accordingly.

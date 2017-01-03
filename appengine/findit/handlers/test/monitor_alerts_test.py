@@ -8,8 +8,8 @@ import textwrap
 import webapp2
 
 from common import constants
-from common.http_client_appengine import RetryHttpClient
 from handlers import monitor_alerts
+from libs.http.retry_http_client import RetryHttpClient
 from waterfall import build_failure_analysis_pipelines
 from waterfall.test import wf_testcase
 

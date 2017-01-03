@@ -6,10 +6,10 @@ import base64
 import json
 
 from common import constants
-from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
 from common.waterfall import failure_type
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from waterfall import build_util
@@ -381,7 +381,7 @@ class DetectFirstFailurePipeline(BasePipeline):
   def _CheckFirstKnownFailureForSwarmingTests(
       self, master_name, builder_name, build_number, failed_steps, builds):
     """Uses swarming test results to update first failure info at test level."""
-    http_client = HttpClient()
+    http_client = HttpClientAppengine()
 
     # Identifies swarming tests and saves isolated data to them.
     result = swarming_util.GetIsolatedDataForFailedBuild(

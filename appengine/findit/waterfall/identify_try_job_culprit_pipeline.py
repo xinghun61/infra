@@ -8,7 +8,7 @@ import logging
 
 from google.appengine.ext import ndb
 
-from common.http_client_appengine import HttpClientAppengine as HttpClient
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from common.pipeline_wrapper import BasePipeline
 from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
@@ -24,7 +24,7 @@ from waterfall.send_notification_for_culprit_pipeline import (
 
 
 GIT_REPO = CachedGitilesRepository(
-    HttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
+    HttpClientAppengine(), 'https://chromium.googlesource.com/chromium/src.git')
 
 
 def _GetResultAnalysisStatus(analysis, result):

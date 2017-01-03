@@ -6,7 +6,9 @@ import os
 
 from testing_utils import testing
 
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
+from libs.gitiles.gitiles_repository import GitilesRepository
 from libs.http import retry_http_client
 
 

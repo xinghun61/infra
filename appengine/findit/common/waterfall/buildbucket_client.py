@@ -8,8 +8,8 @@ import collections
 import json
 import logging
 
-from common import auth_util
-from common.http_client_appengine import HttpClientAppengine as HttpClient
+from gae_libs.http import auth_util
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 
 # TODO: save these settings in datastore and create a role account.
@@ -147,7 +147,7 @@ def TriggerTryJobs(try_jobs):
   }
 
   for try_job in try_jobs:
-    status_code, content = HttpClient().Put(
+    status_code, content = HttpClientAppengine().Put(
         _BUILDBUCKET_PUT_GET_ENDPOINT,
         json.dumps(try_job.ToBuildbucketRequest()), headers=headers)
     if status_code == 200:  # pragma: no cover
@@ -182,7 +182,7 @@ def GetTryJobs(build_ids):
   }
 
   for build_id in build_ids:
-    status_code, content = HttpClient().Get(
+    status_code, content = HttpClientAppengine().Get(
         _BUILDBUCKET_PUT_GET_ENDPOINT + '/' + build_id, headers=headers)
     if status_code == 200:  # pragma: no cover
       json_results.append(json.loads(content))

@@ -8,9 +8,9 @@ import textwrap
 
 from google.appengine.ext import ndb
 
-from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from infra_api_clients.codereview.rietveld import Rietveld
 from libs import time_util
 from model import analysis_status as status
@@ -93,7 +93,8 @@ def _GetCulpritInfo(repo_name, revision):
   # TODO(stgao): get repo url at runtime based on the given repo name.
   # unused arg - pylint: disable=W0612,W0613
   repo = CachedGitilesRepository(
-      HttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
+      HttpClientAppengine(),
+      'https://chromium.googlesource.com/chromium/src.git')
   change_log = repo.GetChangeLog(revision)
   return change_log.commit_position, change_log.code_review_url
 

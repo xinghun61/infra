@@ -10,7 +10,7 @@ import sys
 
 import google
 
-from common.http_client_appengine import HttpClientAppengine as HttpClient
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model.flake.flake_analysis_request import BuildStep
 from waterfall import buildbot
 from waterfall import swarming_util
@@ -115,7 +115,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     super(StepMapperTest, self).setUp()
-    self.http_client = HttpClient()
+    self.http_client = HttpClientAppengine()
     self.master_name = 'm'
     self.builder_name = 'b'
     self.build_number = 123
@@ -166,12 +166,13 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_builder_name,
                      step_mapper._ProcessStringForLogDog(builder_name))
 
-  @mock.patch.object(HttpClient, 'Post', return_value=(404, 'Not Found'))
+  @mock.patch.object(HttpClientAppengine, 'Post',
+      return_value=(404, 'Not Found'))
   def testGetResponseFromLogDogError(self, _):
     self.assertIsNone(step_mapper._GetResponseFromLogDog(
         'url', 'path', self.http_client))
 
-  @mock.patch.object(HttpClient, 'Post', return_value=(200, 'Found'))
+  @mock.patch.object(HttpClientAppengine, 'Post', return_value=(200, 'Found'))
   def testGetResponseFromLogDog(self, _):
     self.assertEqual('Found', step_mapper._GetResponseFromLogDog(
         'url', 'path', self.http_client))

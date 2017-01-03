@@ -9,7 +9,7 @@ import logging
 
 from google.appengine.api.urlfetch import ResponseTooLargeError
 
-from common.http_client_appengine import HttpClientAppengine as HttpClient
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
 from model.wf_analysis import WfAnalysis
@@ -84,7 +84,7 @@ def _GetReliableTestFailureLog(gtest_result):
 class ExtractSignalPipeline(BasePipeline):
   """A pipeline to extract failure signals from each failed step."""
 
-  HTTP_CLIENT = HttpClient()
+  HTTP_CLIENT = HttpClientAppengine()
 
   # Limit stored log data to 1000 KB, because a datastore entity has a size
   # limit of 1 MB. And Leave 24 KB for other possible usage later.

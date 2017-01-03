@@ -2,10 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common.http_client_appengine import HttpClientAppengine as HttpClient
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 
 class PullChangelogPipeline(BasePipeline):
@@ -13,7 +13,8 @@ class PullChangelogPipeline(BasePipeline):
 
   # TODO: for files in dependencies(blink, v8, skia, etc), use blame first.
   GIT_REPO = CachedGitilesRepository(
-      HttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
+      HttpClientAppengine(),
+      'https://chromium.googlesource.com/chromium/src.git')
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, failure_info):
