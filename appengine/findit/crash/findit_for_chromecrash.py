@@ -54,10 +54,23 @@ class FinditForChromeCrash(Findit):
     component_classifier_config = CrashConfig.Get().component_classifier
 
     self._stacktrace_parser = ChromeCrashParser()
+
+    # TODO(crbug.com/677224): should replace this with an actual factory.
+    def MutateTheRepo(dep_url): # pragma: no cover
+      """A factory function for returning ``Repository`` objects.
+
+      The current definition captures the functionality of before
+      we factored out this factory method. That is, it's not really a
+      "factory" but rather mutates the main repo object in place. In
+      the future this should be changed to do the right thing instead.
+      """
+      repository.repo_url = dep_url
+      return repository
+
     # The top_n is the number of components we should return as
     # components suggestion results.
     self._predator = Predator(
-        cl_classifier = ChangelistClassifier(repository = repository),
+        cl_classifier = ChangelistClassifier(repository, MutateTheRepo),
         component_classifier = ComponentClassifier(
             [Component(component_name, path_regex, function_regex)
             for path_regex, function_regex, component_name

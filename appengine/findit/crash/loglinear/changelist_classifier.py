@@ -5,7 +5,7 @@
 import logging
 import math
 
-from common import chrome_dependency_fetcher
+from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from crash import changelist_classifier
 from crash.loglinear.changelist_features import min_distance
 from crash.loglinear.changelist_features import top_frame_index
@@ -18,9 +18,17 @@ from crash.stacktrace import Stacktrace
 class LogLinearChangelistClassifier(object):
   """A ``LogLinearModel``-based implementation of CL classification."""
 
-  def __init__(self, repository, weights, top_n_frames=7, top_n_suspects=3):
+  def __init__(self, repository, get_repository, weights, top_n_frames=7,
+               top_n_suspects=3):
     """Args:
       repository (Repository): the Git repository for getting CLs to classify.
+      get_repository (callable): a function from DEP urls to ``Repository``
+        objects, so we can get changelogs and blame for each dep. Notably,
+        to keep the code here generic, we make no assumptions about
+        which subclass of ``Repository`` this function returns. Thus,
+        it is up to the caller to decide what class to return and handle
+        any other arguments that class may require (e.g., an http client
+        for ``GitilesRepository``).
       weights (dict of float): the weights for the features. The keys of
         the dictionary are the names of the feature that weight is
         for. We take this argument as a dict rather than as a list so that
@@ -29,6 +37,8 @@ class LogLinearChangelistClassifier(object):
       top_n_suspects (int): maximum number of suspects to return.
     """
     self._repository = repository
+    self._dependency_fetcher = ChromeDependencyFetcher(self._repository)
+    self._get_repository = get_repository
     self._top_n_frames = top_n_frames
     self._top_n_suspects = top_n_suspects
 
@@ -103,14 +113,12 @@ class LogLinearChangelistClassifier(object):
     # doing redundant work creating it.
     stack_deps = changelist_classifier.GetDepsInCrashStack(
         report.stacktrace.crash_stack,
-        chrome_dependency_fetcher.ChromeDependencyFetcher(
-            self._repository).GetDependency(report.crashed_version,
-                                            report.platform))
+        self._dependency_fetcher.GetDependency(
+            report.crashed_version, report.platform))
 
     # Get dep and file to changelogs, stack_info and blame dicts.
-    dep_rolls = chrome_dependency_fetcher.ChromeDependencyFetcher(
-        self._repository).GetDependencyRollsDict(
-            last_good_version, first_bad_version, report.platform)
+    dep_rolls = self._dependency_fetcher.GetDependencyRollsDict(
+        last_good_version, first_bad_version, report.platform)
 
     # Regression of a dep added/deleted (old_revision/new_revision is None) can
     # not be known for sure and this case rarely happens, so just filter them
@@ -135,7 +143,7 @@ class LogLinearChangelistClassifier(object):
         dep_to_file_to_changelogs,
         dep_to_file_to_stack_infos,
         stack_deps,
-        self._repository,
+        self._get_repository,
         ignore_cls)
     if suspects is None:
       return []

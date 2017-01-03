@@ -117,9 +117,23 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
         'TopFrameIndex': 1.,
     }
 
+    repository = GitilesRepository(self.GetMockHttpClient())
+
+    # TODO(crbug.com/677224): should replace this with an actual factory.
+    def MutateTheRepo(dep_url): # pragma: no cover
+      """A factory function for returning ``Repository`` objects.
+
+      The current definition captures the functionality of before
+      we factored out this factory method. That is, it's not really a
+      "factory" but rather mutates the main repo object in place. In
+      the future this should be changed to do the right thing instead.
+      """
+      repository.repo_url = dep_url
+      return repository
+
     self.changelist_classifier = (
         loglinear_changelist_classifier.LogLinearChangelistClassifier(
-          GitilesRepository(self.GetMockHttpClient()), weights))
+            repository, MutateTheRepo, weights))
 
   def testAggregateChangedFilesAggreegates(self):
     """Test that ``AggregateChangedFiles`` does aggregate reasons per file.

@@ -6,7 +6,7 @@ import logging
 from collections import defaultdict
 from collections import namedtuple
 
-from common import chrome_dependency_fetcher
+from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from crash import crash_util
 from crash.suspect import StackInfo
 from crash.suspect import Suspect
@@ -20,18 +20,27 @@ from libs.gitiles.diff import ChangeType
 
 
 class ChangelistClassifier(namedtuple('ChangelistClassifier',
-    ['repository', 'top_n_results', 'confidence_threshold'])):
+    ['repository', 'get_repository', 'top_n_results', 'confidence_threshold'])):
   __slots__ = ()
 
-  def __new__(cls, repository, top_n_results=3, confidence_threshold=0.999):
+  def __new__(cls, repository, get_repository, top_n_results=3,
+              confidence_threshold=0.999):
     """Args:
-      repository (Repository): the Git repository for getting CLs to classify.
+      repository (Repository): the Git repository of the main project
+        we're trying to classify CLs from.
+      get_repository (callable): a function from DEP urls to ``Repository``
+        objects, so we can get changelogs and blame for each dep. Notably,
+        to keep the code here generic, we make no assumptions about
+        which subclass of ``Repository`` this function returns. Thus,
+        it is up to the caller to decide what class to return and handle
+        any other arguments that class may require (e.g., an http client
+        for ``GitilesRepository``).
       top_n_results (int): maximum number of results to return.
       confidence_threshold (float): In [0,1], above which we only return
         the first suspect.
     """
     return super(cls, ChangelistClassifier).__new__(
-        cls, repository, top_n_results, confidence_threshold)
+        cls, repository, get_repository, top_n_results, confidence_threshold)
 
   def __str__(self): # pragma: no cover
     return ('%s(top_n_results=%d, confidence_threshold=%g)'
@@ -59,6 +68,8 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
     logging.info('ChangelistClassifier.__call__: Regression range %s:%s',
         last_good_version, first_bad_version)
 
+    dependency_fetcher = ChromeDependencyFetcher(self.repository)
+
     # We are only interested in the deps in crash stack (the callstack that
     # caused the crash).
     # TODO(wrengr): we may want to receive the crash deps as an argument,
@@ -66,14 +77,12 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
     # doing redundant work creating it.
     stack_deps = GetDepsInCrashStack(
         report.stacktrace.crash_stack,
-        chrome_dependency_fetcher.ChromeDependencyFetcher(
-            self.repository).GetDependency(report.crashed_version,
-                                           report.platform))
+        dependency_fetcher.GetDependency(
+            report.crashed_version, report.platform))
 
     # Get dep and file to changelogs, stack_info and blame dicts.
-    dep_rolls = chrome_dependency_fetcher.ChromeDependencyFetcher(
-        self.repository).GetDependencyRollsDict(
-            last_good_version, first_bad_version, report.platform)
+    dep_rolls = dependency_fetcher.GetDependencyRollsDict(
+        last_good_version, first_bad_version, report.platform)
 
     # Regression of a dep added/deleted (old_revision/new_revision is None) can
     # not be known for sure and this case rarely happens, so just filter them
@@ -91,11 +100,9 @@ class ChangelistClassifier(namedtuple('ChangelistClassifier',
     dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
         report.stacktrace, stack_deps)
 
-    # TODO: argument order is inconsistent from others. Repository should
-    # be last argument.
     suspects = FindSuspects(dep_to_file_to_changelogs,
                             dep_to_file_to_stack_infos,
-                            stack_deps, self.repository, ignore_cls)
+                            stack_deps, self.get_repository, ignore_cls)
     if not suspects:
       return []
 
@@ -257,7 +264,7 @@ def GetStackInfosForFilesGroupedByDeps(stacktrace, stack_deps):
 # TODO(katesonia): Remove the repository argument after refatoring cl committed.
 def FindSuspects(dep_to_file_to_changelogs,
                  dep_to_file_to_stack_infos,
-                 stack_deps, repository,
+                 stack_deps, get_repository,
                  ignore_cls=None):
   """Finds suspects by matching stacktrace and changelogs in regression range.
 
@@ -271,7 +278,8 @@ def FindSuspects(dep_to_file_to_changelogs,
       frames, one stack info consist of a StackFrame and the callstack priority
       of it.
     stack_deps (dict): Represents all the dependencies shown in the crash stack.
-    repository (Repository): Repository to get changelogs and blame from.
+    get_repository (callable): a function from urls to ``Repository``
+      objects, so we can get changelogs and blame for each dep.
     ignore_cls (set): Set of reverted revisions.
 
   Returns:
@@ -287,7 +295,7 @@ def FindSuspects(dep_to_file_to_changelogs,
         if not crash_util.IsSameFilePath(crashed_file_path, touched_file_path):
           continue
 
-        repository.repo_url = stack_deps[dep].repo_url
+        repository = get_repository(stack_deps[dep].repo_url)
         blame = repository.GetBlame(touched_file_path,
                                     stack_deps[dep].revision)
 
