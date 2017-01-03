@@ -50,10 +50,9 @@
       element._alertsTimes = {
         test: new Date()
       };
-      assert.equal(
-          element.$$('.last-updated').textContent.trim(),
-          'Last updated: Unknown');
 
+      expect(element.$.lastUpdatedTime).be.hidden;
+      expect(element.$.lastUpdatedUnknown).be.visible;
       expect(element.$.fetchAlertsError).be.hidden;
     });
 

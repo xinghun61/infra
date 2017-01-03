@@ -25,6 +25,8 @@
 <link rel="import" href="../elements/pages/som-help.html">
 <link rel="import" href="../elements/pages/som-rotation-calendar.html">
 
+<script src="../bower_components/moment/min/moment.min.js"></script>
+<script src="../bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
 <dom-module id="som-app">
   <template>
     <style>
@@ -45,6 +47,9 @@
         --paper-header-panel-body: {
           background: #eee;
         }
+      }
+      span.line {
+        display: inline-block;
       }
       h2, h3 {
         font-weight: bold;
@@ -180,8 +185,11 @@
           <div class="layout horizontal flex">
             <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
             <div class="flex title" id="tree-title">[[_tree]]</div>
-            <div hidden$="[[_lastUpdate]]" class="flex last-updated">
-              Last updated: [[_lastUpdated]]
+            <div class="flex last-updated">
+              Last updated: <span hidden$="[[!_lastUpdated]]" id="lastUpdatedTime">
+                <span class="line">[[_lastUpdated.time]]</span>
+                <span class="line">([[_lastUpdated.relativeTime]])</span>
+              </span><span hidden$="[[_lastUpdated]]" id="lastUpdatedUnknown">Unknown</span>
             </div>
             <div class="horizontal user-name">
               [[user]] (<a href$="[[logoutUrl]]">Log Out </a>)
@@ -601,10 +609,13 @@
 
         // Assume it takes less than 1 millisecond to calculate that.
         if (Date.now() - oldestDate > 1) {
-          return new Date(oldestDate * 1000).toLocaleString(false,
-            {timeZoneName: 'short'});
+          let date = moment(oldestDate * 1000).tz('America/Los_Angeles');
+          return {
+            'time': date.format('M/DD/YYYY, h:mm a z'),
+            'relativeTime': date.fromNow()
+          };
         }
-        return 'Unknown';
+        return null;
       },
 
       _alertsGroupsChanged: function(alertsGroups) {
