@@ -32,6 +32,12 @@
       [end]
       </th>
     [end]
+    [if-any viewed_user]
+      <th class="padded">
+        User: [viewed_user.display_name]
+        [if-any viewed_user_pb.is_site_admin_bool]<i>(Administrator)</i>[end]
+      </th>
+    [end]
     [if-any hotlist_id]
       <th class="toptabs padded">
       <a href="[viewed_user.profile_url]hotlists/[hotlist.name]" title="[hotlist_id]"
@@ -42,13 +48,6 @@
       </th>
     [end]
     [#TODO(jojwang): urls here wouldn't work for friendly url. consider creating hotlist_url variabl later]
-
-    [if-any viewed_user]
-      <th class="padded">
-        User: [viewed_user.display_name]
-        [if-any viewed_user_pb.is_site_admin_bool]<i>(Administrator)</i>[end]
-      </th>
-    [end]
 
     <td width="100%" id="userbar">
       [include "user-bar.ezt"]
