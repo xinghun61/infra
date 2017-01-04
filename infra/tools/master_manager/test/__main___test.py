@@ -10,10 +10,10 @@ from infra_libs import ts_mon
 
 import infra.tools.master_manager.__main__ as mm
 
-class TestMasterManager(unittest.TestCase):
+class MasterManagerTest(unittest.TestCase):
 
   def setUp(self):
-    super(TestMasterManager, self).setUp()
+    super(MasterManagerTest, self).setUp()
     ts_mon.reset_for_unittest()
 
   @mock.patch('subprocess.check_call', autospec=True)
@@ -36,6 +36,48 @@ class TestMasterManager(unittest.TestCase):
         '--hostname', 'master.host.name', '--prod']))
     self.assertEqual(1, check_call_mock.call_count)
     self.assertEqual(2, mm.run_count.get(
-        fields={'result': 'success', 'action': '_make_start'},
-        target_fields={'job_name': 'master.dir'}))
-                                         
+        fields={'result': 'success', 'action': '_make_start'}))
+
+
+class ParseArgsTest(unittest.TestCase):
+  def setUp(self):
+    self.mock_logs = (
+        mock.patch('infra_libs.logs.process_argparse_options').start())
+    self.mock_ts_mon = (
+        mock.patch('infra_libs.ts_mon.process_argparse_options').start())
+
+  def tearDown(self):
+    mock.patch.stopall()
+
+  def test_ts_mon_task_job_name(self):
+    args = mm.parse_args(['/foo/bar/baz', 'running', '123'])
+    self.assertEqual('baz', args.ts_mon_task_job_name)
+
+    self.assertEqual(1, self.mock_ts_mon.call_count)
+    args = self.mock_ts_mon.call_args[0][0]
+    self.assertEqual('baz', args.ts_mon_task_job_name)
+
+  def test_explicit_ts_mon_task_job_name(self):
+    args = mm.parse_args(['--ts-mon-task-job-name', 'wibble',
+                          '/foo/bar/baz', 'running', '123'])
+    self.assertEqual('wibble', args.ts_mon_task_job_name)
+
+    self.assertEqual(1, self.mock_ts_mon.call_count)
+    args = self.mock_ts_mon.call_args[0][0]
+    self.assertEqual('wibble', args.ts_mon_task_job_name)
+
+  def test_list_all_states(self):
+    mm.parse_args(['--list-all-states'])  # Should not error
+    self.assertFalse(self.mock_ts_mon.called)
+
+  def test_missing_directory(self):
+    with self.assertRaises(SystemExit):
+      mm.parse_args(['', 'running', '123'])
+
+  def test_missing_state(self):
+    with self.assertRaises(SystemExit):
+      mm.parse_args(['/foo/bar/baz', '', '123'])
+
+  def test_missing_transition_time(self):
+    with self.assertRaises(SystemExit):
+      mm.parse_args(['/foo/bar/baz', 'running', '0'])

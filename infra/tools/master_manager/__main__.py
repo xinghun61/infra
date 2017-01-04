@@ -78,16 +78,20 @@ def parse_args(argv):
   )
 
   args = parser.parse_args(argv)
-  logs.process_argparse_options(args)
-  ts_mon.process_argparse_options(args)
 
-  if not args.list_all_states:  # pragma: no cover
+  if not args.list_all_states:
     if not args.directory:
       parser.error('A master directory must be specified.')
     if not args.transition_time_utc:
       parser.error('A transition time must be specified.')
-    if not args.desired_state:
-      parser.error('A desired state must be specified.')
+
+    if args.ts_mon_task_job_name == 'unset':
+      abs_master_directory = os.path.abspath(args.directory)
+      args.ts_mon_task_job_name = abs_master_directory.split('/')[-1]
+
+    logs.process_argparse_options(args)
+    ts_mon.process_argparse_options(args)
+
   return args
 
 
@@ -105,27 +109,16 @@ def run_state_machine_pass(
     logger, matchlist, abs_master_directory, emergency_file, desired_state,
     transition_time_utc, enable_gclient_sync, prod, connection_timeout,
     hostname, builder_filters):
-  def metric_kwargs(result, action='none'):
-    return {
-        'fields': {
-            'result': result,
-            'action': action,
-        },
-        'target_fields': {
-            'job_name': abs_master_directory.split('/')[-1],
-        },
-    }
-  
   if os.path.exists(os.path.join(
       abs_master_directory, emergency_file)):  # pragma: no cover
     logger.error('%s detected in %s, aborting!',
         emergency_file, abs_master_directory)
-    run_count.increment(**metric_kwargs('failure'))
+    run_count.increment(fields={'result': 'failure', 'action': 'none'})
     return 1
 
   if not master_hostname_is_valid(
       hostname, abs_master_directory, logger):  # pragma: no cover
-    run_count.increment(**metric_kwargs('failure'))
+    run_count.increment(fields={'result': 'failure', 'action': 'none'})
     return 1
 
   evidence = buildbot_state.collect_evidence(
@@ -165,7 +158,7 @@ def run_state_machine_pass(
   else:  # pragma: no cover
     logger.info('no action to be taken.')
 
-  run_count.increment(**metric_kwargs('success', action_name))
+  run_count.increment(fields={'result': 'success', 'action': action_name})
   return 0
 
 
