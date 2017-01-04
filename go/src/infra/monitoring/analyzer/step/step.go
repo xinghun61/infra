@@ -18,7 +18,7 @@ var (
 		basicAnalyzer,
 		compileFailureAnalyzer,
 		testFailureAnalyzer,
-		deviceAnalyzer,
+		botAnalyzer,
 	}
 )
 

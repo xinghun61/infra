@@ -5,6 +5,7 @@
 package step
 
 import (
+	"fmt"
 	"net/url"
 	"testing"
 
@@ -47,7 +48,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 
 	Convey("test analyze", t, func() {
 		Convey("no failures", func() {
-			reasons, err := deviceAnalyzer(nil, makeSteps([]messages.Step{}))
+			reasons, err := botAnalyzer(nil, makeSteps([]messages.Step{}))
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{})
@@ -61,7 +62,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := deviceAnalyzer(nil, makeSteps(steps))
+			reasons, err := botAnalyzer(nil, makeSteps(steps))
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
@@ -85,7 +86,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := deviceAnalyzer(nil, makeSteps(steps))
+			reasons, err := botAnalyzer(nil, makeSteps(steps))
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
@@ -109,14 +110,14 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := deviceAnalyzer(nil, makeSteps(steps))
+			reasons, err := botAnalyzer(nil, makeSteps(steps))
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
 				nil,
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
 			})
 		})
@@ -150,22 +151,22 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := deviceAnalyzer(nil, makeSteps(steps))
+			reasons, err := botAnalyzer(nil, makeSteps(steps))
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
 				nil,
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
 			})
 		})
@@ -203,26 +204,26 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := deviceAnalyzer(nil, makeSteps(steps))
+			reasons, err := botAnalyzer(nil, makeSteps(steps))
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
 				nil,
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
 			})
 		})
@@ -260,26 +261,26 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := deviceAnalyzer(nil, makeSteps(steps))
+			reasons, err := botAnalyzer(nil, makeSteps(steps))
 
 			So(err, ShouldBeNil)
 			So(reasons, ShouldResemble, []messages.ReasonRaw{
 				nil,
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
 			})
 		})
@@ -327,7 +328,7 @@ func TestDeviceAnalyzer(t *testing.T) {
 				},
 			}
 
-			reasons, err := deviceAnalyzer(nil, makeSteps(steps))
+			reasons, err := botAnalyzer(nil, makeSteps(steps))
 
 			So(err, ShouldBeNil)
 			// only 5 reasons, because ok_test passed.
@@ -335,17 +336,17 @@ func TestDeviceAnalyzer(t *testing.T) {
 				nil,
 				nil,
 				nil,
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
-				&deviceFailure{
+				&botFailure{
 					Builder: "fake_builder",
-					Devices: []int{4},
+					Bots:    []string{"4"},
 				},
 			})
 		})
@@ -355,14 +356,14 @@ func TestDeviceAnalyzer(t *testing.T) {
 func TestPerfDeviceFailure(t *testing.T) {
 	Convey("test", t, func() {
 		Convey("devicesStr", func() {
-			p := &deviceFailure{
-				Devices: []int{1},
+			p := &botFailure{
+				Bots: []string{"1"},
 			}
 			Convey("one device", func() {
 				So(p.devicesStr(), ShouldEqual, "1")
 			})
 
-			p.Devices = append(p.Devices, 2)
+			p.Bots = append(p.Bots, "2")
 
 			Convey("multiple devices", func() {
 				So(p.devicesStr(), ShouldEqual, "1, 2")
@@ -381,31 +382,31 @@ func TestGetDeviceAffinity(t *testing.T) {
 			}
 
 			Convey("non perf step", func() {
-				rec, _, err := getDeviceAffinity(step)
-				So(err, ShouldBeNil)
-				So(rec, ShouldBeFalse)
+				res := getBotID(step)
+				So(res, ShouldEqual, "")
 			})
 
-			Convey("perf step", func() {
-				step.Text = []string{
-					"Device Affinity: 1",
-				}
-				rec, num, err := getDeviceAffinity(step)
-				So(err, ShouldBeNil)
-				So(rec, ShouldBeTrue)
-				So(num, ShouldEqual, 1)
-
-				Convey("with br", func() {
-					// Copied from buildbot logs
+			for title, prefix := range map[string]string{
+				"perf android": "Device Affinity:",
+				"perf desktop": "Bot id:",
+			} {
+				Convey(fmt.Sprintf("%s step", title), func() {
 					step.Text = []string{
-						"smoothness.key_silk_cases.reference<br>smoothness.key_silk_cases.reference<br><div class=\"BuildResultInfo\"><br></div><br><br/>Device Affinity: 4<br/>",
+						fmt.Sprintf("%s foo", prefix),
 					}
-					rec, num, err := getDeviceAffinity(step)
-					So(err, ShouldBeNil)
-					So(rec, ShouldBeTrue)
-					So(num, ShouldEqual, 4)
+					res := getBotID(step)
+					So(res, ShouldEqual, "foo")
+
+					Convey("with br", func() {
+						// Copied from buildbot logs
+						step.Text = []string{
+							fmt.Sprintf("smoothness.key_silk_cases.reference<br>smoothness.key_silk_cases.reference<br><div class=\"BuildResultInfo\"><br></div><br><br/>%s bar<br/>", prefix),
+						}
+						res := getBotID(step)
+						So(res, ShouldEqual, "bar")
+					})
 				})
-			})
+			}
 		})
 	})
 }
