@@ -20,7 +20,7 @@ def _BuildDataNeedUpdating(build):
   return (not build.data or (
       not build.completed and (
           time_util.GetUTCNow() - build.last_crawled_time
-              ).total_seconds() >= 300))
+          ).total_seconds() >= 300))
 
 
 def DownloadBuildData(master_name, builder_name, build_number):
@@ -55,6 +55,26 @@ def DownloadBuildData(master_name, builder_name, build_number):
     build.put()
 
   return build
+
+
+def GetBuildInfo(master_name, builder_name, build_number):
+  """Gets build info given a master, builder, and build number.
+
+  Args:
+    master_name (str): The name of the master.
+    builder_name (str): The name of the builder.
+    build_number (int): The build number.
+
+  Returns:
+    Build information as an instance of BuildInfo.
+  """
+  build = DownloadBuildData(master_name, builder_name, build_number)
+
+  if not build.data:
+    return None
+
+  return buildbot.ExtractBuildInfo(
+      master_name, builder_name, build_number, build.data)
 
 
 def GetBuildEndTime(master_name, builder_name, build_number):

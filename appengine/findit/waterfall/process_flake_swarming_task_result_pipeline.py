@@ -8,35 +8,8 @@ from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util
-from waterfall import buildbot
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
-
-
-def _GetCommitPositionAndGitHash(master_name, builder_name, build_number):
-  """Gets the commit position and git hash of a build.
-
-  Args:
-    master_name (str): The name of the master.
-    builder_name (str): The name of the builder.
-    build_number (int): The build number.
-
-  Returns:
-    commit_position (int), git_hash (str): The git commit position corresponding
-      to the last commit in the build, and the git hash itself.
-  """
-  if build_number < 0:
-    return None, None
-
-  build = build_util.DownloadBuildData(master_name, builder_name, build_number)
-
-  if not build.data:
-    return None, None
-
-  build_info = buildbot.ExtractBuildInfo(
-      master_name, builder_name, build_number, build.data)
-
-  return build_info.commit_position, build_info.chromium_revision
 
 
 class ProcessFlakeSwarmingTaskResultPipeline(
@@ -104,17 +77,18 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     data_point.pass_rate = pass_rate
     data_point.task_id = flake_swarming_task.task_id
 
-    # Include git commit position information about each build that was run.
+    # Include git information about each build that was run.
     if build_number > 0:
-      previous_commit, previous_build_git_hash = _GetCommitPositionAndGitHash(
+      previous_build = build_util.GetBuildInfo(
           master_name, builder_name, build_number - 1)
-      data_point.previous_build_commit_position = previous_commit
-      data_point.previous_build_git_hash = previous_build_git_hash
+      data_point.previous_build_commit_position = previous_build.commit_position
+      data_point.previous_build_git_hash = previous_build.chromium_revision
 
-    commit_position, git_hash = _GetCommitPositionAndGitHash(
+    build_info = build_util.GetBuildInfo(
         master_name, builder_name, build_number)
-    data_point.commit_position = commit_position
-    data_point.git_hash = git_hash
+    data_point.commit_position = build_info.commit_position
+    data_point.git_hash = build_info.chromium_revision
+    data_point.blame_list = build_info.blame_list
 
     master_flake_analysis.data_points.append(data_point)
 

@@ -23,6 +23,7 @@ class DataPoint(ndb.Model):
   git_hash = ndb.StringProperty(indexed=False)
   previous_build_commit_position = ndb.IntegerProperty(indexed=False)
   previous_build_git_hash = ndb.StringProperty(indexed=False)
+  blame_list = ndb.StringProperty(repeated=True)
 
 
 class MasterFlakeAnalysis(

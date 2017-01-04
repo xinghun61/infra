@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 
 import datetime
-
-from testing_utils import testing
+import json
+import mock
 
 from model.wf_build import WfBuild
 from waterfall import build_util
@@ -197,3 +197,29 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   def testGetBuildInfoFromId(self):
     build_id = 'm/b/1'
     self.assertEqual(build_util.GetBuildInfoFromId(build_id), ['m', 'b', '1'])
+
+  @mock.patch.object(build_util, 'DownloadBuildData')
+  def testGetBuildInfo(self, mocked_fn):
+    build = WfBuild.Create('m', 'b', 123)
+    build.data = json.dumps({
+        'properties': [
+            ['got_revision', 'a_git_hash'],
+            ['got_revision_cp', 'refs/heads/master@{#12345}']
+        ],
+    })
+    mocked_fn.return_value = build
+
+    build_info = build_util.GetBuildInfo('m', 'b', 123)
+    self.assertEqual(build_info.chromium_revision, 'a_git_hash')
+
+  @mock.patch.object(build_util, 'DownloadBuildData')
+  def testGetBuildInfoBuildNotAvailable(self, mocked_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.data = {}
+    mocked_fn.return_value = build
+
+    self.assertIsNone(
+        build_util.GetBuildInfo(master_name, builder_name, build_number))
