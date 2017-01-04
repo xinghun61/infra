@@ -4,7 +4,7 @@
 [if-any read_only cant_administer_hotlist][include "read-only-hotlist-details-page.ezt"]
 [else]
 
-<form action="details.do" method="POST" autocomplete="off" enctype="multipart/form-data">
+<form id="edithotlist" action="details.do" method="POST" autocomplete="off" enctype="multipart/form-data">
   <input type="hidden" name="token" value="[form_token]">
 
 <h4>Hotlist details</h4>
@@ -54,15 +54,25 @@
 </div>
 
 
-
+  <input type="hidden" id="delete" name="deletestate" value="false">
   <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
+  <input type="button" id="deletehotlist" name="btn" value="Delete hotlist" class="submit">
+
 </form>
 
 [include "../framework/footer-script.ezt"]
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  _onload();
+  $('deletehotlist').addEventListener('click', function () {
+    if (!confirm("Are you sure you want to delete this hotlist? This cannot be undone.")){
+      return;
+    } else {
+      $('delete').value = "true";
+      $('edithotlist').submit();
+    }
+
+  });
 });
 </script>
 

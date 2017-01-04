@@ -47,6 +47,13 @@ class HotlistDetails(servlet.Servlet):
 
   def ProcessFormData(self, mr, post_data):
     """Process the posted form."""
+
+    if post_data.get('deletestate') == 'true':
+      # TODO(jojwang): write features_svc function for deleting hotlist
+      return framework_helpers.FormatAbsoluteURL(
+          mr, '/u/%s/hotlists' % mr.auth.email,
+          saved=1, ts=int(time.time()), include_project=False)
+
     (summary, description, name, default_col_spec) = self._ParseMetaData(
         post_data, mr.errors)
     is_private = post_data.get('is_private') != 'no'
