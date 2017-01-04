@@ -62,6 +62,16 @@ var Known = []*Master{
 		Groups:     []string{"ThisIsUnused"},
 	},
 	{
+		Name:       "ChromiumWebRTC",
+		Identifier: "chromium.webrtc",
+		Groups:     []string{"@ToT Chromium"},
+	},
+	{
+		Name:       "ChromiumWebRTCFYI",
+		Identifier: "chromium.webrtc.fyi",
+		Groups:     []string{"@ToT Chromium", "@ToT WebRTC"},
+	},
+	{
 		Name:       "ChromiumWebkit",
 		Identifier: "chromium.webkit",
 		Groups:     []string{"@ToT Chromium", "@ToT Blink"},
