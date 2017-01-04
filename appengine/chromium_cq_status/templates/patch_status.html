@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <title>CQ status timeline for issue %(issue)s patch %(patchset)s</title>
 <script>
-var codereview_hostname = '%(codereview_hostname)s';
+var codereview_hostname = %(codereview_hostname_js)s;
 var issue = %(issue)s;
 var patchset = %(patchset)s;
 </script>
@@ -104,11 +104,11 @@ message {
 }
 </style>
 <a href="/"><h1>Chromium CQ Status</h1></a>
-<h2>CQ status timeline for issue <a href="https://%(codereview_hostname)s/%(issue)s">%(issue)s</a>
-    patch <a href="%(full_patchset_url)s">%(patchset)s</a>
-    on <a href="https://%(codereview_hostname)s">%(codereview_hostname)s</a></h2>
+<h2>CQ status timeline for issue <a href="https://%(codereview_hostname_html)s/%(issue)s">%(issue)s</a>
+    patch <a href="%(full_patchset_url_html)s">%(patchset)s</a>
+    on <a href="https://%(codereview_hostname_html)s">%(codereview_hostname_html)s</a></h2>
 Status updates are shown in reverse chronological order.<br>
-<a href="/recent#issue=%(issue)s,patchset=%(patchset)s,codereview_hostname=%(codereview_hostname)s"
+<a href="/recent#issue=%(issue)s,patchset=%(patchset)s,codereview_hostname=%(codereview_hostname_html)s"
   class="raw">[Raw CQ logs]</a><br>
 <br>
 <div id="container"></div>
