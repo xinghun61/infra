@@ -7,12 +7,16 @@ package track
 
 import (
 	"time"
+
+	ds "github.com/luci/gae/service/datastore"
 )
 
 // Run tracks the processing of one analysis request.
 //
 // Stored under the 'Run' entity in datastore.
 type Run struct {
+	// LUCI datastore fields.
+	ID int64 `gae:"$id"`
 	// Time when the corresponding request was received, time recorded in the reporter.
 	Received time.Time
 	// State of this run; received, launched, or done-*, with done indicating success.
@@ -23,6 +27,9 @@ type Run struct {
 //
 // Stored with 'Run' as parent and is read-only.
 type ServiceRequest struct {
+	// LUCI datastore fields.
+	ID     string  `gae:"$id"`
+	Parent *ds.Key `gae:"$parent"`
 	// Tricium connected project receiving the request.
 	Project string
 	// File paths listed in the request.

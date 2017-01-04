@@ -1,0 +1,92 @@
+// Copyright 2016 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+package frontend
+
+import (
+	"net/http"
+	"net/url"
+	"testing"
+
+	tq "github.com/luci/gae/service/taskqueue"
+
+	. "github.com/smartystreets/goconvey/convey"
+
+	"infra/tricium/appengine/common"
+	"infra/tricium/appengine/common/pipeline"
+	trit "infra/tricium/appengine/common/testing"
+)
+
+func TestAnalyzeRequest(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		tt := &trit.Testing{}
+		ctx := tt.Context()
+
+		project := "test-project"
+		gitref := "ref/test"
+		paths := []string{
+			"README.md",
+			"README2.md",
+		}
+		sr := &pipeline.ServiceRequest{
+			Project: project,
+			GitRef:  gitref,
+			Path:    paths,
+		}
+
+		Convey("Form request", func() {
+			v := url.Values{}
+
+			Convey("Is successfully parsed when complete", func() {
+				v.Set("Project", project)
+				v.Set("GitRef", gitref)
+				v["Path[]"] = paths
+				sr, err := parseRequestForm(&http.Request{Form: v})
+				So(err, ShouldBeNil)
+				So(sr.Project, ShouldEqual, project)
+				So(sr.GitRef, ShouldEqual, gitref)
+				So(len(sr.Path), ShouldEqual, len(paths))
+				for k, p := range paths {
+					So(sr.Path[k], ShouldEqual, p)
+				}
+			})
+
+			Convey("Fails with missing project", func() {
+				v.Set("GitRef", gitref)
+				v["Path[]"] = paths
+				_, err := parseRequestForm(&http.Request{Form: v})
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("Fails with missing Git ref", func() {
+				v.Set("Project", project)
+				v["Path[]"] = paths
+				_, err := parseRequestForm(&http.Request{Form: v})
+				So(err, ShouldNotBeNil)
+			})
+
+			Convey("Fails with missing paths", func() {
+				v.Set("Project", project)
+				v.Set("GitRef", gitref)
+				_, err := parseRequestForm(&http.Request{Form: v})
+				So(err, ShouldNotBeNil)
+			})
+		})
+
+		Convey("Service request", func() {
+			_, err := analyze(ctx, sr)
+			So(err, ShouldBeNil)
+
+			Convey("Enqueues launch request", func() {
+				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.LauncherQueue]), ShouldEqual, 1)
+			})
+
+			Convey("Adds tracking of run", func() {
+				r, err := runs(ctx)
+				So(err, ShouldBeNil)
+				So(len(r), ShouldEqual, 1)
+			})
+		})
+	})
+}

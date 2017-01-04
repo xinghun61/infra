@@ -2,24 +2,22 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package frontend implements HTTP handlers for the default (frontend) module.
+// Package frontend implements HTTP handlers for the frontend (default) module.
 package frontend
 
 import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/google/go-querystring/query"
 
 	"golang.org/x/net/context"
 
-	"google.golang.org/appengine/datastore"
-	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/taskqueue"
-
-	"github.com/luci/luci-go/appengine/gaemiddleware"
+	ds "github.com/luci/gae/service/datastore"
+	tq "github.com/luci/gae/service/taskqueue"
+	"github.com/luci/luci-go/common/clock"
+	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 
@@ -28,155 +26,144 @@ import (
 	"infra/tricium/appengine/common/track"
 )
 
-func init() {
-	r := router.New()
-	base := common.MiddlewareForUI()
-
-	// LUCI frameworks needs a bunch of routes exposed via default module.
-	gaemiddleware.InstallHandlers(r, base)
-
-	// TODO(emso): Should these use MiddlewareForInternal? Are they called by
-	// end-users?
-	r.POST("/internal/analyze", base, analyzeHandler)
-	r.POST("/internal/queue", base, queueHandler)
-
-	r.GET("/results", base, resultsPageHandler)
-	r.GET("/", base, landingPageHandler)
-
-	http.DefaultServeMux.Handle("/", r)
-}
-
 func landingPageHandler(c *router.Context) {
 	templates.MustRender(c.Context, c.Writer, "pages/index.html", map[string]interface{}{
 		"StatusMsg": "This service is under construction.",
 	})
 }
 
-func resultsPageHandler(c *router.Context) {
-	ctx := common.NewGAEContext(c)
-	// Read run state from datastore.
-	q := datastore.NewQuery("Run").Order("-Received").Limit(20)
-	var runs []track.Run
-	_, err := q.GetAll(ctx, &runs)
-	if err != nil {
-		common.ReportServerError(c, err)
+func resultsHandler(ctx *router.Context) {
+	c, w := ctx.Context, ctx.Writer
+	if _, err := runs(c); err != nil {
+		logging.WithError(err).Errorf(c, "Results handler encountered errors")
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// Show results template.
-	templates.MustRender(c.Context, c.Writer, "pages/results.html", map[string]interface{}{
+	templates.MustRender(c, w, "pages/results.html", map[string]interface{}{
 		"Runs": runs,
 	})
 }
 
-func analyzeHandler(c *router.Context) {
-	ctx := common.NewGAEContext(c)
-
-	c.Request.ParseForm()
-	log.Infof(ctx, "[frontend] Raw analyze request: %v", c.Request.Form)
-
-	// Verify form values.
-	project := c.Request.FormValue("Project")
-	ref := c.Request.FormValue("GitRef")
-	path := []string{}
-	for _, p := range c.Request.Form["Path[]"] {
-		path = append(path, p)
+func runs(c context.Context) ([]*track.Run, error) {
+	var runs []*track.Run
+	q := ds.NewQuery("Run").Order("-Received").Limit(20)
+	if err := ds.GetAll(c, q, &runs); err != nil {
+		logging.WithError(err).Errorf(c, "Failed to read run entries from datastore")
+		return nil, err
 	}
-	if project == "" || ref == "" || len(path) == 0 {
-		common.ReportServerError(c, errors.New("missing required information"))
-		return
-	}
-
-	// Add to the service queue.
-	sr := pipeline.ServiceRequest{
-		Project: project,
-		GitRef:  ref,
-		Path:    path,
-	}
-	v, err := query.Values(sr)
-	if err != nil {
-		common.ReportServerError(c, errors.New("failed to encode service request"))
-		return
-	}
-	t := taskqueue.NewPOSTTask("/internal/queue", v)
-	if _, err := taskqueue.Add(ctx, t, common.ServiceQueue); err != nil {
-		common.ReportServerError(c, err)
-		return
-	}
-
-	// Return the landing page with a status message.
-	templates.MustRender(c.Context, c.Writer, "pages/index.html", map[string]interface{}{
-		"StatusMsg": "Analysis request sent.",
-	})
-
-	log.Infof(ctx, "[frontend] Analysis request enqueued")
+	return runs, nil
 }
 
-func queueHandler(c *router.Context) {
-	ctx := common.NewGAEContext(c)
-
-	c.Request.ParseForm()
-
-	// Parse service request.
-	if err := c.Request.ParseForm(); err != nil {
-		common.ReportServerError(c, err)
-		return
-	}
-	sr, err := pipeline.ParseServiceRequest(c.Request.Form)
+func analyzeHandler(ctx *router.Context) {
+	c, r, w := ctx.Context, ctx.Request, ctx.Writer
+	sr, err := parseRequestForm(r)
 	if err != nil {
-		common.ReportServerError(c, err)
+		logging.WithError(err).Errorf(c, "Failed to parse analyze request")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	if _, err := analyze(c, sr); err != nil {
+		logging.WithError(err).Errorf(c, "Analyze handler encountered errors")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	logging.Infof(c, "Analyzer handler successfully completed")
+	templates.MustRender(c, w, "pages/index.html", map[string]interface{}{
+		"StatusMsg": "Analysis request sent.",
+	})
+}
 
-	log.Infof(ctx, "[frontend] Parsed service request (project: %s, Git ref: %s)", sr.Project, sr.GitRef)
+func parseRequestForm(r *http.Request) (*pipeline.ServiceRequest, error) {
+	r.ParseForm()
+	project := r.FormValue("Project")
+	ref := r.FormValue("GitRef")
+	paths := []string{}
+	for _, p := range r.Form["Path[]"] {
+		paths = append(paths, p)
+	}
+	if project == "" || ref == "" || len(paths) == 0 {
+		return nil, fmt.Errorf("Missing required information, project: %s, ref: %s, paths: %v", project, ref, paths)
+	}
+	return &pipeline.ServiceRequest{
+		Project: project,
+		GitRef:  ref,
+		Path:    paths,
+	}, nil
+}
 
+// TODO(emso): Replace this analyze function with a pRPC Analyze RPC.
+func analyze(c context.Context, sr *pipeline.ServiceRequest) (int64, error) {
 	// TODO(emso): Verify that the project in the request is known.
 	// TODO(emso): Verify that the user making the request has permission.
 	// TODO(emso): Verify that there is no current run for this request (map hashed requests to run IDs).
-
 	// TODO(emso): Read Git repo info from the configuration projects/ endpoint.
 	repo := "https://chromium-review.googlesource.com/playground/gerrit-tricium"
-
-	err = datastore.RunInTransaction(ctx, func(ctx context.Context) error {
-		// Create run entry.
-		run := &track.Run{
-			Received: time.Now(),
-			State:    track.Pending,
+	run := &track.Run{
+		Received: clock.Now(c).UTC(),
+		State:    track.Pending,
+	}
+	err := ds.RunInTransaction(c, func(c context.Context) error {
+		// Add tracking entries for run and request.
+		if err := ds.Put(c, run); err != nil {
+			return err
 		}
+		logging.Infof(c, "[frontend] Run ID: %s, key: %s", run.ID, ds.KeyForObj(c, run))
 		req := &track.ServiceRequest{
+			Parent:  ds.KeyForObj(c, run),
 			Project: sr.Project,
 			Path:    sr.Path,
 			GitRepo: repo,
 			GitRef:  sr.GitRef,
 		}
-		k := datastore.NewIncompleteKey(ctx, "Run", nil)
-		runKey, err := datastore.Put(ctx, k, run)
-		if err != nil {
-			return fmt.Errorf("failed to add run entry: %v", err)
-		}
-		reqKey := datastore.NewKey(ctx, "ServiceRequest", "", 0, runKey)
-		if _, err = datastore.Put(ctx, reqKey, req); err != nil {
-			return fmt.Errorf("failed to add service request entry: %v", err)
+		if err := ds.Put(c, req); err != nil {
+			return err
 		}
 		// Launch workflow, enqueue launch request.
 		rl := pipeline.LaunchRequest{
-			RunID:   runKey.IntID(),
+			RunID:   run.ID,
 			Project: sr.Project,
 			Path:    sr.Path,
 			GitRepo: repo,
 			GitRef:  sr.GitRef,
 		}
-		vl, err := query.Values(rl)
+		v, err := query.Values(rl)
 		if err != nil {
 			return errors.New("failed to encode launch request")
 		}
-		tl := taskqueue.NewPOSTTask("/launcher/internal/queue", vl)
-		if _, err := taskqueue.Add(ctx, tl, common.LauncherQueue); err != nil {
-			return fmt.Errorf("faile to enqueue launch request: %v", err)
-		}
-		return nil
+		t := tq.NewPOSTTask("/launcher/internal/queue", v)
+		return tq.Add(c, common.LauncherQueue, t)
 	}, nil)
 	if err != nil {
-		common.ReportServerError(c, fmt.Errorf("failed to track and launch request: %v", err))
+		logging.WithError(err).Errorf(c, "failed to track and launch request")
+		return 0, err
+	}
+	return run.ID, nil
+}
+
+// queueHandler calls analyze for entries in the queue.
+//
+// This queue is intended as a service extension point for modules
+// running within the Tricium GAE app. For instance, the Gerrit poller.
+// TODO(emso): Figure out if this queue is needed.
+// TODO(emso): Figure out if/where WrapTransient should be used for errors.
+func queueHandler(ctx *router.Context) {
+	c, r, w := ctx.Context, ctx.Request, ctx.Writer
+	if err := r.ParseForm(); err != nil {
+		logging.WithError(err).Errorf(c, "Failed to parse service request form")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	sr, err := pipeline.ParseServiceRequest(r.Form)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "Failed to parse service request")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	logging.Infof(c, "[frontend] Parsed service request (project: %s, Git ref: %s)", sr.Project, sr.GitRef)
+	if _, err := analyze(c, sr); err != nil {
+		logging.WithError(err).Errorf(c, "Failed to handle analyze request")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
