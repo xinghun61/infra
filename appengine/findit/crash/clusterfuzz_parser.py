@@ -104,7 +104,7 @@ class ClusterfuzzParser(StacktraceParser):
     for line in stacktrace_string.splitlines():
       # Note, some flags like is_first_stack may be changed inside of stack
       # detector.
-      start_of_callstack = stack_detector(line)
+      start_of_callstack = stack_detector(line, flags=self.flag_manager)
 
       if start_of_callstack:
         stacktrace_buffer.AddFilteredStack(

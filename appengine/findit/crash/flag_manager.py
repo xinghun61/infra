@@ -57,7 +57,7 @@ class ParsingFlag(object):
       value (bool): Initial value of the flag.
     """
     self._name = name
-    self._turn_on_condition = turn_on_condition
+    self._turn_on_condition = turn_on_condition or (lambda _: False)
     self._value = value
 
   @property
@@ -81,8 +81,7 @@ class ParsingFlag(object):
 
   def ConditionallyTurnOn(self, line):
     """When the flag is off, turns on it if turn_on_conditions met."""
-    if (not self._value and self._turn_on_condition and
-        self._turn_on_condition(line)):
+    if not self._value and self._turn_on_condition(line):
       self.TurnOn()
 
 

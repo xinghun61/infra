@@ -115,6 +115,15 @@ class FlagManagerTest(StacktraceTestSuite):
     self.flag_manager.ConditionallyTurnOnFlags(line)
     self.assertFalse(bool(self.flag_manager.Get('flag')))
 
+  def testDoNothingWhenThereIsNoCondition(self):
+    """Tests doing nothing if flag has empty condition."""
+    self.flag_manager.Register(
+        'group',
+        ParsingFlag('flag', value=False))
+    line = 'dummy line'
+    self.flag_manager.ConditionallyTurnOnFlags(line)
+    self.assertFalse(bool(self.flag_manager.Get('flag')))
+
   def testSettingFlag(self):
     """Tests using ``TurnOn`` and ``TurnOff`` to set flags."""
     self.flag_manager.Register('group', ParsingFlag('flag', value=False))
