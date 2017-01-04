@@ -78,6 +78,9 @@ HOTLIST_PEOPLE = '/people'
 HOTLIST_DETAIL = '/details'
 HOTLIST_RERANK_JSON = '/rerank'
 
+# URL of JSON feed for the "My hotlists" menu
+USER_HOTLISTS_JSON = '/hosting/hotlists'
+
 # URLs of issue tracker project pages
 ISSUE_LIST = '/issues/list'
 ISSUE_DETAIL = '/issues/detail'

@@ -61,6 +61,7 @@ from sitewide import grouplist
 from sitewide import hostinghome
 from sitewide import moved
 from sitewide import projectcreate
+from sitewide import userhotlistsmenu
 from sitewide import userprofile
 from sitewide import userprojects
 from sitewide import usersettings
@@ -303,6 +304,7 @@ class ServletRegistry(object):
         # The user settings page is a site-wide servlet, not under /u/.
         urls.USER_SETTINGS: usersettings.UserSettings,
         urls.USER_PROJECTS_JSON: userprojects.ProjectsJsonFeed,
+        urls.USER_HOTLISTS_JSON: userhotlistsmenu.HotlistsJsonFeed,
         urls.HOSTING_HOME: hostinghome.HostingHome,
         urls.STARS_JSON: stars.SetStarsFeed,
         urls.CUES_JSON: cues.SetCuesFeed,

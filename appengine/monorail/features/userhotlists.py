@@ -10,6 +10,7 @@ from features import hotlist_views
 from framework import framework_views
 from framework import servlet
 
+
 class UserHotlists(servlet.Servlet):
   """Servlet to display all of a user's hotlists."""
 

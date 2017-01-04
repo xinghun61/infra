@@ -5,6 +5,7 @@
   <script type="text/javascript" defer src="/static/js/framework/framework-display.js?version=[app_version]" nonce="[nonce]"></script>
   <script type="text/javascript" defer src="/static/js/framework/framework-menu.js?version=[app_version]" nonce="[nonce]"></script>
   <script type="text/javascript" defer src="/static/js/framework/framework-myprojects.js?version=[app_version]" nonce="[nonce]"></script>
+  <script type="text/javascript" defer src="/static/js/framework/framework-myhotlists.js?version=[app_version]" nonce="[nonce]"></script>
   <script type="text/javascript" defer src="/static/js/framework/framework-accountmenu.js?version=[app_version]" nonce="[nonce]"></script>
   <script type="text/javascript" defer src="/static/js/framework/framework-stars.js?version=[app_version]" nonce="[nonce]"></script>
   <script type="text/javascript" defer src="/static/js/framework/project-name-check.js?version=[app_version]" nonce="[nonce]"></script>

@@ -22,4 +22,4 @@
   </menu>
 </dialog>
 
-<script type="text/javascript" defer src="/static/js/framework/framework-myhotlists.js?version=[app_version]" nonce="[nonce]"></script>
+<script type="text/javascript" defer src="/static/js/hotlists/edit-hotlist.js?version=[app_version]" nonce="[nonce]"></script>
