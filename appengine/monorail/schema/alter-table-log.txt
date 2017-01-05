@@ -1036,3 +1036,11 @@ CREATE TABLE HotlistStar (
   FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
+
+================================================================
+2017-12-04: Add two new columns to Hotlist2Issue.
+
+ALTER TABLE Hotlist2Issue
+      ADD COLUMN adder_id INT UNSIGNED,
+      ADD COLUMN added INT,
+      ADD FOREIGN KEY (adder_id) REFERENCES User(user_id);

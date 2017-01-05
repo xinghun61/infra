@@ -39,7 +39,7 @@ def UserOwnsHotlist(hotlist, effective_ids):
 def IssueIsInHotlist(hotlist, issue_id):
   """Returns T/F if the issue is in the hotlist."""
   return any(issue_id == hotlist_issue.issue_id
-             for hotlist_issue in hotlist.iid_rank_pairs)
+             for hotlist_issue in hotlist.items)
 
 
 def UserIsInHotlist(hotlist, effective_ids):

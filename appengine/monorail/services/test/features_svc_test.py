@@ -44,9 +44,11 @@ class HotlistTwoLevelCacheTest(unittest.TestCase):
     hotlist_rows = [
         (123, 'hot1', 'test hot 1', 'test hotlist', False, ''),
         (234, 'hot2', 'test hot 2', 'test hotlist', False, '')]
+
+    ts = 20021111111111
     issue_rows = [
-        (123, 567, 10), (123, 678, 9),
-        (234, 567, 0)]
+        (123, 567, 10, 111L, ts), (123, 678, 9, 111L, ts),
+        (234, 567, 0, 111L, ts)]
     role_rows = [
         (123, 111L, 'owner'), (123, 444L, 'owner'),
         (123, 222L, 'editor'),
@@ -412,7 +414,8 @@ class FeaturesServiceTest(unittest.TestCase):
 
     # Insert the issues: there are none.
     self.features_service.hotlist2issue_tbl.InsertRows(
-        self.cnxn, ['hotlist_id', 'issue_id', 'rank'], [], commit=False)
+        self.cnxn, ['hotlist_id', 'issue_id', 'rank', 'adder_id', 'added'],
+        [], commit=False)
 
     # Insert the users: there is one owner and one editor.
     self.features_service.hotlist2user_tbl.InsertRows(
@@ -452,7 +455,7 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, cols=['hotlist_id', 'user_id', 'role_name'],
         hotlist_id=[hotlist_id]).AndReturn([])
     self.features_service.hotlist2issue_tbl.Select(
-        self.cnxn, cols=['hotlist_id', 'issue_id', 'rank'],
+        self.cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
         hotlist_id=[hotlist_id],
         order_by=[('rank DESC', ''), ('issue_id', '')]).AndReturn([])
 
@@ -469,23 +472,23 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, 456, summary='A better one-line summary')
     self.mox.VerifyAll()
 
-  def SetUpUpdateHotlistIssuesRankings(self, hotlist_id, relations_to_change):
+  def SetUpUpdateHotlistItemsRankings(self, hotlist_id, relations_to_change):
     self.features_service.hotlist2issue_tbl.Delete(
         self.cnxn, hotlist_id=hotlist_id,
         issue_id=relations_to_change.keys(), commit=False)
     insert_rows = [
         (hotlist_id, issue_id, relations_to_change[
-            issue_id]) for issue_id in relations_to_change.keys()]
+            issue_id], None, None) for issue_id in relations_to_change.keys()]
     self.features_service.hotlist2issue_tbl.InsertRows(
         self.cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
         row_values=insert_rows, commit=True)
 
-  def testUpdateHotlistIssuesRankings(self):
+  def testUpdateHotlistItemsRankings(self):
     self.SetUpGetHotlists(456)
     relations_to_change = {11: 112, 33: 332, 55: 552}
-    self.SetUpUpdateHotlistIssuesRankings(456, relations_to_change)
+    self.SetUpUpdateHotlistItemsRankings(456, relations_to_change)
     self.mox.ReplayAll()
-    self.features_service.UpdateHotlistIssuesRankings(
+    self.features_service.UpdateHotlistItemsRankings(
         self.cnxn, 456, relations_to_change)
     self.mox.VerifyAll()
 
@@ -547,23 +550,29 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, 456, [111L, 222L], [333L], [])
     self.mox.VerifyAll()
 
-  def SetUpUpdateHotlistIssues(self, cnxn, hotlist_id, _remove, added_pairs):
+  def SetUpUpdateHotlistItems(self, cnxn, hotlist_id, _remove, added_tuples):
     self.features_service.hotlist2issue_tbl.Delete(
         cnxn, hotlist_id=hotlist_id, issue_id=[], commit=False)
     insert_rows = [(hotlist_id, issue_id,
-        rank) for (issue_id, rank) in added_pairs]
+                    rank, user_id, date) for
+                   (issue_id, rank, user_id, date) in added_tuples]
     self.features_service.hotlist2issue_tbl.InsertRows(
         cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
         row_values=insert_rows, commit=False)
 
-  def testUpdateHotlistIssues(self):
+  def testUpdateHotlistItems(self):
     self.SetUpGetHotlists(456)
-    self.SetUpUpdateHotlistIssues(
-        self.cnxn, 456, [555L], [(111L, 100), (222L, 200), (333L, 300)])
+    self.SetUpUpdateHotlistItems(
+        self. cnxn, 456, [555L], [
+            (111L, 100, None, None),
+            (222L, 200, None, None),
+            (333L, 300, None, None)])
     self.mox.ReplayAll()
-    self.features_service.UpdateHotlistIssues(
+    self.features_service.UpdateHotlistItems(
         self.cnxn, 456, [555L],
-        [(111L, 100), (222L, 200), (333L, 300)], commit=False)
+        [(111L, 100, None, None),
+         (222L, 200, None, None),
+         (333L, 300, None, None)], commit=False)
     self.mox.VerifyAll()
 
   # TODO(jojwang): alter SetUpGetHotlists to take the expected return
@@ -576,9 +585,9 @@ class FeaturesServiceTest(unittest.TestCase):
         id=[hotlist_id]).AndReturn(hotlist_rows)
     self.features_service.hotlist2user_tbl.Select(
         self.cnxn, cols=['hotlist_id', 'user_id', 'role_name'],
-        hotlist_id=[hotlist_id]).AndReturn([(hotlist_id, 111L, 'owner')])
+        hotlist_id=[hotlist_id]).AndReturn([(hotlist_id, 111L, 'owner', )])
     self.features_service.hotlist2issue_tbl.Select(
-        self.cnxn, cols=['hotlist_id', 'issue_id', 'rank'],
+        self.cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
         hotlist_id=[hotlist_id],
         order_by=[('rank DESC', ''), ('issue_id', '')]).AndReturn([])
     self.features_service.hotlist2issue_tbl.Delete(

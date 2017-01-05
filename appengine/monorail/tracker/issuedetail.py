@@ -1180,9 +1180,9 @@ class _HotlistFlipper(_Flipper):
     # and call it here.
     issues_list = self.services.issue.GetIssues(
         mr.cnxn,
-        [pair.issue_id for pair in self.hotlist.iid_rank_pairs])
-    issue_rank_dict = {issue.issue_id: issue.rank for issue
-                       in self.hotlist.iid_rank_pairs}
+        [item.issue_id for item in self.hotlist.items])
+    issue_rank_dict = {item.issue_id: item.rank for item
+                       in self.hotlist.items}
 
     allowed_issues = hotlist_helpers.FilterIssues(
         mr, issues_list, self.services)

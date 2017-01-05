@@ -54,12 +54,13 @@ class HotlistIssuesUnitTest(unittest.TestCase):
         001, 3, 'issue_summary3', 'New', 222L, project_name='project-name')
     self.services.issue.TestAddIssue(self.issue3)
     self.issues = [self.issue1, self.issue2, self.issue3]
-    self.iid_rank_pairs = [
-        (issue.issue_id, rank) for rank, issue in enumerate(self.issues)]
+    self.iid_rank_user_date = [
+        (issue.issue_id, rank, None, None) for
+        rank, issue in enumerate(self.issues)]
     self.test_hotlist = self.services.features.TestAddHotlist(
         'hotlist', hotlist_id=123, owner_ids=[222L], editor_ids=[111L],
-        iid_rank_pairs=self.iid_rank_pairs)
-    self.hotlistissues = self.test_hotlist.iid_rank_pairs
+        iid_rank_user_date=self.iid_rank_user_date)
+    self.hotlistissues = self.test_hotlist.items
     self.mr = testing_helpers.MakeMonorailRequest(hotlist=self.test_hotlist,
                                                   path='/u/222/hotlists/123',
                                                   services = self.services)
@@ -72,7 +73,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
   def testAssertBasePermissions(self):
     private_hotlist = self.services.features.TestAddHotlist(
         'privateHotlist', hotlist_id=321, owner_ids=[222L],
-        iid_rank_pairs=self.iid_rank_pairs, is_private=True)
+        iid_rank_user_date=self.iid_rank_user_date, is_private=True)
     # non-members cannot view private hotlists
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=private_hotlist)
@@ -137,7 +138,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     post_data = fake.PostData(remove=['false'], add_local_ids=[''])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue(url.endswith('u/222/hotlists/hotlist'))
-    self.assertEqual(self.test_hotlist.iid_rank_pairs, self.hotlistissues)
+    self.assertEqual(self.test_hotlist.items, self.hotlistissues)
 
   def testProcessFormData_NormalEditIssues(self):
     issue4 = fake.MakeTestIssue(
@@ -151,17 +152,17 @@ class HotlistIssuesUnitTest(unittest.TestCase):
                               add_local_ids=['project-name:4, project-name:5'])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('u/222/hotlists/hotlist' in url)
-    self.assertEqual(len(self.test_hotlist.iid_rank_pairs), 5)
+    self.assertEqual(len(self.test_hotlist.items), 5)
     self.assertEqual(
-        self.test_hotlist.iid_rank_pairs[3].issue_id, issue4.issue_id)
+        self.test_hotlist.items[3].issue_id, issue4.issue_id)
     self.assertEqual(
-        self.test_hotlist.iid_rank_pairs[4].issue_id, issue5.issue_id)
+        self.test_hotlist.items[4].issue_id, issue5.issue_id)
 
     post_data = fake.PostData(remove=['true'], remove_local_ids=[
         'project-name:4, project-name:1, project-name:2'])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('u/222/hotlists/hotlist' in url)
-    self.assertTrue(len(self.test_hotlist.iid_rank_pairs), 2)
-    issue_ids = [issue.issue_id for issue in self.test_hotlist.iid_rank_pairs]
+    self.assertTrue(len(self.test_hotlist.items), 2)
+    issue_ids = [issue.issue_id for issue in self.test_hotlist.items]
     self.assertTrue(issue5.issue_id in issue_ids)
     self.assertTrue(self.issue3.issue_id in issue_ids)

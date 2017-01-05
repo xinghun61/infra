@@ -71,7 +71,7 @@ class HotlistView(template_helpers.PBProxy):
                      owner_id in hotlist_pb.owner_ids]
       self.editors = [users_by_id[editor_id] for
                       editor_id in hotlist_pb.editor_ids]
-    self.num_issues = len(hotlist_pb.iid_rank_pairs)
+    self.num_issues = len(hotlist_pb.items)
     self.is_followed = ezt.boolean(user_auth.user_id in hotlist_pb.follower_ids)
     # TODO(jojwang): if hotlist follower's will not be used, perhaps change
     # from is_followed to is_member or just use is_starred

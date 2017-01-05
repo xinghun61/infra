@@ -46,15 +46,16 @@ class HotlistTableDataTest(unittest.TestCase):
         001, 3, 'issue_summary3', 'New', 222L, project_name='ProjectName')
     self.services.issue.TestAddIssue(issue3)
     issues = [issue1, issue2, issue3]
-    hotlist_issues = [
-        (issue.issue_id, rank) for rank, issue in enumerate(issues)]
+    hotlist_items = [
+        (issue.issue_id, rank, 222L, None) for rank, issue in enumerate(issues)]
 
-    self.iid_rank_pairs_list = [
-        features_pb2.MakeHotlistIssue(
-            issue_id, rank=rank) for (issue_id, rank) in hotlist_issues]
+    self.hotlist_items_list = [
+        features_pb2.MakeHotlistItem(
+            issue_id, rank=rank, adder_id=adder_id, date_added=date) for (
+                issue_id, rank, adder_id, date) in hotlist_items]
     self.test_hotlist = self.services.features.TestAddHotlist(
         'hotlist', hotlist_id=123,
-        iid_rank_pairs=hotlist_issues)
+        iid_rank_user_date=hotlist_items)
     sorting.InitializeArtValues(self.services)
     self.mr = None
 
@@ -67,7 +68,7 @@ class HotlistTableDataTest(unittest.TestCase):
   def testCreateHotlistTableData(self):
     self.setUpCreateHotlistTableDataTestMR()
     table_data, table_related_dict = hotlist_helpers.CreateHotlistTableData(
-        self.mr, self.iid_rank_pairs_list, profiler.Profiler(), self.services)
+        self.mr, self.hotlist_items_list, profiler.Profiler(), self.services)
     self.assertEqual(len(table_data), 3)
     start_index = 100001
     for row in table_data:
@@ -87,14 +88,14 @@ class HotlistTableDataTest(unittest.TestCase):
     self.setUpCreateHotlistTableDataTestMR(
         hotlist=self.test_hotlist, path='/123?num=2')
     table_data, _ = hotlist_helpers.CreateHotlistTableData(
-        self.mr, self.iid_rank_pairs_list, profiler.Profiler(), self.services)
+        self.mr, self.hotlist_items_list, profiler.Profiler(), self.services)
     self.assertEqual(len(table_data), 2)
 
   def testCreateHotlistTableData_EndPagination(self):
     self.setUpCreateHotlistTableDataTestMR(
         hotlist=self.test_hotlist, path='/123?num=2&start=2')
     table_data, _ = hotlist_helpers.CreateHotlistTableData(
-        self.mr, self.iid_rank_pairs_list, profiler.Profiler(), self.services)
+        self.mr, self.hotlist_items_list, profiler.Profiler(), self.services)
     self.assertEqual(len(table_data), 1)
 
 

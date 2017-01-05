@@ -19,7 +19,9 @@ class MemberViewTest(unittest.TestCase):
 
   def setUp(self):
     self.hotlist = fake.Hotlist('hotlistName', 123,
-                                iid_rank_pairs=[(2, 0), (1, 0), (5, 0)],
+                                iid_rank_user_date=[
+                                    (2, 0, None, None),
+                                    (1, 0, None, None), (5, 0, None, None)],
                                 is_private=False, owner_ids=[111])
     self.user1 = user_pb2.User(user_id=111)
     self.user1_view = framework_views.UserView(self.user1)
@@ -77,7 +79,9 @@ class HotlistViewTest(unittest.TestCase):
 
   def testOtherAttributes(self):
     hotlist = fake.Hotlist(
-        'hotlistName', 123, iid_rank_pairs=[(2, 0), (1, 0), (5, 0)],
+        'hotlistName', 123, iid_rank_user_date=[(2, 0, None, None),
+                                                (1, 0, None, None),
+                                                 (5, 0, None, None)],
                                 is_private=False, owner_ids=[1],
                                 editor_ids=[2, 3])
     hotlist_view = hotlist_views.HotlistView(

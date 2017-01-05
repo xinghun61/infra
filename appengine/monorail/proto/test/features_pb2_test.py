@@ -15,26 +15,36 @@ class FeaturesPb2Test(unittest.TestCase):
   def testMakeHotlist_Defaults(self):
     hotlist = features_pb2.MakeHotlist('summer-issues')
     self.assertEqual('summer-issues', hotlist.name)
-    self.assertEqual([], hotlist.iid_rank_pairs)
+    self.assertEqual([], hotlist.items)
 
   def testMakeHotlist_Everything(self):
+    ts = 20011111111111
     hotlist = features_pb2.MakeHotlist(
-        'summer-issues', [(1000, 1), (1001, 2), (1009, None)],
+        'summer-issues', [(1000, 1, 444L, ts), (1001, 2, 333L, ts),
+                          (1009, None, None, None)],
         description='desc')
     self.assertEqual('summer-issues', hotlist.name)
     self.assertEqual(
-        [features_pb2.MakeHotlistIssue(1000, rank=1),
-         features_pb2.MakeHotlistIssue(1001, rank=2),
-         features_pb2.MakeHotlistIssue(1009),
+        [features_pb2.MakeHotlistItem(
+            1000, rank=1, adder_id=444L, date_added=ts),
+         features_pb2.MakeHotlistItem(
+             1001, rank=2, adder_id=333L, date_added=ts),
+         features_pb2.MakeHotlistItem(1009),
          ],
-        hotlist.iid_rank_pairs)
+        hotlist.items)
     self.assertEqual('desc', hotlist.description)
 
-  def testMakeHotlistIssue(self):
-    pair_1 = features_pb2.MakeHotlistIssue(1000, rank=1)
-    self.assertEqual(1000, pair_1.issue_id)
-    self.assertEqual(1, pair_1.rank)
+  def testMakeHotlistItem(self):
+    ts = 20011111111111
+    item_1 = features_pb2.MakeHotlistItem(
+        1000, rank=1, adder_id=111L, date_added=ts)
+    self.assertEqual(1000, item_1.issue_id)
+    self.assertEqual(1, item_1.rank)
+    self.assertEqual(111L, item_1.adder_id)
+    self.assertEqual(ts, item_1.date_added)
 
-    pair_2 = features_pb2.MakeHotlistIssue(1001)
-    self.assertEqual(1001, pair_2.issue_id)
-    self.assertEqual(None, pair_2.rank)
+    item_2 = features_pb2.MakeHotlistItem(1001)
+    self.assertEqual(1001, item_2.issue_id)
+    self.assertEqual(None, item_2.rank)
+    self.assertEqual(None, item_2.adder_id)
+    self.assertEqual(None, item_2.date_added)

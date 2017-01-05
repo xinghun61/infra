@@ -44,7 +44,7 @@ FILTERRULE_COLS = ['project_id', 'rank', 'predicate', 'consequence']
 HOTLIST_COLS = [
     'id', 'name', 'summary', 'description', 'is_private', 'default_col_spec']
 HOTLIST_ABBR_COLS = ['id', 'name', 'summary', 'is_private']
-HOTLIST2ISSUE_COLS = ['hotlist_id', 'issue_id', 'rank']
+HOTLIST2ISSUE_COLS = ['hotlist_id', 'issue_id', 'rank', 'adder_id', 'added']
 HOTLIST2USER_COLS = ['hotlist_id', 'user_id', 'role_name']
 
 
@@ -79,11 +79,12 @@ class HotlistTwoLevelCache(caches.AbstractTwoLevelCache):
           default_col_spec=default_col_spec)
       hotlist_dict[hotlist_id] = hotlist
 
-    for (hotlist_id, issue_id, rank) in issue_rows:
+    for (hotlist_id, issue_id, rank, adder_id, added) in issue_rows:
       hotlist = hotlist_dict.get(hotlist_id)
       if hotlist:
-        hotlist.iid_rank_pairs.append(
-            features_pb2.MakeHotlistIssue(issue_id=issue_id, rank=rank))
+        hotlist.items.append(
+            features_pb2.MakeHotlistItem(issue_id=issue_id, rank=rank,
+                                         adder_id=adder_id , date_added=added))
       else:
         logging.warn('hotlist %d not found', hotlist_id)
 
@@ -476,7 +477,7 @@ class FeaturesService(object):
 
   def CreateHotlist(
       self, cnxn, name, summary, description, owner_ids, editor_ids,
-      issue_ids=None, is_private=None, default_col_spec=None):
+      issue_ids=None, is_private=None, default_col_spec=None, ts=None):
     """Create and store a Hotlist with the given attributes.
 
     Args:
@@ -489,6 +490,7 @@ class FeaturesService(object):
       issue_ids: a list of issue IDs for the hotlist issues.
       is_private: True if the hotlist can only be viewed by owners and editors.
       default_col_spec: the default columns that show in list view.
+      ts: a timestamp for when this hotlist was created.
 
     Returns:
       The int id of the new hotlist.
@@ -501,12 +503,13 @@ class FeaturesService(object):
     if self.LookupHotlistIDs(cnxn, [name], owner_ids):
       raise HotlistAlreadyExists()
 
-    iid_rank_pairs = [
-        (issue_id, rank*100) for rank, issue_id in enumerate(issue_ids or [])]
+    iid_rank_user_date = [
+        (issue_id, rank*100, owner_ids[0], ts) for
+        rank, issue_id in enumerate(issue_ids or [])]
     if default_col_spec is None:
       default_col_spec = features_constants.DEFAULT_COL_SPEC
     hotlist = features_pb2.MakeHotlist(
-        name, iid_rank_pairs=iid_rank_pairs, summary=summary,
+        name, iid_rank_user_date=iid_rank_user_date, summary=summary,
         description=description, is_private=is_private, owner_ids=owner_ids,
         editor_ids=editor_ids, default_col_spec=default_col_spec)
     hotlist.hotlist_id = self._InsertHotlist(cnxn, hotlist)
@@ -550,15 +553,15 @@ class FeaturesService(object):
     if default_col_spec is not None:
       hotlist.default_col_spec = default_col_spec
 
-  def UpdateHotlistIssues(
-      self, cnxn, hotlist_id, remove, added_pairs, commit=True):
+  def UpdateHotlistItems(
+      self, cnxn, hotlist_id, remove, added_tuples, commit=True):
     """Updates a hotlist's list of hotlistissues.
 
     Args:
       cnxn: connection to SQL database.
       hotlist_id: the ID of the hotlist to update
       remove: a list of issue_ids for be removed
-      added_pairs: a list of (issue_id, pairs) for issues to be added
+      added_tuples: a list of (issue_id, user_id, date) for issues to be added
     """
     hotlist = self.GetHotlist(cnxn, hotlist_id, use_cache=False)
     if not hotlist:
@@ -567,7 +570,7 @@ class FeaturesService(object):
     # adding new Hotlistissues, ignoring pairs where issue_id is already in
     # hotlist's iid_rank_pairs
     current_issues_ids = {
-        iid_rank_pair.issue_id for iid_rank_pair in hotlist.iid_rank_pairs}
+        item.issue_id for item in hotlist.items}
 
     self.hotlist2issue_tbl.Delete(
         cnxn, hotlist_id=hotlist_id,
@@ -576,8 +579,8 @@ class FeaturesService(object):
         commit=False)
 
     insert_rows = [
-        (hotlist_id, issue_id, rank)
-        for (issue_id, rank) in added_pairs
+        (hotlist_id, issue_id, rank, user_id, date)
+        for (issue_id, rank, user_id, date) in added_tuples
         if issue_id not in current_issues_ids]
     self.hotlist2issue_tbl.InsertRows(
         cnxn, cols=HOTLIST2ISSUE_COLS, row_values=insert_rows, commit=commit)
@@ -585,18 +588,18 @@ class FeaturesService(object):
 
     # removing an issue that was never in the hotlist would not cause any
     # problems.
-    iid_rank_pairs = [
-        iid_rank_pair for iid_rank_pair in hotlist.iid_rank_pairs if
-        iid_rank_pair.issue_id not in remove]
+    items = [
+        item for item in hotlist.items if
+        item.issue_id not in remove]
 
-    new_hotlist_issues = [
-        features_pb2.MakeHotlistIssue(issue_id, rank)
-        for (issue_id, rank) in added_pairs
+    new_hotlist_items = [
+        features_pb2.MakeHotlistItem(issue_id, rank, user_id, date)
+        for (issue_id, rank, user_id, date) in added_tuples
         if issue_id not in current_issues_ids]
-    iid_rank_pairs.extend(new_hotlist_issues)
-    hotlist.iid_rank_pairs = iid_rank_pairs
+    items.extend(new_hotlist_items)
+    hotlist.items = items
 
-  def UpdateHotlistIssuesRankings(
+  def UpdateHotlistItemsRankings(
       self, cnxn, hotlist_id, relations_to_change, commit=True):
     """Updates rankings of hotlistissues.
 
@@ -614,19 +617,21 @@ class FeaturesService(object):
     issue_ids = relations_to_change.keys()
     self.hotlist2issue_tbl.Delete(
         cnxn, hotlist_id=hotlist_id, issue_id=issue_ids, commit=False)
+
+    # TODO(jojwang): get issues original add date and adder_id
     insert_rows = [
-        (hotlist_id, issue_id, relations_to_change[
-            issue_id]) for issue_id in issue_ids]
+        (hotlist_id, issue_id, relations_to_change[issue_id], None, None) for
+        issue_id in issue_ids]
     self.hotlist2issue_tbl.InsertRows(
         cnxn, cols=HOTLIST2ISSUE_COLS , row_values=insert_rows, commit=commit)
 
     self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
 
     # Update the hotlist PB in RAM
-    rank_pairs = hotlist.iid_rank_pairs
-    for hotlist_issue in rank_pairs:
-      if hotlist_issue.issue_id in relations_to_change:
-        hotlist_issue.rank = relations_to_change[hotlist_issue.issue_id]
+    items = hotlist.items
+    for hotlist_item in items:
+      if hotlist_item.issue_id in relations_to_change:
+        hotlist_item.rank = relations_to_change[hotlist_item.issue_id]
 
   def _InsertHotlist(self, cnxn, hotlist):
     """Insert the given hotlist into the database."""
@@ -638,8 +643,9 @@ class FeaturesService(object):
 
     self.hotlist2issue_tbl.InsertRows(
         cnxn, HOTLIST2ISSUE_COLS,
-        [(hotlist_id, issue.issue_id, issue.rank)
-         for issue in hotlist.iid_rank_pairs],
+        [(hotlist_id, issue.issue_id, issue.rank,
+          issue.adder_id, issue.date_added)
+         for issue in hotlist.items],
         commit=False)
     self.hotlist2user_tbl.InsertRows(
         cnxn, HOTLIST2USER_COLS,

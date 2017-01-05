@@ -699,12 +699,15 @@ CREATE TABLE Hotlist2Issue (
   issue_id INT NOT NULL,
 
   rank BIGINT NOT NULL,
+  adder_id INT UNSIGNED,
+  added INT,
 
   PRIMARY KEY (hotlist_id, issue_id),
   INDEX (hotlist_id),
   INDEX (issue_id),
   FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
-  FOREIGN KEY (issue_id) REFERENCES Issue(id)
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (adder_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
 
 

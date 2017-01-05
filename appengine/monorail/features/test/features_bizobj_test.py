@@ -17,13 +17,14 @@ class FeaturesBizobjTest(unittest.TestCase):
     self.local_ids = [1L, 2L, 3L, 4L, 5L]
     self.issues = [fake.MakeTestIssue(1000, local_id, '', 'New', 111L)
                    for local_id in self.local_ids]
-    self.iid_rank_pairs = [features_pb2.MakeHotlistIssue(
-        issue.issue_id, rank=rank*10) for rank, issue in enumerate(self.issues)]
-    self.iid_rank_tuples = [(pair.issue_id, pair.rank) for pair
-                            in self.iid_rank_pairs]
+    self.hotlistitems = [features_pb2.MakeHotlistItem(
+        issue.issue_id, rank=rank*10, adder_id=111L, date_added=3) for
+                           rank, issue in enumerate(self.issues)]
+    self.iid_rank_tuples = [(item.issue_id, item.rank) for item
+                            in self.hotlistitems]
 
   def testIssueIsInHotlist(self):
-    hotlist = features_pb2.Hotlist(iid_rank_pairs=self.iid_rank_pairs)
+    hotlist = features_pb2.Hotlist(items=self.hotlistitems)
     for issue in self.issues:
       self.assertTrue(features_bizobj.IssueIsInHotlist(hotlist, issue.issue_id))
 
@@ -32,7 +33,7 @@ class FeaturesBizobjTest(unittest.TestCase):
 
   def testSplitHotlistIssueRanks(self):
     iid_rank_tuples = [(issue.issue_id, issue.rank)
-                       for issue in self.iid_rank_pairs]
+                       for issue in self.hotlistitems]
     iid_rank_tuples.reverse()
     ret = features_bizobj.SplitHotlistIssueRanks(
         100003L, False, iid_rank_tuples)
@@ -88,14 +89,14 @@ class FeaturesBizobjTest(unittest.TestCase):
     # normal
     prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
         self.issues[2], self.iid_rank_tuples)
-    self.assertEqual(prev_iid, self.iid_rank_pairs[1].issue_id)
+    self.assertEqual(prev_iid, self.hotlistitems[1].issue_id)
     self.assertEqual(index, 2)
-    self.assertEqual(next_iid, self.iid_rank_pairs[3].issue_id)
+    self.assertEqual(next_iid, self.hotlistitems[3].issue_id)
 
     # end of list
     prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
         self.issues[4], self.iid_rank_tuples)
-    self.assertEqual(prev_iid, self.iid_rank_pairs[3].issue_id)
+    self.assertEqual(prev_iid, self.hotlistitems[3].issue_id)
     self.assertEqual(index, 4)
     self.assertEqual(next_iid, None)
 
@@ -104,7 +105,7 @@ class FeaturesBizobjTest(unittest.TestCase):
         self.issues[0], self.iid_rank_tuples)
     self.assertEqual(prev_iid, None)
     self.assertEqual(index, 0)
-    self.assertEqual(next_iid, self.iid_rank_pairs[1].issue_id)
+    self.assertEqual(next_iid, self.hotlistitems[1].issue_id)
 
     # one item in list
     prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(

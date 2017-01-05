@@ -682,9 +682,10 @@ class FlipperTest(unittest.TestCase):
          002, 3, 'issue_summary', 'New', 111L, project_name='project2',
          issue_id=3L)
     self.services.issue.TestAddIssue(issue3)
-
-    self.iid_rank_pairs = [(1L, 10), (2L, 20), (3L, 30)]
-    self.hotlist = fake.Hotlist('name', 123, self.iid_rank_pairs)
+    ts = 20091111111111
+    self.iid_rank_adder_date = [(1L, 10, 111L, ts), (2L, 20, 111L, ts),
+                                (3L, 30, 111L, ts)]
+    self.hotlist = fake.Hotlist('name', 123, self.iid_rank_adder_date)
     self.hotlist_flipper = issuedetail._HotlistFlipper(
         self.services, self.hotlist)
 
@@ -719,7 +720,8 @@ class FlipperTest(unittest.TestCase):
     self.assertEqual(self.hotlist_flipper.next_url, '')
 
   def testAssignFlipperValues_NoShow(self):
-    one_issue_hotlist = fake.Hotlist('name1', 122, [self.iid_rank_pairs[0]])
+    one_issue_hotlist = fake.Hotlist(
+        'name1', 122, [self.iid_rank_adder_date[0]])
     no_show_hotlist_flipper = issuedetail._HotlistFlipper(
         self.services, one_issue_hotlist)
     no_show_hotlist_flipper.AssignFlipperValues(self.mr, None, 0, None, 1)

@@ -124,7 +124,7 @@ class HotlistIssues(servlet.Servlet):
       Dictionary of page data for rendering of the Table View.
     """
     table_data, table_related_dict = hotlist_helpers.CreateHotlistTableData(
-        mr, mr.hotlist.iid_rank_pairs, self.profiler, self.services)
+        mr, mr.hotlist.items, self.profiler, self.services)
     columns = mr.col_spec.split()
     ordered_columns = [template_helpers.EZTItem(col_index=i, name=col)
                        for i, col in enumerate(columns)]
@@ -159,8 +159,8 @@ class HotlistIssues(servlet.Servlet):
           include_project=False)
     sorting.InvalidateArtValuesKeys(
         mr.cnxn,
-        [hotlist_issue.issue_id for hotlist_issue
-         in mr.hotlist.iid_rank_pairs])
+        [hotlist_item.issue_id for hotlist_item
+         in mr.hotlist.items])
 
     if post_data.get('remove') == 'true':
       project_and_local_ids = post_data.get('remove_local_ids')
@@ -194,19 +194,21 @@ class HotlistIssues(servlet.Servlet):
 
     else:
       if post_data.get('remove') == 'true':
-        self.services.features.UpdateHotlistIssues(
+        self.services.features.UpdateHotlistItems(
             mr.cnxn, mr.hotlist_id, selected_iids, [])
       else:
-        if mr.hotlist.iid_rank_pairs:
-          iid_rank_pairs_sorted = sorted(
-              mr.hotlist.iid_rank_pairs, key=lambda pair: pair.rank)
-          rank_base = iid_rank_pairs_sorted[-1].rank + 10
+        if mr.hotlist.items:
+          items_sorted = sorted(
+              mr.hotlist.items, key=lambda item: item.rank)
+          rank_base = items_sorted[-1].rank + 10
         else:
           rank_base = 1
-        added_pairs =  [(issue_id, rank_base + multiplier*10)
+        # TODO(jojwang): add date
+        added_tuples =  [(issue_id, rank_base + multiplier*10,
+                          mr.auth.user_id, None)
                         for (multiplier, issue_id) in enumerate(selected_iids)]
-        self.services.features.UpdateHotlistIssues(
-            mr.cnxn, mr.hotlist_id, [], added_pairs)
+        self.services.features.UpdateHotlistItems(
+            mr.cnxn, mr.hotlist_id, [], added_tuples)
 
       return framework_helpers.FormatAbsoluteURL(
           mr, hotlist_view_url,
@@ -227,7 +229,7 @@ class HotlistIssues(servlet.Servlet):
     issues_list = self.services.issue.GetIssues(
         mr.cnxn,
         [hotlist_issue.issue_id for hotlist_issue
-         in mr.hotlist.iid_rank_pairs])
+         in mr.hotlist.items])
     allowed_issues = hotlist_helpers.FilterIssues(
         mr, issues_list, self.services)
     users_by_id = framework_views.MakeAllUserViews(

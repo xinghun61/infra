@@ -38,19 +38,19 @@ class RerankHotlistIssue(jsonfeed.JsonFeed):
       relations_to_change = dict(
           (issue_id, rank) for issue_id, rank in changed_ranks)
 
-      self.services.features.UpdateHotlistIssuesRankings(
+      self.services.features.UpdateHotlistItemsRankings(
           mr.cnxn, mr.hotlist_id, relations_to_change)
 
-      hotlist_issues = self.services.features.GetHotlist(
-          mr.cnxn, mr.hotlist_id).iid_rank_pairs
+      hotlist_items = self.services.features.GetHotlist(
+          mr.cnxn, mr.hotlist_id).items
 
       # Note: Cannot use mr.hotlist because hotlist_issues
       # of mr.hotlist is not updated
 
       sorting.InvalidateArtValuesKeys(
-          mr.cnxn, [hotlist_issue.issue_id for hotlist_issue in hotlist_issues])
+          mr.cnxn, [hotlist_item.issue_id for hotlist_item in hotlist_items])
       (table_data, _) = hotlist_helpers.CreateHotlistTableData(
-          mr, hotlist_issues, self.profiler, self.services)
+          mr, hotlist_items, self.profiler, self.services)
 
       json_table_data = [{
           'cells': [{
@@ -121,13 +121,13 @@ class RerankHotlistIssue(jsonfeed.JsonFeed):
     if missing:
       return
 
-    untouched_iid_rank_pairs = [
-        (pair.issue_id, pair.rank) for pair in
-        mr.hotlist.iid_rank_pairs if pair.issue_id not in mr.moved_ids]
+    untouched_items = [
+        (item.issue_id, item.rank) for item in
+        mr.hotlist.items if item.issue_id not in mr.moved_ids]
 
     # Note: The original reranking methods were written for reranking lists
     # sorted High to Low. Hotlist issues are reranked when they are sorted
     # Low to High so the mr.split_above must be flipped.
     lower, higher = features_bizobj.SplitHotlistIssueRanks(
-        mr.target_id, not mr.split_above, untouched_iid_rank_pairs)
+        mr.target_id, not mr.split_above, untouched_items)
     return rerank_helpers.GetInsertRankings(lower, higher, mr.moved_ids)

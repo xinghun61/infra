@@ -38,12 +38,12 @@ EDITOR_ROLE = 'EDITOR_ROLE'
 FOLLOWER_ROLE = 'FOLLOWER_ROLE'
 
 def Hotlist(
-    hotlist_name, hotlist_id, iid_rank_pairs=None,
+    hotlist_name, hotlist_id, iid_rank_user_date=None,
     is_private=False, owner_ids=None, editor_ids=None, follower_ids=None):
   hotlist_id = hotlist_id or hash(hotlist_name)
   return features_pb2.MakeHotlist(
-      hotlist_name, iid_rank_pairs=iid_rank_pairs, hotlist_id=hotlist_id,
-      is_private=is_private, owner_ids=owner_ids or [],
+      hotlist_name, iid_rank_user_date=iid_rank_user_date,
+      hotlist_id=hotlist_id, is_private=is_private, owner_ids=owner_ids or [],
       editor_ids=editor_ids or [], follower_ids=follower_ids or [])
 
 def Project(
@@ -1534,7 +1534,7 @@ class FeaturesService(object):
 
   def TestAddHotlist(self, name, summary='', owner_ids=None, editor_ids=None,
                      follower_ids=None, description=None, hotlist_id=None,
-                     is_private=False, iid_rank_pairs=None):
+                     is_private=False, iid_rank_user_date=None):
     """Add a hotlist to the fake FeaturesService object.
 
     Args:
@@ -1547,7 +1547,8 @@ class FeaturesService(object):
       description: The description string for this hotlist
       hotlist_id: A unique integer identifier for the created hotlist
       is_private: A boolean indicating whether the hotlist is private/public
-      iid_rank_pairs: a list of tuples [(issue_id, rank),...]
+      iid_rank_user_date: a list of tuples ->
+        [(issue_id, rank, adder_id, date_added),...]
 
     Returns:
       A populated hotlist PB.
@@ -1564,10 +1565,12 @@ class FeaturesService(object):
     self.TestAddHotlistMembers(follower_ids, hotlist_pb, FOLLOWER_ROLE)
     self.TestAddHotlistMembers(editor_ids, hotlist_pb, EDITOR_ROLE)
 
-    if iid_rank_pairs is not None:
-      for(issue_id, rank) in iid_rank_pairs:
-        hotlist_pb.iid_rank_pairs.append(
-            features_pb2.Hotlist.HotlistIssue(issue_id=issue_id, rank=rank))
+    if iid_rank_user_date is not None:
+      for(issue_id, rank, adder_id, date) in iid_rank_user_date:
+        hotlist_pb.items.append(
+            features_pb2.Hotlist.HotlistItem(
+                issue_id=issue_id, rank=rank, adder_id=adder_id,
+                date_added=date))
 
     self.test_hotlists[name] = hotlist_pb
     self.hotlists_by_id[hotlist_pb.hotlist_id] = hotlist_pb
@@ -1591,15 +1594,17 @@ class FeaturesService(object):
 
   def CreateHotlist(
       self, _cnxn, hotlist_name, summary, description, owner_ids, editor_ids,
-      issue_ids=None, is_private=None, default_col_spec=None):
+      issue_ids=None, is_private=None, default_col_spec=None, ts=None):
     """Create and store a Hotlist with the given attributes."""
     if hotlist_name in self.test_hotlists:
       raise features_svc.HotlistAlreadyExists()
-    iid_rank_pairs = [
-        (issue_id, rank*100) for rank, issue_id in enumerate(issue_ids or [])]
+    iid_rank_user_date = [
+        (issue_id, rank*100, owner_ids[0] or None, ts) for
+        rank, issue_id in enumerate(issue_ids or [])]
     self.TestAddHotlist(hotlist_name, summary=summary, owner_ids=owner_ids,
                         editor_ids=editor_ids, description=description,
-                        is_private=is_private, iid_rank_pairs=iid_rank_pairs)
+                        is_private=is_private,
+                        iid_rank_user_date=iid_rank_user_date)
 
   def UpdateHotlist(self, cnxn, hotlist_id, name=None, summary=None,
                     description=None, is_private=None, default_col_spec=None):
@@ -1618,24 +1623,24 @@ class FeaturesService(object):
     if default_col_spec is not None:
       hotlist.default_col_spec = default_col_spec
 
-  def UpdateHotlistIssues(
-      self, cnxn, hotlist_id, remove, added_pairs, commit=True):
+  def UpdateHotlistItems(
+      self, cnxn, hotlist_id, remove, added_issue_tuples, commit=True):
     hotlist = self.hotlists_by_id.get(hotlist_id)
     if not hotlist:
       raise features_svc.NoSuchHotlistException(
           'Hotlist "%s" not found!' % hotlist_id)
     current_issues_ids = {
-        iid_rank_pair.issue_id for iid_rank_pair in hotlist.iid_rank_pairs}
-    iid_rank_pairs = [
-        iid_rank_pair for iid_rank_pair in hotlist.iid_rank_pairs if
-        iid_rank_pair.issue_id not in remove]
+        item.issue_id for item in hotlist.items}
+    items = [
+        item for item in hotlist.items if
+        item.issue_id not in remove]
 
-    new_hotlist_issues = [
-        features_pb2.MakeHotlistIssue(issue_id, rank)
-        for (issue_id, rank) in added_pairs
+    new_hotlist_items = [
+        features_pb2.MakeHotlistItem(issue_id, rank, adder_id, date)
+        for (issue_id, rank, adder_id, date) in added_issue_tuples
         if issue_id not in current_issues_ids]
-    iid_rank_pairs.extend(new_hotlist_issues)
-    hotlist.iid_rank_pairs = iid_rank_pairs
+    items.extend(new_hotlist_items)
+    hotlist.items = items
 
   def UpdateHotlistIssuesRankings(
       self, cnxn, hotlist_id, relations_to_change, commit=True):

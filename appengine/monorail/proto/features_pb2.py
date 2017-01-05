@@ -31,33 +31,38 @@ class Hotlist(messages.Message):
   follower_ids = messages.IntegerField(9, repeated=True)
 
 
-  class HotlistIssue(messages.Message):
+  class HotlistItem(messages.Message):
     """Nested message for a hotlist to issue relation."""
     issue_id = messages.IntegerField(1, required=True)
     rank = messages.IntegerField(2, required=True)
+    adder_id = messages.IntegerField(3)
+    date_added = messages.IntegerField(4)
 
-  iid_rank_pairs = messages.MessageField(HotlistIssue, 10, repeated=True)
+  items = messages.MessageField(HotlistItem, 10, repeated=True)
 
   # The default columns to show on hotlist issues page
   default_col_spec = messages.StringField(11, default='')
 
-
-def MakeHotlist(name, iid_rank_pairs=None, **kwargs):
+def MakeHotlist(name, iid_rank_user_date=None, **kwargs):
   """Returns a hotlist protocol buffer with the given attributes.
   kwargs should only include the following:
     hotlist_id, summary, description, is_private, owner_ids, editor_ids,
     follower_ids, default_col_spec"""
   hotlist = Hotlist(name=name, **kwargs)
 
-  if iid_rank_pairs is not None:
-    for (issue_id, rank) in iid_rank_pairs:
-      hotlist.iid_rank_pairs.append(Hotlist.HotlistIssue(issue_id=issue_id, rank=rank))
+  if iid_rank_user_date is not None:
+    for iid, rank, user, date in iid_rank_user_date:
+      hotlist.items.append(Hotlist.HotlistItem(
+          issue_id=iid, rank=rank, adder_id=user, date_added=date))
 
   return hotlist
 
-
-def MakeHotlistIssue(issue_id, rank=None):
-  issue = Hotlist.HotlistIssue(issue_id=issue_id)
+def MakeHotlistItem(issue_id, rank=None, adder_id=None, date_added=None):
+  item = Hotlist.HotlistItem(issue_id=issue_id)
   if rank is not None:
-    issue.rank = rank
-  return issue
+    item.rank = rank
+  if adder_id is not None:
+    item.adder_id = adder_id
+  if date_added is not None:
+    item.date_added = date_added
+  return item
