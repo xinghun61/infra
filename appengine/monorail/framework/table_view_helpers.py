@@ -189,9 +189,25 @@ def ExtractUniqueValues(columns, artifact_list, users_by_id,
     for art in artifact_list:
       if art.merged_into and art.merged_into != 0:
         merged_issue = related_issues[art.merged_into]
-        merged_into = merged_issue.project_name + ':' + str(
-            merged_issue.local_id)
-        column_values['mergedinto'][merged_into] = merged_into
+        merged_issue_ref = tracker_bizobj.FormatIssueRef((
+            merged_issue.project_name, merged_issue.local_id))
+        column_values['mergedinto'][merged_issue_ref] = merged_issue_ref
+
+  if 'blocked' in column_values:
+    for art in artifact_list:
+      if art.blocked_on_iids:
+        column_values['blocked']['is_blocked'] = 'Yes'
+      else:
+        column_values['blocked']['is_not_blocked'] = 'No'
+
+  if 'blockedon' in column_values:
+    for art in artifact_list:
+      if art.blocked_on_iids:
+        for blocked_on_iid in art.blocked_on_iids:
+          blocked_on_issue = related_issues[blocked_on_iid]
+          blocked_on_ref = tracker_bizobj.FormatIssueRef((
+              blocked_on_issue.project_name, blocked_on_issue.local_id))
+          column_values['blockedon'][blocked_on_ref] = blocked_on_ref
 
   # TODO(jrobbins): blocked on, and blocking.
   # And, the ability to parse a user query on those fields and do a SQL search.

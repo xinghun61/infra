@@ -225,16 +225,26 @@ def GetArtifactAttr(
     return [art.star_count]
   if attribute_name == 'attachments':
     return [art.attachment_count]
-  # TODO(jrobbins): support blocked on, blocking
+  # TODO(jrobbins): support blocking
   if attribute_name == 'project':
     return [art.project_name]
   if attribute_name == 'mergedinto':
     if art.merged_into and art.merged_into != 0:
-      return [
-          related_issues[art.merged_into].project_name +
-          ':' + str(related_issues[art.merged_into].local_id)]
+      return [tracker_bizobj.FormatIssueRef((
+          related_issues[art.merged_into].project_name,
+          related_issues[art.merged_into].local_id))]
     else:
       return [framework_constants.NO_VALUES]
+  if attribute_name == 'blocked':
+    return ['Yes' if art.blocked_on_iids else 'No']
+  if attribute_name == 'blockedon':
+    if not art.blocked_on_iids:
+      return [framework_constants.NO_VALUES]
+    else:
+      return [tracker_bizobj.FormatIssueRef((
+          related_issues[blocked_on_iid].project_name,
+          related_issues[blocked_on_iid].local_id)) for
+              blocked_on_iid in art.blocked_on_iids]
   if attribute_name == 'reporter':
     return [users_by_id[art.reporter_id].display_name]
   if attribute_name == 'owner':
