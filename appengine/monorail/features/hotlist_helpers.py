@@ -231,3 +231,13 @@ def GetURLOfHotlist(cnxn, hotlist, user_service):
     return (
         '/u/%s/hotlists/%s' % (
             owner.email, hotlist.name))
+
+
+def RemoveHotlist(cnxn, hotlist_id, services):
+  """Removes the given hotlist from the database.
+    Args:
+      hotlist_id: the id of the hotlist to be removed.
+      services: interfaces to data storage.
+  """
+  services.hotlist_star.ExpungeStars(cnxn, hotlist_id)
+  services.features.DeleteHotlist(cnxn, hotlist_id)

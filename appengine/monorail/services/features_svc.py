@@ -49,7 +49,7 @@ HOTLIST2USER_COLS = ['hotlist_id', 'user_id', 'role_name']
 
 
 class HotlistTwoLevelCache(caches.AbstractTwoLevelCache):
-  """Class to manage both RAM and memcache for Project PBs."""
+  """Class to manage both RAM and memcache for Hotlist PBs."""
 
   def __init__(self, cachemanager, features_service):
     super(HotlistTwoLevelCache, self).__init__(
@@ -778,6 +778,21 @@ class FeaturesService(object):
     hotlist.owner_ids = owner_ids
     hotlist.editor_ids = editor_ids
     hotlist.follower_ids = follower_ids
+
+  def DeleteHotlist(self, cnxn, hotlist_id, commit=True):
+    hotlist = self.GetHotlist(cnxn, hotlist_id, use_cache=False)
+    if not hotlist:
+      raise NoSuchHotlistException()
+
+    self.hotlist2issue_tbl.Delete(cnxn, hotlist_id=hotlist_id, commit=False)
+    self.hotlist2user_tbl.Delete(cnxn, hotlist_id=hotlist_id, commit=False)
+    self.hotlist_tbl.Delete(cnxn, id=hotlist_id, commit=commit)
+
+    self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
+    self.hotlist_user_to_ids.InvalidateKeys(cnxn, hotlist.owner_ids)
+    self.hotlist_user_to_ids.InvalidateKeys(cnxn, hotlist.editor_ids)
+    self.hotlist_names_owner_to_ids.InvalidateKeys(
+        cnxn,(hotlist.name, hotlist.owner_ids[0]))
 
 
 class HotlistAlreadyExists(Exception):

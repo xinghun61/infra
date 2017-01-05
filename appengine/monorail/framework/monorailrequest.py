@@ -550,8 +550,11 @@ class MonorailRequest(object):
       if self.hotlist_name:
         hotlist_id_dict = services.features.LookupHotlistIDs(
             self.cnxn, [self.hotlist_name], [self.viewed_user_auth.user_id])
-        self.hotlist_id = hotlist_id_dict[(
-            self.hotlist_name, self.viewed_user_auth.user_id)]
+        try:
+          self.hotlist_id = hotlist_id_dict[(
+              self.hotlist_name, self.viewed_user_auth.user_id)]
+        except KeyError:
+          webapp2.abort(404, 'invalid hotlist')
 
       if not self.hotlist_id:
         logging.info('no hotlist_id or bad hotlist_name, so no hotlist')

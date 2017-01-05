@@ -559,9 +559,36 @@ class FeaturesServiceTest(unittest.TestCase):
   def testUpdateHotlistIssues(self):
     self.SetUpGetHotlists(456)
     self.SetUpUpdateHotlistIssues(
-        self. cnxn, 456, [555L], [(111L, 100), (222L, 200), (333L, 300)])
+        self.cnxn, 456, [555L], [(111L, 100), (222L, 200), (333L, 300)])
     self.mox.ReplayAll()
     self.features_service.UpdateHotlistIssues(
         self.cnxn, 456, [555L],
         [(111L, 100), (222L, 200), (333L, 300)], commit=False)
+    self.mox.VerifyAll()
+
+  # TODO(jojwang): alter SetUpGetHotlists to take the expected return
+  # for each tbl
+  def SetUpDeleteHotlist(self, cnxn, hotlist_id):
+    hotlist_rows = [(hotlist_id, 'hotlist', 'test hotlist',
+                     'test list', False, '')]
+    self.features_service.hotlist_tbl.Select(
+        self.cnxn, cols=features_svc.HOTLIST_COLS,
+        id=[hotlist_id]).AndReturn(hotlist_rows)
+    self.features_service.hotlist2user_tbl.Select(
+        self.cnxn, cols=['hotlist_id', 'user_id', 'role_name'],
+        hotlist_id=[hotlist_id]).AndReturn([(hotlist_id, 111L, 'owner')])
+    self.features_service.hotlist2issue_tbl.Select(
+        self.cnxn, cols=['hotlist_id', 'issue_id', 'rank'],
+        hotlist_id=[hotlist_id],
+        order_by=[('rank DESC', ''), ('issue_id', '')]).AndReturn([])
+    self.features_service.hotlist2issue_tbl.Delete(
+        cnxn, hotlist_id=hotlist_id, commit=False)
+    self.features_service.hotlist2user_tbl.Delete(
+        cnxn, hotlist_id=hotlist_id, commit=False)
+    self.features_service.hotlist_tbl.Delete(cnxn, id=hotlist_id, commit=False)
+
+  def testDeleteHotlist(self):
+    self.SetUpDeleteHotlist(self.cnxn, 678)
+    self.mox.ReplayAll()
+    self.features_service.DeleteHotlist(self.cnxn, 678, commit=False)
     self.mox.VerifyAll()

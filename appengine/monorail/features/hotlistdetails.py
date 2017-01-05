@@ -9,6 +9,7 @@ import time
 
 from third_party import ezt
 
+from features import hotlist_helpers
 from framework import framework_helpers
 from framework import servlet
 from framework import permissions
@@ -49,7 +50,7 @@ class HotlistDetails(servlet.Servlet):
     """Process the posted form."""
 
     if post_data.get('deletestate') == 'true':
-      # TODO(jojwang): write features_svc function for deleting hotlist
+      hotlist_helpers.RemoveHotlist(mr.cnxn, mr.hotlist_id, self.services)
       return framework_helpers.FormatAbsoluteURL(
           mr, '/u/%s/hotlists' % mr.auth.email,
           saved=1, ts=int(time.time()), include_project=False)
