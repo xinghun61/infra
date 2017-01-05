@@ -487,13 +487,16 @@ def get_target_package_vars():
   goos = os.environ['GOOS']
   goarch = os.environ['GOARCH']
 
-  if goarch not in ('386', 'amd64', 'arm'):
+  if goarch not in ('386', 'amd64', 'arm', 'arm64'):
     raise BuildException('Unsupported GOARCH %s' % goarch)
 
   # There are many ARMs, pick the concrete instruction set. 'v6' is the default,
-  # don't try to support other variants for now.
+  # don't try to support other variants for now. Note that 'GOARM' doesn't apply
+  # to 'arm64' arch.
   #
-  # See https://golang.org/doc/install/source#environment.
+  # See:
+  #   https://golang.org/doc/install/source#environment
+  #   https://github.com/golang/go/wiki/GoArm
   if goarch == 'arm':
     goarm = os.environ.get('GOARM', '6')
     if goarm != '6':
