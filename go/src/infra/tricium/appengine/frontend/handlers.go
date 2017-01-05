@@ -98,7 +98,7 @@ func analyzeHandler(c *router.Context) {
 		return
 	}
 	t := taskqueue.NewPOSTTask("/internal/queue", v)
-	if _, err := taskqueue.Add(ctx, t, "service-queue"); err != nil {
+	if _, err := taskqueue.Add(ctx, t, common.ServiceQueue); err != nil {
 		common.ReportServerError(c, err)
 		return
 	}
@@ -170,7 +170,7 @@ func queueHandler(c *router.Context) {
 			return errors.New("failed to encode launch request")
 		}
 		tl := taskqueue.NewPOSTTask("/launcher/internal/queue", vl)
-		if _, err := taskqueue.Add(ctx, tl, "launcher-queue"); err != nil {
+		if _, err := taskqueue.Add(ctx, tl, common.LauncherQueue); err != nil {
 			return fmt.Errorf("faile to enqueue launch request: %v", err)
 		}
 		return nil

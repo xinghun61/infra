@@ -402,7 +402,7 @@ func enqueueServiceRequests(ctx context.Context, changes []*GerritChangeDetails)
 			return errors.New("failed to encode service request")
 		}
 		t := taskqueue.NewPOSTTask("internal/queue", v)
-		if _, err := taskqueue.Add(ctx, t, "service-queue"); err != nil {
+		if _, err := taskqueue.Add(ctx, t, common.ServiceQueue); err != nil {
 			return err
 		}
 		log.Infof(ctx, "Converted change details (%v) to service request (%v)", c, sr)

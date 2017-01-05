@@ -25,6 +25,20 @@ import (
 	"github.com/luci/luci-go/server/templates"
 )
 
+const (
+	// ServiceQueue specifies the name of the service task queue.
+	ServiceQueue = "service-queue"
+
+	// LauncherQueue specifies the name of the launcher task queue.
+	LauncherQueue = "launcher-queue"
+
+	// DriverQueue specified the name of the driver task queue.
+	DriverQueue = "driver-queue"
+
+	// TrackerQueue specified the name of the tracker task queue.
+	TrackerQueue = "tracker-queue"
+)
+
 // Entity encapsulates a byte slice for storing in datastore.
 type Entity struct {
 	Value []byte

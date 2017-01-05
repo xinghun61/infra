@@ -72,7 +72,7 @@ func queueHandler(c *router.Context) {
 			return
 		}
 		tr := taskqueue.NewPOSTTask("/tracker/internal/queue", vr)
-		if _, err := taskqueue.Add(ctx, tr, "tracker-queue"); err != nil {
+		if _, err := taskqueue.Add(ctx, tr, common.TrackerQueue); err != nil {
 			common.ReportServerError(c, err)
 			return
 		}
@@ -98,7 +98,7 @@ func queueHandler(c *router.Context) {
 			return
 		}
 		tr := taskqueue.NewPOSTTask("/tracker/internal/queue", vr)
-		if _, err := taskqueue.Add(ctx, tr, "tracker-queue"); err != nil {
+		if _, err := taskqueue.Add(ctx, tr, common.TrackerQueue); err != nil {
 			common.ReportServerError(c, err)
 			return
 		}
@@ -122,13 +122,13 @@ func queueHandler(c *router.Context) {
 				return
 			}
 			td := taskqueue.NewPOSTTask("/driver/internal/queue", vd)
-			if _, err := taskqueue.Add(ctx, td, "driver-queue"); err != nil {
+			if _, err := taskqueue.Add(ctx, td, common.DriverQueue); err != nil {
 				common.ReportServerError(c, err)
 				return
 			}
 		}
 	default:
-		common.ReportServerError(c, fmt.Errorf("Unknown kind: %s", dr.Kind))
+		common.ReportServerError(c, fmt.Errorf("Unknown kind: %d", dr.Kind))
 	}
 }
 
@@ -154,7 +154,7 @@ func notifyHandler(c *router.Context) {
 		return
 	}
 	td := taskqueue.NewPOSTTask("/driver/internal/queue", vd)
-	if _, err := taskqueue.Add(ctx, td, "driver-queue"); err != nil {
+	if _, err := taskqueue.Add(ctx, td, common.DriverQueue); err != nil {
 		common.ReportServerError(c, err)
 		return
 	}
