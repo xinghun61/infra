@@ -12,9 +12,12 @@ from google.appengine.ext import testbed
 from third_party import ezt
 
 from features import hotlistissues
+from features import hotlist_helpers
 from framework import framework_views
 from framework import permissions
 from framework import sorting
+from framework import template_helpers
+from framework import xsrf
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
@@ -114,8 +117,17 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     self.assertEqual(ezt.boolean(False), page_data['allow_rerank'])
 
   def testGetTableViewData(self):
-    # TODO(jojwang): Write this test
-    pass
+    self.mr.auth.user_id = 222L
+    self.mr.col_spec = 'Stars Projects Rank'
+    table_view_data = self.servlet.GetTableViewData(self.mr)
+    self.assertEqual(table_view_data['remove_issues_token'], xsrf.GenerateToken(
+        self.mr.auth.user_id, '/u/222/hotlists/hotlist.do'))
+    self.assertEqual(table_view_data['add_issues_selected'], ezt.boolean(False))
+
+    self.user2.obscure_email = False
+    table_view_data = self.servlet.GetTableViewData(self.mr)
+    self.assertEqual(table_view_data['remove_issues_token'], xsrf.GenerateToken(
+        self.mr.auth.user_id, '/u/testuser2@gmail.com/hotlists/hotlist.do'))
 
   def testGetGridViewData(self):
     # TODO(jojwang): Write this test

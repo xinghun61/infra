@@ -78,9 +78,19 @@ class HotlistPeopleListTest(unittest.TestCase):
     page_data = self.servlet.GatherPageData(mr)
     self.assertEqual(ezt.boolean(False), page_data['offer_membership_editing'])
 
-  def testProcessFormData(self):
-    # TODO(jojwang): Write this test
-    pass
+  def testProcessFormData_Permission(self):
+    """Only owner can change member of hotlist."""
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/u/buzbuz@gmail.com/hotlists/people',
+        hotlist=self.private_hotlist,
+        )
+    mr.auth.effective_ids = {111L, 444L}
+    self.servlet.ProcessFormData(mr, {})
+
+    mr.auth.effective_ids = {222L, 444L}
+    self.assertRaises(permissions.PermissionException,
+                      self.servlet.ProcessFormData, mr, {})
+
 
   def testProcessRemoveMembers(self):
     # TODO(jojwang): Write this test

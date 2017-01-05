@@ -14,7 +14,7 @@
         [if-any hotlist.is_starred]&#9733;[else]&#9734;[end]
         </a>
       [end]
-      <a href="[viewed_user.profile_url]hotlists/[hotlist.name]">Hotlist [hotlist.name]</a>
+      <a href="[hotlist.url]">Hotlist [hotlist.name]</a>
     </td>
     <td nowrap="nowrap" width="80%" style="border-right: 2px solid white" class="issueheader">
       <span class="h3" style="padding-left:4px">Description: [hotlist.description]</span>

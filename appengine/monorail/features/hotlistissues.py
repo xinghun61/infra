@@ -137,6 +137,9 @@ class HotlistIssues(servlet.Servlet):
         'default_results_per_page': 10,
         'preview_on_hover': (
             settings.enable_quick_edit and mr.auth.user_pb.preview_on_hover),
+        # TODO(jojwang): if owner chooses not to obscure email, but hotlist
+        # is still being accessed via u/owner_id/hotlists/hotlist_name
+        # this token will be wrong.
         'remove_issues_token': xsrf.GenerateToken(
             mr.auth.user_id,
             hotlist_helpers.GetURLOfHotlist(

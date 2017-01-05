@@ -1706,6 +1706,11 @@ class FeaturesService(object):
     hotlist.owner_ids = owner_ids
     hotlist.editor_ids = editor_ids
     hotlist.follower_ids = follower_ids
+
+  def DeleteHotlist(self, cnxn, hotlist_id, commit=True):
+    hotlist = self.hotlists_by_id.pop(hotlist_id, None)
+    if hotlist is not None:
+      self.test_hotlists.pop(hotlist.name, None)
   # end of Hotlist functions
 
   def ExpungeSavedQueriesExecuteInProject(self, _cnxn, project_id):
