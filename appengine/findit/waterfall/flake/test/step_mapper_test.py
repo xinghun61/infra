@@ -116,7 +116,8 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
   def setUp(self):
     super(StepMapperTest, self).setUp()
     self.http_client = HttpClientAppengine()
-    self.master_name = 'm'
+    self.master_name = 'tryserver.m'
+    self.wf_master_name = 'm'
     self.builder_name = 'b'
     self.build_number = 123
     self.step_name = 'browser_tests on platform'
@@ -125,8 +126,13 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
         self.step_name, None)
     self.build_step.put()
 
+    self.wf_build_step = BuildStep.Create(
+        self.wf_master_name, self.builder_name, self.build_number,
+        self.step_name, None)
+    self.wf_build_step.put()
+
   @mock.patch.object(step_mapper, '_GetMatchingWaterfallBuildStep',
-                     return_value=('m', 'b', 123, 'browser_tests',
+                     return_value=('tryserver.m', 'b', 123, 'browser_tests',
                                    _SAMPLE_STEP_METADATA))
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask',
                      return_value=_SAMPLE_OUTPUT)
@@ -136,7 +142,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(self.build_step.supported)
 
   @mock.patch.object(step_mapper, '_GetMatchingWaterfallBuildStep',
-                     return_value=('m', None, 123, 'browser_tests',
+                     return_value=('tryserver.m', None, 123, 'browser_tests',
                                    _SAMPLE_STEP_METADATA))
   def testFindMatchingWaterfallStepNoMatch(self, _):
     step_mapper.FindMatchingWaterfallStep(self.build_step, 'test1')
@@ -144,14 +150,14 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(self.build_step.wf_builder_name)
 
   @mock.patch.object(step_mapper, '_GetMatchingWaterfallBuildStep',
-                     return_value=('m', 'b', 123, 'browser_tests',
+                     return_value=('tryserver.m', 'b', 123, 'browser_tests',
                                    _SAMPLE_STEP_METADATA_NOT_SWARMED))
   def testFindMatchingWaterfallStepNotSwarmed(self, _):
     step_mapper.FindMatchingWaterfallStep(self.build_step, 'test1')
     self.assertFalse(self.build_step.swarmed)
 
   @mock.patch.object(step_mapper, '_GetMatchingWaterfallBuildStep',
-                     return_value=('m', 'b', 123, 'browser_tests',
+                     return_value=('tryserver.m', 'b', 123, 'browser_tests',
                                    _SAMPLE_STEP_METADATA))
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask',
                      return_value=None)
@@ -246,7 +252,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     master_name, builder_name, build_number, step_name, step_metadata = (
         step_mapper._GetMatchingWaterfallBuildStep(
             self.build_step, self.http_client))
-    self.assertEqual(master_name, self.master_name)
+    self.assertEqual(master_name, self.wf_master_name)
     self.assertEqual(builder_name, self.builder_name)
     self.assertEqual(build_number, self.build_number)
     self.assertEqual(step_name, self.step_name)
@@ -261,7 +267,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(step_mapper, '_GetStepMetadata')
   def testGetMatchingWaterfallBuildStepNoWfBuilderName(self, mock_fn):
     mock_fn.return_value = {
-        'waterfall_mastername': 'm'
+        'waterfall_mastername': self.wf_master_name
     }
     _, _, _, _, step_metadata = step_mapper._GetMatchingWaterfallBuildStep(
          self.build_step, self.http_client)
@@ -270,7 +276,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(step_mapper, '_GetStepMetadata')
   def testGetMatchingWaterfallBuildStepNoStep(self, mock_fn):
     mock_fn.return_value = {
-        'waterfall_mastername': 'm',
+        'waterfall_mastername': self.wf_master_name,
         'waterfall_buildername': 'b'
     }
     _, _, _, _, step_metadata = step_mapper._GetMatchingWaterfallBuildStep(
@@ -370,9 +376,24 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     step = step_mapper._GetAnnotationsProto(self.build_step, self.http_client)
     self.assertIsNone(step)
 
+  @mock.patch.object(step_mapper, '_GetResponseFromLogDog')
+  def testGetAnnotationsTailReturnedEmpty(self, mock_fn):
+    data = {
+        'logs': [
+            {
+                'datagram': {
+                    'data': 'data'
+                }
+            }
+        ]
+    }
+    mock_fn.side_effect = [_GenerateResWithPrefix({}),
+                           _GenerateResWithPrefix(data)]
+    step = step_mapper._GetAnnotationsProto(self.build_step, self.http_client)
+    self.assertIsNone(step)
+
   def testGetResultJsonException(self):
     self.assertIsNone(step_mapper._GetResultJson('res'))
-
 
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask',
                      return_value=_SAMPLE_OUTPUT)
@@ -391,3 +412,21 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     step_mapper.FindMatchingWaterfallStep(self.build_step, 'test1')
     self.assertTrue(self.build_step.swarmed)
     self.assertTrue(self.build_step.supported)
+
+  @mock.patch.object(step_mapper, '_GetStepMetadata',
+                     return_value={})
+  def testFindMatchingWaterfallStepForWfStepNoStepMetadata(self, _):
+    step_mapper.FindMatchingWaterfallStep(self.wf_build_step, 'test1')
+    self.assertEqual(self.wf_build_step.wf_build_number,
+                     self.wf_build_step.build_number)
+    self.assertFalse(self.wf_build_step.swarmed)
+    self.assertFalse(self.wf_build_step.supported)
+
+  @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask',
+                     return_value=_SAMPLE_OUTPUT)
+  @mock.patch.object(step_mapper, '_GetStepMetadata',
+                     return_value=_SAMPLE_STEP_METADATA)
+  def testFindMatchingWaterfallStepForWfStep(self, *_):
+    step_mapper.FindMatchingWaterfallStep(self.wf_build_step, 'test1')
+    self.assertTrue(self.wf_build_step.swarmed)
+    self.assertTrue(self.wf_build_step.supported)

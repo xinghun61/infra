@@ -24,7 +24,7 @@ google.__path__.append(os.path.join(third_party, 'google'))
 from logdog import annotations_pb2
 
 
-_LOGDOG_ENDPOINT = 'https://luci-logdog.appspot.com/prpc/logdog.Logs/'
+_LOGDOG_ENDPOINT = 'https://luci-logdog.appspot.com/prpc/logdog.Logs'
 _LOGDOG_TAIL_ENDPOINT = '%s/Tail' % _LOGDOG_ENDPOINT
 _LOGDOG_GET_ENDPOINT = '%s/Get' % _LOGDOG_ENDPOINT
 _BASE_LOGDOG_REQUEST_PATH = 'bb/%s/%s/%s/+/%s'
@@ -102,7 +102,12 @@ def _GetAnnotationsProto(cq_build_step, http_client):
 
   response_json = _GetResultJson(response)
   if not response_json:
-    return None
+    # Due to a bug(crbug.com/678831) in LogDog, Tail request might return
+    # empty data. So use Get request as a backup.
+    response = _GetResponseFromLogDog(_LOGDOG_GET_ENDPOINT, path, http_client)
+    response_json = _GetResultJson(response)
+    if not response_json:
+      return None
 
   # Gets data for proto. Data format as below:
   # {
@@ -300,23 +305,28 @@ def FindMatchingWaterfallStep(build_step, test_name):
   build_step.swarmed = False
   build_step.supported = False
 
-  wf_master_name = None
-  wf_builder_name = None
-  wf_build_number = None
-  wf_step_name = None
-
   http_client = HttpClientAppengine()
 
-  wf_master_name, wf_builder_name, wf_build_number, wf_step_name, metadata = (
-      _GetMatchingWaterfallBuildStep(build_step, http_client))
+  if build_step.on_cq:
+    wf_master_name, wf_builder_name, wf_build_number, wf_step_name, metadata = (
+        _GetMatchingWaterfallBuildStep(build_step, http_client))
 
-  build_step.wf_master_name = wf_master_name
-  build_step.wf_builder_name = wf_builder_name
-  build_step.wf_build_number = wf_build_number
-  build_step.wf_step_name = wf_step_name
+    build_step.wf_master_name = wf_master_name
+    build_step.wf_builder_name = wf_builder_name
+    build_step.wf_build_number = wf_build_number
+    build_step.wf_step_name = wf_step_name
 
-  if not build_step.has_matching_waterfall_step:
-    return
+    if not build_step.has_matching_waterfall_step:
+      return
+  else:
+    build_step.wf_master_name = build_step.master_name
+    build_step.wf_builder_name = build_step.builder_name
+    build_step.wf_build_number = build_step.build_number
+    build_step.wf_step_name = build_step.step_name
+    metadata = _GetStepMetadata(build_step, http_client)
+    if not metadata:
+      logging.error('Couldn\'t get step_metadata')
+      return
 
   # Query Swarming for isolated data.
   build_step.swarmed = True if metadata.get('swarm_task_ids') else False
