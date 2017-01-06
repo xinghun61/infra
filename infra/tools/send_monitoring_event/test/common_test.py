@@ -93,6 +93,13 @@ class TestServiceEvent(SendingEventBaseTest):
        '--service-event-revinfo', os.path.join(DATA_DIR, 'revinfo.txt')])
     common.send_service_event(args)
 
+  def test_send_service_event_revinfo_from_gclient_smoke(self):
+    args = get_arguments(
+      ['--event-mon-service-name', 'thing',
+       '--service-event-type', 'START',
+       '--service-event-revinfo-from-gclient'])
+    common.send_service_event(args)
+
 
 class TestBuildEvent(SendingEventBaseTest):
   def test_send_build_event_smoke(self):

@@ -63,8 +63,7 @@ def add_argparse_options(parser):
                        ' "gclient revinfo -a".')
   revinfo.add_argument('--service-event-revinfo-from-gclient',
                        action='store_true',
-                       help='Calls gclient to get revision information. '
-                       '\nMutually exclusive with --service-event-revinfo')
+                       help='DEPRECATED. Do not use, it will be deleted soon.')
 
   # Build events
   build_group = parser.add_argument_group('Build event options')
@@ -257,8 +256,8 @@ def send_service_event(args):
     else:
       with open(args.service_event_revinfo, 'r') as f:
         revinfo = event_mon.parse_revinfo(f.read())
-  elif args.service_event_revinfo_from_gclient:  # pragma: no cover
-    revinfo = event_mon.get_revinfo()
+  if args.service_event_revinfo_from_gclient:
+    LOGGER.error('--service-event-revinfo-from-gclient is deprecated.')
 
   if args.service_event_stack_trace:
     args.service_event_type = 'CRASH'
