@@ -28,6 +28,10 @@
 <dom-module id="som-app">
   <template>
     <style>
+      paper-button {
+        font-size: 0.85em;
+        padding: 0.5em;
+      }
       paper-toolbar {
         --paper-toolbar-background: black;
       }
@@ -44,18 +48,22 @@
       }
       h2, h3 {
         font-weight: bold;
-        font-size: 18px;
+        background-color: #eee;
+        border-bottom: 1px solid #ddd;
       }
-      .header {
+      h2 {
+        font-size: 22px;
         padding: 0.5em 0.5em 0.2em;
         margin: 1em 0.5em;
-        background-color: #eee;
+      }
+      h3 {
+        padding: 0.3em 0.5em 0.1em;
+        margin: 1em 0.5em;
+        height: 45px;
+        align-items: center;
       }
       #alertsList {
         padding: 0;
-      }
-      #alertsListInner h2 {
-        font-size: 22px;
       }
       #examineAlert {
         height: 100%;
@@ -107,11 +115,8 @@
         border-left: 1px solid #ddd;
         padding: 1em;
       }
-      .category-title {
-        padding: 0.5em 0.5em 0.2em;
-        margin: 1em 0.5em;
-        background-color: #eee;
-        border-bottom: 1px solid #ddd;
+      .section-buttons {
+        font-weight: normal;
       }
       .som-title {
         font-weight: bold;
@@ -211,11 +216,11 @@
             </div>
             <som-bug-queue id="bugQueue" bugs="{{_bugs}}" bug-queue-label="[[_bugQueueLabel]]" tree-display-name="[[_treeDisplayName]]"></som-bug-queue>
             <template is="dom-if" if="[[_showSwarmingAlerts]]">
-              <h2 class="header">Swarming Bots (<a target="_blank" href="https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/troopers/playbook.md#Swarming">Help?</a>)</h2>
+              <h2>Swarming Bots (<a target="_blank" href="https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/troopers/playbook.md#Swarming">Help?</a>)</h2>
               <som-swarming-bots bots="[[_swarmingAlerts]]"></som-swarming-bots>
             </template>
             <div id="alertsListInner">
-              <h2 class="header">[[_treeDisplayName]] Failure Alerts (<a href="/help-som">Help?</a>)</h2>
+              <h2>[[_treeDisplayName]] Failure Alerts (<a href="/help-som">Help?</a>)</h2>
               <div id="fetchAlertsError" hidden=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
               <template is="dom-if" if="[[!_hideJulie]]">
                 <div id="noAlerts">
@@ -225,8 +230,8 @@
                 </div>
               </template>
               <template is="dom-repeat" items="[[_computeCategories(_alerts, _isTrooperPage)]]" as="cat">
-                <div class="category-title layout horizontal justified">
-                  <h3 class="self-center">[[_getCategoryTitle(cat, _isTrooperPage)]]:</h3>
+                <h3 class="category-title self-center layout horizontal justified">
+                  [[_getCategoryTitle(cat, _isTrooperPage)]]:
                   <template is="dom-if" if="[[useCompactView]]">
                     <div class="self-center end section-buttons">
                       <paper-button raised on-tap="collapseAll">
@@ -237,7 +242,7 @@
                       </paper-button>
                     </div>
                   </template>
-                </div>
+                </h3>
                 <template is="dom-repeat" items="[[_alertsWithCategory(_alerts, cat, _isTrooperPage)]]" as="alert">
                   <div class="list-item" tabindex$="[[tabIndex]]">
                     <som-alert-item
