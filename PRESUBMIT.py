@@ -352,8 +352,24 @@ def JshintChecks(input_api, output_api):  # pragma: no cover
   return tests
 
 
+def NoTypescriptCheck(input_api, output_api):  # pragma: no cover
+  """Checks that typescript files aren't being added to infra."""
+  output = []
+  for f in input_api.AffectedFiles(include_deletes=False):
+    if str(f).endswith('.ts'):
+      output.append(output_api.PresubmitError(
+          'Typescript file disallowed: %s' % f))
+  if output:
+    output.append(output_api.PresubmitError(
+        'Please contact {dnj,estaab,andybons,seanmccullough,infra-dev}'
+        '@chromium.org before adding typescript files. See '
+        'http://crbug.com/678673 for details.'))
+  return output
+
+
 def CommonChecks(input_api, output_api):  # pragma: no cover
   output = []
+  output.extend(NoTypescriptCheck(input_api, output_api))
   output.extend(input_api.RunTests(JshintChecks(input_api, output_api)))
   output.extend(BrokenLinksChecks(input_api, output_api))
 
