@@ -513,7 +513,7 @@ class FeaturesService(object):
         description=description, is_private=is_private, owner_ids=owner_ids,
         editor_ids=editor_ids, default_col_spec=default_col_spec)
     hotlist.hotlist_id = self._InsertHotlist(cnxn, hotlist)
-    return hotlist.hotlist_id
+    return hotlist
 
   def UpdateHotlist(
       self, cnxn, hotlist_id, name=None, summary=None, description=None,

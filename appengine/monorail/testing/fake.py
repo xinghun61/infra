@@ -1601,10 +1601,10 @@ class FeaturesService(object):
     iid_rank_user_date = [
         (issue_id, rank*100, owner_ids[0] or None, ts) for
         rank, issue_id in enumerate(issue_ids or [])]
-    self.TestAddHotlist(hotlist_name, summary=summary, owner_ids=owner_ids,
-                        editor_ids=editor_ids, description=description,
-                        is_private=is_private,
-                        iid_rank_user_date=iid_rank_user_date)
+    return self.TestAddHotlist(hotlist_name, summary=summary,
+                               owner_ids=owner_ids, editor_ids=editor_ids,
+                               description=description, is_private=is_private,
+                               iid_rank_user_date=iid_rank_user_date)
 
   def UpdateHotlist(self, cnxn, hotlist_id, name=None, summary=None,
                     description=None, is_private=None, default_col_spec=None):

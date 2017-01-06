@@ -6,9 +6,11 @@
 """Servlet for creating new hotlists."""
 
 import logging
+import time
 import re
 
 from features import features_constants
+from features import hotlist_helpers
 from framework import framework_bizobj
 from framework import framework_helpers
 from framework import permissions
@@ -23,7 +25,8 @@ _MSG_HOTLIST_NAME_NOT_AVAIL = 'You already have a hotlist with that name.'
 _MSG_MISSING_HOTLIST_NAME = 'Missing hotlist name'
 _MSG_INVALID_HOTLIST_NAME = 'Invalid hotlist name'
 _MSG_MISSING_HOTLIST_SUMMARY = 'Missing hotlist summary'
-_MSG_INVALID_ISSUES_INPUT = "Issues input is invalid"
+_MSG_INVALID_ISSUES_INPUT = 'Issues input is invalid'
+_MSG_INVALID_MEMBERS_INPUT = 'One or more editor emails is not valid.'
 
 
 class HotlistCreate(servlet.Servlet):
@@ -112,17 +115,18 @@ class HotlistCreate(servlet.Servlet):
       try:
         editor_dict = self.services.user.LookupUserIDs(mr.cnxn, editor_emails)
         editor_ids = editor_dict.values()
-      except user_svc.NoSuchUserException as e:
-        mr.errors.editors = e.message
+      except user_svc.NoSuchUserException:
+        mr.errors.editors = _MSG_INVALID_MEMBERS_INPUT
 
     is_private = post_data.get('is_private')
 
     if not mr.errors.AnyErrors():
       try:
-        hotlist_id = self.services.features.CreateHotlist(
+        hotlist = self.services.features.CreateHotlist(
             mr.cnxn, hotlist_name, summary, description,
             owner_ids=[mr.auth.user_id], editor_ids=editor_ids,
-            issue_ids = issue_ids, is_private=(is_private == 'yes'))
+            issue_ids = issue_ids, is_private=(is_private == 'yes'),
+            ts=int(time.time()))
       except features_svc.HotlistAlreadyExists:
         mr.errors.hotlistname = _MSG_HOTLIST_NAME_NOT_AVAIL
 
@@ -133,6 +137,6 @@ class HotlistCreate(servlet.Servlet):
           initial_editors=editors, initial_privacy=is_private)
     else:
       return framework_helpers.FormatAbsoluteURL(
-          mr, '/u/%s/hotlists%s/%d' % (mr.auth.user_id,
-                                       urls.HOTLIST_ISSUES, hotlist_id),
+          mr, hotlist_helpers.GetURLOfHotlist(
+              mr.cnxn, hotlist, self.services.user),
           include_project=False)

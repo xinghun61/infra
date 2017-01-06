@@ -5,6 +5,7 @@
 
 """Unit test for Hotlist creation servlet."""
 
+import mox
 import unittest
 
 import settings
@@ -24,7 +25,8 @@ class HotlistCreateTest(unittest.TestCase):
     self.mr = testing_helpers.MakeMonorailRequest()
     self.services = service_manager.Services(project=fake.ProjectService(),
                                         user=fake.UserService(),
-                                        issue=fake.IssueService())
+                                             issue=fake.IssueService(),
+                                             features=fake.FeaturesService())
     self.servlet = hotlistcreate.HotlistCreate('req', 'res',
                                                services=self.services)
     self.project = self.services.project.TestAddProject('projectname',
@@ -47,6 +49,11 @@ class HotlistCreateTest(unittest.TestCase):
         self.project.project_id][self.issue1_local_id]
     self.issue2 = self.services.issue.issues_by_project[
         self.project.project_id][self.issue2_local_id]
+    self.mox = mox.Mox()
+
+  def tearDown(self):
+    self.mox.UnsetStubs()
+    self.mox.ResetAll()
 
   def testParseIssueRefs(self):
     issue_refs_string = "projectname: %d, projectname: %d" % (
@@ -107,6 +114,29 @@ class HotlistCreateTest(unittest.TestCase):
     self.assertEqual('no', page_data['initial_privacy'])
 
   def testProcessFormData(self):
-    pass
-  # TODO(jojwang): implement this test after adding CreateHotlist and
-  # other functions to Features Services in testing/fake.py
+    self.servlet.services.user.TestAddUser('owner', 111L)
+    self.mr.auth.user_id = 111L
+    post_data = fake.PostData(hotlistname=['Hotlist'], summary=['summ'],
+                              description=['hey'],
+                              issue_refs_string=[
+                                  'projectname:1, projectname:2'],
+                              editors=[''], is_private=['yes'])
+    url = self.servlet.ProcessFormData(self.mr, post_data)
+    self.assertTrue('/u/111/hotlists/Hotlist' in url)
+
+  def testProcessFormData_RejectTemplate(self):
+    mr = testing_helpers.MakeMonorailRequest()
+    post_data = fake.PostData(hotlistname=['Hotlist'], summary=['summ'],
+                              description=['hey'],
+                              issues=['projectna, projectname:2'],
+                              editors=[''], is_private=['yes'])
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        mr, initial_name = 'Hotlist', initial_summary='summ',
+        initial_description='hey', initial_issues='projectna, projectname:2',
+        initial_editors='', initial_privacy='yes')
+    self.mox.ReplayAll()
+    url = self.servlet.ProcessFormData(mr, post_data)
+    self.mox.VerifyAll()
+    self.assertEqual('Issues input is invalid', mr.errors.issues)
+    self.assertIsNone(url)
