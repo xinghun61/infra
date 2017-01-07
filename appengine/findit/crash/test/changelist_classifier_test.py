@@ -110,13 +110,12 @@ DUMMY_CHANGELOG3 = ChangeLog.FromDict({
 # itself; that way ChangelistClassifier.__call__ needn't worry about it,
 # allowing us to clean up the tests here.
 
-DUMMY_CALLSTACKS = [CallStack(0, [],
-                              CallStackFormatType.DEFAULT, LanguageType.CPP),
-                    CallStack(1, [],
-                              CallStackFormatType.DEFAULT, LanguageType.CPP)]
-DUMMY_REPORT = CrashReport(None, None, None, Stacktrace(DUMMY_CALLSTACKS,
-                                                        DUMMY_CALLSTACKS[0]),
-                           (None, None))
+DUMMY_CALLSTACKS = [
+    CallStack(0, [], CallStackFormatType.DEFAULT, LanguageType.CPP),
+    CallStack(1, [], CallStackFormatType.DEFAULT, LanguageType.CPP)]
+DUMMY_REPORT = CrashReport(
+    None, None, None, Stacktrace(DUMMY_CALLSTACKS, DUMMY_CALLSTACKS[0]),
+    (None, None))
 
 
 class ChangelistClassifierTest(CrashTestSuite):
@@ -133,7 +132,6 @@ class ChangelistClassifierTest(CrashTestSuite):
 
   def setUp(self):
     super(ChangelistClassifierTest, self).setUp()
-
     self.changelist_classifier = changelist_classifier.ChangelistClassifier(
         self._mock_http_gitiles_repo_factory, 7)
 
@@ -164,7 +162,7 @@ class ChangelistClassifierTest(CrashTestSuite):
                                signature = 'sig',
                                platform = 'canary',
                                stacktrace = Stacktrace([stack], stack),
-                               regression_range = ['4', '5']))
+                               regression_range = ('4', '5')))
     expected_regression_deps_rolls = copy.deepcopy(dep_rolls)
 
     # Regression of a dep added/deleted (old_revision/new_revision is None) can

@@ -16,8 +16,7 @@ class MockHttpClient(retry_http_client.RetryHttpClient):  # pragma: no cover.
 
   def __init__(self, response_for_url=None):
     super(MockHttpClient, self).__init__()
-    if response_for_url is None:
-      self.response_for_url = {}
+    self.response_for_url = response_for_url or {}
 
   def SetResponseForUrl(self, url, response):
     self.response_for_url[url] = response

@@ -244,8 +244,8 @@ def GetStackInfosForFilesGroupedByDeps(stacktrace, stack_deps):
     {
         'src/': {
             'a.cc': [
-                (StackFrame(0, 'src/', '', 'func', 'a.cc', [1]), 0),
-                (StackFrame(2, 'src/', '', 'func', 'a.cc', [33]), 0),
+                StackInfo(StackFrame(0, 'src/', '', 'func', 'a.cc', [1]), 0),
+                StackInfo(StackFrame(2, 'src/', '', 'func', 'a.cc', [33]), 0),
             ]
         }
     }

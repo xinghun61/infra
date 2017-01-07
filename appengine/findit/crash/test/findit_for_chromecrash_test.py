@@ -220,7 +220,7 @@ class FinditForFracasTest(PredatorTestCase):
     analysis.platform = 'win'
     analysis.stack_trace = 'frame1\nframe2'
     analysis.crashed_version = '50.0.1234.0'
-    dummy_regression_range = ['50.0.1233.0', '50.0.1234.0']
+    dummy_regression_range = ('50.0.1233.0', '50.0.1234.0')
     analysis.regression_range = dummy_regression_range
     culprit = _FinditForChromeCrash().FindCulprit(analysis)
     self.assertIsNotNone(culprit, 'FindCulprit failed unexpectedly')
@@ -248,6 +248,7 @@ class FinditForFracasTest(PredatorTestCase):
     analysis.platform = 'win'
     analysis.stack_trace = 'frame1\nframe2'
     analysis.crashed_version = '50.0.1234.0'
+    # N.B., analysis.regression_range is None
     suspects, tag = _FinditForChromeCrash().FindCulprit(analysis).ToDicts()
 
     expected_suspects = {'found': False}

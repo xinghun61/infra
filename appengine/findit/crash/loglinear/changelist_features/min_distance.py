@@ -21,14 +21,14 @@ class MinDistanceFeature(Feature):
 
   That is, the normal-domain value is scaled linearly between 0 and 1,
   but since we want to return a log-domain value we take the logarithm
-  of that (hence -inf to 0). This ensures that when a result has a
+  of that (hence -inf to 0). This ensures that when a suspect has a
   linearly-scaled value of 0 (aka log-scaled value of -inf) we absolutely
-  refuse to blame that result. This heuristic behavior is intended. Before
-  changing it to be less aggressive about refusing to blame the result,
+  refuse to blame that suspect. This heuristic behavior is intended. Before
+  changing it to be less aggressive about refusing to blame the suspect,
   we should delta test to be sure the new heuristic acts as indented.
 
   When the actual minimum min_distance is zero, we return the log-domain
-  value 0 (aka normal-domain value of 1). When the result has no files
+  value 0 (aka normal-domain value of 1). When the suspect has no files
   or the actual minimum min_distance is greater than the ``maximum``,
   we return the log-domain value -inf (aka normal-domain value of 0). In
   between we scale the normal-domain values linearly, which means the
@@ -47,7 +47,7 @@ class MinDistanceFeature(Feature):
 
   @property
   def name(self):
-    return "MinDistance"
+    return 'MinDistance'
 
   def __call__(self, report):
     """Returns the scaled min ``AnalysisInfo.min_distance`` across all files.
@@ -56,34 +56,34 @@ class MinDistanceFeature(Feature):
       report (CrashReport): the crash report being analyzed.
 
     Returns:
-      A function from ``Result`` to the minimum distance between (the code
-      for) a stack frame in that result and the CL in that result, as a
+      A function from ``Suspect`` to the minimum distance between (the code
+      for) a stack frame in that suspect and the CL in that suspect, as a
       log-domain ``float``.
     """
-    def FeatureValueGivenReport(result):
-      if not result.file_to_analysis_info:
-        logging.warning('No AnalysisInfo for any file: %s' % str(result))
-        return FeatureValue(self.name, lmath.LOG_ZERO,
-            'No AnalysisInfo for any file', None)
+    def FeatureValueGivenReport(suspect):
+      analyses = suspect.file_to_analysis_info
+      if not analyses:
+        message = 'No AnalysisInfo for any file in suspect: %s' % str(suspect)
+        logging.warning(message)
+        return FeatureValue(self.name, lmath.LOG_ZERO, message, None)
 
-      min_distance = min(analysis_info.min_distance
-                         for analysis_info
-                         in result.file_to_analysis_info.itervalues())
+      min_distance = min(per_file_analysis.min_distance
+                         for per_file_analysis in analyses.itervalues())
 
       return FeatureValue(
           name = self.name,
           value = LogLinearlyScaled(float(min_distance), float(self._maximum)),
           reason = ('Minimum distance is %d' % min_distance),
-          changed_files = self._ChangedFiles(result),
+          changed_files = self._ChangedFiles(suspect),
       )
 
     return FeatureValueGivenReport
 
-  def _ChangedFiles(self, result):
-    """Get all the changed files causing this feature to blame this result.
+  def _ChangedFiles(self, suspect):
+    """Get all the changed files causing this feature to blame this suspect.
 
     Arg:
-      result (Result): the result being blamed.
+      suspect (Suspect): the suspect being blamed.
 
     Returns:
       List of ``ChangedFile`` objects sorted by frame index. For example:
@@ -96,7 +96,7 @@ class MinDistanceFeature(Feature):
     """
     index_to_changed_files = {}
 
-    for file_path, analysis_info in result.file_to_analysis_info.iteritems():
+    for file_path, analysis_info in suspect.file_to_analysis_info.iteritems():
       file_name = file_path.split('/')[-1]
       frame = analysis_info.min_distance_frame
       if frame is None: # pragma: no cover
@@ -112,10 +112,13 @@ class MinDistanceFeature(Feature):
 
       index_to_changed_files[frame.index] = ChangedFile(
           name = file_name,
-          blame_url = frame.BlameUrl(result.changelog.revision),
+          blame_url = frame.BlameUrl(suspect.changelog.revision),
           reasons = ['Minimum distance (LOC) %d, frame #%d' % (
               analysis_info.min_distance, frame.index)]
       )
+
+    if not index_to_changed_files: # pragma: no cover
+      logging.warning('Found no changed files for suspect: %s', str(suspect))
 
     # Sort changed file by frame index.
     _, changed_files = zip(*sorted(index_to_changed_files.items(),

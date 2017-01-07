@@ -2,17 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import defaultdict
 import logging
 import math
 
 from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from crash import changelist_classifier
+from crash.crash_report_with_dependencies import CrashReportWithDependencies
 from crash.loglinear.changelist_features import min_distance
 from crash.loglinear.changelist_features import top_frame_index
 from crash.loglinear.model import ToFeatureFunction
 from crash.loglinear.model import UnnormalizedLogLinearModel
 from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
+from crash.suspect import StackInfo
 
 
 class LogLinearChangelistClassifier(object):
@@ -95,59 +98,40 @@ class LogLinearChangelistClassifier(object):
     Returns:
       List of ``Suspect``s, sorted by probability from highest to lowest.
     """
-    if not report.regression_range:
-      logging.warning('ChangelistClassifier.__call__: Missing regression range '
-          'for report: %s', str(report))
+    report = CrashReportWithDependencies(report, self._dependency_fetcher)
+    if report is None:
       return []
-    last_good_version, first_bad_version = report.regression_range
-    logging.info('ChangelistClassifier.__call__: Regression range %s:%s',
-        last_good_version, first_bad_version)
 
-    # We are only interested in the deps in crash stack (the callstack that
-    # caused the crash).
-    # TODO(wrengr): we may want to receive the crash deps as an argument,
-    # so that when this method is called via Findit.FindCulprit, we avoid
-    # doing redundant work creating it.
-    stack_deps = changelist_classifier.GetDepsInCrashStack(
-        report.stacktrace.crash_stack,
-        self._dependency_fetcher.GetDependency(
-            report.crashed_version, report.platform))
-
-    # Get dep and file to changelogs, stack_info and blame dicts.
-    dep_rolls = self._dependency_fetcher.GetDependencyRollsDict(
-        last_good_version, first_bad_version, report.platform)
-
-    # Regression of a dep added/deleted (old_revision/new_revision is None) can
-    # not be known for sure and this case rarely happens, so just filter them
-    # out.
-    regression_deps_rolls = {}
-    for dep_path, dep_roll in dep_rolls.iteritems():
-      if not dep_roll.old_revision or not dep_roll.new_revision:
-        logging.info('Skip %s denpendency %s',
-                     'added' if dep_roll.new_revision else 'deleted', dep_path)
-        continue
-      regression_deps_rolls[dep_path] = dep_roll
+    # Look at all the frames from any stack in the crash report, and
+    # organize the ones that come from dependencies we care about.
+    dep_to_file_to_stack_infos = defaultdict(lambda: defaultdict(list))
+    for stack in report.stacktrace:
+      for frame in stack:
+        if frame.dep_path in report.dependencies:
+          dep_to_file_to_stack_infos[frame.dep_path][frame.file_path].append(
+              StackInfo(frame, stack.priority))
 
     dep_to_file_to_changelogs, ignore_cls = (
         changelist_classifier.GetChangeLogsForFilesGroupedByDeps(
-            regression_deps_rolls, stack_deps, self._get_repository))
-    dep_to_file_to_stack_infos = (
-        changelist_classifier.GetStackInfosForFilesGroupedByDeps(
-            report.stacktrace, stack_deps))
+            report.dependency_rolls, report.dependencies,
+            self._get_repository))
 
     # Get the possible suspects.
     suspects = changelist_classifier.FindSuspects(
         dep_to_file_to_changelogs,
         dep_to_file_to_stack_infos,
-        stack_deps,
+        report.dependencies,
         self._get_repository,
         ignore_cls)
-    if suspects is None:
+    if not suspects:
+      logging.warning('%s.__call__: Found no suspects for report: %s',
+          self.__class__.__name__, str(report))
       return []
 
     # Score the suspects and organize them for outputting/returning.
     features_given_report = self._model.Features(report)
     score_given_report = self._model.Score(report)
+
     scored_suspects = []
     for suspect in suspects:
       score = score_given_report(suspect)
@@ -159,7 +143,8 @@ class LogLinearChangelistClassifier(object):
       suspect.confidence = score
       features = features_given_report(suspect)
       suspect.reasons = self.FormatReasons(features)
-      suspect.changed_files = [changed_file.ToDict()
+      suspect.changed_files = [
+          changed_file.ToDict()
           for changed_file in self.AggregateChangedFiles(features)]
       scored_suspects.append(suspect)
 
@@ -227,9 +212,10 @@ class LogLinearChangelistClassifier(object):
           all_changed_files[changed_file.name] = changed_file
           continue
 
-        assert accumulated_changed_file.blame_url == changed_file.blame_url, (
-            ValueError('Blame URLs do not match: %s != %s'
-                % (accumulated_changed_file.blame_url, changed_file.blame_url)))
+        if (accumulated_changed_file.blame_url !=
+            changed_file.blame_url): # pragma: no cover
+          raise ValueError('Blame URLs do not match: %s != %s'
+              % (accumulated_changed_file.blame_url, changed_file.blame_url))
         accumulated_changed_file.reasons.extend(changed_file.reasons or [])
 
     return sorted(all_changed_files.values(),

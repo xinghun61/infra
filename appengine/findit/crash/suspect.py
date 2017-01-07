@@ -33,10 +33,10 @@ class StackInfo(namedtuple('StackInfo', ['frame', 'priority'])):
         % (self.__class__.__name__, self.frame, self.priority))
 
 
-# TODO(wrengr): break this into separate unanalyzed suspect, and analyzed
-# suspect; so we can distinguish the input to ``ChangelistClassifier``
-# from the output of it (which will amend each suspect with extra metadata
-# like the confidence and reasons).
+# TODO(wrengr): maybe break this into separate unanalyzed suspect,
+# and analyzed suspect; so we can distinguish the input to
+# ``ChangelistClassifier`` from the output of it (which will amend each
+# suspect with extra metadata like the confidence and reasons).
 class Suspect(object):
   """A suspected changelog to be classified as a possible ``Culprit``.
 
@@ -47,10 +47,11 @@ class Suspect(object):
 
   def __init__(self, changelog, dep_path,
                confidence=None, reasons=None, changed_files=None):
-    assert isinstance(confidence, (int, float, type(None))), TypeError(
-        'In the ``confidence`` argument to the Result constructor, '
-        'expected a number or None, but got a %s object instead.'
-        % confidence.__class__.__name__)
+    if not isinstance(confidence, (int, float, type(None))): # pragma: no cover
+      raise TypeError(
+          'In the ``confidence`` argument to the Result constructor, '
+          'expected a number or None, but got a %s object instead.'
+          % confidence.__class__.__name__)
     self.changelog = changelog
     self.dep_path = dep_path
     self.confidence = None if confidence is None else float(confidence)
@@ -102,7 +103,7 @@ class Suspect(object):
 
 
   def _UpdateSuspect(self, file_path, stack_infos, blame):
-    """Updates a ``Suspect`` with file path and its stack_infos and blame.
+    """Updates the ``Suspect`` with file path and its stack_infos and blame.
 
     When a file_path is found both shown in stacktrace and touched by
     the revision of this result, update result with the information of
@@ -113,7 +114,6 @@ class Suspect(object):
     crashed lines in the file path.
 
     Args:
-      suspect (Suspect): the suspect to be updated.
       file_path (str): File path of the crashed file.
       stack_infos (list of StackInfo): List of the frames of this file
         together with their callstack priorities.

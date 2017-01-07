@@ -18,14 +18,14 @@ class TopFrameIndexFeature(Feature):
 
   That is, the normal-domain value is scaled linearly between 0 and 1,
   but since we want to return a log-domain value we take the logarithm
-  of that (hence -inf to 0). This ensures that when a result has a
+  of that (hence -inf to 0). This ensures that when a suspect has a
   linearly-scaled value of 0 (aka log-scaled value of -inf) we absolutely
-  refuse to blame that result. This heuristic behavior is intended. Before
-  changing it to be less aggressive about refusing to blame the result,
+  refuse to blame that suspect. This heuristic behavior is intended. Before
+  changing it to be less aggressive about refusing to blame the suspect,
   we should delta test to be sure the new heuristic acts as indented.
 
   When the actual minimum frame index is zero, we return the log-domain
-  value 0 (aka normal-domain value of 1). When the result has no frames or
+  value 0 (aka normal-domain value of 1). When the suspect has no frames or
   the actual minimum frame index is greater than the ``max_frame_index``,
   we return the log-domain value -inf (aka normal-domain value of 0). In
   between we scale the normal-domain values linearly, which means the
@@ -44,7 +44,7 @@ class TopFrameIndexFeature(Feature):
 
   @property
   def name(self):
-    return "TopFrameIndex"
+    return 'TopFrameIndex'
 
   def __call__(self, report):
     """The minimum ``StackFrame.index`` across all files and stacks.
@@ -53,7 +53,7 @@ class TopFrameIndexFeature(Feature):
       report (CrashReport): the crash report being analyzed.
 
     Returns:
-      A function from ``Result`` to the scaled minimum frame index, as a
+      A function from ``Suspect`` to the scaled minimum frame index, as a
       log-domain ``float``.
     """
     def FeatureValueGivenReport(result):

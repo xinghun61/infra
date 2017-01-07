@@ -33,27 +33,30 @@ class StackFrame(namedtuple('StackFrame',
   """Represents a frame in a stacktrace.
 
   Attributes:
-    index (int): Index shown in the stacktrace if a stackframe line looks like
-      this - '#0 ...', else use the index in the callstack list.
+    index (int): Index shown in the stacktrace if a stackframe line
+      looks like this - '#0 ...', else use the index in the callstack
+      list.
     dep_path (str): Path of the dep this frame represents, for example,
       'src/', 'src/v8', 'src/skia'...etc.
     function (str): Function that caused the crash.
-    file_path (str): Normalized path of the crashed file, with parts dep_path
-      and parts before it stripped, for example, api.cc.
+    file_path (str): Normalized path of the crashed file, with parts
+      dep_path and parts before it stripped, for example, api.cc.
     raw_file_path (str): Normalized original path of the crashed file,
       for example, /b/build/slave/mac64/build/src/v8/src/heap/
       incremental-marking-job.cc.
-    crashed_line_numbers (list): Line numbers of the file that caused the crash.
+    crashed_line_numbers (tuple of int): Line numbers of the file that
+      caused the crash.
     repo_url (str): Repo url of this frame.
   """
   __slots__ = ()
 
   def __new__(cls, index, dep_path, function, file_path, raw_file_path,
               crashed_line_numbers, repo_url=None):
-    assert index is not None, TypeError('The index must be an int')
-    return super(cls, StackFrame).__new__(cls,
-        index, dep_path, function, file_path, raw_file_path,
-        crashed_line_numbers, repo_url)
+    if index is None: # pragma: no cover
+      raise TypeError('The index must be an int')
+    return super(cls, StackFrame).__new__(
+        cls, int(index), dep_path, function, file_path, raw_file_path,
+        tuple(crashed_line_numbers), repo_url)
 
   def ToString(self):
     frame_str = '#%d in %s @ %s' % (self.index, self.function, self.file_path)
@@ -213,9 +216,8 @@ class CallStack(namedtuple('CallStack',
         LanguageType.CPP)
 
     language_type = language_type or default_language_type
-    frames = frame_list or []
-    return super(cls, CallStack).__new__(cls, priority, tuple(frames),
-                                         format_type, language_type)
+    return super(cls, CallStack).__new__(
+        cls, priority, tuple(frame_list or []), format_type, language_type)
 
   def __len__(self):
     """Returns the number of frames in this stack."""

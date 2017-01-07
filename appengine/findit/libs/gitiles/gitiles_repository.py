@@ -221,6 +221,7 @@ class GitilesRepository(GitRepository):
                                 start_revision, next_end_revision)
       data = self._SendRequestForJsonResponse(url, params={'n': str(n),
                                                            'name-status': '1'})
+      assert data is not None, '_SendRequestForJsonResponse failed unexpectedly'
 
       for log in data['log']:
         changelogs.append(self._ParseChangeLogFromLogData(log))
