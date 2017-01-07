@@ -24,11 +24,11 @@ deps = {
 
   "infra/go/src/github.com/luci/luci-go":
     ("https://chromium.googlesource.com/external/github.com/luci/luci-go"
-     "@3b9b350e96778cdf0bd6381a2b3c23503faed52d"),
+     "@fb0dd9bf7c939a60b4199989f565c0345c3c58bb"),
 
   "infra/go/src/github.com/luci/gae":
     ("https://chromium.googlesource.com/external/github.com/luci/gae"
-     "@ac70e96219aebdd26608395df0d7f8b41b15771d"),
+     "@a05a77f8ad60158869c1dc908b16dc618a580101"),
 
   # Appengine third_party DEPS
   "infra/appengine/third_party/bootstrap":
