@@ -62,3 +62,11 @@ class WfTryJob(BaseTryJob, BaseBuildModel):
   def Get(master_name, builder_name, build_number):
     return WfTryJob._CreateKey(
         master_name, builder_name, build_number).get()
+
+  @classmethod
+  def GetBuildNumber(cls, key):
+    return int(key.pairs()[0][1].split('/')[2])
+
+  @ndb.ComputedProperty
+  def build_number(self):
+    return self.GetBuildNumber(self.key)

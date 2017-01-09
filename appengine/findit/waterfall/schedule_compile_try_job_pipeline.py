@@ -4,6 +4,7 @@
 
 from common.waterfall import failure_type
 from model.wf_try_job import WfTryJob
+from model.wf_try_job_data import WfTryJobData
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 
 
@@ -19,6 +20,16 @@ class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
     properties['target_buildername'] = builder_name
 
     return properties
+
+  def _CreateTryJobData(
+      self, build_id, try_job_key, has_compile_targets, has_heuristic_results):
+    try_job_data = WfTryJobData.Create(build_id)
+    try_job_data.has_compile_targets = has_compile_targets
+    try_job_data.has_heuristic_results = has_heuristic_results
+    try_job_data.try_job_key = try_job_key
+    try_job_data.try_job_type = failure_type.GetDescriptionForFailureType(
+        failure_type.COMPILE)
+    try_job_data.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(
@@ -47,16 +58,14 @@ class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
     build_id = self._TriggerTryJob(
         master_name, builder_name, properties, additional_parameters)
 
-    try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
-    try_job_result.compile_results.append({'try_job_id': build_id})
-    try_job_result.try_job_ids.append(build_id)
-    try_job_result.put()
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    try_job.compile_results.append({'try_job_id': build_id})
+    try_job.try_job_ids.append(build_id)
+    try_job.put()
 
     # Create a corresponding WfTryJobData entity to capture as much metadata as
     # early as possible.
     self._CreateTryJobData(
-        build_id, master_name, builder_name, build_number,
-        failure_type.GetDescriptionForFailureType(try_job_type),
-        bool(compile_targets), bool(suspected_revisions))
+        build_id, try_job.key, bool(compile_targets), bool(suspected_revisions))
 
     return build_id

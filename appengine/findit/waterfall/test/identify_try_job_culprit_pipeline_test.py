@@ -434,6 +434,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.put()
     try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
     try_job_data.put()
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
@@ -468,6 +469,8 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     }
 
     try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = WfTryJob.Create(
+        master_name, builder_name, build_number).key
     try_job_data.put()
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
@@ -550,8 +553,13 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         'try_job_id': try_job_id,
     }
 
-    WfTryJobData.Create(try_job_id).put()
-    WfTryJob.Create(master_name, builder_name, build_number).put()
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.put()
+
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
@@ -576,10 +584,14 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     build_number = 1
     try_job_id = '1'
 
-    WfTryJobData.Create(try_job_id).put()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.status = analysis_status.RUNNING
     try_job.put()
+
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
@@ -608,10 +620,13 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         'repo_name': 'chromium'
     }
 
-    WfTryJobData.Create(try_job_id).put()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.status = analysis_status.RUNNING
     try_job.put()
+
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
 
     # Heuristic analysis already provided some results.
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
@@ -655,10 +670,14 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         'try_job_id': try_job_id
     }
 
-    WfTryJobData.Create(try_job_id).put()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.status = analysis_status.RUNNING
     try_job.put()
+    
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
@@ -697,10 +716,14 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         'try_job_id': try_job_id
     }
 
-    WfTryJobData.Create(try_job_id).put()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.status = analysis_status.RUNNING
     try_job.put()
+
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
@@ -783,11 +806,15 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         'try_job_id': try_job_id
     }
 
-    WfTryJobData.Create(try_job_id).put()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.status = analysis_status.RUNNING
     try_job.test_results = [test_result]
     try_job.put()
+
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
@@ -947,9 +974,6 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         },
     }
 
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.put()
-
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.status = analysis_status.RUNNING
     try_job.compile_results = [{
@@ -960,8 +984,11 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         },
         'try_job_id': try_job_id,
     }]
-
     try_job.put()
+
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
 
     pipeline = IdentifyTryJobCulpritPipeline()
     pipeline.run(master_name, builder_name, build_number, [revision],

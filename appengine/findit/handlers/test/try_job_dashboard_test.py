@@ -3,12 +3,12 @@
 # found in the LICENSE file.
 
 from datetime import datetime
-from datetime import timedelta
 import json
 
 import webapp2
 
 from handlers import try_job_dashboard
+from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 
 from testing_utils import testing
@@ -77,9 +77,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
 
   def testGet(self):
     try_job_in_progress = WfTryJobData.Create(1)
-    try_job_in_progress.master_name = 'm'
-    try_job_in_progress.builder_name = 'b'
-    try_job_in_progress.build_number = 1
+    try_job_in_progress.try_job_key = WfTryJob.Create('m', 'b', 1).key
     try_job_in_progress.try_job_type = 'compile'
     try_job_in_progress.start_time = datetime(2016, 5, 4, 0, 0, 1)
     try_job_in_progress.request_time = datetime(2016, 5, 4, 0, 0, 0)
@@ -88,9 +86,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     try_job_in_progress.put()
 
     try_job_with_error = WfTryJobData.Create(2)
-    try_job_with_error.master_name = 'm'
-    try_job_with_error.builder_name = 'b'
-    try_job_with_error.build_number = 2
+    try_job_with_error.try_job_key = WfTryJob.Create('m', 'b', 2).key
     try_job_with_error.try_job_type = 'compile'
     try_job_with_error.start_time = datetime(2016, 5, 4, 0, 0, 1)
     try_job_with_error.request_time = datetime(2016, 5, 4, 0, 0, 0)
@@ -106,9 +102,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     try_job_with_error.put()
 
     try_job_completed = WfTryJobData.Create(3)
-    try_job_completed.master_name = 'm'
-    try_job_completed.builder_name = 'b'
-    try_job_completed.build_number = 3
+    try_job_completed.try_job_key = WfTryJob.Create('m', 'b', 3).key
     try_job_completed.try_job_type = 'compile'
     try_job_completed.start_time = datetime(2016, 5, 4, 0, 0, 1)
     try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)

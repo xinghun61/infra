@@ -25,3 +25,19 @@ class BaseTryJob(ndb.Model):
   @property
   def failed(self):
     return self.status == analysis_status.ERROR
+
+  @classmethod
+  def GetMasterName(cls, key):
+    return key.pairs()[0][1].split('/')[0]
+
+  @classmethod
+  def GetBuilderName(cls, key):
+    return key.pairs()[0][1].split('/')[1]
+
+  @ndb.ComputedProperty
+  def master_name(self):
+    return self.GetMasterName(self.key)
+
+  @ndb.ComputedProperty
+  def builder_name(self):
+    return self.GetBuilderName(self.key)

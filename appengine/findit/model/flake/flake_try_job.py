@@ -23,6 +23,30 @@ class FlakeTryJob(BaseTryJob):
   # ]
   flake_results = ndb.JsonProperty(indexed=False, compressed=True)
 
+  @classmethod
+  def GetStepName(cls, key):
+    return key.pairs()[0][1].split('/')[2]
+
+  @classmethod
+  def GetTestName(cls, key):
+    return base64.b64decode(key.pairs()[0][1].split('/')[3])
+
+  @classmethod
+  def GetGitHash(cls, key):
+    return key.pairs()[0][1].split('/')[4]
+
+  @ndb.ComputedProperty
+  def step_name(self):
+    return self.GetStepName(self.key)
+
+  @ndb.ComputedProperty
+  def test_name(self):
+    return self.GetTestName(self.key)
+
+  @ndb.ComputedProperty
+  def git_hash(self):
+    return self.GetGitHash(self.key)
+
   @staticmethod
   def _CreateTryJobId(master_name, builder_name, step_name, test_name,
                       git_hash):  # pragma: no cover

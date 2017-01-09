@@ -8,10 +8,11 @@ import mock
 import time
 
 from common.waterfall import buildbucket_client
-from common.waterfall import try_job_error
 from common.waterfall import failure_type
+from common.waterfall import try_job_error
 from model import analysis_status
 from model.flake.flake_try_job import FlakeTryJob
+from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall import monitor_try_job_pipeline
@@ -59,9 +60,10 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
     error = buildbucket_client.BuildbucketError(error_data)
     try_job_data = WfTryJobData.Create('1')
+    try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
 
     monitor_try_job_pipeline._UpdateTryJobMetadata(
-        try_job_data, None, None, error, False)
+        try_job_data, failure_type.COMPILE, None, None, error, False)
     self.assertEqual(try_job_data.error, error_data)
 
   def testUpdateTryJobMetadata(self):
@@ -95,9 +97,10 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                        'job_timeout_hours'))
     }
     try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
 
     monitor_try_job_pipeline._UpdateTryJobMetadata(
-        try_job_data, None, build, None, False)
+        try_job_data, failure_type.COMPILE, None, build, None, False)
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertIsNone(try_job_data.error)
     self.assertEqual(try_job_data.regression_range_size, 2)
@@ -108,7 +111,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.try_job_url, url)
 
     monitor_try_job_pipeline._UpdateTryJobMetadata(
-        try_job_data, None, build, None, True)
+        try_job_data, failure_type.COMPILE, None, build, None, True)
     self.assertEqual(try_job_data.error, expected_error_dict)
     self.assertEqual(try_job_data.error_code, try_job_error.TIMEOUT)
 
@@ -122,6 +125,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
     try_job_data.put()
     try_job.compile_results = [
         {
@@ -200,6 +204,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job.put()
 
     try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
     try_job_data.put()
 
     data = [
@@ -297,6 +302,95 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_test_result, try_job.test_results[-1])
     self.assertEqual(analysis_status.RUNNING, try_job.status)
+
+  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
+  def testGetTryJobsForFlakeSuccess(self, mock_module):
+    master_name = 'm'
+    builder_name = 'b'
+    step_name = 's'
+    test_name = 't'
+    git_hash = 'a1b2c3d4'
+    try_job_id = '1'
+
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, git_hash)
+    try_job.flake_results = [
+        {
+            'report': None,
+            'url': 'url',
+            'try_job_id': '1',
+        }
+    ]
+    try_job.status = analysis_status.RUNNING
+    try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
+    build_response = {
+        'id': '1',
+        'url': 'url',
+        'status': 'COMPLETED',
+        'result_details_json': json.dumps({
+            'properties': {
+                'report': {
+                    'result': {
+                        'r0': {
+                            'gl_tests': {
+                                'status': 'passed',
+                                'valid': True,
+                                'pass_fail_counts': {
+                                    'Test.One': {
+                                        'pass_count': 100,
+                                        'fail_count': 0
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    mock_module.GetTryJobs.return_value = [
+        (None, buildbucket_client.BuildbucketBuild(build_response))]
+
+    pipeline = MonitorTryJobPipeline()
+    flake_result = pipeline.run(
+        try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
+
+    expected_flake_result = {
+        'report': {
+            'result': {
+                'r0': {
+                    'gl_tests': {
+                        'status': 'passed',
+                        'valid': True,
+                        'pass_fail_counts': {
+                            'Test.One': {
+                                'pass_count': 100,
+                                'fail_count': 0
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        'url': 'url',
+        'try_job_id': '1',
+    }
+
+    self.assertEqual(expected_flake_result, flake_result)
+
+    try_job = FlakeTryJob.Get(
+        master_name, builder_name, step_name, test_name, git_hash)
+    self.assertEqual(expected_flake_result, try_job.flake_results[-1])
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
+
+    try_job_data = FlakeTryJobData.Get(try_job_id)
+    self.assertEqual(try_job_data.last_buildbucket_response, build_response)
 
   def testUpdateTryJobResultAnalyzing(self):
     master_name = 'm'

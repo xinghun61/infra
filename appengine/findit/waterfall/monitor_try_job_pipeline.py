@@ -15,6 +15,7 @@ from common.waterfall import try_job_error
 from common.waterfall.buildbucket_client import BuildbucketBuild
 from libs import time_util
 from model import analysis_status
+from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job_data import WfTryJobData
 from waterfall import waterfall_config
 
@@ -107,8 +108,8 @@ def _GetError(buildbucket_response, buildbucket_error, timed_out):
   return None, None
 
 
-def _UpdateTryJobMetadata(try_job_data, start_time, buildbucket_build,
-                          buildbucket_error, timed_out):
+def _UpdateTryJobMetadata(try_job_data, try_job_type, start_time,
+                          buildbucket_build, buildbucket_error, timed_out):
   buildbucket_response = {}
 
   if buildbucket_build:
@@ -119,10 +120,13 @@ def _UpdateTryJobMetadata(try_job_data, start_time, buildbucket_build,
     try_job_data.start_time = start_time or try_job_data.request_time
     try_job_data.end_time = time_util.MicrosecondsToDatetime(
         buildbucket_build.end_time)
-    try_job_data.number_of_commits_analyzed = len(
-        buildbucket_build.report.get('result', {}))
-    try_job_data.regression_range_size = buildbucket_build.report.get(
-        'metadata', {}).get('regression_range_size')
+
+    if try_job_type != failure_type.FLAKY_TEST:  # pragma: no branch
+      try_job_data.number_of_commits_analyzed = len(
+          buildbucket_build.report.get('result', {}))
+      try_job_data.regression_range_size = buildbucket_build.report.get(
+          'metadata', {}).get('regression_range_size')
+
     try_job_data.try_job_url = buildbucket_build.url
     buildbucket_response = buildbucket_build.response
     try_job_data.last_buildbucket_response = buildbucket_response
@@ -236,10 +240,14 @@ class MonitorTryJobPipeline(BasePipeline):
     pipeline_wait_seconds = default_pipeline_wait_seconds
     allowed_response_error_times = max_error_times
 
+    if try_job_type == failure_type.FLAKY_TEST:
+      try_job_data = FlakeTryJobData.Get(try_job_id)
+    else:
+      try_job_data = WfTryJobData.Get(try_job_id)
+
     # TODO(chanli): Make sure total wait time equals to timeout_hours
     # regardless of retries.
     deadline = time.time() + timeout_hours * 60 * 60
-    try_job_data = WfTryJobData.Get(try_job_id)
     already_set_started = False
     start_time = None
     while True:
@@ -251,12 +259,14 @@ class MonitorTryJobPipeline(BasePipeline):
           pipeline_wait_seconds += default_pipeline_wait_seconds
         else:  # pragma: no cover
           # Buildbucket has responded error more than 5 times, retry pipeline.
-          _UpdateTryJobMetadata(try_job_data, start_time, build, error, False)
+          _UpdateTryJobMetadata(
+              try_job_data, try_job_type, start_time, build, error, False)
           raise pipeline.Retry(
               'Error "%s" occurred. Reason: "%s"' % (error.message,
                                                      error.reason))
       elif build.status == BuildbucketBuild.COMPLETED:
-        _UpdateTryJobMetadata(try_job_data, start_time, build, error, False)
+        _UpdateTryJobMetadata(
+            try_job_data, try_job_type, start_time, build, error, False)
         result_to_update = self._UpdateTryJobResult(
             urlsafe_try_job_key, try_job_type, try_job_id, build.url,
             BuildbucketBuild.COMPLETED, build.report)
@@ -286,7 +296,8 @@ class MonitorTryJobPipeline(BasePipeline):
           already_set_started = True
 
       if time.time() > deadline:  # pragma: no cover
-        _UpdateTryJobMetadata(try_job_data, start_time, build, error, True)
+        _UpdateTryJobMetadata(
+            try_job_data, try_job_type, start_time, build, error, True)
         # Explicitly abort the whole pipeline.
         raise pipeline.Abort(
             'Try job %s timed out after %d hours.' % (

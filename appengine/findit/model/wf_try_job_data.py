@@ -4,41 +4,33 @@
 
 from google.appengine.ext import ndb
 
+from model.base_try_job_data import BaseTryJobData
+from model.wf_try_job import WfTryJob
 
-class WfTryJobData(ndb.Model):
-  """Represents a tryjob's data for a completed try job."""
-  # The original master on which the build was detected to have failed.
-  master_name = ndb.StringProperty(indexed=True)
-  # The original buildername on which the build was detected to have failed.
-  builder_name = ndb.StringProperty(indexed=True)
-  # The original build number.
-  build_number = ndb.IntegerProperty(indexed=True)
-  # The type of try job, such as 'compile' or 'test'.
-  try_job_type = ndb.StringProperty(indexed=True)
-  # When the try job was created.
-  request_time = ndb.DateTimeProperty(indexed=True)
-  # When the try job began executing.
-  start_time = ndb.DateTimeProperty(indexed=True)
-  # When the try job completed.
-  end_time = ndb.DateTimeProperty(indexed=True)
+
+class WfTryJobData(BaseTryJobData):
+  """Represents a tryjob's data for a completed compile or test try job."""
   # Number of commits in the revision range.
   regression_range_size = ndb.IntegerProperty(indexed=False)
+
   # Number of commits analyzed to determine a culprit if any.
   number_of_commits_analyzed = ndb.IntegerProperty(indexed=False)
+
   # Culprit(s) determined to have caused the failure, if any.
   culprits = ndb.JsonProperty(indexed=False)
-  # The url to the try job build page.
-  try_job_url = ndb.StringProperty(indexed=False)
-  # Error message and reason, if any.
-  error = ndb.JsonProperty(indexed=False)
-  # Error code if anything went wrong with the try job.
-  error_code = ndb.IntegerProperty(indexed=True)
-  # The last buildbucket build response received.
-  last_buildbucket_response = ndb.JsonProperty(indexed=False, compressed=True)
+
   # Whether or not the try job had compile targets passed (compile only).
   has_compile_targets = ndb.BooleanProperty(indexed=True)
+
   # Whether or not the try job had heuristic results to guide it.
   has_heuristic_results = ndb.BooleanProperty(indexed=True)
+
+  # The type of try job, such as 'compile' or 'test'.
+  try_job_type = ndb.StringProperty(indexed=True)
+
+  @ndb.ComputedProperty
+  def build_number(self):
+    return WfTryJob.GetBuildNumber(self.try_job_key)
 
   @staticmethod
   def _CreateKey(build_id):  # pragma: no cover

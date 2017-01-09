@@ -33,3 +33,11 @@ class BaseTryJobTest(unittest.TestCase):
       try_job = WfTryJob.Create('m', 'b', 123)
       try_job.status = status
       self.assertFalse(try_job.failed)
+
+  def testProperties(self):
+    master_name = 'm'
+    builder_name = 'b'
+    try_job = WfTryJob.Create(master_name, builder_name, 123)
+
+    self.assertEqual(master_name, try_job.master_name)
+    self.assertEqual(builder_name, try_job.builder_name)
