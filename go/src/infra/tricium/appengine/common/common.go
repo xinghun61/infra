@@ -40,7 +40,10 @@ const (
 )
 
 // Entity encapsulates a byte slice for storing in datastore.
+// TODO(emso): Replace with a more specific type Workflow.
 type Entity struct {
+	ID    int64  `gae:"$id"`
+	Kind  string `gae:"$kind"`
 	Value []byte
 }
 

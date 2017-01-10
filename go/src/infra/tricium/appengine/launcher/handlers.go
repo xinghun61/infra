@@ -6,17 +6,17 @@
 package launcher
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
+	"golang.org/x/net/context"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-querystring/query"
+	ds "github.com/luci/gae/service/datastore"
+	tq "github.com/luci/gae/service/taskqueue"
+	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
-
-	"google.golang.org/appengine/datastore"
-	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/taskqueue"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
@@ -24,34 +24,129 @@ import (
 	"infra/tricium/appengine/common/pipeline"
 )
 
-func init() {
-	r := router.New()
-	base := common.MiddlewareForInternal()
-
-	r.POST("/launcher/internal/queue", base, queueHandler)
-
-	http.DefaultServeMux.Handle("/", r)
+type workflowProvider interface {
+	readConfig(context.Context, string) (*admin.Workflow, error)
 }
 
-func queueHandler(c *router.Context) {
-	ctx := common.NewGAEContext(c)
+type luciConfigProvider struct {
+}
 
-	// Parse launch request.
-	if err := c.Request.ParseForm(); err != nil {
-		common.ReportServerError(c, err)
+func queueHandler(ctx *router.Context) {
+	c, r, w := ctx.Context, ctx.Request, ctx.Writer
+	// TODO(emso): Convert to use serialized json strings (from json encoded structs)?
+	if err := r.ParseForm(); err != nil {
+		logging.WithError(err).Errorf(c, "Launch queue handler encountered errors")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	lr, err := pipeline.ParseLaunchRequest(c.Request.Form)
+	lr, err := pipeline.ParseLaunchRequest(r.Form)
 	if err != nil {
-		common.ReportServerError(c, err)
+		logging.WithError(err).Errorf(c, "Launch queue handler encountered errors")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	logging.Infof(c, "[launcher] Launch request (run ID: %d)", lr.RunID)
+	if err := launch(c, lr, &luciConfigProvider{}); err != nil {
+		logging.WithError(err).Errorf(c, "Launch queue handler encountered errors")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	logging.Infof(c, "[launcher] Successfully completed")
+	w.WriteHeader(http.StatusOK)
+}
 
-	log.Infof(ctx, "[launcher] Launch request (run ID: %d)", lr.RunID)
+func launch(c context.Context, lr *pipeline.LaunchRequest, wp workflowProvider) error {
+	// Read and convert workflow to string.
+	wf, err := wp.readConfig(c, lr.Project)
+	if err != nil {
+		return err
+	}
+	m := jsonpb.Marshaler{}
+	wfs, err := m.MarshalToString(wf)
+	if err != nil {
+		return fmt.Errorf("Failed to marshal workflow: %v", err)
+	}
+	err = ds.RunInTransaction(c, func(c context.Context) error {
+		// TODO(emso): Refactor code to use a type actually called Workflow and use standard binary proto encoding.
+		// Store the workflow config, as kind 'Workflow' entity using run ID as key.
+		e := &common.Entity{
+			ID:    lr.RunID,
+			Kind:  "Workflow",
+			Value: []byte(wfs),
+		}
+		// TODO(emso): This call overrides any existing config for this run. If this is a retry there may already
+		// be a config for this run, and this config may be different if there was a config change between retries.
+		// Let the first config take precedence? Additional checking is needed to make sure workers are only
+		// started once to avoid duplication in the pipeline.
+		if err := ds.Put(c, e); err != nil {
+			return fmt.Errorf("Failed to store workflow: %v", err)
+		}
+		// Track workflow as launched, the tracker needs the stored workflow config
+		// to process this request.
+		vr, err := query.Values(&pipeline.TrackRequest{
+			Kind:  pipeline.TrackWorkflowLaunched,
+			RunID: lr.RunID,
+		})
+		if err != nil {
+			return fmt.Errorf("Failed to encode reporter request: %v", err)
+		}
+		tr := tq.NewPOSTTask("/tracker/internal/queue", vr)
+		if err := tq.Add(c, common.TrackerQueue, tr); err != nil {
+			return fmt.Errorf("Failed to enqueue reporter request: %v", err)
+		}
+		return nil
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("Failed to store workflow and track launch: %v", err)
+	}
+	// Isolate initial intput.
+	inputHash, err := isolateGitFileDetails(lr.Project, lr.GitRepo, lr.GitRef, lr.Path)
+	if err != nil {
+		return fmt.Errorf("Failed to isolate git file details: %v", err)
+	}
+	// Trigger root workers, enqueue driver requests.
+	tasks := []*tq.Task{}
+	for _, worker := range rootWorkers(wf) {
+		vd, err := query.Values(&pipeline.DriverRequest{
+			Kind:          pipeline.DriverTrigger,
+			RunID:         lr.RunID,
+			IsolatedInput: inputHash,
+			Worker:        worker,
+		})
+		if err != nil {
+			return fmt.Errorf("Failed to encode launch request: %v", err)
+		}
+		tasks = append(tasks, tq.NewPOSTTask("/driver/internal/queue", vd))
+	}
+	if err := tq.Add(c, common.DriverQueue, tasks...); err != nil {
+		return fmt.Errorf("Failed to enqueue driver request: %v", err)
+	}
+	return nil
+}
 
-	// Store workflow as 'Workflow' entity, using run ID as key.
-	// TODO(emso): Get workflow config from config module.
-	wf := admin.Workflow{
+// rootWorkers returns the list of root workers from the workflow config.
+//
+// Root workers are those workers in need of the initial Tricium
+// data type, i.e., Git file details.
+func rootWorkers(wf *admin.Workflow) []string {
+	var wl []string
+	for _, w := range wf.Workers {
+		if w.Needs == tricium.Data_GIT_FILE_DETAILS {
+			wl = append(wl, w.Name)
+		}
+	}
+	return wl
+}
+
+func isolateGitFileDetails(project, gitRepo, gitRef string, paths []string) (string, error) {
+	// TODO(emso): Create initial Tricium data, git file details.
+	// TODO(emso): Isolate created Tricium data.
+	return "abcedfg", nil
+}
+
+func (s *luciConfigProvider) readConfig(c context.Context, project string) (*admin.Workflow, error) {
+	// TODO(emso): Replace this dummy config with one read from luci-config.
+	return &admin.Workflow{
 		WorkerTopic:    "projects/tricium-dev/topics/worker-completion",
 		ServiceAccount: "emso@chromium.org",
 		Workers: []*admin.Worker{
@@ -74,61 +169,5 @@ func queueHandler(c *router.Context) {
 				Deadline: 30,
 			},
 		},
-	}
-	m := jsonpb.Marshaler{}
-	wfs, err := m.MarshalToString(&wf)
-	if err != nil {
-		common.ReportServerError(c, fmt.Errorf("Failed to marshal workflow: %v", err))
-		return
-	}
-	workflowKey := datastore.NewKey(ctx, "Workflow", "", lr.RunID, nil)
-	e := new(common.Entity)
-	e.Value = []byte(wfs)
-	if _, err := datastore.Put(ctx, workflowKey, e); err != nil {
-		common.ReportServerError(c, fmt.Errorf("Failed to store workflow: %v", err))
-		return
-	}
-
-	// TODO(emso): Create initial Tricium data, git file details.
-	// TODO(emso): Isolate created Tricium data.
-	isolatedInput := "abcdef"
-
-	// TODO(emso): Get root workers from the workflow config.
-	workers := []string{"Hello_Ubuntu14.04_x86-64"}
-
-	// Track progress, enqueue track request.
-	rr := pipeline.TrackRequest{
-		Kind:  pipeline.TrackWorkflowLaunched,
-		RunID: lr.RunID,
-	}
-	vr, err := query.Values(rr)
-	if err != nil {
-		common.ReportServerError(c, errors.New("failed to encode reporter request"))
-		return
-	}
-	tr := taskqueue.NewPOSTTask("/tracker/internal/queue", vr)
-	if _, err := taskqueue.Add(ctx, tr, common.TrackerQueue); err != nil {
-		common.ReportServerError(c, err)
-		return
-	}
-
-	// Trigger root workers, enqueue driver requests.
-	for _, worker := range workers {
-		rd := pipeline.DriverRequest{}
-		rd.Kind = pipeline.DriverTrigger
-		rd.RunID = lr.RunID
-		rd.IsolatedInput = isolatedInput
-		rd.Worker = worker
-		vd, err := query.Values(rd)
-		if err != nil {
-			common.ReportServerError(c, errors.New("failed to encode launch request"))
-			return
-		}
-		td := taskqueue.NewPOSTTask("/driver/internal/queue", vd)
-		if _, err := taskqueue.Add(ctx, td, common.DriverQueue); err != nil {
-			common.ReportServerError(c, err)
-			return
-		}
-	}
-
+	}, nil
 }
