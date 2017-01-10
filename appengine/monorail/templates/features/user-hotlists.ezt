@@ -27,7 +27,7 @@
     </div>
     <table cellspacing="0" cellpadding="2" border="0" class="results striped" width="100%">
       <tr id="headingrow">
-        [if-any viewing_self][else]<th style="white-space:nowrap; width:3%;">&nbsp;</th>[end]
+        <th style="white-space:nowrap; width:3%;">&nbsp;</th>
         <th style="white-space:nowrap; width:15%;">Role</th>
         <th style="white-space:nowrap; width:25%">Hotlist</th>
         <th style="white-space:nowrap; width:10%;">Issues</th>
@@ -36,7 +36,7 @@
     [if-any owner_of_hotlists editor_of_hotlists]
       [for owner_of_hotlists]
         <tr data-url="[owner_of_hotlists.url]">
-          [if-any logged_in_user][if-any viewing_self][else]
+          [if-any logged_in_user]
             <td class="rowwidgets">
               <a class="star"
                  style="color:[if-any owner_of_hotlists.is_starred]cornflowerblue[else]gray[end]"
@@ -45,7 +45,7 @@
              [if-any owner_of_hotlists.is_starred]&#9733;[else]&#9734;[end]
               </a>
             </td>
-          [end][end]
+          [end]
           <td>Owner</td>
           <td class="id" name="owner">
             <a href="[owner_of_hotlists.url]">[owner_of_hotlists.name]</a></td>
@@ -55,7 +55,7 @@
       [end]
       [for editor_of_hotlists]
         <tr data-url="[editor_of_hotlists.url]">
-          [if-any logged_in_user][if-any viewing_self][else]
+          [if-any logged_in_user]
             <td class="rowwidgets">
               <a class="star"
                  style="color:[if-any editor_of_hotlists.is_starred]cornflowerblue[else]gray[end]"
@@ -63,7 +63,7 @@
                  data-hotlist-id="[editor_of_hotlists.hotlist_id]">
              [if-any editor_of_hotlists.is_starred]&#9733;[else]&#9734;[end]
             </td>
-          [end][end]
+          [end]
           <td>Editor</td>
           <td class="id" name="editor">
             <a href="[editor_of_hotlists.url]">[editor_of_hotlists.name]</a></td>
