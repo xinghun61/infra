@@ -128,7 +128,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     self.user2.obscure_email = False
     table_view_data = self.servlet.GetTableViewData(self.mr)
     self.assertEqual(table_view_data['remove_issues_token'], xsrf.GenerateToken(
-        self.mr.auth.user_id, '/u/testuser2@gmail.com/hotlists/hotlist.do'))
+        self.mr.auth.user_id, '/u/222/hotlists/hotlist.do'))
 
   def testGetGridViewData(self):
     # TODO(jojwang): Write this test

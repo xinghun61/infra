@@ -213,20 +213,22 @@ def MembersWithGivenIDs(hotlist, new_member_ids, role):
   return owner_ids, editor_ids, follower_ids
 
 
-def GetURLOfHotlist(cnxn, hotlist, user_service):
+def GetURLOfHotlist(cnxn, hotlist, user_service, url_for_token=False):
     """Determines the url to be used to access the given hotlist.
 
     Args:
       cnxn: connection to SQL database
       hotlist: the hotlist_pb
       user_service: interface to user data storage
+      url_for_token: if true, url returned will use user's id
+        regardless of their user settings, for tokenization.
 
     Returns:
       The string url to be used when accessing this hotlist.
     """
     owner_id = hotlist.owner_ids[0]  # only one owner allowed
     owner = user_service.GetUser(cnxn, owner_id)
-    if owner.obscure_email:
+    if owner.obscure_email or url_for_token:
       return '/u/%d/hotlists/%s' % (owner_id, hotlist.name)
     return (
         '/u/%s/hotlists/%s' % (

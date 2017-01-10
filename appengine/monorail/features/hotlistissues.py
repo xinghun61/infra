@@ -137,13 +137,13 @@ class HotlistIssues(servlet.Servlet):
         'default_results_per_page': 10,
         'preview_on_hover': (
             settings.enable_quick_edit and mr.auth.user_pb.preview_on_hover),
-        # TODO(jojwang): if owner chooses not to obscure email, but hotlist
-        # is still being accessed via u/owner_id/hotlists/hotlist_name
-        # this token will be wrong.
+        # token must be generated using url with userid to accommodate
+        # multiple urls for one hotlist
         'remove_issues_token': xsrf.GenerateToken(
             mr.auth.user_id,
             hotlist_helpers.GetURLOfHotlist(
-                mr.cnxn, mr.hotlist, self.services.user) + '.do'),
+                mr.cnxn, mr.hotlist, self.services.user,
+                url_for_token=True) + '.do'),
         'add_local_ids': _INITIAL_ADD_ISSUES_MESSAGE,
         'add_issues_selected': ezt.boolean(False),
         }

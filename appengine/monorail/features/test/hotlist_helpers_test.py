@@ -252,6 +252,10 @@ class HelpersUnitTest(unittest.TestCase):
         cnxn, hotlist1, self.services.user)
     self.assertEqual('/u/claremont@email.com/hotlists/hotlist1', url)
 
+    url = hotlist_helpers.GetURLOfHotlist(
+        cnxn, hotlist1, self.services.user, url_for_token=True)
+    self.assertEqual('/u/432/hotlists/hotlist1', url)
+
     user.obscure_email = True
     url = hotlist_helpers.GetURLOfHotlist(
         cnxn, hotlist1, self.services.user)
