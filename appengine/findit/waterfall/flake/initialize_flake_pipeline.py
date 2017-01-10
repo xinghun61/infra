@@ -133,7 +133,7 @@ def ScheduleAnalysisIfNeeded(
         normalized_test.master_name, normalized_test.builder_name,
         normalized_test.build_number, normalized_test.step_name,
         normalized_test.test_name, analysis.version_number,
-        master_build_number=normalized_test.build_number,
+        triggering_build_number=normalized_test.build_number,
         manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor)
     pipeline_job.target = appengine_util.GetTargetNameForModule(
