@@ -145,7 +145,8 @@ class HotlistIssues(servlet.Servlet):
             hotlist_helpers.GetURLOfHotlist(
                 mr.cnxn, mr.hotlist, self.services.user,
                 url_for_token=True) + '.do'),
-        'add_local_ids': _INITIAL_ADD_ISSUES_MESSAGE,
+        'add_local_ids': '',
+        'placeholder': _INITIAL_ADD_ISSUES_MESSAGE,
         'add_issues_selected': ezt.boolean(False),
         }
     table_view_data.update(table_related_dict)

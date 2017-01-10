@@ -69,7 +69,7 @@
   <span id="addissuesspec" style="display:none; font-size:90%">
     <span>Issues:</span>
     <span id="issues_field"><input type="text" size="60" name="add_local_ids"
-                   value="[add_local_ids]"></span>
+                   value="[add_local_ids]" placeholder="[placeholder]"></span>
     <input type="submit" name="nobtn" value="Add Issues">
   </span>
   [if-any errors.issues]

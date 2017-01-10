@@ -8,7 +8,7 @@
    <div style="padding: 3em; text-align: center">
        This hotlist currently has no issues.<br>
      [if-any owner_permissions editor_permissions]
-     You may want to add an <a class="id" href="entry">issue</a>.
+     Select 'Add issues...' in the above 'Actions...' dropdown menu to add some.
      [end]
     </div>
    </td>
