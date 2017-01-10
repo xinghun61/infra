@@ -101,6 +101,9 @@ class Servlet(webapp2.RequestHandler):
   PROCESS_TAB_VIEWS = 'st8'
   ADMIN_TAB_META = 'st1'
   ADMIN_TAB_ADVANCED = 'st9'
+  HOTLIST_TAB_ISSUES = 'ht2'
+  HOTLIST_TAB_PEOPLE = 'ht3'
+  HOTLIST_TAB_DETAILS = 'ht4'
 
   # Most forms require a security token, however if a form is really
   # just redirecting to a search GET request without writing any data,

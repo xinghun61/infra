@@ -27,6 +27,7 @@ class HotlistPeopleList(servlet.Servlet):
   _PAGE_TEMPLATE = 'project/people-list-page.ezt'
   # Note: using the project's peoplelist page template. minor edits were
   # to make it compatible with HotlistPeopleList
+  _MAIN_TAB_MODE = servlet.Servlet.HOTLIST_TAB_PEOPLE
 
   def AssertBasePermission(self, mr):
     super(HotlistPeopleList, self).AssertBasePermission(mr)

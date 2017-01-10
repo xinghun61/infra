@@ -25,6 +25,7 @@ class HotlistDetails(servlet.Servlet):
   """A page with hotlist details and editing options."""
 
   _PAGE_TEMPLATE = 'features/hotlist-details-page.ezt'
+  _MAIN_TAB_MODE = servlet.Servlet.HOTLIST_TAB_DETAILS
 
   def AssertBasePermission(self, mr):
     super(HotlistDetails, self).AssertBasePermission(mr)

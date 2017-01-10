@@ -37,6 +37,7 @@ class HotlistIssues(servlet.Servlet):
   """HotlistIssues is a page that shows the issues of one hotlist."""
 
   _PAGE_TEMPLATE = 'features/hotlist-issues-page.ezt'
+  _MAIN_TAB_MODE = servlet.Servlet.HOTLIST_TAB_ISSUES
 
   def AssertBasePermission(self, mr):
     """Check that the user has permission to even visit this page."""
