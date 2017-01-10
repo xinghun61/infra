@@ -98,10 +98,34 @@ class LogLinearChangelistClassifier(object):
     Returns:
       List of ``Suspect``s, sorted by probability from highest to lowest.
     """
-    report = CrashReportWithDependencies(report, self._dependency_fetcher)
-    if report is None:
+    annotated_report = CrashReportWithDependencies(
+        report, self._dependency_fetcher)
+    if annotated_report is None:
+      logging.warning('%s.__call__: '
+          'Could not obtain dependencies for report: %s',
+          self.__class__.__name__, str(report))
       return []
 
+    suspects = self.GenerateSuspects(annotated_report)
+    if not suspects:
+      logging.warning('%s.__call__: Found no suspects for report: %s',
+          self.__class__.__name__, str(annotated_report))
+      return []
+
+    return self.RankSuspects(annotated_report, suspects)
+
+  def GenerateSuspects(self, report):
+    """Generate all possible suspects for the reported crash.
+
+    Args:
+      report (CrashReportWithDependencies): the crash we seek to explain.
+
+    Returns:
+      A list of ``Suspect``s who may be to blame for the
+      ``report``. Notably these ``Suspect`` instances do not have
+      all their fields filled in. They will be filled in later by
+      ``RankSuspects``.
+    """
     # Look at all the frames from any stack in the crash report, and
     # organize the ones that come from dependencies we care about.
     dep_to_file_to_stack_infos = defaultdict(lambda: defaultdict(list))
@@ -117,17 +141,29 @@ class LogLinearChangelistClassifier(object):
             self._get_repository))
 
     # Get the possible suspects.
-    suspects = changelist_classifier.FindSuspects(
+    return changelist_classifier.FindSuspects(
         dep_to_file_to_changelogs,
         dep_to_file_to_stack_infos,
         report.dependencies,
         self._get_repository,
         ignore_cls)
-    if not suspects:
-      logging.warning('%s.__call__: Found no suspects for report: %s',
-          self.__class__.__name__, str(report))
-      return []
 
+  def RankSuspects(self, report, suspects):
+    """Returns a lineup of the suspects in order of likelihood.
+
+    Args:
+      report (CrashReportWithDependencies): the crash we seek to explain.
+      suspects (list of Suspect): the CLs to consider blaming for the crash.
+
+    Returns:
+      A list of suspects in order according to their likelihood. This
+      list contains elements of the ``suspects`` list, where we mutate
+      some of the fields to store information about why that suspect
+      is being blamed (e.g., the ``confidence``, ``reasons``, and
+      ``changed_files`` fields are updated). In addition to sorting the
+      suspects, we also filter out those which are exceedingly unlikely
+      or don't make the ``top_n_suspects`` cut.
+    """
     # Score the suspects and organize them for outputting/returning.
     features_given_report = self._model.Features(report)
     score_given_report = self._model.Score(report)
