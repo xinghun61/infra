@@ -1,3 +1,31 @@
+# Release Notes sheriff-o-matic 2017-01-10
+
+- 8 commits, 3 bugs affected since a32145c (2016-12-21T01:59:25Z)
+- 3 Authors:
+  - martiniss@chromium.org
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [[som] disable analyzer cron jobs so we can deploy today](https://chromium-review.googlesource.com/426779) (seanmccullough@chromium.org)
+- [[som] create a new relnotes Make target](https://chromium-review.googlesource.com/425873) (seanmccullough@chromium.org)
+- [[som] proposal: split js from .html files, use clang-format](https://chromium-review.googlesource.com/424333) (seanmccullough@chromium.org)
+- [SoM: Make lastUpdated PST/PDT and add relative time.](https://chromium-review.googlesource.com/423199) (zhangtiff@google.com)
+- [SoM: Minor UI tweaks.](https://chromium-review.googlesource.com/425840) (zhangtiff@google.com)
+- [SOM: Change link bug to link or file bug](https://chromium-review.googlesource.com/424224) (martiniss@chromium.org)
+- [[som] Add cron tasks, actually store alerts from analyzer running in SoM](https://chromium-review.googlesource.com/422993) (seanmccullough@chromium.org)
+- [[som] update RELNOTES.md for weekly push](https://chromium-review.googlesource.com/422928) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/675688](https://crbug.com/675688)
+  
+- zhangtiff@google.com:
+  -  [https://crbug.com/427715](https://crbug.com/427715)
+  -  [https://crbug.com/658781](https://crbug.com/658781)
+
 # Release Notes sheriff-o-matic 2016-12-20
 
 - 9 commits, 5 bugs affected since ead1512 (2016-12-13)
