@@ -6,137 +6,145 @@
 package driver
 
 import (
-	"errors"
+	"bytes"
 	"fmt"
 	"net/http"
 
+	"golang.org/x/net/context"
+
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/google/go-querystring/query"
-
-	"google.golang.org/appengine/taskqueue"
-
+	ds "github.com/luci/gae/service/datastore"
+	tq "github.com/luci/gae/service/taskqueue"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
 
+	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/pipeline"
 )
 
-func init() {
-	r := router.New()
-	base := common.MiddlewareForInternal()
-
-	r.POST("/driver/internal/queue", base, queueHandler)
-	r.POST("/_ah/push-handlers/notify", base, notifyHandler)
-
-	http.DefaultServeMux.Handle("/", r)
+type workflowConfigProvider interface {
+	readConfig(context.Context, int64) (*admin.Workflow, error)
 }
 
-func queueHandler(c *router.Context) {
-	ctx := common.NewGAEContext(c)
-
-	// Parse driver request.
-	if err := c.Request.ParseForm(); err != nil {
-		common.ReportServerError(c, err)
+func queueHandler(ctx *router.Context) {
+	c, r, w := ctx.Context, ctx.Request, ctx.Writer
+	if err := r.ParseForm(); err != nil {
+		logging.WithError(err).Errorf(c, "Driver queue handler encountered errors")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	dr, err := pipeline.ParseDriverRequest(c.Request.Form)
+	dr, err := pipeline.ParseDriverRequest(r.Form)
 	if err != nil {
-		common.ReportServerError(c, err)
+		logging.WithError(err).Errorf(c, "Driver queue handler encountered errors")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	logging.Infof(c, "[driver] Driver request (run ID: %d, Worker: %s)", dr.RunID, dr.Worker)
+	if err = drive(c, dr, &datastoreConfigProvider{}); err != nil {
+		logging.WithError(err).Errorf(c, "Driver queue handler encountered errors")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	logging.Infof(c, "[driver] Successfully completed")
+	w.WriteHeader(http.StatusOK)
+}
 
+func drive(c context.Context, dr *pipeline.DriverRequest, wp workflowConfigProvider) error {
 	switch dr.Kind {
 	case pipeline.DriverTrigger:
-		logging.Infof(c.Context, "[driver]: Received trigger request (runID: %d, worker: %s)", dr.RunID, dr.Worker)
-
-		// TODO(emso): Read workflow config.
-		// TODO(emso): Runtime type check.
-		// TODO(emso): Isolate swarming input.
-		// TODO(emso): Launch swarming task and get actual task URL. Put
-		// runID, worker name, and hash tp isolated input in pubsub userdata.
-		swarmingURL := "https://chromium-swarm-dev.appspot.com"
-		taskID := "123456789"
-
-		// Report progress, enqueue reporter request, marking worker as launched.
-		rr := pipeline.TrackRequest{
-			Kind:          pipeline.TrackWorkerLaunched,
-			RunID:         dr.RunID,
-			Worker:        dr.Worker,
-			IsolatedInput: dr.IsolatedInput,
-			SwarmingURL:   swarmingURL,
-			TaskID:        taskID,
-		}
-		vr, err := query.Values(rr)
-		if err != nil {
-			common.ReportServerError(c, errors.New("failed to encode reporter request"))
-			return
-		}
-		tr := taskqueue.NewPOSTTask("/tracker/internal/queue", vr)
-		if _, err := taskqueue.Add(ctx, tr, common.TrackerQueue); err != nil {
-			common.ReportServerError(c, err)
-			return
-		}
+		return handleTrigger(c, dr, wp)
 	case pipeline.DriverCollect:
-		logging.Infof(c.Context, "[driver]: Received collect request (runID: %d, worker: %s)", dr.RunID, dr.Worker)
-
-		// TODO(emso): Read workflow config.
-		// TODO(emso): Collect results from swarming task, getting actual isolated output and exit code.
-		isolatedOutput := "abcdefg"
-		exitCode := 0
-
-		// Report progress, enqueue reporter request, marking worker as launched.
-		rr := pipeline.TrackRequest{
-			Kind:           pipeline.TrackWorkerDone,
-			RunID:          dr.RunID,
-			Worker:         dr.Worker,
-			IsolatedOutput: isolatedOutput,
-			ExitCode:       exitCode,
-		}
-		vr, err := query.Values(rr)
-		if err != nil {
-			common.ReportServerError(c, errors.New("failed to encode reporter request"))
-			return
-		}
-		tr := taskqueue.NewPOSTTask("/tracker/internal/queue", vr)
-		if _, err := taskqueue.Add(ctx, tr, common.TrackerQueue); err != nil {
-			common.ReportServerError(c, err)
-			return
-		}
-
-		// TODO(emso): Get actual successors for this worker from the workflow config.
-		successors := []string{}
-		// TODO(emso): Massage actual isolated output to isolated input for successors.
-		isolatedInput := "abcdefg"
-
-		// Trigger root workers, enqueue driver requests.
-		for _, worker := range successors {
-			rd := pipeline.DriverRequest{
-				Kind:          pipeline.DriverTrigger,
-				RunID:         dr.RunID,
-				IsolatedInput: isolatedInput,
-				Worker:        worker,
-			}
-			vd, err := query.Values(rd)
-			if err != nil {
-				common.ReportServerError(c, errors.New("failed to encode launch request"))
-				return
-			}
-			td := taskqueue.NewPOSTTask("/driver/internal/queue", vd)
-			if _, err := taskqueue.Add(ctx, td, common.DriverQueue); err != nil {
-				common.ReportServerError(c, err)
-				return
-			}
-		}
+		return handleCollect(c, dr, wp)
 	default:
-		common.ReportServerError(c, fmt.Errorf("Unknown kind: %d", dr.Kind))
+		return fmt.Errorf("Unknown driver request kind: %d", dr.Kind)
 	}
 }
 
-func notifyHandler(c *router.Context) {
-	ctx := common.NewGAEContext(c)
+func handleTrigger(c context.Context, dr *pipeline.DriverRequest, wp workflowConfigProvider) error {
+	logging.Infof(c, "[driver]: Received trigger request (run ID: %d, worker: %s)", dr.RunID, dr.Worker)
+	_, err := wp.readConfig(c, dr.RunID)
+	if err != nil {
+		return fmt.Errorf("Failed to read workflow config: %v", err)
+	}
+	// TODO(emso): Auth check.
+	// TODO(emso): Runtime type check.
+	// TODO(emso): Isolate swarming input.
+	// TODO(emso): Launch swarming task and get actual task URL. Put
+	// runID, worker name, and hash tp isolated input in pubsub userdata.
+	swarmingURL := "https://chromium-swarm-dev.appspot.com"
+	taskID := "123456789"
+	// Report progress, enqueue reporter request, marking worker as launched.
+	rr := pipeline.TrackRequest{
+		Kind:          pipeline.TrackWorkerLaunched,
+		RunID:         dr.RunID,
+		Worker:        dr.Worker,
+		IsolatedInput: dr.IsolatedInput,
+		SwarmingURL:   swarmingURL,
+		TaskID:        taskID,
+	}
+	vr, err := query.Values(rr)
+	if err != nil {
+		return fmt.Errorf("Failed to encode track request: %v", err)
+	}
+	tr := tq.NewPOSTTask("/tracker/internal/queue", vr)
+	if err := tq.Add(c, common.TrackerQueue, tr); err != nil {
+		return fmt.Errorf("Failed to enqueue track request: %v", err)
+	}
+	return nil
+}
 
-	logging.Infof(c.Context, "[driver]: Received notify")
+func handleCollect(c context.Context, dr *pipeline.DriverRequest, wp workflowConfigProvider) error {
+	logging.Infof(c, "[driver]: Received collect request (run ID: %d, worker: %s)", dr.RunID, dr.Worker)
+	wf, err := wp.readConfig(c, dr.RunID)
+	if err != nil {
+		return fmt.Errorf("Failed to read workflow config: %v", err)
+	}
+	// TODO(emso): Collect results from swarming task, getting actual isolated output and exit code.
+	isolatedOutput := "abcdefg"
+	exitCode := 0
+	// Report progress, enqueue reporter request, marking worker as launched.
+	rr := pipeline.TrackRequest{
+		Kind:           pipeline.TrackWorkerDone,
+		RunID:          dr.RunID,
+		Worker:         dr.Worker,
+		IsolatedOutput: isolatedOutput,
+		ExitCode:       exitCode,
+	}
+	vr, err := query.Values(rr)
+	if err != nil {
+		return fmt.Errorf("Failed to encode track request: %v", err)
+	}
+	tr := tq.NewPOSTTask("/tracker/internal/queue", vr)
+	if err := tq.Add(c, common.TrackerQueue, tr); err != nil {
+		return fmt.Errorf("Failed to enqueue track request: %v", err)
+	}
+	// TODO(emso): Massage actual isolated output to isolated input for successors.
+	isolatedInput := "abcdefg"
+	// Trigger root workers, enqueue driver requests.
+	for _, worker := range successorWorkers(dr.Worker, wf) {
+		rd := pipeline.DriverRequest{
+			Kind:          pipeline.DriverTrigger,
+			RunID:         dr.RunID,
+			IsolatedInput: isolatedInput,
+			Worker:        worker,
+		}
+		vd, err := query.Values(rd)
+		if err != nil {
+			return fmt.Errorf("Failed to encode driver request: %v", err)
+		}
+		td := tq.NewPOSTTask("/driver/internal/queue", vd)
+		if err := tq.Add(c, common.DriverQueue, td); err != nil {
+			return fmt.Errorf("Failed to enqueue driver request: %v", err)
+		}
+	}
+	return nil
+}
 
+func notifyHandler(ctx *router.Context) {
+	c, w := ctx.Context, ctx.Writer
+	logging.Infof(c, "[driver]: Received notify")
 	// TODO(emso): Extract actual run ID, isolated input hash, and worker name from notification details.
 	runID := 1234567
 	isolatedInput := "abcdefg"
@@ -150,12 +158,41 @@ func notifyHandler(c *router.Context) {
 	}
 	vd, err := query.Values(rd)
 	if err != nil {
-		common.ReportServerError(c, errors.New("failed to encode driver request"))
+		logging.WithError(err).Errorf(c, "Failed to encode driver request: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	td := taskqueue.NewPOSTTask("/driver/internal/queue", vd)
-	if _, err := taskqueue.Add(ctx, td, common.DriverQueue); err != nil {
-		common.ReportServerError(c, err)
+	td := tq.NewPOSTTask("/driver/internal/queue", vd)
+	if err := tq.Add(c, common.DriverQueue, td); err != nil {
+		logging.WithError(err).Errorf(c, "Failed to enqueue driver request: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+type datastoreConfigProvider struct {
+}
+
+func (*datastoreConfigProvider) readConfig(c context.Context, runID int64) (*admin.Workflow, error) {
+	e := &common.Entity{
+		ID:   runID,
+		Kind: "Workflow",
+	}
+	if err := ds.Get(c, e); err != nil {
+		return nil, err
+	}
+	wf := &admin.Workflow{}
+	if err := jsonpb.Unmarshal(bytes.NewBuffer(e.Value), wf); err != nil {
+		return nil, err
+	}
+	return wf, nil
+}
+
+func successorWorkers(cw string, wf *admin.Workflow) []string {
+	for _, w := range wf.Workers {
+		if w.Name == cw {
+			return w.Next
+		}
+	}
+	return nil
 }
