@@ -202,7 +202,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
     if roll_result['success']:
       self._process_successful_roll(
-          project_data['repo_url'], roll_step, roll_result, workdir)
+          project_data['repo_url'], repo_data, roll_step, roll_result, workdir)
       return ROLL_SUCCESS
     else:
       if (not roll_result['roll_details'] and
@@ -233,7 +233,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         return ROLL_FAILURE
 
   def _process_successful_roll(
-      self, repo_url, roll_step, roll_result, workdir):
+      self, repo_url, original_repo_data, roll_step, roll_result, workdir):
+    original_repo_data = original_repo_data or {}
+
     roll_step.presentation.logs['blame'] = get_blame(
         roll_result['picked_roll_details']['commit_infos'])
 
@@ -271,10 +273,23 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       self.m.python.failing_step(
           'git cl upload failed', 'no issue metadata returned')
 
+    roll_data = {
+      'spec': roll_result['picked_roll_details']['spec'],
+      'trivial': roll_result['trivial'],
+      'issue': str(issue_result['issue']),
+      'issue_url': issue_result['issue_url'],
+      'utc_timestamp': self.m.time.utcnow().strftime('%Y-%m-%dT%H:%M:%S'),
+    }
+
     repo_data = {
       'issue': str(issue_result['issue']),
       'issue_url': issue_result['issue_url'],
       'trivial': roll_result['trivial'],
+      'last_roll': roll_data,
+      'last_trivial': roll_data if roll_result['trivial']
+                      else original_repo_data.get('last_trivial'),
+      'last_nontrivial': roll_data if not roll_result['trivial']
+                         else original_repo_data.get('last_nontrivial'),
     }
 
     issue_step.presentation.links['Issue %s' % repo_data['issue']] = (
