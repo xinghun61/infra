@@ -8,6 +8,7 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -34,6 +35,14 @@ const (
 
 var (
 	expvars = expvar.NewMap("analyzer")
+
+	// Link hosts which are allowed to be uploaded to SOM. Whitelist for security.
+	allowedLinkHosts = []string{
+		"chromeperf.appspot.com",        // Perf dashboard links
+		"bugs.chromium.org",             // Monorail, just in case
+		"crbug.com",                     // Monorail as well
+		"console.developers.google.com", // Cloud storage links
+	}
 )
 
 var (
@@ -839,7 +848,8 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 		}
 		scannedFailures = append(scannedFailures, failure)
 		i := i
-		go func(f *messages.BuildStep) {
+		f := failure
+		go func() {
 			expvars.Add("StepFailures", 1)
 			defer expvars.Add("StepFailures", -1)
 
@@ -848,6 +858,28 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 				Time:      f.Build.Times[0],
 				StartTime: f.Build.Times[0],
 				Severity:  messages.NewFailure,
+			}
+
+			allowedSet := stringset.NewFromSlice(allowedLinkHosts...)
+			for name, href := range f.Step.Links {
+				fmt.Printf("DOING %s\n", href)
+				URL, err := url.Parse(href)
+				if err != nil {
+					logging.Warningf(ctx, "Failed to parse step link %s: %s", href, err)
+					continue
+				}
+				fmt.Printf("HOST %s LIST %s\n", URL.Host, allowedSet)
+				if !allowedSet.Has(URL.Host) {
+					fmt.Printf("SUP\n")
+					logging.Debugf(ctx, "Step link not in whitelist: %s", href)
+					break
+				}
+
+				fmt.Printf("POTATAO\n")
+				alr.Links = append(alr.Links, messages.Link{
+					Title: name,
+					Href:  href,
+				})
 			}
 
 			regRanges := a.regrangeFinder(f.Build)
@@ -936,7 +968,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 				a:   &alr,
 				err: nil,
 			}
-		}(failure)
+		}()
 	}
 
 	for range filteredFailures {

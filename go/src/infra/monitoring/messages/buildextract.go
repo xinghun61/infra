@@ -175,13 +175,14 @@ type Clock struct {
 
 // Step is an automatically generated type.
 type Step struct {
-	Eta          EpochTime       `json:"eta"`
-	Expectations [][]interface{} `json:"expectations"`
-	Hidden       bool            `json:"hidden"`
-	IsFinished   bool            `json:"isFinished"`
-	IsStarted    bool            `json:"isStarted"`
-	Logs         [][]interface{} `json:"logs"`
-	Name         string          `json:"name"`
+	Eta          EpochTime         `json:"eta"`
+	Expectations [][]interface{}   `json:"expectations"`
+	Hidden       bool              `json:"hidden"`
+	IsFinished   bool              `json:"isFinished"`
+	IsStarted    bool              `json:"isStarted"`
+	Logs         [][]interface{}   `json:"logs"`
+	Links        map[string]string `json:"urls"`
+	Name         string            `json:"name"`
 	// Results is a homogenous array. Use runtime introspection to
 	// determine element types.
 	Results    []interface{} `json:"results"`
