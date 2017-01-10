@@ -12,8 +12,6 @@ import (
 )
 
 // Run tracks the processing of one analysis request.
-//
-// Stored under the 'Run' entity in datastore.
 type Run struct {
 	// LUCI datastore fields.
 	ID int64 `gae:"$id"`
@@ -33,11 +31,11 @@ type ServiceRequest struct {
 	// Tricium connected project receiving the request.
 	Project string
 	// File paths listed in the request.
-	Path []string
+	Path []string `gae:",noindex"`
 	// Git repository hosting files in the request.
-	GitRepo string
+	GitRepo string `gae:",noindex"`
 	// Git ref to use in the Git repo.
-	GitRef string
+	GitRef string `gae:",noindex"`
 }
 
 // RunState specifies the state of a run, analyzer, or worker.
@@ -61,11 +59,19 @@ const (
 	DoneException
 )
 
-// AnalyzerRun tracks the execution of an analyzer.
+// IsDone returns true is state is done regardless the kind of done state.
+func (r RunState) IsDone() bool {
+	return r == DoneSuccess || r == DoneFailure || r == DoneException
+}
+
+// AnalyzerInvocation tracks the execution of an analyzer.
 //
-// This may happen in one or more workers, each running on different platforms.
+// This may happen in one or more worker invocations, each running on different platforms.
 // Stored with 'Run' as parent.
-type AnalyzerRun struct {
+type AnalyzerInvocation struct {
+	// LUCI datastore fields.
+	ID     string  `gae:"$id"`
+	Parent *ds.Key `gae:"$parent"`
 	// Name of the analyzer. The workflow for a run may have several
 	// workers for one analyzer, each running on different platforms.
 	Name string
@@ -74,10 +80,13 @@ type AnalyzerRun struct {
 	State RunState
 }
 
-// Worker tracks the execution of a worker.
+// WorkerInvocation tracks the execution of a worker.
 //
-// Stored under the entity 'Worker' in datastore, with an 'Analyzer' parent entity.
-type Worker struct {
+// Stored with 'AnalyzerInvocation' as parent.
+type WorkerInvocation struct {
+	// LUCI datastore fields.
+	ID     string  `gae:"$id"`
+	Parent *ds.Key `gae:"$parent"`
 	// Name of the worker. Same as that used in the workflow configuration.
 	Name string
 	// State of this worker run; launched, or done-*, with done indicating success.
@@ -85,15 +94,15 @@ type Worker struct {
 	// Name of the platform configuration used for the swarming task of this worker.
 	Platform string
 	// Hash to the isolated input provided to the corresponding swarming task.
-	IsolatedInput string
+	IsolatedInput string `gae:",noindex"`
 	// Hash to the isolated output collected from the corresponding swarming task.
-	IsolatedOutput string
+	IsolatedOutput string `gae:",noindex"`
 	// Names of workers succeeding this worker in the workflow.
-	Next []string
+	Next []string `gae:",noindex"`
 	//  Exit code of the corresponding swarming task.
 	ExitCode int
 	// Swarming server URL.
-	SwarmingURL string
+	SwarmingURL string `gae:",noindex"`
 	// Swarming task ID.
-	TaskID string
+	TaskID string `gae:",noindex"`
 }
