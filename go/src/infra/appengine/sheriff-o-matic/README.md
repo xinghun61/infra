@@ -55,7 +55,7 @@ google-chrome ./coverage/lcov-report/index.html
 
 First create a new CL for the RELNOTES.md update. Then run:
 ```sh
-go run ../../tools/relnotes/relnotes.go -app sheriff-o-matic
+make relnotes
 ```
 
 Note that you may need to install `GOOGLE_APPLICATION_CREDENTIALS` as

@@ -21,6 +21,10 @@ test: deps
 	cd som && go test
 	xvfb-run -a $(WCT_PATH)
 
+relnotes:
+	go run ../../tools/relnotes/relnotes.go -app sheriff-o-matic
+
+# This is only used for testing on the continuous build system.
 bower-cipd: deps
 	cipd create -pkg-def ../../../../../build/packages/sheriff-o-matic.yaml -pkg-var platform:linux-amd64
 
