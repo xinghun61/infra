@@ -43,4 +43,3 @@ class WfTryJobData(BaseTryJobData):
   @staticmethod
   def Get(build_id):  # pragma: no cover
     return WfTryJobData._CreateKey(build_id).get()
-

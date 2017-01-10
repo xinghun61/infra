@@ -42,4 +42,3 @@ class FlakeTryJobData(BaseTryJobData):
   @staticmethod
   def Get(build_id):  # pragma: no cover
     return FlakeTryJobData._CreateKey(build_id).get()
-

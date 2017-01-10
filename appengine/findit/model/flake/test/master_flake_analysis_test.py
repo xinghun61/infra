@@ -4,16 +4,17 @@
 
 from datetime import datetime
 
-import unittest
+from gae_libs.testcase import TestCase
 
 from model import analysis_status
 from model import result_status
 from model import triage_status
+from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 
-class MasterFlakeAnalysisTest(unittest.TestCase):
+class MasterFlakeAnalysisTest(TestCase):
 
   def testMasterFlakeAnalysisStatusIsCompleted(self):
     for status in (analysis_status.COMPLETED, analysis_status.ERROR):
@@ -109,6 +110,8 @@ class MasterFlakeAnalysisTest(unittest.TestCase):
     analysis.correct_culprit = None
     analysis.data_points = [DataPoint()]
     analysis.suspected_flake_build_number = 123
+    analysis.culprit = FlakeCulprit.Create('r', 'a1b2c3d4', 12345, 'url')
+    analysis.try_job_status = analysis_status.COMPLETED
     analysis.Reset()
 
     self.assertEqual([], analysis.swarming_rerun_results)
@@ -117,6 +120,8 @@ class MasterFlakeAnalysisTest(unittest.TestCase):
     self.assertIsNone(analysis.correct_culprit)
     self.assertIsNone(analysis.suspected_flake_build_number)
     self.assertEqual([], analysis.data_points)
+    self.assertIsNone(analysis.culprit)
+    self.assertIsNone(analysis.try_job_status)
 
   def testGetErrorMessage(self):
     cases = [
@@ -154,3 +159,34 @@ class MasterFlakeAnalysisTest(unittest.TestCase):
     self.assertEqual(
         (master_name, builder_name),
         MasterFlakeAnalysis.GetBuildConfigurationFromKey(key))
+
+  def testGetDataPointOfSuspectedBuildNoSuspectedFlakeBuildNumber(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertIsNone(analysis.GetDataPointOfSuspectedBuild())
+
+  def testGetDataPointOfSuspectedBuild(self):
+    expected_build_number = 123
+    data_point = DataPoint()
+    data_point.build_number = expected_build_number
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 125, 's', 't')
+    analysis.suspected_flake_build_number = expected_build_number
+    analysis.data_points.append(data_point)
+
+    suspected_data_point = analysis.GetDataPointOfSuspectedBuild()
+    self.assertEqual(expected_build_number, suspected_data_point.build_number)
+
+  def testGetDataPointOfSuspectedBuildNoDatapoint(self):
+    # This scenario should not happen.
+    expected_build_number = 123
+    unexpected_build_number = 124
+    data_point = DataPoint()
+    data_point.build_number = expected_build_number
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 125, 's', 't')
+    analysis.suspected_flake_build_number = unexpected_build_number
+    analysis.data_points.append(data_point)
+
+    self.assertIsNone(analysis.GetDataPointOfSuspectedBuild())
+
+

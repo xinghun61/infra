@@ -12,6 +12,7 @@ from model import triage_status
 from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
 from model.base_triaged_model import TriagedModel
+from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_swarming_task import FlakeSwarmingTaskData
 
 
@@ -95,6 +96,15 @@ class MasterFlakeAnalysis(
     else:
       self.result_status = result_status.FOUND_INCORRECT
 
+  def GetDataPointOfSuspectedBuild(self):
+    """Gets the corresponding data point to the suspected flake build."""
+    if self.suspected_flake_build_number is not None:
+      for data_point in self.data_points:
+        if data_point.build_number == self.suspected_flake_build_number:
+          return data_point
+
+    return None
+
   def Reset(self):
     super(MasterFlakeAnalysis, self).Reset()
     self.original_master_name = None
@@ -109,6 +119,8 @@ class MasterFlakeAnalysis(
     self.correct_culprit = None
     self.algorithm_parameters = None
     self.suspected_flake_build_number = None
+    self.culprit = None
+    self.try_job_status = None
     self.data_points = []
     self.result_status = None
 
@@ -157,6 +169,15 @@ class MasterFlakeAnalysis(
 
   # The suspected build number to have introduced the flakiness.
   suspected_flake_build_number = ndb.IntegerProperty()
+
+  # The culprit CL associated with the try job results, if any.
+  culprit = ndb.LocalStructuredProperty(FlakeCulprit)
+
+  # The status of try jobs, if any. None if try jobs have not been triggered.
+  # Status should be PENDING or STARTED when the first try job is triggered,
+  # and COMPLETED when the last one finishes. If any try job ends in error,
+  # status will be ERROR. 
+  try_job_status = ndb.IntegerProperty(indexed=False)
 
   # The data points used to plot the flakiness graph build over build.
   data_points = ndb.LocalStructuredProperty(

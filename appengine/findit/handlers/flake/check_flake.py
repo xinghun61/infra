@@ -19,14 +19,6 @@ from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
 
 
-def _FindSuspectedFlakeBuildDataPoint(analysis):
-  for data_point in analysis.data_points:
-    if data_point.build_number == analysis.suspected_flake_build_number:
-      return data_point
-
-  return None
-
-
 def _GetSuspectedFlakeInfo(analysis):
   """Returns a dict with information about the suspected flake build.
 
@@ -48,7 +40,7 @@ def _GetSuspectedFlakeInfo(analysis):
   if analysis.suspected_flake_build_number is None:
     return {}
 
-  data_point = _FindSuspectedFlakeBuildDataPoint(analysis)
+  data_point = analysis.GetDataPointOfSuspectedBuild()
   assert data_point
 
   return {
