@@ -17,7 +17,6 @@ import (
 	"infra/libs/infraenv"
 
 	"github.com/luci/luci-go/common/auth"
-	"github.com/luci/luci-go/common/config"
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/system/environ"
@@ -33,6 +32,7 @@ import (
 	"github.com/luci/luci-go/logdog/client/butlerlib/streamclient"
 	"github.com/luci/luci-go/logdog/client/butlerlib/streamproto"
 	"github.com/luci/luci-go/logdog/common/types"
+	"github.com/luci/luci-go/luci_config/common/cfgtypes"
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
@@ -183,7 +183,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env en
 
 	// Augment our environment with Butler parameters.
 	bsEnv := bootstrap.Environment{
-		Project: config.ProjectName(c.logdog.project),
+		Project: cfgtypes.ProjectName(c.logdog.project),
 		Prefix:  c.logdog.prefix,
 	}
 	bsEnv.Augment(env)
@@ -232,7 +232,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env en
 		ocfg := out.Config{
 			Auth:    authenticator,
 			Host:    c.logdog.host,
-			Project: config.ProjectName(c.logdog.project),
+			Project: cfgtypes.ProjectName(c.logdog.project),
 			Prefix:  prefix,
 			SourceInfo: []string{
 				"Kitchen",
@@ -255,7 +255,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env en
 
 	butlerCfg := butler.Config{
 		Output:       o,
-		Project:      config.ProjectName(c.logdog.project),
+		Project:      cfgtypes.ProjectName(c.logdog.project),
 		Prefix:       prefix,
 		BufferLogs:   true,
 		MaxBufferAge: butler.DefaultMaxBufferAge,
