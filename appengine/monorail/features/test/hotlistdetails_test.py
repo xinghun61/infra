@@ -11,6 +11,7 @@ import unittest
 from third_party import ezt
 
 from framework import permissions
+from features import features_constants
 from services import service_manager
 from features import hotlistdetails
 from proto import features_pb2
@@ -71,7 +72,8 @@ class HotlistDetailsTest(unittest.TestCase):
     self.assertEqual('hotlist summary', page_data['initial_summary'])
     self.assertEqual('hotlist description', page_data['initial_description'])
     self.assertEqual('hotlist', page_data['initial_name'])
-    self.assertEqual('', page_data['initial_default_col_spec'])
+    self.assertEqual(features_constants.DEFAULT_COL_SPEC,
+                     page_data['initial_default_col_spec'])
     self.assertEqual(ezt.boolean(False), page_data['initial_is_private'])
 
     # editor is viewing, so cant_administer_hotlist is True

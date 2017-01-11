@@ -94,7 +94,8 @@ class HotlistIssues(servlet.Servlet):
                       'allow_rerank': ezt.boolean(allow_rerank),
                       'csv_link': framework_helpers.FormatURL(
                           mr, '%d/csv' % mr.hotlist_id, num=100),
-                      'is_hotlist': ezt.boolean(True)})
+                      'is_hotlist': ezt.boolean(True),
+                      'col_spec': mr.col_spec.lower()})
     return page_data
   # TODO(jojwang): implement peek issue on hover, implement starring issues
 

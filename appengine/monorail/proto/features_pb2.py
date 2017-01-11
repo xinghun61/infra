@@ -5,6 +5,7 @@
 
 """Protocol buffers for Monorail features."""
 
+from features import features_constants
 from protorpc import messages
 
 
@@ -41,7 +42,7 @@ class Hotlist(messages.Message):
   items = messages.MessageField(HotlistItem, 10, repeated=True)
 
   # The default columns to show on hotlist issues page
-  default_col_spec = messages.StringField(11, default='')
+  default_col_spec = messages.StringField(11, default=features_constants.DEFAULT_COL_SPEC)
 
 def MakeHotlist(name, iid_rank_user_date=None, **kwargs):
   """Returns a hotlist protocol buffer with the given attributes.
