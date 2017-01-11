@@ -72,7 +72,11 @@
         --paper-tooltip: {
           font-size: 12px;
           line-height: 1.2;
+          max-width: 500px;
         }
+      }
+      .design-doc {
+        text-align: right;
       }
     </style>
 
@@ -122,7 +126,8 @@
             caused by flakiness, therefore this is a lower-bound. Runs in which
             the test has failed all tries may be also caused by flakiness, but
             are also likely to be caused by a reliable test failure on CQ,
-            therefore we ignore them.
+            therefore we ignore them. More details can be found in the design
+            doc linked in the bottom of the page.
           </paper-tooltip>
           <div class="test-stats" id="flakiness-header">
             Flakiness*
@@ -132,7 +137,8 @@
             based on the number of detected flaky failures in the "Flaky
             Failures" column, but it is also statistically corrected for
             undetected flaky failures making it a good approximation of the true
-            test flakiness.
+            test flakiness. More details can be found in the design doc linked
+            in the bottom of the page.
           </paper-tooltip>
         </div>
         <template is="dom-repeat" items="[[_data]]" as="test">
@@ -145,6 +151,9 @@
           </a>
         </template>
       </div>
+    </div>
+    <div class="design-doc">
+      (<a href="https://docs.google.com/document/d/1g587hOo4KySenWGNzZnItINI7zFP8hsNDn_CyhQ6X5Q">design doc</a>)
     </div>
   </template>
   <script>
