@@ -88,7 +88,9 @@
     </p>
 
     <!-- Omnibox selector for test group -->
-    <div class="error" hidden$="[[!_errorGroups]]">[[_errorGroups.error]]</div>
+    <div class="error" hidden$="[[!_errorGroups]]">
+      [[_formatError(_errorGroups)]]
+    </div>
     <iron-ajax
         id="groupsAjax"
         url="/test_flakiness_groups"
@@ -105,7 +107,9 @@
 
     <!-- List of flaky tests -->
     <div class="loading" hidden$="[[!_loadingData]]">Loading data... </div>
-    <div class="error" hidden$="[[!_errorData]]">[[_errorData.error]]</div>
+    <div class="error" hidden$="[[!_errorData]]">
+      [[_formatError(_errorData)]]
+    </div>
     <iron-ajax
         id="dataAjax"
         url="/test_flakiness"
@@ -222,6 +226,14 @@
 
         _showPercentage: function(rate) {
           return (rate * 100).toFixed(2);
+        },
+
+        _formatError: function(errorObj) {
+          if (errorObj.error && typeof errorObj.error == "string")
+            return errorObj.error
+
+          console.error(errorObj);
+          return 'Unknown error';
         },
 
         _isEmpty: function(obj) {

@@ -43,7 +43,8 @@
                     test_name: 'foo/bar/zee/test.html',
                     flakiness: 0.01345,
                     normalized_step_name: 'test_unittests',
-                    false_rejections: 0
+                    total_flaky_failures: 10,
+                    total_tries: 2000,
                   }
                 ]);
               }
@@ -54,16 +55,17 @@
 
         test('loads suggestions for omnibox', function(done) {
           fix.route = {path: '/'};
-          assert.isUndefined(fix._group);
+          assert.equal(fix._group.kind, 'all');
+          assert.equal(fix._group.name, 'all');
           assert.equal(fix.$.omnibox.value, '');
           assert.deepEqual(
               fix.$.omnibox.items,
               [
-                {label: 'Directory "foo/bar/zee"', value: 1},
-                {label: 'Team "DOM"', value: 2},
-                {label: 'Test Suite "FooBar"', value: 5},
-                {label: 'Tests with unknown directory', value: 4},
-                {label: 'Tests with unknown owner', value: 3},
+                {label: 'dir:foo/bar/zee', value: 1},
+                {label: 'dir:unknown', value: 4},
+                {label: 'team:DOM', value: 2},
+                {label: 'team:unknown', value: 3},
+                {label: 'test-suite:FooBar', value: 5},
               ]
           );
           done();
@@ -88,11 +90,33 @@
             assert.equal(
                 fix.$.tests.querySelector('.grid-row .test-name').innerText,
                 'foo/bar/zee/test.html')
-            assert.equal(
-                fix.$.tests.querySelector('.grid-row .test-stats').innerText,
-                '1.34%')
+            let stats = fix.$.tests.querySelectorAll('.grid-row .test-stats');
+            assert.equal(stats[0].innerText, '10 / 2000')
+            assert.equal(stats[1].innerText, '1.34%')
             done();
           });
+        });
+
+        test('error is formatted to be user-readable', function(done) {
+          let oldConsoleError = console.error;
+          let lastConsoleErrorArgs;
+          console.error = function() { lastConsoleErrorArgs = arguments; }
+
+          lastConsoleErrorArgs = undefined;
+          assert.equal(fix._formatError({}), 'Unknown error');
+          assert.deepEqual(lastConsoleErrorArgs[0], {})
+
+          lastConsoleErrorArgs = undefined;
+          assert.equal(
+              fix._formatError({'error': {'a': 'b'}}), 'Unknown error');
+          assert.deepEqual(lastConsoleErrorArgs[0], {'error': {'a': 'b'}})
+
+          lastConsoleErrorArgs = undefined;
+          assert.equal(fix._formatError({'error': 'foobar'}), 'foobar');
+          assert.isUndefined(lastConsoleErrorArgs);
+
+          console.error = oldConsoleError;
+          done();
         });
       });
     })();
