@@ -10,6 +10,7 @@ import time
 from third_party import ezt
 
 from features import hotlist_helpers
+from framework import framework_bizobj
 from framework import framework_helpers
 from framework import servlet
 from framework import permissions
@@ -19,6 +20,8 @@ _MSG_DESCRIPTION_MISSING = 'Description is missing.'
 _MSG_SUMMARY_MISSING = 'Summary is missing.'
 _MSG_NAME_MISSING = 'Hotlist name is missing.'
 _MSG_COL_SPEC_MISSING = 'Hotlist default columns are missing.'
+_MSG_HOTLIST_NAME_NOT_AVAIL = 'You already have a hotlist with that name.'
+_MSG_INVALID_HOTLIST_NAME = 'Invalid hotlist name.'
 
 
 class HotlistDetails(servlet.Servlet):
@@ -57,7 +60,7 @@ class HotlistDetails(servlet.Servlet):
           saved=1, ts=int(time.time()), include_project=False)
 
     (summary, description, name, default_col_spec) = self._ParseMetaData(
-        post_data, mr.errors)
+        post_data, mr)
     is_private = post_data.get('is_private') != 'no'
 
     if not mr.errors.AnyErrors():
@@ -77,7 +80,7 @@ class HotlistDetails(servlet.Servlet):
           saved=1, ts=int(time.time()),
           include_project=False)
 
-  def _ParseMetaData(self, post_data, errors):
+  def _ParseMetaData(self, post_data, mr):
     """Process a POST on the hotlist metadata."""
     summary = None
     description = None
@@ -87,15 +90,21 @@ class HotlistDetails(servlet.Servlet):
     if 'summary' in post_data:
       summary = post_data['summary']
       if not summary:
-        errors.summary = _MSG_SUMMARY_MISSING
+        mr.errors.summary = _MSG_SUMMARY_MISSING
     if 'description' in post_data:
       description = post_data['description']
       if not description:
-        errors.description = _MSG_DESCRIPTION_MISSING
+        mr.errors.description = _MSG_DESCRIPTION_MISSING
     if 'name' in post_data:
       name = post_data['name']
       if not name:
-        errors.name = _MSG_NAME_MISSING
+        mr.errors.name = _MSG_NAME_MISSING
+      else:
+        if not framework_bizobj.IsValidHotlistName(name):
+          mr.errors.name = _MSG_INVALID_HOTLIST_NAME
+        elif self.services.features.LookupHotlistIDs(
+            mr.cnxn, [name], [mr.auth.user_id]) and mr.hotlist.name != name:
+          mr.errors.name = _MSG_HOTLIST_NAME_NOT_AVAIL
     if 'default_col_spec' in post_data:
       default_col_spec = post_data['default_col_spec']
     return summary, description, name, default_col_spec

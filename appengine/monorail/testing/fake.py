@@ -1586,12 +1586,6 @@ class FeaturesService(object):
         elif role == FOLLOWER_ROLE:
           hotlist_pb.follower_ids.append(user_id)
 
-
-  def LookupHotlistIDs(self, cnxn, hotlist_names, owner_ids):
-    # function in real service not being called yet.
-    # TODO(jojwang): implement this before above statement becomes false
-    pass
-
   def CreateHotlist(
       self, _cnxn, hotlist_name, summary, description, owner_ids, editor_ids,
       issue_ids=None, is_private=None, default_col_spec=None, ts=None):
@@ -1662,6 +1656,15 @@ class FeaturesService(object):
       users_hotlists_dict[user_id] = [
           user_hotlist.hotlist_id for user_hotlist in user_hotlists]
     return users_hotlists_dict
+
+  def LookupHotlistIDs(self, cnxn, hotlist_names, owner_ids):
+    id_dict = {}
+    for name in hotlist_names:
+      hotlist = self.test_hotlists.get(name)
+      if hotlist:
+        if hotlist.owner_ids[0] in owner_ids:
+          id_dict[(name, hotlist.owner_ids[0])] = hotlist
+    return id_dict
 
   def GetHotlists(self, cnxn, hotlist_ids, use_cache=True):
     """Returns dict of {hotlist_id: hotlist PB}."""

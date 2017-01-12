@@ -1,7 +1,7 @@
 <a id="transfer-ownership">Transfer ownership</a>
 <dialog id='transfer-ownership-dialog' [if-any open_dialog]open[end]>
   <section>
-  Transfer hotlist ownership to: <input name="change-owners" placeholder=[initial_new_owner_username]>
+  Transfer hotlist ownership to: <input name="changeowners" value="[initial_new_owner_username]" placeholder=[placeholder]>
   [if-any errors.transfer_ownership]
   <div class="fielderror">[errors.transfer_ownership]</div>
   [end]
@@ -9,7 +9,7 @@
 
   <section>
   Would you like to stay on as an editor of this hotlist?
-  <input type="checkbox" name=become-editor checked>
+  <input type="checkbox" name=becomeeditor checked>
   </section>
   <a id="hotlist_star"
         style="color:[if-any hotlist.is_starred]cornflowerblue[else]gray[end]"

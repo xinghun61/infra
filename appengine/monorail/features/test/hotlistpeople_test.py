@@ -5,7 +5,9 @@
 
 """Unittest for Hotlist People servlet."""
 
+import mox
 import unittest
+import logging
 
 from third_party import ezt
 
@@ -25,11 +27,16 @@ class HotlistPeopleListTest(unittest.TestCase):
     self.non_member_user = self.services.user.TestAddUser(
         'who-dis@gmail.com', 333L)
     self.private_hotlist = self.services.features.TestAddHotlist(
-        'private_hotlist', 'owner only', [111L], [222L], is_private=True)
+        'PrivateHotlist', 'owner only', [111L], [222L], is_private=True)
     self.public_hotlist = self.services.features.TestAddHotlist(
-        'public_hotlist', 'everyone', [111L], [222L], is_private=False)
+        'PublicHotlist', 'everyone', [111L], [222L], is_private=False)
     self.servlet = hotlistpeople.HotlistPeopleList(
         'req', 'res', services=self.services)
+    self.mox = mox.Mox()
+
+  def tearDown(self):
+    self.mox.UnsetStubs()
+    self.mox.ResetAll()
 
   def testAssertBasePermission(self):
     # owner can view people in private hotlist
@@ -81,7 +88,7 @@ class HotlistPeopleListTest(unittest.TestCase):
   def testProcessFormData_Permission(self):
     """Only owner can change member of hotlist."""
     mr = testing_helpers.MakeMonorailRequest(
-        path='/u/buzbuz@gmail.com/hotlists/people',
+        path='/u/buzbuz@gmail.com/hotlists/PrivateHotlist/people',
         hotlist=self.private_hotlist,
         )
     mr.auth.effective_ids = {111L, 444L}
@@ -93,13 +100,78 @@ class HotlistPeopleListTest(unittest.TestCase):
 
 
   def testProcessRemoveMembers(self):
-    # TODO(jojwang): Write this test
-    pass
+    hotlist = self.servlet.services.features.TestAddHotlist(
+        'HotlistName', 'removing 222, monica', [111L], [222L])
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/u/buzbuz@gmail.com/hotlists/HotlistName/people',
+        hotlist=hotlist)
+    mr.hotlist_id = hotlist.hotlist_id
+    post_data = fake.PostData(
+        remove = ['monica@gmail.com'])
+    url = self.servlet.ProcessRemoveMembers(
+        mr, post_data, '/u/111/hotlists/HotlistName')
+    self.assertTrue('/u/111/hotlists/HotlistName/people' in url)
+    self.assertEqual(hotlist.editor_ids, [])
 
   def testProcessAddMembers(self):
-    # TODO(jojwang): Write this test
-    pass
+    hotlist = self.servlet.services.features.TestAddHotlist(
+        'HotlistName', 'adding 333, who-dis', [111L], [222L])
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/u/buzbuz@gmail.com/hotlists/HotlistName/people',
+        hotlist=hotlist)
+    mr.hotlist_id = hotlist.hotlist_id
+    post_data = fake.PostData(
+        addmembers = ['who-dis@gmail.com'],
+        role = ['editor'])
+    url = self.servlet.ProcessAddMembers(
+        mr, post_data, '/u/111/hotlists/HotlistName')
+    self.assertTrue('/u/111/hotlists/HotlistName/people' in url)
+    self.assertEqual(hotlist.editor_ids, [222L, 333L])
 
   def testProcessChangeOwnership(self):
-    # TODO(jojwang): Write this test
+    hotlist = self.servlet.services.features.TestAddHotlist(
+        'HotlistName', 'new owner 333L, who-dis', [111L], [222L])
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/u/buzbuz@gmail.com/hotlists/HotlistName/people',
+        hotlist=hotlist)
+    mr.hotlist_id = hotlist.hotlist_id
+    post_data = fake.PostData(
+        changeowners = ['who-dis@gmail.com'],
+        becomeeditor = ['on'])
+    url = self.servlet.ProcessChangeOwnership(mr, post_data)
+    self.assertTrue('/u/333/hotlists/HotlistName/people' in url)
+    self.assertEqual(hotlist.owner_ids, [333L])
+    self.assertEqual(hotlist.editor_ids, [222L, 111L])
+
+  def testProcessChangeOwnership_BadEmail(self):
+    hotlist = self.servlet.services.features.TestAddHotlist(
+        'HotlistName', 'new owner 333L, who-dis', [111L], [222L])
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/u/buzbuz@gmail.com/hotlists/HotlistName/people',
+        hotlist=hotlist)
+    mr.hotlist_id = hotlist.hotlist_id
+    changeowners_input = 'who-dis@gmail.com, extra-email@gmail.com'
+    post_data = fake.PostData(
+        changeowners = [changeowners_input],
+        becomeeditor = ['on'])
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        mr, initial_new_owner_username=changeowners_input, open_dialog='yes')
+    self.mox.ReplayAll()
+    url = self.servlet.ProcessChangeOwnership(mr, post_data)
+    self.mox.VerifyAll()
+    self.assertEqual(
+        'Please add one valid user email.', mr.errors.transfer_ownership)
+    self.assertIsNone(url)
+
+  def testProcessChangeOwnership_DuplicateName(self):
+    # other_hotlist = self.servlet.services.features.TestAddHotlist(
+    #    'HotlistName', 'hotlist with same name', [333L], [])
+    # hotlist = self.servlet.services.features.TestAddHotlist(
+    #     'HotlistName', 'new owner 333L, who-dis', [111L], [222L])
+
+    # in the test_hotlists dict of features_service in testing/fake
+    # 'other_hotlist' is overwritten by 'hotlist'
+    # TODO(jojwang): edit the fake features_service to allow hotlists
+    # with the same name but different owners
     pass

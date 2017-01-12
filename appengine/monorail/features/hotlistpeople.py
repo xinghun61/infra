@@ -78,7 +78,8 @@ class HotlistPeopleList(servlet.Servlet):
         'offer_membership_editing': ezt.boolean(offer_membership_editing),
         'total_num_owners': len(mr.hotlist.owner_ids),
         'check_abandonment': ezt.boolean(True),
-        'initial_new_owner_username': 'new-owner-username',
+        'initial_new_owner_username': '',
+        'placeholder': 'new-owner-username',
         'open_dialog': ezt.boolean(False),
         }
 
@@ -95,7 +96,7 @@ class HotlistPeopleList(servlet.Servlet):
       return self.ProcessAddMembers(mr, post_data, hotlist_url)
     elif 'removebtn' in post_data:
       return self.ProcessRemoveMembers(mr, post_data, hotlist_url)
-    elif 'change-owners' in post_data:
+    elif 'changeowners' in post_data:
       return self.ProcessChangeOwnership(mr, post_data)
 
   def _MakeMemberViews(self, mr, member_ids):
@@ -109,18 +110,23 @@ class HotlistPeopleList(servlet.Servlet):
 
   def ProcessChangeOwnership(self, mr, post_data):
     new_owner_id_set = project_helpers.ParseUsernames(
-        mr.cnxn, self.services.user, post_data.get('change-owners'))
-    remain_as_editor = post_data.get('become-editor') == 'on'
+        mr.cnxn, self.services.user, post_data.get('changeowners'))
+    remain_as_editor = post_data.get('becomeeditor') == 'on'
     if len(new_owner_id_set) != 1:
       mr.errors.transfer_ownership = (
           'Please add one valid user email.')
+    else:
+      new_owner_id = new_owner_id_set.pop()
+      if self.services.features.LookupHotlistIDs(
+          mr.cnxn, [mr.hotlist.name], [new_owner_id]):
+        mr.errors.transfer_ownership = (
+            'This user already owns a hotlist with the same name')
 
     if mr.errors.AnyErrors():
       self.PleaseCorrect(
-          mr, initial_new_owner_username=post_data.get('change-owners'),
+          mr, initial_new_owner_username=post_data.get('changeowners'),
           open_dialog=ezt.boolean(True))
     else:
-      new_owner_id = new_owner_id_set.pop()
       (_, editor_ids, follower_ids) = hotlist_helpers.MembersWithoutGivenIDs(
           mr.hotlist, [mr.hotlist.owner_ids[0], new_owner_id])
       if remain_as_editor:
