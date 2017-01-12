@@ -25,8 +25,11 @@
   </span>
   [end]
 
-  [# TODO(lukasperaza): add <span class"inst6"> for Hotlists tab once hotlists
-   # feature is completed #]
+  [if-any show_hotlist_feature]
+  <span class="inst6">
+    <a href="[viewed_user.profile_url]hotlists">Hotlists</a>
+  </span>
+  [end]
 
 </div>
 
