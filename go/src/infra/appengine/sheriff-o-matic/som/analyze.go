@@ -61,16 +61,41 @@ func getAnalyzeHandler(ctx *router.Context) {
 	}
 
 	alerts := []messages.Alert{}
+	logging.Infof(c, "Getting compressed master json for %d masters", len(treeCfg.Masters))
+
+	type res struct {
+		alerts []messages.Alert
+		err    error
+	}
+
+	resCh := make(chan res)
 	for masterLoc := range treeCfg.Masters {
-		buildExtract, err := client.BuildExtract(c, &masterLoc)
-		if err != nil {
-			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
+		masterLoc := masterLoc
+		go func() {
+			buildExtract, err := client.BuildExtract(c, &masterLoc)
+			r := res{err: err}
+			if err == nil {
+				r.alerts = a.MasterAlerts(c, &masterLoc, buildExtract)
+				r.alerts = append(r.alerts, a.BuilderAlerts(c, tree, &masterLoc, buildExtract)...)
+			}
+			resCh <- r
+		}()
+	}
+
+	var anyErr error
+	for i := 0; i < len(treeCfg.Masters); i++ {
+		r := <-resCh
+		alerts = append(alerts, r.alerts...)
+		if r.err != nil {
+			anyErr = r.err
 		}
-		masterAlerts := a.MasterAlerts(c, &masterLoc, buildExtract)
-		builderAlerts := a.BuilderAlerts(c, tree, &masterLoc, buildExtract)
-		alerts = append(alerts, masterAlerts...)
-		alerts = append(alerts, builderAlerts...)
+	}
+
+	if anyErr != nil {
+		// TODO: Deal with partial failures so some errors are tolerated so long
+		// as some analysis succeeded.
+		errStatus(c, w, http.StatusInternalServerError, anyErr.Error())
+		return
 	}
 
 	if err := storeAlertsSummary(c, a, tree, &messages.AlertsSummary{
