@@ -164,6 +164,25 @@
   {
     "cmd": [
       "git",
+      "cl",
+      "issue",
+      "--json",
+      "/path/to/tmp/json"
+    ],
+    "cwd": "[START_DIR]/src",
+    "name": "git cl issue",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue\": 123456789, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": \"https://codereview.chromium.org/123456789\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@issue 123456789@https://codereview.chromium.org/123456789@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
       "checkout",
       "origin/master"
     ],
@@ -223,6 +242,25 @@
     ],
     "cwd": "[START_DIR]/src/third_party/WebKit",
     "name": "update css"
+  },
+  {
+    "cmd": [
+      "git",
+      "cl",
+      "issue",
+      "--json",
+      "/path/to/tmp/json"
+    ],
+    "cwd": "[START_DIR]/src",
+    "name": "git cl issue (2)",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue\": 123456789, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": \"https://codereview.chromium.org/123456789\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@issue 123456789@https://codereview.chromium.org/123456789@@@"
+    ]
   },
   {
     "cmd": [

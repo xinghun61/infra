@@ -14,6 +14,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
+  'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
@@ -51,11 +52,25 @@ def RunSteps(api):
       name,
     ]
     api.python('update ' + name, script, args, cwd=blink_dir)
+    git_cl_issue_link(api)
 
   with new_branch('update_wpt'):
     update_w3c_repo('wpt')
   with new_branch('update_css'):
     update_w3c_repo('css')
+
+
+def git_cl_issue_link(api):
+  """Runs a step which adds a link to the current CL."""
+  issue_step = api.m.git(
+      'cl', 'issue', '--json', api.json.output(),
+      name='git cl issue',
+      step_test_data=lambda: api.m.json.test_api.output({
+          'issue': 123456789,
+          'issue_url': 'https://codereview.chromium.org/123456789'}))
+  issue_result = issue_step.json.output
+  link_text = 'issue %s' % issue_result['issue']
+  issue_step.presentation.links[link_text] = issue_result['issue_url']
 
 
 def GenTests(api):
