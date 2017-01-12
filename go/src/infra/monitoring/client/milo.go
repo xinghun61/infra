@@ -9,6 +9,7 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -96,6 +97,9 @@ func (r *miloReader) LatestBuilds(ctx context.Context, master *messages.MasterLo
 }
 
 func (r *miloReader) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
+	ctx, cancelFunc := context.WithTimeout(ctx, 60*time.Second)
+	defer cancelFunc()
+
 	miloClient := &prpc.Client{
 		Host: r.host,
 		C:    &http.Client{Transport: urlfetch.Get(ctx)},
@@ -103,7 +107,6 @@ func (r *miloReader) BuildExtract(ctx context.Context, master *messages.MasterLo
 
 	req := &milo.MasterRequest{Name: master.Name()}
 	resp := &milo.CompressedMasterJSON{}
-
 	if err := miloClient.Call(ctx, buildBotSvcName, "GetCompressedMasterJSON", req, resp); err != nil {
 		logging.Errorf(ctx, "error getting build extract for %s: %v", master.Name(), err)
 		return nil, err
