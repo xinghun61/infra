@@ -6,22 +6,17 @@
 package frontend
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
-
-	"github.com/google/go-querystring/query"
 
 	"golang.org/x/net/context"
 
 	ds "github.com/luci/gae/service/datastore"
-	tq "github.com/luci/gae/service/taskqueue"
-	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 
-	"infra/tricium/appengine/common"
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/pipeline"
 	"infra/tricium/appengine/common/track"
 )
@@ -35,12 +30,18 @@ func landingPageHandler(c *router.Context) {
 func resultsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 	if _, err := runs(c); err != nil {
-		logging.WithError(err).Errorf(c, "Results handler encountered errors")
+		logging.WithError(err).Errorf(c, "results handler encountered errors")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	r, err := runs(c)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "failed to retrieve runs")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	templates.MustRender(c, w, "pages/results.html", map[string]interface{}{
-		"Runs": runs,
+		"Runs": r,
 	})
 }
 
@@ -48,7 +49,7 @@ func runs(c context.Context) ([]*track.Run, error) {
 	var runs []*track.Run
 	q := ds.NewQuery("Run").Order("-Received").Limit(20)
 	if err := ds.GetAll(c, q, &runs); err != nil {
-		logging.WithError(err).Errorf(c, "Failed to read run entries from datastore")
+		logging.WithError(err).Errorf(c, "failed to read run entries from datastore")
 		return nil, err
 	}
 	return runs, nil
@@ -56,21 +57,32 @@ func runs(c context.Context) ([]*track.Run, error) {
 
 func analyzeHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
+	// TODO(emso): With a switch to Polymer this handler can be replaced with a direct
+	// call to the pRPC server via Javascript fetch.
 	sr, err := parseRequestForm(r)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "Failed to parse analyze request")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if _, err := analyze(c, sr); err != nil {
-		logging.WithError(err).Errorf(c, "Analyze handler encountered errors")
+	res, err := triciumServer.Analyze(c, &tricium.TriciumRequest{
+		Project: sr.Project,
+		GitRef:  sr.GitRef,
+		Paths:   sr.Paths,
+	})
+	// TODO(emso): Sort out the returned error code to distinguish retriable errors
+	// from fatal errors. For instance, grpc.Code(err) equal to codes.InvalidArgument is fatal, while
+	// codes.Internal is not.
+	if err != nil {
+		logging.WithError(err).Errorf(c, "Failed to call Tricium.Analyze RPC")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	logging.Infof(c, "Analyzer handler successfully completed")
+	logging.Infof(c, "Analyzer handler successfully completed, run ID: %s", res.RunId)
 	templates.MustRender(c, w, "pages/index.html", map[string]interface{}{
-		"StatusMsg": "Analysis request sent.",
+		"StatusMsg": fmt.Sprintf("Analysis request sent. Run ID: %s", res.RunId),
 	})
+	w.WriteHeader(http.StatusOK)
 }
 
 func parseRequestForm(r *http.Request) (*pipeline.ServiceRequest, error) {
@@ -87,57 +99,8 @@ func parseRequestForm(r *http.Request) (*pipeline.ServiceRequest, error) {
 	return &pipeline.ServiceRequest{
 		Project: project,
 		GitRef:  ref,
-		Path:    paths,
+		Paths:   paths,
 	}, nil
-}
-
-// TODO(emso): Replace this analyze function with a pRPC Analyze RPC.
-func analyze(c context.Context, sr *pipeline.ServiceRequest) (int64, error) {
-	// TODO(emso): Verify that the project in the request is known.
-	// TODO(emso): Verify that the user making the request has permission.
-	// TODO(emso): Verify that there is no current run for this request (map hashed requests to run IDs).
-	// TODO(emso): Read Git repo info from the configuration projects/ endpoint.
-	repo := "https://chromium-review.googlesource.com/playground/gerrit-tricium"
-	run := &track.Run{
-		Received: clock.Now(c).UTC(),
-		State:    track.Pending,
-	}
-	err := ds.RunInTransaction(c, func(c context.Context) error {
-		// Add tracking entries for run and request.
-		if err := ds.Put(c, run); err != nil {
-			return err
-		}
-		logging.Infof(c, "[frontend] Run ID: %s, key: %s", run.ID, ds.KeyForObj(c, run))
-		req := &track.ServiceRequest{
-			Parent:  ds.KeyForObj(c, run),
-			Project: sr.Project,
-			Path:    sr.Path,
-			GitRepo: repo,
-			GitRef:  sr.GitRef,
-		}
-		if err := ds.Put(c, req); err != nil {
-			return err
-		}
-		// Launch workflow, enqueue launch request.
-		rl := pipeline.LaunchRequest{
-			RunID:   run.ID,
-			Project: sr.Project,
-			Path:    sr.Path,
-			GitRepo: repo,
-			GitRef:  sr.GitRef,
-		}
-		v, err := query.Values(rl)
-		if err != nil {
-			return errors.New("failed to encode launch request")
-		}
-		t := tq.NewPOSTTask("/launcher/internal/queue", v)
-		return tq.Add(c, common.LauncherQueue, t)
-	}, nil)
-	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to track and launch request")
-		return 0, err
-	}
-	return run.ID, nil
 }
 
 // queueHandler calls analyze for entries in the queue.
@@ -160,8 +123,14 @@ func queueHandler(ctx *router.Context) {
 		return
 	}
 	logging.Infof(c, "[frontend] Parsed service request (project: %s, Git ref: %s)", sr.Project, sr.GitRef)
-	if _, err := analyze(c, sr); err != nil {
-		logging.WithError(err).Errorf(c, "Failed to handle analyze request")
+	// TODO(emso): Consider proto-serializing pRPC requests in the task payload for queues wrapping pRPC calls.
+	_, err = triciumServer.Analyze(c, &tricium.TriciumRequest{
+		Project: sr.Project,
+		GitRef:  sr.GitRef,
+		Paths:   sr.Paths,
+	})
+	if err != nil {
+		logging.WithError(err).Errorf(c, "Failed to call Tricium.Analyze RPC")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

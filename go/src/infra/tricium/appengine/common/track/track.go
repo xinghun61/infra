@@ -31,7 +31,7 @@ type ServiceRequest struct {
 	// Tricium connected project receiving the request.
 	Project string
 	// File paths listed in the request.
-	Path []string `gae:",noindex"`
+	Paths []string `gae:",noindex"`
 	// Git repository hosting files in the request.
 	GitRepo string `gae:",noindex"`
 	// Git ref to use in the Git repo.

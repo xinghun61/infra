@@ -20,7 +20,7 @@ type ServiceRequest struct {
 	// The Git ref to use in the Git repo connected to the project.
 	GitRef string `url:"git-ref"`
 	// Paths to files to analyze (from the repo root).
-	Path []string `url:"path"`
+	Paths []string `url:"path"`
 }
 
 // ParseServiceRequest creates and populates a ServiceRequest struct from URL values.
@@ -32,10 +32,10 @@ func ParseServiceRequest(v url.Values) (*ServiceRequest, error) {
 		GitRef:  v.Get("git-ref"),
 	}
 	if p := v["path"]; len(p) != 0 {
-		res.Path = make([]string, len(p))
-		copy(res.Path, p)
+		res.Paths = make([]string, len(p))
+		copy(res.Paths, p)
 	}
-	if res.Project == "" || res.GitRef == "" || len(res.Path) == 0 {
+	if res.Project == "" || res.GitRef == "" || len(res.Paths) == 0 {
 		return nil, fmt.Errorf("failed to parse service request, missing values: %#v", res)
 	}
 	return res, nil
@@ -51,7 +51,7 @@ type LaunchRequest struct {
 	// The Git ref to use in the Git repo connected to the project.
 	GitRef string `url:"git-ref"`
 	// Paths to files to analyze (from the repo root).
-	Path []string `url:"path"`
+	Paths []string `url:"path"`
 	// URL to the Git repo connected to this project.
 	GitRepo string `url:"git-repo"`
 }
@@ -66,11 +66,12 @@ func ParseLaunchRequest(v url.Values) (*LaunchRequest, error) {
 		GitRef:  v.Get("git-ref"),
 	}
 	runID := v.Get("run-id")
-	for _, p := range v["path"] {
-		res.Path = append(res.Path, p)
+	if p := v["path"]; len(p) != 0 {
+		res.Paths = make([]string, len(p))
+		copy(res.Paths, p)
 	}
 	if runID == "" || res.Project == "" || res.GitRepo == "" ||
-		res.GitRef == "" || len(res.Path) == 0 {
+		res.GitRef == "" || len(res.Paths) == 0 {
 		return nil, fmt.Errorf("failed to parse launch request, missing values (id: %s)", runID)
 	}
 	r, err := strconv.Atoi(runID)

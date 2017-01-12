@@ -9,8 +9,11 @@ import (
 	"net/http"
 
 	"github.com/luci/luci-go/appengine/gaemiddleware"
+	"github.com/luci/luci-go/grpc/discovery"
+	"github.com/luci/luci-go/grpc/prpc"
 	"github.com/luci/luci-go/server/router"
 
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 )
 
@@ -28,6 +31,13 @@ func init() {
 
 	r.GET("/results", base, resultsHandler)
 	r.GET("/", base, landingPageHandler)
+
+	// Configure pRPC server.
+	// TODO(emso): Enable authentication
+	server := prpc.Server{Authenticator: prpc.NoAuthenticator}
+	tricium.RegisterTriciumServer(&server, triciumServer)
+	discovery.Enable(&server)
+	server.InstallHandlers(r, base)
 
 	http.DefaultServeMux.Handle("/", r)
 }

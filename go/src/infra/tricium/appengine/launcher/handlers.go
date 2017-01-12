@@ -100,7 +100,7 @@ func launch(c context.Context, lr *pipeline.LaunchRequest, wp workflowProvider) 
 		return fmt.Errorf("Failed to store workflow and track launch: %v", err)
 	}
 	// Isolate initial intput.
-	inputHash, err := isolateGitFileDetails(lr.Project, lr.GitRepo, lr.GitRef, lr.Path)
+	inputHash, err := isolateGitFileDetails(lr.Project, lr.GitRepo, lr.GitRef, lr.Paths)
 	if err != nil {
 		return fmt.Errorf("Failed to isolate git file details: %v", err)
 	}

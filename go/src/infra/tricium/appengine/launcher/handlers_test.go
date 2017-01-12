@@ -51,7 +51,7 @@ func TestLaunchRequest(t *testing.T) {
 			RunID:   123456789,
 			Project: "test-project",
 			GitRef:  "ref/test",
-			Path: []string{
+			Paths: []string{
 				"README.md",
 				"README2.md",
 			},

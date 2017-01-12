@@ -29,20 +29,8 @@ message TriciumRequest {
   repeated string paths = 3;
 }
 
-enum ErrorCode {
-  SUCCESS         = 0;
-  TRICIUM_ERROR   = 1; // Unspecified internal Tricium error.
-  UNKNOWN_PROJECT = 2;
-  UNKNOWN_GITREF  = 3;
-}
-
 message TriciumResponse {
-  ErrorCode error_code = 1;
-
-  // Optional error message with more details.
-  string error_message = 2;
-
   // ID of the run started for this request. This ID can be used to track
   // progress and find results.
-  string run_id = 3;
+  string run_id = 1;
 }

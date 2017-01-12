@@ -4,12 +4,14 @@
 <table class="results">
 <tr>
   <th><b>Received</b></th>
+  <th><b>ID</b></th>
   <th><b>State</b></th>
 </tr>
 {{range .Runs}}
 <tr>
   <td>{{ .Received }}</td>
-  <td>{{ .RunState }}</td>
+  <td>{{ .ID }}</td>
+  <td>{{ .State }}</td>
 </tr>
 {{end}}
 </table>

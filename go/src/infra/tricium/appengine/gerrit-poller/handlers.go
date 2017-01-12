@@ -396,7 +396,7 @@ func enqueueServiceRequests(ctx context.Context, changes []*GerritChangeDetails)
 				files = append(files, file.Path)
 			}
 		}
-		sr.Path = files
+		sr.Paths = files
 		v, err := query.Values(sr)
 		if err != nil {
 			return errors.New("failed to encode service request")
