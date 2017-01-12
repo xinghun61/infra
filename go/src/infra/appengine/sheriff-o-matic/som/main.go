@@ -402,7 +402,7 @@ func init() {
 
 	// Disallow cookies because this handler should not be accessible by regular
 	// users.
-	r.POST("/api/v1/alerts/:tree", base(false), postAlertsHandler)
+	r.POST("/api/v1/alerts/:tree", base(false).Extend(requireGoogler), postAlertsHandler)
 	r.GET("/api/v1/annotations/", protected, getAnnotationsHandler)
 	r.POST("/api/v1/annotations/:annKey/:action", protected, postAnnotationsHandler)
 	r.GET("/api/v1/bugqueue/:label", protected, getBugQueueHandler)
