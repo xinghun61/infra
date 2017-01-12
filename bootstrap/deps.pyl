@@ -79,10 +79,10 @@
     'implicit': True,  # Required by cryptography
   },
   'infra_libs': {
-    'version': '1.1.2',
+    'version': '1.1.3',
     'build': '0',
     'repo': 'infra/infra/packages/infra_libs',
-    'rev': '4c57fa184c653636ca2683a1faaa8e26283f6c59',
+    'rev': '3ae8974686065d78f6319b7ac7638eda5859bbbe',
   },
   'ipaddress': {
     'version': '1.0.16',
