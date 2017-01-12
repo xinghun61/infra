@@ -176,12 +176,12 @@ class GlobalsTest(unittest.TestCase):
     fake_metric.serialize_to.side_effect = serialize_to
     interface.register(fake_metric)
 
-    for i in xrange(1001):
+    for i in xrange(501):
       interface.state.store.set('fake', ('field', i), None, 123)
 
     interface.flush()
     self.assertEquals(2, interface.state.global_monitor.send.call_count)
-    self.assertListEqual([1000, 1], data_lengths)
+    self.assertListEqual([500, 1], data_lengths)
 
   def test_flush_many_new(self):
     interface.state.global_monitor = stubs.MockMonitor()
@@ -208,7 +208,7 @@ class GlobalsTest(unittest.TestCase):
 
     interface.flush()
     self.assertEquals(2, interface.state.global_monitor.send.call_count)
-    self.assertListEqual([1000, 1], data_lengths)
+    self.assertListEqual([500, 1], data_lengths)
 
   def test_flush_different_target_fields(self):
     interface.state.global_monitor = stubs.MockMonitor()
