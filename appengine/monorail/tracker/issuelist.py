@@ -172,6 +172,7 @@ class IssueList(servlet.Servlet):
         'editor_permissions': ezt.boolean(False),
         'remove_issues_token': '',
         'add_local_ids': '',
+        'placeholder': ''
     })
 
     return page_data
