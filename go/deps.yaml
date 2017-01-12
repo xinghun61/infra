@@ -77,6 +77,9 @@ import:
   subpackages:
   - context
   - context/ctxhttp
+- package: golang.org/x/text
+  version: master
+  repo: https://go.googlesource.com/text.git
 - package: golang.org/x/oauth2
   version: master
   repo: https://go.googlesource.com/oauth2.git
