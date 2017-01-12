@@ -6,6 +6,7 @@ from collections import namedtuple
 
 from libs.gitiles.diff import ChangeType
 
+
 # TODO(wrengr): it'd be better to have a class hierarchy here, so we can
 # avoid playing around with None, and so the change_type can be stored
 # once (in the class itself; rather than once per instance).
@@ -50,33 +51,33 @@ class FileChangeInfo(namedtuple('FileChangeInfo',
     }
 
 
+class Contributor(namedtuple('Contributor', ['name', 'email', 'time'])):
+  """A generalization of the "author" and "committer" in Git's terminology."""
+  __slots__ = ()
+
+
 class ChangeLog(namedtuple('ChangeLog',
-    ['author_name', 'author_email', 'author_time', 'committer_name',
-     'committer_email', 'committer_time', 'revision', 'commit_position',
-     'message', 'touched_files', 'commit_url', 'code_review_url',
-     'reverted_revision'])):
+    ['author', 'committer', 'revision', 'commit_position', 'message',
+     'touched_files', 'commit_url', 'code_review_url', 'reverted_revision'])):
   """Represents the change log of a revision."""
   __slots__ = ()
 
-  def __new__(cls, author_name, author_email, author_time, committer_name,
-              committer_email, committer_time, revision, commit_position,
-              message, touched_files, commit_url, code_review_url=None,
+  def __new__(cls, author, committer, revision, commit_position, message,
+              touched_files, commit_url, code_review_url=None,
               reverted_revision=None):
-    return super(cls, ChangeLog).__new__(cls,
-        author_name, author_email, author_time, committer_name,
-        committer_email, committer_time, revision, commit_position,
-        message, touched_files, commit_url, code_review_url,
-        reverted_revision)
+    return super(cls, ChangeLog).__new__(
+        cls, author, committer, revision, commit_position, message,
+        touched_files, commit_url, code_review_url, reverted_revision)
 
   def ToDict(self):
     """Returns the change log as a JSON object."""
     json_data = {
-      'author_name': self.author_name,
-      'author_email': self.author_email,
-      'author_time': self.author_time,
-      'committer_name': self.committer_name,
-      'committer_email': self.committer_email,
-      'committer_time': self.committer_time,
+      'author_name': self.author.name,
+      'author_email': self.author.email,
+      'author_time': self.author.time,
+      'committer_name': self.committer.name,
+      'committer_email': self.committer.email,
+      'committer_time': self.committer.time,
       'revision': self.revision,
       'commit_position': self.commit_position,
       'touched_files': [],
@@ -102,8 +103,10 @@ class ChangeLog(namedtuple('ChangeLog',
       touched_files.append(touched_file_info)
 
     return ChangeLog(
-        info['author_name'], info['author_email'], info['author_time'],
-        info['committer_name'], info['committer_email'], info['committer_time'],
+        Contributor(info['author_name'], info['author_email'],
+                    info['author_time']),
+        Contributor(info['committer_name'], info['committer_email'],
+                    info['committer_time']),
         info['revision'], info['commit_position'], info['message'],
         touched_files, info['commit_url'], info['code_review_url'],
         info['reverted_revision']

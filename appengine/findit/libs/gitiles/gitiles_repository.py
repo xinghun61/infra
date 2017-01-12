@@ -13,6 +13,7 @@ from libs.gitiles import diff
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs.gitiles.change_log import ChangeLog
+from libs.gitiles.change_log import Contributor
 from libs.gitiles.change_log import FileChangeInfo
 from libs.gitiles.git_repository import GitRepository
 from libs.time_util import TimeZoneInfo
@@ -99,6 +100,12 @@ class GitilesRepository(GitRepository):
 
     return datetime.strptime(datetime_string, date_format)
 
+  def _ContributorFromDict(self, data):
+    return Contributor(
+        data['name'],
+        commit_util.NormalizeEmail(data['email']),
+        self._GetDateTimeFromString(data['time']))
+
   def _ParseChangeLogFromLogData(self, data):
     commit_position, code_review_url = (
         commit_util.ExtractCommitPositionAndCodeReviewUrl(data['message']))
@@ -112,20 +119,14 @@ class GitilesRepository(GitRepository):
           FileChangeInfo(
               change_type, file_diff['old_path'], file_diff['new_path']))
 
-    author_time = self._GetDateTimeFromString(data['author']['time'])
-    committer_time = self._GetDateTimeFromString(data['committer']['time'])
     reverted_revision = commit_util.GetRevertedRevision(data['message'])
     url = '%s/+/%s' % (self.repo_url, data['commit'])
 
     return ChangeLog(
-        data['author']['name'],
-        commit_util.NormalizeEmail(data['author']['email']),
-        author_time,
-        data['committer']['name'],
-        commit_util.NormalizeEmail(data['committer']['email']),
-        committer_time, data['commit'], commit_position,
-        data['message'], touched_files, url, code_review_url,
-        reverted_revision)
+        self._ContributorFromDict(data['author']),
+        self._ContributorFromDict(data['committer']),
+        data['commit'], commit_position, data['message'], touched_files, url,
+        code_review_url, reverted_revision)
 
   def GetChangeLog(self, revision):
     """Returns the change log of the given revision."""

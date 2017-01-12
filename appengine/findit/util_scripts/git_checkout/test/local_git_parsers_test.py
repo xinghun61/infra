@@ -113,10 +113,12 @@ class LocalGitParsersTest(unittest.TestCase):
                'Cr-Commit-Position: refs/heads/master@{#425880}')
 
     expected_changelog = change_log.ChangeLog(
-        'Test', 'test@google.com', datetime(2016, 7, 13, 20, 37, 6),
-        'Test', 'test@google.com', datetime(2016, 7, 13, 20, 37, 6),
-        'revision', 425880, message, [change_log.FileChangeInfo(
-            'modify', 'src/a/b.py', 'src/a/b.py')],
+        change_log.Contributor('Test', 'test@google.com',
+                               datetime(2016, 7, 13, 20, 37, 6)),
+        change_log.Contributor('Test', 'test@google.com',
+                               datetime(2016, 7, 13, 20, 37, 6)),
+        'revision', 425880, message,
+        [change_log.FileChangeInfo('modify', 'src/a/b.py', 'src/a/b.py')],
         'https://repo/+/revision',
         'https://codereview.chromium.org/2391763002',
         'c9cc182781484f9010f062859cda048afefefefe')
@@ -191,36 +193,31 @@ class LocalGitParsersTest(unittest.TestCase):
     )
 
     expected_changelogs = [
-        change_log.ChangeLog('author1',
-                             'author1@chromium.org',
-                             datetime(2016, 6, 2, 10, 55, 38),
-                             'Commit bot',
-                             'commit-bot@chromium.org',
-                             datetime(2016, 6, 2, 10, 57, 13),
-                             'rev1', None,
-                             'Message 1', [change_log.FileChangeInfo(
-                                 'delete', 'a/b.py', None)],
-                             'http://repo/+/rev1', None, None),
-        change_log.ChangeLog('author2',
-                             'author2@chromium.org',
-                             datetime(2016, 6, 2, 10, 53, 3),
-                             'Commit bot',
-                             'commit-bot@chromium.org',
-                             datetime(2016, 6, 2, 10, 54, 14),
-                             'rev2', None,
-                             'Message 2', [change_log.FileChangeInfo(
-                                 'add', None, 'b/c.py')],
-                             'http://repo/+/rev2', None, None),
-        change_log.ChangeLog('author3',
-                             'author3@chromium.org',
-                             datetime(2016, 6, 2, 10, 53, 3),
-                             'Commit bot',
-                             'commit-bot@chromium.org',
-                             datetime(2016, 6, 2, 10, 54, 14),
-                             'rev3', None,
-                             'Message 3', [change_log.FileChangeInfo(
-                                 'rename', 'b/c.py', 'b/cc.py')],
-                             'http://repo/+/rev3', None, None),
+        change_log.ChangeLog(
+            change_log.Contributor('author1', 'author1@chromium.org',
+                                   datetime(2016, 6, 2, 10, 55, 38)),
+            change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
+                                   datetime(2016, 6, 2, 10, 57, 13)),
+            'rev1', None,
+            'Message 1', [change_log.FileChangeInfo('delete', 'a/b.py', None)],
+            'http://repo/+/rev1', None, None),
+        change_log.ChangeLog(
+            change_log.Contributor('author2', 'author2@chromium.org',
+                                   datetime(2016, 6, 2, 10, 53, 3)),
+            change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
+                                   datetime(2016, 6, 2, 10, 54, 14)),
+            'rev2', None,
+            'Message 2', [change_log.FileChangeInfo('add', None, 'b/c.py')],
+            'http://repo/+/rev2', None, None),
+        change_log.ChangeLog(
+            change_log.Contributor('author3', 'author3@chromium.org',
+                                   datetime(2016, 6, 2, 10, 53, 3)),
+            change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
+                                   datetime(2016, 6, 2, 10, 54, 14)),
+            'rev3', None,
+            'Message 3',
+            [change_log.FileChangeInfo('rename', 'b/c.py', 'b/cc.py')],
+            'http://repo/+/rev3', None, None),
     ]
 
     changelogs = local_git_parsers.GitChangeLogsParser()(output, 'http://repo')

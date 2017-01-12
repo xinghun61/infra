@@ -10,6 +10,7 @@ from crash.suspect import Suspect
 from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
 from libs.gitiles.change_log import ChangeLog
+from libs.gitiles.change_log import Contributor
 from model import analysis_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
@@ -93,12 +94,8 @@ class CrashPipelineTest(PredatorTestCase):
     analysis.put()
 
     dummy_cl = ChangeLog(
-        'AUTHOR_NAME',
-        'AUTHOR_EMAIL',
-        'AUTHOR_TIME',
-        'COMITTER_NAME',
-        'COMITTER_EMAIL',
-        'COMITTER_TIME',
+        Contributor('AUTHOR_NAME', 'AUTHOR_EMAIL', 'AUTHOR_TIME'),
+        Contributor('COMITTER_NAME', 'COMITTER_EMAIL', 'COMITTER_TIME'),
         'REVISION',
         'COMMIT_POSITION',
         'MESSAGE',

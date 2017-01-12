@@ -72,10 +72,12 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
     )
 
     expected_changelog = change_log.ChangeLog(
-        'Test', 'test@google.com', datetime(2016, 7, 13, 20, 37, 6),
-        'Test', 'test@google.com', datetime(2016, 7, 13, 20, 37, 6),
-        'revision', None, 'blabla', [change_log.FileChangeInfo(
-            'modify', 'src/a/b.py', 'src/a/b.py')],
+        change_log.Contributor('Test', 'test@google.com',
+                               datetime(2016, 7, 13, 20, 37, 6)),
+        change_log.Contributor('Test', 'test@google.com',
+                               datetime(2016, 7, 13, 20, 37, 6)),
+        'revision', None, 'blabla',
+        [change_log.FileChangeInfo('modify', 'src/a/b.py', 'src/a/b.py')],
         'https://repo/path/+/revision', None, None)
     self.mock(script_util, 'GetCommandOutput', lambda *_: output)
     # TODO: compare the objects directly, rather than via ToDict
@@ -132,16 +134,20 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
 
     expected_changelogs = [
         change_log.ChangeLog(
-            'author1', 'author1@chromium.org', datetime(2016, 6, 2, 10, 55, 38),
-            'Commit bot', 'commit-bot@chromium.org',
-            datetime(2016, 6, 2, 10, 57, 13), 'rev1', None,
-            'Message 1', [change_log.FileChangeInfo('delete', 'a/b.py', None)],
+            change_log.Contributor('author1', 'author1@chromium.org',
+                                   datetime(2016, 6, 2, 10, 55, 38)),
+            change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
+                                   datetime(2016, 6, 2, 10, 57, 13)),
+            'rev1', None, 'Message 1',
+            [change_log.FileChangeInfo('delete', 'a/b.py', None)],
             'https://repo/path/+/rev1', None, None),
         change_log.ChangeLog(
-            'author2', 'author2@chromium.org', datetime(2016, 6, 2, 10, 53, 3),
-            'Commit bot', 'commit-bot@chromium.org',
-            datetime(2016, 6, 2, 10, 54, 14), 'rev2', None,
-            'Message 2', [change_log.FileChangeInfo('add', None, 'b/c.py')],
+            change_log.Contributor('author2', 'author2@chromium.org',
+                                   datetime(2016, 6, 2, 10, 53, 3)),
+            change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
+                                   datetime(2016, 6, 2, 10, 54, 14)),
+            'rev2', None, 'Message 2',
+            [change_log.FileChangeInfo('add', None, 'b/c.py')],
             'https://repo/path/+/rev2', None, None),
     ]
 
