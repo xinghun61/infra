@@ -19,12 +19,16 @@ class ChangeLogTest(unittest.TestCase):
 
   def testChangeLog(self):
     change_log_dict = {
-      'author_name': 'a',
-      'author_email': 'b@email.com',
-      'author_time': '2014-08-13 00:53:12',
-      'committer_name': 'c',
-      'committer_email': 'd@email.com',
-      'committer_time': '2014-08-14 00:53:12',
+      'author': {
+          'name': 'a',
+          'email': 'b@email.com',
+          'time': '2014-08-13 00:53:12',
+      },
+      'committer': {
+          'name': 'c',
+          'email': 'd@email.com',
+          'time': '2014-08-14 00:53:12',
+      },
       'revision': 'aaaa',
       'commit_position': 1111,
       'touched_files': [

@@ -66,12 +66,21 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
 
     expected_change_logs = {
       'rev1': {
-        'author_name': 'someone@chromium.org',
+        'author': {
+          'name': 'someone@chromium.org',
+          'email': 'someone@chromium.org',
+          'time': datetime.strptime('Wed Jun 11 19:35:32 2014',
+              '%a %b %d %H:%M:%S %Y'),
+        },
+        'committer': {
+          'name': 'someone@chromium.org',
+          'email': 'someone@chromium.org',
+          'time': datetime.strptime('Wed Jun 11 19:35:32 2014',
+              '%a %b %d %H:%M:%S %Y'),
+        },
         'message':
           'Cr-Commit-Position: refs/heads/master@{#175976}',
-        'committer_email': 'someone@chromium.org',
         'commit_position': 175976,
-        'author_email': 'someone@chromium.org',
         'touched_files': [
           {
             'new_path': 'added_file.js',
@@ -79,13 +88,8 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
             'old_path': '/dev/null'
           }
         ],
-        'author_time': datetime.strptime('Wed Jun 11 19:35:32 2014',
-            '%a %b %d %H:%M:%S %Y'),
-        'committer_time': datetime.strptime('Wed Jun 11 19:35:32 2014',
-            '%a %b %d %H:%M:%S %Y'),
         'commit_url': REV1_COMMIT_LOG_URL,
         'code_review_url': None,
-        'committer_name': 'someone@chromium.org',
         'revision': 'rev1',
         'reverted_revision': None
       }

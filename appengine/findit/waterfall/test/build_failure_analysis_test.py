@@ -7,6 +7,7 @@ from datetime import datetime
 from common.waterfall import failure_type
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
+from libs.gitiles.change_log import Contributor
 from libs.gitiles.change_log import FileChangeInfo
 from libs.gitiles.diff import ChangeType
 from libs.gitiles.gitiles_repository import GitilesRepository
@@ -22,8 +23,10 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     class MockChangeLog(object):
 
       def __init__(self, date, touched_files):
-        self.author_time = datetime.strptime(
-            'Jun %s 04:35:32 2015' % date, '%b %d %H:%M:%S %Y')
+        self.author = Contributor(
+            'name', 'email@chromium.org',
+            datetime.strptime(
+                'Jun %s 04:35:32 2015' % date, '%b %d %H:%M:%S %Y'))
         self.touched_files = touched_files
 
     MOCK_CHANGE_LOGS = {}

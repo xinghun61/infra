@@ -164,11 +164,18 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
         'src/': {
             'a.cc': [
                 ChangeLog.FromDict({
-                    'author_name': 'test@chromium.org',
+                    'author': {
+                        'name': 'test@chromium.org',
+                        'email': 'example@chromium.org',
+                        'time': 'Thu Mar 31 21:24:43 2016',
+                    },
+                    'committer': {
+                        'name': 'example@chromium.org',
+                        'email': 'example@chromium.org',
+                        'time': 'Thu Mar 31 21:28:39 2016',
+                    },
                     'message': 'dummy',
-                    'committer_email': 'example@chromium.org',
                     'commit_position': 175976,
-                    'author_email': 'example@chromium.org',
                     'touched_files': [
                         {
                             'change_type': 'add',
@@ -177,12 +184,9 @@ def GetChangeLogsForFilesGroupedByDeps(regression_deps_rolls, stack_deps,
                         },
                         ...
                     ],
-                    'author_time': 'Thu Mar 31 21:24:43 2016',
-                    'committer_time': 'Thu Mar 31 21:28:39 2016',
                     'commit_url':
                         'https://repo.test/+/bcfd',
                     'code_review_url': 'https://codereview.chromium.org/3281',
-                    'committer_name': 'example@chromium.org',
                     'revision': 'bcfd',
                     'reverted_revision': None
                 }),

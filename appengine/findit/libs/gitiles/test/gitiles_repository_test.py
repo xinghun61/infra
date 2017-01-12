@@ -88,11 +88,18 @@ COMMIT_LOG = """)]}'
 }""" % json.JSONEncoder().encode(COMMIT_MESSAGE)
 
 EXPECTED_CHANGE_LOG_JSON = {
-    'author_name': 'test1@chromium.org',
+    'author': {
+        'name': 'test1@chromium.org',
+        'email': 'test1@chromium.org',
+        'time': datetime(2014, 06, 11, 23, 35, 32),
+    },
+    'committer': {
+        'name': 'test1@chromium.org',
+        'email': 'test1@chromium.org',
+        'time': datetime(2014, 06, 11, 19, 35, 32),
+    },
     'message': COMMIT_MESSAGE,
-    'committer_email': 'test1@chromium.org',
     'commit_position': 175976,
-    'author_email': 'test1@chromium.org',
     'touched_files': [
         {
             'change_type': 'add',
@@ -120,12 +127,9 @@ EXPECTED_CHANGE_LOG_JSON = {
             'old_path': 'Source/devtools/front_end/layers/file.js'
         }
     ],
-    'author_time': datetime(2014, 06, 11, 23, 35, 32),
-    'committer_time': datetime(2014, 06, 11, 19, 35, 32),
     'commit_url':
         'https://repo.test/+/bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb',
     'code_review_url': 'https://codereview.chromium.org/328113005',
-    'committer_name': 'test1@chromium.org',
     'revision': 'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb',
     'reverted_revision': None
 }
@@ -232,11 +236,18 @@ EXPECTED_FILE_BLAME_JSON = {
 }
 
 DUMMY_CHANGELOG_JSON = {
-    'author_name': 'test@chromium.org',
+    'author': {
+        'name': 'test@chromium.org',
+        'email': 'test1@chromium.org',
+        'time': datetime(2016, 01, 11, 23, 35, 32),
+    },
+    'committer': {
+        'name': 'test1@chromium.org',
+        'email': 'test@chromium.org',
+        'time': datetime(2016, 01, 11, 19, 35, 32),
+    },
     'message': 'dummy',
-    'committer_email': 'test@chromium.org',
     'commit_position': 175976,
-    'author_email': 'test1@chromium.org',
     'touched_files': [
         {
             'change_type': 'add',
@@ -244,12 +255,9 @@ DUMMY_CHANGELOG_JSON = {
             'old_path': '/dev/null'
         }
     ],
-    'author_time': datetime(2016, 01, 11, 23, 35, 32),
-    'committer_time': datetime(2016, 01, 11, 19, 35, 32),
     'commit_url':
         'https://repo.test/+/bcfd',
     'code_review_url': 'https://codereview.chromium.org/328113005',
-    'committer_name': 'test1@chromium.org',
     'revision': 'bcfd',
     'reverted_revision': None
 }

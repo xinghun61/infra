@@ -72,12 +72,16 @@ class ChangeLog(namedtuple('ChangeLog',
   def ToDict(self):
     """Returns the change log as a JSON object."""
     json_data = {
-      'author_name': self.author.name,
-      'author_email': self.author.email,
-      'author_time': self.author.time,
-      'committer_name': self.committer.name,
-      'committer_email': self.committer.email,
-      'committer_time': self.committer.time,
+      'author': {
+        'name': self.author.name,
+        'email': self.author.email,
+        'time': self.author.time,
+      },
+      'committer': {
+        'name': self.committer.name,
+        'email': self.committer.email,
+        'time': self.committer.time,
+      },
       'revision': self.revision,
       'commit_position': self.commit_position,
       'touched_files': [],
@@ -103,10 +107,10 @@ class ChangeLog(namedtuple('ChangeLog',
       touched_files.append(touched_file_info)
 
     return ChangeLog(
-        Contributor(info['author_name'], info['author_email'],
-                    info['author_time']),
-        Contributor(info['committer_name'], info['committer_email'],
-                    info['committer_time']),
+        Contributor(info['author']['name'], info['author']['email'],
+                    info['author']['time']),
+        Contributor(info['committer']['name'], info['committer']['email'],
+                    info['committer']['time']),
         info['revision'], info['commit_position'], info['message'],
         touched_files, info['commit_url'], info['code_review_url'],
         info['reverted_revision']

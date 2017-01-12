@@ -28,11 +28,18 @@ from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.gitiles_repository import GitilesRepository
 
 DUMMY_CHANGELOG1 = ChangeLog.FromDict({
-    'author_name': 'r@chromium.org',
+    'author': {
+        'name': 'r@chromium.org',
+        'email': 'r@chromium.org',
+        'time': 'Thu Mar 31 21:24:43 2016',
+    },
+    'committer': {
+        'email': 'r@chromium.org',
+        'time': 'Thu Mar 31 21:28:39 2016',
+        'name': 'example@chromium.org',
+    },
     'message': 'dummy',
-    'committer_email': 'r@chromium.org',
     'commit_position': 175900,
-    'author_email': 'r@chromium.org',
     'touched_files': [
         {
             'change_type': 'add',
@@ -40,21 +47,25 @@ DUMMY_CHANGELOG1 = ChangeLog.FromDict({
             'old_path': None,
         },
     ],
-    'author_time': 'Thu Mar 31 21:24:43 2016',
-    'committer_time': 'Thu Mar 31 21:28:39 2016',
     'commit_url': 'https://repo.test/+/1',
     'code_review_url': 'https://codereview.chromium.org/3281',
-    'committer_name': 'example@chromium.org',
     'revision': '1',
     'reverted_revision': None
 })
 
 DUMMY_CHANGELOG2 = ChangeLog.FromDict({
-    'author_name': 'example@chromium.org',
+    'author': {
+        'name': 'example@chromium.org',
+        'email': 'example@chromium.org',
+        'time': 'Thu Mar 31 21:24:43 2016',
+    },
+    'committer': {
+        'name': 'example@chromium.org',
+        'email': 'example@chromium.org',
+        'time': 'Thu Mar 31 21:28:39 2016',
+    },
     'message': 'dummy',
-    'committer_email': 'example@chromium.org',
     'commit_position': 175976,
-    'author_email': 'example@chromium.org',
     'touched_files': [
         {
             'change_type': 'add',
@@ -62,21 +73,25 @@ DUMMY_CHANGELOG2 = ChangeLog.FromDict({
             'old_path': 'b/f0.cc'
         },
     ],
-    'author_time': 'Thu Mar 31 21:24:43 2016',
-    'committer_time': 'Thu Mar 31 21:28:39 2016',
     'commit_url': 'https://repo.test/+/2',
     'code_review_url': 'https://codereview.chromium.org/3281',
-    'committer_name': 'example@chromium.org',
     'revision': '2',
     'reverted_revision': '1'
 })
 
 DUMMY_CHANGELOG3 = ChangeLog.FromDict({
-    'author_name': 'e@chromium.org',
+    'author': {
+        'name': 'e@chromium.org',
+        'email': 'e@chromium.org',
+        'time': 'Thu Apr 1 21:24:43 2016',
+    },
+    'committer': {
+        'name': 'example@chromium.org',
+        'email': 'e@chromium.org',
+        'time': 'Thu Apr 1 21:28:39 2016',
+    },
     'message': 'dummy',
-    'committer_email': 'e@chromium.org',
     'commit_position': 176000,
-    'author_email': 'e@chromium.org',
     'touched_files': [
         {
             'change_type': 'modify',
@@ -89,11 +104,8 @@ DUMMY_CHANGELOG3 = ChangeLog.FromDict({
             'old_path': 'f1.cc'
         },
     ],
-    'author_time': 'Thu Apr 1 21:24:43 2016',
-    'committer_time': 'Thu Apr 1 21:28:39 2016',
     'commit_url': 'https://repo.test/+/3',
     'code_review_url': 'https://codereview.chromium.org/3281',
-    'committer_name': 'example@chromium.org',
     'revision': '3',
     'reverted_revision': None
 })

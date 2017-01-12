@@ -209,7 +209,7 @@ class GitChangeLogParser(GitParser):
       return None
 
     is_message_line = False
-    info = {'message': '', 'touched_files': []}
+    info = {'author':{}, 'committer': {}, 'message': '', 'touched_files': []}
     for line in output.splitlines():
       if MESSAGE_START_PATTERN.match(line):
         is_message_line = True
@@ -226,21 +226,21 @@ class GitChangeLogParser(GitParser):
       elif COMMIT_HASH_PATTERN.match(line):
         info['revision'] = COMMIT_HASH_PATTERN.match(line).group(1)
       elif AUTHOR_NAME_PATTERN.match(line):
-        info['author_name'] = AUTHOR_NAME_PATTERN.match(line).group(1)
+        info['author']['name'] = AUTHOR_NAME_PATTERN.match(line).group(1)
       elif AUTHOR_MAIL_PATTERN.match(line):
-        info['author_email'] = commit_util.NormalizeEmail(
+        info['author']['email'] = commit_util.NormalizeEmail(
             AUTHOR_MAIL_PATTERN.match(line).group(1))
       elif AUTHOR_TIME_PATTERN.match(line):
-        info['author_time'] = datetime.strptime(
+        info['author']['time'] = datetime.strptime(
             AUTHOR_TIME_PATTERN.match(line).group(1), DATETIME_FORMAT)
       elif COMMITTER_NAME_PATTERN.match(line):
-        info['committer_name'] = (
+        info['committer']['name'] = (
             COMMITTER_NAME_PATTERN.match(line).group(1))
       elif COMMITTER_MAIL_PATTERN.match(line):
-        info['committer_email'] = commit_util.NormalizeEmail(
+        info['committer']['email'] = commit_util.NormalizeEmail(
             COMMITTER_MAIL_PATTERN.match(line).group(1))
       elif COMMITTER_TIME_PATTERN.match(line):
-        info['committer_time'] = datetime.strptime(
+        info['committer']['time'] = datetime.strptime(
             COMMITTER_TIME_PATTERN.match(line).group(1), DATETIME_FORMAT)
       elif (CHANGED_FILE_PATTERN1.match(line) or
             CHANGED_FILE_PATTERN2.match(line)):

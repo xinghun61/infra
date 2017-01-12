@@ -13,11 +13,18 @@ from libs.gitiles.blame import Region
 from libs.gitiles.change_log import ChangeLog
 
 DUMMY_CHANGELOG1 = ChangeLog.FromDict({
-    'author_name': 'r@chromium.org',
+    'author': {
+        'name': 'r@chromium.org',
+        'email': 'r@chromium.org',
+        'time': 'Thu Mar 31 21:24:43 2016',
+    },
+    'committer': {
+        'email': 'r',
+        'time': 'Thu Mar 31 21:28:39 2016',
+        'name': 'example@chromium.org',
+    },
     'message': 'dummy',
-    'committer_email': 'r@chromium.org',
     'commit_position': 175900,
-    'author_email': 'r@chromium.org',
     'touched_files': [
         {
             'change_type': 'modify',
@@ -30,22 +37,26 @@ DUMMY_CHANGELOG1 = ChangeLog.FromDict({
             'old_path': 'b.cc',
         },
     ],
-    'author_time': 'Thu Mar 31 21:24:43 2016',
-    'committer_time': 'Thu Mar 31 21:28:39 2016',
     'commit_url':
         'https://repo.test/+/1',
     'code_review_url': 'https://codereview.chromium.org/3281',
-    'committer_name': 'r',
     'revision': '1',
     'reverted_revision': None
 })
 
 DUMMY_CHANGELOG2 = ChangeLog.FromDict({
-    'author_name': 'e@chromium.org',
+    'author': {
+        'name': 'e@chromium.org',
+        'email': 'e@chromium.org',
+        'time': 'Thu Mar 31 21:24:43 2016',
+    },
+    'committer': {
+        'name': 'e',
+        'email': 'e@chromium.org',
+        'time': 'Thu Mar 31 21:28:39 2016',
+    },
     'message': 'dummy',
-    'committer_email': 'e@chromium.org',
     'commit_position': 175911,
-    'author_email': 'e@chromium.org',
     'touched_files': [
         {
             'change_type': 'modify',
@@ -53,12 +64,9 @@ DUMMY_CHANGELOG2 = ChangeLog.FromDict({
             'old_path': 'a.cc',
         },
     ],
-    'author_time': 'Thu Mar 31 21:24:43 2016',
-    'committer_time': 'Thu Mar 31 21:28:39 2016',
     'commit_url':
         'https://repo.test/+/2',
     'code_review_url': 'https://codereview.chromium.org/3290',
-    'committer_name': 'e',
     'revision': '2',
     'reverted_revision': None
 })

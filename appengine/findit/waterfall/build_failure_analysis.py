@@ -446,9 +446,9 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
   old_revision = roll['old_revision']
   new_revision = roll['new_revision']
   old_change_log = roll_repo.GetChangeLog(old_revision)
-  old_rev_author_time = old_change_log.author_time
+  old_rev_author_time = old_change_log.author.time
   new_change_log = roll_repo.GetChangeLog(new_revision)
-  new_rev_author_time = new_change_log.author_time
+  new_rev_author_time = new_change_log.author.time
 
   file_change_type = None
   changed_line_numbers = []

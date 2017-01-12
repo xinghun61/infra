@@ -6,11 +6,18 @@ from libs.gitiles.change_log import ChangeLog
 from testing_utils import testing
 
 DUMMY_CHANGELOG = ChangeLog.FromDict({
-    'author_name': 'r@chromium.org',
+    'author': {
+        'name': 'r@chromium.org',
+        'email': 'r@chromium.org',
+        'time': 'Thu Mar 31 21:24:43 2016',
+    },
+    'committer': {
+        'name': 'example@chromium.org',
+        'email': 'r@chromium.org',
+        'time': 'Thu Mar 31 21:28:39 2016',
+    },
     'message': 'dummy',
-    'committer_email': 'r@chromium.org',
     'commit_position': 175900,
-    'author_email': 'r@chromium.org',
     'touched_files': [
         {
             'change_type': 'add',
@@ -18,12 +25,9 @@ DUMMY_CHANGELOG = ChangeLog.FromDict({
             'old_path': None,
         },
     ],
-    'author_time': 'Thu Mar 31 21:24:43 2016',
-    'committer_time': 'Thu Mar 31 21:28:39 2016',
     'commit_url':
         'https://repo.test/+/1',
     'code_review_url': 'https://codereview.chromium.org/3281',
-    'committer_name': 'example@chromium.org',
     'revision': '1',
     'reverted_revision': None
 })
