@@ -73,6 +73,10 @@ class FeaturesServiceTest(unittest.TestCase):
     return self.mox.CreateMock(sql.SQLTableManager)
 
   def setUp(self):
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_memcache_stub()
+
     self.mox = mox.Mox()
     self.cnxn = self.mox.CreateMock(sql.MonorailConnection)
     self.cache_manager = fake.CacheManager()
