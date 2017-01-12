@@ -449,19 +449,25 @@ class FeaturesServiceTest(unittest.TestCase):
     self.assertEqual(ret, {('hot1', 567) : 123})
     self.mox.VerifyAll()
 
-  def SetUpGetHotlists(self, hotlist_id):
-    hotlist_rows = [(hotlist_id, 'hotlist2', 'test hotlist 2',
-                     'test hotlist', False, '')]
+  def SetUpGetHotlists(
+      self, hotlist_id, hotlist_rows=None, issue_rows=None, role_rows=None):
+    if not hotlist_rows:
+      hotlist_rows = [(hotlist_id, 'hotlist2', 'test hotlist 2',
+                       'test hotlist', False, '')]
+    if not issue_rows:
+      issue_rows=[]
+    if not role_rows:
+      role_rows=[]
     self.features_service.hotlist_tbl.Select(
         self.cnxn, cols=features_svc.HOTLIST_COLS,
         id=[hotlist_id]).AndReturn(hotlist_rows)
     self.features_service.hotlist2user_tbl.Select(
         self.cnxn, cols=['hotlist_id', 'user_id', 'role_name'],
-        hotlist_id=[hotlist_id]).AndReturn([])
+        hotlist_id=[hotlist_id]).AndReturn(role_rows)
     self.features_service.hotlist2issue_tbl.Select(
         self.cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
         hotlist_id=[hotlist_id],
-        order_by=[('rank DESC', ''), ('issue_id', '')]).AndReturn([])
+        order_by=[('rank DESC', ''), ('issue_id', '')]).AndReturn(issue_rows)
 
   def SetUpUpdateHotlist(self, hotlist_id, delta):
     self.features_service.hotlist_tbl.Update(
@@ -579,21 +585,11 @@ class FeaturesServiceTest(unittest.TestCase):
          (333L, 300, None, None)], commit=False)
     self.mox.VerifyAll()
 
-  # TODO(jojwang): alter SetUpGetHotlists to take the expected return
-  # for each tbl
   def SetUpDeleteHotlist(self, cnxn, hotlist_id):
     hotlist_rows = [(hotlist_id, 'hotlist', 'test hotlist',
                      'test list', False, '')]
-    self.features_service.hotlist_tbl.Select(
-        self.cnxn, cols=features_svc.HOTLIST_COLS,
-        id=[hotlist_id]).AndReturn(hotlist_rows)
-    self.features_service.hotlist2user_tbl.Select(
-        self.cnxn, cols=['hotlist_id', 'user_id', 'role_name'],
-        hotlist_id=[hotlist_id]).AndReturn([(hotlist_id, 111L, 'owner', )])
-    self.features_service.hotlist2issue_tbl.Select(
-        self.cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
-        hotlist_id=[hotlist_id],
-        order_by=[('rank DESC', ''), ('issue_id', '')]).AndReturn([])
+    self.SetUpGetHotlists(678, hotlist_rows=hotlist_rows,
+                          role_rows=[(hotlist_id, 111L, 'owner', )])
     self.features_service.hotlist2issue_tbl.Delete(
         cnxn, hotlist_id=hotlist_id, commit=False)
     self.features_service.hotlist2user_tbl.Delete(
