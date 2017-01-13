@@ -18,7 +18,7 @@ from model.flake.flake_swarming_task import FlakeSwarmingTaskData
 
 class DataPoint(ndb.Model):
   # The build number corresponding to this data point. Only relevant for
-  # analysis at the at the build level.
+  # analysis at the build level.
   build_number = ndb.IntegerProperty(indexed=False)
 
   # The pass rate of the test when run against this commit.

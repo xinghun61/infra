@@ -208,20 +208,9 @@ def _GetNextCommitPosition(data_points, flake_settings,
         # the culprit.
         return None, commit_position
 
-      # Check the pass_rate of previous run, if this is the first data_point,
-      # consider the virtual previous run is stable.
-      previous_pass_rate = data_points[i - 1].pass_rate if i > 0 else 0
-      if _IsStable(
-          previous_pass_rate, lower_flake_threshold, upper_flake_threshold):
-        next_commit_position = commit_position - flakes_in_a_row
-        continue
-
-      
       step_size = flakes_in_a_row
       next_commit_position = commit_position - step_size
       continue
-
-      
 
   if next_commit_position < lower_boundary_commit_position:
     # Do not run past the bounds of the blame list.
@@ -320,6 +309,8 @@ class NextCommitPositionPipeline(BasePipeline):
 
     pipeline_job = RecursiveFlakeTryJobPipeline(
         urlsafe_flake_analysis_key, next_commit_position, next_revision)
-    pipeline_job.target = appengine_util.GetTargetNameForModule(
-        constants.WATERFALL_BACKEND)
+    # Disable attribute 'target' defined outside __init__ pylint warning,
+    # because pipeline generates its own __init__ based on run function.
+    pipeline_job.target = (  # pylint: disable=W0201
+        appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
     pipeline_job.start()

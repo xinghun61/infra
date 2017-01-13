@@ -175,13 +175,19 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         analysis.key.urlsafe(), try_job.key.urlsafe())
     self.assertTrue(queue_name['x'])
 
-  def testNextCommitPositionPipelineCompleted(self, *_):
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  def testNextCommitPositionPipelineCompleted(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
     step_name = 's'
     test_name = 't'
     git_hash = 'r95'
+    commit_position = 95
+    url = 'url'
+    change_log = ChangeLog(None, None, git_hash,
+                           commit_position, None, None, url, None)
+    mock_fn.return_value = change_log
 
     try_job = FlakeTryJob.Create(
         master_name, builder_name, step_name, test_name, git_hash)
