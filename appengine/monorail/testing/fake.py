@@ -1533,8 +1533,10 @@ class FeaturesService(object):
     self.expunged_quick_edit = []
 
     # hotlists
-    self.test_hotlists = {} # hotlist_name => hotlist_pb
+    self.test_hotlists = {}  # hotlist_name => hotlist_pb
     self.hotlists_by_id = {}
+    self.hotlists_id_by_user = {}  # user_id => [hotlist_id, hotlist_id, ...]
+    self.hotlists_id_by_issue = {}  # issue_id => [hotlist_id, hotlist_id, ...]
 
   def TestAddHotlist(self, name, summary='', owner_ids=None, editor_ids=None,
                      follower_ids=None, description=None, hotlist_id=None,
@@ -1575,6 +1577,10 @@ class FeaturesService(object):
             features_pb2.Hotlist.HotlistItem(
                 issue_id=issue_id, rank=rank, adder_id=adder_id,
                 date_added=date))
+        try:
+          self.hotlists_id_by_issue[issue_id].append(hotlist_pb.hotlist_id)
+        except KeyError:
+          self.hotlists_id_by_issue[issue_id] = [hotlist_pb.hotlist_id]
 
     self.test_hotlists[name] = hotlist_pb
     self.hotlists_by_id[hotlist_pb.hotlist_id] = hotlist_pb
@@ -1589,6 +1595,10 @@ class FeaturesService(object):
           hotlist_pb.editor_ids.append(user_id)
         elif role == FOLLOWER_ROLE:
           hotlist_pb.follower_ids.append(user_id)
+        try:
+          self.hotlists_id_by_user[user_id].append(hotlist_pb.hotlist_id)
+        except KeyError:
+          self.hotlists_id_by_user[user_id] = [hotlist_pb.hotlist_id]
 
   def CreateHotlist(
       self, _cnxn, hotlist_name, summary, description, owner_ids, editor_ids,
@@ -1640,7 +1650,18 @@ class FeaturesService(object):
     items.extend(new_hotlist_items)
     hotlist.items = items
 
-  def UpdateHotlistIssuesRankings(
+    for issue_id in remove:
+      try:
+        self.hotlists_id_by_issue[issue_id].remove(hotlist_id)
+      except ValueError:
+        pass
+    for item in new_hotlist_items:
+      try:
+        self.hotlists_id_by_issue[item.issue_id].append(hotlist_id)
+      except KeyError:
+        self.hotlists_id_by_issue[item.issue_id] = [hotlist_id]
+
+  def UpdateHotlistItemsRankings(
       self, cnxn, hotlist_id, relations_to_change, commit=True):
     hotlist = self.hotlists_by_id.get(hotlist_id)
     if not hotlist:
@@ -1652,14 +1673,15 @@ class FeaturesService(object):
 
   def LookupUserHotlists(self, cnxn, user_ids):
     """Return dict of {user_id: [hotlist_id, hotlist_id...]}."""
-    hotlists = self.test_hotlists.values()
-    users_hotlists_dict = {}
-    for user_id in user_ids:
-      user_hotlists = [hotlist for hotlist in hotlists if user_id in (
-          hotlist.ower_ids + hotlist.editor_ids + hotlist.follower_ids)]
-      users_hotlists_dict[user_id] = [
-          user_hotlist.hotlist_id for user_hotlist in user_hotlists]
+    users_hotlists_dict = {
+        user_id: self.hotlists_id_by_user[user_id] for user_id in user_ids}
     return users_hotlists_dict
+
+  def LookupIssueHotlists(self, cnxn, issue_ids):
+    """Return dict of {issue_id: [hotlist_id, hotlist_id...]}."""
+    issues_hotlists_dict = {
+        issue_id: self.hotlists_id_by_issue[issue_id] for issue_id in issue_ids}
+    return issues_hotlists_dict
 
   def LookupHotlistIDs(self, cnxn, hotlist_names, owner_ids):
     id_dict = {}
@@ -1686,6 +1708,13 @@ class FeaturesService(object):
     hotlist_id_dict = self.LookupUserHotlists(cnxn, [user_id])
     hotlists = self.GetHotlists(cnxn, hotlist_id_dict.get(
         user_id, []), use_cache=use_cache)
+    return hotlists.values()
+
+  def GetHotlistsByIssueID(self, cnxn, issue_id, use_cache=True):
+    """Get a list of hotlist PBs for a given issue."""
+    hotlist_id_dict = self.LookUpIssueHotlists(cnxn, [issue_id])
+    hotlists = self.GetHotlists(cnxn, hotlist_id_dict.get(
+        issue_id, []), use_cache=use_cache)
     return hotlists.values()
 
   def GetHotlist(self, cnxn, hotlist_id, use_cache=True):
@@ -1719,10 +1748,29 @@ class FeaturesService(object):
     hotlist.editor_ids = editor_ids
     hotlist.follower_ids = follower_ids
 
+    for user_id in owner_ids+editor_ids+follower_ids:
+      try:
+        if hotlist_id not in self.hotlists_id_by_user[user_id]:
+          self.hotlists_id_by_user[user_id].append(hotlist_id)
+      except KeyError:
+        self.hotlists_id_by_user[user_id] = [hotlist_id]
+
   def DeleteHotlist(self, cnxn, hotlist_id, commit=True):
     hotlist = self.hotlists_by_id.pop(hotlist_id, None)
     if hotlist is not None:
       self.test_hotlists.pop(hotlist.name, None)
+      user_ids = hotlist.owner_ids+hotlist.editor_ids+hotlist.follower_ids
+      for user_id in user_ids:
+        try:
+          self.hotlists_id_by_user[user_id].remove(hotlist_id)
+        except (ValueError, KeyError):
+          pass
+      for item in hotlist.items:
+        try:
+          self.hotlists_id_by_issue[item.issue_id].remove(hotlist_id)
+        except (ValueError, KeyError):
+          pass
+
   # end of Hotlist functions
 
   def ExpungeSavedQueriesExecuteInProject(self, _cnxn, project_id):
