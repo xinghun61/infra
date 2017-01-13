@@ -449,6 +449,32 @@ class FeaturesServiceTest(unittest.TestCase):
     self.assertEqual(ret, {('hot1', 567) : 123})
     self.mox.VerifyAll()
 
+  def SetUpLookupUserHotlists(self):
+    self.features_service.hotlist2user_tbl.Select(
+        self.cnxn, cols=['user_id', 'hotlist_id'],
+        user_id=[111L]).AndReturn([(111L, 123)])
+
+  def testLookupUserHotlists(self):
+    self.SetUpLookupUserHotlists()
+    self.mox.ReplayAll()
+    ret = self.features_service.LookupUserHotlists(
+        self.cnxn, [111L])
+    self.assertEqual(ret, {111L: [123]})
+    self.mox.VerifyAll()
+
+  def SetUpLookupIssueHotlists(self):
+    self.features_service.hotlist2issue_tbl.Select(
+        self.cnxn, cols=['hotlist_id', 'issue_id'],
+        issue_id=[987]).AndReturn([(123, 987)])
+
+  def testLookupIssueHotlists(self):
+    self.SetUpLookupIssueHotlists()
+    self.mox.ReplayAll()
+    ret = self.features_service.LookupIssueHotlists(
+        self.cnxn, [987])
+    self.assertEqual(ret, {987: [123]})
+    self.mox.VerifyAll()
+
   def SetUpGetHotlists(
       self, hotlist_id, hotlist_rows=None, issue_rows=None, role_rows=None):
     if not hotlist_rows:
@@ -526,6 +552,24 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, [123, 456])
     self.mox.VerifyAll()
     self.assertEqual(actual_missed, [])
+
+  def testGetHotlistsByUserID(self):
+    self.SetUpLookupUserHotlists()
+    self.SetUpGetHotlists(123)
+    self.mox.ReplayAll()
+    hotlists = self.features_service.GetHotlistsByUserID(self.cnxn, 111L)
+    self.assertEqual(len(hotlists), 1)
+    self.assertEqual(hotlists[0].hotlist_id, 123)
+    self.mox.VerifyAll()
+
+  def testGetHotlistsByIssueID(self):
+    self.SetUpLookupIssueHotlists()
+    self.SetUpGetHotlists(123)
+    self.mox.ReplayAll()
+    hotlists = self.features_service.GetHotlistsByIssueID(self.cnxn, 987)
+    self.assertEqual(len(hotlists), 1)
+    self.assertEqual(hotlists[0].hotlist_id, 123)
+    self.mox.VerifyAll()
 
   def SetUpUpdateHotlistRoles(
       self, hotlist_id, owner_ids, editor_ids, follower_ids):

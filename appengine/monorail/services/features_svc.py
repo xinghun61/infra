@@ -703,6 +703,15 @@ class FeaturesService(object):
 
     return id_dict
 
+  def LookupIssueHotlists(self, cnxn, issue_ids):
+    """Return a dict of {issue_id: [hotlist_id,...]} for all issue_ids."""
+    # TODO(jojwang): create hotlist_issue_to_ids cache
+    retrieved_dict = {issue_id: [] for issue_id in issue_ids}
+    id_rows = self.hotlist2issue_tbl.Select(
+        cnxn, cols=['hotlist_id', 'issue_id'], issue_id=issue_ids)
+    for hotlist_id, issue_id in id_rows:
+      retrieved_dict[issue_id].append(hotlist_id)
+    return retrieved_dict
   ### Get hotlists
 
   def GetHotlists(self, cnxn, hotlist_ids, use_cache=True):
@@ -720,6 +729,13 @@ class FeaturesService(object):
     hotlist_id_dict = self.LookupUserHotlists(cnxn, [user_id])
     hotlists = self.GetHotlists(
         cnxn, hotlist_id_dict.get(user_id, []), use_cache=use_cache)
+    return hotlists.values()
+
+  def GetHotlistsByIssueID(self, cnxn, issue_id, use_cache=True):
+    """Get a list of hotlist PBs for a given issue."""
+    hotlist_id_dict = self.LookupIssueHotlists(cnxn, [issue_id])
+    hotlists = self.GetHotlists(
+        cnxn, hotlist_id_dict.get(issue_id, []), use_cache=use_cache)
     return hotlists.values()
 
   def GetHotlist(self, cnxn, hotlist_id, use_cache=True):
