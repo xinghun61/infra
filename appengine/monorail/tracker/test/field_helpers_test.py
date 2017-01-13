@@ -212,7 +212,7 @@ class FieldHelpersTest(unittest.TestCase):
     fv = field_helpers._ParseOneFieldValue(
         self.mr.cnxn, self.services.user, fd, '2009-02-13')
     self.assertEqual(fv.field_id, 123)
-    self.assertEqual(fv.date_value, 1234512000)
+    self.assertEqual(fv.date_value, 1234483200)
 
   def testParseFieldValues_Empty(self):
     field_val_strs = {}
@@ -238,7 +238,7 @@ class FieldHelpersTest(unittest.TestCase):
     fv1 = tracker_bizobj.MakeFieldValue(123, 80386, None, None, None, False)
     fv2 = tracker_bizobj.MakeFieldValue(123, 68040, None, None, None, False)
     fv3 = tracker_bizobj.MakeFieldValue(
-        124, None, None, None, 1234512000, False)
+        124, None, None, None, 1234483200, False)
     self.assertEqual([fv1, fv2, fv3], field_values)
 
   def testValidateOneCustomField_IntType(self):

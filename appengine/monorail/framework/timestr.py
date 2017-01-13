@@ -5,6 +5,7 @@
 
 """Time-to-string and time-from-string routines."""
 
+import calendar
 import datetime
 import time
 
@@ -39,7 +40,7 @@ def TimestampToDateWidgetStr(when):
 
 def DateWidgetStrToTimestamp(val_str):
   """Parse the HTML <input type="date"> string into a timestamp int."""
-  return int(time.mktime(time.strptime(val_str, HTML_DATE_WIDGET_FORMAT)))
+  return int(calendar.timegm(time.strptime(val_str, HTML_DATE_WIDGET_FORMAT)))
 
 
 def FormatAbsoluteDate(
