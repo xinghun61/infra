@@ -5,6 +5,7 @@
 
 """Unittest for timestr module."""
 
+import calendar
 import datetime
 import time
 import unittest
@@ -21,7 +22,7 @@ class TimeStrTest(unittest.TestCase):
     def GetDate(*args):
       date = datetime.datetime(*args)
       return timestr.FormatAbsoluteDate(
-          time.mktime(date.timetuple()), clock=lambda: now)
+          calendar.timegm(date.utctimetuple()), clock=lambda: now)
 
     self.assertEquals(GetDate(2008, 1, 1), 'Today')
     self.assertEquals(GetDate(2007, 12, 31), 'Yesterday')

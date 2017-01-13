@@ -62,7 +62,7 @@ def FormatAbsoluteDate(
     time as formatted by recent_format. Otherwise, return the time as formatted
     by old_format.
   """
-  ts = datetime.datetime.fromtimestamp(timestamp)
+  ts = datetime.datetime.utcfromtimestamp(timestamp)
   now = clock()
   month_delta = 12 * now.year + now.month - (12 * ts.year + ts.month)
   delta = now - ts
@@ -84,7 +84,7 @@ def FormatAbsoluteDate(
   else:
     fmt = recent_format
 
-  return time.strftime(fmt, time.localtime(timestamp)).replace(' 0', ' ')
+  return time.strftime(fmt, time.gmtime(timestamp)).replace(' 0', ' ')
 
 
 def FormatRelativeDate(timestamp, days_only=False, clock=None):
