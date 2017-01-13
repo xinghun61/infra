@@ -95,7 +95,9 @@ class HotlistIssues(servlet.Servlet):
                       'csv_link': framework_helpers.FormatURL(
                           mr, '%d/csv' % mr.hotlist_id, num=100),
                       'is_hotlist': ezt.boolean(True),
-                      'col_spec': mr.col_spec.lower()})
+                      'col_spec': mr.col_spec.lower(),
+                      # for issue-list-controls-top.ezt shared with issuelist.py
+                      'users_hotlists': []})
     return page_data
   # TODO(jojwang): implement peek issue on hover, implement starring issues
 

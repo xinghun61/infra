@@ -1042,6 +1042,9 @@ function TKR_handleListActions(actionsMenu) {
     case 'unflagspam':
       TKR_flagSpam(false);
       break;
+    case 'addtohotlist':
+      TKR_addToHotlist();
+      break;
     case 'addissues':
       _showID('addissuesspec');
       _hideID('columnspec');
@@ -1115,6 +1118,26 @@ function TKR_flagSpam(isSpam) {
     form.submit();
   } else {
     alert('Please select some issues to flag as spam');
+  }
+}
+
+/**
+ * The user has selected the "Add to hotlist..." menu item. Show a dialog
+ * box with the user's hotlists and offer the option to add all selected
+ * issues to the selected hotlist.
+*/
+function TKR_addToHotlist() {
+  var selectedLocalIDs = [];
+  for (var i = 0; i < issueRefs.length; i++) {
+    var checkbox = document.getElementById('cb_' + issueRefs[i]['id']);
+    if (checkbox && checkbox.checked) {
+      selectedLocalIDs.push(issueRefs[i]['id']);
+    }
+  }
+  if (selectedLocalIDs.length > 0) {
+    $('add-to-hotlist').showModal()
+  } else {
+    alert('Please select some issues to add to a hotlist')
   }
 }
 

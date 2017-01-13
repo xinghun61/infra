@@ -23,6 +23,7 @@
        <option value="flagspam">Flag as spam...</option>
        <option value="unflagspam">Un-flag as spam...</option>
      [end]
+     [if-any show_hotlist_feature]<option value="addtohotlist">Add to hotlist...</option>[end]
     </select>
     <span id='bulk-action-loading' class='loading' style='visibility:hidden'>Processing</span>
    [end]
@@ -82,6 +83,29 @@
   </div>
 </form>
 
+<dialog id="add-to-hotlist" [if-any show_user_hotlists]open[end]>
+  <table>
+  [# TODO(jojwang): add 'create hotlist' button with selected options already added to the create hotlist form]
+  [if-any users_hotlists]
+    [for users_hotlists]
+      <tr class="hotlist_rows">
+        <td>
+          <input type="checkbox" id="cb_[users_hotlists.hotlist_id]" class="checkRangeSelect">
+        <td>
+        <td class="hotlistname">[users_hotlists.name]</td>
+      </tr>
+    [end]
+  [else]
+  You have no hotlists.
+  [end]
+  </table>
+  <menu>
+    <button id="cancel-add-hotlist" type="reset">Cancel</button>
+    <button type="submit">Confirm</button>
+  </menu>
+</dialog>
+
+
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   if ($("selectall")) {
@@ -98,5 +122,8 @@ runOnLoad(function() {
       _showID('addissuesspec');
     }
     }
+  $("cancel-add-hotlist").addEventListener("click", function () {
+    $("add-to-hotlist").close();
+  })
 });
 </script>
