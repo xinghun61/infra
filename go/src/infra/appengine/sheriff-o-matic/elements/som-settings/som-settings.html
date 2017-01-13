@@ -1,0 +1,21 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-localstorage/iron-localstorage.html">
+
+<dom-module id="som-settings">
+  <template>
+    <iron-localstorage
+      name="defaultTree"
+      value="{{defaultTree}}"></iron-localstorage>
+    <iron-localstorage
+      name="showInfraFailures"
+      value="{{showInfraFailures}}"></iron-localstorage>
+    <iron-localstorage
+      name="useCompactView"
+      value="{{useCompactView}}"></iron-localstorage>
+    <iron-localstorage
+      name="linkStyle"
+      value="{{linkStyle}}"
+      on-iron-localstorage-load-empty="_initializeUber"></iron-localstorage>
+  </template>
+  <script src="som-settings.js"></script>
+</dom-module>

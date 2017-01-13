@@ -1,0 +1,124 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/paper-item/paper-item.html">
+<link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../../bower_components/paper-radio-button/paper-radio-button.html">
+<link rel="import" href="../../bower_components/paper-radio-group/paper-radio-group.html">
+
+<link rel="import" href="../../elements/som-settings/som-settings.html">
+
+<dom-module id="som-drawer">
+  <template>
+    <style>
+      h2 {
+        box-sizing: border-box;
+        font-size: 18px;
+        font-weight: bold;
+        padding: 0 5px 3px;
+        width: 95%;
+        margin: 15px auto 5px;
+        border-bottom: 1px solid #bbb;
+      }
+      h2 iron-icon {
+        padding-right: 5px;
+        width: 18px;
+        height: 18px;
+      }
+      paper-checkbox, paper-radio-button {
+        padding-left: 30px;
+        padding-bottom: 10px;
+      }
+      label {
+        padding-top: 0.5em;
+        padding-left: 20px;
+      }
+      ul {
+        margin-top: 0.3em;
+        padding-left: 50px;
+      }
+      paper-item {
+        padding-left: 35px;
+        font-size: 18px;
+        -webkit-transition: background .3s ease;
+        transition: background .3s ease;
+      }
+      paper-item:hover {
+        cursor: pointer;
+        background-color: #eee;
+      }
+    </style>
+    <iron-ajax
+        auto
+        url="/api/v1/trees"
+        handle-as="json"
+        verbose
+        last-response="{{_treeList}}"
+    ></iron-ajax>
+    <iron-ajax
+        id="fetchTrooper"
+        auto
+        url="https://build.chromium.org/p/chromium/current_trooper.txt"
+        handle-as="text"
+        last-response="{{_trooper}}"
+    ></iron-ajax>
+    <iron-ajax
+        id="fetchSheriffs"
+        auto
+        url="https://build.chromium.org/p/chromium/all_rotations.js"
+        handle-as="json"
+        last-response="{{_sheriffRotations}}"
+    ></iron-ajax>
+    <som-settings
+        show-infra-failures="{{showInfraFailures}}"
+        link-style="{{linkStyle}}"
+        use-compact-view="{{useCompactView}}"
+        default-tree="{{defaultTree}}"
+    ></som-settings>
+    <paper-menu attr-for-selected="value" selected="[[tree]]" selectable="paper-item" id="menu">
+      <h2><iron-icon icon="folder"></iron-icon>Trees</h2>
+      <template is="dom-repeat" items="[[_treeList]]" as="tree">
+        <paper-item value="[[tree.name]]" on-tap="_onSelected">[[tree.display_name]]</paper-item>
+      </template>
+
+      <h2><iron-icon icon="help"></iron-icon>Help</h2>
+      <template is="dom-repeat" items="[[_staticPageList]]" as="page">
+        <paper-item value="[[page.name]]" on-tap="_onSelected">[[page.displayText]]</paper-item>
+      </template>
+    </paper-menu>
+
+    <h2><iron-icon icon="perm-phone-msg"></iron-icon>Current On Calls</h2>
+
+    <div class="vertical layout">
+      <label>Trooper (<a href="http://go/bugatrooper" target="_blank">go/bugatrooper</a>)</label>
+      <ul id="currentTroopers">
+        <li>[[_trooper]]</li>
+      </ul>
+
+      <template is="dom-if" if="[[_sheriffs]]">
+        <label>[[_computeTreeDisplayName(tree, trees)]] Sheriffs</label>
+        <ul id="currentSheriffs">
+          <template is="dom-repeat" items="[[_sheriffs]]" as="sheriff">
+            <li>[[sheriff.username]] <small>(ends [[_formatDate(sheriff.endDate)]] PST)</small></li>
+          </template>
+        </ul>
+      </template>
+    </div>
+
+    <h2><iron-icon icon="settings"></iron-icon>Settings</h2>
+    <div class="vertical layout">
+      <paper-checkbox checked="{{showInfraFailures}}" hidden$=[[_isTrooperPage]]>Show infra failures</paper-checkbox>
+      <paper-checkbox checked="{{useCompactView}}">Use compact alerts view</paper-checkbox>
+      <label id="linkStyleLabel">Builder links:</label>
+      <paper-radio-group selected="{{linkStyle}}" aria-labeled-by="linkStyleLabel" selectedAttribute="name">
+        <paper-radio-button name="uber">Link to uberchromegw</paper-radio-button>
+        <paper-radio-button name="milo">Link to luci-milo</paper-radio-button>
+        <paper-radio-button name="buildbot">Link to buildbot</paper-radio-button>
+      </paper-radio-group>
+    </div>
+
+  </template>
+  <script src="som-drawer.js"></script>
+</dom-module>

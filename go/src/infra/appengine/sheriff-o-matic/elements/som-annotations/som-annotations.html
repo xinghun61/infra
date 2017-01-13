@@ -1,0 +1,139 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
+<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
+
+<link rel="import" href="../../elements/som-annotation-manager-behavior.html">
+<link rel="import" href="../../elements/som-formatted-text.html">
+
+<dom-module id="som-annotations">
+  <template>
+    <style>
+      #bugDialog, #snoozeDialog {
+        width: 300px;
+      }
+      #commentsDialog {
+        width: 400px;
+      }
+      #commentsDialog paper-icon-button {
+        color: #666;
+        padding: 0;
+        margin: 0 2px;
+        height: 20px;
+        width: 20px;
+        -webkit-transition: all .3s ease;
+        transition: all .3s ease;
+        border-radius: 50%;
+        float: right;
+      }
+      #commentsDialog paper-icon-button:hover {
+        color: #222;
+        background-color: #aaa;
+      }
+      #commentsList {
+        display: block;
+        max-height: 300px;
+        overflow: auto;
+      }
+      #commentsList li {
+        list-style-type: none;
+        box-sizing: border-box;
+        padding: 5px 10px;
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+        background: #eee;
+        border-radius: 15px;
+        word-wrap: break-word;
+      }
+      #commentsList .comment-context {
+        font-size: 0.9em;
+        display: block;
+        width: 100%;
+        font-style: italic;
+      }
+      .error {
+        color: #c00;
+        margin-top: 0;
+      }
+      .header {
+        padding: 0.5em 0.5em 0.2em;
+        margin: 1em 0.5em;
+        background-color: #eee;
+      }
+    </style>
+    <template is="dom-if" if="[[_haveAnnotationError(annotationError.*)]]">
+      <span class="error header">
+        [[annotationError.action]] failed: [[annotationError.message]]
+      </span>
+    </template>
+
+    <iron-a11y-keys target="[[_bugInput]]" keys="enter" on-keys-pressed="_saveBug"></iron-a11y-keys>
+    <paper-dialog id="bugDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+      <h2>Enter bug number</h2>
+      <paper-input autofocus id="bug" label="Bug # or URL" auto-validate minlength="3"></paper-input>
+      <a hidden$="[[_filedBug]]" id="fileBugLink" target="_blank" on-tap="_fileBugClicked">
+        File bug
+      </a>
+      <div hidden$="[[!_filedBug]]" id="bugReminder">
+        Remember to enter the new bug number above!
+      </div>
+      <div class="error">[[_bugErrorMessage]]</div>
+      <div class="buttons">
+        <paper-button dialog-dismiss raised>
+          Close
+        </paper-button>
+        <paper-button raised on-tap="_saveBug">
+          Save Bug
+        </paper-button>
+      </div>
+    </paper-dialog>
+    <iron-a11y-keys target="[[_snoozeTimeInput]]" keys="enter" on-keys-pressed="_snooze"></iron-a11y-keys>
+    <paper-dialog id="snoozeDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+      <h2>Snooze</h2>
+      <paper-input autofocus label="Amount of time (minutes):" id="snoozeTime" auto-validate allowed-pattern="[0-9]"></paper-input>
+      <div class="error">[[_snoozeErrorMessage]]</div>
+      <div class="buttons">
+        <paper-button dialog-dismiss raised>
+          Close
+        </paper-button>
+        <paper-button raised on-tap="_snooze">
+          Snooze
+        </paper-button>
+      </div>
+    </paper-dialog>
+    <iron-a11y-keys target="[[_commentTextInput]]" keys="enter" on-keys-pressed="_addComment"></iron-a11y-keys>
+    <paper-dialog id="commentsDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+      <h2>Comments</h2>
+      <ul id="commentsList" hidden$="[[_commentsHidden]]">
+        <template is="dom-repeat" items="[[_commentsModelAnnotation.comments]]" as="comment">
+          <li class="comment">
+            <span class="comment-context">
+              <a href="mailto:[[comment.user]]" class="user-info">
+                [[_computeUsername(comment.user)]]
+              </a> on [[_formatTimestamp(comment.time)]]
+            </span>
+            <som-formatted-text class="comment-text" text="[[comment.text]]"></som-formatted-text>
+            <paper-icon-button icon="close" title="Remove" id="removeComment[[index]]"
+              hidden$="[[_computeHideDeleteComment(comment)]]" on-tap="_removeComment"></paper-icon-button>
+          </li>
+        </template>
+      </ul>
+      <paper-textarea autofocus label="add comment" id="commentText" required></paper-textarea>
+      <div class="error">[[_commentsErrorMessage]]</div>
+      <div class="buttons">
+        <paper-button dialog-dismiss raised>
+          Close
+        </paper-button>
+        <paper-button raised on-tap="_addComment">
+          Comment
+        </paper-button>
+      </div>
+    </paper-dialog>
+  </template>
+  <script src="som-annotations.js"></script>
+</dom-module>

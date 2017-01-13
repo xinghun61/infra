@@ -12,10 +12,10 @@ deps:
 	npm install
 
 build: deps
-	vulcanize elements/som-app.html -o elements/som-app.vulcanized.html
+	vulcanize elements/som-app/som-app.html -o elements/som-app/som-app.vulcanized.html
 
 clean:
-	rm elements/som-app.vulcanized.html
+	rm elements/som-app/som-app.vulcanized.html
 
 test: deps
 	cd som && go test

@@ -12,11 +12,11 @@ window.xsrfToken = '{{.XsrfToken}}';
 function loadNonVulcanized() {
   var link = document.createElement('link');
   link.rel = 'import';
-  link.href = 'elements/som-app.html';
+  link.href = 'elements/som-app/som-app.html';
   document.documentElement.appendChild(link);
 }
 </script>
-<link rel="import" href="elements/som-app.vulcanized.html" onerror="loadNonVulcanized()">
+<link rel="import" href="elements/som-app/som-app.vulcanized.html" onerror="loadNonVulcanized()">
 <style>
   body {
     font-family: sans-serif;

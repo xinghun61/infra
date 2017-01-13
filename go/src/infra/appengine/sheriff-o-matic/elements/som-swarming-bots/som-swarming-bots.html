@@ -1,5 +1,5 @@
-<link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
 
 <dom-module id="som-swarming-bots">
   <template>
@@ -54,48 +54,5 @@
     </div>
   </template>
 
-  <script>
-  (function() {
-    'use strict';
-
-    Polymer({
-      is: 'som-swarming-bots',
-
-      properties: {
-        bots: {
-          type: Object,
-          value: function() { return {} },
-        },
-        _hideDeadBots: {
-          type: Boolean,
-          computed: '_computeHideBots(bots.dead)',
-          value: true,
-        },
-        _hideErrors: {
-          type: Boolean,
-          computed: '_computeHideBots(bots.errors)',
-          value: true,
-        },
-        _hideQuarantinedBots: {
-          type: Boolean,
-          computed: '_computeHideBots(bots.quarantined)',
-          value: true,
-        },
-      },
-
-      toggleDead: function() {
-        this.$.deadBotsList.toggle();
-      },
-
-      toggleQuarantined: function() {
-        this.$.quarantinedBotsList.toggle();
-      },
-
-      _computeHideBots: function(bots) {
-        return !bots || bots.length == 0;
-      },
-    });
-  })();
-  </script>
+  <script src="som-swarming-bots.js"></script>
 </dom-module>
-

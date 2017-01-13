@@ -1,0 +1,41 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="../../elements/som-formatted-text.html">
+
+<dom-module id="som-tree-status">
+  <template>
+    <style>
+    #error,
+    #treeClosed {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 8px 10px;
+      margin: 5px auto;
+      border: 1px solid #dcdcdc;
+      color: #fff;
+      background-color: #E75D54;
+      border-radius: 5px;
+    }
+    a, a:visited,
+    som-formatted-text /deep/ a, som-formatted-text /deep/ a:visited {
+      color: #fff;
+    }
+    </style>
+    <iron-ajax
+      id="treeStatus"
+      url="[[_statusUrl]]/current?format=json"
+      handle-as="json"
+      last-error="{{_statusErrorJson}}"
+      last-response="{{_statusJson}}"
+      debounce-duration="300"></iron-ajax>
+    <div id="error" hidden$="[[!_hasError]]">
+      Error fetching tree status from <a href="[[_statusUrl]]" target="_blank">[[_statusUrl]]</a>
+    </div>
+    <div id="treeClosed" hidden$="[[_hideNotice]]">
+      <som-formatted-text text="[[_message]]"></som-formatted-text>
+      by <a href="mailto:[[_email]]">[[_username]]</a> on [[_time]] (<a href="[[_statusUrl]]" target="_blank">More</a>)
+    </div>
+  </template>
+  <script src="som-tree-status.js"></script>
+</dom-module>

@@ -2,4 +2,4 @@
 appengine-generated/
 bower_components
 node_modules
-elements/som-app.vulcanized.html
+elements/som-app/som-app.vulcanized.html

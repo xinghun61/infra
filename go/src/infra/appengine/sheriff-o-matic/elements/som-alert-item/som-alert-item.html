@@ -1,0 +1,194 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+<link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+
+<link rel="import" href="../../elements/som-extension-build-failure/som-extension-build-failure.html">
+<link rel="import" href="../../elements/som-linkify-behavior.html">
+
+<dom-module id="som-alert-item">
+  <template>
+    <style include="iron-flex iron-flex-alignment">
+    <style>
+      paper-button {
+        -webkit-transition: background .3s ease;
+        transition: background .3s ease;
+      }
+      paper-button:hover {
+        background-color: #eee;
+      }
+     .alert-controls {
+       text-align: center;
+       min-width: 380px;
+       padding-right: 5px;
+       height: 100px;
+     }
+     .alert-controls paper-button {
+       text-align: center;
+       min-width: 110px;
+       display: inline-block;
+       font-size: 0.9em;
+     }
+     .alert-controls-links {
+       padding: 0 10px;
+     }
+     .alert-controls-links a,
+     .alert-controls-links .link {
+       padding: 5px;
+       cursor: pointer;
+     }
+     .alert-expanded {
+       color: #666;
+     }
+     .alert-info {
+       padding-right: 20px;
+       min-width:  400px;
+     }
+     .alert-link {
+       padding-left: 5px;
+     }
+     .alert-times {
+       font-size: smaller;
+       color: #666;
+       min-width: 150px;
+     }
+     .alert-title {
+       font-weight: bold;
+     }
+     .alert-title-bar {
+       align-items: center;
+       padding-bottom: 0.25em;
+       border-bottom: 1px dotted #ddd;
+       position: relative;
+     }
+     .alert-title-bar:hover {
+       cursor: pointer;
+     }
+     .file-bug-icon,
+     .snooze-icon {
+       color: #aaa;
+     }
+     .list-item {
+       @apply(--layout-vertical);
+     }
+     .snoozed {
+       opacity: 0.5;
+     }
+
+     #expand-tip {
+       color: #a9a9a9;
+       font-size: 13.3333px;
+       padding-right: 1em;
+     }
+     #bugsList .bug {
+       font-size: 0.8em;
+       background: #eee;
+       border-radius: 15px;
+       padding: 1px 2px 1px 5px;
+       display: inline-block;
+       margin: 0 2px;
+       white-space: nowrap;
+       overflow: hidden;
+     }
+     #bugsList paper-icon-button {
+       color: #666;
+       padding: 0;
+       margin: 0 2px;
+       height: 15px;
+       width: 15px;
+       -webkit-transition: all .3s ease;
+       transition: all .3s ease;
+       border-radius: 50%;
+     }
+     #bugsList paper-icon-button:hover {
+       color: #222;
+       background-color: #aaa;
+     }
+     #bugsList,
+     #handleLink {
+       margin-left: 15px;
+     }
+     #collapse {
+       transition: height 3s ease;
+     }
+     #ripple {
+       pointer-events: none;
+     }
+     #root {
+       transition: opacity .25s;
+     }
+     #usefulLinks {
+       margin: .25em 0;
+     }
+    </style>
+    <div id="root" class$="[[_cssClass]]">
+      <div class$="[[_classForAlert(alert, selected)]]">
+        <div class="list-item">
+          <div class="alert-title-bar horizontal layout justified" on-tap="toggle">
+            <paper-ripple>
+            </paper-ripple>
+            <div class="horizontal layout wrap">
+              <div class="layout horizontal flex-child">
+                <div class="alert-title self-center">[[alert.title]]</div>
+                <div id="handleLink" class="self-center" hidden$="[[!_helpLinkForAlert(alert)]]">
+                  [<a href="[[_helpLinkForAlert(alert)]]" target="_blank">Help</a>]
+                </div>
+              </div>
+              <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links self-center flex">
+                <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
+                  <div class="bug">
+                    <a target="_blank" href="[[_bugUrl(bug)]]">[[_bugLabel(bug)]]</a>
+                    [[_bugSummary(bug, annotation.bugData)]]
+                    <paper-icon-button icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></paper-icon-button>
+                  </div>
+                </template>
+              </div>
+            </div>
+            <div class="horizontal layout end">
+              <template is="dom-if" if="[[useCompactView]]">
+                <span id="expand-tip" class="layout end">
+                  Click to expand
+                </span>
+              </template>
+              <div class="alert-times">
+                [[_duration]]
+              </div>
+            </div>
+          </div>
+          <div id="collapse" hidden$="[[_isHidden(annotation.opened, useCompactView)]]" class="alert-expanded layout horizontal wrap">
+            <div class="alert-controls layout horizontal center flex-child">
+              <div class="layout vertical alert-controls-links">
+                <a href$="[[tree]]/examine/[[alert.key]]" hidden$="[[examining]]">Examine</a>
+                <a href$="[[tree]]" hidden$="[[!examining]]">[[tree]]</a>
+                <span class="link" on-tap="_comment" id="commentsLink"><iron-icon icon="question-answer"></iron-icon> ([[_numComments]])</span>
+              </div>
+              <paper-button class="horizontal layout center" id="link-bug" on-tap="_linkBug" alt="Link a bug" raised noink>
+                <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
+                Link/File Bug
+              </paper-button>
+              <paper-button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" raised noink>
+                <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
+                </iron-icon>
+                [[_snoozeText]]
+              </paper-button>
+            </div>
+            <div class="alert-info flex">
+              <div id="usefulLinks" hidden$="[[!_haveLinks(alert)]]">
+                Useful Links:
+                <template is="dom-repeat" items="[[alert.links]]" as="link">
+                  <a class="alert-link" target="_blank" href$="[[_linkify(linkStyle, link.href)]]">[[link.title]]</a>
+                </template>
+              </div>
+              <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-build-failure>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+  <script src="som-alert-item.js"></script>
+</dom-module>

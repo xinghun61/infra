@@ -1,0 +1,99 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
+
+<dom-module id="som-bug-queue">
+  <template>
+    <style>
+      #main {
+        background: white;
+      }
+      #error {
+        color: red;
+      }
+      #error,
+      #loadingBugs,
+      #noBugs {
+        padding: 0.3em 0.5em;
+        margin: 0 1em;
+      }
+      h2 {
+        font-size: 22px;
+        font-weight: bold;
+        padding: 0.5em 0.5em 0.2em;
+        margin: 1em 0.5em 0.5em;
+        background-color: #eee;
+        border-bottom: 1px solid #ddd;
+      }
+      .bug {
+        padding: 0.3em 0.5em;
+        line-height: 150%;
+        border-bottom: 1px solid #ddd;
+        margin: 0 1em;
+      }
+      .bug-label {
+        font-size: 0.8em;
+        text-decoration: none;
+        color: #008000;
+      }
+      .bug-label:hover,
+      .summary:hover {
+        text-decoration: underline;
+      }
+      .summary {
+        font-weight: bold;
+        color: #222;
+        text-decoration: none;
+      }
+      .summary-box {
+        text-overflow: ellipsis;
+        max-width: 90%;
+      }
+    </style>
+    <iron-ajax
+        id="bugQueueAjax"
+        url="/api/v1/bugqueue/[[bugQueueLabel]]"
+        handle-as="json"
+        last-error="{{_bugQueueJsonError}}"
+        last-response="{{_bugQueueJson}}"
+        debounce-duration="300"></iron-ajax>
+    <iron-ajax
+        id="assignedBugsAjax"
+        url="/api/v1/bugqueue/[[bugQueueLabel]]/owned"
+        handle-as="json"
+        last-error="{{_assignedBugsJsonError}}"
+        last-response="{{_assignedBugsJson}}"
+        debounce-duration="300"></iron-ajax>
+    <div id="main" hidden$="[[_hideBugQueue]]">
+      <h2 hidden$="[[_isTrooperQueue]]">[[treeDisplayName]] Bug Queue (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues" target="_blank">Help?</a>)</h2>
+      <h2 hidden$="[[!_isTrooperQueue]]">Trooper Queue (<a href="http://go/trooper-queue" target="_blank">View in Monorail</a>)</h2>
+      <div id="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
+        Error fetching bug queue: [[_bugQueueJsonError.error]]
+      </div>
+      <div id="error" hidden$="[[_haveNoErrors(_assignedBugsJsonError)]]">
+        Error fetching assigned bugs: [[_assignedBugsJsonError.error]]
+      </div>
+      <div id="loadingBugs" hidden$="[[!_showBugsLoading(_bugsLoaded, _bugQueueJsonError)]]"><paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bug Queue... </div>
+      <div id="noBugs" hidden$="[[!_showNoBugs]]">No bugs in the queue!</div>
+      <template is="dom-repeat" items="[[_sortBugs(bugs)]]" as="bug">
+        <div class="bug">
+          <div class="summary-box">
+            <a href="http://crbug.com/[[bug.id]]" target="_blank" title="[[bug.summary]]" class="summary">[[bug.summary]]</a>
+            <template is="dom-repeat" items="[[_filterBugLabels(bug.labels, bugQueueLabel)]]" as="label">
+              <a href="https://bugs.chromium.org/p/chromium/issues/list?q=label:[[label]]"
+                class="bug-label" target="_blank">[[label]]</a>
+            </template>
+          </div>
+          <a href="http://crbug.com/[[bug.id]]" target="_blank">Bug [[bug.id]]</a>
+          ([[bug.status]]<template is="dom-if" if="[[bug.owner.name]]">,
+          [[bug.owner.name]]</template>)
+          <template is="dom-if" if="[[_hasPriority(bug)]]">
+            (Pri-[[_computePriority(bug)]])
+          </template>
+        </div>
+      </template>
+    </div>
+  </template>
+  <script src="som-bug-queue.js"></script>
+</dom-module>
