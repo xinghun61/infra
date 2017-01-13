@@ -314,7 +314,7 @@ def NeedANewWaterfallTryJob(
   try_job_type = failure_info['failure_type']
   if not tryserver_mastername or not tryserver_buildername:
     logging.info('%s, %s is not supported yet.', master_name, builder_name)
-    return False
+    return False, None
 
   if not force_try_job:
     build = WfBuild.Get(master_name, builder_name, build_number)

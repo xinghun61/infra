@@ -69,10 +69,11 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'failure_type': failure_type.COMPILE
     }
 
-    need_try_job = try_job_util.NeedANewWaterfallTryJob(
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertFalse(need_try_job)
+    self.assertIsNone(try_job_key)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
   def testBailOutForTestTryJob(self, mock_fn):
@@ -877,10 +878,11 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job = try_job_util.NeedANewWaterfallTryJob(
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
+    self.assertEqual(try_job.key, try_job_key)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
   def testNotNeedANewWaterfallTryJobIfNoNewFailure(self, mock_fn):
@@ -1000,10 +1002,11 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job = try_job_util.NeedANewWaterfallTryJob(
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
+    self.assertIsNotNone(try_job_key)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
   def testNeedANewWaterfallTryJob(self, mock_fn):
@@ -1042,10 +1045,11 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     mock_fn.return_value = False
 
-    need_try_job = try_job_util.NeedANewWaterfallTryJob(
+    need_try_job, try_job_key  = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
+    self.assertIsNotNone(try_job_key)
 
   @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
   def testNotNeedANewWaterfallTryJobForOtherType(self, mock_fn):
@@ -1157,10 +1161,11 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
     analysis.put()
 
-    need_try_job = try_job_util.NeedANewWaterfallTryJob(
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None, True)
 
     self.assertTrue(need_try_job)
+    self.assertEqual(try_job_key, try_job.key)
 
   def testRemovePlatformFromStepName(self):
     self.assertEqual('a_tests',

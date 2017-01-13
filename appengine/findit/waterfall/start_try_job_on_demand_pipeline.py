@@ -28,7 +28,7 @@ def _GetLastPassCompile(build_number, failed_steps):
 
 def _GetLastPassTest(build_number, failed_steps):
   for step_failure in failed_steps.itervalues():
-    for test_failure in step_failure['tests'].itervalues():
+    for test_failure in step_failure.get('tests', {}).itervalues():
       if (test_failure['first_failure'] == build_number and
           test_failure.get('last_pass') is not None):
         return test_failure['last_pass']
