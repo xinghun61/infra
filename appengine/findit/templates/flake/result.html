@@ -77,6 +77,17 @@
       }
     };
 
+    function GetDataPointByCommitPosition(commit_position) {
+      var dataPoint = null;
+      $.each(findit.passRates, function(index, value) {
+        if (value.commit_position == commit_position) {
+          dataPoint = value;
+          return false;
+        }
+      });
+      return dataPoint;
+    }
+
     function DrawFlakeTrend() {
       if (findit.passRates.length == 0) {
         $('#flake-data').html('No data available yet.');
@@ -85,24 +96,33 @@
 
       var not_run_data = [];
       var run_data = [];
+      var build_run_data = [];
+      var revision_run_data = [];
       $.each(findit.passRates, function(index, value) {
         // Convert pass rate from [0, 1] to a percentage. Include information about each point in the format:
         // [this build commit position, pass rate, swarming task url, build number,
         //  this build's git hash, previous build's commit position,
         //  previous build's git hash].
-        var pass_rate = (value[1] * 100).toFixed(0);
+        var pass_rate = (value.pass_rate * 100).toFixed(0);
 
         if (pass_rate < 0) {
           // -1 means that the test doesn't exist or is disabled at the build.
           // We consider that a 100% pass rate.
-          not_run_data.push([value[0], 100, value[2], value[3], value[4], value[5], value[6]]);
+          not_run_data.push([value.commit_position, 100]);
         } else {
-          run_data.push([value[0], pass_rate, value[2], value[3], value[4], value[5], value[6]]);
+          run_data.push([value.commit_position, pass_rate]);
+          if (value.try_job_url == null) {
+            build_run_data.push([value.commit_position, pass_rate]);
+          } else {
+            revision_run_data.push([value.commit_position, pass_rate]);
+          }
         }
       });
 
       var data_series = [];
       var run_data_sery_index = 0;
+      var build_data_sery_index = 0;
+      var revision_data_sery_index = 0;
       if (not_run_data.length > 0) {
         data_series.push({
           data: not_run_data,
@@ -114,17 +134,51 @@
         });
         run_data_sery_index = 1;
       }
+
       data_series.push({
         data: run_data,
         points: {
-          symbol: "circle",
+          show: false,
+        },
+        lines: {
+          show: true,
         },
       });
+
+      if (build_run_data.length > 0) {
+        data_series.push({
+          data: build_run_data,
+          points: {
+            symbol: "circle",
+          },
+          color: "blue",
+          lines: {
+            show: false,
+          },
+          label: "Swarm rerun",
+        });
+        build_data_sery_index = run_data_sery_index + 1;
+      }
+
+      if (revision_run_data.length > 0) {
+        data_series.push({
+          data: revision_run_data,
+          points: {
+            symbol: "circle",
+          },
+          lines: {
+            show: false,
+          },
+          color: "green",
+          label: "Try-job rerun",
+        });
+        revision_data_sery_index = max(run_data_sery_index, build_data_sery_index) + 1;
+      }
 
       var options = {
         series: {
           lines: {
-            show: true
+            show: true,
           },
           points: {
             show: true,
@@ -173,11 +227,13 @@
         var itemData = item.series.data[item.dataIndex];
         var thisBuildCommitPosition = itemData[0];
         var passRate = itemData[1];
-        var swarmingTaskId = itemData[2];
-        var buildNumber = itemData[3];
-        var thisBuildGitHash = itemData[4];
-        var previousBuildCommitPosition = itemData[5];
-        var previousBuildGitHash = itemData[6];
+        var dataPoint = GetDataPointByCommitPosition(thisBuildCommitPosition);
+        var swarmingTaskId = dataPoint.task_id;
+        var buildNumber = dataPoint.build_number;
+        var thisBuildGitHash = dataPoint.git_hash;
+        var previousBuildCommitPosition = dataPoint.previous_build_commit_position;
+        var previousBuildGitHash = dataPoint.previous_build_git_hash;
+        var tryJobUrl = dataPoint.try_job_url;
 
         var tooltipStr = 'Pass rate: ' + passRate + '%';
 
@@ -185,15 +241,20 @@
           tooltipStr += '<br>Range: <a href="https://crrev.com/' + previousBuildGitHash + '..' + thisBuildGitHash + '"target="_blank">' + previousBuildCommitPosition + ':' + thisBuildCommitPosition + '</a>';
         } else if (thisBuildCommitPosition && thisBuildGitHash) {
           // Previous information not available, so only show this build.
-          tooltipStr += '<br>Range: <a href="https://crrev.com/' + thisBuildGitHash + '" "target="_blank">' + thisBuildCommitPosition + '</a>';
+          tooltipStr += '<br>Commit: <a href="https://crrev.com/' + thisBuildGitHash + '" "target="_blank">' + thisBuildCommitPosition + '</a>';
         }
 
-        tooltipStr += '<br>Build #: <a href="https://build.chromium.org/p/' + findit.masterName + '/builders/' + findit.builderName + '/builds/' + buildNumber + '" target="_blank">' + buildNumber + '</a>';        
-
         if (swarmingTaskId) {
-          tooltipStr += '<br>Swarming Task: <a href="https://chromium-swarm.appspot.com/task?id=' + swarmingTaskId + '" target="_blank">' + swarmingTaskId +'</a>';
+          tooltipStr += '<br>Swarming: <a href="https://chromium-swarm.appspot.com/task?id=' + swarmingTaskId + '" target="_blank">' + swarmingTaskId +'</a>';
         } else {
-          tooltipStr += '<br>Swarming Task: N/A';
+          tooltipStr += '<br>Swarming: N/A';
+        }
+
+        if (buildNumber) {
+          tooltipStr += '<br>Build #: <a href="https://build.chromium.org/p/' + findit.masterName + '/builders/' + findit.builderName + '/builds/' + buildNumber + '" target="_blank">' + buildNumber + '</a>';
+        }
+        if (tryJobUrl) {
+          tooltipStr += '<br>Try Job: <a href="' + tryJobUrl + '" target="_blank">link</a>';
         }
 
         $("#tooltip").html(tooltipStr).css({top: item.pageY + 5, left: item.pageX + 5}).show();
@@ -220,10 +281,10 @@
         }
       });
 
-      $.each(run_data, function(index, value) {
-        if (value[3] == findit.regressedBuildNumber) {
-          // value[3] contains the build number.
-          plot.highlight(run_data_sery_index, index);
+      $.each(build_run_data, function(index, value) {
+        var dataPoint = GetDataPointByCommitPosition(value[0]);
+        if (dataPoint != null && dataPoint.build_number == findit.regressedBuildNumber) {
+          plot.highlight(build_data_sery_index, index);
         }
       });
     }

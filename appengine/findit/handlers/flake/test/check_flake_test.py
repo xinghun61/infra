@@ -380,6 +380,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     success_rate = .9
+    try_job_url = 'try_job_url'
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
     data_point = DataPoint()
@@ -389,9 +390,20 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point.git_hash = 'git_hash_2'
     data_point.previous_build_commit_position = 1
     data_point.previous_build_git_hash = 'git_hash_1'
+    data_point.try_job_url = try_job_url
     analysis.data_points.append(data_point)
     analysis.Save()
 
-    self.assertEqual([[2, success_rate, None, build_number, 'git_hash_2', 1,
-                       'git_hash_1']],
-                     check_flake._GetCoordinatesData(analysis))
+    expected_result = [
+        {
+            'commit_position': 2,
+            'pass_rate': success_rate,
+            'task_id': None,
+            'build_number': build_number,
+            'git_hash': 'git_hash_2',
+            'previous_build_commit_position': 1,
+            'previous_build_git_hash': 'git_hash_1',
+            'try_job_url': try_job_url
+        }
+    ]
+    self.assertEqual(expected_result, check_flake._GetCoordinatesData(analysis))

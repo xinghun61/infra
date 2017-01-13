@@ -45,6 +45,7 @@ class DataPoint(ndb.Model):
   # relevant if this data point is generated as the result of a flake swarming
   # task.
   blame_list = ndb.StringProperty(repeated=True)
+  try_job_url = ndb.StringProperty(indexed=False)
 
   # The URL to the try job that generated this data point, if any.
   try_job_url = ndb.StringProperty(indexed=False)
