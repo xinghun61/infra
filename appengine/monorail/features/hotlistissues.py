@@ -206,9 +206,9 @@ class HotlistIssues(servlet.Servlet):
           rank_base = items_sorted[-1].rank + 10
         else:
           rank_base = 1
-        # TODO(jojwang): add date
+
         added_tuples =  [(issue_id, rank_base + multiplier*10,
-                          mr.auth.user_id, None)
+                          mr.auth.user_id, int(time.time()))
                         for (multiplier, issue_id) in enumerate(selected_iids)]
         self.services.features.UpdateHotlistItems(
             mr.cnxn, mr.hotlist_id, [], added_tuples)

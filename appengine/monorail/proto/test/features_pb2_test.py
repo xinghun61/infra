@@ -21,7 +21,7 @@ class FeaturesPb2Test(unittest.TestCase):
     ts = 20011111111111
     hotlist = features_pb2.MakeHotlist(
         'summer-issues', [(1000, 1, 444L, ts), (1001, 2, 333L, ts),
-                          (1009, None, None, None)],
+                          (1009, None, None, ts)],
         description='desc')
     self.assertEqual('summer-issues', hotlist.name)
     self.assertEqual(
@@ -29,7 +29,7 @@ class FeaturesPb2Test(unittest.TestCase):
             1000, rank=1, adder_id=444L, date_added=ts),
          features_pb2.MakeHotlistItem(
              1001, rank=2, adder_id=333L, date_added=ts),
-         features_pb2.MakeHotlistItem(1009),
+         features_pb2.MakeHotlistItem(1009, date_added=ts),
          ],
         hotlist.items)
     self.assertEqual('desc', hotlist.description)
@@ -47,4 +47,4 @@ class FeaturesPb2Test(unittest.TestCase):
     self.assertEqual(1001, item_2.issue_id)
     self.assertEqual(None, item_2.rank)
     self.assertEqual(None, item_2.adder_id)
-    self.assertEqual(None, item_2.date_added)
+    self.assertIsNotNone(item_2.date_added)

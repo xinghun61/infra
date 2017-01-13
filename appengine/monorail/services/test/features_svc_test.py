@@ -5,6 +5,7 @@
 
 """Unit tests for features_svc module."""
 
+import logging
 import unittest
 import mox
 
@@ -509,23 +510,31 @@ class FeaturesServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
 
   def SetUpUpdateHotlistItemsRankings(self, hotlist_id, relations_to_change):
+    hotlist_rows = [(hotlist_id, 'hotlist', '', '', True, '')]
+    insert_rows = [(345, 11, 112, 333L, 2002), (345, 33, 332, 333L, 2002),
+                   (345, 55, 552, 333L, 2002)]
+    issue_rows = [(345, 11, 1, 333L, 2002), (345, 33, 3, 333L, 2002),
+             (345, 55, 3, 333L, 2002)]
+    self.SetUpGetHotlists(
+        hotlist_id, hotlist_rows=hotlist_rows, issue_rows=issue_rows)
     self.features_service.hotlist2issue_tbl.Delete(
         self.cnxn, hotlist_id=hotlist_id,
         issue_id=relations_to_change.keys(), commit=False)
-    insert_rows = [
-        (hotlist_id, issue_id, relations_to_change[
-            issue_id], None, None) for issue_id in relations_to_change.keys()]
     self.features_service.hotlist2issue_tbl.InsertRows(
         self.cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
         row_values=insert_rows, commit=True)
 
   def testUpdateHotlistItemsRankings(self):
-    self.SetUpGetHotlists(456)
+    iid_rank_user_date = [
+        (11, 1, 333L, 2002), (33, 3, 333L, 2002), (55, 3, 333L, 2002)]
+    hotlist = fake.Hotlist(hotlist_name='hotlist', hotlist_id=345,
+                           iid_rank_user_date=iid_rank_user_date)
+    self.features_service.hotlist_2lc.CacheItem(345, hotlist)
     relations_to_change = {11: 112, 33: 332, 55: 552}
-    self.SetUpUpdateHotlistItemsRankings(456, relations_to_change)
+    self.SetUpUpdateHotlistItemsRankings(345, relations_to_change)
     self.mox.ReplayAll()
     self.features_service.UpdateHotlistItemsRankings(
-        self.cnxn, 456, relations_to_change)
+        self.cnxn, 345, relations_to_change)
     self.mox.VerifyAll()
 
   def testGetHotlists(self):

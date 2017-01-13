@@ -46,6 +46,10 @@ def Hotlist(
       hotlist_id=hotlist_id, is_private=is_private, owner_ids=owner_ids or [],
       editor_ids=editor_ids or [], follower_ids=follower_ids or [])
 
+def HotlistItem(issue_id, rank=None, adder_id=None, date_added=None):
+  return features_pb2.MakeHotlistItem(issue_id=issue_id, rank=rank,
+                                      adder_id=adder_id, date_added=date_added)
+
 def Project(
     project_name='proj', project_id=None, state=project_pb2.ProjectState.LIVE,
     access=project_pb2.ProjectAccess.ANYONE, moved_to=None,

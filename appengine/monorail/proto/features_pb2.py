@@ -5,6 +5,8 @@
 
 """Protocol buffers for Monorail features."""
 
+import time
+
 from features import features_constants
 from protorpc import messages
 
@@ -59,11 +61,11 @@ def MakeHotlist(name, iid_rank_user_date=None, **kwargs):
   return hotlist
 
 def MakeHotlistItem(issue_id, rank=None, adder_id=None, date_added=None):
-  item = Hotlist.HotlistItem(issue_id=issue_id)
+  if date_added is None:
+    date_added=int(time.time())
+  item = Hotlist.HotlistItem(issue_id=issue_id, date_added=date_added)
   if rank is not None:
     item.rank = rank
   if adder_id is not None:
     item.adder_id = adder_id
-  if date_added is not None:
-    item.date_added = date_added
   return item
