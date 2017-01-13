@@ -310,6 +310,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
 
     updated_cls = identify_try_job_culprit_pipeline._GetSuspectedCLs(
         analysis, failure_type.TEST, None, try_job_suspected_cls)
+
     self.assertEqual(updated_cls, [suspected_cl])
 
   def testGetSuspectedCLsForTestTryJob(self):

@@ -593,4 +593,5 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = MonitorTryJobPipeline()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     test_result = pipeline.run(try_job.key.urlsafe(), failure_type.TEST, None)
+
     self.assertIsNone(test_result)

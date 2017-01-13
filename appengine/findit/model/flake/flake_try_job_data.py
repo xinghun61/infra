@@ -9,6 +9,7 @@ from model.base_try_job_data import BaseTryJobData
 
 
 class FlakeTryJobData(BaseTryJobData):
+
   """Represents a flake try job's metadata."""
 
   @ndb.ComputedProperty

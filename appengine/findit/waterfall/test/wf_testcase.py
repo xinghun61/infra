@@ -124,6 +124,15 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
     'dive_rate_threshold': 0.4,
 }
 
+_DEFAULT_CHECK_FLAKE_TRY_JOB_SETTINGS = {
+    'lower_flake_threshold': 0.02,
+    'upper_flake_threshold': 0.98,
+    'max_flake_in_a_row': 1,
+    'max_stable_in_a_row': 0,
+    'max_dive_in_a_row': 4,
+    'dive_rate_threshold': 0.4,
+}
+
 
 DEFAULT_CONFIG_DATA = {
     'steps_for_masters_rules': _DEFAULT_STEPS_FOR_MASTERS_RULES,
@@ -133,6 +142,7 @@ DEFAULT_CONFIG_DATA = {
     'download_build_data_settings': _DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS,
     'action_settings': _DEFAULT_ACTION_SETTINGS,
     'check_flake_settings': _DEFAULT_CHECK_FLAKE_SETTINGS,
+    'check_flake_try_job_settings': _DEFAULT_CHECK_FLAKE_TRY_JOB_SETTINGS,
 }
 
 

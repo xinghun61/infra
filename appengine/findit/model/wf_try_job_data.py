@@ -13,7 +13,7 @@ class WfTryJobData(BaseTryJobData):
   # Number of commits in the revision range.
   regression_range_size = ndb.IntegerProperty(indexed=False)
 
-  # Number of commits analyzed to determine a culprit if any.
+  # Number of commits analyzed to determine a culprit, if any.
   number_of_commits_analyzed = ndb.IntegerProperty(indexed=False)
 
   # Culprit(s) determined to have caused the failure, if any.

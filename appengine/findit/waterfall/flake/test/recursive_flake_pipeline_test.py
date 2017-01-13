@@ -465,13 +465,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, master_build_number, step_name, test_name)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
-  def testUpdateAnalysisUponCompletionFound(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    recursive_flake_pipeline._UpdateAnalysisStatusUponCompletion(
-        analysis, 100, analysis_status.COMPLETED, None)
-    self.assertEqual(analysis.suspected_flake_build_number, 100)
-    self.assertEqual(analysis.result_status, result_status.FOUND_UNTRIAGED)
-
   def testUpdateAnalysisUponCompletionError(self):
     expected_error = {
         'code': 1,

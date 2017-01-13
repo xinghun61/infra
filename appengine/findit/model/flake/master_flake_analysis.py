@@ -17,14 +17,68 @@ from model.flake.flake_swarming_task import FlakeSwarmingTaskData
 
 
 class DataPoint(ndb.Model):
+  # The build number corresponding to this data point. Only relevant for
+  # analysis at the at the build level.
   build_number = ndb.IntegerProperty(indexed=False)
+
+  # The pass rate of the test when run against this commit.
   pass_rate = ndb.FloatProperty(indexed=False)
+
+  # The ID of the swarming task responsible for generating this data.
   task_id = ndb.StringProperty(indexed=False)
+
+  # The commit position of this data point.
   commit_position = ndb.IntegerProperty(indexed=False)
+
+  # The git hash of this data point.
   git_hash = ndb.StringProperty(indexed=False)
+
+  # The commit position of the build preceding this one. Only relevant if this
+  # data point is generated at the build level.
   previous_build_commit_position = ndb.IntegerProperty(indexed=False)
+
+  # The git hash of the data point 1 build before this one. Only relevant if
+  # this data point is generated as the result of a flake swarming task.
   previous_build_git_hash = ndb.StringProperty(indexed=False)
+
+  # The list of revisions between this build and the previous build. Only
+  # relevant if this data point is generated as the result of a flake swarming
+  # task.
   blame_list = ndb.StringProperty(repeated=True)
+
+  # The URL to the try job that generated this data point, if any.
+  try_job_url = ndb.StringProperty(indexed=False)
+
+  def GetCommitPosition(self, revision):
+    """Gets the commit position of a revision within blame_list.
+
+    Args:
+      revision (str): The revision to search for.
+
+    Returns:
+      commit_position (int): The calculated commit position of revision.
+    """
+    assert revision in self.blame_list
+
+    for i in range(0, len(self.blame_list)):  # pragma: no branch
+      if revision == self.blame_list[i]:
+        return i + self.previous_build_commit_position + 1
+
+  def GetRevisionAtCommitPosition(self, commit_position):
+    """Gets the corresponding revision to commit_position.
+
+    Args:
+      commit_position (int): The commit position for which to find the
+          corresponding revision within self.blame_list.
+
+    Returns:
+      revision (str): The git revision corresponding to commit_position.
+    """
+    length = len(self.blame_list)
+    assert (commit_position > self.commit_position - length and
+            commit_position <= self.commit_position)
+    return self.blame_list[
+        length - (self.commit_position - commit_position) - 1]
 
 
 class MasterFlakeAnalysis(
@@ -176,7 +230,7 @@ class MasterFlakeAnalysis(
   # The status of try jobs, if any. None if try jobs have not been triggered.
   # Status should be PENDING or STARTED when the first try job is triggered,
   # and COMPLETED when the last one finishes. If any try job ends in error,
-  # status will be ERROR. 
+  # status will be ERROR.
   try_job_status = ndb.IntegerProperty(indexed=False)
 
   # The data points used to plot the flakiness graph build over build.

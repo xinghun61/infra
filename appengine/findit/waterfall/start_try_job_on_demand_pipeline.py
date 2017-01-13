@@ -120,6 +120,7 @@ class StartTryJobOnDemandPipeline(BasePipeline):
 
     try_job_result = yield MonitorTryJobPipeline(
         try_job_key.urlsafe(), try_job_type, try_job_id)
+
     yield IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, blame_list, try_job_type,
         try_job_id, try_job_result)

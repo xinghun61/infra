@@ -103,3 +103,7 @@ class FinditConfig(VersionedConfig):
   #     'max_dive_in_a_row': 4,
   # }
   check_flake_settings = ndb.JsonProperty(indexed=False, default={})
+
+  # A dict containing try job settings for identifying a cl that introduced
+  # test flakiness.
+  check_flake_try_job_settings = ndb.JsonProperty(indexed=False, default={})

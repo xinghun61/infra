@@ -9,6 +9,7 @@ from model.base_try_job import BaseTryJob
 
 class BaseTryJobData(ndb.Model):
   """Represents a tryjob's metadata."""
+
   # When the try job completed.
   end_time = ndb.DateTimeProperty(indexed=True)
 

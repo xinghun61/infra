@@ -189,4 +189,22 @@ class MasterFlakeAnalysisTest(TestCase):
 
     self.assertIsNone(analysis.GetDataPointOfSuspectedBuild())
 
+  def testGetCommitPosition(self):
+    data_point = DataPoint()
+    data_point.blame_list = ['r1', 'r2', 'r3']
+    data_point.commit_position = 100
+    data_point.previous_build_commit_position = 97
 
+    self.assertEqual(98, data_point.GetCommitPosition('r1'))
+    self.assertEqual(99, data_point.GetCommitPosition('r2'))
+    self.assertEqual(100, data_point.GetCommitPosition('r3'))
+
+  def testGetRevisionAtCommitPosition(self):
+    data_point = DataPoint()
+    data_point.blame_list = ['r1', 'r2', 'r3']
+    data_point.commit_position = 100
+    data_point.previous_build_commit_position = 97
+
+    self.assertEqual('r1', data_point.GetRevisionAtCommitPosition(98))
+    self.assertEqual('r2', data_point.GetRevisionAtCommitPosition(99))
+    self.assertEqual('r3', data_point.GetRevisionAtCommitPosition(100))

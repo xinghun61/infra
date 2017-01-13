@@ -55,17 +55,15 @@ def _UpdateBugWithResult(analysis, queue_name):
 
 def _UpdateAnalysisStatusUponCompletion(
     master_flake_analysis, suspected_build, status, error):
-  master_flake_analysis.end_time = time_util.GetUTCNow()
-  master_flake_analysis.status = status
-
   if error:
     master_flake_analysis.error = error
 
-  if suspected_build != -1:
-    master_flake_analysis.suspected_flake_build_number = suspected_build
-    master_flake_analysis.result_status = result_status.FOUND_UNTRIAGED
-  else:
+  if suspected_build == _NO_BUILD_NUMBER:
+    master_flake_analysis.end_time = time_util.GetUTCNow()
+    master_flake_analysis.status = status
     master_flake_analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
+  else:
+    master_flake_analysis.suspected_flake_build_number = suspected_build
 
   master_flake_analysis.put()
 
@@ -317,9 +315,10 @@ def _GetNextBuildNumber(data_points, flake_settings):
   Returns:
     (next_build_number, suspected_build): The next build number to check
         and suspected build number that the flakiness was introduced in.
-        If needs to check next_build_number, suspected_build will be -1;
-        If finds the suspected_build, next_build_number will be -1;
-        If no findings evertually, both will be -1.
+        If needs to check next_build_number, suspected_build will be
+        _NO_BUILD_NUMBER; If suspected_build is found, next_build_number will be
+        _NO_BUILD_NUMBER; If no findings eventually, both will be
+        _NO_BUILD_NUMBER.
   """
   # A description of this algorithm can be found at:
   # https://docs.google.com/document/d/1wPYFZ5OT998Yn7O8wGDOhgfcQ98mknoX13AesJaS6ig/edit
