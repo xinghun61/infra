@@ -36,6 +36,10 @@
       },
       tree: String,
       annotation: Object,
+      _commentsClass: {
+        type: String,
+        computed: '_computeCommentsClass(_numComments)',
+      },
       _cssClass: {
         type: String,
         computed: '_computeCssClass(annotation.snoozed)',
@@ -122,6 +126,13 @@
 
     _computeHasBugs: function(bugs) {
       return !!(bugs && bugs.length > 0);
+    },
+
+    _computeCommentsClass: function(numComments) {
+      if (numComments > 0) {
+        return 'comments-link-highlighted';
+      }
+      return 'comments-link';
     },
 
     _computeNumComments: function(comments) {

@@ -30,7 +30,8 @@
     },
 
     _classForBuilder: function(builder) {
-      let classes = ['builder'] if (this._failureCount(builder) > 1) {
+      let classes = ['builder'];
+      if (this._failureCount(builder) > 1) {
         classes.push('multiple-failures');
       }
       if (this.type == 'infra-failure') {

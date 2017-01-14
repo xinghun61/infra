@@ -78,7 +78,9 @@
      .snoozed {
        opacity: 0.5;
      }
-
+     .comments-link-highlighted {
+       color: #FF8C00;
+     }
      #expand-tip {
        color: #a9a9a9;
        font-size: 13.3333px;
@@ -164,7 +166,9 @@
               <div class="layout vertical alert-controls-links">
                 <a href$="[[tree]]/examine/[[alert.key]]" hidden$="[[examining]]">Examine</a>
                 <a href$="[[tree]]" hidden$="[[!examining]]">[[tree]]</a>
-                <span class="link" on-tap="_comment" id="commentsLink"><iron-icon icon="question-answer"></iron-icon> ([[_numComments]])</span>
+                <span class$="link [[_commentsClass]]" on-tap="_comment" id="commentsLink">
+                  <iron-icon icon="question-answer"></iron-icon> ([[_numComments]])
+                </span>
               </div>
               <paper-button class="horizontal layout center" id="link-bug" on-tap="_linkBug" alt="Link a bug" raised noink>
                 <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
