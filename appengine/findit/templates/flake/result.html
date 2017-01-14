@@ -239,7 +239,7 @@
         var tooltipStr = 'Pass Rate: ' + passRate + '%';
 
         if (previousBuildCommitPosition && previousBuildGitHash && thisBuildCommitPosition && thisBuildGitHash) {
-          tooltipStr += '<br>Range: <a href="https://crrev.com/' + previousBuildGitHash + '..' + thisBuildGitHash + '" target="_blank">' + previousBuildCommitPosition + ':' + thisBuildCommitPosition + '</a>';
+          tooltipStr += '<br>Range: <a href="https://crrev.com/' + previousBuildGitHash + '..' + thisBuildGitHash + '?pretty=fuller" target="_blank">' + previousBuildCommitPosition + ':' + thisBuildCommitPosition + '</a>';
         } else if (thisBuildCommitPosition && thisBuildGitHash) {
           // Previous information not available, so only show this build.
           tooltipStr += '<br>Commit: <a href="https://crrev.com/' + thisBuildGitHash + '" target="_blank">' + thisBuildCommitPosition + '</a>';
