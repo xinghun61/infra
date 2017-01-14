@@ -17,6 +17,7 @@ from model import analysis_status
 from model.analysis_status import STATUS_TO_DESCRIPTION
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake import flake_analysis_service
@@ -120,7 +121,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'step_name': step_name,
         'test_name': test_name,
         'request_time': '2016-10-01 12:10:00 UTC',
-        'task_number': 1,
+        'build_level_number': 1,
+        'revision_level_number': 0,
         'error': None,
         'iterations_to_rerun': 100,
         'pending_time': '00:00:05',
@@ -132,7 +134,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'triage_result': 0
         },
         'version_number': 1,
-        'show_debug_info': False
+        'show_debug_info': False,
+        'culprit': {},
+        'try_job_status': None
     }
 
     self.assertEquals(200, response.status_int)
@@ -221,7 +225,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'step_name': step_name,
         'test_name': test_name,
         'request_time': '2016-10-01 12:10:00 UTC',
-        'task_number': 1,
+        'build_level_number': 1,
+        'revision_level_number': 0,
         'error': None,
         'iterations_to_rerun': 100,
         'pending_time': '00:00:05',
@@ -233,7 +238,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'triage_result': 0
         },
         'version_number': 1,
-        'show_debug_info': False
+        'show_debug_info': False,
+        'culprit': {},
+        'try_job_status': None
     }
 
     self.assertEqual(200, response.status_int)
@@ -373,6 +380,34 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_result,
                      check_flake._GetSuspectedFlakeInfo(analysis))
 
+  def testGetCulpritInfo(self):
+    commit_position = 2
+    git_hash = 'git_hash_2'
+    url = 'url'
+    culprit = FlakeCulprit.Create('chromium', git_hash, commit_position, url)
+    culprit.put()
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 123
+    data_point = DataPoint()
+    data_point.pass_rate = 0.9
+    data_point.commit_position = commit_position
+    data_point.git_hash = git_hash
+    data_point.previous_build_commit_position = 1
+    data_point.previous_build_git_hash = 'git_hash_1'
+    data_point.try_job_url = 'try_job_url'
+    analysis.data_points.append(data_point)
+    analysis.culprit = culprit
+    analysis.Save()
+
+    expected_result = {
+        'commit_position': commit_position,
+        'git_hash': git_hash,
+        'url': url
+    }
+    self.assertEqual(expected_result,
+                     check_flake._GetCulpritInfo(analysis))
+
   def testGetCoordinatesData(self):
     master_name = 'm'
     builder_name = 'b'
@@ -407,3 +442,14 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         }
     ]
     self.assertEqual(expected_result, check_flake._GetCoordinatesData(analysis))
+
+  def testGetNumbersOfDataPointGroups(self):
+    data_point1 = DataPoint()
+    data_point1.try_job_url = 'try_job_url'
+
+    data_point2 = DataPoint()
+    data_point2.build_number = 1
+
+    data_points = [data_point1, data_point2]
+    self.assertEqual((1,1),
+                     check_flake._GetNumbersOfDataPointGroups(data_points))

@@ -160,6 +160,16 @@ class MasterFlakeAnalysis(
 
     return None
 
+  def GetDataPointOfCulprit(self):
+    """Gets the corresponding data point to the culprit revision."""
+    if self.culprit is not None:
+      for data_point in self.data_points:
+        if (data_point.try_job_url and
+            data_point.git_hash == self.culprit.revision):
+          return data_point
+
+    return None
+
   def Reset(self):
     super(MasterFlakeAnalysis, self).Reset()
     self.original_master_name = None

@@ -54,6 +54,7 @@
     findit.builderName = "{{ builder_name }}";
     findit.regressedBuildNumber = {{ suspected_flake.build_number or -1 }};
     findit.passRates = {{ pass_rates | tojson | safe }};
+    findit.culpritGitHash = "{{ culprit.git_hash }}";
 
     function getTriageParameters(triageResult) {
       parameters = {}
@@ -172,7 +173,7 @@
           color: "green",
           label: "Try-job rerun",
         });
-        revision_data_sery_index = max(run_data_sery_index, build_data_sery_index) + 1;
+        revision_data_sery_index = Math.max(run_data_sery_index, build_data_sery_index) + 1;
       }
 
       var options = {
@@ -235,13 +236,13 @@
         var previousBuildGitHash = dataPoint.previous_build_git_hash;
         var tryJobUrl = dataPoint.try_job_url;
 
-        var tooltipStr = 'Pass rate: ' + passRate + '%';
+        var tooltipStr = 'Pass Rate: ' + passRate + '%';
 
         if (previousBuildCommitPosition && previousBuildGitHash && thisBuildCommitPosition && thisBuildGitHash) {
-          tooltipStr += '<br>Range: <a href="https://crrev.com/' + previousBuildGitHash + '..' + thisBuildGitHash + '"target="_blank">' + previousBuildCommitPosition + ':' + thisBuildCommitPosition + '</a>';
+          tooltipStr += '<br>Range: <a href="https://crrev.com/' + previousBuildGitHash + '..' + thisBuildGitHash + '" target="_blank">' + previousBuildCommitPosition + ':' + thisBuildCommitPosition + '</a>';
         } else if (thisBuildCommitPosition && thisBuildGitHash) {
           // Previous information not available, so only show this build.
-          tooltipStr += '<br>Commit: <a href="https://crrev.com/' + thisBuildGitHash + '" "target="_blank">' + thisBuildCommitPosition + '</a>';
+          tooltipStr += '<br>Commit: <a href="https://crrev.com/' + thisBuildGitHash + '" target="_blank">' + thisBuildCommitPosition + '</a>';
         }
 
         if (swarmingTaskId) {
@@ -281,10 +282,19 @@
         }
       });
 
-      $.each(build_run_data, function(index, value) {
+      if (revision_run_data.length == 0){
+        $.each(build_run_data, function(index, value) {
+          var dataPoint = GetDataPointByCommitPosition(value[0]);
+          if (dataPoint != null && dataPoint.build_number == findit.regressedBuildNumber) {
+            plot.highlight(build_data_sery_index, index);
+          }
+        });
+      }
+
+      $.each(revision_run_data, function(index, value) {
         var dataPoint = GetDataPointByCommitPosition(value[0]);
-        if (dataPoint != null && dataPoint.build_number == findit.regressedBuildNumber) {
-          plot.highlight(build_data_sery_index, index);
+        if (dataPoint != null && dataPoint.git_hash == findit.culpritGitHash) {
+          plot.highlight(revision_data_sery_index, index);
         }
       });
     }
@@ -316,17 +326,24 @@
   <br>
   <div>
     <b>Analysis Result:</b><br>
-    Status:  {{ analysis_status }}<br>
+    Analysis Status:  {{ analysis_status }}<br>
+    {% if try_job_status %}
+      Try Job Status:  {{ try_job_status }}<br>
+    {% endif %}
     {% if error %}
     Error info: {{ error }}<br>
     {% endif %}
     {% if suspected_flake.build_number %}
       Flakiness <b>started</b> in Build: <a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake.build_number }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.build_number }}</a>
+      <br>
     {% endif %}
     {% if suspected_flake.commit_position and suspected_flake.git_hash %}
-      <br>
       Regression Range: <a href="https://crrev.com/{{ suspected_flake.previous_build_git_hash }}..{{ suspected_flake.git_hash }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.previous_build_commit_position }}:{{ suspected_flake.commit_position }}</a>
       <br>
+    {% endif %}
+    {% if (culprit.commit_position or culprit.revision) and culprit.url %}
+        Culprit: <a href="{{ culprit.url }}" target="_blank" style="color:red;font-weight:bold">{{ culprit.commit_position or culprit.revision }}</a>
+        <br>
     {% endif %}
 
   </div>
@@ -350,7 +367,8 @@
     {% if duration %}
     Duration: {{ duration }}<br>
     {% endif %}
-    Total Swarm tasks: {{ task_number }}
+    Total Swarm Tasks: {{ build_level_number }}<br>
+    Total Try Jobs: {{ revision_level_number }}
   </div>
   <br>
   <div id="triage_flake">

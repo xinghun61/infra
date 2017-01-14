@@ -56,6 +56,34 @@ def _GetSuspectedFlakeInfo(analysis):
   }
 
 
+def _GetCulpritInfo(analysis):
+  """Returns a dict with information about the culprit git_hash.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The master flake analysis the suspected
+      flake build is associated with.
+
+  Returns:
+    A dict in the format:
+      {
+          'commit_position': int,
+          'git_hash': str,
+          'url': str,
+      }
+  """
+  if analysis.culprit is None:
+    return {}
+
+  data_point = analysis.GetDataPointOfCulprit()
+  assert data_point
+
+  return {
+      'commit_position': data_point.commit_position,
+      'git_hash': data_point.git_hash,
+      'url': analysis.culprit.url
+  }
+
+
 def _GetCoordinatesData(analysis):
   if not analysis or not analysis.data_points:
     return []
@@ -79,6 +107,19 @@ def _GetCoordinatesData(analysis):
   coordinates.sort(key=lambda x: x['commit_position'])
 
   return coordinates
+
+
+def _GetNumbersOfDataPointGroups(data_points):
+  build_level_number = 0
+  revision_level_number = 0
+
+  for data_point in data_points:
+    if data_point.try_job_url:
+      revision_level_number += 1
+    else:
+      build_level_number += 1
+
+  return build_level_number, revision_level_number
 
 
 class CheckFlake(BaseHandler):
@@ -200,6 +241,9 @@ class CheckFlake(BaseHandler):
           }
 
     suspected_flake = _GetSuspectedFlakeInfo(analysis)
+    culprit = _GetCulpritInfo(analysis)
+    build_level_number, revision_level_number = _GetNumbersOfDataPointGroups(
+        analysis.data_points)
 
     data = {
         'key': analysis.key.urlsafe(),
@@ -210,11 +254,15 @@ class CheckFlake(BaseHandler):
         'test_name': analysis.test_name,
         'pass_rates': [],
         'analysis_status': analysis.status_description,
+        'try_job_status': analysis_status.STATUS_TO_DESCRIPTION.get(
+            analysis.try_job_status),
         'version_number': analysis.version_number,
         'suspected_flake': suspected_flake,
+        'culprit': culprit,
         'request_time': time_util.FormatDatetime(
             analysis.request_time),
-        'task_number': len(analysis.data_points),
+        'build_level_number': build_level_number,
+        'revision_level_number': revision_level_number,
         'error': analysis.error_message,
         'iterations_to_rerun': analysis.iterations_to_rerun,
         'show_debug_info': self._ShowDebugInfo()

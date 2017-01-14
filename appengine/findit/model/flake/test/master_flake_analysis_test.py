@@ -176,7 +176,7 @@ class MasterFlakeAnalysisTest(TestCase):
     suspected_data_point = analysis.GetDataPointOfSuspectedBuild()
     self.assertEqual(expected_build_number, suspected_data_point.build_number)
 
-  def testGetDataPointOfSuspectedBuildNoDatapoint(self):
+  def testGetDataPointOfSuspectedBuildNoDataPoint(self):
     # This scenario should not happen.
     expected_build_number = 123
     unexpected_build_number = 124
@@ -188,6 +188,50 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis.data_points.append(data_point)
 
     self.assertIsNone(analysis.GetDataPointOfSuspectedBuild())
+
+  def testGetDataPointOfCulprit(self):
+    git_hash = 'rev'
+    data_point = DataPoint()
+    data_point.git_hash = git_hash
+    data_point.try_job_url = 'try_job_url'
+
+    commit_position = 1
+    url = 'url'
+    culprit = FlakeCulprit.Create('chromium', git_hash, commit_position, url)
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 125, 's', 't')
+    analysis.culprit = culprit
+    analysis.data_points.append(data_point)
+
+    culprit_data_point = analysis.GetDataPointOfCulprit()
+    self.assertEqual(analysis.culprit.revision, culprit_data_point.git_hash)
+
+  def testGetDataPointOfCulpritNoCulprit(self):
+    git_hash = 'rev'
+    data_point = DataPoint()
+    data_point.git_hash = git_hash
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 125, 's', 't')
+    analysis.data_points.append(data_point)
+
+    self.assertIsNone(analysis.GetDataPointOfCulprit())
+
+
+  def testGetDataPointOfCulpritNoMatch(self):
+    git_hash = 'rev'
+    data_point = DataPoint()
+    data_point.git_hash = git_hash
+
+    commit_position = 1
+    url = 'url'
+    culprit = FlakeCulprit.Create('chromium', 'other_rev', commit_position, url)
+    culprit.put()
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 125, 's', 't')
+    analysis.culprit = culprit
+    analysis.data_points.append(data_point)
+
+    self.assertIsNone(analysis.GetDataPointOfCulprit())
 
   def testGetCommitPosition(self):
     data_point = DataPoint()
