@@ -23,6 +23,7 @@ import (
 
 	"github.com/luci/luci-go/common/data/stringset"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/sync/parallel"
 )
 
 const (
@@ -31,6 +32,10 @@ const (
 
 	// Step result values.
 	resInfraFailure = float64(4)
+
+	// This is pretty aggressive, and tuned mainly for chromium.perf. Consider
+	// making this a per-tree setting.
+	maxConcurrentBuilders = 2
 )
 
 var (
@@ -129,6 +134,7 @@ func (a *Analyzer) MasterAlerts(ctx context.Context, master *messages.MasterLoca
 	}
 	expvars.Add("MasterAlerts", 1)
 	defer expvars.Add("MasterAlerts", -1)
+
 	elapsed := a.Now().Sub(be.CreatedTimestamp.Time())
 	if elapsed > a.StaleMasterThreshold {
 		ret = append(ret, messages.Alert{
@@ -163,35 +169,36 @@ func (a *Analyzer) BuilderAlerts(ctx context.Context, tree string, master *messa
 	}
 	c := make(chan r, len(be.Builders))
 
-	// TODO: get a list of all the running builds from be.Slaves? It
-	// appears to be used later on in the original py.
-	scannedBuilders := []string{}
-	for builderName, builder := range be.Builders {
-		if a.BuilderOnly != "" && builderName != a.BuilderOnly {
-			continue
-		}
-		scannedBuilders = append(scannedBuilders, builderName)
-		go func(builderName string, b messages.Builder) {
-			out := r{builderName: builderName, b: b}
-			defer func() {
-				c <- out
-			}()
+	workers := len(be.Builders)
+	if workers > maxConcurrentBuilders {
+		workers = maxConcurrentBuilders
+	}
 
-			expvars.Add("BuilderAlerts", 1)
-			defer expvars.Add("BuilderAlerts", -1)
-			// Each call to builderAlerts may trigger blocking json fetches,
-			// but it has a data dependency on the above cache-warming call, so
-			// the logic remains serial.
-			out.alerts, out.err = a.builderAlerts(ctx, tree, master, builderName, &b)
-		}(builderName, builder)
+	err := parallel.WorkPool(workers, func(workC chan<- func() error) {
+		for builderName, builder := range be.Builders {
+			builderName, builder := builderName, builder
+			workC <- func() error {
+				out := r{builderName: builderName, b: builder}
+				out.alerts, out.err = a.builderAlerts(ctx, tree, master, builderName, &builder)
+
+				c <- out
+				return nil
+			}
+		}
+	})
+
+	if err != nil {
+		// Eh... What to do here? Return? But we never return an error from a worker,
+		// so I suppose it's not an issue.
+		logging.Errorf(ctx, "Error from worker pool: %v", err)
 	}
 
 	ret := []messages.Alert{}
-	for _, builderName := range scannedBuilders {
+	for _ = range be.Builders {
 		r := <-c
 		if len(r.err) != 0 {
 			// TODO: add a special alert for this too?
-			logging.Errorf(ctx, "Error getting alerts for builder %s: %v", builderName, r.err)
+			logging.Errorf(ctx, "Error getting alerts for builder %s: %v", r.builderName, r.err)
 		} else {
 			ret = append(ret, r.alerts...)
 		}
