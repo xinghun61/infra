@@ -215,7 +215,7 @@ class CheckFlake(BaseHandler):
         # the results from that analysis.
         request = FlakeAnalysisRequest.GetVersion(key=test_name)
 
-        if not request:
+        if not (request and request.analyses):
           return {
               'template': 'error.html',
               'data': {
