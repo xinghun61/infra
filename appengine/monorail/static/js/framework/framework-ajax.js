@@ -11,6 +11,28 @@
  */
 
 
+var DEBOUNCE_THRESH_MS = 2000;
+
+/*
+ * Simple debouncer to handle text input.  Don't try to hit the server
+ * until the user has stopped typing for a few seconds.  E.g.,
+ * var debouncedKeyHandler = debounce(keyHandler);
+ * el.addEventListener('keyup', debouncedKeyHandler);
+ */
+function debounce(func) {
+  var timeout;
+  return function() {
+    var context = this, args = arguments;
+    var later = function() {
+      timeout = null;
+      func.apply(context, args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, DEBOUNCE_THRESH_MS);
+  };
+}
+
+
 /**
  * Builds a POST string from a parameter dictionary.
  * @param {Object} args parameters to encode.
@@ -30,6 +52,7 @@ function CS_postData(args, opt_token) {
   }
   return params.join('&');
 }
+
 
 /**
  * Helper for an extremely common kind of XHR: a POST with an XHRF token
@@ -94,6 +117,7 @@ function isTokenExpired(opt_tokenExpiresSec) {
   return tokenExpiresDate <= new Date();
 }
 
+
 /**
  * After we refresh the form token, we need to actually submit the form.
  * formToSubmit keeps track of which form the user was trying to submit.
@@ -115,6 +139,7 @@ function refreshTokens(event, formToken, formTokenPath, tokenExpiresSec) {
             {form_token: formToken,
              form_token_path: formTokenPath});
 }
+
 
 /**
  * If we got a new XSRF token from the server, use it to actually

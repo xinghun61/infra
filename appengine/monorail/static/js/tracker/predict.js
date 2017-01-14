@@ -2,23 +2,8 @@
   // TODO: make this dynamic so it works on prod too.
    const PREDICT_ENDPOINT =
        'https://monorail-predict.appspot.com/_predict';
-   const DEBOUNCE_THRESH_MS = 2000;
    const LOG_ENDPOINT =
        'https://monorail-predict.appspot.com/_log';
-
-  // Simple debouncer to handle text input. Don't try to get suggestions
-  // until the user has stopped typing for a few seconds.
-  function debounce(func) {
-    var timeout;
-    return function() {
-      var later = function() {
-        timeout = null;
-        func.apply();
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, DEBOUNCE_THRESH_MS);
-    };
-  }
 
   var componentsEl, commentEl, suggestionsEl, newIssueTextArea,
       addCommentTextArea, issueSummaryInput, existingComments, componentEdit;

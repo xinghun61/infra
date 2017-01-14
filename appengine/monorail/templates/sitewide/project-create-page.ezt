@@ -91,9 +91,9 @@ runOnLoad(function() {
     }
   }
 
-  function checkname() {
+  var checkname = debounce(function() {
     _CP_checkProjectName(projectname.value);
-  }
+  });
 
   function checkempty(elemId) {
     var elem = document.getElementById(elemId);
