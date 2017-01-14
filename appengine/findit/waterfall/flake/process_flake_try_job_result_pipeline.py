@@ -5,7 +5,40 @@
 from google.appengine.ext import ndb
 
 from common.pipeline_wrapper import BasePipeline
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model.flake.master_flake_analysis import DataPoint
+from waterfall import swarming_util
+
+
+def _GetSwarmingTaskIdForTryJob(report, revision, step_name, test_name):
+  """Check json output for each task and return id of the one with test result.
+  """
+  if not report:
+    return None
+
+  http_client = HttpClientAppengine()
+
+  step_result = report.get('result', {}).get(revision, {}).get(
+      step_name, {})
+  pass_fail_counts = step_result.get('pass_fail_counts', {}).get(test_name)
+  task_ids = step_result.get('step_metadata', {}).get('swarm_task_ids', [])
+
+  if len(task_ids) == 1:
+    return task_ids[0]
+
+  if not pass_fail_counts:  # Test doesn't exist.
+    return task_ids[0] if task_ids else None
+
+  for task_id in task_ids:
+    output_json = swarming_util.GetIsolatedOutputForTask(task_id, http_client)
+    if output_json:
+      for data in output_json.get('per_iteration_data', []):
+        # If this task doesn't have result, per_iteration_data will look like
+        # [{}, {}, ...]
+        if data:
+          return task_id
+
+  return None
 
 
 class ProcessFlakeTryJobResultPipeline(BasePipeline):
@@ -22,24 +55,27 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
       try_job_result (dict): The result dict reported by buildbucket.
           Example:
           {
-            'report': {
-                'metadata': {},
-                'result': {
-                    'cafed52c5f3313646b8e04e05601b5cb98f305b3': {
-                        'browser_tests': {
-                            'status': 'failed',
-                            'failures': ['TabCaptureApiTest.FullscreenEvents'],
-                            'valid': True,
-                            'pass_fail_counts': {
-                                'TabCaptureApiTest.FullscreenEvents': {
-                                    'pass_count': 28,
-                                    'fail_count': 72
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+              'metadata': {},
+              'result': {
+                  'cafed52c5f3313646b8e04e05601b5cb98f305b3': {
+                      'browser_tests': {
+                          'status': 'failed',
+                          'failures': ['TabCaptureApiTest.FullscreenEvents'],
+                          'valid': True,
+                          'pass_fail_counts': {
+                              'TabCaptureApiTest.FullscreenEvents': {
+                                  'pass_count': 28,
+                                  'fail_count': 72
+                              }
+                          },
+                          'step_metadata': {
+                              'task_ids': [],
+                              ...
+                          }
+                      }
+                  }
+              }
+          }
       urlsafe_try_job_key (str): The urlsafe key to the corresponding try job
           entity.
       urlsafe_flake_analysis_key (str): The urlsafe key for the master flake
@@ -69,6 +105,7 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     data_point.git_hash = revision
     data_point.pass_rate = pass_rate
     data_point.try_job_url = try_job.flake_results[-1].get('url')
-    # TODO(chanli): Add swarming task data.
+    data_point.task_id = _GetSwarmingTaskIdForTryJob(
+        try_job.flake_results[-1].get('report'), revision, step_name, test_name)
     flake_analysis.data_points.append(data_point)
     flake_analysis.put()
