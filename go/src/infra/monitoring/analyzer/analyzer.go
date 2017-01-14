@@ -863,20 +863,16 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 
 			allowedSet := stringset.NewFromSlice(allowedLinkHosts...)
 			for name, href := range f.Step.Links {
-				fmt.Printf("DOING %s\n", href)
 				URL, err := url.Parse(href)
 				if err != nil {
 					logging.Warningf(ctx, "Failed to parse step link %s: %s", href, err)
 					continue
 				}
-				fmt.Printf("HOST %s LIST %s\n", URL.Host, allowedSet)
 				if !allowedSet.Has(URL.Host) {
-					fmt.Printf("SUP\n")
 					logging.Debugf(ctx, "Step link not in whitelist: %s", href)
 					break
 				}
 
-				fmt.Printf("POTATAO\n")
 				alr.Links = append(alr.Links, messages.Link{
 					Title: name,
 					Href:  href,
