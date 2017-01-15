@@ -1127,18 +1127,56 @@ function TKR_flagSpam(isSpam) {
  * issues to the selected hotlist.
 */
 function TKR_addToHotlist() {
-  var selectedLocalIDs = [];
+  var selectedIssueRefs = [];
   for (var i = 0; i < issueRefs.length; i++) {
     var checkbox = document.getElementById('cb_' + issueRefs[i]['id']);
     if (checkbox && checkbox.checked) {
-      selectedLocalIDs.push(issueRefs[i]['id']);
+      selectedIssueRefs.push(issueRefs[i]['project_name']+':'+issueRefs[i]['id']);
     }
   }
-  if (selectedLocalIDs.length > 0) {
-    $('add-to-hotlist').showModal()
+  if (selectedIssueRefs.length > 0) {
+    addToHotlistDialog = $('add-to-hotlist');
+    addToHotlistDialog.showModal();
+    $('cancel-add-hotlist').addEventListener('click', function() {
+      addToHotlistDialog.close()
+    });
+    $('add-issues').addEventListener('click', function () {
+      AddIssuesToHotlist(addToHotlistDialog, selectedIssueRefs)});
   } else {
     alert('Please select some issues to add to a hotlist')
   }
+}
+
+function AddIssuesToHotlist(dialogBox, issueRefs) {
+  var selectedHotlistIDs = [];
+  for (var i = 0; i < usersHotlists.length; i++) {
+    var checkbox = document.getElementById('cb_hotlist_' + usersHotlists[i]);
+    if (checkbox && checkbox.checked) {
+      selectedHotlistIDs.push(usersHotlists[i]);
+    }
+  }
+  if (selectedHotlistIDs.length > 0) {
+    var data = {
+      hotlist_ids: selectedHotlistIDs.join(','),
+      issue_refs: issueRefs.join(','),
+    }
+    CS_doPost('/hosting/addToHotlist.do', onAddIssuesResponse, data);
+  } else {
+    alert('Please select some hotlists')
+  }
+}
+
+function onAddIssuesResponse(event) {
+  var xhr = event.target;
+    if (xhr.readyState != 4) {
+      return;
+    }
+    if (xhr.status != 200) {
+      console.error('200 page error')
+      // TODO(jojwang): fill this in more
+      return;
+    }
+  var response = CS_parseJSON(xhr);
 }
 
 /**

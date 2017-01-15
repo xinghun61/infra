@@ -14,6 +14,7 @@ CHECK_PROJECT_NAME_JSON = '/hosting/createProject/checkProjectName'
 GROUP_LIST = '/g/'
 GROUP_CREATE = '/hosting/createGroup'
 GROUP_DELETE = '/hosting/deleteGroup'
+ADD_ISSUES_TO_HOTLIST = '/hosting/addToHotlist'
 
 # URLs of project pages
 SUMMARY = '/'  # Now just a redirect to /issues/list

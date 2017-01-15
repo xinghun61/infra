@@ -85,12 +85,11 @@
 
 <dialog id="add-to-hotlist">
   <table>
-  [# TODO(jojwang): add 'create hotlist' button with selected options already added to the create hotlist form]
   [if-any users_hotlists]
     [for users_hotlists]
       <tr class="hotlist_rows">
         <td>
-          <input type="checkbox" id="cb_[users_hotlists.hotlist_id]" class="checkRangeSelect">
+          <input type="checkbox" id="cb_hotlist_[users_hotlists.hotlist_id]" class="checkRangeSelect">
         <td>
         <td class="hotlistname">[users_hotlists.name]</td>
       </tr>
@@ -101,7 +100,11 @@
   </table>
   <menu>
     <button id="cancel-add-hotlist" type="reset">Cancel</button>
-    <button type="submit">Confirm</button>
+    <button id="add-issues">Confirm</button>
+    [# TODO(jojwang): pass in selected issues to put into createhotlist form for the user]
+    <a href="/hosting/createHotlist">
+      <input type="button" value="Create hotlist">
+    </a>
   </menu>
 </dialog>
 
@@ -122,8 +125,15 @@ runOnLoad(function() {
       _showID('addissuesspec');
     }
     }
-  $("cancel-add-hotlist").addEventListener("click", function () {
-    $("add-to-hotlist").close();
-  })
+  [if-any users_hotlists]
+  window.usersHotlists = [[]
+    [for users_hotlists]
+    [users_hotlists.hotlist_id]
+    [if-index users_hotlists last][else],[end]
+    [end]
+  ];
+ [else]
+ window.usersHotlists = [[]]
+ [end]
 });
 </script>

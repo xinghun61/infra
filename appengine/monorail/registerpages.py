@@ -89,6 +89,7 @@ from tracker import issueimport
 from tracker import issuereindex
 from tracker import issuererank
 from tracker import issuetips
+from tracker import issueaddtohotlist
 from tracker import spam
 
 from api import api_service
@@ -312,6 +313,7 @@ class ServletRegistry(object):
         urls.GROUP_LIST: grouplist.GroupList,
         urls.GROUP_DELETE: grouplist.GroupList,
         urls.HOTLIST_CREATE: hotlistcreate.HotlistCreate,
+        urls.ADD_ISSUES_TO_HOTLIST: issueaddtohotlist.AddToHotlist,
         })
 
     self._SetupUserServlets({

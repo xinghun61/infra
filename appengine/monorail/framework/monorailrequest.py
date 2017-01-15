@@ -490,6 +490,10 @@ class MonorailRequest(object):
     self.moved_ids = self.GetIntListParam('moved_ids')
     self.split_above = self.GetBoolParam('split_above')
 
+    # For adding issues to hotlists servlet
+    self.hotlist_ids = self.GetIntListParam('hotlist_ids')
+    self.issue_refs = self.GetListParam('issue_refs')
+
   def _ParseFormOverrides(self):
     """Support deep linking by allowing the user to set form fields via QS."""
     allowed_overrides = {
