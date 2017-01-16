@@ -1,0 +1,35 @@
+// Copyright 2017 The Chromium Authors. All rights reserved. Use of this source
+// code is governed by a BSD-style license that can be found in the LICENSE
+// file.
+
+syntax = "proto3";
+
+package admin;
+
+// Launcher implements the internal launcher API of the Tricium service.
+service Launcher {
+  // Launch launches a workflow for provided request details.
+  rpc Launch(LaunchRequest) returns (LaunchResponse);
+}
+
+// LaunchRequest contains the details needed to launch a workflow for an analysis request.
+message LaunchRequest {
+  // The run ID created by a Tricium.Analyze call.
+  int64 run_id = 1;
+
+  // The name of the project as it is known to Tricium.
+  string project = 2;
+
+  // The Git repo connected to the project in the Tricium config.
+  string git_repo = 3;
+
+  // TODO(emso): Specify Git ref requirements.
+  string git_ref = 4;
+
+  // File paths from the root of the Git repository.
+  // TODO(emso): Specify file separators, or add listing of path segments.
+  repeated string paths = 5;
+}
+
+message LaunchResponse {
+}

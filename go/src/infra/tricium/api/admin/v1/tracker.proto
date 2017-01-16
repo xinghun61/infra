@@ -1,0 +1,66 @@
+// Copyright 2017 The Chromium Authors. All rights reserved. Use of this source
+// code is governed by a BSD-style license that can be found in the LICENSE
+// file.
+
+syntax = "proto3";
+
+package admin;
+
+// Tracker implements the internal tracker API of the Tricium service.
+service Tracker {
+
+  // WorkflowLaunched marks the workflow as launched for a specificed run.
+  rpc WorkflowLaunched(WorkflowLaunchedRequest) returns (WorkflowLaunchedResponse);
+
+  // WorkerLaunched marks the specified worker as launched.
+  rpc WorkerLaunched(WorkerLaunchedRequest) returns (WorkerLaunchedResponse);
+
+  // WorkerDone marks the specified worker as done.
+  rpc WorkerDone(WorkerDoneRequest) returns (WorkerDoneResponse);
+
+  // TODO(emso): Add RPC for collection of results.
+}
+
+// WorkflowLaunchedRequest specified details need to mark a workflow as
+// launched.
+//
+// This message should be sent by the Launcher after a workflow has been launched.
+message WorkflowLaunchedRequest {
+  int64 run_id = 1;
+}
+
+message WorkflowLaunchedResponse {
+}
+
+// WorkerLaunchedRequest specifies details needed to mark a worker as launched.
+// This includes details useful for the tracking UI.
+//
+// This message should be sent by the Driver after a swarming task for a worker
+// has been triggered.
+message WorkerLaunchedRequest {
+  int64 run_id = 1;
+  string worker = 2;
+  string isolate_url = 3;
+  string isolated_input_hash = 4;
+  string swarming_url = 5;
+  string task_id = 6;
+}
+
+message WorkerLaunchedResponse {
+}
+
+// WorkerDoneRequest specifies details needed to mark a worker as done.
+// This includes details useful for the tracking UI.
+//
+// This message should be sent by the Driver after results from the swarming
+// task for a worker has been collected.
+message WorkerDoneRequest {
+  int64 run_id = 1;
+  string worker = 2;
+  string isolate_url = 3;
+  string isolated_output_hash = 4;
+  int32 exit_code = 5;
+}
+
+message WorkerDoneResponse {
+}

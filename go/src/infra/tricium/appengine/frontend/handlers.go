@@ -7,14 +7,19 @@ package frontend
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"golang.org/x/net/context"
 
+	"github.com/golang/protobuf/proto"
 	ds "github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/pipeline"
@@ -55,7 +60,7 @@ func runs(c context.Context) ([]*track.Run, error) {
 	return runs, nil
 }
 
-func analyzeHandler(ctx *router.Context) {
+func analyzeFormHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
 	// TODO(emso): With a switch to Polymer this handler can be replaced with a direct
 	// call to the pRPC server via Javascript fetch.
@@ -65,7 +70,7 @@ func analyzeHandler(ctx *router.Context) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	res, err := triciumServer.Analyze(c, &tricium.TriciumRequest{
+	res, err := server.Analyze(c, &tricium.AnalyzeRequest{
 		Project: sr.Project,
 		GitRef:  sr.GitRef,
 		Paths:   sr.Paths,
@@ -103,36 +108,37 @@ func parseRequestForm(r *http.Request) (*pipeline.ServiceRequest, error) {
 	}, nil
 }
 
-// queueHandler calls analyze for entries in the queue.
+// analyzeHandler calls Tricium.Analyze for entries in the analyze queue.
 //
 // This queue is intended as a service extension point for modules
 // running within the Tricium GAE app. For instance, the Gerrit poller.
 // TODO(emso): Figure out if this queue is needed.
 // TODO(emso): Figure out if/where WrapTransient should be used for errors.
-func queueHandler(ctx *router.Context) {
+func analyzeHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
-	if err := r.ParseForm(); err != nil {
-		logging.WithError(err).Errorf(c, "Failed to parse service request form")
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "[frontend] Analyze queue handler failed to read request body")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	sr, err := pipeline.ParseServiceRequest(r.Form)
-	if err != nil {
-		logging.WithError(err).Errorf(c, "Failed to parse service request")
-		w.WriteHeader(http.StatusInternalServerError)
+	ar := &tricium.AnalyzeRequest{}
+	if err := proto.Unmarshal(body, ar); err != nil {
+		logging.WithError(err).Errorf(c, "[frontend] Analyze queue handler failed to unmarshal request")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	logging.Infof(c, "[frontend] Parsed service request (project: %s, Git ref: %s)", sr.Project, sr.GitRef)
-	// TODO(emso): Consider proto-serializing pRPC requests in the task payload for queues wrapping pRPC calls.
-	_, err = triciumServer.Analyze(c, &tricium.TriciumRequest{
-		Project: sr.Project,
-		GitRef:  sr.GitRef,
-		Paths:   sr.Paths,
-	})
-	if err != nil {
-		logging.WithError(err).Errorf(c, "Failed to call Tricium.Analyze RPC")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	logging.Infof(c, "[frontend] Analyze request (Project: %s, Git ref: %s)", ar.Project, ar.GitRef)
+	if _, err := server.Analyze(c, ar); err != nil {
+		logging.WithError(err).Errorf(c, "[frontend] Failed to call Tricium.Analyze")
+		switch grpc.Code(err) {
+		case codes.InvalidArgument:
+			w.WriteHeader(http.StatusBadRequest)
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	}
+	logging.Infof(c, "[frontend] Successfully completed analyze")
 	w.WriteHeader(http.StatusOK)
 }

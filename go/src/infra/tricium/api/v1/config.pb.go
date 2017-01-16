@@ -26,8 +26,8 @@ It has these top-level messages:
 	Cmd
 	CipdPackage
 	Data
-	TriciumRequest
-	TriciumResponse
+	AnalyzeRequest
+	AnalyzeResponse
 */
 package tricium
 

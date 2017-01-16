@@ -6,6 +6,7 @@
 package common
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
@@ -13,6 +14,8 @@ import (
 
 	"google.golang.org/appengine"
 
+	"github.com/golang/protobuf/proto"
+	ds "github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
@@ -23,11 +26,14 @@ import (
 	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
+
+	"infra/tricium/api/admin/v1"
+	"infra/tricium/api/v1"
 )
 
 const (
-	// ServiceQueue specifies the name of the service task queue.
-	ServiceQueue = "service-queue"
+	// AnalyzeQueue specifies the name of the analyze task queue.
+	AnalyzeQueue = "analyze-queue"
 
 	// LauncherQueue specifies the name of the launcher task queue.
 	LauncherQueue = "launcher-queue"
@@ -39,12 +45,15 @@ const (
 	TrackerQueue = "tracker-queue"
 )
 
-// Entity encapsulates a byte slice for storing in datastore.
-// TODO(emso): Replace with a more specific type Workflow.
-type Entity struct {
-	ID    int64  `gae:"$id"`
-	Kind  string `gae:"$kind"`
-	Value []byte
+// TODO(emso): Use string IDs every where and use a ID translation scheme between
+// the key visible to users and the ID used to store in datastore. This removes the
+// temptation for users to try things like ID+1.
+
+// Workflow config entry for storing in datastore.
+type Workflow struct {
+	ID int64 `gae:"$id"`
+	// Serialized workflow config proto.
+	SerializedWorkflow []byte `gae:",noindex"`
 }
 
 // ReportServerError reports back a server error (http code 500).
@@ -169,4 +178,70 @@ func prepareTemplates() *templates.Bundle {
 			}, nil
 		},
 	}
+}
+
+// WorkflowProvider provides a workflow config from a project or a run ID.
+type WorkflowProvider interface {
+	ReadConfigForProject(context.Context, string) (*admin.Workflow, error)
+	ReadConfigForRun(context.Context, int64) (*admin.Workflow, error)
+}
+
+// LuciConfigProvider provides workflow configurations from the Luci-config service.
+type LuciConfigProvider struct {
+}
+
+// ReadConfigForProject reads a workflow config for a project from Luci-config.
+func (*LuciConfigProvider) ReadConfigForProject(c context.Context, project string) (*admin.Workflow, error) {
+	// TODO(emso): Replace this dummy config with one read from luci-config.
+	return &admin.Workflow{
+		WorkerTopic:    "projects/tricium-dev/topics/worker-completion",
+		ServiceAccount: "emso@chromium.org",
+		Workers: []*admin.Worker{
+			{
+				Name:     "Hello_Ubuntu14.04_x86-64",
+				Needs:    tricium.Data_GIT_FILE_DETAILS,
+				Provides: tricium.Data_FILES,
+				Platform: "Ubuntu14.04_x86-64",
+				Dimensions: []string{
+					"pool:Chrome",
+					"os:Ubuntu-14.04",
+					"cpu:x84-64",
+				},
+				Cmd: &tricium.Cmd{
+					Exec: "echo",
+					Args: []string{
+						"'hello'",
+					},
+				},
+				Deadline: 30,
+			},
+		},
+	}, nil
+}
+
+// ReadConfigForRun is not supported by this workflow provider, included to match the interface.
+func (*LuciConfigProvider) ReadConfigForRun(c context.Context, runID int64) (*admin.Workflow, error) {
+	return nil, errors.New("Luci-config workflow provider cannot provide config for run ID")
+}
+
+// DatastoreConfigProvider provides workflow configurations from Datastore.
+type DatastoreConfigProvider struct {
+}
+
+// ReadConfigForProject is not supported by this workflow provider, included to match the interface.
+func (*DatastoreConfigProvider) ReadConfigForProject(c context.Context, project string) (*admin.Workflow, error) {
+	return nil, errors.New("Datastore workflow provider cannot provide config for project name")
+}
+
+// ReadConfigForRun provides workflow configurations for a run ID from Datastore.
+func (*DatastoreConfigProvider) ReadConfigForRun(c context.Context, runID int64) (*admin.Workflow, error) {
+	wfb := &Workflow{ID: runID}
+	if err := ds.Get(c, wfb); err != nil {
+		return nil, err
+	}
+	wf := &admin.Workflow{}
+	if err := proto.Unmarshal(wfb.SerializedWorkflow, wf); err != nil {
+		return nil, err
+	}
+	return wf, nil
 }

@@ -29,7 +29,7 @@ func TestAnalyzeRequest(t *testing.T) {
 		}
 
 		Convey("Service request", func() {
-			_, err := triciumServer.Analyze(ctx, &tricium.TriciumRequest{
+			_, err := server.Analyze(ctx, &tricium.AnalyzeRequest{
 				Project: project,
 				GitRef:  gitref,
 				Paths:   paths,

@@ -8,7 +8,6 @@ package gerritpoller
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -17,7 +16,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/go-querystring/query"
+	"github.com/golang/protobuf/proto"
 	"github.com/luci/luci-go/server/router"
 
 	"golang.org/x/build/gerrit"
@@ -31,8 +30,8 @@ import (
 	"google.golang.org/appengine/taskqueue"
 	"google.golang.org/appengine/urlfetch"
 
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
-	"infra/tricium/appengine/common/pipeline"
 )
 
 const (
@@ -385,27 +384,25 @@ func queryChanges(ctx context.Context, p *GerritProject, offset int) ([]gerrit.C
 // enqueueServiceRequests enqueues service requests for the given change details.
 func enqueueServiceRequests(ctx context.Context, changes []*GerritChangeDetails) error {
 	for _, c := range changes {
-		// Add to the service queue.
-		sr := pipeline.ServiceRequest{
+		req := &tricium.AnalyzeRequest{
 			Project: c.Project,
 			GitRef:  c.GitRef,
 		}
-		var files []string
 		for _, file := range c.FileChanges {
 			if file.Status != "Delete" {
-				files = append(files, file.Path)
+				req.Paths = append(req.Paths, file.Path)
 			}
 		}
-		sr.Paths = files
-		v, err := query.Values(sr)
+		b, err := proto.Marshal(req)
 		if err != nil {
-			return errors.New("failed to encode service request")
+			return fmt.Errorf("failed to marshal Tricium request: %v", err)
 		}
-		t := taskqueue.NewPOSTTask("internal/queue", v)
-		if _, err := taskqueue.Add(ctx, t, common.ServiceQueue); err != nil {
-			return err
+		t := taskqueue.NewPOSTTask("internal/analyze", nil)
+		t.Payload = b
+		if _, err := taskqueue.Add(ctx, t, common.AnalyzeQueue); err != nil {
+			return fmt.Errorf("failed to enqueue Tricium request: %v", err)
 		}
-		log.Infof(ctx, "Converted change details (%v) to service request (%v)", c, sr)
+		log.Infof(ctx, "Converted change details (%v) to Tricium request (%v)", c, req)
 	}
 	return nil
 }

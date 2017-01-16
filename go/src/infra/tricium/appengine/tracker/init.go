@@ -8,8 +8,11 @@ package tracker
 import (
 	"net/http"
 
+	"github.com/luci/luci-go/grpc/discovery"
+	"github.com/luci/luci-go/grpc/prpc"
 	"github.com/luci/luci-go/server/router"
 
+	"infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"
 )
 
@@ -17,7 +20,16 @@ func init() {
 	r := router.New()
 	base := common.MiddlewareForInternal()
 
-	r.POST("/tracker/internal/queue", base, queueHandler)
+	r.POST("/tracker/internal/worker-done", base, workerDoneHandler)
+	r.POST("/tracker/internal/worker-launched", base, workerLaunchedHandler)
+	r.POST("/tracker/internal/workflow-launched", base, workflowLaunchedHandler)
+
+	// Configure pRPC server.
+	// TODO(emso): Enable authentication
+	s := prpc.Server{Authenticator: prpc.NoAuthenticator}
+	admin.RegisterTrackerServer(&s, server)
+	discovery.Enable(&s)
+	s.InstallHandlers(r, base)
 
 	http.DefaultServeMux.Handle("/", r)
 }

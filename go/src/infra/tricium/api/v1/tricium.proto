@@ -13,11 +13,11 @@ service Tricium {
   // An analysis request for a list of paths in a project connected to Tricium
   // via the Tricium configuration. On success, the ID of the resulting run is
   // returned.
-  rpc Analyze(TriciumRequest) returns (TriciumResponse);
+  rpc Analyze(AnalyzeRequest) returns (AnalyzeResponse);
 }
 
-// TriciumRequest contains the details needed for an analysis request.
-message TriciumRequest {
+// AnalyzeRequest contains the details needed for an analysis request.
+message AnalyzeRequest {
   // Name of the project hosting the paths listed in the request. The name
   // should map to the project name as it is connected to Tricium.
   string project = 1;
@@ -26,10 +26,11 @@ message TriciumRequest {
 
   // Paths to analyze in the project. Listed from the root of the Git
   // repository.
+  // TODO(emso): document path separators or add listing of path segments.
   repeated string paths = 3;
 }
 
-message TriciumResponse {
+message AnalyzeResponse {
   // ID of the run started for this request. This ID can be used to track
   // progress and find results.
   string run_id = 1;

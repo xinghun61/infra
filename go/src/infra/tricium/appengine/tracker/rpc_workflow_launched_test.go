@@ -5,6 +5,7 @@
 package tracker
 
 import (
+	"errors"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -15,13 +16,9 @@ import (
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
-	"infra/tricium/appengine/common/pipeline"
 	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
 )
-
-type mockConfigProvider struct {
-}
 
 const (
 	clangIsolatorUbuntu  = "ClangIsolator_Ubuntu14.04-x86-64"
@@ -29,7 +26,11 @@ const (
 	fileIsolator         = "GitFileIsolator_Ubuntu14.04-x86-64"
 )
 
-func (*mockConfigProvider) readConfig(c context.Context, runID int64) (*admin.Workflow, error) {
+// mockConfigProvider mocks common.WorkflowProvider.
+type mockConfigProvider struct {
+}
+
+func (*mockConfigProvider) ReadConfigForRun(c context.Context, runID int64) (*admin.Workflow, error) {
 	return &admin.Workflow{
 		Workers: []*admin.Worker{
 			{
@@ -51,8 +52,11 @@ func (*mockConfigProvider) readConfig(c context.Context, runID int64) (*admin.Wo
 		},
 	}, nil
 }
+func (*mockConfigProvider) ReadConfigForProject(c context.Context, project string) (*admin.Workflow, error) {
+	return nil, errors.New("Should not try to retrieve workflow config using a project name")
+}
 
-func TestTrackRequest(t *testing.T) {
+func TestWorkflowLaunchedRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
@@ -68,11 +72,9 @@ func TestTrackRequest(t *testing.T) {
 			runID := run.ID
 
 			// Mark workflow as launched.
-			tr := &pipeline.TrackRequest{
-				RunID: runID,
-				Kind:  pipeline.TrackWorkflowLaunched,
-			}
-			err = handleWorkflowLaunched(ctx, tr, &mockConfigProvider{})
+			err = workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
+				RunId: runID,
+			}, &mockConfigProvider{})
 			So(err, ShouldBeNil)
 
 			Convey("Marks run as launched", func() {
@@ -97,62 +99,6 @@ func TestTrackRequest(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(a.State, ShouldEqual, track.Pending)
 			})
-
-			// Mark worker as launched.
-			tr = &pipeline.TrackRequest{
-				RunID:  runID,
-				Kind:   pipeline.TrackWorkerLaunched,
-				Worker: fileIsolator,
-			}
-			err = handleWorkerLaunched(ctx, tr)
-			So(err, ShouldBeNil)
-
-			Convey("Marks worker as launched", func() {
-				_, analyzerKey, workerKey := createKeys(ctx, runID, tr.Worker)
-				w := &track.WorkerInvocation{
-					ID:     workerKey.StringID(),
-					Parent: workerKey.Parent(),
-				}
-				err = ds.Get(ctx, w)
-				So(err, ShouldBeNil)
-				So(w.State, ShouldEqual, track.Launched)
-				a := &track.AnalyzerInvocation{
-					ID:     analyzerKey.StringID(),
-					Parent: analyzerKey.Parent(),
-				}
-				err = ds.Get(ctx, a)
-				So(err, ShouldBeNil)
-				So(a.State, ShouldEqual, track.Launched)
-			})
-
-			// Mark worker as done.
-			tr = &pipeline.TrackRequest{
-				RunID:    runID,
-				Kind:     pipeline.TrackWorkerDone,
-				Worker:   fileIsolator,
-				ExitCode: 0,
-			}
-			err = handleWorkerDone(ctx, tr)
-			So(err, ShouldBeNil)
-
-			Convey("Marks worker as done", func() {
-				_, analyzerKey, workerKey := createKeys(ctx, runID, tr.Worker)
-				w := &track.WorkerInvocation{
-					ID:     workerKey.StringID(),
-					Parent: workerKey.Parent(),
-				}
-				err = ds.Get(ctx, w)
-				So(err, ShouldBeNil)
-				So(w.State, ShouldEqual, track.DoneSuccess)
-				a := &track.AnalyzerInvocation{
-					ID:     analyzerKey.StringID(),
-					Parent: analyzerKey.Parent(),
-				}
-				err = ds.Get(ctx, a)
-				So(err, ShouldBeNil)
-				So(a.State, ShouldEqual, track.DoneSuccess)
-			})
-			// TODO(emso): multi-platform analyzer is half done, analyzer stays launched
 		})
 	})
 }

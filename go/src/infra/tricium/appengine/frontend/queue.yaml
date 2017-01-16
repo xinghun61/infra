@@ -1,5 +1,5 @@
 queue:
-- name: service-queue
+- name: analyze-queue
   mode: push
   rate: 1/s
 - name: launcher-queue

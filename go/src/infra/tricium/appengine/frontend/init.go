@@ -26,18 +26,18 @@ func init() {
 
 	// TODO(emso): Should these use MiddlewareForInternal? Are they called by
 	// end-users?
+	r.POST("/internal/analyze-form", base, analyzeFormHandler)
 	r.POST("/internal/analyze", base, analyzeHandler)
-	r.POST("/internal/queue", base, queueHandler)
 
 	r.GET("/results", base, resultsHandler)
 	r.GET("/", base, landingPageHandler)
 
 	// Configure pRPC server.
 	// TODO(emso): Enable authentication
-	server := prpc.Server{Authenticator: prpc.NoAuthenticator}
-	tricium.RegisterTriciumServer(&server, triciumServer)
-	discovery.Enable(&server)
-	server.InstallHandlers(r, base)
+	s := prpc.Server{Authenticator: prpc.NoAuthenticator}
+	tricium.RegisterTriciumServer(&s, server)
+	discovery.Enable(&s)
+	s.InstallHandlers(r, base)
 
 	http.DefaultServeMux.Handle("/", r)
 }

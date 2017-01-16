@@ -5,6 +5,7 @@
 package launcher
 
 import (
+	"errors"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -17,14 +18,14 @@ import (
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
-	"infra/tricium/appengine/common/pipeline"
 	trit "infra/tricium/appengine/common/testing"
 )
 
+// mockConfigProvider mocks the common.WorkflowProvider interface.
 type mockConfigProvider struct {
 }
 
-func (*mockConfigProvider) readConfig(c context.Context, project string) (*admin.Workflow, error) {
+func (*mockConfigProvider) ReadConfigForProject(c context.Context, project string) (*admin.Workflow, error) {
 	return &admin.Workflow{
 		Workers: []*admin.Worker{
 			{
@@ -42,22 +43,25 @@ func (*mockConfigProvider) readConfig(c context.Context, project string) (*admin
 		},
 	}, nil
 }
+func (*mockConfigProvider) ReadConfigForRun(c context.Context, runID int64) (*admin.Workflow, error) {
+	return nil, errors.New("Should not ask for a config using a run ID")
+}
 
 func TestLaunchRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
-		lr := &pipeline.LaunchRequest{
-			RunID:   123456789,
-			Project: "test-project",
-			GitRef:  "ref/test",
-			Paths: []string{
-				"README.md",
-				"README2.md",
-			},
-		}
+		runID := int64(123456789)
 		Convey("Launch request", func() {
-			err := launch(ctx, lr, &mockConfigProvider{})
+			err := launch(ctx, &admin.LaunchRequest{
+				RunId:   runID,
+				Project: "test-project",
+				GitRef:  "ref/test",
+				Paths: []string{
+					"README.md",
+					"README2.md",
+				},
+			}, &mockConfigProvider{})
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track request", func() {
@@ -65,10 +69,7 @@ func TestLaunchRequest(t *testing.T) {
 			})
 
 			Convey("Stores workflow config", func() {
-				wf := &common.Entity{
-					ID:   lr.RunID,
-					Kind: "Workflow",
-				}
+				wf := &common.Workflow{ID: runID}
 				err := ds.Get(ctx, wf)
 				So(err, ShouldBeNil)
 			})
@@ -76,6 +77,23 @@ func TestLaunchRequest(t *testing.T) {
 			Convey("Enqueues driver requests", func() {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 2)
 			})
+
+			// Check guard: one more launch request results in no added tasks
+			err = launch(ctx, &admin.LaunchRequest{
+				RunId:   runID,
+				Project: "test-project",
+				GitRef:  "ref/test",
+				Paths: []string{
+					"README.md",
+					"README2.md",
+				},
+			}, &mockConfigProvider{})
+			So(err, ShouldBeNil)
+
+			Convey("Succeeding launch request for the same run enqueues no track request", func() {
+				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.TrackerQueue]), ShouldEqual, 1)
+			})
+
 		})
 	})
 }

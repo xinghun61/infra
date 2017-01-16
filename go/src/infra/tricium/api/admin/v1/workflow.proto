@@ -4,7 +4,7 @@
 
 syntax = "proto3";
 
-package tricium.admin;
+package admin;
 
 import "infra/tricium/api/v1/config.proto";
 import "infra/tricium/api/v1/data.proto";
@@ -26,8 +26,8 @@ message Worker {
   string name = 1;
 
   // Includes data dependencies for runtime type checking.
-  Data.Type needs = 2;
-  Data.Type provides = 3;
+  tricium.Data.Type needs = 2;
+  tricium.Data.Type provides = 3;
 
   // Workers to run after this one.
   repeated string next = 4;
@@ -41,10 +41,10 @@ message Worker {
 
   // List of cipd packages needed on the swarming task use to execute the
   // worker.
-  repeated CipdPackage cipd_package = 7;
+  repeated tricium.CipdPackage cipd_package = 7;
 
   // Command use to execute the worker.
-  Cmd cmd = 8;
+  tricium.Cmd cmd = 8;
 
   // Deadline for execution of the worker in minutes.  Note that this time
   // should include the overhead of triggering the corresponding swarming task

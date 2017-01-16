@@ -1,0 +1,45 @@
+// Copyright 2017 The Chromium Authors. All rights reserved. Use of this source
+// code is governed by a BSD-style license that can be found in the LICENSE
+// file.
+
+syntax = "proto3";
+
+package admin;
+
+// Driver implements the internal driver API of the Tricium service.
+service Driver {
+
+  // Trigger triggers a swarming task for a Tricium worker.
+  rpc Trigger(TriggerRequest) returns (TriggerResponse);
+
+  // Collect collects results from a swarming task running a Tricium worker.
+  rpc Collect(CollectRequest) returns (CollectResponse);
+}
+
+// TriggerRequest contains the details needed to launch a swarming task for a
+// Tricium worker.
+message TriggerRequest {
+  int64 run_id = 1;
+  string isolated_input_hash = 2;
+  string worker = 3;
+}
+
+message TriggerResponse {
+}
+
+// CollectRequest contains the details needed to collect results from a swarming task
+// running a Tricium worker and to launch succeeding Tricium workers.
+message CollectRequest {
+  int64 run_id = 1;
+
+  // The isolated input of this worker is imported in the input hash of any successor
+  // workers of this worker. Passing it along here to make sure it is available.
+  string isolated_input_hash = 2;
+
+  // Points out which worker to collect results for. This worker name is used to
+  // mangle the ID of the swarming task running the worker.
+  string worker = 3;
+}
+
+message CollectResponse {
+}
