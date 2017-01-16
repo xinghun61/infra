@@ -209,12 +209,18 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::perf_dashboard]\\resources\\post_json.py"
+      "RECIPE_MODULE[build::perf_dashboard]\\resources\\post_json.py",
+      "https://chromeperf.appspot.com/add_point"
     ],
     "name": "perf dashboard post",
-    "stdin": "{\"data\": [{\"bot\": \"infra-perf-win\", \"buildername\": \"infra-perf-win\", \"buildnumber\": 123, \"master\": \"chromium.infra\", \"masterid\": \"chromium.infra\", \"revision\": \"1476374537\", \"supplemental_columns\": {\"a_default_rev\": \"r_infra_infra_git\", \"r_infra_infra_git\": \"0123456789abcdeffedcba987654321012345678\", \"tstamp\": \"2016-10-13T18:02:17+02:00\"}, \"test\": \"infra/luci/isolate/isolate-client-upload\", \"units\": \"s\", \"value\": 2.0}], \"url\": \"https://chromeperf.appspot.com/add_point\"}",
+    "stdin": "{\"data\": [{\"bot\": \"infra-perf-win\", \"buildername\": \"infra-perf-win\", \"buildnumber\": 123, \"master\": \"chromium.infra\", \"masterid\": \"chromium.infra\", \"revision\": \"1476374537\", \"supplemental_columns\": {\"a_default_rev\": \"r_infra_infra_git\", \"r_infra_infra_git\": \"0123456789abcdeffedcba987654321012345678\", \"tstamp\": \"2016-10-13T18:02:17+02:00\"}, \"test\": \"infra/luci/isolate/isolate-client-upload\", \"units\": \"s\", \"value\": 2.0}]}",
+    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
-      "@@@STEP_LINK@Results Dashboard@https://chromeperf.appspot.com/report?rev=1476374537&masters=chromium.infra&tests=infra%2Fluci%2Fisolate%2Fisolate-client-upload&bots=infra-perf-win@@@"
+      "@@@STEP_TEXT@Failed to post to Perf Dashboard. Error response: None@@@",
+      "@@@STEP_LOG_LINE@json.output (invalid)@null@@@",
+      "@@@STEP_LOG_END@json.output (invalid)@@@",
+      "@@@STEP_LINK@Results Dashboard@https://chromeperf.appspot.com/report?rev=1476374537&masters=chromium.infra&tests=infra%2Fluci%2Fisolate%2Fisolate-client-upload&bots=infra-perf-win@@@",
+      "@@@STEP_WARNINGS@@@"
     ]
   },
   {
