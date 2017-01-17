@@ -21,6 +21,7 @@ import settings
 from features import features_bizobj
 from features import notify
 from features import hotlist_helpers
+from features import hotlist_views
 from framework import actionlimit
 from framework import framework_bizobj
 from framework import framework_constants
@@ -312,6 +313,25 @@ class IssueDetail(issuepeek.IssuePeek):
           overruled=verdict['overruled'],
           ) for verdict in issue_spam_hist]
 
+    # get hotlists that contain the current issue
+    issue_hotlists = self.services.features.GetHotlistsByIssueID(
+        mr.cnxn, issue.issue_id)
+    users_by_id = framework_views.MakeAllUserViews(
+        mr.cnxn, self.services.user, features_bizobj.UsersInvolvedInHotlists(
+            issue_hotlists))
+
+    issue_hotlists = [hotlist_views.HotlistView(
+        hotlist_pb, mr.auth, mr.auth.user_id, users_by_id,
+        self.services.hotlist_star.IsItemStarredBy(
+            mr.cnxn, hotlist_pb.hotlist_id, mr.auth.user_id)
+    ) for hotlist_pb in self.services.features.GetHotlistsByIssueID(
+        mr.cnxn, issue.issue_id)]
+
+    visible_issue_hotlists = [view for view in issue_hotlists if view.visible]
+    user_issue_hotlists = [view for view in visible_issue_hotlists if (
+        view.role_name=='owner' or view.role_name=='editor')]
+    remaining_issue_hotlists = [view for view in visible_issue_hotlists if
+                                view not in user_issue_hotlists]
     return {
         'issue_tab_mode': 'issueDetail',
         'issue': issue_view,
@@ -377,6 +397,10 @@ class IssueDetail(issuepeek.IssuePeek):
         'page_perms': page_perms,
         'previous_locations': previous_locations,
         'spam_verdict_history': spam_verdict_history,
+
+        # For showing hotlists that contain this issue
+        'user_issue_hotlists': user_issue_hotlists,
+        'remaining_issue_hotlists': remaining_issue_hotlists
     }
 
   def GatherHelpData(self, mr, page_data):

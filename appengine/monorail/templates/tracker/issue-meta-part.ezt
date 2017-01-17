@@ -227,6 +227,20 @@
         </ul>
       </div>
     [end]
+
+    [if-any user_issue_hotlists]
+      <br><b>Your hotlists:</b><br>
+      [for user_issue_hotlists]
+        <a href="[user_issue_hotlists.url]">[user_issue_hotlists.name]</a><br>
+      [end]
+    [end]
+    [if-any remaining_issue_hotlists]
+      [# TODO(jojwang): add collapse/expand for remainig_issue_hotlists]
+      <br><b>[if-any user_issue_hotlists]Other h[else]H[end]otlists containing this issue:</b><br>
+      [for remaining_issue_hotlists]
+      <a href="[remaining_issue_hotlists.url]">[remaining_issue_hotlists.name]</a><br>
+      [end]
+    [end]
 </div>
 
 

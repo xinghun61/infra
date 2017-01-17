@@ -155,9 +155,6 @@ class IssueList(servlet.Servlet):
     # grid view.
     users_hotlists = self.services.features.GetHotlistsByUserID(
         mr.cnxn, mr.auth.user_id)
-    print mr.auth.user_id
-    print users_hotlists
-    print "sjdlkfjslkdjfkldsjflkdsnfsdlfnlsdkjflkdsj"
     page_data.update({
         'issue_tab_mode': 'issueList',
         'pagination': pipeline.pagination,
