@@ -83,7 +83,7 @@
   </div>
 </form>
 
-<dialog id="add-to-hotlist" [if-any show_user_hotlists]open[end]>
+<dialog id="add-to-hotlist">
   <table>
   [# TODO(jojwang): add 'create hotlist' button with selected options already added to the create hotlist form]
   [if-any users_hotlists]
