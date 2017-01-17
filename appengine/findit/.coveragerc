@@ -1,5 +1,7 @@
 [run]
 include = ./appengine/findit/*
+omit= ./appengine/findit/first_party/*
+      ./appengine/findit/third_party/*
 
 [report]
 exclude_lines =

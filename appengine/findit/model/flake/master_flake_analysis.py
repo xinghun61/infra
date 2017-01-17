@@ -22,6 +22,7 @@ class DataPoint(ndb.Model):
   build_number = ndb.IntegerProperty(indexed=False)
 
   # The pass rate of the test when run against this commit.
+  # -1 means that the test doesn't exist at this commit/build.
   pass_rate = ndb.FloatProperty(indexed=False)
 
   # The ID of the swarming task responsible for generating this data.
