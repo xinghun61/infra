@@ -226,21 +226,24 @@ func TestUpdateIncremental(t *testing.T) {
 				return err
 			}), ShouldBeNil)
 			So(datastore.Put(ctx, &resultsTf), ShouldBeNil)
-			datastore.GetTestable(ctx).CatchupIndexes()
 
 			incr := model.AggregateResult{
 				Builder: "Linux Swarm",
 				BuilderInfo: &model.BuilderInfo{
-					BuildNumbers: []model.Number{7399},
+					BuildNumbers:   []model.Number{7399},
+					FailuresByType: map[string][]int{"PASS": {1}},
+					Tests:          model.AggregateTest{},
 				},
 			}
-			So(updateIncremental(SetUploadParams(ctx, &UploadParams{
-				Master:   "chromium.swarm",
-				TestType: "content_unittests",
-				Builder:  "Linux Swarm",
-			}), &incr), ShouldBeNil)
 
-			Convey("updates without error", func() {
+			Convey("valid aggregate entity", func() {
+				datastore.GetTestable(ctx).CatchupIndexes()
+				So(updateIncremental(SetUploadParams(ctx, &UploadParams{
+					Master:   "chromium.swarm",
+					TestType: "content_unittests",
+					Builder:  "Linux Swarm",
+				}), &incr), ShouldBeNil)
+
 				datastore.GetTestable(ctx).CatchupIndexes()
 				q := datastore.NewQuery("TestFile")
 				q = q.Eq("master", "chromium.swarm")
@@ -254,8 +257,37 @@ func TestUpdateIncremental(t *testing.T) {
 				So(err, ShouldBeNil)
 				var updated model.AggregateResult
 				So(json.NewDecoder(reader).Decode(&updated), ShouldBeNil)
+				So(len(updated.BuilderInfo.BuildNumbers), ShouldEqual, 500)
+				So(updated.BuilderInfo.BuildNumbers[0], ShouldEqual, 7399)
+				So(len(updated.BuilderInfo.FailuresByType["PASS"]), ShouldEqual, 501)
+				So(updated.Builder, ShouldEqual, "Linux Swarm")
+			})
 
-				// TODO(nishanths): also check `updated` ShouldResemble `expected`.
+			Convey("corrupted aggregate entity: mismatching builder name", func() {
+				resultsTf.Builder = "" // Mistamach with "Linux Swarm" stored in JSON.
+				So(datastore.Put(ctx, &resultsTf), ShouldBeNil)
+
+				datastore.GetTestable(ctx).CatchupIndexes()
+				So(updateIncremental(SetUploadParams(ctx, &UploadParams{
+					Master:   "chromium.swarm",
+					TestType: "content_unittests",
+					Builder:  "Linux Swarm",
+				}), &incr), ShouldBeNil)
+
+				datastore.GetTestable(ctx).CatchupIndexes()
+				q := datastore.NewQuery("TestFile")
+				q = q.Eq("master", "chromium.swarm")
+				q = q.Eq("test_type", "content_unittests")
+				q = q.Eq("builder", "Linux Swarm")
+				q = q.Eq("name", "results.json")
+				tf, err := getFirstTestFile(ctx, q)
+				So(err, ShouldBeNil)
+
+				reader, err := tf.DataReader(ctx)
+				So(err, ShouldBeNil)
+				var updated model.AggregateResult
+				So(json.NewDecoder(reader).Decode(&updated), ShouldBeNil)
+				So(updated, ShouldResemble, incr)
 			})
 		})
 	})
@@ -276,7 +308,7 @@ func TestUses409ResponseCodeForBuildNumberConflict(t *testing.T) {
 
 		ctx = SetUploadParams(ctx, &UploadParams{
 			Master:   "foo",
-			Builder:  "bar",
+			Builder:  "test-builder",
 			TestType: "baz",
 		})
 		data, err := ioutil.ReadFile(

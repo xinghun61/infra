@@ -274,9 +274,14 @@ func updateFullResults(c context.Context, data io.Reader) error {
 		return statusError{err, http.StatusBadRequest}
 	}
 
-	logging.Debugf(
-		c, "Processing full results for master %s, builder %s, build %d",
-		p.Master, f.Builder, f.BuildNumber)
+	if f.Builder != p.Builder {
+		err := errors.New("Builder in query params does not match uploaded JSON")
+		logging.WithError(err).Errorf(c, "updateFullResults: validate input")
+		return statusError{err, http.StatusBadRequest}
+	}
+
+	logging.Debugf(c, "Processing full_results.json for master %s, builder %s, "+
+		"build %d, test type %s", p.Master, f.Builder, f.BuildNumber, p.TestType)
 
 	if err := uploadTestFile(c, io.MultiReader(buf, dec.Buffered()), "full_results.json"); err != nil {
 		logging.WithError(err).Errorf(c, "updateFullResults: uploadTestFile")
@@ -355,6 +360,16 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	return nil
 }
 
+func createEmptyAggregateTestFileEntity(p model.TestFileParams) *model.TestFile {
+	return &model.TestFile{
+		Master:      p.Master,
+		Builder:     p.Builder,
+		TestType:    p.TestType,
+		BuildNumber: -1,
+		Name:        p.Name,
+	}
+}
+
 // updateIncremental gets "results.json" and "results-small.json"
 // for UploadParams in context, merges incr into them, and puts the updated
 // files to the datastore.
@@ -385,13 +400,7 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 			tf, err := getTestFileAlt(c, p, u.DeprecatedMaster)
 			if err != nil {
 				if _, ok := err.(ErrNoMatches); ok {
-					files[i].tf = &model.TestFile{
-						Master:      p.Master,
-						Builder:     p.Builder,
-						TestType:    p.TestType,
-						BuildNumber: -1,
-						Name:        name,
-					}
+					files[i].tf = createEmptyAggregateTestFileEntity(p)
 					return
 				}
 				logging.WithError(err).Errorf(c, "updateIncremental: getTestFileAlt")
@@ -411,6 +420,30 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 				files[i].err = statusError{err, http.StatusBadRequest}
 				return
 			}
+
+			if p.Builder != a.Builder {
+				logging.Warningf(c, "Builder in TestFile entity for aggregated file "+
+					"does not match data in linked JSON file. Deleting corrupted entity.")
+
+				// Try to delete data entities linked to the corrupted aggregate file.
+				if err = datastore.Delete(c, tf.DataKeys); err != nil {
+					logging.WithError(err).Warningf(
+						c, "Failed to delete data keys linked with corrupted entity")
+				}
+
+				// Delete entity for the corrupted aggregate file.
+				err = datastore.Delete(c, datastore.KeyForObj(c, tf))
+				if err != nil {
+					logging.WithError(err).Errorf(c, "updateIncremental: delete entity")
+					files[i].err = statusError{err, http.StatusInternalServerError}
+					return
+				}
+
+				// Create a new empty entity.
+				files[i].tf = createEmptyAggregateTestFileEntity(p)
+				return
+			}
+
 			files[i].tf = tf
 			files[i].aggr = &a
 		}()
