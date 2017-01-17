@@ -11,6 +11,10 @@ deps:
 	bower install
 	npm install
 
+format:
+	gofmt -s -w .
+	clang-format -i elements/**/*.js -style=file
+
 build: deps
 	vulcanize elements/som-app/som-app.html -o elements/som-app/som-app.vulcanized.html
 

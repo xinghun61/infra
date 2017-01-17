@@ -122,7 +122,7 @@ func TestGetAnalyzeHandler(t *testing.T) {
 
 		c = client.WithReader(c, testhelper.MockReader{
 			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": &messages.BuildExtract{},
+				"chromium": {},
 			},
 		})
 
@@ -148,7 +148,7 @@ func TestGetAnalyzeHandler(t *testing.T) {
 
 		c = client.WithReader(c, testhelper.MockReader{
 			BuildExtracts: map[string]*messages.BuildExtract{
-				"chromium": &messages.BuildExtract{},
+				"chromium": {},
 			},
 		})
 
