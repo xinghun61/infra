@@ -13,6 +13,7 @@ from framework import csv_helpers
 from framework import permissions
 from framework import urls
 from tracker import issuelist
+from tracker import tablecell
 
 
 class IssueListCsv(issuelist.IssueList):
@@ -46,3 +47,6 @@ class IssueListCsv(issuelist.IssueList):
     mr.col_spec = csv_helpers.RewriteColspec(mr.col_spec)
     page_data = issuelist.IssueList.GatherPageData(self, mr)
     return  csv_helpers.ReformatRowsForCSV(mr, page_data, urls.ISSUE_LIST_CSV)
+
+  def GetCellFactories(self):
+    return tablecell.CSV_CELL_FACTORIES
