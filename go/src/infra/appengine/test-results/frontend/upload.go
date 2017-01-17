@@ -266,12 +266,17 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	buf := &bytes.Buffer{}
 	tee := io.TeeReader(data, buf)
 	dec := json.NewDecoder(tee)
+	p := GetUploadParams(c)
 
 	var f model.FullResult
 	if err := dec.Decode(&f); err != nil {
 		logging.WithError(err).Errorf(c, "updateFullResults: unmarshal JSON")
 		return statusError{err, http.StatusBadRequest}
 	}
+
+	logging.Debugf(
+		c, "Processing full results for master %s, builder %s, build %d",
+		p.Master, f.Builder, f.BuildNumber)
 
 	if err := uploadTestFile(c, io.MultiReader(buf, dec.Buffered()), "full_results.json"); err != nil {
 		logging.WithError(err).Errorf(c, "updateFullResults: uploadTestFile")
@@ -297,7 +302,6 @@ func updateFullResults(c context.Context, data io.Reader) error {
 		return statusError{err, code}
 	}
 
-	p := GetUploadParams(c)
 	wg := sync.WaitGroup{}
 
 	wg.Add(1)
@@ -404,7 +408,7 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 			var a model.AggregateResult
 			if err := json.NewDecoder(reader).Decode(&a); err != nil {
 				logging.WithError(err).Warningf(c, "updateIncremental: unmarshal TestFile data")
-				files[i].err = statusError{err, 400}
+				files[i].err = statusError{err, http.StatusBadRequest}
 				return
 			}
 			files[i].tf = tf
