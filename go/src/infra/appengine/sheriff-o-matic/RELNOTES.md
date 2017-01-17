@@ -1,3 +1,26 @@
+# Release Notes sheriff-o-matic 2017-01-17
+
+- 6 commits, 2 bugs affected since ffb69b1 (2017-01-12T19:35:06Z)
+- 2 Authors:
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [SoM: Add make format to makefile.](https://chromium-review.googlesource.com/428904) (zhangtiff@google.com)
+- [SoM: Delete som-formatted-text and replace with marked-element's](https://chromium-review.googlesource.com/428391) (zhangtiff@google.com)
+- [SoM: Highlight comments link when there's a comment](https://chromium-review.googlesource.com/428305) (zhangtiff@google.com)
+- [SoM: Move elements into their own subdirectories.](https://chromium-review.googlesource.com/427414) (zhangtiff@google.com)
+- [[som] analyze each master in a separate goroutine](https://chromium-review.googlesource.com/427960) (seanmccullough@chromium.org)
+- [[som] auth POSTs to alerts for crying out loud](https://chromium-review.googlesource.com/427256) (seanmccullough@chromium.org)
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/680607](https://crbug.com/680607)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/674660](https://crbug.com/674660)
+
 # Release Notes sheriff-o-matic 2017-01-10
 
 - 8 commits, 3 bugs affected since a32145c (2016-12-21T01:59:25Z)
