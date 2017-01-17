@@ -1,6 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../../bower_components/marked-element/marked-element.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
@@ -8,7 +9,6 @@
 <link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
 
 <link rel="import" href="../../elements/som-annotation-manager-behavior.html">
-<link rel="import" href="../../elements/som-formatted-text.html">
 
 <dom-module id="som-annotations">
   <template>
@@ -22,7 +22,7 @@
       #commentsDialog paper-icon-button {
         color: #666;
         padding: 0;
-        margin: 0 2px;
+        margin-left: 3px;
         height: 20px;
         width: 20px;
         -webkit-transition: all .3s ease;
@@ -64,6 +64,12 @@
         padding: 0.5em 0.5em 0.2em;
         margin: 1em 0.5em;
         background-color: #eee;
+      }
+      marked-element {
+        display: inline-block;
+      }
+      marked-element p {
+        margin: 0;
       }
     </style>
     <template is="dom-if" if="[[_haveAnnotationError(annotationError.*)]]">
@@ -116,10 +122,12 @@
               <a href="mailto:[[comment.user]]" class="user-info">
                 [[_computeUsername(comment.user)]]
               </a> on [[_formatTimestamp(comment.time)]]
+              <paper-icon-button icon="close" title="Remove" id="removeComment[[index]]"
+                hidden$="[[_computeHideDeleteComment(comment)]]" on-tap="_removeComment"></paper-icon-button>
             </span>
-            <som-formatted-text class="comment-text" text="[[comment.text]]"></som-formatted-text>
-            <paper-icon-button icon="close" title="Remove" id="removeComment[[index]]"
-              hidden$="[[_computeHideDeleteComment(comment)]]" on-tap="_removeComment"></paper-icon-button>
+            <marked-element class="comment-text" markdown="[[comment.text]]" sanitize>
+              <div class="markdown-html"></div>
+            </marked-element>
           </li>
         </template>
       </ul>

@@ -1,7 +1,6 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
-
-<link rel="import" href="../../elements/som-formatted-text.html">
+<link rel="import" href="../../bower_components/marked-element/marked-element.html">
 
 <dom-module id="som-tree-status">
   <template>
@@ -18,8 +17,14 @@
       border-radius: 5px;
     }
     a, a:visited,
-    som-formatted-text /deep/ a, som-formatted-text /deep/ a:visited {
+    marked-element /deep/ a, marked-element /deep/ a:visited {
       color: #fff;
+    }
+    marked-element {
+      display: inline-block;
+    }
+    marked-element p {
+      margin: 0;
     }
     </style>
     <iron-ajax
@@ -33,7 +38,9 @@
       Error fetching tree status from <a href="[[_statusUrl]]" target="_blank">[[_statusUrl]]</a>
     </div>
     <div id="treeClosed" hidden$="[[_hideNotice]]">
-      <som-formatted-text text="[[_message]]"></som-formatted-text>
+      <marked-element markdown="[[_message]]" sanitize>
+        <span class="markdown-html"></span>
+      </marked-element>
       by <a href="mailto:[[_email]]">[[_username]]</a> on [[_time]] (<a href="[[_statusUrl]]" target="_blank">More</a>)
     </div>
   </template>
