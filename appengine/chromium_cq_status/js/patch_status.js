@@ -30,6 +30,7 @@ var actionInfo = {
   patch_ready_to_commit: {
     description: 'Patch is ready to be committed',
     cls: 'important',
+    duplicate: function() { return true; },
   },
   patch_tree_closed: {
     description: 'Patch blocked on closed tree',
