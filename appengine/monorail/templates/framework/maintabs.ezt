@@ -40,14 +40,13 @@
     [end]
     [if-any hotlist_id]
       <th class="toptabs padded">
-      <a href="[viewed_user.profile_url]hotlists/[hotlist.name]" title="[hotlist_id]"
+      <a href="[hotlist.url]" title="[hotlist_id]"
         id = "hotlists-dropdown">Hotlist: [hotlist.name] <small>&#9660;</small></a>
-      <a href="[viewed_user.profile_url]hotlists/[hotlist.name]" class="[is main_tab_mode "ht2"]active[end]">Issues</a>
-      <a href="[viewed_user.profile_url]hotlists/[hotlist.name]/people" class="[is main_tab_mode "ht3"]active[end]">People</a>
-      <a href="[viewed_user.profile_url]hotlists/[hotlist.name]/details" class="[is main_tab_mode "ht4"]active[end]">Details</a>
+      <a href="[hotlist.url]" class="[is main_tab_mode "ht2"]active[end]">Issues</a>
+      <a href="[hotlist.url]/people" class="[is main_tab_mode "ht3"]active[end]">People</a>
+      <a href="[hotlist.url]/details" class="[is main_tab_mode "ht4"]active[end]">Details</a>
       </th>
     [end]
-    [#TODO(jojwang): urls here wouldn't work for friendly url. consider creating hotlist_url variabl later]
 
     <td width="100%" id="userbar">
       [include "user-bar.ezt"]
