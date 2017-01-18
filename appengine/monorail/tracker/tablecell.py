@@ -15,6 +15,23 @@ from tracker import tracker_bizobj
 
 # pylint: disable=unused-argument
 
+class TableCellDateAdded(table_view_helpers.TableCell):
+  """TableCell subclass specifically for showing the date added of an issue."""
+
+  def __init__(self, issue, date_added=None, **_kw):
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_ATTR, [date_added])
+
+
+class TableCellAdderID(table_view_helpers.TableCell):
+  """TableCell subclass specifically for showing an issue's adder_id."""
+
+  def __init__(self, issue, adder_id=None, users_by_id=None, **_kw):
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_ATTR,
+        [users_by_id[adder_id].display_name])
+
+
 class TableCellRank(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing issue rank."""
 
@@ -287,6 +304,8 @@ CELL_FACTORIES = {
     'componentmodified': TableCellComponentModified,
     'ownerlastvisit': TableCellOwnerLastVisit,
     'rank': TableCellRank,
+    'added': TableCellDateAdded,
+    'adder': TableCellAdderID,
     'alllabels': TableCellAllLabels,
     }
 

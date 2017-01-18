@@ -54,6 +54,22 @@ class TableCellUnitTest(unittest.TestCase):
         'config': 'fake config',
         }
 
+  def testTableCellDateAdded(self):
+    table_cell_kws = self.table_cell_kws.copy()
+    table_cell_kws.update({'date_added': 1234})
+    cell = tablecell.TableCellDateAdded(
+        self.issue1, **table_cell_kws)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.values[0].item, 1234)
+
+  def testTableCellAdderID(self):
+    table_cell_kws = self.table_cell_kws.copy()
+    table_cell_kws.update({'adder_id': 23456})
+    cell = tablecell.TableCellAdderID(
+        self.issue1, **table_cell_kws)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.values[0].item, 'Jason')
+
   def testTableCellRank(self):
     table_cell_kws = self.table_cell_kws.copy()
     table_cell_kws.update({'issue_rank': 3})

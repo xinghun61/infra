@@ -55,7 +55,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     self.services.issue.TestAddIssue(self.issue3)
     self.issues = [self.issue1, self.issue2, self.issue3]
     self.iid_rank_user_date = [
-        (issue.issue_id, rank, None, None) for
+        (issue.issue_id, rank, 111L, 1205079300) for
         rank, issue in enumerate(self.issues)]
     self.test_hotlist = self.services.features.TestAddHotlist(
         'hotlist', hotlist_id=123, owner_ids=[222L], editor_ids=[111L],

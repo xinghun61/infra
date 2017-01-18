@@ -9,6 +9,7 @@ from features import features_constants
 from framework import framework_views
 from framework import sorting
 from framework import table_view_helpers
+from framework import timestr
 from framework import paginate
 from framework import permissions
 from framework import urls
@@ -44,24 +45,41 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
         [hotlist_issue.rank for hotlist_issue in hotlist_issues])
     friendly_ranks = {
         rank: friendly for friendly, rank in enumerate(sorted_ranks, 1)}
-    issue_ranks = {
-        hotlist_issue.issue_id: friendly_ranks[hotlist_issue.rank]
+    issue_adders = framework_views.MakeAllUserViews(
+        mr.cnxn, services.user, [hotlist_issue.adder_id for
+                                 hotlist_issue in hotlist_issues])
+    hotlist_issues_context = {
+        hotlist_issue.issue_id: {'issue_rank':
+                                 friendly_ranks[hotlist_issue.rank],
+                                 'adder_id': hotlist_issue.adder_id,
+                                 'date_added': timestr.FormatRelativeDate(
+                                     hotlist_issue.date_added)}
         for hotlist_issue in hotlist_issues}
 
   with profiler.Phase('Making user views'):
     issues_users_by_id = framework_views.MakeAllUserViews(
         mr.cnxn, services.user,
         tracker_bizobj.UsersInvolvedInIssues(allowed_issues or []))
+    issues_users_by_id.update(issue_adders)
 
   with profiler.Phase('Sorting issues'):
     sortable_fields = tracker_helpers.SORTABLE_FIELDS.copy()
     sortable_fields.update(
-        {'rank': lambda issue: issue_ranks[issue.issue_id]})
+        {'rank': lambda issue: hotlist_issues_context[
+            issue.issue_id]['issue_rank'],
+         'adder': lambda issue: hotlist_issues_context[
+             issue.issue_id]['adder_id'],
+         'added': lambda issue: hotlist_issues_context[
+             issue.issue_id]['date_added']})
+    sortable_postproc = tracker_helpers.SORTABLE_FIELDS_POSTPROCESSORS.copy()
+    sortable_postproc.update(
+        {'adder': lambda user_view: user_view.email,
+        })
     if not mr.sort_spec:
       mr.sort_spec = 'rank'
     sorted_issues = sorting.SortArtifacts(
         mr, allowed_issues, harmonized_config, sortable_fields,
-        tracker_helpers.SORTABLE_FIELDS_POSTPROCESSORS,
+        sortable_postproc,
         users_by_id=issues_users_by_id, tie_breakers=['rank', 'id'])
 
   with profiler.Phase("getting related issues"):
@@ -80,9 +98,9 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
     related_issues = {issue.issue_id: issue for issue in related_issues_list}
 
   with profiler.Phase('building table'):
-    context_for_all_issues = {issue.issue_id: {
-          'issue_rank': issue_ranks[issue.issue_id]}
-                                for issue in sorted_issues}
+    context_for_all_issues = {
+        issue.issue_id: hotlist_issues_context[issue.issue_id]
+                              for issue in sorted_issues}
 
     column_values = table_view_helpers.ExtractUniqueValues(
         mr.col_spec.lower().split(), sorted_issues, issues_users_by_id,
