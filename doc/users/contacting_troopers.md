@@ -36,7 +36,7 @@ Priorities are set using the `Pri=N` label. Use the following as your guideline
 
 *   Pri-0: Immediate attention desired.  The trooper will stop everything they are
     doing and investigate.
-    *   Examples: CQ no longer committing changes, master offline, gnumbd broken.
+    *   Examples: CQ no longer committing changes, master offline.
 *   Pri-1: Resolution desired within an hour or two.
     * Examples: disk full on device, device offline, sheriff-o-matic data stale.
 *   Pri-2: Should be handled today.

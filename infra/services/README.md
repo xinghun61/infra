@@ -1,5 +1,3 @@
-* gnumbd: git numbering daemon. Adds a monotonically-increasing number
-  to git commits.
 * gsubtreed: git subtree daemon. Mirrors subdirectories of some
   repositories into independent repos so they can be consumed by
   downstream projects.

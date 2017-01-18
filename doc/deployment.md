@@ -31,7 +31,7 @@ In order to combat tip-of-tree breakages, these services do not run from
 ToT of the master branch. Instead, they operate in detached-HEAD mode,
 checking out the remote ref origin/deployed before each run.
 
-In order to update the code being run by gnumbd, gsubtreed, or other
+In order to update the code being run by gsubtreed or other
 similar services you have to push a new value to the origin/deployed
 ref:
 

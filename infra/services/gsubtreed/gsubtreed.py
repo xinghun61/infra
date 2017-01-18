@@ -13,8 +13,9 @@ from infra.libs.git2 import INVALID
 from infra.libs.git2 import config_ref
 from infra.libs.git2 import repo
 
-from infra.services.gnumbd.gnumbd import FOOTER_PREFIX
-from infra.services.gnumbd.gnumbd import PUSH_TIMEOUT
+FOOTER_PREFIX = 'Cr-'
+# How long to wait for 'git push' to complete before forcefully killing it.
+PUSH_TIMEOUT = 18 * 60
 
 LOGGER = logging.getLogger(__name__)
 

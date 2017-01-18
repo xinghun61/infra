@@ -23,7 +23,6 @@ DISABLED_PROJECTS = [
     # Taken care of by appengine/PRESUBMIT.py
     'appengine/*',
     'infra/services/lkgr_finder',
-    'infra/services/gnumbd',
 
     # Don't bother pylinting (these could also move to .gitignore):
     '.*/__pycache__',

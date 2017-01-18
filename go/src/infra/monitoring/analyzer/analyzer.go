@@ -667,7 +667,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 			mergedBuilder := mergedBF.Builders[0]
 
 			// These failure numbers are build numbers. The UI should probably indicate
-			// gnumbd sequence numbers instead or in addition to build numbers.
+			// git numberer sequence numbers instead or in addition to build numbers.
 
 			// FIXME: Use timestamps or revision info instead of build numbers, in
 			// case of a master restart.
