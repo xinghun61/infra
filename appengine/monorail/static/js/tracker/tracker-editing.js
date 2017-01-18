@@ -1166,7 +1166,7 @@ function AddIssuesToHotlist(dialogBox, issueRefs) {
     }
     CS_doPost('/hosting/addToHotlist.do', onAddIssuesResponse, data);
   } else {
-    alert('Please select some hotlists')
+    alert('Please select some hotlists');
   }
 }
 
@@ -1176,7 +1176,7 @@ function onAddIssuesResponse(event) {
       return;
     }
     if (xhr.status != 200) {
-      console.error('200 page error')
+      console.error('200 page error');
       // TODO(jojwang): fill this in more
       return;
     }

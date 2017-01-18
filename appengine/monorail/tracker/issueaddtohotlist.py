@@ -6,6 +6,7 @@
 """Classes that implement adding issues to hotlists from /issues/ pages."""
 
 import logging
+import time
 
 from framework import jsonfeed
 from framework import permissions
@@ -23,5 +24,26 @@ class AddToHotlist(jsonfeed.JsonFeed):
             'You are not allowed to edit hotlist %s' % hotlist.name)
 
   def HandleRequest(self, mr):
-    return {'issues': ', '.join(mr.issue_refs),
-            'hotlists': ', '.join(str(h_id) for h_id in mr.hotlist_ids)}
+    project_names = []
+    refs = []
+    for issue_ref in mr.issue_refs:
+      issue_split = issue_ref.split(':')
+      project_names.append(issue_split[0])
+      refs.append((issue_split[0], int(issue_split[1])))
+    ref_projects = self.services.project.GetProjectsByName(
+        mr.cnxn, project_names)
+    # TODO(jojwang): a default_project_name can be passed in for adding an issue
+    # via the issuedetail page
+    default_project_name = ''
+    selected_iids, _misses = self.services.issue.ResolveIssueRefs(
+        mr.cnxn, ref_projects, default_project_name, refs)
+    added_tuples = [(issue_id, mr.auth.user_id,
+                          int(time.time())) for issue_id in
+                         selected_iids]
+    self.services.features.AddIssuesToHotlists(
+        mr.cnxn, mr.hotlist_ids, added_tuples)
+
+    # TODO(jojwang): Let users know if adding issues was successful
+    # or if errors occurred.
+    return {'issues': mr.issue_refs,
+            'hotlists': mr.hotlist_ids}
