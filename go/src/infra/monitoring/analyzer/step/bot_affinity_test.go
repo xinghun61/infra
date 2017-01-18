@@ -372,9 +372,9 @@ func TestPerfDeviceFailure(t *testing.T) {
 	})
 }
 
-func TestGetDeviceAffinity(t *testing.T) {
+func TestGetBotID(t *testing.T) {
 	Convey("test", t, func() {
-		Convey("getDeviceAffinity", func() {
+		Convey("getBotID", func() {
 			step := &messages.Step{
 				Text: []string{
 					"hi",
@@ -401,6 +401,7 @@ func TestGetDeviceAffinity(t *testing.T) {
 						// Copied from buildbot logs
 						step.Text = []string{
 							fmt.Sprintf("smoothness.key_silk_cases.reference<br>smoothness.key_silk_cases.reference<br><div class=\"BuildResultInfo\"><br></div><br><br/>%s bar<br/>", prefix),
+							"some other junk that should be ignored",
 						}
 						res := getBotID(step)
 						So(res, ShouldEqual, "bar")

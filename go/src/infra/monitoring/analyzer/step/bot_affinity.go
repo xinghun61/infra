@@ -20,19 +20,23 @@ var idPrefixes = []string{
 // Gets the Bot ID a step (probably a step) was executed on.
 // TODO(martiniss): Use more structured data.
 func getBotID(step *messages.Step) string {
-	text := strings.Replace(strings.TrimSpace(strings.Join(step.Text, "")), "<br/>", "", -1)
+	for _, line := range step.Text {
+		line = strings.TrimSpace(line)
+		line = strings.Replace(line, "<br/>", "", -1)
+		line = strings.Replace(line, "<br>", "", -1)
 
-	for _, prefix := range idPrefixes {
-		if len(text) < len(prefix) {
-			continue
+		for _, prefix := range idPrefixes {
+			if len(line) < len(prefix) {
+				continue
+			}
+
+			if !strings.Contains(line, prefix) {
+				continue
+			}
+
+			affinity := line[len(prefix)+strings.Index(line, prefix):]
+			return strings.TrimSpace(string(affinity))
 		}
-
-		if !strings.Contains(text, prefix) {
-			continue
-		}
-
-		affinity := text[len(prefix)+strings.Index(text, prefix):]
-		return strings.TrimSpace(string(affinity))
 	}
 	return ""
 }
