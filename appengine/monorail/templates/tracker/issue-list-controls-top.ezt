@@ -28,18 +28,22 @@
     <span id='bulk-action-loading' class='loading' style='visibility:hidden'>Processing</span>
    [end]
 
-   [if-any owner_permissions editor_permissions]
+   [if-any hotlist_id][if-any logged_in_user]
    <span style="margin:0 .7em">Select:
      <a id="selectall" href="#">All</a>
      <a id="selectnone" href="#">None</a>
    </span>
    <select id="moreactions" class="drop-down-bub">
      <option value="moreactions" disabled="disabled" [if-any add_issues_selected][else]selected="selected"[end]>Actions...</option>
+     [if-any owner_permissions editor_permissions]
      <option value="addissues" [if-any add_issues_selected]selected="selected"[end]>Add issues...</option>
      <option value="removeissues">Remove issues...</options>
      <option value="colspec">Change columns...</option>
-   </select>
    [end]
+     <option value="addtohotlist">Add to hotlist...</option>
+   </select>
+   [end][end]
+
 
    <form id="colspecform" action=[if-any hotlist_id]"[hotlist.name]"[else]"list"[end] method="GET" autocomplete="off"
          style="display:inline; margin-left:1em">

@@ -31,7 +31,7 @@ function setAttributes(el, attrs) {
  * @param {boolean} ownerEditorPerm does current viewer have owner/editor permissions.
  * @return an element containing the widget elements
  */
-function createWidgets(tableRow, readOnly, ownerEditorPerm) {
+function createWidgets(tableRow, readOnly, userLoggedIn) {
   var widgets = document.createElement('td');
   widgets.setAttribute('class', 'rowwidgets nowrap');
 
@@ -41,7 +41,7 @@ function createWidgets(tableRow, readOnly, ownerEditorPerm) {
   widgets.appendChild(gripper);
 
   if (!readOnly) {
-    if (ownerEditorPerm) {
+    if (userLoggedIn) {
       // TODO(jojwang): for bulk edit, only show a checkbox next to an issue that
       // the user has permission to edit.
         var checkbox = document.createElement('input');
@@ -49,18 +49,19 @@ function createWidgets(tableRow, readOnly, ownerEditorPerm) {
                                  'id': 'cb_' + tableRow['issueRef'],
                                  'type': 'checkbox'});
       widgets.appendChild(checkbox);
+
+      var star = document.createElement('a');
+      var starColor = tableRow['isStarred'] ? 'cornflowerblue' : 'gray';
+      var starred = tableRow['isStarred'] ? 'Un-s' : 'S' ;
+      setAttributes(star, {'class': 'star',
+                           'id': 'star-' + tableRow['projectName'] + tableRow['localID'],
+                           'style': 'color:' + starColor,
+                           'title': starred + 'tar this issue',
+                           'data-project-name': tableRow['projectName'],
+                           'data-local-id': tableRow['localID']});
+      star.innerText = (tableRow['isStarred'] ? '\u2605' : '\u2606');
+      widgets.appendChild(star);
     }
-    var star = document.createElement('a');
-    var starColor = tableRow['isStarred'] ? 'cornflowerblue' : 'gray';
-    var starred = tableRow['isStarred'] ? 'Un-s' : 'S' ;
-    setAttributes(star, {'class': 'star',
-                         'id': 'star-' + tableRow['projectName'] + tableRow['localID'],
-                         'style': 'color:' + starColor,
-                         'title': starred + 'tar this issue',
-                         'data-project-name': tableRow['projectName'],
-                         'data-local-id': tableRow['localID']});
-    star.innerText = (tableRow['isStarred'] ? '\u2605' : '\u2606');
-    widgets.appendChild(star);
   }
   return widgets;
 }
@@ -176,7 +177,7 @@ function renderHotlistRow(tableRow, pageSettings) {
 
   setAttributes(tr, {'data-idx': tableRow['idx'], 'data-id': tableRow['issueID']});
   widgets = createWidgets(tableRow, pageSettings['readOnly'],
-                          (pageSettings['ownerPerm'] || pageSettings['editorPerm']));
+                          pageSettings['userLoggedIn']);
   tr.appendChild(widgets);
   tableRow['cells'].forEach(function(cell) {
     var td = document.createElement('td');

@@ -1129,7 +1129,11 @@ function TKR_flagSpam(isSpam) {
 function TKR_addToHotlist() {
   var selectedIssueRefs = [];
   for (var i = 0; i < issueRefs.length; i++) {
-    var checkbox = document.getElementById('cb_' + issueRefs[i]['id']);
+    var checkbox = document.getElementById('cb_' + issueRefs[i]['id'])
+    if (checkbox == null) {
+      checkbox = document.getElementById(
+          'cb_' + issueRefs[i]['project_name'] + ':' + issueRefs[i]['id'])
+    }
     if (checkbox && checkbox.checked) {
       selectedIssueRefs.push(issueRefs[i]['project_name']+':'+issueRefs[i]['id']);
     }
@@ -1177,6 +1181,7 @@ function onAddIssuesResponse(event) {
       return;
     }
   var response = CS_parseJSON(xhr);
+  console.log(response);
 }
 
 /**

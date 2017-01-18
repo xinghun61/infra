@@ -82,6 +82,7 @@ runOnLoad(function(){
 
     var pageSettings = {
     "cursor": "[cursor]",
+    "userLoggedIn": "[if-any logged_in_user]yes[end]",
     "ownerPerm": "[owner_permissions]",
     "editorPerm": "[editor_permissions]",
     "isCrossProject": "[is_cross_project]",
