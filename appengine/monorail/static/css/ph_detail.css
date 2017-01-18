@@ -238,7 +238,6 @@ td u:hover { text-decoration: underline; }
 .preview { border: 2px solid #c3d9ff; padding: 1px; }
 .preview:hover { border: 2px solid blue; }
 .label { white-space: nowrap; }
-.derived { font-style: italic; }
 
 .cursor_on .author {
     background: url(/static/images/show-arrow.gif) no-repeat 2px;

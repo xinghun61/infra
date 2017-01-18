@@ -42,13 +42,13 @@
      [end]
 
      [is table_data.cells.type "attr"]
-      <td class="col_[table_data.cells.col_index][if-any table_data.cells.NOWRAP] nowrap[end]"
+      <td class="col_[table_data.cells.col_index][if-any table_data.cells.NOWRAP] nowrapspan[end]"
             [if-any table_data.cells.align]align="[table_data.cells.align]"[end]
             >[include "../framework/artifact-list-cell-values.ezt"]</td>
      [end]
 
      [is table_data.cells.type "unfilterable"]
-       <td class="col_[table_data.cells.col_index] [if-any table_data.cells.NOWRAP]nowrap[end]"
+       <td class="col_[table_data.cells.col_index] [if-any table_data.cells.NOWRAP]nowrapspan[end]"
          [if-any table_data.cells.align]align="[table_data.cells.align]"[end]
          >[include "../framework/artifact-list-cell-values.ezt"]</td>
      [end]

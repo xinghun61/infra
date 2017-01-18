@@ -200,6 +200,8 @@ table {
 }
 
 .nowrap { white-space: nowrap; }
+.nowrapspan span { white-space: nowrap; }
+.derived { font-style: italic; }
 
 .bubble_bg {
     background: #e5ecf9;
