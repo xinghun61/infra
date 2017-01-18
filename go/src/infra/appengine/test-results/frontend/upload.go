@@ -421,7 +421,7 @@ func updateIncremental(c context.Context, incr *model.AggregateResult) error {
 				return
 			}
 
-			if p.Builder != a.Builder {
+			if tf.Builder != a.Builder {
 				logging.Warningf(c, "Builder in TestFile entity for aggregated file "+
 					"does not match data in linked JSON file. Deleting corrupted entity.")
 
