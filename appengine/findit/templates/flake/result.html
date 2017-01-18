@@ -95,49 +95,32 @@
         return;
       }
 
+      var all_data = [];
       var not_run_data = [];
-      var run_data = [];
       var build_run_data = [];
       var revision_run_data = [];
       $.each(findit.passRates, function(index, value) {
-        // Convert pass rate from [0, 1] to a percentage. Include information about each point in the format:
-        // [this build commit position, pass rate, swarming task url, build number,
-        //  this build's git hash, previous build's commit position,
-        //  previous build's git hash].
+        // Convert pass rate from [0, 1] to a percentage.
         var pass_rate = (value.pass_rate * 100).toFixed(0);
 
+        all_data.push([value.commit_position, Math.abs(pass_rate)]);
+
         if (pass_rate < 0) {
-          // -1 means that the test doesn't exist or is disabled at the build.
+          // -1 means that the test doesn't exist yet.
           // We consider that a 100% pass rate.
           not_run_data.push([value.commit_position, 100]);
+        } else if (value.try_job_url == null) {
+          build_run_data.push([value.commit_position, pass_rate]);
         } else {
-          run_data.push([value.commit_position, pass_rate]);
-          if (value.try_job_url == null) {
-            build_run_data.push([value.commit_position, pass_rate]);
-          } else {
-            revision_run_data.push([value.commit_position, pass_rate]);
-          }
+          revision_run_data.push([value.commit_position, pass_rate]);
         }
       });
 
       var data_series = [];
-      var run_data_sery_index = 0;
-      var build_data_sery_index = 0;
-      var revision_data_sery_index = 0;
-      if (not_run_data.length > 0) {
-        data_series.push({
-          data: not_run_data,
-          color: "gray",
-          points: {
-            symbol: "cross",
-          },
-          label: "disabled or nonexistent",
-        });
-        run_data_sery_index = 1;
-      }
+      var next_sery_index = 0;
 
       data_series.push({
-        data: run_data,
+        data: all_data,
         points: {
           show: false,
         },
@@ -145,6 +128,25 @@
           show: true,
         },
       });
+      next_sery_index += 1;
+
+      var build_data_sery_index = 0;
+      var revision_data_sery_index = 0;
+
+      if (not_run_data.length > 0) {
+        data_series.push({
+          data: not_run_data,
+          color: "gray",
+          points: {
+            symbol: "cross",
+          },
+          lines: {
+            show: false,
+          },
+          label: "Non-existent",
+        });
+        next_sery_index += 1;
+      }
 
       if (build_run_data.length > 0) {
         data_series.push({
@@ -158,7 +160,8 @@
           },
           label: "Swarm rerun",
         });
-        build_data_sery_index = run_data_sery_index + 1;
+        build_data_sery_index = next_sery_index;
+        next_sery_index += 1;
       }
 
       if (revision_run_data.length > 0) {
@@ -173,7 +176,8 @@
           color: "green",
           label: "Try-job rerun",
         });
-        revision_data_sery_index = Math.max(run_data_sery_index, build_data_sery_index) + 1;
+        revision_data_sery_index = next_sery_index;
+        next_sery_index += 1;
       }
 
       var options = {
@@ -282,7 +286,7 @@
         }
       });
 
-      if (revision_run_data.length == 0){
+      if (revision_run_data.length == 0) {
         $.each(build_run_data, function(index, value) {
           var dataPoint = GetDataPointByCommitPosition(value[0]);
           if (dataPoint != null && dataPoint.build_number == findit.regressedBuildNumber) {
