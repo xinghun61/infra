@@ -61,20 +61,46 @@ def RunSteps(api):
 
 
 def git_cl_issue_link(api):
-  """Runs a step which adds a link to the current CL."""
+  """Runs a step which adds a link to the current CL if there is one."""
   issue_step = api.m.git(
       'cl', 'issue', '--json', api.json.output(),
-      name='git cl issue',
-      step_test_data=lambda: api.m.json.test_api.output({
-          'issue': 123456789,
-          'issue_url': 'https://codereview.chromium.org/123456789'}))
+      name='git cl issue')
   issue_result = issue_step.json.output
+  if not issue_result or not issue_result.get('issue_url'):
+      return
   link_text = 'issue %s' % issue_result['issue']
   issue_step.presentation.links[link_text] = issue_result['issue_url']
 
 
 def GenTests(api):
-  yield (api.test('w3c-test-autoroller') +
-         api.properties(mastername='chromium.infra.cron',
-                        buildername='w3c-test-autoroller',
-                        slavename='fake-slave'))
+  yield (
+      api.test('w3c-test-autoroller') +
+      api.properties(
+          mastername='chromium.infra.cron',
+          buildername='w3c-test-autoroller',
+          slavename='fake-slave') +
+      api.step_data(
+          'git cl issue',
+          api.json.output({
+              'issue': 123456789,
+              'issue_url': 'https://codereview.chromium.org/123456789'
+          })) +
+      api.step_data(
+          'git cl issue (2)',
+          api.json.output({
+              'issue': 123456789,
+              'issue_url': 'https://codereview.chromium.org/123456789'
+          })))
+
+  yield (
+      api.test('w3c-test-autoroller-no-issue') +
+      api.properties(
+          mastername='chromium.infra.cron',
+          buildername='w3c-test-autoroller',
+          slavename='fake-slave') +
+      api.step_data(
+          'git cl issue',
+          api.json.output({'issue': None, 'issue_url': None})) +
+      api.step_data(
+          'git cl issue (2)',
+          api.json.output({'issue': None, 'issue_url': None})))
