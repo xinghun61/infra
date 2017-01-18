@@ -553,6 +553,17 @@ class FeaturesService(object):
     if default_col_spec is not None:
       hotlist.default_col_spec = default_col_spec
 
+  def AddIssuesToHotlists(self, cnxn, hotlist_ids, added_tuples, commit=True):
+    """Add the issues given in the added_tuples list to the given hotlists.
+
+    Args:
+      cnxn: connection to SQL database.
+      hotlist_ids: a list of hotlist_ids to add the issues
+      added_tuples: a list of (issue_id, user_id, ts) for issues to be added
+    """
+    for hotlist_id in hotlist_ids:
+      self.UpdateHotlistItems(cnxn, hotlist_id, [], added_tuples, commit=commit)
+
   def UpdateHotlistItems(
       self, cnxn, hotlist_id, remove, added_tuples, commit=True):
     """Updates a hotlist's list of hotlistissues.
@@ -577,10 +588,14 @@ class FeaturesService(object):
         issue_id=[remove_id for remove_id in remove
                   if remove_id in current_issues_ids],
         commit=False)
-
+    if hotlist.items:
+      items_sorted = sorted(hotlist.items, key=lambda item: item.rank)
+      rank_base = items_sorted[-1].rank + 10
+    else:
+      rank_base = 1L
     insert_rows = [
-        (hotlist_id, issue_id, rank, user_id, ts)
-        for (issue_id, rank, user_id, ts) in added_tuples
+        (hotlist_id, issue_id, rank*10 + rank_base, user_id, ts)
+        for (rank, (issue_id, user_id, ts)) in enumerate(added_tuples)
         if issue_id not in current_issues_ids]
     self.hotlist2issue_tbl.InsertRows(
         cnxn, cols=HOTLIST2ISSUE_COLS, row_values=insert_rows, commit=commit)
@@ -594,10 +609,10 @@ class FeaturesService(object):
 
     new_hotlist_items = [
         features_pb2.MakeHotlistItem(issue_id, rank, user_id, ts)
-        for (issue_id, rank, user_id, ts) in added_tuples
-        if issue_id not in current_issues_ids]
+        for (_hid, issue_id, rank, user_id, ts) in insert_rows]
     items.extend(new_hotlist_items)
     hotlist.items = items
+    logging.info(hotlist.items)
 
   def UpdateHotlistItemsRankings(
       self, cnxn, hotlist_id, relations_to_change, commit=True):
@@ -625,14 +640,13 @@ class FeaturesService(object):
         insert_rows.append((
             hotlist_id, hotlist_item.issue_id, hotlist_item.rank,
             hotlist_item.adder_id, hotlist_item.date_added))
-
+    hotlist.items = sorted(hotlist.items, key=lambda item: item.rank)
     issue_ids = relations_to_change.keys()
     self.hotlist2issue_tbl.Delete(
         cnxn, hotlist_id=hotlist_id, issue_id=issue_ids, commit=False)
 
     self.hotlist2issue_tbl.InsertRows(
         cnxn, cols=HOTLIST2ISSUE_COLS , row_values=insert_rows, commit=commit)
-
     self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
 
   def _InsertHotlist(self, cnxn, hotlist):

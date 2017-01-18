@@ -208,16 +208,9 @@ class HotlistIssues(servlet.Servlet):
         self.services.features.UpdateHotlistItems(
             mr.cnxn, mr.hotlist_id, selected_iids, [])
       else:
-        if mr.hotlist.items:
-          items_sorted = sorted(
-              mr.hotlist.items, key=lambda item: item.rank)
-          rank_base = items_sorted[-1].rank + 10
-        else:
-          rank_base = 1
-
-        added_tuples =  [(issue_id, rank_base + multiplier*10,
-                          mr.auth.user_id, int(time.time()))
-                        for (multiplier, issue_id) in enumerate(selected_iids)]
+        added_tuples =  [(issue_id, mr.auth.user_id,
+                          int(time.time())) for issue_id in
+                         selected_iids]
         self.services.features.UpdateHotlistItems(
             mr.cnxn, mr.hotlist_id, [], added_tuples)
 

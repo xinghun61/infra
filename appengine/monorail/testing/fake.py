@@ -1631,6 +1631,10 @@ class FeaturesService(object):
     if default_col_spec is not None:
       hotlist.default_col_spec = default_col_spec
 
+  def AddIssuesToHotlists(self, cnxn, hotlist_ids, added_tuples, commit=True):
+    for hotlist_id in hotlist_ids:
+      self.UpdateHotlistItems(cnxn, hotlist_id, [], added_tuples, commit=commit)
+
   def UpdateHotlistItems(
       self, cnxn, hotlist_id, remove, added_issue_tuples, commit=True):
     hotlist = self.hotlists_by_id.get(hotlist_id)
@@ -1643,9 +1647,16 @@ class FeaturesService(object):
         item for item in hotlist.items if
         item.issue_id not in remove]
 
+    if hotlist.items:
+      items_sorted = sorted(hotlist.items, key=lambda item: item.rank)
+      rank_base = items_sorted[-1].rank + 10
+    else:
+      rank_base = 1L
+
     new_hotlist_items = [
-        features_pb2.MakeHotlistItem(issue_id, rank, adder_id, date)
-        for (issue_id, rank, adder_id, date) in added_issue_tuples
+        features_pb2.MakeHotlistItem(
+            issue_id, rank+rank_base*10, adder_id, date)
+        for rank, (issue_id, adder_id, date) in enumerate(added_issue_tuples)
         if issue_id not in current_issues_ids]
     items.extend(new_hotlist_items)
     hotlist.items = items

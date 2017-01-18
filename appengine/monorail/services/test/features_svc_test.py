@@ -616,26 +616,45 @@ class FeaturesServiceTest(unittest.TestCase):
   def SetUpUpdateHotlistItems(self, cnxn, hotlist_id, _remove, added_tuples):
     self.features_service.hotlist2issue_tbl.Delete(
         cnxn, hotlist_id=hotlist_id, issue_id=[], commit=False)
+    rank = 1L
+    added_tuples_with_rank = [(issue_id, rank+10*mult, user_id, ts) for mult, (
+        issue_id, user_id, ts) in enumerate(added_tuples)]
     insert_rows = [(hotlist_id, issue_id,
                     rank, user_id, date) for
-                   (issue_id, rank, user_id, date) in added_tuples]
+                   (issue_id, rank, user_id, date) in added_tuples_with_rank]
     self.features_service.hotlist2issue_tbl.InsertRows(
         cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
         row_values=insert_rows, commit=False)
+
+  def testAddIssuesToHotlists(self):
+    added_tuples = [
+            (111L, None, None),
+            (222L, None, None),
+            (333L, None, None)]
+    self.SetUpGetHotlists(456)
+    self.SetUpUpdateHotlistItems(
+        self. cnxn, 456, [555L], added_tuples)
+    self.SetUpGetHotlists(567)
+    self.SetUpUpdateHotlistItems(
+        self. cnxn, 567, [555L], added_tuples)
+    self.mox.ReplayAll()
+    self.features_service.AddIssuesToHotlists(
+        self.cnxn, [456, 567], added_tuples, commit=False)
+    self.mox.VerifyAll()
 
   def testUpdateHotlistItems(self):
     self.SetUpGetHotlists(456)
     self.SetUpUpdateHotlistItems(
         self. cnxn, 456, [555L], [
-            (111L, 100, None, None),
-            (222L, 200, None, None),
-            (333L, 300, None, None)])
+            (111L, None, None),
+            (222L, None, None),
+            (333L, None, None)])
     self.mox.ReplayAll()
     self.features_service.UpdateHotlistItems(
         self.cnxn, 456, [555L],
-        [(111L, 100, None, None),
-         (222L, 200, None, None),
-         (333L, 300, None, None)], commit=False)
+        [(111L, None, None),
+         (222L, None, None),
+         (333L, None, None)], commit=False)
     self.mox.VerifyAll()
 
   def SetUpDeleteHotlist(self, cnxn, hotlist_id):
