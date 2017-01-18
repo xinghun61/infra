@@ -329,4 +329,5 @@ api_ratelimiting_cost_penalty = 1
 # Hotlist dogfooders whitelist
 hotlist_whitelist = ['jojwang@google.com', 'jrobbins@chromium.org',
                      'seanmccullough@chromium.org', 'jparent@chromium.org',
-                     'agable@chromium.org', 'stip@chromium.org']
+                     'agable@chromium.org', 'stip@chromium.org',
+                     'laforge@chromium.org']
