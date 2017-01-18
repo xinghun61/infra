@@ -1092,6 +1092,72 @@ func TestMergeAlertsByReason(t *testing.T) {
 					},
 				},
 			},
+			{
+				name: "multiple builders fail on step_a with tests, with links",
+				in: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+						},
+						Links: []messages.Link{
+							{
+								Title: "link 1",
+								Href:  "https://google.com",
+							},
+						},
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+						},
+						Links: []messages.Link{
+							{
+								Title: "link 2",
+								Href:  "https://youtube.com",
+							},
+						},
+					},
+				},
+				want: []messages.Alert{
+					{
+						Title: "fakeTitle",
+						Type:  messages.AlertBuildFailure,
+						Body:  "builder A, builder B",
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{},
+						},
+						Links: []messages.Link{
+							{
+								Title: "link 1",
+								Href:  "https://google.com",
+							},
+							{
+								Title: "link 2",
+								Href:  "https://youtube.com",
+							},
+						},
+					},
+				},
+			},
 		}
 
 		ctx := context.Background()

@@ -194,7 +194,7 @@ func (a *Analyzer) BuilderAlerts(ctx context.Context, tree string, master *messa
 	}
 
 	ret := []messages.Alert{}
-	for _ = range be.Builders {
+	for range be.Builders {
 		r := <-c
 		if len(r.err) != 0 {
 			// TODO: add a special alert for this too?
@@ -417,6 +417,9 @@ func (a *Analyzer) mergeAlertsByReason(ctx context.Context, alerts []messages.Al
 
 		sort.Sort(messages.Alerts(stepAlerts))
 		merged := stepAlerts[0]
+		for _, stepAlert := range stepAlerts[1:] {
+			merged.Links = append(merged.Links, stepAlert.Links...)
+		}
 
 		mergedBF := merged.Extension.(messages.BuildFailure)
 		if len(mergedBF.Builders) > 1 {
