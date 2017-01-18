@@ -41,11 +41,6 @@
     'rev': '69365ce2041081fe6b109496bbb9c56f86ccb7b5',
     'implicit': True,  # Required by pyOpenSSL
   },
-  'devil': {
-    'version': '0.1.0',
-    'build': '0',
-    'gs': '35b5e8932cebabc7c3a0fd41cf9e8cd30a4be8ae.tar.gz',
-  },
   'enum34': {
     'version': '1.0.4',
     'build': '0',
