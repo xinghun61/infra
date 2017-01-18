@@ -178,6 +178,10 @@ func (a *Analyzer) BuilderAlerts(ctx context.Context, tree string, master *messa
 		for builderName, builder := range be.Builders {
 			builderName, builder := builderName, builder
 			workC <- func() error {
+				if a.BuilderOnly != "" && builderName != a.BuilderOnly {
+					return nil
+				}
+
 				out := r{builderName: builderName, b: builder}
 				out.alerts, out.err = a.builderAlerts(ctx, tree, master, builderName, &builder)
 
