@@ -17,7 +17,7 @@ from model.flake.flake_try_job import FlakeTryJob
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake import recursive_flake_try_job_pipeline
-from waterfall.flake.recursive_flake_try_job_pipeline import _CreateCulprit
+from waterfall.flake.recursive_flake_try_job_pipeline import CreateCulprit
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     _GetNextCommitPosition)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
@@ -108,9 +108,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = RecursiveFlakeTryJobPipeline(
         analysis.key.urlsafe(), commit_position, revision)
-
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
+
     self.assertIsNotNone(
         FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
                         revision))
@@ -136,7 +136,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
     self.assertIsNone(analysis.try_job_status)
 
-  def testNextCommitPositionPipeline(self, *_):
+  def testNextCommitPositionPipeline(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -163,17 +163,16 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.suspected_flake_build_number = 12345
     analysis.Save()
 
-    queue_name = {'x': False}
-    def MockedRun(*_):
-      queue_name['x'] = True  # pragma: no cover
+    self.MockPipeline(
+        recursive_flake_try_job_pipeline.RecursiveFlakeTryJobPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), 97, 'r97'],
+        expected_kwargs={})
 
-    self.mock(
-        recursive_flake_try_job_pipeline.RecursiveFlakeTryJobPipeline, 'start',
-        MockedRun)
-
-    NextCommitPositionPipeline().run(
+    pipeline = NextCommitPositionPipeline(
         analysis.key.urlsafe(), try_job.key.urlsafe())
-    self.assertTrue(queue_name['x'])
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
   def testNextCommitPositionPipelineCompleted(self, mock_fn):
@@ -211,8 +210,20 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.suspected_flake_build_number = 12345
     analysis.Save()
 
-    NextCommitPositionPipeline().run(
+    self.MockPipeline(
+        recursive_flake_try_job_pipeline.RecursiveFlakeTryJobPipeline,
+        '',
+        expected_args=[],
+        expected_kwargs={})
+    self.MockPipeline(recursive_flake_try_job_pipeline.UpdateFlakeBugPipeline,
+                      '',
+                      expected_args=[analysis.key.urlsafe()],
+                      expected_kwargs={})
+
+    pipeline = NextCommitPositionPipeline(
         analysis.key.urlsafe(), try_job.key.urlsafe())
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
 
     culprit = analysis.culprit
     self.assertEqual(git_hash, culprit.revision)
@@ -243,8 +254,15 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.suspected_flake_build_number = 12345
     analysis.Save()
 
-    NextCommitPositionPipeline().run(
+    self.MockPipeline(
+        recursive_flake_try_job_pipeline.RecursiveFlakeTryJobPipeline,
+        '',
+        expected_args=[])
+
+    pipeline = NextCommitPositionPipeline(
         analysis.key.urlsafe(), try_job.key.urlsafe())
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
 
     culprit = analysis.culprit
     self.assertEqual(git_hash, culprit.revision)
@@ -275,8 +293,16 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name, test_name)
     analysis.put()
 
-    NextCommitPositionPipeline().run(
+    self.MockPipeline(recursive_flake_try_job_pipeline.UpdateFlakeBugPipeline,
+                      '',
+                      expected_args=[analysis.key.urlsafe()],
+                      expected_kwargs={})
+
+    pipeline = NextCommitPositionPipeline(
         analysis.key.urlsafe(), try_job.key.urlsafe())
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
     mocked_pipeline.assert_not_called()
     self.assertEqual(error, analysis.error)
 
@@ -289,7 +315,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     change_log = ChangeLog(None, None, revision,
                            commit_position, None, None, url, None)
     mocked_module.return_value = change_log
-    culprit = _CreateCulprit(revision, commit_position, repo_name)
+    culprit = CreateCulprit(revision, commit_position, 0.6, repo_name)
 
     self.assertEqual(commit_position, culprit.commit_position)
     self.assertEqual(revision, culprit.revision)
@@ -301,7 +327,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     revision = 'a1b2c3d4'
     commit_position = 12345
     repo_name = 'repo_name'
-    culprit = _CreateCulprit(revision, commit_position, repo_name)
+    culprit = CreateCulprit(revision, commit_position, 0.6, repo_name)
 
     self.assertEqual(commit_position, culprit.commit_position)
     self.assertEqual(revision, culprit.revision)

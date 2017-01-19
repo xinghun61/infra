@@ -367,9 +367,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point.previous_build_commit_position = 1
     data_point.previous_build_git_hash = 'git_hash_1'
     analysis.data_points.append(data_point)
+    analysis.confidence_in_suspected_build = 0
     analysis.Save()
 
     expected_result = {
+        'confidence': 0,
         'build_number': analysis.suspected_flake_build_number,
         'commit_position': 2,
         'git_hash': 'git_hash_2',
@@ -385,25 +387,15 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     git_hash = 'git_hash_2'
     url = 'url'
     culprit = FlakeCulprit.Create('chromium', git_hash, commit_position, url)
-    culprit.put()
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.suspected_flake_build_number = 123
-    data_point = DataPoint()
-    data_point.pass_rate = 0.9
-    data_point.commit_position = commit_position
-    data_point.git_hash = git_hash
-    data_point.previous_build_commit_position = 1
-    data_point.previous_build_git_hash = 'git_hash_1'
-    data_point.try_job_url = 'try_job_url'
-    analysis.data_points.append(data_point)
     analysis.culprit = culprit
-    analysis.Save()
 
     expected_result = {
         'commit_position': commit_position,
         'git_hash': git_hash,
-        'url': url
+        'url': url,
+        'confidence': None,
     }
     self.assertEqual(expected_result,
                      check_flake._GetCulpritInfo(analysis))

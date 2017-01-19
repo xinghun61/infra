@@ -339,6 +339,9 @@
     {% endif %}
     {% if suspected_flake.build_number %}
       Flakiness <b>started</b> in Build: <a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake.build_number }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.build_number }}</a>
+      {% if suspected_flake.confidence %}
+        (Confidence: {{ '%.1' % (suspected_flake.confidence * 100) }})
+      {% endif %}
       <br>
     {% endif %}
     {% if suspected_flake.commit_position and suspected_flake.git_hash %}
@@ -347,6 +350,9 @@
     {% endif %}
     {% if (culprit.commit_position or culprit.revision) and culprit.url %}
         Culprit: <a href="{{ culprit.url }}" target="_blank" style="color:red;font-weight:bold">{{ culprit.commit_position or culprit.revision }}</a>
+      {% if culprit.confidence %}
+        (Confidence: {{ '%.1' % (culprit.confidence * 100) }})
+      {% endif %}
         <br>
     {% endif %}
 

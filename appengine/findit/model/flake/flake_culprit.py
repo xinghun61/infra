@@ -16,11 +16,15 @@ class FlakeCulprit(BaseSuspectedCL):
   # Url to the code review or change log associated with this change.
   url = ndb.StringProperty(indexed=False)
 
+  # The confidence in the culprit to have introduced the flakiness.
+  confidence = ndb.FloatProperty(indexed=False)
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
-  def Create(
-      cls, repo_name, revision, commit_position, url):  # pragma: no cover
+  def Create(cls, repo_name, revision, commit_position,
+             url, confidence=None):  # pragma: no cover
     instance = super(FlakeCulprit, cls).Create(
         repo_name, revision, commit_position)
     instance.url = url
+    instance.confidence = confidence
     return instance

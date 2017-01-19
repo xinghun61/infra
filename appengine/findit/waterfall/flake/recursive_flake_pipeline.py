@@ -17,7 +17,11 @@ from model import result_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import waterfall_config
-from waterfall.post_comment_to_bug_pipeline import PostCommentToBugPipeline
+from waterfall.flake import confidence
+from waterfall.flake import recursive_flake_try_job_pipeline
+from waterfall.flake.recursive_flake_try_job_pipeline import (
+    RecursiveFlakeTryJobPipeline)
+from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
 from waterfall.trigger_flake_swarming_task_pipeline import (
@@ -27,45 +31,21 @@ from waterfall.trigger_flake_swarming_task_pipeline import (
 _NO_BUILD_NUMBER = -1
 
 
-def _UpdateBugWithResult(analysis, queue_name):
-  """Updates attached bug for the flakiness trend."""
-  if (not analysis.bug_id or
-      not analysis.algorithm_parameters.get('update_monorail_bug')):
-    return False
-
-  comment = textwrap.dedent("""
-  Findit has generated the flakiness trend for this flake in the test config
-  "%s / %s / %s" by rerunning the test %s times on Swarming with build artifacts
-  from Waterfall. Please visit
-    https://findit-for-me.appspot.com/waterfall/flake?key=%s\n
-  Automatically posted by the findit-for-me app (https://goo.gl/YTKnaU).
-  This feature is in alpha version. Feedback is welcome using component
-  Tools>Test>FindIt>Flakiness !""") % (
-      analysis.original_master_name, analysis.original_builder_name,
-      analysis.original_step_name,
-      analysis.algorithm_parameters.get('iterations_to_rerun'),
-      analysis.key.urlsafe())
-  labels = ['AnalyzedByFindit']
-  comment_pipeline = PostCommentToBugPipeline(analysis.bug_id, comment, labels)
-  comment_pipeline.target = appengine_util.GetTargetNameForModule(
-      constants.WATERFALL_BACKEND)
-  comment_pipeline.start(queue_name=queue_name)
-  return True
-
-
 def _UpdateAnalysisStatusUponCompletion(
-    master_flake_analysis, suspected_build, status, error):
-  if error:
-    master_flake_analysis.error = error
-
+    analysis, suspected_build, status, error,
+    build_confidence_score=None, culprit=None):
   if suspected_build == _NO_BUILD_NUMBER:
-    master_flake_analysis.end_time = time_util.GetUTCNow()
-    master_flake_analysis.status = status
-    master_flake_analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
+    analysis.end_time = time_util.GetUTCNow()
+    analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
   else:
-    master_flake_analysis.suspected_flake_build_number = suspected_build
+    analysis.suspected_flake_build_number = suspected_build
 
-  master_flake_analysis.put()
+  analysis.error = error
+  analysis.status = status
+  analysis.confidence_in_suspected_build = build_confidence_score
+  analysis.culprit = culprit
+
+  analysis.put()
 
 
 def _GetETAToStartAnalysis(manually_triggered):
@@ -244,8 +224,7 @@ class RecursiveFlakePipeline(BasePipeline):
       step_name (str): The step name.
       test_name (str): The test name.
       version_number (int): The version to save analysis results and data to.
-      triggering_build_number (int): The build number triggered this
-          Master_Flake_analysis.
+      triggering_build_number (int): The build number triggered this analysis.
       manually_triggered (bool): True if the analysis is from manual request,
         like by a Chromium sheriff.
       use_nearby_neighbor (bool): Whether the optimization for using the
@@ -437,9 +416,8 @@ class NextBuildNumberPipeline(BasePipeline):
       self, master_name, builder_name, triggering_build_number,
        current_build_number, step_name, test_name, version_number,
       use_nearby_neighbor=False, manually_triggered=False):
-
     # Get MasterFlakeAnalysis success list corresponding to parameters.
-    master_flake_analysis = MasterFlakeAnalysis.GetVersion(
+    analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, triggering_build_number, step_name,
         test_name, version=version_number)
 
@@ -457,12 +435,14 @@ class NextBuildNumberPipeline(BasePipeline):
       }
 
       _UpdateAnalysisStatusUponCompletion(
-          master_flake_analysis, None, analysis_status.ERROR, error)
+          analysis, None, analysis_status.ERROR, error)
+      logging.error('Error in Swarming task')
+      yield UpdateFlakeBugPipeline(analysis.key.urlsafe())
       return
 
     flake_settings = waterfall_config.GetCheckFlakeSettings()
     data_points = sorted(
-        master_flake_analysis.data_points, key=lambda k: k.build_number,
+        analysis.data_points, key=lambda k: k.build_number,
         reverse=True)
     # Figure out what build_number to trigger a swarming rerun on next, if any.
     next_build_number, suspected_build = _GetNextBuildNumber(
@@ -472,14 +452,61 @@ class NextBuildNumberPipeline(BasePipeline):
         'max_build_numbers_to_look_back')
     last_build_number = max(
         0, triggering_build_number - max_build_numbers_to_look_back)
+
     if (next_build_number < last_build_number or
-        next_build_number >= triggering_build_number):
-       # Finished.
-      _UpdateAnalysisStatusUponCompletion(
-          master_flake_analysis, suspected_build, analysis_status.COMPLETED,
-          None)
-      _UpdateBugWithResult(
-          master_flake_analysis, self.queue_name or constants.DEFAULT_QUEUE)
+        next_build_number >= triggering_build_number):  # Finished.
+      build_confidence_score = None
+      if suspected_build != _NO_BUILD_NUMBER:
+        # Use steppiness as the confidence score.
+        build_confidence_score = confidence.SteppinessForBuild(
+            analysis.data_points, suspected_build)
+
+      if (build_confidence_score is None or build_confidence_score < 0.6):
+        # If no suspected build or confidence is too low, bail out on try jobs.
+        # Based on analysis of historical data, 60% confidence could filter out
+        # almost all false positive.
+        _UpdateAnalysisStatusUponCompletion(
+            analysis, suspected_build, analysis_status.COMPLETED,
+            None, build_confidence_score=build_confidence_score)
+        logging.info('Bail out on try-jobs.')
+      else:
+        suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
+        if suspected_build_point and suspected_build_point.blame_list:
+          if len(suspected_build_point.blame_list) > 1:
+            # Update suspected build and the confidence score.
+            _UpdateAnalysisStatusUponCompletion(
+                analysis, suspected_build, analysis_status.RUNNING,
+                None, build_confidence_score=build_confidence_score)
+            logging.info('Running try-jobs against commits in suspected build')
+
+            # Hook up with try-job.
+            start_commit_position = suspected_build_point.commit_position - 1
+            start_revision = suspected_build_point.GetRevisionAtCommitPosition(
+                start_commit_position)
+            yield RecursiveFlakeTryJobPipeline(
+               analysis.key.urlsafe(), start_commit_position, start_revision)
+            return  # No update to bug yet.
+          else:
+            # Single commit is the culprit.
+            culprit_confidence_score = confidence.SteppinessForCommitPosition(
+               analysis.data_points, suspected_build_point.commit_position)
+            culprit = recursive_flake_try_job_pipeline.CreateCulprit(
+               suspected_build_point.git_hash,
+               suspected_build_point.commit_position,
+               culprit_confidence_score)
+            # Update suspected build and the confidence score.
+            _UpdateAnalysisStatusUponCompletion(
+                analysis, suspected_build, analysis_status.COMPLETED,
+                None, build_confidence_score=build_confidence_score,
+                culprit=culprit)
+            logging.info('Single commit in the blame list of suspected build')
+        else:
+          _UpdateAnalysisStatusUponCompletion(
+              analysis, suspected_build, analysis_status.COMPLETED,
+              None, build_confidence_score=build_confidence_score)
+          logging.info('No suspected build or empty blame list')
+
+      yield UpdateFlakeBugPipeline(analysis.key.urlsafe())
       return
 
     pipeline_job = RecursiveFlakePipeline(

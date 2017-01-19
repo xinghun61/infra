@@ -161,16 +161,6 @@ class MasterFlakeAnalysis(
 
     return None
 
-  def GetDataPointOfCulprit(self):
-    """Gets the corresponding data point to the culprit revision."""
-    if self.culprit is not None:
-      for data_point in self.data_points:
-        if (data_point.try_job_url and
-            data_point.git_hash == self.culprit.revision):
-          return data_point
-
-    return None
-
   def Reset(self):
     super(MasterFlakeAnalysis, self).Reset()
     self.original_master_name = None
@@ -235,6 +225,9 @@ class MasterFlakeAnalysis(
 
   # The suspected build number to have introduced the flakiness.
   suspected_flake_build_number = ndb.IntegerProperty()
+
+  # The confidence in the suspected build to have introduced the flakiness.
+  confidence_in_suspected_build = ndb.FloatProperty(indexed=False)
 
   # The culprit CL associated with the try job results, if any.
   culprit = ndb.LocalStructuredProperty(FlakeCulprit)

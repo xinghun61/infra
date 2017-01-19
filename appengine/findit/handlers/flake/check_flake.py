@@ -29,6 +29,7 @@ def _GetSuspectedFlakeInfo(analysis):
   Returns:
     A dict in the format:
       {
+          'confidence': float or None,
           'build_number': int,
           'commit_position': int,
           'git_hash': str,
@@ -44,6 +45,7 @@ def _GetSuspectedFlakeInfo(analysis):
   assert data_point
 
   return {
+      'confidence': analysis.confidence_in_suspected_build,
       'build_number': analysis.suspected_flake_build_number,
       'commit_position': data_point.commit_position,
       'git_hash': data_point.git_hash,
@@ -74,13 +76,11 @@ def _GetCulpritInfo(analysis):
   if analysis.culprit is None:
     return {}
 
-  data_point = analysis.GetDataPointOfCulprit()
-  assert data_point
-
   return {
-      'commit_position': data_point.commit_position,
-      'git_hash': data_point.git_hash,
-      'url': analysis.culprit.url
+      'commit_position': analysis.culprit.commit_position,
+      'git_hash': analysis.culprit.revision,
+      'url': analysis.culprit.url,
+      'confidence': analysis.culprit.confidence,
   }
 
 

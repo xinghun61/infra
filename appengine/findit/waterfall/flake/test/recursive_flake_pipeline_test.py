@@ -9,10 +9,12 @@ from common import constants
 from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
 from model import result_status
+from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake import recursive_flake_pipeline
+from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.recursive_flake_pipeline import _GetNextBuildNumber
 from waterfall.flake.recursive_flake_pipeline import NextBuildNumberPipeline
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
@@ -151,8 +153,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  @mock.patch.object(
-      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
   def testNextBuildPipelineForNewRecursionFirstFlake(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -177,23 +177,22 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.data_points.append(data_point)
     analysis.put()
 
-    queue_name = {'x': False}
-    def my_mocked_run(*_, **__):
-      queue_name['x'] = True  # pragma: no cover
-
-    self.mock(
-      recursive_flake_pipeline.RecursiveFlakePipeline, 'start', my_mocked_run)
-
-    NextBuildNumberPipeline.run(
-        NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name, test_name,
-        analysis.version_number)
-    self.assertTrue(queue_name['x'])
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakePipeline,
+                      '',
+                      expected_args=['m', 'b', 99, 's', 't', 1, 100],
+                      expected_kwargs={
+                          'manually_triggered': False,
+                          'use_nearby_neighbor': False,
+                          'step_size': 1,
+                      })
+    pipeline = NextBuildNumberPipeline(
+        master_name, builder_name, master_build_number, build_number,
+        step_name, test_name, analysis.version_number)
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
-  @mock.patch.object(
-      recursive_flake_pipeline, '_UpdateBugWithResult', return_value=None)
   @mock.patch(
       'waterfall.flake.recursive_flake_pipeline.RecursiveFlakePipeline')
   def testNextBuildPipelineForFailedSwarmingTask(self, mocked_pipeline, *_):
@@ -223,9 +222,17 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.data_points.append(data_point)
     analysis.put()
 
-    NextBuildNumberPipeline.run(
-        NextBuildNumberPipeline(), master_name, builder_name,
-        master_build_number, build_number, step_name, test_name, 1)
+    self.MockPipeline(recursive_flake_pipeline.UpdateFlakeBugPipeline,
+                      '',
+                      expected_args=[analysis.key.urlsafe()],
+                      expected_kwargs={})
+
+    pipeline = NextBuildNumberPipeline(
+        master_name, builder_name, master_build_number, build_number,
+        step_name, test_name, 1)
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
     mocked_pipeline.assert_not_called()
     self.assertEqual(swarming_task_error, analysis.error)
 
@@ -456,10 +463,16 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.COMPLETED)
 
-    pipeline = NextBuildNumberPipeline()
-    pipeline.run(
+    self.MockPipeline(recursive_flake_pipeline.UpdateFlakeBugPipeline,
+                      '',
+                      expected_args=[analysis.key.urlsafe()],
+                      expected_kwargs={})
+
+    pipeline = NextBuildNumberPipeline(
         master_name, builder_name, master_build_number, build_number, step_name,
         test_name, analysis.version_number)
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
 
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, master_build_number, step_name, test_name)
@@ -663,66 +676,232 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
             test_name, step_size, number_of_iterations),
         running_cached_build_number_2)
 
-  @mock.patch(
-      'waterfall.flake.recursive_flake_pipeline.PostCommentToBugPipeline')
-  def testNotUpdateBugWithResultWithoutAttachedBug(self, mocked_pipeline):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetNextBuildNumber', return_value=(-1, 100))
+  @mock.patch.object(
+      recursive_flake_pipeline.confidence, 'SteppinessForBuild',
+      return_value=0.4)
+  def testNextBuildPipelineForSuspectedBuildWithLowConfidence(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
+    build_number = 100
     step_name = 's'
     test_name = 't'
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.algorithm_parameters = {'update_monorail_bug': True}
-    self.assertFalse(
-        recursive_flake_pipeline._UpdateBugWithResult(analysis, None))
-    mocked_pipeline.assert_not_called()
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.COMPLETED
+    )
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
 
-  @mock.patch(
-      'waterfall.flake.recursive_flake_pipeline.PostCommentToBugPipeline')
-  def testNotUpdateBugWithResultIfDisabled(self, mocked_pipeline):
+    data_point = DataPoint()
+    data_point.pass_rate = .08
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
+    analysis.put()
+
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakePipeline,
+                      '',
+                      expected_args=[],
+                      expected_kwargs={})
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
+                      '',
+                      expected_args=[],
+                      expected_kwargs={})
+
+    pipeline = NextBuildNumberPipeline(
+        master_name, builder_name, master_build_number, build_number,
+        step_name, test_name, analysis.version_number)
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    self.assertTrue(analysis.completed)
+    self.assertEqual(100, analysis.suspected_flake_build_number)
+    self.assertEqual(0.4, analysis.confidence_in_suspected_build)
+
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetNextBuildNumber', return_value=(-1, 100))
+  @mock.patch.object(
+      recursive_flake_pipeline.confidence, 'SteppinessForBuild',
+      return_value=0.7)
+  @mock.patch.object(
+      recursive_flake_pipeline.MasterFlakeAnalysis,
+      'GetDataPointOfSuspectedBuild',
+      return_value=DataPoint())
+  def testNextBuildPipelineForSuspectedBuildWithEmptyBlamelist(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
+    build_number = 100
     step_name = 's'
     test_name = 't'
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.bug_id = 123
-    analysis.algorithm_parameters = {'update_monorail_bug': False}
-    self.assertFalse(
-        recursive_flake_pipeline._UpdateBugWithResult(analysis, None))
-    mocked_pipeline.assert_not_called()
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.COMPLETED
+    )
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
 
-  @mock.patch(
-      'waterfall.flake.recursive_flake_pipeline.PostCommentToBugPipeline')
-  def testUpdateBugWithResultWithAttachedBug(self, mocked_pipeline):
-    mocked_target = mock.Mock()
-    mocked_pipeline.attach_mock(mocked_target, 'target')
+    data_point = DataPoint()
+    data_point.pass_rate = .08
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
+    analysis.put()
+
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakePipeline,
+                      '',
+                      expected_args=[],
+                      expected_kwargs={})
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
+                      '',
+                      expected_args=[],
+                      expected_kwargs={})
+
+    pipeline = NextBuildNumberPipeline(
+        master_name, builder_name, master_build_number, build_number,
+        step_name, test_name, analysis.version_number)
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    self.assertTrue(analysis.completed)
+    self.assertEqual(100, analysis.suspected_flake_build_number)
+    self.assertEqual(0.7, analysis.confidence_in_suspected_build)
+
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetNextBuildNumber', return_value=(-1, 100))
+  @mock.patch.object(
+      recursive_flake_pipeline.confidence, 'SteppinessForBuild',
+      return_value=0.7)
+  @mock.patch.object(
+      recursive_flake_pipeline.confidence, 'SteppinessForCommitPosition',
+      return_value=0.8)
+  @mock.patch.object(
+      recursive_flake_pipeline.MasterFlakeAnalysis,
+      'GetDataPointOfSuspectedBuild',
+      return_value=DataPoint(blame_list=['r1'], commit_position=10))
+  @mock.patch.object(
+      recursive_flake_try_job_pipeline, 'CreateCulprit',
+      return_value=FlakeCulprit.Create('cr', 'r1', 10, 'http://', 0.8))
+  def testNextBuildPipelineForSuspectedBuildWithOnlyOneCommit(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
+    build_number = 100
     step_name = 's'
     test_name = 't'
-    algorithm_parameters = {
-        'update_monorail_bug': True,
-    }
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.algorithm_parameters = algorithm_parameters
-    analysis.bug_id = 123
-    analysis.original_master_name = 'om'
-    analysis.original_builder_name = 'ob'
-    analysis.original_step_name = 'os'
-    self.assertTrue(
-        recursive_flake_pipeline._UpdateBugWithResult(analysis, 'queue'))
-    calls = mocked_pipeline.mock_calls
-    self.assertEqual(2, len(calls))
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.COMPLETED
+    )
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
 
-    _, args, __ = calls[0]
-    bug_id, comment, labels = args
-    self.assertEqual(123, bug_id)
-    self.assertEqual(['AnalyzedByFindit'], labels)
-    self.assertTrue('om / ob / os' in comment)
+    data_point = DataPoint()
+    data_point.pass_rate = .08
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
+    analysis.put()
 
-    self.assertEqual(mock.call().start(queue_name='queue'), calls[1])
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakePipeline,
+                      '',
+                      expected_args=[],
+                      expected_kwargs={})
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
+                      '',
+                      expected_args=[],
+                      expected_kwargs={})
+
+    pipeline = NextBuildNumberPipeline(
+        master_name, builder_name, master_build_number, build_number,
+        step_name, test_name, analysis.version_number)
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    self.assertTrue(analysis.completed)
+    self.assertEqual(100, analysis.suspected_flake_build_number)
+    self.assertEqual(0.7, analysis.confidence_in_suspected_build)
+    self.assertIsNotNone(analysis.culprit)
+    self.assertEqual(10, analysis.culprit.commit_position)
+    self.assertEqual(0.8, analysis.culprit.confidence)
+
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
+  @mock.patch.object(
+      recursive_flake_pipeline, '_GetNextBuildNumber', return_value=(-1, 100))
+  @mock.patch.object(
+      recursive_flake_pipeline.confidence, 'SteppinessForBuild',
+      return_value=0.7)
+  @mock.patch.object(
+      recursive_flake_pipeline.MasterFlakeAnalysis,
+      'GetDataPointOfSuspectedBuild',
+      return_value=DataPoint(blame_list=['r1', 'r2', 'r3'], commit_position=10))
+  def testNextBuildPipelineForSuspectedBuildWithMultipleCommits(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.COMPLETED
+    )
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+
+    data_point = DataPoint()
+    data_point.pass_rate = .08
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
+    analysis.put()
+
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakePipeline,
+                      '',
+                      expected_args=[],
+                      expected_kwargs={})
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
+                      '',
+                      expected_args=[analysis.key.urlsafe(), 9, 'r2'],
+                      expected_kwargs={})
+
+    pipeline = NextBuildNumberPipeline(
+        master_name, builder_name, master_build_number, build_number,
+        step_name, test_name, analysis.version_number)
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
+    self.assertEqual(100, analysis.suspected_flake_build_number)
+    self.assertEqual(0.7, analysis.confidence_in_suspected_build)
+    self.assertIsNone(analysis.culprit)

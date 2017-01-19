@@ -19,10 +19,12 @@ from model import analysis_status
 from model import result_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
+from waterfall.flake import confidence
 from waterfall.flake.process_flake_try_job_result_pipeline import (
     ProcessFlakeTryJobResultPipeline)
 from waterfall.flake.schedule_flake_try_job_pipeline import (
     ScheduleFlakeTryJobPipeline)
+from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
 
@@ -36,17 +38,19 @@ _GIT_REPO = CachedGitilesRepository(
     'https://chromium.googlesource.com/chromium/src.git')
 
 
-def _CreateCulprit(revision, commit_position, repo_name='chromium'):
+def CreateCulprit(revision, commit_position, confidence_score,
+                   repo_name='chromium'):
   """Sets culprit information."""
   change_log = _GIT_REPO.GetChangeLog(revision)
 
   if change_log:
     url = change_log.code_review_url or change_log.commit_url
     culprit = FlakeCulprit.Create(
-        repo_name, revision, commit_position, url)
+        repo_name, revision, commit_position, url, confidence_score)
   else:
     logging.error('Unable to retrieve change logs for %s', revision)
-    culprit = FlakeCulprit.Create(repo_name, revision, commit_position, None)
+    culprit = FlakeCulprit.Create(
+        repo_name, revision, commit_position, None, confidence_score)
 
   return culprit
 
@@ -268,6 +272,7 @@ class NextCommitPositionPipeline(BasePipeline):
       }
       _UpdateAnalysisTryJobStatusUponCompletion(
           flake_analysis, None, analysis_status.ERROR, error)
+      yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
       return
 
     # TODO(lijeffrey) Move parameters to config.
@@ -297,11 +302,15 @@ class NextCommitPositionPipeline(BasePipeline):
       if next_commit_position == suspected_build_data_point.commit_position:
         suspected_commit_position = next_commit_position
 
+      confidence_score = confidence.SteppinessForCommitPosition(
+         flake_analysis.data_points, suspected_commit_position)
       culprit_revision = suspected_build_data_point.GetRevisionAtCommitPosition(
           suspected_commit_position)
-      culprit = _CreateCulprit(culprit_revision, suspected_commit_position)
+      culprit = CreateCulprit(
+          culprit_revision, suspected_commit_position, confidence_score)
       _UpdateAnalysisTryJobStatusUponCompletion(
           flake_analysis, culprit, analysis_status.COMPLETED, None)
+      yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
       return
 
     next_revision = suspected_build_data_point.GetRevisionAtCommitPosition(
