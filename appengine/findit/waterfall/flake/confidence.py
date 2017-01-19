@@ -19,6 +19,7 @@ def _Steppiness(data_points, index_picker, split_index_value):
   for i, datum in enumerate(sorted_data):
     if index_picker(datum) == split_index_value:
       split_index = i
+      break
   assert split_index is not None, (
       '%r not in the given data list' % split_index_value)
   values = [d.pass_rate for d in sorted_data]
