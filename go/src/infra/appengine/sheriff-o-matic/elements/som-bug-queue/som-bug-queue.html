@@ -9,10 +9,10 @@
       #main {
         background: white;
       }
-      #error {
+      .error {
         color: red;
       }
-      #error,
+      .error,
       #loadingBugs,
       #noBugs {
         padding: 0.3em 0.5em;
@@ -68,10 +68,10 @@
     <div id="main" hidden$="[[_hideBugQueue]]">
       <h2 hidden$="[[_isTrooperQueue]]">[[treeDisplayName]] Bug Queue (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues" target="_blank">Help?</a>)</h2>
       <h2 hidden$="[[!_isTrooperQueue]]">Trooper Queue (<a href="http://go/trooper-queue" target="_blank">View in Monorail</a>)</h2>
-      <div id="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
+      <div class="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
         Error fetching bug queue: [[_bugQueueJsonError.error]]
       </div>
-      <div id="error" hidden$="[[_haveNoErrors(_assignedBugsJsonError)]]">
+      <div class="error" hidden$="[[_haveNoErrors(_assignedBugsJsonError)]]">
         Error fetching assigned bugs: [[_assignedBugsJsonError.error]]
       </div>
       <div id="loadingBugs" hidden$="[[!_showBugsLoading(_bugsLoaded, _bugQueueJsonError)]]"><paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bug Queue... </div>
