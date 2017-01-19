@@ -15,6 +15,9 @@ format:
 	gofmt -s -w .
 	clang-format -i elements/**/*.js -style=file
 
+lint:
+	polylint -i elements/som-app/som-app.html
+
 build: deps
 	vulcanize elements/som-app/som-app.html -o elements/som-app/som-app.vulcanized.html
 
@@ -35,8 +38,8 @@ bower-cipd: deps
 # In the future we can add different commends for prod and staging.
 deploy-prod: build
 	./gae.py upload -A sheriff-o-matic
-	rm elements/som-app.vulcanized.html
+	rm elements/som-app/som-app.vulcanized.html
 
 deploy: build
 	./gae.py upload
-	rm elements/som-app.vulcanized.html
+	rm elements/som-app/som-app.vulcanized.html

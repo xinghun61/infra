@@ -39,6 +39,7 @@
       },
       _bugModel: Object,
       bugQueueLabel: String,
+      _commentsErrorMessage: String,
       _commentsModel: Object,
       _commentsModelAnnotation: {
         type: Object,

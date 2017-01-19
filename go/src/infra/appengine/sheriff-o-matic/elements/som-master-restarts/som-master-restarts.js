@@ -19,8 +19,8 @@
         computed: '_computeHideNotice(_hasRestarts, _hasError)',
         value: true,
       },
-      _restartErrorJson: Object,
-      _restartJson: Object,
+      _restartsErrorJson: Object,
+      _restartsJson: Object,
       _hasRestarts: {
         type: Boolean,
         value: false,

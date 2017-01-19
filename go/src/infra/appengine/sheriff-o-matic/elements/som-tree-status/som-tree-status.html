@@ -29,19 +29,19 @@
     </style>
     <iron-ajax
       id="treeStatus"
-      url="[[_statusUrl]]/current?format=json"
+      url$="[[_statusUrl]]/current?format=json"
       handle-as="json"
       last-error="{{_statusErrorJson}}"
       last-response="{{_statusJson}}"
       debounce-duration="300"></iron-ajax>
     <div id="error" hidden$="[[!_hasError]]">
-      Error fetching tree status from <a href="[[_statusUrl]]" target="_blank">[[_statusUrl]]</a>
+      Error fetching tree status from <a href$="[[_statusUrl]]" target="_blank">[[_statusUrl]]</a>
     </div>
     <div id="treeClosed" hidden$="[[_hideNotice]]">
       <marked-element markdown="[[_message]]" sanitize>
         <span class="markdown-html"></span>
       </marked-element>
-      by <a href="mailto:[[_email]]">[[_username]]</a> on [[_time]] (<a href="[[_statusUrl]]" target="_blank">More</a>)
+      by <a href$="mailto:[[_email]]">[[_username]]</a> on [[_time]] (<a href$="[[_statusUrl]]" target="_blank">More</a>)
     </div>
   </template>
   <script src="som-tree-status.js"></script>

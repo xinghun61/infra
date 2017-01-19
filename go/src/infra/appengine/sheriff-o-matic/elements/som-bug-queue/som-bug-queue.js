@@ -49,6 +49,7 @@
         value: false,
         computed: '_computeShowNoBugs(bugs, _bugsLoaded, _bugQueueJsonError)',
       },
+      treeDisplayName: String,
     },
 
     refresh: function() {

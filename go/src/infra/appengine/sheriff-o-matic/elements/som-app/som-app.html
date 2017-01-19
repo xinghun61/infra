@@ -209,10 +209,10 @@
               <som-master-restarts tree="[[_tree]]" id="masterRestarts"></som-master-restarts>
               <div class="notification" hidden$="[[_isTrooperPage]]">
                 Start at the top and try to clear all the alerts. For additional guidance, see:
-                <span hidden="[[!_helpLink]]">
-                  <a href="[[_helpLink]]" target="_blank">[[_treeDisplayName]] Help</a>
+                <span hidden$="[[!_helpLink]]">
+                  <a href$="[[_helpLink]]" target="_blank">[[_treeDisplayName]] Help</a>
                 </span>
-                <span hidden="[[_helpLink]]">
+                <span hidden$="[[_helpLink]]">
                   <a href="/help-som">The Help Page</a>
                 </span>
               </div>
@@ -229,7 +229,7 @@
             </template>
             <div id="alertsListInner">
               <h2>[[_treeDisplayName]] Failure Alerts (<a href="/help-som">Help?</a>)</h2>
-              <div id="fetchAlertsError" hidden=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
+              <div id="fetchAlertsError" hidden$=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
               <template is="dom-if" if="[[!_hideJulie]]">
                 <div id="noAlerts">
                   No alerts!
