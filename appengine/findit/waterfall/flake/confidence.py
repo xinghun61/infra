@@ -42,6 +42,7 @@ def SteppinessForBuild(data_points, build_number):
     data_points (list): A list of master_flake_analysis.DataPoint instances.
     build_number (int): The build number to split the data points.
   """
+  data_points = filter(lambda x: x.try_job_url is None, data_points)
   return _Steppiness(data_points, lambda dp: dp.build_number, build_number)
 
 

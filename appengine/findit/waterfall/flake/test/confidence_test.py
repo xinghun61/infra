@@ -50,6 +50,7 @@ class ConfidenceTest(wf_testcase.WaterfallTestCase):
     data_points = [
         DataPoint(build_number=90, pass_rate=1),
         DataPoint(build_number=94, pass_rate=1),
+        DataPoint(build_number=94, pass_rate=0.5, try_job_url='http://'),
         DataPoint(build_number=97, pass_rate=1),
         DataPoint(build_number=99, pass_rate=1),
         DataPoint(build_number=100, pass_rate=1),
