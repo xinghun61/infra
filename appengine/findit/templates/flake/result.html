@@ -374,7 +374,7 @@
     {% if pending_time %}
     Pending time: {{ pending_time }}<br>
     {% endif %}
-    {% if duration %}
+    {% if show_debug_info and duration %}
     Duration: {{ duration }}<br>
     {% endif %}
     Total Swarm Tasks: {{ build_level_number }}<br>
