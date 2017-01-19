@@ -39,7 +39,7 @@ _GIT_REPO = CachedGitilesRepository(
 
 
 def CreateCulprit(revision, commit_position, confidence_score,
-                   repo_name='chromium'):
+                  repo_name='chromium'):
   """Sets culprit information."""
   change_log = _GIT_REPO.GetChangeLog(revision)
 
@@ -71,6 +71,15 @@ def _UpdateAnalysisTryJobStatusUponCompletion(
   flake_analysis.put()
 
 
+@ndb.transactional
+def _CreateTryJobEntity(
+    master_name, builder_name, step_name, test_name, revision):
+  try_job = FlakeTryJob.Create(
+      master_name, builder_name, step_name, test_name, revision)
+  try_job.put()
+  return try_job
+
+
 class RecursiveFlakeTryJobPipeline(BasePipeline):
   """Starts a series of flake try jobs to identify the exact culprit."""
 
@@ -97,10 +106,9 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 
     # TODO(lijeffrey): support force/rerun.
 
-    try_job = FlakeTryJob.Create(
+    try_job = _CreateTryJobEntity(
         flake_analysis.master_name, flake_analysis.builder_name,
-        flake_analysis.step_name, flake_analysis.test_name, revision)
-    try_job.put()
+        flake_analysis.canonical_step_name, flake_analysis.test_name, revision)
 
     if flake_analysis.try_job_status is None:  # pragma: no branch
       flake_analysis.try_job_status = analysis_status.RUNNING
@@ -109,7 +117,8 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
     with pipeline.InOrder():
       try_job_id = yield ScheduleFlakeTryJobPipeline(
           flake_analysis.master_name, flake_analysis.builder_name,
-          flake_analysis.step_name, flake_analysis.test_name, revision)
+          flake_analysis.canonical_step_name, flake_analysis.test_name,
+          revision)
 
       try_job_result = yield MonitorTryJobPipeline(
           try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)

@@ -50,7 +50,7 @@ based on the flakiness trend in the config "%s / %s".
 
 _LOW_FLAKINESS_COMMENT_TEMPLATE = """
 Findit has generated a flakiness trend in the config "%s / %s" for this flake.
-It seems a longstanding flake or with low flakiness.
+It seems a longstanding flake, with low flakiness, or not reproducible.
   https://findit-for-me.appspot.com/waterfall/flake?key=%s""" + _COMMENT_FOOTER
 
 

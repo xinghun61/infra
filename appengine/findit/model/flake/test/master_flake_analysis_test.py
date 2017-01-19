@@ -85,8 +85,9 @@ class MasterFlakeAnalysisTest(TestCase):
     self.assertEqual('Error', analysis.status_description)
 
   def testMasterFlakeAnalysisStepTestName(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    self.assertEqual('s', analysis.step_name)
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's on OS', 't')
+    self.assertEqual('s on OS', analysis.step_name)
+    self.assertEqual('s', analysis.canonical_step_name)
     self.assertEqual('t', analysis.test_name)
 
   def testMasterFlakeAnalysisUpdateTriageResultCorrect(self):

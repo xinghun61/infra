@@ -901,7 +901,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
-    self.assertEqual(analysis_status.RUNNING, analysis.status)
+    self.assertTrue(analysis.completed)
     self.assertEqual(100, analysis.suspected_flake_build_number)
     self.assertEqual(0.7, analysis.confidence_in_suspected_build)
     self.assertIsNone(analysis.culprit)

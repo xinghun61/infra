@@ -86,7 +86,7 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     assert flake_analysis
     assert try_job
 
-    step_name = flake_analysis.step_name
+    step_name = flake_analysis.canonical_step_name
     test_name = flake_analysis.test_name
     result = try_job_result['report']['result']
     pass_fail_counts = result[revision][step_name].get('pass_fail_counts', {})

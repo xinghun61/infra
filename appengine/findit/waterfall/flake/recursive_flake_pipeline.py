@@ -224,7 +224,8 @@ class RecursiveFlakePipeline(BasePipeline):
       step_name (str): The step name.
       test_name (str): The test name.
       version_number (int): The version to save analysis results and data to.
-      triggering_build_number (int): The build number triggered this analysis.
+      triggering_build_number (int): The build number that triggered this
+        analysis.
       manually_triggered (bool): True if the analysis is from manual request,
         like by a Chromium sheriff.
       use_nearby_neighbor (bool): Whether the optimization for using the
@@ -468,14 +469,14 @@ class NextBuildNumberPipeline(BasePipeline):
         _UpdateAnalysisStatusUponCompletion(
             analysis, suspected_build, analysis_status.COMPLETED,
             None, build_confidence_score=build_confidence_score)
-        logging.info('Bail out on try-jobs.')
+        logging.info('Skipping try jobs due to insufficient confidence.')
       else:
         suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
         if suspected_build_point and suspected_build_point.blame_list:
           if len(suspected_build_point.blame_list) > 1:
             # Update suspected build and the confidence score.
             _UpdateAnalysisStatusUponCompletion(
-                analysis, suspected_build, analysis_status.RUNNING,
+                analysis, suspected_build, analysis_status.COMPLETED,
                 None, build_confidence_score=build_confidence_score)
             logging.info('Running try-jobs against commits in suspected build')
 

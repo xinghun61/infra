@@ -92,6 +92,10 @@ class MasterFlakeAnalysis(
     return self.key.pairs()[0][1].split('/')[3]
 
   @ndb.ComputedProperty
+  def canonical_step_name(self):
+    return self.step_name.split(' on ')[0]
+
+  @ndb.ComputedProperty
   def test_name(self):
     return base64.urlsafe_b64decode(self.key.pairs()[0][1].split('/')[4])
 
