@@ -1185,7 +1185,16 @@ function onAddIssuesResponse(event) {
       return;
     }
   var response = CS_parseJSON(xhr);
-  console.log(response);
+  var messageDisplay = $('response-message');
+  var issues = response['added'].join(', ');
+  var hotlists = response['hotlist_names'].join(', ');
+  var message = issues + ' successfully added to ' + hotlists;
+  if (response['missed'] && response['missed'].length > 0) {
+    missed = ' \n' + response['missed'].join(', ') + ' could not be added.';
+    message = message + missed;
+  }
+  messageDisplay.innerText = message;
+  messageDisplay.style.display = 'block';
 }
 
 /**

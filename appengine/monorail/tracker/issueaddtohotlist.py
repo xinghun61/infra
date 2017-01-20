@@ -35,7 +35,7 @@ class AddToHotlist(jsonfeed.JsonFeed):
     # TODO(jojwang): a default_project_name can be passed in for adding an issue
     # via the issuedetail page
     default_project_name = ''
-    selected_iids, _misses = self.services.issue.ResolveIssueRefs(
+    selected_iids, misses = self.services.issue.ResolveIssueRefs(
         mr.cnxn, ref_projects, default_project_name, refs)
     added_tuples = [(issue_id, mr.auth.user_id,
                           int(time.time())) for issue_id in
@@ -43,7 +43,17 @@ class AddToHotlist(jsonfeed.JsonFeed):
     self.services.features.AddIssuesToHotlists(
         mr.cnxn, mr.hotlist_ids, added_tuples)
 
-    # TODO(jojwang): Let users know if adding issues was successful
-    # or if errors occurred.
-    return {'issues': mr.issue_refs,
-            'hotlists': mr.hotlist_ids}
+    missed = []
+    for miss in misses:
+      project_name = self.services.project.GetProject(
+          mr.cnxn, miss[0]).project_name
+      missed.append(('%s:%d' % (project_name, miss[1])))
+
+    added = [issue_ref for issue_ref in mr.issue_refs if
+             issue_ref not in missed]
+    hotlist_names = [self.services.features.GetHotlist(
+        mr.cnxn, hotlist_id).name for hotlist_id in mr.hotlist_ids]
+    return {'added': added,
+            'hotlistIDs': mr.hotlist_ids,
+            'missed': missed,
+            'hotlist_names': hotlist_names}

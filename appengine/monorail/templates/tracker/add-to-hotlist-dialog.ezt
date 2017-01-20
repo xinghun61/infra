@@ -1,5 +1,7 @@
 <div id="add-to-hotlist" style="display: none">
 <div id="add-to-hotlist-dialog">
+  <div id="response-message" style="display:none">
+  </div>
   <table>
   [if-any user_hotlists]
     [for user_hotlists]

@@ -27,9 +27,13 @@ class TableCellAdderID(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing an issue's adder_id."""
 
   def __init__(self, issue, adder_id=None, users_by_id=None, **_kw):
+    if adder_id:
+      display_name = [users_by_id[adder_id].display_name]
+    else:
+      display_name = [None]
     table_view_helpers.TableCell.__init__(
         self, table_view_helpers.CELL_TYPE_ATTR,
-        [users_by_id[adder_id].display_name])
+        display_name)
 
 
 class TableCellRank(table_view_helpers.TableCell):
