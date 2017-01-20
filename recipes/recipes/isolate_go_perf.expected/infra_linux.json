@@ -185,11 +185,13 @@
       "python",
       "-u",
       "RECIPE_MODULE[build::perf_dashboard]/resources/post_json.py",
-      "https://chromeperf.appspot.com/add_point"
+      "https://chromeperf.appspot.com/add_point",
+      "-i",
+      "{\"data\": \"[{\\\"buildnumber\\\": 123, \\\"masterid\\\": \\\"chromium.infra\\\", \\\"units\\\": \\\"s\\\", \\\"master\\\": \\\"chromium.infra\\\", \\\"supplemental_columns\\\": {\\\"a_default_rev\\\": \\\"r_infra_infra_git\\\", \\\"r_infra_infra_git\\\": \\\"0123456789abcdeffedcba987654321012345678\\\", \\\"tstamp\\\": \\\"2016-10-13T18:02:17+02:00\\\"}, \\\"buildername\\\": \\\"infra-perf-linux\\\", \\\"test\\\": \\\"infra/luci/isolate/isolate-client-upload\\\", \\\"bot\\\": \\\"infra-perf-linux\\\", \\\"value\\\": 2.0, \\\"revision\\\": \\\"1476374537\\\"}]\"}",
+      "-o",
+      "/path/to/tmp/json"
     ],
     "name": "perf dashboard post",
-    "stdin": "{\"data\": \"[{\\\"buildnumber\\\": 123, \\\"masterid\\\": \\\"chromium.infra\\\", \\\"units\\\": \\\"s\\\", \\\"master\\\": \\\"chromium.infra\\\", \\\"supplemental_columns\\\": {\\\"a_default_rev\\\": \\\"r_infra_infra_git\\\", \\\"r_infra_infra_git\\\": \\\"0123456789abcdeffedcba987654321012345678\\\", \\\"tstamp\\\": \\\"2016-10-13T18:02:17+02:00\\\"}, \\\"buildername\\\": \\\"infra-perf-linux\\\", \\\"test\\\": \\\"infra/luci/isolate/isolate-client-upload\\\", \\\"bot\\\": \\\"infra-perf-linux\\\", \\\"value\\\": 2.0, \\\"revision\\\": \\\"1476374537\\\"}]\"}",
-    "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_TEXT@Failed to post to Perf Dashboard. Error response: None@@@",
       "@@@STEP_LOG_LINE@json.output (invalid)@null@@@",
