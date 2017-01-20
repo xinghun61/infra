@@ -3,15 +3,15 @@
  * @param {Long} hotlist_id id of the current hotlist
 */
 function initializeDialogBox(hotlist_id) {
-  var transferDialog = document.getElementById('transfer-ownership-dialog');
+  var transferContainer = $('transfer-ownership-container');
   $('transfer-ownership').addEventListener('click', function () {
-    transferDialog.showModal();
+    transferContainer.style.display = 'block';
   });
 
   var cancelButton = document.getElementById('cancel');
 
   cancelButton.addEventListener('click', function() {
-    transferDialog.close();
+    transferContainer.style.display = 'none';
   });
 
   $('hotlist_star').addEventListener('click', function () {

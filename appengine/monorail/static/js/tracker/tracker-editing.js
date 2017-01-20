@@ -1139,16 +1139,20 @@ function TKR_addToHotlist() {
     }
   }
   if (selectedIssueRefs.length > 0) {
-    addToHotlistDialog = $('add-to-hotlist');
-    addToHotlistDialog.showModal();
-    $('cancel-add-hotlist').addEventListener('click', function() {
-      addToHotlistDialog.close()
-    });
-    $('add-issues').addEventListener('click', function () {
-      AddIssuesToHotlist(addToHotlistDialog, selectedIssueRefs)});
+    ShowAddToHotlistDialog(selectedIssueRefs);
   } else {
     alert('Please select some issues to add to a hotlist')
   }
+}
+
+function ShowAddToHotlistDialog(issueRefs){
+  addToHotlistDialog = $('add-to-hotlist');
+  addToHotlistDialog.style.display = 'block';
+  $('cancel-add-hotlist').addEventListener('click', function() {
+    addToHotlistDialog.style.display = 'none';
+  });
+  $('add-issues').addEventListener('click', function () {
+    AddIssuesToHotlist(addToHotlistDialog, issueRefs)});
 }
 
 function AddIssuesToHotlist(dialogBox, issueRefs) {

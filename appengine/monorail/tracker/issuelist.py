@@ -153,7 +153,7 @@ class IssueList(servlet.Servlet):
 
     # Update page data with variables that are shared between list and
     # grid view.
-    users_hotlists = self.services.features.GetHotlistsByUserID(
+    user_hotlists = self.services.features.GetHotlistsByUserID(
         mr.cnxn, mr.auth.user_id)
     page_data.update({
         'issue_tab_mode': 'issueList',
@@ -169,7 +169,7 @@ class IssueList(servlet.Servlet):
                 mr.project_name, urls.ISSUE_SETSTAR_JSON)),
         'search_error_message': search_error_message,
         'is_hotlist': ezt.boolean(False),
-        'users_hotlists': users_hotlists,
+        'user_hotlists': user_hotlists,
         # the following are needed by templates for hotlists
         'owner_permissions': ezt.boolean(False),
         'editor_permissions': ezt.boolean(False),

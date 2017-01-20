@@ -5,6 +5,7 @@
   </div>
 
    [include "../framework/artifact-list-pagination-part.ezt"]
+   [include "add-to-hotlist-dialog.ezt"]
 
    [if-any page_perms.EditIssue]
      [if-any is_cross_project][else]
@@ -87,32 +88,6 @@
   </div>
 </form>
 
-<dialog id="add-to-hotlist">
-  <table>
-  [if-any users_hotlists]
-    [for users_hotlists]
-      <tr class="hotlist_rows">
-        <td>
-          <input type="checkbox" id="cb_hotlist_[users_hotlists.hotlist_id]" class="checkRangeSelect">
-        <td>
-        <td class="hotlistname">[users_hotlists.name]</td>
-      </tr>
-    [end]
-  [else]
-  You have no hotlists.
-  [end]
-  </table>
-  <menu>
-    <button id="cancel-add-hotlist" type="reset">Cancel</button>
-    <button id="add-issues">Confirm</button>
-    [# TODO(jojwang): pass in selected issues to put into createhotlist form for the user]
-    <a href="/hosting/createHotlist">
-      <input type="button" value="Create hotlist">
-    </a>
-  </menu>
-</dialog>
-
-
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   if ($("selectall")) {
@@ -129,15 +104,5 @@ runOnLoad(function() {
       _showID('addissuesspec');
     }
     }
-  [if-any users_hotlists]
-  window.usersHotlists = [[]
-    [for users_hotlists]
-    [users_hotlists.hotlist_id]
-    [if-index users_hotlists last][else],[end]
-    [end]
-  ];
- [else]
- window.usersHotlists = [[]]
- [end]
 });
 </script>

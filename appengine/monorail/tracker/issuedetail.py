@@ -320,18 +320,25 @@ class IssueDetail(issuepeek.IssuePeek):
         mr.cnxn, self.services.user, features_bizobj.UsersInvolvedInHotlists(
             issue_hotlists))
 
-    issue_hotlists = [hotlist_views.HotlistView(
+    issue_hotlist_views = [hotlist_views.HotlistView(
         hotlist_pb, mr.auth, mr.auth.user_id, users_by_id,
         self.services.hotlist_star.IsItemStarredBy(
             mr.cnxn, hotlist_pb.hotlist_id, mr.auth.user_id)
     ) for hotlist_pb in self.services.features.GetHotlistsByIssueID(
         mr.cnxn, issue.issue_id)]
 
-    visible_issue_hotlists = [view for view in issue_hotlists if view.visible]
-    user_issue_hotlists = [view for view in visible_issue_hotlists if (
-        view.role_name=='owner' or view.role_name=='editor')]
-    remaining_issue_hotlists = [view for view in visible_issue_hotlists if
-                                view not in user_issue_hotlists]
+    visible_issue_hotlist_views = [view for view in issue_hotlist_views if
+                                   view.visible]
+    user_issue_hotlist_views = [
+        view for view in visible_issue_hotlist_views if (
+            view.role_name=='owner' or view.role_name=='editor')]
+    remaining_issue_hotlist_views = [
+        view for view in visible_issue_hotlist_views if
+        view not in user_issue_hotlist_views]
+    user_hotlists = [hotlist for hotlist in
+                      self.services.features.GetHotlistsByUserID(
+                          mr.cnxn, mr.auth.user_id) if
+                      hotlist not in issue_hotlists]
     return {
         'issue_tab_mode': 'issueDetail',
         'issue': issue_view,
@@ -368,7 +375,6 @@ class IssueDetail(issuepeek.IssuePeek):
             mr.auth.user_id, '/p/%s%s.do' % (
                 mr.project_name, urls.ISSUE_SETSTAR_JSON)),
 
-
         # For deep linking and input correction after a failed submit.
         'initial_summary': issue_view.summary,
         'initial_comment': '',
@@ -398,9 +404,11 @@ class IssueDetail(issuepeek.IssuePeek):
         'previous_locations': previous_locations,
         'spam_verdict_history': spam_verdict_history,
 
+        # For adding issue to user's hotlists
+        'user_hotlists': user_hotlists,
         # For showing hotlists that contain this issue
-        'user_issue_hotlists': user_issue_hotlists,
-        'remaining_issue_hotlists': remaining_issue_hotlists
+        'user_issue_hotlists': user_issue_hotlist_views,
+        'remaining_issue_hotlists': remaining_issue_hotlist_views
     }
 
   def GatherHelpData(self, mr, page_data):

@@ -229,10 +229,14 @@
     [end]
 
     [if-any user_issue_hotlists]
-      <br><b>Your hotlists:</b><br>
+      <br><b>Hotlists:</b><br>
       [for user_issue_hotlists]
-        <a href="[user_issue_hotlists.url]">[user_issue_hotlists.name]</a><br>
+        <a href="[user_issue_hotlists.url]">[user_issue_hotlists.name]</a>
       [end]
+    [end]
+
+    [if-any logged_in_user]<br><a id="add-issue-to-hotlist">Add to hotlist</a><br>
+    [include "add-to-hotlist-dialog.ezt"]
     [end]
     [if-any remaining_issue_hotlists]
       [# TODO(jojwang): add collapse/expand for remainig_issue_hotlists]
@@ -280,5 +284,10 @@ runOnLoad(function() {
       event.preventDefault();
     });
   }
+
+  $("add-issue-to-hotlist").addEventListener("click", function(event) {
+    ShowAddToHotlistDialog([[]"[issue.project_name]:[issue.local_id]"]);
+  });
+
 });
 </script>

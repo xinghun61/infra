@@ -1,5 +1,6 @@
 [define title]People[end]
 [define category_css]css/ph_list.css[end]
+[if-any is_hotlist][define category2_css]css/ph_detail.css[end][end]
 [include "../framework/master-header.ezt" "showtabs"]
 [include "../framework/js-placeholders.ezt"]
 

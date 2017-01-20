@@ -1,0 +1,40 @@
+<div id="add-to-hotlist" style="display: none">
+<div id="add-to-hotlist-dialog">
+  <table>
+  [if-any user_hotlists]
+    [for user_hotlists]
+      <tr class="hotlist_rows">
+        <td>
+          <input type="checkbox" id="cb_hotlist_[user_hotlists.hotlist_id]" class="checkRangeSelect">
+        <td>
+        <td class="hotlistname">[user_hotlists.name]</td>
+      </tr>
+    [end]
+  [else]
+  You have no hotlists.
+  [end]
+  </table>
+  <menu>
+    <button id="cancel-add-hotlist" type="reset">Cancel</button>
+    <button id="add-issues">Confirm</button>
+    [# TODO(jojwang): pass in selected issues to put into createhotlist form for the user]
+    <a href="/hosting/createHotlist">
+      <input type="button" value="Create hotlist">
+    </a>
+  </menu>
+</div></div>
+
+<script type="text/javascript" nonce="[nonce]">
+
+  [if-any user_hotlists]
+  window.usersHotlists = [[]
+    [for user_hotlists]
+    [user_hotlists.hotlist_id]
+    [if-index user_hotlists last][else],[end]
+    [end]
+  ];
+ [else]
+ window.usersHotlists = [[]]
+ [end]
+
+</script>
