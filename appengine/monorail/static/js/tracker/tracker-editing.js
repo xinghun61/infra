@@ -42,7 +42,7 @@ var TKR_OWNER_DEFAULTS_TO_MEMBER_AREA_ID =
 var TKR_COMPONENT_REQUIRED_CHECKBOX_ID =
     'component_required_checkbox';
 var TKR_PROMPT_COMPONENTS_EDITOR_ID = 'components_editor';
-var TKR_FIELD_EDITOR_ID_PREFIX = 'custom_';
+var TKR_FIELD_EDITOR_ID_PREFIX = 'tmpl_custom_';
 var TKR_PROMPT_LABELS_EDITOR_ID_PREFIX = 'label';
 var TKR_CONFIRMAREA_ID = 'confirmarea';
 var TKR_DISCARD_YOUR_CHANGES = 'Discard your changes?';

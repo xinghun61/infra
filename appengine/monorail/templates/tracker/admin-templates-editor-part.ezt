@@ -65,7 +65,7 @@
     <tr>
       <th>[fields.field_name]:</th>
       <td colspan="2">
-        [include "field-value-widgets.ezt" False ""]
+        [include "field-value-widgets.ezt" False "tmpl"]
       </td>
     <tr>
   [end]
