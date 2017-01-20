@@ -338,7 +338,11 @@
         this._activeRequests += alertsGroups.length;
 
         alertsGroups.forEach((group) => {
-          window.fetch('/api/v1/alerts/' + group, {credentials: 'include'})
+          let base = '/api/v1/alerts/';
+          if (window.location.href.indexOf('useMilo') != -1) {
+            base = base + 'milo.';
+          }
+          window.fetch(base + group, {credentials: 'include'})
               .then(
                   (response) => {
                     this._activeRequests -= 1;
