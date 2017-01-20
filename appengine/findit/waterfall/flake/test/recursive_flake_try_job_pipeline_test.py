@@ -229,13 +229,21 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(git_hash, culprit.revision)
     self.assertEqual(95, culprit.commit_position)
 
-  def testNextCommitPositionNewlyAddedFlakyTest(self, *_):
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  def testNextCommitPositionNewlyAddedFlakyTest(self, mocked_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
     step_name = 's'
     test_name = 't'
     git_hash = 'r100'
+
+    revision = 'r100'
+    commit_position = 100
+    url = 'url'
+    change_log = ChangeLog(None, None, revision,
+                           commit_position, None, None, url, None)
+    mocked_fn.return_value = change_log
 
     try_job = FlakeTryJob.Create(
         master_name, builder_name, step_name, test_name, git_hash)
@@ -248,7 +256,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.try_job_status = analysis_status.RUNNING
     analysis.data_points = [
         _GenerateDataPoint(
-            pass_rate=0.9, commit_position=100, build_number=12345,
+            pass_rate=0.9, commit_position=commit_position, build_number=12345,
             previous_build_commit_position=98, blame_list=['r99', 'r100']),
         _GenerateDataPoint(pass_rate=-1, commit_position=99, try_job_url='id1')]
     analysis.suspected_flake_build_number = 12345
