@@ -56,6 +56,17 @@ class LocalGitRepository(GitRepository):
     self.blame_parser = local_git_parsers.GitBlameParser()
     self.diff_parser = local_git_parsers.GitDiffParser()
 
+  @classmethod
+  def Factory(cls): # pragma: no cover
+    """Construct a factory for creating ``LocalGitRepository`` instances.
+
+    Returns:
+      A function from repo urls to ``LocalGitRepository`` instances. All
+      instances produced by the returned function are novel (i.e., newly
+      allocated).
+    """
+    return lambda repo_url: cls(repo_url)  # pylint: disable=W0108
+
   @property
   def repo_path(self):
     return self._repo_path

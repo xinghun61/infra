@@ -40,7 +40,7 @@ def StoreResults(crash, client_id, app_id, id_to_culprits, lock, verbose=False):
     findit = FinditForClientID(client_id, LocalGitRepository)
     stacktrace = findit._stacktrace_parser.Parse(
         crash['stack_trace'],
-        ChromeDependencyFetcher(findit._repository).GetDependency(
+        ChromeDependencyFetcher(LocalGitRepository.Factory()).GetDependency(
             crash['crashed_version'],
             crash['platform']))
     if stacktrace:

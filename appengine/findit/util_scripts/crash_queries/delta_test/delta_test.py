@@ -162,6 +162,9 @@ def GetResults(crashes, client_id, app_id, git_hash, result_path,
     p = subprocess.Popen(args, stdin=subprocess.PIPE)
     # TODO(katesonia): Cache crashes for crash_iterator and let subprocess read
     # corresponding cache file instead.
+    #
+    # Pass the crashes information to sub-routine ``run-predator`` to compute
+    # culprit results and write results to ``result_path``.
     p.communicate(input=json.dumps(crashes))
   else:
     print '\nLoading results from', result_path
@@ -170,6 +173,8 @@ def GetResults(crashes, client_id, app_id, git_hash, result_path,
     print 'Failed to get results.'
     return {}
 
+  # Read culprit results from ``result_path``, which is computed by sub-routine
+  # ``run-predator``.
   with open(result_path) as f:
     return pickle.load(f)
 
@@ -207,6 +212,7 @@ def DeltaEvaluator(git_hash1, git_hash2,
   try:
     deltas = {}
     crash_count = 0
+    # Iterate batches of crash informations.
     for index, crashes in enumerate(
         crash_iterator.IterateCrashes(client_id, app_id,
                                       fields=CRASH_FIELDS,
@@ -222,13 +228,15 @@ def DeltaEvaluator(git_hash1, git_hash2,
             PREDATOR_RESULTS_DIRECTORY, delta_util.GenerateFileName(
                 client_id, property_values, start_date, end_date,
                 batch_size, index, git_hash))
+        # Get the culprit results of this batch of crashes.
         results.append(GetResults(crashes, client_id, app_id,
                                   git_hash, result_path,
                                   verbose=verbose))
 
       crash_count += len(crashes)
+      # Compute delta between 2 versions of culprit results for this batch.
       batch_deltas = GetDeltasFromTwoSetsOfResults(*results)
-      # Print deltas of the current batch.
+      # Print the deltas of the current batch.
       print '========= Delta of this batch ========='
       delta_util.PrintDelta(batch_deltas, len(crashes), app_id)
       deltas.update(batch_deltas)
