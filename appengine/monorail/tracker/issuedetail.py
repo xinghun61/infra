@@ -120,7 +120,7 @@ class IssueDetail(issuepeek.IssuePeek):
         if (features_bizobj.IssueIsInHotlist(hotlist, issue.issue_id) and
             permissions.CanViewHotlist(mr.auth.effective_ids, hotlist)):
           self.hotlist_id = hotlist_id
-          return _HotlistFlipper(self.services, hotlist)
+          return _HotlistFlipper(self.services, self.profiler, hotlist)
 
     # if not hotlist/hotlist_id return a _TrackerFlipper
     # The flipper is not itself a Promise, but it contains Promises.
@@ -1178,18 +1178,19 @@ class _Flipper(object):
 class _HotlistFlipper(_Flipper):
   """Helper class for user to flip among issues within a hotlist."""
 
-  def __init__(self, services, hotlist):
+  def __init__(self, services, profiler, hotlist):
     """Store info for a hotlist's issue flipper widget (prev & next nav.)
 
     Args:
       mr: commonly used info parsed from the request.
       services: connections to backend services.
-      prof: a Profiler for the sevlet's handling of the current request.
+      profiler: a Profiler for the sevlet's handling of the current request.
       hotlist: the hotlist this flipper is flipping through.
     """
 
     super(_HotlistFlipper, self).__init__(services)
     self.hotlist = hotlist
+    self.profiler = profiler
     self.is_hotlist_flipper = True
 
   def SearchForIIDs(self, mr, current_issue):
@@ -1199,42 +1200,34 @@ class _HotlistFlipper(_Flipper):
       mr: commonly used info parsed from the request.
       current_issue: the currently viewed issue.
     """
-    # TODO(jojwang): The process of getting a sorted list can be
-    # refactored. Eg. create a new function in hotlist_helpers
-    # and call it here.
     issues_list = self.services.issue.GetIssues(
         mr.cnxn,
         [item.issue_id for item in self.hotlist.items])
-    issue_rank_dict = {item.issue_id: item.rank for item
-                       in self.hotlist.items}
-
-    allowed_issues = hotlist_helpers.FilterIssues(
-        mr, issues_list, self.services)
-    users_by_id = framework_views.MakeAllUserViews(
-        mr.cnxn, self.services.user,
-        tracker_bizobj.UsersInvolvedInIssues(allowed_issues or []))
     project_ids = hotlist_helpers.GetAllProjectsOfIssues(
         [issue for issue in issues_list])
     config_list = hotlist_helpers.GetAllConfigsOfProjects(
         mr.cnxn, project_ids, self.services)
     harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
-    sortable_fields = tracker_helpers.SORTABLE_FIELDS.copy()
-    sortable_fields.update(
-        {'rank': lambda issue: issue_rank_dict[issue.issue_id]})
-    sorted_issues = sorting.SortArtifacts(
-        mr, allowed_issues, harmonized_config, sortable_fields,
-        tracker_helpers.SORTABLE_FIELDS_POSTPROCESSORS,
-        users_by_id=users_by_id, tie_breakers=['rank', 'id'])
+
+
+    (sorted_issues, hotlist_issues_context,
+     _users) = hotlist_helpers.GetSortedHotlistIssues(
+         mr, self.hotlist.items, issues_list, harmonized_config,
+         self.profiler, self.services)
+
     (prev_iid, cur_index,
      next_iid) = features_bizobj.DetermineHotlistIssuePosition(
-         current_issue, [(issue.issue_id, issue_rank_dict[issue.issue_id]) for
+         current_issue, [(issue.issue_id,
+                          hotlist_issues_context[issue.issue_id]) for
                          issue in sorted_issues])
+    # TODO(jojwang): confirm DeterminhotlistsissuePosition does not
+    # need each issue's rank
 
     logging.info('prev_iid, cur_index, next_iid is %r %r %r',
                  prev_iid, cur_index, next_iid)
 
     self.AssignFlipperValues(
-        mr, prev_iid, cur_index, next_iid, len(allowed_issues))
+        mr, prev_iid, cur_index, next_iid, len(sorted_issues))
 
 
 class _TrackerFlipper(_Flipper):

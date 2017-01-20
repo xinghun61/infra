@@ -19,26 +19,8 @@ from tracker import tracker_helpers
 from tracker import tablecell
 
 
-def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
-  """Creates the table data for the hotlistissues table."""
-  with profiler.Phase('getting stars'):
-    starred_iid_set = set(services.issue_star.LookupStarredItemIDs(
-        mr.cnxn, mr.auth.user_id))
-
-  with profiler.Phase('computer col_spec'):
-    mr.ComputeColSpec(mr.hotlist)
-
-  issues_list = services.issue.GetIssues(
-        mr.cnxn,
-        [hotlist_issue.issue_id for hotlist_issue in hotlist_issues])
-  with profiler.Phase('Getting config'):
-    hotlist_issues_project_ids = GetAllProjectsOfIssues(
-        [issue for issue in issues_list])
-    is_cross_project = len(hotlist_issues_project_ids) > 1
-    config_list = GetAllConfigsOfProjects(
-        mr.cnxn, hotlist_issues_project_ids, services)
-    harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
-
+def GetSortedHotlistIssues(
+    mr, hotlist_issues, issues_list, harmonized_config, profiler, services):
   with profiler.Phase('Checking issue permissions and getting ranks'):
     allowed_issues = FilterIssues(mr, issues_list, services)
     sorted_ranks = sorted(
@@ -81,6 +63,32 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
         mr, allowed_issues, harmonized_config, sortable_fields,
         sortable_postproc,
         users_by_id=issues_users_by_id, tie_breakers=['rank', 'id'])
+    return sorted_issues, hotlist_issues_context, issues_users_by_id
+
+
+def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
+  """Creates the table data for the hotlistissues table."""
+  with profiler.Phase('getting stars'):
+    starred_iid_set = set(services.issue_star.LookupStarredItemIDs(
+        mr.cnxn, mr.auth.user_id))
+
+  with profiler.Phase('Computing col_spec'):
+    mr.ComputeColSpec(mr.hotlist)
+
+  issues_list = services.issue.GetIssues(
+        mr.cnxn,
+        [hotlist_issue.issue_id for hotlist_issue in hotlist_issues])
+  with profiler.Phase('Getting config'):
+    hotlist_issues_project_ids = GetAllProjectsOfIssues(
+        [issue for issue in issues_list])
+    is_cross_project = len(hotlist_issues_project_ids) > 1
+    config_list = GetAllConfigsOfProjects(
+        mr.cnxn, hotlist_issues_project_ids, services)
+    harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
+
+  (sorted_issues, hotlist_issues_context,
+   issues_users_by_id) = GetSortedHotlistIssues(
+       mr, hotlist_issues, issues_list, harmonized_config, profiler, services)
 
   with profiler.Phase("getting related issues"):
     related_iids = set()
