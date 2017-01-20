@@ -213,7 +213,7 @@
       "https://chromeperf.appspot.com/add_point"
     ],
     "name": "perf dashboard post",
-    "stdin": "{\"data\": [{\"bot\": \"infra-perf-win\", \"buildername\": \"infra-perf-win\", \"buildnumber\": 123, \"master\": \"chromium.infra\", \"masterid\": \"chromium.infra\", \"revision\": \"1476374537\", \"supplemental_columns\": {\"a_default_rev\": \"r_infra_infra_git\", \"r_infra_infra_git\": \"0123456789abcdeffedcba987654321012345678\", \"tstamp\": \"2016-10-13T18:02:17+02:00\"}, \"test\": \"infra/luci/isolate/isolate-client-upload\", \"units\": \"s\", \"value\": 2.0}]}",
+    "stdin": "{\"data\": \"[{\\\"buildnumber\\\": 123, \\\"masterid\\\": \\\"chromium.infra\\\", \\\"units\\\": \\\"s\\\", \\\"master\\\": \\\"chromium.infra\\\", \\\"supplemental_columns\\\": {\\\"a_default_rev\\\": \\\"r_infra_infra_git\\\", \\\"r_infra_infra_git\\\": \\\"0123456789abcdeffedcba987654321012345678\\\", \\\"tstamp\\\": \\\"2016-10-13T18:02:17+02:00\\\"}, \\\"buildername\\\": \\\"infra-perf-win\\\", \\\"test\\\": \\\"infra/luci/isolate/isolate-client-upload\\\", \\\"bot\\\": \\\"infra-perf-win\\\", \\\"value\\\": 2.0, \\\"revision\\\": \\\"1476374537\\\"}]\"}",
     "stdout": "/path/to/tmp/json",
     "~followup_annotations": [
       "@@@STEP_TEXT@Failed to post to Perf Dashboard. Error response: None@@@",
