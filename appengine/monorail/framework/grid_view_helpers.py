@@ -86,7 +86,8 @@ def _WKSortingValue(value, well_known_list):
 
 def MakeGridData(
     artifacts, x_attr, x_headings, y_attr, y_headings, users_by_id,
-    artifact_view_factory, all_label_values, config, related_issues):
+    artifact_view_factory, all_label_values, config, related_issues,
+    hotlist_context_dict=None):
   """Return a list of grid row items for display by EZT.
 
   Args:
@@ -101,6 +102,7 @@ def MakeGridData(
         labels on each issue: {issue_id: {key: [val,...], ...}, ...}
     config: ProjectIssueConfig PB for the current project.
     related_issues: dict {issue_id: issue} of pre-fetched related issues.
+    hotlist_context_dict: dict{issue_id: {hotlist_item_field: field_value, ..}}
 
   Returns:
     A list of EZTItems, each representing one grid row, and each having
@@ -119,11 +121,17 @@ def MakeGridData(
 
   # Put each issue into the grid cell(s) where it belongs.
   for art in artifacts:
+    if hotlist_context_dict:
+      hotlist_issues_context = hotlist_context_dict[art.issue_id]
+    else:
+      hotlist_issues_context = None
     label_value_dict = all_label_values[art.local_id]
     x_vals = GetArtifactAttr(
-        art, x_attr, users_by_id, label_value_dict, config, related_issues)
+        art, x_attr, users_by_id, label_value_dict, config, related_issues,
+        hotlist_issue_context=hotlist_issues_context)
     y_vals = GetArtifactAttr(
-        art, y_attr, users_by_id, label_value_dict, config, related_issues)
+        art, y_attr, users_by_id, label_value_dict, config, related_issues,
+        hotlist_issue_context=hotlist_issues_context)
     tile = artifact_view_factory(art)
 
     # Put the current issue into each cell where it belongs, which will usually
@@ -198,7 +206,7 @@ def MakeLabelValuesDict(art):
 
 def GetArtifactAttr(
     art, attribute_name, users_by_id, label_attr_values_dict,
-    config, related_issues):
+    config, related_issues, hotlist_issue_context=None):
   """Return the requested attribute values of the given artifact.
 
   Args:
@@ -208,6 +216,7 @@ def GetArtifactAttr(
     label_attr_values_dict: dictionary {'key': [value, ...], }.
     config: ProjectIssueConfig PB for the current project.
     related_issues: dict {issue_id: issue} of pre-fetched related issues.
+    hotlist_issue_context: dict of {hotlist_issue_field: field_value,..}
 
   Returns:
     A list of string attribute values, or [framework_constants.NO_VALUES]
@@ -245,6 +254,17 @@ def GetArtifactAttr(
           related_issues[blocked_on_iid].project_name,
           related_issues[blocked_on_iid].local_id)) for
               blocked_on_iid in art.blocked_on_iids]
+  if attribute_name == 'adder':
+    if hotlist_issue_context:
+      adder_id = hotlist_issue_context['adder_id']
+      return [users_by_id[adder_id].display_name]
+    else:
+      return [framework_constants.NO_VALUES]
+  if attribute_name == 'added':
+    if hotlist_issue_context:
+      return [hotlist_issue_context['date_added']]
+    else:
+      return [framework_constants.NO_VALUES]
   if attribute_name == 'reporter':
     return [users_by_id[art.reporter_id].display_name]
   if attribute_name == 'owner':
@@ -291,14 +311,18 @@ def GetArtifactAttr(
 
 def AnyArtifactHasNoAttr(
     artifacts, attr_name, users_by_id, all_label_values, config,
-    related_issues):
+    related_issues, hotlist_context_dict=None):
   """Return true if any artifact does not have a value for attr_name."""
   # TODO(jrobbins): all_label_values needs to be keyed by issue_id to allow
   # cross-project grid views.
   for art in artifacts:
+    if hotlist_context_dict:
+      hotlist_issue_context = hotlist_context_dict[art.issue_id]
+    else:
+      hotlist_issue_context = None
     vals = GetArtifactAttr(
         art, attr_name.lower(), users_by_id, all_label_values[art.local_id],
-        config, related_issues)
+        config, related_issues, hotlist_issue_context=hotlist_issue_context)
     if framework_constants.NO_VALUES in vals:
       return True
 
@@ -307,7 +331,7 @@ def AnyArtifactHasNoAttr(
 
 def GetGridViewData(
     mr, results, config, users_by_id, starred_iid_set,
-    grid_limited, related_issues):
+    grid_limited, related_issues, hotlist_context_dict=None):
   """EZT template values to render a Grid View of issues.
   Args:
     mr: commonly used info parsed from the request.
@@ -318,6 +342,7 @@ def GetGridViewData(
     starred_iid_set: Set of issues that the user has starred.
     grid_limited: True if the results were limited to fit within the grid.
     related_issues: dict {issue_id: issue} of pre-fetched related issues.
+    hotlist_context_dict: dict for building a hotlist grid table
 
   Returns:
     Dictionary for EZT template rendering of the Grid View.
@@ -341,11 +366,12 @@ def GetGridViewData(
     grid_x_headings = ['All']
   else:
     grid_x_items = table_view_helpers.ExtractUniqueValues(
-        [grid_x_attr], results, users_by_id, config, related_issues)
+        [grid_x_attr], results, users_by_id, config, related_issues,
+        hotlist_context_dict=hotlist_context_dict)
     grid_x_headings = grid_x_items[0].filter_values
     if AnyArtifactHasNoAttr(
         results, grid_x_attr, users_by_id, all_label_values,
-        config, related_issues):
+        config, related_issues, hotlist_context_dict= hotlist_context_dict):
       grid_x_headings.append(framework_constants.NO_VALUES)
     grid_x_headings = SortGridHeadings(
         grid_x_attr, grid_x_headings, users_by_id, config,
@@ -355,11 +381,12 @@ def GetGridViewData(
     grid_y_headings = ['All']
   else:
     grid_y_items = table_view_helpers.ExtractUniqueValues(
-        [grid_y_attr], results, users_by_id, config, related_issues)
+        [grid_y_attr], results, users_by_id, config, related_issues,
+        hotlist_context_dict=hotlist_context_dict)
     grid_y_headings = grid_y_items[0].filter_values
     if AnyArtifactHasNoAttr(
         results, grid_y_attr, users_by_id, all_label_values,
-        config, related_issues):
+        config, related_issues, hotlist_context_dict= hotlist_context_dict):
       grid_y_headings.append(framework_constants.NO_VALUES)
     grid_y_headings = SortGridHeadings(
         grid_y_attr, grid_y_headings, users_by_id, config,
@@ -370,7 +397,7 @@ def GetGridViewData(
   grid_data = PrepareForMakeGridData(
       results, starred_iid_set, grid_x_attr, grid_x_headings,
       grid_y_attr, grid_y_headings, users_by_id, all_label_values,
-      config, related_issues)
+      config, related_issues, hotlist_context_dict=hotlist_context_dict)
 
   grid_axis_choice_dict = {}
   for oc in ordered_columns:
@@ -403,7 +430,7 @@ def GetGridViewData(
 def PrepareForMakeGridData(
     allowed_results, starred_iid_set, x_attr,
     grid_col_values, y_attr, grid_row_values, users_by_id, all_label_values,
-    config, related_issues):
+    config, related_issues, hotlist_context_dict=None):
   """Return all data needed for EZT to render the body of the grid view."""
 
   def IssueViewFactory(issue):
@@ -413,7 +440,8 @@ def PrepareForMakeGridData(
 
   grid_data = MakeGridData(
       allowed_results, x_attr, grid_col_values, y_attr, grid_row_values,
-      users_by_id, IssueViewFactory, all_label_values, config, related_issues)
+      users_by_id, IssueViewFactory, all_label_values, config, related_issues,
+      hotlist_context_dict=hotlist_context_dict)
   issue_dict = {issue.issue_id: issue for issue in allowed_results}
   for grid_row in grid_data:
     for grid_cell in grid_row.cells_in_row:

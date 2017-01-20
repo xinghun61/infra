@@ -94,7 +94,7 @@ def ComputeUnshownColumns(results, shown_columns, config, built_in_cols):
 
 
 def ExtractUniqueValues(columns, artifact_list, users_by_id,
-                        config, related_issues):
+                        config, related_issues, hotlist_context_dict=None):
   """Build a nested list of unique values so the user can auto-filter.
 
   Args:
@@ -104,6 +104,7 @@ def ExtractUniqueValues(columns, artifact_list, users_by_id,
     users_by_id: dict mapping user_ids to UserViews.
     config: ProjectIssueConfig PB for the current project.
     related_issues: dict {issue_id: issue} of pre-fetched related issues.
+    hotlist_context_dict: dict for building a hotlist grid table
 
   Returns:
     [EZTItem(col1, colname1, [val11, val12,...]), ...]
@@ -211,6 +212,21 @@ def ExtractUniqueValues(columns, artifact_list, users_by_id,
 
   # TODO(jrobbins): blocked on, and blocking.
   # And, the ability to parse a user query on those fields and do a SQL search.
+
+  if 'added' in column_values:
+    for art in artifact_list:
+      if hotlist_context_dict and hotlist_context_dict[art.issue_id]:
+        issue_dict = hotlist_context_dict[art.issue_id]
+        date_added = issue_dict['date_added']
+        column_values['added'][date_added] = date_added
+
+  if 'adder' in column_values:
+    for art in artifact_list:
+      if hotlist_context_dict and hotlist_context_dict[art.issue_id]:
+        issue_dict = hotlist_context_dict[art.issue_id]
+        adder_id = issue_dict['adder_id']
+        adder = users_by_id[adder_id].display_name
+        column_values['adder'][adder] = adder
 
   if 'attachments' in column_values:
     for art in artifact_list:

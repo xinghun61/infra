@@ -12,6 +12,7 @@ import settings
 import time
 import re
 
+from features import features_bizobj
 from features import features_constants
 from features import hotlist_helpers
 from framework import servlet
@@ -23,6 +24,7 @@ from framework import framework_constants
 from framework import framework_views
 from framework import grid_view_helpers
 from framework import template_helpers
+from framework import timestr
 from framework import urls
 from framework import xsrf
 from services import features_svc
@@ -236,9 +238,12 @@ class HotlistIssues(servlet.Servlet):
          in mr.hotlist.items])
     allowed_issues = hotlist_helpers.FilterIssues(
         mr, issues_list, self.services)
+    issue_and_hotlist_users = tracker_bizobj.UsersInvolvedInIssues(
+        allowed_issues or []).union(features_bizobj.UsersInvolvedInHotlists(
+            [mr.hotlist]))
     users_by_id = framework_views.MakeAllUserViews(
         mr.cnxn, self.services.user,
-        tracker_bizobj.UsersInvolvedInIssues(allowed_issues or []))
+        issue_and_hotlist_users)
     hotlist_issues_project_ids = hotlist_helpers.GetAllProjectsOfIssues(
         [issue for issue in issues_list])
     config_list = hotlist_helpers.GetAllConfigsOfProjects(
@@ -263,9 +268,16 @@ class HotlistIssues(servlet.Servlet):
         mr.cnxn, list(related_iids))
     related_issues = {issue.issue_id: issue for issue in related_issues_list}
 
+    hotlist_context_dict = {
+        hotlist_issue.issue_id: {'adder_id': hotlist_issue.adder_id,
+                                 'date_added': timestr.FormatRelativeDate(
+                                     hotlist_issue.date_added)}
+        for hotlist_issue in mr.hotlist.items}
+
     grid_view_data = grid_view_helpers.GetGridViewData(
         mr, allowed_issues, harmonized_config,
-        users_by_id, starred_iid_set, grid_limited, related_issues)
+        users_by_id, starred_iid_set, grid_limited, related_issues,
+        hotlist_context_dict=hotlist_context_dict)
 
     grid_view_data.update({'pagination': paginate.ArtifactPagination(
           mr, allowed_issues, features_constants.DEFAULT_RESULTS_PER_PAGE,
