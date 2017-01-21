@@ -45,31 +45,31 @@ DEFAULT_CERT_FILE = os.path.join(ROOT, 'data', 'cacert.pem')
 # CIPD server round-trip lookup. This can be obtained for a given package via:
 # $ cipd resolve \
 #     infra/tools/cipd/ \
-#     -version=git_revision:92db82258d3a6ea6f35f80588038372297b03eaf
+#     -version=git_revision:9249eb05a614e65bc222ffe8f98961aa4d588bfe
 ARCH_CONFIG_MAP = {
   ('Linux', 'x86_64'): {
     'cipd_package': 'infra/tools/cipd/linux-amd64',
-    'cipd_package_version': '65946ba38a505e943026c7bdaa4f742212ad8557',
+    'cipd_package_version': 'a47119c00beb49adf5533c8e3b33e2a9e19ff81a',
     'cipd_install_list': 'cipd_linux_amd64.txt',
   },
   ('Linux', 'x86'): {
     'cipd_package': 'infra/tools/cipd/linux-386',
-    'cipd_package_version': '30ff59ff0645ee87aaab16729b4f605cba84331a',
+    'cipd_package_version': 'c34e0b8f9271193420ce8d914adc7bc6e1488c03',
     'cipd_install_list': None,
   },
   ('Darwin', 'x86_64'): {
     'cipd_package': 'infra/tools/cipd/mac-amd64',
-    'cipd_package_version': 'aa960318848d95c8f8a51c33b69e9cd869f657f7',
+    'cipd_package_version': 'b5800d796256b4edf0f5e0bbcb1b6f4faf8efd65',
     'cipd_install_list': 'cipd_mac_amd64.txt',
   },
   ('Windows', 'x86_64'): {
     'cipd_package': 'infra/tools/cipd/windows-amd64',
-    'cipd_package_version': '94fef5b47ef2449825282263caceaa3f4ff00f4e',
+    'cipd_package_version': 'e5067b7892d837e7b5ca25c5436bc8e355d044d9',
     'cipd_install_list': None,
   },
   ('Windows', 'x86'): {
     'cipd_package': 'infra/tools/cipd/windows-386',
-    'cipd_package_version': '235acd2ab792c7459a06417ffd2ed9af1d5e3e88',
+    'cipd_package_version': '9db34b3660897c529ab10b6ad411c0428002bd2d',
     'cipd_install_list': None,
   },
 }
