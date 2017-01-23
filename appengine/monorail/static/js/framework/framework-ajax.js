@@ -77,8 +77,7 @@ function CS_doPost(url, callback, args, opt_token, opt_tokenPath) {
         if (xhr.readyState != 4 || xhr.status != 200)
             return;
         var resp = CS_parseJSON(xhr);
-        if (opt_tokenPath)
-            CS_env[opt_tokenPath] = resp.form_token;
+        CS_env[opt_tokenPath || 'token'] = resp.form_token;
         CS_env.tokenExpiresSec = Number(resp.token_expires_sec);
         var retryXh = XH_XmlHttpCreate();
         XH_XmlHttpPOST(

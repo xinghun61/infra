@@ -176,7 +176,7 @@ runOnLoad(function() {
         resp.issues.forEach(function(issue) {
           issues.push(issue);
         });
-      }, data, '[xhr_token]');
+      }, data, CS_env.token);
     } else {
       renderTable(opt_issues);
       renderIssueLinks(opt_issues);
