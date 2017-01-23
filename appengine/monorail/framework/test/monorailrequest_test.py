@@ -75,8 +75,11 @@ class MonorailRequestUnitTest(unittest.TestCase):
     self.services = service_manager.Services(
         project=fake.ProjectService(),
         user=fake.UserService(),
-        usergroup=fake.UserGroupService())
+        usergroup=fake.UserGroupService(),
+        features=fake.FeaturesService())
     self.project = self.services.project.TestAddProject('proj')
+    self.hotlist = self.services.features.TestAddHotlist(
+        'TestHotlist', owner_ids=[111])
     self.services.user.TestAddUser('jrobbins@example.com', 111)
 
     self.profiler = profiler.Profiler()
@@ -271,6 +274,19 @@ class MonorailRequestUnitTest(unittest.TestCase):
         path='/p/proj/issues/detail?id=123&colspec=a b C')
     mr.ComputeColSpec(config)
     self.assertEquals('a b C', mr.col_spec)
+
+    # project colspec contains hotlist columns
+    mr = testing_helpers.MakeMonorailRequest(
+        path='p/proj/issues/detail?id=123&colspec=Rank Adder Adder Owner')
+    mr.ComputeColSpec(None)
+    self.assertEquals(tracker_constants.DEFAULT_COL_SPEC, mr.col_spec)
+
+    # hotlist columns are not deleted when page is a hotlist page
+    mr = testing_helpers.MakeMonorailRequest(
+        path='u/jrobbins@example.com/hotlists/TestHotlist?colspec=Rank Adder',
+        hotlist=self.hotlist)
+    mr.ComputeColSpec(None)
+    self.assertEquals('Rank Adder', mr.col_spec)
 
   def testComputeColSpec_XSS(self):
     config_1 = tracker_pb2.ProjectIssueConfig()

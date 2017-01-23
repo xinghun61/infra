@@ -24,6 +24,7 @@ from google.appengine.api import users
 import webapp2
 
 import settings
+from features import features_constants
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_views
@@ -590,6 +591,14 @@ class MonorailRequest(object):
     col_spec = self.GetParam(
         'colspec', default_value=default_col_spec,
         antitamper_re=framework_constants.COLSPEC_RE)
+    cols_lower = col_spec.lower().split()
+    if self.project and any(
+        hotlist_col in cols_lower for hotlist_col in [
+            'rank', 'adder', 'added']):
+      # if the the list is a project list and the 'colspec' is a carry-over
+      # from hotlists, set col_spec to None so it will be set to default in
+      # in the next if statement
+      col_spec = None
 
     if not col_spec:
       # If col spec is still empty then default to the global col spec.
