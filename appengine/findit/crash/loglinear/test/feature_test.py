@@ -5,6 +5,7 @@
 import unittest
 
 from crash.loglinear import feature
+from crash.loglinear.test.loglinear_testcase import LoglinearTestCase
 import libs.math.logarithms as lmath
 
 _MAXIMUM = 50.
@@ -38,3 +39,13 @@ class ChangelistFeatureTest(unittest.TestCase):
   def testLogLinearlyScaledIsOverMax(self):
     """Test that ``LogLinearlyScaled`` takes values over the max to log(0)."""
     self.assertEqual(lmath.LOG_ZERO, feature.LogLinearlyScaled(42., 10.))
+
+
+class FeatureFunctionTest(LoglinearTestCase):
+
+  def testFeatureFunction(self):
+    """Test that ``FeatureFunction`` obeys the equality its docstring says."""
+    for x in self._X:
+      for y in self._Y(x):
+        for f in self._feature_list:
+          self.assertEqual(f(x)(y), self._feature_function(x)(y)[f.name])

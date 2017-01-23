@@ -6,6 +6,7 @@
 # in this file better. We avoid having separate todos per task; instead
 # see that meta-issue ticket.
 
+import logging
 import math
 import numpy as np
 # N.B., ``np.array`` can't take generators; you must pass explicit lists.
@@ -15,24 +16,6 @@ from libs.math.logarithms import logsumexp
 from libs.math.vectors import vsum
 
 EPSILON = 0.00001
-
-
-def ToFeatureFunction(fs):
-  """Given an array of scalar-valued functions, return an array-valued function.
-
-  Args:
-    fs (iterable): A collection of curried functions ``X -> Y -> A``.
-      That is, given a particular ``x`` they return a function ``Y -> A``.
-
-  Returns:
-    A function ``X -> Y -> list(A)`` where for all ``x``, ``y``, and
-    ``i`` we have that ``ToFeatureFunction(fs)(x)(y)[i] == fs[i](x)(y)``.
-  """
-  def _FeatureFunction(x):
-    fxs = [f(x) for f in fs]
-    return lambda y: [fx(y) for fx in fxs]
-
-  return _FeatureFunction
 
 
 class UnnormalizedLogLinearModel(object):
@@ -67,19 +50,26 @@ class UnnormalizedLogLinearModel(object):
       feature_function: A function ``X -> Y -> list(FeatureValue)``. N.B.,
         for all ``x`` and ``y`` the length of ``feature_function(x)(y)``
         must be the same as the length of ``weights``.
-      weights (list of float): coefficients for how important we consider
-        each component of the feature vector for deciding which ``y``
-        to blame.
+      weights (dict of float): the weights for the features. The keys of
+        the dictionary are the names of the feature that weight is
+        for. We take this argument as a dict rather than as a list so that
+        callers needn't worry about what order to provide the weights in.
       epsilon (float): The absolute-error threshold for considering a
         weight to be "equal to zero". N.B., this should be a positive
         number, as we will compare it against the absolute value of
         each weight.
     """
     if epsilon is None:
-      epsilon = EPSILON
-    self._weights = np.array([
-        w if isinstance(w, float) and math.fabs(w) >= epsilon else 0.
-        for w in weights])
+      self._epsilon = EPSILON
+    else:
+      self._epsilon = epsilon
+
+    # TODO(crbug.com/680207) Filter zero weights, use sparse representaion of
+    # weight covector.
+    self._weights = {
+        name: weight for name, weight in weights.iteritems()
+        if self.IsNonZeroWeight(weight)
+    }
 
     self._quadrance = None
 
@@ -89,7 +79,7 @@ class UnnormalizedLogLinearModel(object):
 
       This outer wrapping takes each ``x`` to a memoized instance of
       ``_FeaturesGivenX``. That is, for each ``x`` we return a
-      ``MemoizedFunction`` from ``Y`` to ``list(FeatureValue)``.
+      ``MemoizedFunction`` from ``Y`` to ``dict(str to FeatureValue)``.
       """
       fx = feature_function(x)
       def _FeaturesGivenX(y):
@@ -117,9 +107,42 @@ class UnnormalizedLogLinearModel(object):
     # more efficient way, we should. In particular, we will want to
     # make the weights sparse, in which case we need to use a sparse
     # variant of the dot product.
-    self._scores = MemoizedFunction(lambda x:
-        self._features(x).map(lambda fxy:
-            self.weights.dot(np.array([feature.value for feature in fxy]))))
+    self._scores = MemoizedFunction(lambda x: self._features(x).map(
+        lambda fxy: math.fsum(self.SingleFeatureScore(feature)
+                              for feature in fxy.itervalues())))
+
+  def IsNonZeroWeight(self, weight):
+    """Determines whether a weight is zero or not using ``self._epsilon``."""
+    return isinstance(weight, float) and math.fabs(weight) > self._epsilon
+
+  def SingleFeatureScore(self, feature_value):
+    """Returns the score (aka weighted value) of a ``FeatureValue``.
+
+    Args:
+      feature_value (FeatureValue): the feature value to check.
+
+    Returns:
+      The score of the feature value.
+    """
+    return feature_value.value * self._weights.get(feature_value.name, 0.)
+
+  # TODO(crbug.com/673964): something better for detecting "close to log(0)".
+  def LogZeroish(self, x):
+    """Determine whether a float is close enough to log(0).
+
+    If a ``FeatureValue`` has a (log-domain) score of -inf for a given
+    ``Suspect``, then that suspect has zero probability of being the
+    culprit. We want to filter these suspects out, to clean up the
+    output of classification; so this method encapsulates the logic of
+    that check.
+
+    Args:
+      x (float): the float to check
+
+    Returns:
+      ``True`` if ``x`` is close enough to log(0); else ``False``.
+    """
+    return x < 0 and math.isinf(x)
 
   def ClearWeightBasedMemos(self):
     """Clear all the memos that depend on the weight covector."""
@@ -135,9 +158,9 @@ class UnnormalizedLogLinearModel(object):
   def weights(self):
     """The weight covector.
 
-    At present we return the weights as an ``np.ndarray``, but in the
-    future that may be replaced by a more general type which specifies
-    the semantics rather than the implementation details.
+    At present we return the weights as an dict mapping feature name to its
+    weight, but in the future that may be replaced by a more general type which
+    specifies the semantics rather than the implementation details.
     """
     return self._weights
 
@@ -147,12 +170,12 @@ class UnnormalizedLogLinearModel(object):
 
     N.B., despite being popularly called the "l0-norm", this isn't
     actually a norm in the mathematical sense."""
-    return float(np.count_nonzero(self.weights))
+    return float(len(self.weights) - self.weights.values().count(0.))
 
   @property
   def l1(self): # pragma: no cover
     """The l1 (aka: Manhattan) norm of the weight covector."""
-    return math.fsum(math.fabs(w) for w in self.weights)
+    return math.fsum(math.fabs(w) for w in self.weights.itervalues())
 
   @property
   def quadrance(self):
@@ -164,7 +187,8 @@ class UnnormalizedLogLinearModel(object):
     the error introduced by squaring the square-root of an IEEE-754 float.
     """
     if self._quadrance is None:
-      self._quadrance = math.fsum(math.fabs(w)**2 for w in self.weights)
+      self._quadrance = math.fsum(
+          math.fabs(w)**2 for w in self.weights.itervalues())
 
     return self._quadrance
 
@@ -185,7 +209,7 @@ class UnnormalizedLogLinearModel(object):
       x (X): the value of the independent variable.
 
     Returns:
-      A ``MemoizedFunction`` of type ``Y -> np.array(float)``.
+      A ``MemoizedFunction`` of type ``Y -> dict(str to float)``.
     """
     return self._features(x)
 
@@ -210,6 +234,77 @@ class UnnormalizedLogLinearModel(object):
     """
     return self._scores(x)
 
+  def FormatReasons(self, features):
+    """Collect and format a list of all ``FeatureValue.reason`` strings.
+
+    Args:
+      features (iterable of FeatureValue): the values whose ``reason``
+        strings should be collected.
+
+    Returns:
+      A list of ``(str, float, str)`` triples; where the first string is
+      the feature name, the float is some numeric representation of how
+      much influence this feature exerts on the ``Suspect`` being blamed,
+      and the final string is the ``FeatureValue.reason``. The list is
+      sorted by feature name, just to ensure that it comes out in some
+      canonical order.
+
+      At present, the float is the log-domain score of the feature
+      value. However, this isn't the best thing for UX reasons. In the
+      future it might be replaced by the normal-domain score, or by
+      the probability.
+    """
+    formatted_reasons = []
+    for feature in features:
+      feature_score = self.SingleFeatureScore(feature)
+      if self.LogZeroish(feature_score): # pragma: no cover
+        logging.debug('Discarding reasons from feature %s'
+            ' because it has zero probability' % feature.name)
+        continue
+
+      formatted_reasons.append((feature.name, feature_score, feature.reason))
+
+    formatted_reasons.sort(key=lambda formatted_reason: formatted_reason[0])
+    return formatted_reasons
+
+  def AggregateChangedFiles(self, features):
+    """Merge multiple``FeatureValue.changed_files`` lists into one.
+
+    Args:
+      features (iterable of FeatureValue): the values whose ``changed_files``
+        lists should be aggregated.
+
+    Returns:
+      A list of ``ChangedFile`` objects sorted by file name. The sorting
+      is not essential, but is provided to ease testing by ensuring the
+      output is in some canonical order.
+
+    Raises:
+      ``ValueError`` if any file name is given inconsistent ``blame_url``s.
+    """
+    all_changed_files = {}
+    for feature in features:
+      if self.LogZeroish(self.SingleFeatureScore(feature)): # pragma: no cover
+        logging.debug('Discarding changed files from feature %s'
+            ' because it has zero probability' % feature.name)
+        continue
+
+      for changed_file in feature.changed_files or []:
+        accumulated_changed_file = all_changed_files.get(changed_file.name)
+        if accumulated_changed_file is None:
+          all_changed_files[changed_file.name] = changed_file
+          continue
+
+        if (accumulated_changed_file.blame_url !=
+            changed_file.blame_url): # pragma: no cover
+          raise ValueError('Blame URLs do not match: %s != %s'
+              % (accumulated_changed_file.blame_url, changed_file.blame_url))
+        accumulated_changed_file.reasons.extend(changed_file.reasons or [])
+
+    changed_files = all_changed_files.values()
+    changed_files.sort(key=lambda changed_file: changed_file.name)
+    return changed_files
+
 
 class LogLinearModel(UnnormalizedLogLinearModel):
   """A loglinear probability model.
@@ -233,9 +328,10 @@ class LogLinearModel(UnnormalizedLogLinearModel):
       feature_function: A function ``X -> Y -> list(float)``. N.B.,
         for all ``x`` and ``y`` the length of ``feature_function(x)(y)``
         must be the same as the length of ``weights``.
-      weights (list of float): coefficients for how important we consider
-        each component of the feature vector for deciding which ``y``
-        to blame.
+      weights (dict of float): the weights for the features. The keys of
+        the dictionary are the names of the feature that weight is
+        for. We take this argument as a dict rather than as a list so that
+        callers needn't worry about what order to provide the weights in.
       epsilon (float): The absolute-error threshold for considering a
         weight to be "equal to zero". N.B., this should be a positive
         number, as we will compare it against the absolute value of

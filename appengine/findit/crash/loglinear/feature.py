@@ -138,3 +138,27 @@ class Feature(object):
     information and decide the cuplrit based on all the evidence together.
     """
     raise NotImplementedError()
+
+
+class FeatureFunction(object):
+  """Given an iterable of scalar-valued functions, return an dict function.
+
+  Properties:
+    fs (iterable of functions): A collection of curried functions
+    ``X -> Y -> FeatureValue``. That is, given a particular ``x`` they
+    return a function ``Y -> dict(FeatureValue)``. N.B. each function should
+    have a name property.
+  """
+  def __init__(self, fs):
+    self._fs = fs
+
+  def __call__(self, x):
+    """Fuction mapping ``X -> Y -> dict(FeatureValue.name to FeatureValue).
+
+    Returns:
+      A function ``X -> Y -> dict(FeatureValue.name to FeatureValue)`` where for 
+      all ``x``, ``y``, and for a feature f in fs, we have
+      ``FeatureFunction(fs)(x)(y)[f.name] == f(x)(y)``.
+    """
+    name_to_fx = {f.name: f(x) for f in self._fs}
+    return lambda y: {name: fx(y) for name, fx in name_to_fx.iteritems()}

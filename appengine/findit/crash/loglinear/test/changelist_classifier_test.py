@@ -13,8 +13,6 @@ from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 import crash.changelist_classifier as scorer_changelist_classifier
 from crash.crash_report import CrashReport
 from crash.loglinear.changelist_classifier import LogLinearChangelistClassifier
-from crash.loglinear.feature import ChangedFile
-from crash.loglinear.feature import FeatureValue
 from crash.suspect import AnalysisInfo
 from crash.suspect import Suspect
 from crash.suspect import StackInfo
@@ -129,40 +127,6 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
 
     self.changelist_classifier = LogLinearChangelistClassifier(
         GitilesRepository.Factory(self.GetMockHttpClient()), weights)
-
-  def testAggregateChangedFilesAggregates(self):
-    """Test that ``AggregateChangedFiles`` does aggregate reasons per file.
-
-    In the main/inner loop of ``AggregateChangedFiles``: if multiple
-    features all blame the same file change, we try to aggregate those
-    reasons so that we only report the file once (with all reasons). None
-    of the other tests here actually check the case where the same file
-    is blamed multiple times, so we check that here.
-
-    In particular, we provide the same ``FeatureValue`` twice, and
-    hence the same ``ChangedFile`` twice; so we should get back a single
-    ``ChangedFile`` but with the ``reasons`` fields concatenated.
-    """
-    file_reason = 'I blame you!'
-    file_blame = ChangedFile(
-        name = 'a.cc',
-        blame_url = None,
-        reasons = [file_reason]
-    )
-
-    feature_value = FeatureValue(
-        name = 'dummy feature',
-        value = 42,
-        reason = 'dummy reason',
-        changed_files = [file_blame]
-    )
-
-    expected_file_blame = file_blame._replace(reasons = [file_reason] * 2)
-
-    self.assertListEqual(
-        [expected_file_blame],
-        self.changelist_classifier.AggregateChangedFiles(
-            [feature_value] * 2))
 
   # TODO(http://crbug.com/659346): why do these mocks give coverage
   # failures? That's almost surely hiding a bug in the tests themselves.

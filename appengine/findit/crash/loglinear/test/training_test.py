@@ -4,7 +4,6 @@
 
 import numpy as np
 
-from crash.loglinear.model import ToFeatureFunction
 from crash.loglinear.training import TrainableLogLinearModel
 from crash.loglinear.test.loglinear_testcase import LoglinearTestCase
 
@@ -19,9 +18,9 @@ class TrainableLogLinearModelTest(LoglinearTestCase):
     self._model = TrainableLogLinearModel(
         self._Y, training_data, self._feature_function, self._weights)
 
-  def testWeightsSetterNotAnNdarray(self):
-    def _WeightSettingExpression():
-      """Wrap the ``self._model.weights = stuff`` expression.
+  def testNpWeightsSetterNotAnNdarray(self):
+    def _NpWeightSettingExpression():
+      """Wrap the ``self._model.np_weights = stuff`` expression.
 
       The ``assertRaises`` method expects a callable object, so we need
       to wrap the expression in a def. If we didn't wrap it in a def
@@ -31,15 +30,16 @@ class TrainableLogLinearModelTest(LoglinearTestCase):
       we want to check is actually a statement it can't be in a lambda
       but rather must be in a def.
       """
-      self._model.weights = 'this is not an np.ndarray'
+      self._model.np_weights = 'this is not an np.ndarray'
 
-    self.assertRaises(TypeError, _WeightSettingExpression)
+    self.assertRaises(TypeError, _NpWeightSettingExpression)
 
-  def testWeightsSetterShapeMismatch(self):
+  def testNpWeightsSetterShapeMismatch(self):
+
     def _WeightSettingExpression():
       """Wrap the ``self._model.weights = stuff`` expression."""
       # This np.ndarray has the wrong shape.
-      self._model.weights = np.array([[1,2], [3,4]])
+      self._model.np_weights = np.array([[1,2], [3,4]])
 
     self.assertRaises(TypeError, _WeightSettingExpression)
 

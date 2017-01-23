@@ -11,7 +11,7 @@ from crash import changelist_classifier
 from crash.crash_report_with_dependencies import CrashReportWithDependencies
 from crash.loglinear.changelist_features import min_distance
 from crash.loglinear.changelist_features import top_frame_index
-from crash.loglinear.model import ToFeatureFunction
+from crash.loglinear.feature import FeatureFunction
 from crash.loglinear.model import UnnormalizedLogLinearModel
 from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
@@ -42,52 +42,12 @@ class LogLinearChangelistClassifier(object):
     self._top_n_frames = top_n_frames
     self._top_n_suspects = top_n_suspects
 
-    feature_function = ToFeatureFunction([
+    feature_function = FeatureFunction([
         top_frame_index.TopFrameIndexFeature(top_n_frames),
         min_distance.MinDistanceFeature(),
     ])
 
-    weight_list = [
-        weights['TopFrameIndex'],
-        weights['MinDistance'],
-    ]
-
-    self._model = UnnormalizedLogLinearModel(feature_function, weight_list)
-
-    # TODO(crbug.com/674262): remove the need for storing these weights.
-    self._weights = weights
-
-  # TODO(crbug.com/673964): something better for detecting "close to log(0)".
-  def _LogZeroish(self, x):
-    """Determine whether a float is close enough to log(0).
-
-    If a ``FeatureValue`` has a (log-domain) score of -inf for a given
-    ``Suspect``, then that suspect has zero probability of being the
-    culprit. We want to filter these suspects out, to clean up the
-    output of classification; so this method encapsulates the logic of
-    that check.
-
-    Args:
-      x (float): the float to check
-
-    Returns:
-      ``True`` if ``x`` is close enough to log(0); else ``False``.
-    """
-    return x < 0 and math.isinf(x)
-
-  def _SingleFeatureScore(self, feature_value):
-    """Returns the score (aka weighted value) of a ``FeatureValue``.
-
-    This function assumes the report's stacktrace has already had any necessary
-    preprocessing (like filtering or truncating) applied.
-
-    Args:
-      feature_value (FeatureValue): the feature value to check.
-
-    Returns:
-      The score of the feature value.
-    """
-    return feature_value.value * self._weights.get(feature_value.name, 0.)
+    self._model = UnnormalizedLogLinearModel(feature_function, weights)
 
   def __call__(self, report):
     """Finds changelists suspected of being responsible for the crash report.
@@ -151,9 +111,12 @@ class LogLinearChangelistClassifier(object):
   def RankSuspects(self, report, suspects):
     """Returns a lineup of the suspects in order of likelihood.
 
+    Suspects with a discardable score or lower ranking than top_n_suspects
+    will be filtered.
+
     Args:
       report (CrashReportWithDependencies): the crash we seek to explain.
-      suspects (list of Suspect): the CLs to consider blaming for the crash.
+      suspects (iterable of Suspect): the CLs to consider blaming for the crash.
 
     Returns:
       A list of suspects in order according to their likelihood. This
@@ -171,88 +134,18 @@ class LogLinearChangelistClassifier(object):
     scored_suspects = []
     for suspect in suspects:
       score = score_given_report(suspect)
-      if self._LogZeroish(score):
+      if self._model.LogZeroish(score):
         logging.debug('Discarding suspect because it has zero probability: %s'
             % str(suspect.ToDict()))
         continue
 
       suspect.confidence = score
       features = features_given_report(suspect)
-      suspect.reasons = self.FormatReasons(features)
+      suspect.reasons = self._model.FormatReasons(features.itervalues())
       suspect.changed_files = [
-          changed_file.ToDict()
-          for changed_file in self.AggregateChangedFiles(features)]
+          changed_file.ToDict() for changed_file in
+          self._model.AggregateChangedFiles(features.itervalues())]
       scored_suspects.append(suspect)
 
     scored_suspects.sort(key=lambda suspect: suspect.confidence)
     return scored_suspects[:self._top_n_suspects]
-
-  def FormatReasons(self, features):
-    """Collect and format a list of all ``FeatureValue.reason`` strings.
-
-    Args:
-      features (list of FeatureValue): the values whose ``reason``
-        strings should be collected.
-
-    Returns:
-      A list of ``(str, float, str)`` triples; where the first string is
-      the feature name, the float is some numeric representation of how
-      much influence this feature exerts on the ``Suspect`` being blamed,
-      and the final string is the ``FeatureValue.reason``. The list is
-      sorted by feature name, just to ensure that it comes out in some
-      canonical order.
-
-      At present, the float is the log-domain score of the feature
-      value. However, this isn't the best thing for UX reasons. In the
-      future it might be replaced by the normal-domain score, or by
-      the probability.
-    """
-    formatted_reasons = []
-    for feature in features:
-      feature_score = self._SingleFeatureScore(feature)
-      if self._LogZeroish(feature_score): # pragma: no cover
-        logging.debug('Discarding reasons from feature %s'
-            ' because it has zero probability' % feature.name)
-        continue
-
-      formatted_reasons.append((feature.name, feature_score, feature.reason))
-
-    return sorted(formatted_reasons,
-        key=lambda formatted_reason: formatted_reason[0])
-
-  def AggregateChangedFiles(self, features):
-    """Merge multiple``FeatureValue.changed_files`` lists into one.
-
-    Args:
-      features (list of FeatureValue): the values whose ``changed_files``
-        lists should be aggregated.
-
-    Returns:
-      A list of ``ChangedFile`` objects sorted by file name. The sorting
-      is not essential, but is provided to ease testing by ensuring the
-      output is in some canonical order.
-
-    Raises:
-      ``ValueError`` if any file name is given inconsistent ``blame_url``s.
-    """
-    all_changed_files = {}
-    for feature in features:
-      if self._LogZeroish(self._SingleFeatureScore(feature)): # pragma: no cover
-        logging.debug('Discarding changed files from feature %s'
-            ' because it has zero probability' % feature.name)
-        continue
-
-      for changed_file in feature.changed_files or []:
-        accumulated_changed_file = all_changed_files.get(changed_file.name)
-        if accumulated_changed_file is None:
-          all_changed_files[changed_file.name] = changed_file
-          continue
-
-        if (accumulated_changed_file.blame_url !=
-            changed_file.blame_url): # pragma: no cover
-          raise ValueError('Blame URLs do not match: %s != %s'
-              % (accumulated_changed_file.blame_url, changed_file.blame_url))
-        accumulated_changed_file.reasons.extend(changed_file.reasons or [])
-
-    return sorted(all_changed_files.values(),
-        key=lambda changed_file: changed_file.name)

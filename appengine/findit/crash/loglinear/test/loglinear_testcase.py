@@ -5,11 +5,39 @@
 import random
 import unittest
 
+from crash.loglinear.feature import Feature
+from crash.loglinear.feature import FeatureFunction
 from crash.loglinear.feature import FeatureValue
-from crash.loglinear.model import ToFeatureFunction
 
 
-class LoglinearTestCase(unittest.TestCase): # pragma: no cover
+# Some arbitrary features.
+class Feature0(Feature):  # pragma: no cover
+  @property
+  def name(self):
+    return 'feature0'
+
+  def __call__(self, x):
+    return lambda y: FeatureValue('feature0', y == (x > 5), 'reason0', None)
+
+class Feature1(Feature):  # pragma: no cover
+  @property
+  def name(self):
+    return 'feature1'
+
+  def __call__(self, x):
+    return lambda y: FeatureValue('feature1', y == ((x % 2) == 1),
+                                  'reason1', None)
+
+class Feature2(Feature):  # pragma: no cover
+  @property
+  def name(self):
+    return 'feature2'
+
+  def __call__(self, x):
+    return lambda y: FeatureValue('feature2', y == (x <= 7), 'reason2', None)
+
+
+class LoglinearTestCase(unittest.TestCase):  # pragma: no cover
   """Common code for testing ``model.py`` and ``training.py``."""
 
   def setUp(self):
@@ -28,20 +56,10 @@ class LoglinearTestCase(unittest.TestCase): # pragma: no cover
     """
     super(LoglinearTestCase, self).setUp()
 
-    # Some arbitrary features.
-    # We don't use double lambdas because gpylint complains about that.
-    def feature0(x):
-      return lambda y: FeatureValue('feature0', y == (x > 5), None, None)
-
-    def feature1(x):
-      return lambda y: FeatureValue('feature1', y == ((x % 2) == 1), None, None)
-
-    def feature2(x):
-      return lambda y: FeatureValue('feature2', y == (x <= 7), None, None)
-
-    self._feature_list = [feature0, feature1, feature2]
-    self._feature_function = ToFeatureFunction(self._feature_list)
+    self._feature_list = [Feature0(), Feature1(), Feature2()]
+    self._feature_function = FeatureFunction(self._feature_list)
     self._qty_features = len(self._feature_list)
     self._X = range(10)
     self._Y = lambda _x: [False, True]
-    self._weights = [random.random() for _ in xrange(self._qty_features)]
+    self._weights = {feature.name: random.random()
+                     for feature in self._feature_list}

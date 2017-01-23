@@ -33,12 +33,14 @@ class TrainableLogLinearModel(LogLinearModel):
         ``float``. N.B., the length of the list must be the same for all
         ``x`` and ``y``, and must be the same as the length of the list
         of weights.
-      initial_weights (list of float): the pre-training coefficients
+      initial_weights (dict from str to float): the pre-training coefficients
         for how much we believe components of the feature vector. This
         provides the seed for training; this starting value shouldn't
         affect the final weights obtained by training (thanks to
         convexity), but will affect how long it takes for training
         to converge.
+        N.B. The dict should not be sparse (only contains non-zero weights),
+        because we only train those features whose names are keys in this dict.
       epsilon (float): The absolute-error threshold for considering a
         weight to be "equal to zero". N.B., this should be a positive
         number, as we will compare it against the absolute value of
@@ -47,50 +49,80 @@ class TrainableLogLinearModel(LogLinearModel):
     super(TrainableLogLinearModel, self).__init__(
         Y_given_X, feature_function, initial_weights, epsilon)
     self._training_data = training_data
-
+    # Use self._weights instead of initialz_weights, since self._weights already
+    # filtered zero weights in the __init__ of superclass.
+    self._feature_order = self._weights.keys()
+    self._np_weights = self._DictToNumPyArray(self._weights)
     self._observed_feature_vector = vsum([
         self.FeaturesAsNumPyArray(x)(y)
         for x, y in self._training_data])
 
-  # Even though this is identical to the superclass definition, we must
-  # re-provide it in order to define the setter.
   @property
-  def weights(self):
-    """The weight covector.
+  def np_weights(self):
+    """The NumPy Array of the weight covector."""
+    return self._np_weights
 
-    At present we return the weights as an ``np.ndarray``, but in the
-    future that may be replaced by a more general type which specifies
-    the semantics rather than the implementation details.
-    """
-    return self._weights
-
-  @weights.setter
-  def weights(self, new_weights): # pylint: disable=W0221
+  @np_weights.setter
+  def np_weights(self, new_np_weights): # pylint: disable=W0221
     """Mutate the weight covector, and clear memos as necessary.
 
     This setter attempts to avoid clearing memos whenever possible,
     but errs on the side of caution/correctness when it needs to.
+    This setter also drop all the zero weights in weight covector using
+    self._epsilon.
+
+    Note, the conversion between dict and np array is needed because model uses
+    dict to organize weights of features, however SciPy trainning (e.g. BFGS)
+    needs numpy array to do computaion.
 
     Args:
-      new_weights (np.ndarray): the new weights to use. Must have the
-        same shape as the old ``np.ndarray``.
+      new_np_weights (np.ndarray): the new weights to use. It will be converted
+      to weights dict mapping feature_name to its weight.
     """
-    if new_weights is self._weights:
+    if np.array_equal(self._np_weights, new_np_weights):
       return
 
-    if not isinstance(new_weights, np.ndarray):
-      raise TypeError('Expected an np.ndarray but got %s instead'
-          % new_weights.__class__.__name__)
+    if not isinstance(new_np_weights, np.ndarray):
+      raise TypeError('Expected an np.ndarray but got %s instead' %
+                      new_np_weights.__class__.__name__)
 
-    if new_weights.shape != self._weights.shape:
-      raise TypeError('Weight shape mismatch: %s != %s'
-          % (new_weights.shape, self._weights.shape))
+    if new_np_weights.shape != self._np_weights.shape:
+      raise TypeError('Weight shape mismatch: %s != %s' %
+                      (new_np_weights.shape, self._np_weights.shape))
 
+    self._np_weights = np.array(filter(self.IsNonZeroWeight, new_np_weights))
     self.ClearWeightBasedMemos()
-    self._weights = new_weights
+    self._weights = self._NumPyArrayToDict(self._np_weights)
+    self._feature_order = self._weights.keys()
+
+  def _NumPyArrayToDict(self, np_weights):
+    """Converts numpy array to dict (mapping feature name to weight).
+
+    Note, this conversion is needed because model uses weights dict to organize
+    weights for features, however SciPy trainning (e.g. BFGS) needs numpy array
+    to do computaion.
+
+    Args:
+      np_weights (np.ndarray): Weights which have the same order of
+        self._feature_order. Note, feature np array should also be serialized by
+        the same order as self._feature_order to match.
+
+    Returns:
+      A dict mapping feature name to weight.
+    """
+    return {feature_name: weight
+            for feature_name, weight in zip(self._feature_order, np_weights)}
+
+  def _DictToNumPyArray(self, weights, default=0.):
+    """Converts dict (mapping feature name to weight) to numpy array."""
+    return np.array([weights.get(feature_name, default)
+                     for feature_name in self._feature_order])
 
   def FeaturesAsNumPyArray(self, x):
     """A variant of ``Features`` which returns a ``np.ndarray``.
+
+    Note, the features np array should have the same order as in
+    self._feature_order to stay aligned with weights np array.
 
     For training we need to have the feature function return an
     ``np.ndarray(float)`` rather than the ``list(FeatureValue)`` used
@@ -103,7 +135,12 @@ class TrainableLogLinearModel(LogLinearModel):
     bottleneck, we can add the extra layer of memoization to avoid that.
     """
     fx = self.Features(x)
-    return lambda y: np.array([fxy.value for fxy in fx(y)])
+    def FeaturesAsNumPyArrayGivenX(y):
+      fxys = fx(y)
+      return np.array([fxys[feature_name].value
+                       for feature_name in self._feature_order])
+
+    return FeaturesAsNumPyArrayGivenX
 
   def LogLikelihood(self):
     """The conditional log-likelihood of the training data.
@@ -122,7 +159,8 @@ class TrainableLogLinearModel(LogLinearModel):
     will be the log-likelihood plus some penalty terms for regularization.
     """
     observed_zeta = math.fsum(self.LogZ(x) for x, _ in self._training_data)
-    observed_score = self.weights.dot(self._observed_feature_vector)
+    observed_score = self.np_weights.dot(
+        self._observed_feature_vector)
     return observed_score - observed_zeta
 
   def LogLikelihoodGradient(self):
@@ -142,7 +180,7 @@ class TrainableLogLinearModel(LogLinearModel):
     Returns:
       Nothing, but has the side effect of mutating the stored weights.
     """
-    initial_weights = self.weights
+    initial_np_weights = self.np_weights
 
     # We want to minimize the number of times we reset the weights since
     # that clears our memos. One might think we could do that in the
@@ -152,17 +190,17 @@ class TrainableLogLinearModel(LogLinearModel):
     # This is why the ``weights`` setter tries to avoid clearing memos
     # when possible.
 
-    def objective_function(new_weights):
-      self.weights = new_weights
+    def objective_function(new_np_weights):
+      self.np_weights = new_np_weights
       return -self.LogLikelihood() + 0.5 * l2_penalty * self.quadrance
 
-    def objective_function_gradient(new_weights):
-      self.weights = new_weights
-      return -self.LogLikelihoodGradient() + l2_penalty * self.weights
+    def objective_function_gradient(new_np_weights):
+      self.np_weights = new_np_weights
+      return -self.LogLikelihoodGradient() + l2_penalty * self.np_weights
 
     result = spo.minimize(
         objective_function,
-        initial_weights,
+        initial_np_weights,
         method='BFGS',
         jac=objective_function_gradient)
 
@@ -182,4 +220,4 @@ class TrainableLogLinearModel(LogLinearModel):
 
     # This shouldn't really be necessary, since we're resetting it
     # directly during training; but just to be safe/sure.
-    self.weights = result.x
+    self.np_weights = result.x
