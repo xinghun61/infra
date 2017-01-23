@@ -400,7 +400,7 @@ func TestGetBotID(t *testing.T) {
 					Convey("with br", func() {
 						// Copied from buildbot logs
 						step.Text = []string{
-							fmt.Sprintf("smoothness.key_silk_cases.reference<br>smoothness.key_silk_cases.reference<br><div class=\"BuildResultInfo\"><br></div><br><br/>%s bar<br/>", prefix),
+							fmt.Sprintf("smoothness.key_silk_cases.reference<br>smoothness.key_silk_cases.reference<br><div class=\"BuildResultInfo\"><br></div><br><br/>%s bar<br/>Other ignored junk", prefix),
 							"some other junk that should be ignored",
 						}
 						res := getBotID(step)
