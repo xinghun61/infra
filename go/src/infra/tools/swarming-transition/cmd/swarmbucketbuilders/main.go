@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"os/exec"
 	"reflect"
 	"sort"
+	"strconv"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/luci/luci-go/common/data/text/indented"
@@ -40,7 +42,11 @@ func parsePyl(r io.Reader, v interface{}) error {
 	if err != nil {
 		return fmt.Errorf("could not parse pyl format: %s. Output: %s", err, out)
 	}
-	return json.Unmarshal(out, v)
+	err = json.Unmarshal(out, v)
+	if err != nil {
+		err = fmt.Errorf("could not convert PYL to JSON: %s", err)
+	}
+	return err
 }
 
 // buildersFile is a structure for portions of builders.pyl file that we need.
@@ -55,16 +61,33 @@ type builder struct {
 	Recipe               string                 `json:"recipe"`
 	Properties           map[string]interface{} `json:"properties"`
 	SlavePoolNames       []string               `json:"slave_pools"`
-	ExecutionTimeoutSecs int                    `json:"builder_timeout_s"`
+	ExecutionTimeoutSecs intOrString            `json:"builder_timeout_s"`
 }
 type slavePool struct {
 	slaveData `json:"slave_data"`
 	// there is also "slaves" property, but we don't need it.
 }
 type slaveData struct {
-	Bitness   int    `json:"bits"`
-	OS        string `json:"os"`
-	OSVersion string `json:"version"`
+	Bitness   intOrString `json:"bits"`
+	OS        string      `json:"os"`
+	OSVersion string      `json:"version"`
+}
+
+// intOrString is an integer that supports JSON unmarshaling from a string
+type intOrString int
+
+// UnmarshalJSON unmarshals data into n.
+// data is expected to be a JSON string. If the string
+// fails to parse to an integer, UnmarshalJSON returns
+// an error.
+func (n *intOrString) UnmarshalJSON(data []byte) error {
+	data = bytes.Trim(data, `"`)
+	num, err := strconv.Atoi(string(data))
+	if err != nil {
+		return err
+	}
+	*n = intOrString(num)
+	return nil
 }
 
 func (f *buildersFile) pool(b *builder) (*slavePool, error) {
