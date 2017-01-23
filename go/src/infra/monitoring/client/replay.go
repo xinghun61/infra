@@ -82,7 +82,7 @@ func (c *replay) Findit(ctx context.Context, master *messages.MasterLocation, bu
 // TODO(seanmccullough): Evaluate GOB encoding as a faster alternative.
 func read(ctx context.Context, path string, v interface{}) error {
 	f, err := os.Open(path)
-	logging.Infof(ctx, "Reading file: %s", path)
+	logging.Debugf(ctx, "Reading file: %s", path)
 	if err != nil {
 		return err
 	}

@@ -198,7 +198,11 @@ func (a *Analyzer) BuilderAlerts(ctx context.Context, tree string, master *messa
 	}
 
 	ret := []messages.Alert{}
-	for range be.Builders {
+	for builderName := range be.Builders {
+		if a.BuilderOnly != "" && builderName != a.BuilderOnly {
+			continue
+		}
+
 		r := <-c
 		if len(r.err) != 0 {
 			// TODO: add a special alert for this too?
@@ -825,7 +829,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 			// TODO(martiniss): move this logic into package step
 			r, _ := failure.Step.Result()
 			if r == messages.ResultInfraFailure {
-				logging.Infof(ctx, "INFRA FAILURE: %s/%s/%s", failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name)
+				logging.Debugf(ctx, "INFRA FAILURE: %s/%s/%s", failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name)
 				bf := messages.BuildFailure{
 					Builders: []messages.AlertedBuilder{
 						{

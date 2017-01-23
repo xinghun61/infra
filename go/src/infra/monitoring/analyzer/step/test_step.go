@@ -163,7 +163,7 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 	if err != nil {
 		// Still want to keep on serving some data, even if test results is down. We can also do something
 		// in this analyzer, even if we have no test results.
-		logging.Infof(ctx, "got error fetching test results (ignoring): %s", err)
+		logging.Debugf(ctx, "got error fetching test results (ignoring): %s", err)
 		return name, failedTests, nil
 	}
 
