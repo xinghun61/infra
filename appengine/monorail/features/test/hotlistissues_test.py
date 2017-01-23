@@ -7,6 +7,7 @@
 
 import mox
 import unittest
+import time
 
 from google.appengine.ext import testbed
 from third_party import ezt
@@ -70,6 +71,11 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     self.mr.viewed_user_auth.user_id = 111L
     sorting.InitializeArtValues(self.services)
 
+    self.mox = mox.Mox()
+
+  def tearDown(self):
+    self.mox.UnsetStubs()
+
   def testAssertBasePermissions(self):
     private_hotlist = self.services.features.TestAddHotlist(
         'privateHotlist', hotlist_id=321, owner_ids=[222L],
@@ -118,6 +124,11 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     self.assertEqual(ezt.boolean(False), page_data['allow_rerank'])
 
   def testGetTableViewData(self):
+    now = time.time()
+    self.mox.StubOutWithMock(time, 'time')
+    time.time().MultipleTimes().AndReturn(now)
+    self.mox.ReplayAll()
+
     self.mr.auth.user_id = 222L
     self.mr.col_spec = 'Stars Projects Rank'
     table_view_data = self.servlet.GetTableViewData(self.mr)
@@ -129,6 +140,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     table_view_data = self.servlet.GetTableViewData(self.mr)
     self.assertEqual(table_view_data['remove_issues_token'], xsrf.GenerateToken(
         self.mr.auth.user_id, '/u/222/hotlists/hotlist.do'))
+    self.mox.VerifyAll()
 
   def testGetGridViewData(self):
     # TODO(jojwang): Write this test
