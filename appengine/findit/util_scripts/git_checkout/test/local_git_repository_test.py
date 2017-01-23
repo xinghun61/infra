@@ -3,9 +3,10 @@
 # found in the LICENSE file.
 
 from datetime import datetime
-import pytz
 import os
+import shutil
 import subprocess
+import tempfile
 import textwrap
 
 from testing_utils import testing
@@ -13,6 +14,7 @@ from testing_utils import testing
 from git_checkout import local_git_repository
 from libs.gitiles import blame
 from libs.gitiles import change_log
+import local_cache
 import script_util
 
 
@@ -20,9 +22,15 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
 
   def setUp(self):
     super(LocalGitRepositoryTest, self).setUp()
+    self.temp_dir = tempfile.mkdtemp(prefix='local_git_repository_test')
     self.mock(subprocess, 'check_call', lambda *args, **kwargs: None)
+    self.mock(local_cache, 'CACHE_DIR', self.temp_dir)
     self.local_repo = local_git_repository.LocalGitRepository(
         'https://repo/path')
+
+  def tearDown(self):
+    shutil.rmtree(self.temp_dir, ignore_errors=True)
+    super(LocalGitRepositoryTest, self).tearDown()
 
   def testCloneOrUpdateRepoIfRepoNotExists(self):
     self.mock(os.path, 'exists', lambda path: False)

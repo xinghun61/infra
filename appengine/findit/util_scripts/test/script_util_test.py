@@ -2,14 +2,26 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import shutil
 import subprocess
+import tempfile
 
 from testing_utils import testing
 
+import local_cache
 import script_util
 
 
 class ScriptUtilTest(testing.AppengineTestCase):
+
+  def setUp(self):
+    super(ScriptUtilTest, self).setUp()
+    self.temp_dir = tempfile.mkdtemp(prefix='script_util_test')
+    self.mock(local_cache, 'CACHE_DIR', self.temp_dir)
+
+  def tearDown(self):
+    shutil.rmtree(self.temp_dir, ignore_errors=True)
+    super(ScriptUtilTest, self).tearDown()
 
   # TODO(katesonia): Figure out a good way to work around cache.
   def testGetLocalGitCommandOutput(self):
