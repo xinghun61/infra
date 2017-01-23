@@ -1,5 +1,5 @@
-hash: 1119a9c46f322a09b97272cefa6016abaa3b8bcf5143a3bab9b2cf1f525bfc73
-updated: 2017-01-23T11:48:38.308463872-08:00
+hash: e8373c145315126fc0cbdc2fd6efc9958767714334b16b01b8d23ca2dd23086a
+updated: 2017-01-23T13:01:56.067060635-08:00
 imports:
 - name: cloud.google.com/go
   version: 55be5ff3e94023dfb73feecbb47d8628c8dbed55
@@ -177,7 +177,7 @@ imports:
   subpackages:
   - gerrit
 - name: golang.org/x/mobile
-  version: c2432111674ba1e139be11cc746383352b9f4d08
+  version: 6f0c9f6df9bb72876ba0f6ef5103207f479a0100
   repo: https://go.googlesource.com/mobile.git
   subpackages:
   - cmd/gomobile

@@ -221,7 +221,7 @@ import:
   version: master
   repo: https://chromium.googlesource.com/external/github.com/mitchellh/go-homedir.git
 - package: golang.org/x/mobile
-  version: master
+  version: 6f0c9f6df9bb72876ba0f6ef5103207f479a0100
   repo: https://go.googlesource.com/mobile.git
   subpackages:
   - cmd/gomobile
