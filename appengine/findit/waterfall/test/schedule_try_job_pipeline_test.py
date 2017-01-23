@@ -23,9 +23,9 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
         'good_revision': 1,
         'bad_revision': 2,
         'target_mastername': master_name,
-        'referenced_build_url': ('https://build.chromium.org/p/%s/builders'
-                                 '/%s/builds/%s') % (
-                                     master_name, builder_name, build_number),
+        'referenced_build_url': (
+            'https://luci-milo.appspot.com/buildbot/%s/%s/%s') % (
+                master_name, builder_name, build_number),
         'suspected_revisions': ['rev']
     }
     try_job_pipeline = ScheduleTryJobPipeline()
@@ -45,9 +45,9 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
         'good_revision': 1,
         'bad_revision': 2,
         'target_mastername': master_name,
-        'referenced_build_url': ('https://build.chromium.org/p/%s/builders'
-                                 '/%s/builds/%s') % (
-                                     master_name, builder_name, build_number)
+        'referenced_build_url': (
+             'https://luci-milo.appspot.com/buildbot/%s/%s/%s') % (
+                 master_name, builder_name, build_number)
     }
     try_job_pipeline = ScheduleTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(

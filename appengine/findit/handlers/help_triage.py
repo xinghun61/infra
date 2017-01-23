@@ -77,14 +77,14 @@ def _CheckReverts(master_name, builder_name, current_build_number):
                  'https://codereview.chromium.org/1278653002'),
               'fixing_build_number': 0,
               'fixing_build_url': (
-                  'https://build.chromium.org/p/m/builders/b/builds/0')
+                  'https://luci-milo.appspot.com/buildbot/m/b/0')
               'fixing_revision': '208c65020aecfcf305d524058f7ca89363',
               'fixing_cl_commit_position': '342013',
               'fixing_cl_review_url': (
                  'https://codereview.chromium.org/1278653005'),
               'fixing_build_number': 2,
               'fixing_build_url': (
-                  'https://build.chromium.org/p/m/builders/b/builds/2')
+                  'https://luci-milo.appspot.com/buildbot/m/b/2')
           },
           ...
       }

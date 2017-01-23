@@ -50,20 +50,12 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build.last_crawled_time = self._TimeBeforeNowBySeconds(360)
     self.assertFalse(build_util._BuildDataNeedUpdating(build))
 
-  def _MockUrlfetchWithBuildData(
-      self, master_name, builder_name, build_number,
-      build_data=None, archive=False):
-    if archive and build_data == 'Test get build data':
-      build_data += ' from archive'
-      archived_build_url = buildbot.CreateArchivedBuildUrl(
-          master_name, builder_name, build_number)
-      self.mocked_urlfetch.register_handler(archived_build_url, build_data)
-
-    if build_data == 'Test get build data':
-      build_data += ' from build master'
-    build_url = buildbot.CreateBuildUrl(
-        master_name, builder_name, build_number, json_api=True)
-    self.mocked_urlfetch.register_handler(build_url, build_data)
+  def _MockUrlfetchWithBuildDataFromArchive(
+      self, master_name, builder_name, build_number, build_data):
+    build_data += ' from archive'
+    archived_build_url = buildbot.CreateArchivedBuildUrl(
+        master_name, builder_name, build_number)
+    self.mocked_urlfetch.register_handler(archived_build_url, build_data)
 
   def testGetBuildDataNotDownloadAgain(self):
     master_name = 'm'
@@ -90,9 +82,9 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     build = WfBuild.Create(master_name, builder_name, build_number)
     build.put()
-    self._MockUrlfetchWithBuildData(master_name, builder_name, build_number,
-                                    build_data='Test get build data',
-                                    archive=True)
+    self._MockUrlfetchWithBuildDataFromArchive(
+        master_name, builder_name, build_number,
+        build_data='Test get build data')
 
     build_util.DownloadBuildData(
         master_name, builder_name, build_number)
@@ -101,12 +93,12 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_build_data, build.data)
 
-  def testGetBuildDataFromBuildMaster(self):
+  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster',
+                     return_value='Test get build data from build master')
+  def testGetBuildDataFromBuildMaster(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 123,
-                                    build_data='Test get build data')
 
     build = build_util.DownloadBuildData(
         master_name, builder_name, build_number)
@@ -124,15 +116,17 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     self.UpdateUnitTestConfigSettings(
         'download_build_data_settings', {'use_chrome_build_extract': True})
-    self._MockUrlfetchWithBuildData(master_name, builder_name, build_number,
-                                    build_data='Test get build data',
-                                    archive=True)
+    self._MockUrlfetchWithBuildDataFromArchive(
+        master_name, builder_name, build_number,
+        build_data='Test get build data')
 
     build_util.DownloadBuildData(master_name, builder_name, build_number)
 
     self.assertEqual(build.data_source, build_util.CHROME_BUILD_EXTRACT)
 
-  def testDownloadBuildDataSourceFromBM(self):
+  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster',
+                     return_value='Test get build data from build master')
+  def testDownloadBuildDataSourceFromBM(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -141,14 +135,14 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     self.UpdateUnitTestConfigSettings(
         'download_build_data_settings', {'use_chrome_build_extract': False})
-    self._MockUrlfetchWithBuildData(master_name, builder_name, build_number,
-                                    build_data='Test get build data')
 
     build_util.DownloadBuildData(master_name, builder_name, build_number)
 
     self.assertEqual(build.data_source, build_util.BUILDBOT_MASTER)
 
-  def testDownloadBuildDataSourceFromBMUpateBuildData(self):
+  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster',
+                     return_value='Test get build data from build master')
+  def testDownloadBuildDataSourceFromBMUpateBuildData(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -159,8 +153,6 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     self.UpdateUnitTestConfigSettings(
         'download_build_data_settings', {'use_chrome_build_extract': False})
-    self._MockUrlfetchWithBuildData(master_name, builder_name, build_number,
-                                    build_data='Test get build data')
 
     build_util.DownloadBuildData(master_name, builder_name, build_number)
 

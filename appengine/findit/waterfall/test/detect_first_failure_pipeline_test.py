@@ -19,7 +19,6 @@ from model.wf_step import WfStep
 from waterfall import buildbot
 from waterfall import detect_first_failure_pipeline
 from waterfall import lock_util
-from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall.test import wf_testcase
@@ -55,17 +54,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     with open(file_name, 'r') as f:
       return f.read()
 
-  def _MockUrlfetchWithBuildData(
-      self, master_name, builder_name, build_number, build_data=None):
-    """If build data is None, use json file in waterfall/test/data."""
-    if build_data is None:
-      build_data = self._GetBuildData(master_name, builder_name, build_number)
-
-    build_url = buildbot.CreateBuildUrl(
-        master_name, builder_name, build_number, json_api=True)
-    self.mocked_urlfetch.register_handler(build_url, build_data)
-
-  def testLookBackUntilGreenBuild(self):
+  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  def testLookBackUntilGreenBuild(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -74,23 +64,22 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, analysis_status.RUNNING)
 
     # Setup build data for builds:
-    # 123: mock urlfetch to ensure it is fetched.
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 123)
     # 122: mock a build in datastore to ensure it is not fetched again.
     build = WfBuild.Create(master_name, builder_name, 122)
     build.data = self._GetBuildData(master_name, builder_name, 122)
     build.completed = True
     build.put()
-    self._MockUrlfetchWithBuildData(
-        master_name, builder_name, 122, build_data='Blow up if used!')
     # 121: mock a build in datastore to ensure it is updated.
     build = WfBuild.Create(master_name, builder_name, 121)
     build.data = 'Blow up if used!'
     build.last_crawled_time = self._TimeBeforeNowBySeconds(7200)
     build.completed = False
     build.put()
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 121)
 
+    mock_fn.side_effect = [
+        self._GetBuildData(master_name, builder_name, 123),
+        self._GetBuildData(master_name, builder_name, 121)
+    ]
     pipeline = DetectFirstFailurePipeline()
     failure_info = pipeline.run(master_name, builder_name, build_number)
 
@@ -109,7 +98,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
 
-  def testFirstFailureLastPassUpdating(self):
+  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  def testFirstFailureLastPassUpdating(self, mock_fn):
     """last pass always should just be updated once."""
     master_name = 'm'
     builder_name = 'b'
@@ -124,8 +114,11 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     # 98: net_unitests passed, unit_tests failed.
     # 97: net_unitests failed, unit_tests failed.
     # 96: net_unitests passed, unit_tests passed.
+    side_effects = []
     for i in range(5):
-      self._MockUrlfetchWithBuildData(master_name, builder_name, 100 - i)
+      side_effects.append(
+          self._GetBuildData(master_name, builder_name, 100 - i))
+    mock_fn.side_effect = side_effects
 
     pipeline = DetectFirstFailurePipeline()
     failure_info = pipeline.run(master_name, builder_name, build_number)
@@ -145,7 +138,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
 
-  def testStopLookingBackIfAllFailedStepsPassedInLastBuild(self):
+  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  def testStopLookingBackIfAllFailedStepsPassedInLastBuild(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -154,11 +148,10 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, analysis_status.RUNNING)
 
     # Setup build data for builds:
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 124)
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 123,
-                                    build_data=None)
-    self._MockUrlfetchWithBuildData(
-        master_name, builder_name, 122, build_data='Blow up if used!')
+    mock_fn.side_effect = [
+        self._GetBuildData(master_name, builder_name, 124),
+        self._GetBuildData(master_name, builder_name, 123)
+    ]
 
     pipeline = DetectFirstFailurePipeline()
     failure_info = pipeline.run(master_name, builder_name, build_number)
@@ -173,7 +166,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
 
-  def testAnalyzeSuccessfulBuild(self):
+  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  def testAnalyzeSuccessfulBuild(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 121
@@ -182,16 +176,15 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, analysis_status.RUNNING)
 
     # Setup build data for builds:
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 121)
-    self._MockUrlfetchWithBuildData(
-        master_name, builder_name, 120, build_data='Blow up if used!')
+    mock_fn.return_value = self._GetBuildData(master_name, builder_name, 121)
 
     pipeline = DetectFirstFailurePipeline()
     failure_info = pipeline.run(master_name, builder_name, build_number)
 
     self.assertFalse(failure_info['failed'])
 
-  def testStopLookingBackIfFindTheFirstBuild(self):
+  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  def testStopLookingBackIfFindTheFirstBuild(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 2
@@ -200,9 +193,11 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, analysis_status.RUNNING)
 
     # Setup build data for builds:
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 2)
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 1)
-    self._MockUrlfetchWithBuildData(master_name, builder_name, 0)
+    mock_fn.side_effect = [
+        self._GetBuildData(master_name, builder_name, 2),
+        self._GetBuildData(master_name, builder_name, 1),
+        self._GetBuildData(master_name, builder_name, 0)
+    ]
 
     pipeline = DetectFirstFailurePipeline()
     failure_info = pipeline.run(master_name, builder_name, build_number)
@@ -568,7 +563,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(builds, expected_builds)
 
-  def testTestLevelFailedInfo(self):
+  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  def testTestLevelFailedInfo(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
@@ -579,9 +575,15 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     # Mock data for retrieving data from swarming server for a build.
     self._MockUrlFetchWithSwarmingData(master_name, builder_name, 223)
 
+    mock_fn.side_effect = [
+      self._GetBuildData( master_name, builder_name, 223),
+      self._GetBuildData(master_name, builder_name, 222),
+      self._GetBuildData(master_name, builder_name, 221),
+      self._GetBuildData(master_name, builder_name, 220)
+    ]
     for n in xrange(223, 219, -1):  # pragma: no branch.
       # Setup build data for builds:
-      self._MockUrlfetchWithBuildData(master_name, builder_name, n)
+
       if n == 220:
         break
 

@@ -2,7 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
 from datetime import datetime
+import gzip
+import io
+import json
 import mock
 import os
 import unittest
@@ -35,30 +39,35 @@ class DummyHttpClient(RetryHttpClient):
 
 class BuildBotTest(unittest.TestCase):
 
-  def testFailToGetRecentCompletedBuilds(self):
-    mocked_http_client = mock.Mock()
-    mocked_http_client.Get.side_effect = [(404, '404'), None]
+  @mock.patch.object(buildbot, 'DownloadJsonData', return_value=None)
+  def testFailToGetRecentCompletedBuilds(self, _):
     self.assertEqual(
-        [], buildbot.GetRecentCompletedBuilds('m', 'b', mocked_http_client))
-    mocked_http_client.assert_has_calls(
-        mock.call('https://build.chromium.org/p/m/json/builders/'))
+        [], buildbot.GetRecentCompletedBuilds('m', 'b', _))
 
-  def testGetRecentCompletedBuilds(self):
-    builders_json_data = """
-    {
-      "b": {
-        "cachedBuilds": [33, 32, 34, 35],
-        "currentBuilds": [35]
+  @mock.patch.object(buildbot, 'DownloadJsonData')
+  def testGetRecentCompletedBuilds(self, mock_fn):
+    builders_data = {
+      'builders': {
+          'b': {
+            'cachedBuilds': [33, 32, 34, 35],
+            'currentBuilds': [35]
+          }
       }
     }
-    """
-    mocked_http_client = mock.Mock()
-    mocked_http_client.Get.return_value = (200, builders_json_data)
+
+    builders_json_data = json.dumps(builders_data)
+    compressed_file = io.BytesIO()
+    with gzip.GzipFile(fileobj=compressed_file, mode='w') as compressed:
+      compressed.write(builders_json_data)
+
+    data = {
+        'data': base64.b64encode(compressed_file.getvalue())
+    }
+    compressed_file.close()
+    mock_fn.return_value = json.dumps(data)
     self.assertEqual(
         [34, 33, 32],
-        buildbot.GetRecentCompletedBuilds('m', 'b', mocked_http_client))
-    mocked_http_client.assert_has_calls(
-        mock.call('https://build.chromium.org/p/m/json/builders/'))
+        buildbot.GetRecentCompletedBuilds('m', 'b', RetryHttpClient()))
 
   def testGetMasternameFromUrl(self):
     cases = {
@@ -68,7 +77,7 @@ class BuildBotTest(unittest.TestCase):
         'http://build.chromium.org/p/chromium': 'chromium',
         'http://build.chromium.org/p/chromium/builders/Linux': 'chromium',
         'https://uberchromegw.corp.google.com/i/m1/builders/Linux': 'm1',
-        'https://luci-milo.appspot.com/m2/b/123': 'm2',
+        'https://luci-milo.appspot.com/buildbot/m2/b/123': 'm2',
     }
 
     for url, expected_result in cases.iteritems():
@@ -88,7 +97,7 @@ class BuildBotTest(unittest.TestCase):
              'chromium.win', 'Win7 Tests (1)', 33911),
         'https://uberchromegw.corp.google.com/i/m1/builders/b1/builds/234':
             ('m1', 'b1', 234),
-        'https://luci-milo.appspot.com/m2/b2/123': ('m2', 'b2', 123),
+        'https://luci-milo.appspot.com/buildbot/m2/b2/123': ('m2', 'b2', 123),
     }
 
     for url, expected_result in cases.iteritems():
@@ -131,18 +140,11 @@ class BuildBotTest(unittest.TestCase):
     master_name = 'a'
     builder_name = 'Win7 Tests (1)'
     build_number = 123
-    expected_url = ('https://build.chromium.org/p/a/builders/'
-                    'Win7%20Tests%20%281%29/builds/123')
-    expected_url_json = ('https://build.chromium.org/p/a/json/builders/'
-                         'Win7%20Tests%20%281%29/builds/123')
-
+    expected_url = ('https://luci-milo.appspot.com/buildbot/a/'
+                    'Win7%20Tests%20%281%29/123')
     self.assertEqual(
         expected_url,
         buildbot.CreateBuildUrl(master_name, builder_name, build_number))
-
-    self.assertEqual(
-        expected_url_json,
-        buildbot.CreateBuildUrl(master_name, builder_name, build_number, True))
 
   def testCreateStdioLogUrl(self):
     master_name = 'a'
@@ -197,29 +199,15 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(1, len(http_client.requests))
     self.assertEqual(expected_url, http_client.requests[0])
 
-  def testGetBuildDataFromBuildMasterSuccess(self):
+  @mock.patch.object(buildbot, 'DownloadJsonData', return_value='response')
+  def testGetBuildDataFromBuildMasterSuccess(self, _):
     master_name = 'a'
     builder_name = 'b c'
     build_number = 1
-    expected_url = 'https://build.chromium.org/p/a/json/builders/b%20c/builds/1'
-    http_client = DummyHttpClient(200, 'abc')
-    data = buildbot.GetBuildDataFromBuildMaster(
-        master_name, builder_name, build_number, http_client)
-    self.assertEqual(http_client.response_content, data)
-    self.assertEqual(1, len(http_client.requests))
-    self.assertEqual(expected_url, http_client.requests[0])
 
-  def testGetBuildDataFromBuildMasterFailure(self):
-    master_name = 'a'
-    builder_name = 'b c'
-    build_number = 1
-    expected_url = 'https://build.chromium.org/p/a/json/builders/b%20c/builds/1'
-    http_client = DummyHttpClient(404, 'Not Found')
-    data = buildbot.GetBuildDataFromBuildMaster(
-        master_name, builder_name, build_number, http_client)
-    self.assertIsNone(data)
-    self.assertEqual(1, len(http_client.requests))
-    self.assertEqual(expected_url, http_client.requests[0])
+    self.assertEqual('response',
+                     buildbot.GetBuildDataFromBuildMaster(
+                        master_name, builder_name, build_number, _))
 
   def testGetStepStdioSuccess(self):
     master_name = 'a'
@@ -464,3 +452,57 @@ class BuildBotTest(unittest.TestCase):
     self.assertIsNone(buildbot._GetCommitPosition('not a commit position'))
     self.assertEqual(
         438538, buildbot._GetCommitPosition('refs/heads/master@{#438538}'))
+
+  @mock.patch.object(buildbot, '_GetResultJson')
+  @mock.patch.object(buildbot, '_DownloadData')
+  def testDownloadJsonData(self, mock_fn_1, mock_fn_2):
+    mocked_response_json = {'a': 'a'}
+    mocked_response = json.dumps(mocked_response_json)
+    mock_fn_1.return_value = mocked_response
+    mock_fn_2.return_value = mocked_response_json
+
+    url = 'url'
+    data = {'data': 'data'}
+    http_client = RetryHttpClient()
+
+    response_json = buildbot.DownloadJsonData(url, data, http_client)
+
+    self.assertEqual(response_json, mocked_response_json)
+    mock_fn_1.assert_called_once_with(url, data, http_client)
+    mock_fn_2.assert_called_once_with(mocked_response, url)
+
+  def testDownloadDataError(self):
+    mocked_http_client = mock.Mock()
+    mocked_http_client.Post.return_value = (404, '404')
+
+    url = 'url'
+    data = {
+      'data': 'data'
+    }
+    self.assertIsNone(
+        buildbot._DownloadData(url, data, mocked_http_client))
+    mocked_http_client.assert_has_calls(
+        mock.call.Post(
+            'url', json.dumps(data),
+            {'Content-Type': 'application/json', 'Accept': 'application/json'}))
+
+  def testDownloadData(self):
+    response = 'response'
+    mocked_http_client = mock.Mock()
+    mocked_http_client.Post.return_value = (200, response)
+
+    url = 'url'
+    data = {
+      'data': 'data'
+    }
+    self.assertEqual(
+        response, buildbot._DownloadData(url, data, mocked_http_client))
+
+  def testGetResultJsonNoPrefix(self):
+    response = 'response_json'
+    self.assertEqual(response, buildbot._GetResultJson(response))
+
+  def testGetResultJson(self):
+    response_json = 'response_json'
+    response = '%s%s' % (buildbot._RESPONSE_PREFIX, response_json)
+    self.assertEqual(response_json, buildbot._GetResultJson(response))

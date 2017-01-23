@@ -77,13 +77,7 @@ def _GenerateGetResJson(value):
   return data
 
 
-def _GenerateResWithPrefix(json_data):
-  return '%s%s' % (
-      step_mapper._LOGDOG_RESPONSE_PREFIX, json.dumps(json_data))
-
-
-_SAMPLE_GET_RESPONSE = _GenerateResWithPrefix(
-    _GenerateGetResJson(json.dumps(_SAMPLE_STEP_METADATA)))
+_SAMPLE_GET_RESPONSE = _GenerateGetResJson(json.dumps(_SAMPLE_STEP_METADATA))
 
 
 def _CreateProtobufMessage(step_name, label, stream_name):
@@ -108,7 +102,7 @@ def _GenerateTailRes(step_name, label, stream_name):
           }
       ]
   }
-  return _GenerateResWithPrefix(tail_res_json)
+  return tail_res_json
 
 
 class StepMapperTest(wf_testcase.WaterfallTestCase):
@@ -172,44 +166,30 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_builder_name,
                      step_mapper._ProcessStringForLogDog(builder_name))
 
-  @mock.patch.object(HttpClientAppengine, 'Post',
-      return_value=(404, 'Not Found'))
-  def testGetResponseFromLogDogError(self, _):
-    self.assertIsNone(step_mapper._GetResponseFromLogDog(
-        'url', 'path', self.http_client))
-
-  @mock.patch.object(HttpClientAppengine, 'Post', return_value=(200, 'Found'))
-  def testGetResponseFromLogDog(self, _):
-    self.assertEqual('Found', step_mapper._GetResponseFromLogDog(
-        'url', 'path', self.http_client))
-
-  @mock.patch.object(step_mapper, '_GetResponseFromLogDog',
+  @mock.patch.object(buildbot, 'DownloadJsonData',
                      return_value=_SAMPLE_GET_RESPONSE)
   def testGetStepMetadataFromLogDog(self, _):
     step_metadata = step_mapper._GetStepMetadataFromLogDog(
         self.build_step, 'stream', self.http_client)
     self.assertEqual(step_metadata, _SAMPLE_STEP_METADATA)
 
-  @mock.patch.object(step_mapper, '_GetResponseFromLogDog')
+  @mock.patch.object(buildbot, 'DownloadJsonData')
   def testGetStepMetadataFromLogDogMalFormated(self, mock_fn):
-    data = _GenerateGetResJson('data')
-    mock_fn.return_value = _GenerateResWithPrefix(data)
+    mock_fn.return_value = _GenerateGetResJson('data')
     step_metadata = step_mapper._GetStepMetadataFromLogDog(
         self.build_step, 'stream', self.http_client)
     self.assertIsNone(step_metadata)
 
-  @mock.patch.object(step_mapper, '_GetResponseFromLogDog',
+  @mock.patch.object(buildbot, 'DownloadJsonData',
                      return_value=None)
   def testGetStepMetadataFromLogDogNoResponse(self, _):
     step_metadata = step_mapper._GetStepMetadataFromLogDog(
         self.build_step, 'stream', self.http_client)
     self.assertIsNone(step_metadata)
 
-  @mock.patch.object(step_mapper, '_GetResponseFromLogDog',
-                     return_value='get_res')
-  @mock.patch.object(step_mapper, '_GetResultJson',
+  @mock.patch.object(buildbot, 'DownloadJsonData',
                      return_value={'a': 'a'})
-  def testGetStepMetadataFromLogDogNoJson(self, *_):
+  def testGetStepMetadataFromLogDogNoJson(self, _):
     step_metadata = step_mapper._GetStepMetadataFromLogDog(
         self.build_step, 'stream', self.http_client)
     self.assertIsNone(step_metadata)
@@ -324,31 +304,24 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
         self.build_step, step)
     self.assertIsNone(log_stream)
 
-  @mock.patch.object(step_mapper, '_GetResponseFromLogDog')
+  @mock.patch.object(buildbot, 'DownloadJsonData')
   def testGetAnnotationsProto(self, mock_fn):
     mock_fn.return_value = _GenerateTailRes(
         self.step_name, 'step_metadata', 'stream')
     step = step_mapper._GetAnnotationsProto(self.build_step, self.http_client)
     self.assertIsNotNone(step)
 
-  @mock.patch.object(step_mapper, '_GetResponseFromLogDog', return_value=None)
+  @mock.patch.object(buildbot, 'DownloadJsonData', return_value=None)
   def testGetAnnotationsProtoNoResponse(self, _):
     step = step_mapper._GetAnnotationsProto(self.build_step, self.http_client)
     self.assertIsNone(step)
 
-  @mock.patch.object(step_mapper, '_GetResponseFromLogDog',
-                     return_value='value')
-  def testGetAnnotationsProtoMalFormated(self, _):
-    step = step_mapper._GetAnnotationsProto(self.build_step, self.http_client)
-    self.assertIsNone(step)
-
-  @mock.patch.object(step_mapper, '_GetResponseFromLogDog',
-                     return_value=_GenerateResWithPrefix({'a':'a'}))
+  @mock.patch.object(buildbot, 'DownloadJsonData', return_value={'a':'a'})
   def testGetAnnotationsProtoNoLogs(self, _):
     step = step_mapper._GetAnnotationsProto(self.build_step, self.http_client)
     self.assertIsNone(step)
 
-  @mock.patch.object(step_mapper, '_GetResponseFromLogDog')
+  @mock.patch.object(buildbot, 'DownloadJsonData')
   def testGetAnnotationsProtoNoAnnotationsB64(self, mock_fn):
     data = {
         'logs': [
@@ -357,11 +330,11 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
             }
         ]
     }
-    mock_fn.return_value = _GenerateResWithPrefix(data)
+    mock_fn.return_value = data
     step = step_mapper._GetAnnotationsProto(self.build_step, self.http_client)
     self.assertIsNone(step)
 
-  @mock.patch.object(step_mapper, '_GetResponseFromLogDog')
+  @mock.patch.object(buildbot, 'DownloadJsonData')
   def testGetAnnotationsProtoNoB64decodable(self, mock_fn):
     data = {
         'logs': [
@@ -372,11 +345,11 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
             }
         ]
     }
-    mock_fn.return_value = _GenerateResWithPrefix(data)
+    mock_fn.return_value = data
     step = step_mapper._GetAnnotationsProto(self.build_step, self.http_client)
     self.assertIsNone(step)
 
-  @mock.patch.object(step_mapper, '_GetResponseFromLogDog')
+  @mock.patch.object(buildbot, 'DownloadJsonData')
   def testGetAnnotationsTailReturnedEmpty(self, mock_fn):
     data = {
         'logs': [
@@ -387,13 +360,9 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
             }
         ]
     }
-    mock_fn.side_effect = [_GenerateResWithPrefix({}),
-                           _GenerateResWithPrefix(data)]
+    mock_fn.side_effect = [{}, data]
     step = step_mapper._GetAnnotationsProto(self.build_step, self.http_client)
     self.assertIsNone(step)
-
-  def testGetResultJsonException(self):
-    self.assertIsNone(step_mapper._GetResultJson('res'))
 
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask',
                      return_value=_SAMPLE_OUTPUT)

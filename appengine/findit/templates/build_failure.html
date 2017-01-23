@@ -67,9 +67,9 @@
     var findit = {};
     findit.analysisCompleted = '{{analysis_completed}}' == 'True';
     findit.analysisFailed = '{{analysis_failed}}' == 'True';
-    findit.builderUrl = 'https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}';
-    findit.buildUrl = findit.builderUrl + '/builds/{{build_number}}';
-    findit.triageReferenceAnalysisUrl = '/waterfall/build-failure?url=https://build.chromium.org/p/{{triage_reference_analysis_master_name}}/builders/{{triage_reference_analysis_builder_name}}/builds/{{triage_reference_analysis_build_number}}';
+    findit.builderUrl = 'https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}';
+    findit.buildUrl = findit.builderUrl + '/{{build_number}}';
+    findit.triageReferenceAnalysisUrl = '/waterfall/build-failure?url=https://luci-milo.appspot.com/buildbot/{{triage_reference_analysis_master_name}}/{{triage_reference_analysis_builder_name}}/{{triage_reference_analysis_build_number}}';
     findit.analysisCorrect = '{{analysis_correct}}';  // Possible values: 'None', 'True', or 'False'.
     findit.analysisIsDuplicate = '{{analysis_is_duplicate}}' == 'True';
     findit.showTriageHelpButton = '{{show_triage_help_button}}' == 'True';
@@ -199,14 +199,14 @@
   </script>
 </head>
 <body>
-  Findit now provides results from both heuristics and try-jobs. (<a href="https://code.google.com/p/chromium/issues/entry?status=Unconfirmed&labels=Pri-2,findit&summary=Findit%20bug%20or%20reature%20request&comment=Url%20to%20the%20build%20Failure:%0Ahttps://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}%0A%0AWhat%20is%20the%20bug%20or%20feature:%0A">File a Findit bug</a>)
+  Findit now provides results from both heuristics and try-jobs. (<a href="https://code.google.com/p/chromium/issues/entry?status=Unconfirmed&labels=Pri-2,findit&summary=Findit%20bug%20or%20reature%20request&comment=Url%20to%20the%20build%20Failure:%0Ahttps://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}%0A%0AWhat%20is%20the%20bug%20or%20feature:%0A">File a Findit bug</a>)
   <br>
   <br>
 
   <b>{% block heading %}{% endblock heading %}</b>
   <div>
     Master: {{master_name}}<br>
-    Builder: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}">{{builder_name}}</a><br>
+    Builder: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}">{{builder_name}}</a><br>
     {% block failure_info %}{% endblock failure_info %}
   </div>
   <br>

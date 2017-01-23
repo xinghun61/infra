@@ -40,9 +40,9 @@ class ScheduleTestTryjobPipelineTest(wf_testcase.WaterfallTestCase):
         'bad_revision': 2,
         'target_mastername': master_name,
         'target_testername': 'b',
-        'referenced_build_url': ('https://build.chromium.org/p/%s/builders'
-                                 '/%s/builds/%s') % (
-                                     master_name, builder_name, build_number)
+        'referenced_build_url': (
+            'https://luci-milo.appspot.com/buildbot/%s/%s/%s') % (
+                master_name, builder_name, build_number)
     }
     try_job_pipeline = ScheduleTestTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(

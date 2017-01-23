@@ -59,9 +59,9 @@
       }
       rowString += '</td>';
 
-      rowString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/builds/' + first_failure + '">' + first_failure + '</a></td>';
+      rowString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + first_failure + '">' + first_failure + '</a></td>';
       if (last_pass) {
-        rowString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/builds/' + last_pass + '">' + last_pass + '</a></td>';
+        rowString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + last_pass + '">' + last_pass + '</a></td>';
       } else {
         rowString += '<td rowspan="' + rowspan + '">N/A</td>';
       }
@@ -70,7 +70,7 @@
     }
 
     function generateStringForSingleCL(cl) {
-      var clString = '<td><a href="' + findit.builderUrl + '/builds/' + cl.build_number + '">' + cl.build_number + '</a></td>';
+      var clString = '<td><a href="' + findit.builderUrl + '/' + cl.build_number + '">' + cl.build_number + '</a></td>';
       clString += '<td><a href="' + cl.url + '">' + cl.commit_position || cl.revision + '</a></td>';
       clString += '<td>' + cl.score + '</td>';
       clString += '<td>';
@@ -117,7 +117,7 @@
           var tryJobCulprit = tryJob.culprit;
           if (! jQuery.isEmptyObject(tryJobCulprit)) {
             var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/builds/' + build_number + '">' + build_number + '</a></td>';
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '">' + build_number + '</a></td>';
             var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
             tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
 
@@ -159,7 +159,7 @@
           if (! jQuery.isEmptyObject(tryJobCulprit)) {
             tableString += '<td rowspan="' + rowspan + '">Try Job</td>';
             var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/builds/' + build_number + '">' + build_number + '</a></td>';
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '">' + build_number + '</a></td>';
             var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
             tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
             // Right now this cell is only for scores of heuristic results, placeholder for confidence in the future.
@@ -245,7 +245,7 @@
 
           if (! jQuery.isEmptyObject(tryJobCulprit)) {
             var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/builds/' + build_number + '">' + build_number + '</a></td>';
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '">' + build_number + '</a></td>';
             var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
             tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
 
@@ -309,7 +309,7 @@ Test Failure:
 {% endblock heading %}
 
 {% block failure_info %}
-    Build Number: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}">{{build_number}}</a>
+    Build Number: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}">{{build_number}}</a>
 {% endblock failure_info %}
 
 

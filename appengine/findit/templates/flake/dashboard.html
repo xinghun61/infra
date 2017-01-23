@@ -193,7 +193,7 @@
         <td>{{ master_flake_analysis.status }}</td>
         <td>
           {% if master_flake_analysis.suspected_build %}
-            <a href="https://build.chromium.org/p/{{ master_flake_analysis.master_name }}/builders/{{ master_flake_analysis.builder_name }}/builds/{{ master_flake_analysis.suspected_build }}" target="_blank">{{ master_flake_analysis.suspected_build }}
+            <a href="https://luci-milo.appspot.com/buildbot/{{ master_flake_analysis.master_name }}/{{ master_flake_analysis.builder_name }}/{{ master_flake_analysis.suspected_build }}" target="_blank">{{ master_flake_analysis.suspected_build }}
             </a>
           {% endif %}
         <td>

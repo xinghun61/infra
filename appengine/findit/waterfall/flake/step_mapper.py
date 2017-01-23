@@ -47,43 +47,6 @@ def _ProcessStringForLogDog(base_string):
   return ''.join(new_string_list)
 
 
-def _GetResponseFromLogDog(url, path, http_client):
-  """Gets response from Logdog.
-
-  There are 2 types of requests:
-    Tail for getting annotations proto.
-    Get for getting desired log.
-  """
-  data = {
-      'project': 'chromium',
-      'path': path
-  }
-  data_json = json.dumps(data)
-
-  headers = {
-      'Content-Type': 'application/json',
-      'Accept':'application/json'
-  }
-  status_code, response = http_client.Post(url, data_json, headers=headers)
-  if status_code != 200 or not response:
-    logging.error('Post request to LogDog failed')
-    return None
-
-  return response
-
-
-def _GetResultJson(response):
-  """Converts response from LogDog to json format."""
-  try:
-    # Removes extra _LOGDOG_RESPONSE_PREFIX so we can get json data.
-    if response.startswith(_LOGDOG_RESPONSE_PREFIX):
-      return json.loads(response[len(_LOGDOG_RESPONSE_PREFIX):])
-    return json.loads(response)
-  except Exception:
-    logging.error("Could not load response from LogDog as json.")
-    return None
-
-
 def _GetAnnotationsProto(cq_build_step, http_client):
   """Gets annotations message for the build."""
 
@@ -96,16 +59,19 @@ def _GetAnnotationsProto(cq_build_step, http_client):
   path = _BASE_LOGDOG_REQUEST_PATH % (
       master_name, _ProcessStringForLogDog(builder_name), build_number,
       'annotations')
-  response = _GetResponseFromLogDog(_LOGDOG_TAIL_ENDPOINT, path, http_client)
-  if not response:
-    return None
 
-  response_json = _GetResultJson(response)
+  data = {
+      'project': 'chromium',
+      'path': path
+  }
+
+  response_json = buildbot.DownloadJsonData(
+      _LOGDOG_TAIL_ENDPOINT, data, http_client)
   if not response_json:
     # Due to a bug(crbug.com/678831) in LogDog, Tail request might return
     # empty data. So use Get request as a backup.
-    response = _GetResponseFromLogDog(_LOGDOG_GET_ENDPOINT, path, http_client)
-    response_json = _GetResultJson(response)
+    response_json = buildbot.DownloadJsonData(
+        _LOGDOG_GET_ENDPOINT, data, http_client)
     if not response_json:
       return None
 
@@ -150,11 +116,16 @@ def _GetStepMetadataFromLogDog(cq_build_step, logdog_stream, http_client):
   path = _BASE_LOGDOG_REQUEST_PATH % (
       master_name, _ProcessStringForLogDog(builder_name), build_number,
       logdog_stream)
-  response = _GetResponseFromLogDog(_LOGDOG_GET_ENDPOINT, path, http_client)
+
+  data = {
+      'project': 'chromium',
+      'path': path
+  }
 
   base_error_log = 'Error when fetch step_metadata log: %s'
 
-  response_json = _GetResultJson(response)
+  response_json = buildbot.DownloadJsonData(
+      _LOGDOG_GET_ENDPOINT, data, http_client)
   if not response_json:
     logging.error(base_error_log % 'cannot get json log.')
     return None

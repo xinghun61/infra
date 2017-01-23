@@ -15,13 +15,13 @@
 
 {% block failure_info %}
     {% if build_number != first_failure %}
-      Current Failure: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}">{{build_number}}</a><br>
-      First Failure: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{first_failure}}">{{first_failure}}</a><br>
+      Current Failure: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}">{{build_number}}</a><br>
+      First Failure: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{first_failure}}">{{first_failure}}</a><br>
     {% else %}
-      First Failure: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}">{{build_number}}</a><br>
+      First Failure: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}">{{build_number}}</a><br>
     {% endif %}
     {% if last_pass %}
-      Last Pass: <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{last_pass}}">{{last_pass}}</a><br>
+      Last Pass: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{last_pass}}">{{last_pass}}</a><br>
       {% if last_pass + 1 != first_failure %}
       <div class="warning">Be careful, compile was not run or purple in builds before first failure!</div>
       {% endif %}
@@ -29,9 +29,9 @@
       <div class="warning">Last Pass: Unknown!</div>
     {% endif %}
     {%if show_debug_info %}
-      <a href="/waterfall/failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/compile">compile stdio</a>
+      <a href="/waterfall/failure-log?url=https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}/steps/compile">compile stdio</a>
     {% else %}
-      <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/compile">compile stdio</a>
+      <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}/steps/compile">compile stdio</a>
     {% endif %}
 {% endblock failure_info %}
 
@@ -79,7 +79,7 @@
           <tbody>
             {% for suspected_cl in suspected_cls_by_heuristic %}
             <tr>
-              <td><a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{suspected_cl.build_number}}">{{suspected_cl.build_number}}</a></td>
+              <td><a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{suspected_cl.build_number}}">{{suspected_cl.build_number}}</a></td>
               <td>
                 {{suspected_cl.repo_name}} <a href="{{suspected_cl.url}}">{{suspected_cl.commit_position or suspected_cl.revision}}</a>
               </td>

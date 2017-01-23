@@ -256,7 +256,7 @@
         }
 
         if (buildNumber) {
-          tooltipStr += '<br>Build #: <a href="https://build.chromium.org/p/' + findit.masterName + '/builders/' + findit.builderName + '/builds/' + buildNumber + '" target="_blank">' + buildNumber + '</a>';
+          tooltipStr += '<br>Build #: <a href="https://luci-milo.appspot.com/buildbot/' + findit.masterName + '/' + findit.builderName + '/' + buildNumber + '" target="_blank">' + buildNumber + '</a>';
         }
         if (tryJobUrl) {
           tooltipStr += '<br>Try Job: <a href="' + tryJobUrl + '" target="_blank">link</a>';
@@ -338,7 +338,7 @@
     Error info: {{ error }}<br>
     {% endif %}
     {% if suspected_flake.build_number %}
-      Flakiness <b>started</b> in Build: <a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake.build_number }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.build_number }}</a>
+      Flakiness <b>started</b> in Build: <a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.build_number }}</a>
       {% if suspected_flake.confidence %}
         (Confidence: {{ '%0.1f%%' % (suspected_flake.confidence * 100) }})
       {% endif %}
@@ -390,7 +390,7 @@
           <th class="triage-header">Feedback</th>
         </tr>
         <tr>
-          <td class="triage-cell"><a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a></a></td>
+          <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a></a></td>
           <td class="triage-cell">
             {% if suspected_flake.triage_result == 1 %}
               <input type="radio" name="triage-radio-button" value="2" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
@@ -426,7 +426,7 @@
             <tr>
               <td class="triage-cell">{{ triage_record.triaged_time }}</td>
               <td class="triage-cell">{{ triage_record.user_name }}</td>
-              <td class="triage-cell"><a href="https://build.chromium.org/p/{{ master_name }}/builders/{{ builder_name }}/builds/{{ triage_record.suspect_info.build_number }}" target="_blank">{{ triage_record.suspect_info.build_number }}</a></a></td>
+              <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ triage_record.suspect_info.build_number }}" target="_blank">{{ triage_record.suspect_info.build_number }}</a></a></td>
               <td class="triage-cell">{{ triage_record.triage_result }}</td>
               <td class="triage-cell">{{ triage_record.version_number }}</td>
             </tr>

@@ -2,9 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
 import contextlib
 from datetime import datetime
 import gzip
+import io
 import logging
 import json
 import re
@@ -22,14 +24,21 @@ _MASTER_URL_PATTERN = re.compile(
     r'^%s/([^/]+)(?:/.*)?$' % _HOST_NAME_PATTERN)
 
 _MILO_MASTER_URL_PATTERN = re.compile(
-    r'^https?://luci-milo\.appspot\.com/([^/]+)(?:/.*)?$')
+    r'^https?://luci-milo\.appspot\.com/buildbot/([^/]+)(?:/.*)?$')
 
 _BUILD_URL_PATTERN = re.compile(
     r'^%s/([^/]+)/builders/([^/]+)/builds/([\d]+)(?:/.*)?$' %
     _HOST_NAME_PATTERN)
 
 _MILO_BUILD_URL_PATTERN = re.compile(
-    r'^https?://luci-milo\.appspot\.com/([^/]+)/([^/]+)/([^/]+)(?:/.*)?$')
+    r'^https?://luci-milo\.appspot\.com/buildbot/([^/]+)/([^/]+)/([^/]+)'
+    '(?:/.*)?$')
+
+_MILO_ENDPOINT = 'https://luci-milo.appspot.com/prpc/milo.Buildbot'
+
+_MILO_ENDPOINT_BUILD = '%s/GetBuildbotBuildJSON' % _MILO_ENDPOINT
+
+_MILO_ENDPOINT_MASTER = '%s/GetCompressedMasterJSON' % _MILO_ENDPOINT
 
 _STEP_URL_PATTERN = re.compile(
     r'^%s/([^/]+)/builders/([^/]+)/builds/([\d]+)/steps/([^/]+)(/.*)?$' %
@@ -38,9 +47,42 @@ _STEP_URL_PATTERN = re.compile(
 _COMMIT_POSITION_PATTERN = re.compile(
     r'refs/heads/master@{#(\d+)}$', re.IGNORECASE)
 
+_RESPONSE_PREFIX = ')]}\'\n'
+
+
 # These values are buildbot constants used for Build and BuildStep.
 # This line was copied from buildbot/master/buildbot/status/results.py.
 SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, CANCELLED = range(7)
+
+
+def _DownloadData(url, data, http_client):
+  """Downloads data from rpc endpoints like Logdog or Milo."""
+
+  headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+
+  status_code, response = http_client.Post(url, json.dumps(data), headers)
+  if status_code != 200 or not response:
+    logging.error('Post request to %s failed' % url)
+    return None
+
+  return response
+
+
+def _GetResultJson(response):
+  """Converts response from rpc endpoints to json format."""
+
+  if response.startswith(_RESPONSE_PREFIX):
+    # Removes extra _RESPONSE_PREFIX so we can get json data.
+    return response[len(_RESPONSE_PREFIX):]
+  return response
+
+def DownloadJsonData(url, data, http_client):
+  """Downloads data from rpc endpoints and converts response in json format."""
+  response = _DownloadData(url, data, http_client)
+  return _GetResultJson(response, url) if response else None
 
 
 def GetRecentCompletedBuilds(master_name, builder_name, http_client):
@@ -48,17 +90,36 @@ def GetRecentCompletedBuilds(master_name, builder_name, http_client):
 
   Sorted by completed time, newer builds at beginning of the returned list.
   """
-  url = 'https://build.chromium.org/p/%s/json/builders/' % master_name
-  status_code, data = http_client.Get(url)
-  if status_code != 200:
-    logging.error('Failed to retrieve recent builds for %s/%s',
-                  master_name, builder_name)
+  data = {
+    'name': master_name
+  }
+  response = DownloadJsonData(_MILO_ENDPOINT_MASTER, data, http_client)
+  if not response:
     return []
-  data_json = json.loads(data)
-  metadata = data_json.get(builder_name, {})
-  cachedBuilds = metadata.get('cachedBuilds', [])
-  currentBuilds = metadata.get('currentBuilds', [])
-  return sorted(set(cachedBuilds) - set(currentBuilds), reverse=True)
+  try:
+    response_json = json.loads(response)
+  except Exception:  # pragma: no cover
+    logging.error('Failed to load json data for master %s' % master_name)
+    return []
+  try:
+    decoded_data = base64.b64decode(response_json.get('data'))
+  except Exception:  # pragma: no cover
+    logging.error('Failed to b64decode data for master %s' % master_name)
+    return []
+
+  try:
+    with io.BytesIO(decoded_data) as compressed_file:
+      with gzip.GzipFile(fileobj=compressed_file) as decompressed_file:
+        master_data_json = decompressed_file.read()
+        master_data = json.loads(master_data_json)
+  except Exception:  # pragma: no cover
+    logging.error('Failed to decompress data for master %s' % master_name)
+    return []
+
+  meta_data = master_data.get('builders', {}).get(builder_name, {})
+  cached_builds = meta_data.get('cachedBuilds', [])
+  current_builds = meta_data.get('currentBuilds', [])
+  return sorted(set(cached_builds) - set(current_builds), reverse=True)
 
 
 def GetMasterNameFromUrl(url):
@@ -115,15 +176,11 @@ def CreateArchivedBuildUrl(master_name, builder_name, build_number):
           '?json=1' % (master_name, builder_name, build_number))
 
 
-def CreateBuildUrl(master_name, builder_name, build_number, json_api=False):
+def CreateBuildUrl(master_name, builder_name, build_number):
   """Creates the url for the given build."""
   builder_name = urllib.quote(builder_name)
-  if json_api:
-    return 'https://build.chromium.org/p/%s/json/builders/%s/builds/%s' % (
-        master_name, builder_name, build_number)
-  else:
-    return 'https://build.chromium.org/p/%s/builders/%s/builds/%s' % (
-        master_name, builder_name, build_number)
+  return 'https://luci-milo.appspot.com/buildbot/%s/%s/%s' % (
+      master_name, builder_name, build_number)
 
 
 def CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
@@ -139,15 +196,15 @@ def CreateGtestResultPath(master_name, builder_name, build_number, step_name):
       master_name, builder_name, build_number, step_name)
 
 
-def GetBuildDataFromBuildMaster(master_name,
-                                builder_name, build_number, http_client):
-  """Returns the json-format data of the build from buildbot json API."""
-  status_code, data = http_client.Get(
-      CreateBuildUrl(master_name, builder_name, build_number, json_api=True))
-  if status_code != 200:
-    return None
-  else:
-    return data
+def GetBuildDataFromBuildMaster(
+      master_name, builder_name, build_number, http_client):
+  """Returns the json-format data of the build."""
+  data = {
+      'master': master_name,
+      'builder': builder_name,
+      'buildNum': build_number
+  }
+  return DownloadJsonData(_MILO_ENDPOINT_BUILD, data, http_client)
 
 
 def GetBuildDataFromArchive(master_name,
@@ -235,7 +292,6 @@ def _GetCommitPosition(commit_position_line):
 def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   """Extracts and returns build information as an instance of BuildInfo."""
   build_info = BuildInfo(master_name, builder_name, build_number)
-
   data_json = json.loads(build_data)
   chromium_revision = GetBuildProperty(
       data_json.get('properties', []), 'got_revision')
