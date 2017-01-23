@@ -99,7 +99,7 @@ func TestLoadFile(t *testing.T) {
       `), 0644)
 			So(err, ShouldBeNil)
 
-			f, status, err := loadFile(ctx, fileName)
+			f, status, _, err := loadFile(ctx, fileName)
 			So(err, ShouldBeNil)
 			So(status, ShouldEqual, "good")
 			So(f, ShouldResemble, deviceStatusFile{
@@ -131,7 +131,7 @@ func TestLoadFile(t *testing.T) {
 		})
 
 		Convey("file not found", func() {
-			_, status, err := loadFile(ctx, "/file/not/found")
+			_, status, _, err := loadFile(ctx, "/file/not/found")
 			So(err, ShouldNotBeNil)
 			So(status, ShouldEqual, "not_found")
 		})
@@ -140,7 +140,7 @@ func TestLoadFile(t *testing.T) {
 			err := ioutil.WriteFile(fileName, []byte(`not valid json`), 0644)
 			So(err, ShouldBeNil)
 
-			_, status, err := loadFile(ctx, fileName)
+			_, status, _, err := loadFile(ctx, fileName)
 			So(err, ShouldNotBeNil)
 			So(status, ShouldEqual, "invalid_json")
 		})
@@ -153,7 +153,7 @@ func TestLoadFile(t *testing.T) {
       `), 0644)
 			So(err, ShouldBeNil)
 
-			_, status, err := loadFile(ctx, fileName)
+			_, status, _, err := loadFile(ctx, fileName)
 			So(err, ShouldNotBeNil)
 			So(status, ShouldEqual, "invalid_version")
 		})
@@ -167,7 +167,7 @@ func TestLoadFile(t *testing.T) {
       `), 0644)
 			So(err, ShouldBeNil)
 
-			_, status, err := loadFile(ctx, fileName)
+			_, status, _, err := loadFile(ctx, fileName)
 			So(err, ShouldBeNil)
 			So(status, ShouldEqual, "good")
 		})
@@ -182,8 +182,9 @@ func TestLoadFile(t *testing.T) {
       `), 0644)
 			So(err, ShouldBeNil)
 
-			_, status, err := loadFile(ctx, fileName)
+			_, status, staleness, err := loadFile(ctx, fileName)
 			So(err, ShouldNotBeNil)
+			So(staleness, ShouldEqual, 161)
 			So(status, ShouldEqual, "stale_file")
 		})
 	})

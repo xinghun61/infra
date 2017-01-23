@@ -64,6 +64,9 @@ var (
 	metricReadStatus = metric.NewString("dev/android_device_metric_read/status",
 		"status of the last metric read",
 		nil)
+	metricSecondsStale = metric.NewFloat("dev/android_device_metric_read/seconds_stale",
+		"seconds since the status file was written",
+		nil)
 
 	portPathRE = regexp.MustCompile(`\d+/\d+`)
 )
@@ -83,7 +86,7 @@ func update(c context.Context) error {
 		return err
 	}
 
-	file, status, err := loadFile(c, filepath.Join(usr.HomeDir, fileName))
+	file, status, staleness, err := loadFile(c, filepath.Join(usr.HomeDir, fileName))
 	metricReadStatus.Set(c, string(status))
 	if status == notFound {
 		// Don't log an error message if the file wasn't found - this is the
@@ -94,6 +97,7 @@ func update(c context.Context) error {
 		return err
 	}
 
+	metricSecondsStale.Set(c, staleness)
 	updateFromFile(c, file)
 	return nil
 }

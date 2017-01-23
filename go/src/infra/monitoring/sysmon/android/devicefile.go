@@ -93,29 +93,30 @@ type temperature struct {
 	EMMCTherm float64 `json:"emmc_therm"`
 }
 
-func loadFile(c context.Context, path string) (deviceStatusFile, status, error) {
+func loadFile(c context.Context, path string) (deviceStatusFile, status, float64, error) {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return deviceStatusFile{}, notFound, err
+		return deviceStatusFile{}, notFound, 0, err
 	}
 
 	var ret deviceStatusFile
 	err = json.Unmarshal(data, &ret)
 	if err != nil {
-		return deviceStatusFile{}, invalidJSON, err
+		return deviceStatusFile{}, invalidJSON, 0, err
 	}
 
 	if ret.Version != fileVersion && ret.Version != previousFileVersion {
-		return deviceStatusFile{}, invalidVersion, fmt.Errorf(
+		return deviceStatusFile{}, invalidVersion, 0, fmt.Errorf(
 			"android device file %s is version %d, not %d", path, ret.Version, fileVersion)
 	}
 
 	ts := time.Unix(0, int64(ret.Timestamp*float64(time.Second)))
 	now := clock.Now(c)
-	if ts.Before(now.Add(-maxStaleness)) {
-		return deviceStatusFile{}, staleFile, fmt.Errorf(
-			"android device file %s is %s stale, max %s", path, now.Sub(ts), maxStaleness)
+	staleness := now.Sub(ts)
+	if staleness >= maxStaleness {
+		return deviceStatusFile{}, staleFile, staleness.Seconds(), fmt.Errorf(
+			"android device file %s is %s stale, max %s", path, staleness, maxStaleness)
 	}
 
-	return ret, good, nil
+	return ret, good, staleness.Seconds(), nil
 }
