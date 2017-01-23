@@ -1,5 +1,8 @@
 package: .
 import:
+- package: github.com/andygrunwald/go-gerrit
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/andygrunwald/go-gerrit.git
 - package: github.com/dustin/go-humanize
   version: master
   repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
