@@ -411,7 +411,7 @@ class FlushThreadTest(unittest.TestCase):
     # Return from the second wait, which exits the thread.
     self.stop_event.set()
     self.t.join()
-    self.assertEqual(2, interface.flush.call_count)
+    self.assertEqual(1, interface.flush.call_count)
 
   def test_run_catches_exceptions(self):
     interface.flush.side_effect = Exception()
@@ -427,7 +427,7 @@ class FlushThreadTest(unittest.TestCase):
     # Return from the third wait, which exits the thread.
     self.stop_event.set()
     self.t.join()
-    self.assertEqual(3, interface.flush.call_count)
+    self.assertEqual(2, interface.flush.call_count)
 
   def test_stop_stops(self):
     self.t.start()
@@ -436,7 +436,6 @@ class FlushThreadTest(unittest.TestCase):
 
     self.t.stop()
     self.assertFalse(self.t.is_alive())
-    self.assertEqual(1, interface.flush.call_count)
 
   def test_sleeps_for_exact_interval(self):
     self.t.start()

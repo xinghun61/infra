@@ -256,7 +256,6 @@ class _FlushThread(threading.Thread):
 
     while True:
       if self.stop_event.wait(next_timeout):
-        self._flush_and_log_exceptions()
         return
 
       # Try to flush every N seconds exactly so rate calculations are more
