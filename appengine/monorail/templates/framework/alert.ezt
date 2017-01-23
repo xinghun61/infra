@@ -1,6 +1,5 @@
-[if-any alerts.show]
-  <table align="center" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 6px">
-   <tr><td class="notice">
+  <table id="alert-table" align="center" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 6px[if-any alerts.show][else];display: none[end]">
+   <tr><td class="notice" id="notice">
      [if-any alerts.updated]
       <a href="[project_home_url]/issues/detail?id=[alerts.updated]">Issue [alerts.updated]</a>
       has been updated.
@@ -34,4 +33,3 @@
      [end]
    </td></tr>
   </table>
-[end]

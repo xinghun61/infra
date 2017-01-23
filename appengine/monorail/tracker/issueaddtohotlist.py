@@ -49,11 +49,8 @@ class AddToHotlist(jsonfeed.JsonFeed):
           mr.cnxn, miss[0]).project_name
       missed.append(('%s:%d' % (project_name, miss[1])))
 
-    added = [issue_ref for issue_ref in mr.issue_refs if
-             issue_ref not in missed]
     hotlist_names = [self.services.features.GetHotlist(
         mr.cnxn, hotlist_id).name for hotlist_id in mr.hotlist_ids]
-    return {'added': added,
-            'hotlistIDs': mr.hotlist_ids,
+    return {'hotlistIDs': mr.hotlist_ids,
             'missed': missed,
             'hotlist_names': hotlist_names}
