@@ -27,7 +27,7 @@
     </div>
     <table cellspacing="0" cellpadding="2" border="0" class="results striped" width="100%">
       <tr id="headingrow">
-        <th style="white-space:nowrap; width:3%;">&nbsp;</th>
+        [if-any logged_in_user]<th style="white-space:nowrap; width:3%;">&nbsp;</th>[end]
         <th style="white-space:nowrap; width:15%;">Role</th>
         <th style="white-space:nowrap; width:25%">Hotlist</th>
         <th style="white-space:nowrap; width:10%;">Issues</th>
