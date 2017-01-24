@@ -81,14 +81,15 @@ func getBugQueueHandler(ctx *router.Context) {
 	w.Write(result)
 }
 
-func getOwnedBugsHandler(ctx *router.Context) {
+func getUncachedBugsHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	label := p.ByName("label")
 
 	user := auth.CurrentIdentity(c)
 	email := getAlternateEmail(user.Email())
-	q := fmt.Sprintf("label:%[1]s owner:%s OR owner:%s label:%[1]s", label, user.Email(), email)
+	q := fmt.Sprintf("label:%[1]s -has:owner OR label:%[1]s owner:%s OR owner:%s label:%[1]s",
+		label, user.Email(), email)
 
 	bugs, err := getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
 

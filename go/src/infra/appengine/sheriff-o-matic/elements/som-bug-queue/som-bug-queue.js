@@ -9,18 +9,18 @@
         type: String,
         observer: '_changeBugQueueLabel',
       },
-      _assignedBugsJson: {
+      _uncachedBugsJson: {
         type: Object,
         value: null,
       },
-      _assignedBugsJsonError: {
+      _uncachedBugsJsonError: {
         type: Object,
         value: null,
       },
       bugs: {
         type: Array,
         notify: true,
-        computed: '_computeBugs(_bugQueueJson, _assignedBugsJson)',
+        computed: '_computeBugs(_bugQueueJson, _uncachedBugsJson)',
       },
       _bugQueueJson: {
         type: Object,
@@ -59,7 +59,7 @@
 
       let promises = [this.$.bugQueueAjax.generateRequest().completes];
       if (this._isTrooperQueue) {
-        promises.push(this.$.assignedBugsAjax.generateRequest().completes);
+        promises.push(this.$.uncachedBugsAjax.generateRequest().completes);
       }
 
       Promise.all(promises).then((reponse) => {
@@ -67,17 +67,15 @@
       });
     },
 
-    _computeBugs: function(bugQueueJson, assignedBugsJson) {
+    _computeBugs: function(bugQueueJson, uncachedBugsJson) {
       let hasBugJson = bugQueueJson && bugQueueJson.items;
-      let hasAssignedJson = assignedBugsJson && assignedBugsJson.items;
-      if (!hasBugJson && !hasAssignedJson) {
+      let hasUncachedJson = uncachedBugsJson && uncachedBugsJson.items;
+      if (!hasBugJson && !hasUncachedJson) {
         return [];
-      } else if (!hasAssignedJson) {
+      } else if (!hasUncachedJson) {
         return bugQueueJson.items;
-      } else if (!hasBugJson) {
-        return assignedBugsJson.items;
       }
-      return bugQueueJson.items.concat(assignedBugsJson.items);
+      return uncachedBugsJson.items;
     },
 
     _computeHideBugQueue: function(bugQueueLabel) {
@@ -113,8 +111,8 @@
       this._bugQueueJson = null;
       this._bugQueueJsonError = null;
 
-      this._assignedBugsJson = null;
-      this._assignedBugsJsonError = null;
+      this._uncachedBugsJson = null;
+      this._uncachedBugsJsonError = null;
 
       this._bugsLoaded = false;
 

@@ -77,7 +77,7 @@
           { summary: 'baz', status: 'zippy', id: 456 },
         ],
       };
-      let assignedBugsJson = {
+      let uncachedBugsJson = {
         items: [
           { summary: 'hello', status: 'world', id: 555 },
           { summary: 'let us', status: 'test', id: 987 },
@@ -92,14 +92,12 @@
       assert.deepEqual([
         { summary: 'hello', status: 'world', id: 555 },
         { summary: 'let us', status: 'test', id: 987 },
-      ], element._computeBugs(null, assignedBugsJson));
+      ], element._computeBugs(null, uncachedBugsJson));
 
       assert.deepEqual([
-        { summary: 'foo', status: 'bar', id: 123 },
-        { summary: 'baz', status: 'zippy', id: 456 },
         { summary: 'hello', status: 'world', id: 555 },
         { summary: 'let us', status: 'test', id: 987 },
-      ], element._computeBugs(bugQueueJson, assignedBugsJson));
+      ], element._computeBugs(bugQueueJson, uncachedBugsJson));
     });
 
     test('compute priority', function() {

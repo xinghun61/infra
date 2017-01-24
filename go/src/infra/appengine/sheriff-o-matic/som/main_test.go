@@ -625,8 +625,8 @@ func TestMain(t *testing.T) {
 						getOAuthClient = oldOAClient
 					})
 
-					Convey("get owned bugs", func() {
-						getOwnedBugsHandler(&router.Context{
+					Convey("get uncached bugs", func() {
+						getUncachedBugsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makeGetRequest(),
