@@ -106,6 +106,14 @@ func botAnalyzer(ctx context.Context, failures []*messages.BuildStep) ([]message
 			continue
 		}
 
+		// TODO(martiniss): Remove this. This can be removed once step_metadata is
+		// fully implemented on all builders. This is currently blocked on some work
+		// in the test runners though, so have to do this hack for now :(
+		// See https://crbug.com/680729
+		if strings.HasPrefix(step.Name, "[trigger]") {
+			continue
+		}
+
 		isAffinityFailure[step.Name] = true
 		if !isStepFailure[step.Name] {
 			deviceWithPassingTests[ID] = true
