@@ -125,7 +125,7 @@ def RunTasks(tasks):  # pragma: no cover
     result_semaphore.acquire()
 
 
-@Cached(namespace='Command-output', cache=LocalCache())
+@Cached(LocalCache(), namespace='Command-output')
 def GetCommandOutput(command):  # pragma: no cover
   """Gets the output stream of executable command.
 

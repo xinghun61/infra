@@ -73,7 +73,9 @@ class MinDistanceFeature(Feature):
       return FeatureValue(
           name = self.name,
           value = LogLinearlyScaled(float(min_distance), float(self._maximum)),
-          reason = ('Minimum distance is %d' % min_distance),
+          reason = ('Minimum distance is %d' % min_distance
+                    if not math.isinf(min_distance) else
+                    'Minimum distance is infinity'),
           changed_files = self._ChangedFiles(suspect),
       )
 

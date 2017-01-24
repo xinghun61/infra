@@ -200,7 +200,7 @@ def DeltaEvaluator(git_hash1, git_hash2,
     app_id (str): Appengine app id to query.
     batch_size (int): Size of a batch that can be queried at one time.
     property_values (dict): Property values to query.
-       batch_size (int): The size of crashes that can be queried at one time.
+    batch_size (int): The size of crashes that can be queried at one time.
     verbose (bool): If True, print all the findit results.
   Return:
     (deltas, crash_count).
@@ -214,14 +214,13 @@ def DeltaEvaluator(git_hash1, git_hash2,
     crash_count = 0
     # Iterate batches of crash informations.
     for index, crashes in enumerate(
-        crash_iterator.IterateCrashes(client_id, app_id,
-                                      fields=CRASH_FIELDS,
-                                      property_values=property_values,
-                                      start_date=start_date,
-                                      end_date=end_date,
-                                      batch_size=batch_size,
-                                      batch_run=True)):
-
+        crash_iterator.CachedCrashIterator(client_id, app_id,
+                                           fields=CRASH_FIELDS,
+                                           property_values=property_values,
+                                           start_date=start_date,
+                                           end_date=end_date,
+                                           batch_size=batch_size,
+                                           batch_run=True)):
       results = []
       for git_hash in [git_hash1, git_hash2]:
         result_path = os.path.join(
