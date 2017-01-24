@@ -330,4 +330,6 @@ api_ratelimiting_cost_penalty = 1
 hotlist_whitelist = ['jojwang@google.com', 'jrobbins@chromium.org',
                      'seanmccullough@chromium.org', 'jparent@chromium.org',
                      'agable@chromium.org', 'stip@chromium.org',
-                     'laforge@chromium.org']
+                     'laforge@chromium.org', 'ojan@chromium.org',
+                     'scheib@chromium.org', 'benhenry@chromium.org',
+                     'efoo@chromium.org', 'eae@chromium.org']
