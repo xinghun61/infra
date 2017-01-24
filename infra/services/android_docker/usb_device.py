@@ -11,6 +11,7 @@ provide any low-level IO support over the bus.
 import os
 import sys
 import libusb1
+import logging
 import usb1
 
 
@@ -18,9 +19,37 @@ if sys.platform != 'linux2':
   raise NotImplementedError('This library only supported on linux systems.')
 
 
-def get_all_devices():
+_SUPPORTED_VENDORS = [
+  '18d1',  # Nexus line of devices
+]
+_SUPPORTED_INTERFACES = [
+  # (interface class, interface subclass, interface protocol)
+  (255, 66, 1),  # ADB's definition.
+]
+
+
+def is_android_device(device):
+  if device.vendor not in _SUPPORTED_VENDORS:
+    return False
+  if not any(i in _SUPPORTED_INTERFACES for i in device.interfaces):
+    return False
+  if not device.serial:
+    return False
+  return True
+
+
+def get_android_devices(filter_devices):
   ctx = usb1.USBContext()
-  return [USBDevice(d) for d in ctx.getDeviceList(skip_on_error=True)]
+  usb_devices = [USBDevice(d) for d in ctx.getDeviceList(skip_on_error=True)]
+  android_devices = []
+  for d in usb_devices:
+    if is_android_device(d):
+      if not filter_devices or d.serial in filter_devices:
+        android_devices.append(d)
+
+  if not android_devices:
+    logging.error('Unable to find devices: %s', filter_devices or 'all')
+  return android_devices
 
 
 class USBDevice(object):
