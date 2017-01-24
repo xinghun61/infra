@@ -1,0 +1,82 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+
+<link rel="import" href="../../elements/som-rev-range/som-rev-range.html">
+<link rel="import" href="../../elements/som-linkify-behavior.html">
+
+<dom-module id="som-extension-cros-failure">
+  <template>
+    <style>
+     .header {
+       color: #000;
+     }
+     .section {
+       padding-bottom: 1em;
+     }
+     div.section:last-of-type {
+       padding-bottom: 0;
+     }
+     .stage {
+        border-radius: 2px;
+        border: 1px solid #dcdcdc;
+        font-size: smaller;
+        margin: .1em;
+        padding: .3em 0.5em;
+        display: inline-block;
+     }
+     .stage-failed {
+       background: #e88;
+       color: #f4f4f4;
+     }
+     .stage-timed-out {
+       background: #e88;
+       color: #f4f4f4;
+     }
+     .stage-forgiven {
+       background: #fa3;
+       color: #f4f4f4;
+     }
+    </style>
+    <template is="dom-if" if="[[_isCrosFailure(type)]]">
+      <div>
+        <div id="stages" class="section">
+          <template is="dom-if" if="[[_haveStages(extension)]]">
+            <div class="header">
+              Unsuccessful stages:
+            </div>
+            <ul>
+              <template is="dom-repeat" items="[[extension.stages]]" as="stage">
+                <li id="stage">
+                  <span class$="[[_classForStage(stage)]]">
+                    [[stage.name]] [[stage.status]]
+                    <template is="dom-repeat" items="[[stage.logs]]" as="logs">
+                      [<a target="_blank" href$="[[_linkify(linkStyle, logs.href)]]">[[logs.title]]</a>]
+                    </template>
+                    <ul>
+                      <template is="dom-repeat" items="[[stage.links]]" as="link">
+                        <li id="stage_links">
+                          <a target="_blank" href$="[[_linkify(linkStyle, link.href)]]" title$="[[link.title]]">
+                            [[link.title]]
+                          </a>
+                        </li>
+                      </template>
+                      <template is="dom-repeat" items="[[stage.notes]]" as="note">
+                        <li id="stage_notes">
+                          [[note]]
+                        </li>
+                      </template>
+                    </ul>
+                  </span>
+                </li>
+              </template>
+            <ul>
+          </template>
+        </div>
+      </div>
+    </template>
+  </template>
+  <script src="som-extension-cros-failure.js"></script>
+</dom-module>

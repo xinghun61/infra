@@ -17,6 +17,10 @@
       },
     },
 
+    _isCrosFailure: function(type) {
+      return type == 'cros-failure';
+    },
+
     _haveBuilders: function(extension) {
       return extension && extension.builders && extension.builders.length > 0;
     },

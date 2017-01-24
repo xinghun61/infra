@@ -503,6 +503,11 @@
         5: 'New failures',
         6: 'Idle builders',
         7: 'Offline builders',
+        // Chrome OS alerts
+        1000: 'CQ failures',
+        1001: 'PFQ failures',
+        1002: 'Canary failures',
+        1003: 'Release branch failures',
       }[category];
     },
 

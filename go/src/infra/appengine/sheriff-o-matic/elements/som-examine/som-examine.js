@@ -36,10 +36,13 @@
 
     _alertChanged: function() {
       if (!this.alert || !this.alert.extension ||
-          !this.alert.extension.reason) {
+          !this.alert.extension.builders) {
         return;
       }
       this.selectedBuilder = this.alert.extension.builders[0].name;
+      if (!this.alert.extension.reason) {
+        return;
+      }
       if (this.alert.extension.reason.name) {
         this.selectedStep = this.alert.extension.reason.name;
       } else if (this.alert.extension.reason.test_names) {
