@@ -10,11 +10,6 @@ import gae_ts_mon
 import config
 import model
 
-# TODO(nodir): move this list to luci-config
-TAG_FIELDS = [
-  'builder',
-  'user_agent',
-]
 
 FIELD_BUCKET = 'bucket'
 # Override default target fields for app-global metrics.
@@ -68,12 +63,21 @@ SCHEDULING_LATENCY = gae_ts_mon.NonCumulativeDistributionMetric(
 
 
 def fields_for(build, **extra):
-  fields = extra
-  fields.setdefault(FIELD_BUCKET, build.bucket if build else '<no bucket>')
-  if build:  # pragma: no branch
+  if build:
     tags = dict(t.split(':', 1) for t in build.tags)
-    for t in TAG_FIELDS:
-      fields.setdefault(t, tags.get(t, ''))
+    fields = {
+        'builder': tags.get('builder', ''),
+        'user_agent': tags.get('user_agent', ''),
+        FIELD_BUCKET: build.bucket,
+    }
+  else:
+    fields = {
+        'builder': '',
+        'user_agent': '',
+        FIELD_BUCKET: '<no bucket>',
+    }
+
+  fields.update(extra)
   return fields
 
 
@@ -95,7 +99,7 @@ def increment_complete_count(build):  # pragma: no cover
 
 
 @ndb.tasklet
-def send_build_status_metric(metric, bucket, status):
+def set_build_status_metric(metric, bucket, status):
   q = model.Build.query(
     model.Build.bucket == bucket,
     model.Build.status == status)
@@ -104,7 +108,7 @@ def send_build_status_metric(metric, bucket, status):
 
 
 @ndb.tasklet
-def send_build_latency(metric, bucket, must_be_never_leased):
+def set_build_latency(metric, bucket, must_be_never_leased):
   q = model.Build.query(
     model.Build.bucket == bucket,
     model.Build.status == model.BuildStatus.SCHEDULED,
@@ -125,16 +129,26 @@ def send_build_latency(metric, bucket, must_be_never_leased):
   metric.set(dist, {FIELD_BUCKET: bucket}, target_fields=GLOBAL_TARGET_FIELDS)
 
 
-def send_all_metrics():
+# Metrics that are per-app rather than per-instance.
+GLOBAL_METRICS = [
+    CURRENTLY_PENDING,
+    CURRENTLY_RUNNING,
+    LEASE_LATENCY,
+    SCHEDULING_LATENCY,
+]
+
+
+def update_global_metrics():
+  """Updates the metrics in GLOBAL_METRICS."""
   futures = []
   for b in config.get_buckets_async().get_result():
     futures.extend([
-      send_build_status_metric(
+      set_build_status_metric(
         CURRENTLY_PENDING, b.name, model.BuildStatus.SCHEDULED),
-      send_build_status_metric(
+      set_build_status_metric(
         CURRENTLY_RUNNING, b.name, model.BuildStatus.STARTED),
-      send_build_latency(LEASE_LATENCY, b.name, True),
-      send_build_latency(SCHEDULING_LATENCY, b.name, False),
+      set_build_latency(LEASE_LATENCY, b.name, True),
+      set_build_latency(SCHEDULING_LATENCY, b.name, False),
     ])
   for f in futures:
     f.check_success()

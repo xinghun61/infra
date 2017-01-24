@@ -42,14 +42,9 @@ def create_backend_app():  # pragma: no cover
   routes = handlers.get_backend_routes() + swarming.get_routes()
   app = webapp2.WSGIApplication(routes, debug=utils.is_local_dev_server())
   gae_ts_mon.initialize(app, cron_module='backend')
-  gae_ts_mon.register_global_metrics([
-      metrics.CURRENTLY_PENDING,
-      metrics.CURRENTLY_RUNNING,
-      metrics.LEASE_LATENCY,
-      metrics.SCHEDULING_LATENCY,
-  ])
+  gae_ts_mon.register_global_metrics(metrics.GLOBAL_METRICS)
   gae_ts_mon.register_global_metrics_callback(
-      'send_metrics', metrics.send_all_metrics)
+      'buildbucket_global', metrics.update_global_metrics)
   return app
 
 

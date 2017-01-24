@@ -22,14 +22,14 @@ class MetricsTest(testing.AppengineTestCase):
     super(MetricsTest, self).setUp()
     gae_ts_mon.reset_for_unittest(disable=True)
 
-  def test_send_build_status_metric(self):
+  def test_set_build_status_metric(self):
     ndb.put_multi([
       model.Build(bucket='chromium', status=model.BuildStatus.SCHEDULED),
       model.Build(bucket='chromium', status=model.BuildStatus.SCHEDULED),
       model.Build(bucket='v8', status=model.BuildStatus.SCHEDULED),
       model.Build(bucket='chromium', status=model.BuildStatus.STARTED),
     ])
-    metrics.send_build_status_metric(
+    metrics.set_build_status_metric(
       metrics.CURRENTLY_PENDING,
       'chromium',
       model.BuildStatus.SCHEDULED).get_result()
@@ -37,7 +37,7 @@ class MetricsTest(testing.AppengineTestCase):
       {metrics.FIELD_BUCKET: 'chromium'},
       target_fields=metrics.GLOBAL_TARGET_FIELDS))
 
-  def test_send_build_lease_latency(self):
+  def test_set_build_lease_latency(self):
     now = datetime.datetime(2015, 1, 4)
     self.mock(utils, 'utcnow', lambda: now)
 
@@ -70,7 +70,7 @@ class MetricsTest(testing.AppengineTestCase):
         create_time=datetime.datetime(2015, 1, 3)
       ),
     ])
-    metrics.send_build_latency(
+    metrics.set_build_latency(
       metrics.LEASE_LATENCY, 'chromium', True).get_result()
     dist = metrics.LEASE_LATENCY.get(
       {metrics.FIELD_BUCKET: 'chromium'},
@@ -78,17 +78,17 @@ class MetricsTest(testing.AppengineTestCase):
     self.assertEquals(dist.sum, 4.0 * 24 * 3600)  # 4 days
 
   @mock.patch('config.get_buckets_async', autospec=True)
-  def test_send_all_metrics(self, *_):
+  def test_update_global_metrics(self, *_):
     config.get_buckets_async.return_value = future([
       project_config_pb2.Bucket(name='x')
     ])
-    self.mock(metrics, 'send_build_status_metric', mock.Mock())
+    self.mock(metrics, 'set_build_status_metric', mock.Mock())
 
-    metrics.send_all_metrics()
+    metrics.update_global_metrics()
 
-    metrics.send_build_status_metric.assert_any_call(
+    metrics.set_build_status_metric.assert_any_call(
       metrics.CURRENTLY_PENDING, 'x', model.BuildStatus.SCHEDULED)
-    metrics.send_build_status_metric.assert_any_call(
+    metrics.set_build_status_metric.assert_any_call(
       metrics.CURRENTLY_RUNNING, 'x', model.BuildStatus.STARTED)
 
   def test_fields_for(self):
@@ -102,6 +102,15 @@ class MetricsTest(testing.AppengineTestCase):
         'bucket': 'master.x',
         'builder': 'release',
         'user_agent': 'cq',
+        'result': 'SUCCESS',
+      }
+    )
+    self.assertEqual(
+      metrics.fields_for(None, result='SUCCESS'),
+      {
+        'bucket': '<no bucket>',
+        'builder': '',
+        'user_agent': '',
         'result': 'SUCCESS',
       }
     )
