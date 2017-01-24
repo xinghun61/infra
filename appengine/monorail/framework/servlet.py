@@ -276,6 +276,7 @@ class Servlet(webapp2.RequestHandler):
             "img-src %(scheme)s data: blob: ; "
             "style-src %(scheme)s 'unsafe-inline'; "
             "object-src 'none'; "
+            "base-uri 'none'; "
             "report-uri /csp.do" % {
             'nonce': nonce,
             'scheme': csp_scheme,
