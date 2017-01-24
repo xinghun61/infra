@@ -265,6 +265,7 @@ td u:hover { text-decoration: underline; }
     padding: 1em;
     max-height: 75%;
     width: 75%;
+    max-width: 30em;
     overflow-y: auto;
 }
 
