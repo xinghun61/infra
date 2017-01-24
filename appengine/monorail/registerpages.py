@@ -250,6 +250,12 @@ class ServletRegistry(object):
         urls.HOTLISTS: userhotlists.UserHotlists,
         })
 
+    user_hotlists_redir = registerpages_helpers.MakeRedirectInScope(
+        urls.HOTLISTS, 'u', keep_qs=True)
+    self._SetupUserServlets({
+        '/hotlists/': user_hotlists_redir,
+        })
+
     # These servlets accept POST, but never write to the database, so they can
     # still be used when the site is read-only.
     self._SetupProjectServlets({
