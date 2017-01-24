@@ -16,7 +16,7 @@ class TrainableLogLinearModelTest(LoglinearTestCase):
     # is just a test; if it doesn't work now, it'll never work.
     training_data = [(x, x == 7) for x in self._X]
     self._model = TrainableLogLinearModel(
-        self._Y, training_data, self._feature_function, self._weights)
+        self._Y, training_data, self._meta_feature, self._meta_weight)
 
   def testNpWeightsSetterNotAnNdarray(self):
     def _NpWeightSettingExpression():
@@ -30,7 +30,7 @@ class TrainableLogLinearModelTest(LoglinearTestCase):
       we want to check is actually a statement it can't be in a lambda
       but rather must be in a def.
       """
-      self._model.np_weights = 'this is not an np.ndarray'
+      self._model.np_weight = 'this is not an np.ndarray'
 
     self.assertRaises(TypeError, _NpWeightSettingExpression)
 
@@ -39,7 +39,7 @@ class TrainableLogLinearModelTest(LoglinearTestCase):
     def _WeightSettingExpression():
       """Wrap the ``self._model.weights = stuff`` expression."""
       # This np.ndarray has the wrong shape.
-      self._model.np_weights = np.array([[1,2], [3,4]])
+      self._model.np_weight = np.array([[1,2], [3,4]])
 
     self.assertRaises(TypeError, _WeightSettingExpression)
 

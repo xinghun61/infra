@@ -9,9 +9,10 @@ import math
 from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from crash import changelist_classifier
 from crash.crash_report_with_dependencies import CrashReportWithDependencies
-from crash.loglinear.changelist_features import min_distance
-from crash.loglinear.changelist_features import top_frame_index
-from crash.loglinear.feature import FeatureFunction
+from crash.loglinear.changelist_features.min_distance import MinDistanceFeature
+from crash.loglinear.changelist_features.top_frame_index import (
+    TopFrameIndexFeature)
+from crash.loglinear.feature import WrapperMetaFeature
 from crash.loglinear.model import UnnormalizedLogLinearModel
 from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
@@ -21,7 +22,8 @@ from crash.suspect import StackInfo
 class LogLinearChangelistClassifier(object):
   """A ``LogLinearModel``-based implementation of CL classification."""
 
-  def __init__(self, get_repository, weights, top_n_frames=7, top_n_suspects=3):
+  def __init__(self, get_repository, meta_feature, meta_weight,
+               top_n_frames=7, top_n_suspects=3):
     """Args:
       get_repository (callable): a function from DEP urls to ``Repository``
         objects, so we can get changelogs and blame for each dep. Notably,
@@ -30,8 +32,9 @@ class LogLinearChangelistClassifier(object):
         it is up to the caller to decide what class to return and handle
         any other arguments that class may require (e.g., an http client
         for ``GitilesRepository``).
-      weights (dict of float): the weights for the features. The keys of
-        the dictionary are the names of the feature that weight is
+      meta_feature (MetaFeature): All features.
+      meta_weight (MetaWeight): All weights. the weights for the features.
+        The keys of the dictionary are the names of the feature that weight is
         for. We take this argument as a dict rather than as a list so that
         callers needn't worry about what order to provide the weights in.
       top_n_frames (int): how many frames of each callstack to look at.
@@ -41,13 +44,7 @@ class LogLinearChangelistClassifier(object):
     self._get_repository = get_repository
     self._top_n_frames = top_n_frames
     self._top_n_suspects = top_n_suspects
-
-    feature_function = FeatureFunction([
-        top_frame_index.TopFrameIndexFeature(top_n_frames),
-        min_distance.MinDistanceFeature(),
-    ])
-
-    self._model = UnnormalizedLogLinearModel(feature_function, weights)
+    self._model = UnnormalizedLogLinearModel(meta_feature, meta_weight)
 
   def __call__(self, report):
     """Finds changelists suspected of being responsible for the crash report.
@@ -140,11 +137,11 @@ class LogLinearChangelistClassifier(object):
         continue
 
       suspect.confidence = score
+      # features is ``MetaFeatureValue`` object containing all feature values.
       features = features_given_report(suspect)
-      suspect.reasons = self._model.FormatReasons(features.itervalues())
-      suspect.changed_files = [
-          changed_file.ToDict() for changed_file in
-          self._model.AggregateChangedFiles(features.itervalues())]
+      suspect.reasons = features.reason
+      suspect.changed_files = [changed_file.ToDict()
+                               for changed_file in features.changed_files]
       scored_suspects.append(suspect)
 
     scored_suspects.sort(key=lambda suspect: suspect.confidence)

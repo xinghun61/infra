@@ -5,36 +5,68 @@
 import random
 import unittest
 
+from crash.loglinear.feature import ChangedFile
 from crash.loglinear.feature import Feature
-from crash.loglinear.feature import FeatureFunction
 from crash.loglinear.feature import FeatureValue
-
+from crash.loglinear.feature import MetaFeature
+from crash.loglinear.feature import MetaFeatureValue
+from crash.loglinear.feature import WrapperMetaFeature
+from crash.loglinear.weight import MetaWeight
+from crash.loglinear.weight import Weight
 
 # Some arbitrary features.
 class Feature0(Feature):  # pragma: no cover
   @property
   def name(self):
-    return 'feature0'
+    return 'Feature0'
 
   def __call__(self, x):
-    return lambda y: FeatureValue('feature0', y == (x > 5), 'reason0', None)
+    return lambda y: FeatureValue(self.name, y == (x > 5), 'reason0',
+                                  [ChangedFile(name='a.cc',
+                                               blame_url=None,
+                                               reasons=['file_reason0']),
+                                   ChangedFile(name='b.cc',
+                                               blame_url=None,
+                                               reasons=['file_reason0'])])
+
 
 class Feature1(Feature):  # pragma: no cover
   @property
   def name(self):
-    return 'feature1'
+    return 'Feature1'
 
   def __call__(self, x):
-    return lambda y: FeatureValue('feature1', y == ((x % 2) == 1),
-                                  'reason1', None)
+    return lambda y: FeatureValue(self.name, y == ((x % 2) == 1), 'reason1',
+                                  [ChangedFile(name='b.cc',
+                                               blame_url=None,
+                                               reasons=['file_reason1'])])
+
 
 class Feature2(Feature):  # pragma: no cover
   @property
   def name(self):
-    return 'feature2'
+    return 'Feature2'
 
   def __call__(self, x):
-    return lambda y: FeatureValue('feature2', y == (x <= 7), 'reason2', None)
+    return lambda y: FeatureValue(self.name, y == (x <= 7), 'reason2', None)
+
+
+class Feature3(Feature):  # pragma: no cover
+  @property
+  def name(self):
+    return 'Feature3'
+
+  def __call__(self, x):
+    return lambda y: FeatureValue(self.name, y == ((x % 3) == 0), None, None)
+
+
+class Feature4(Feature):  # pragma: no cover
+  @property
+  def name(self):
+    return 'Feature4'
+
+  def __call__(self, x):
+    return lambda y: FeatureValue(self.name, y == (x < 9), None, None)
 
 
 class LoglinearTestCase(unittest.TestCase):  # pragma: no cover
@@ -56,10 +88,22 @@ class LoglinearTestCase(unittest.TestCase):  # pragma: no cover
     """
     super(LoglinearTestCase, self).setUp()
 
-    self._feature_list = [Feature0(), Feature1(), Feature2()]
-    self._feature_function = FeatureFunction(self._feature_list)
-    self._qty_features = len(self._feature_list)
+    self._meta_feature = WrapperMetaFeature([Feature0(),
+                                             Feature1(),
+                                             Feature2(),
+                                             WrapperMetaFeature([Feature3(),
+                                                                 Feature4()])])
+    self._meta_weight = MetaWeight(
+        {
+            'Feature0': Weight(random.random()),
+            'Feature1': Weight(random.random()),
+            'Feature2': Weight(random.random()),
+            'WrapperFeature': MetaWeight(
+                {
+                    'Feature3': Weight(random.random()),
+                    'Feature4': Weight(random.random())
+                })
+         })
+
     self._X = range(10)
     self._Y = lambda _x: [False, True]
-    self._weights = {feature.name: random.random()
-                     for feature in self._feature_list}

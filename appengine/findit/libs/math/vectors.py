@@ -36,7 +36,11 @@ def vsum(vs, shape=None):
   total = np.zeros(shape)
   it = np.nditer(total, flags=['multi_index'], op_flags=['writeonly'])
   while not it.finished:
-    it[0] = math.fsum(v[it.multi_index] for v in vs)
+    try:
+      it[0] = math.fsum(v[it.multi_index] for v in vs)
+    except TypeError: 
+      it[0] = sum(v[it.multi_index] for v in vs)
+
     it.iternext()
 
   return total

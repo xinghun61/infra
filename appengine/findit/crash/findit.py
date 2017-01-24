@@ -28,6 +28,7 @@ from model.crash.crash_config import CrashConfig
 # This class should be renamed to avoid confustion between Findit and Predator.
 # Think of a good name (e.g.'PredatorApp') for this class.
 class Findit(object):
+
   def __init__(self, get_repository):
     """
     Args:

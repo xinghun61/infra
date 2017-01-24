@@ -54,7 +54,7 @@ class VectorsTest(unittest.TestCase):
     """
     self.assertIsNone(vsum([]))
 
-  def testVSumEmptyWithShape(self):
+  def testVsumEmptyWithShape(self):
     """Ensure ``vsum`` returns the zero vector when expected.
 
     The empty summation should return the zero vector. If we know the
@@ -68,3 +68,22 @@ class VectorsTest(unittest.TestCase):
     self.assertTupleEqual(expected_shape, total.shape)
     self.assertListEqual(np.zeros(expected_shape).tolist(), total.tolist())
 
+  def testVsumWithNonFloatVector(self):
+    """Tests that ``vsum`` works for list of float-like objects."""
+    class MimicFloat(object):
+
+      def __init__(self, value):
+        self.value = float(value)
+
+      def __add__(self, number):
+        return math.fsum([self.value, number])
+
+      __radd__ = __add__
+
+    lists = [[2.3, 0.4], [0.2, 0.3]]
+    array_lists = [np.array(l) for l in lists]
+    mimic_float_lists = [[MimicFloat(number) for number in l] for l in lists]
+    array_mimic_float_lists = [np.array(l) for l in mimic_float_lists]
+
+    self.assertListEqual(vsum(array_lists).tolist(),
+                         vsum(array_mimic_float_lists).tolist())

@@ -57,6 +57,8 @@ class FinditForChromeCrash(Findit):
 
     # The top_n is the number of components we should return as
     # components suggestion results.
+    # TODO(http://crbug.com/679964) Deprecate the scorer-based changelist
+    # classifier and use loglinear model instead.
     self._predator = Predator(
         cl_classifier = ChangelistClassifier(get_repository),
         component_classifier = ComponentClassifier(

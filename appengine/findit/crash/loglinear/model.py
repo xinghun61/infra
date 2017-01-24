@@ -43,15 +43,16 @@ class UnnormalizedLogLinearModel(object):
   rather than returning a probability per se.
   """
 
-  def __init__(self, feature_function, weights, epsilon=None):
-    """Construct a new model with the given weights and feature function.
+  def __init__(self, meta_feature, meta_weight, epsilon=None):
+    """Construct a new model with the meta_feature and meta_weight.
 
     Args:
-      feature_function: A function ``X -> Y -> list(FeatureValue)``. N.B.,
-        for all ``x`` and ``y`` the length of ``feature_function(x)(y)``
+      meta_feature (MetaFeature): A function ``X -> Y -> MetaFeatureValue``.
+        N.B., for all ``x`` and ``y`` the length of ``wrapped_feature(x)(y)``
         must be the same as the length of ``weights``.
-      weights (dict of float): the weights for the features. The keys of
-        the dictionary are the names of the feature that weight is
+       All features.
+      meta_weight (MetaWeight): All weights. the weights for the features.
+        The keys of the dictionary are the names of the feature that weight is
         for. We take this argument as a dict rather than as a list so that
         callers needn't worry about what order to provide the weights in.
       epsilon (float): The absolute-error threshold for considering a
@@ -59,72 +60,94 @@ class UnnormalizedLogLinearModel(object):
         number, as we will compare it against the absolute value of
         each weight.
     """
-    if epsilon is None:
-      self._epsilon = EPSILON
-    else:
-      self._epsilon = epsilon
+    self._epsilon = EPSILON if epsilon is None else epsilon
 
-    # TODO(crbug.com/680207) Filter zero weights, use sparse representaion of
-    # weight covector.
-    self._weights = {
-        name: weight for name, weight in weights.iteritems()
-        if self.IsNonZeroWeight(weight)
-    }
+    self._meta_weight = meta_weight
+    self._meta_weight.DropZeroWeights(self._epsilon)
 
     self._quadrance = None
-
     # TODO(crbug.com/674752): we need better names for ``self._features``.
     def _Features(x):
-      """Wrap ``feature_function`` to memoize things and ensure types.
+      """Wrap ``meta_feature`` to memoize things.
 
       This outer wrapping takes each ``x`` to a memoized instance of
       ``_FeaturesGivenX``. That is, for each ``x`` we return a
       ``MemoizedFunction`` from ``Y`` to ``dict(str to FeatureValue)``.
       """
-      fx = feature_function(x)
-      def _FeaturesGivenX(y):
-        """Wrap ``feature_function(x)`` to ensure appropriate types.
-
-        This inner wrapper ensures that the resulting ``FeatureValue``
-        array has the same length as the weight covector.
-        """
-        fxy = fx(y)
-        # N.B., we're assuming that ``len(self.weights)`` is O(1).
-        assert len(fxy) == len(self.weights), TypeError(
-            "vector length mismatch: %d != %d" % (len(fxy), len(self.weights)))
-        return fxy
-
       # Memoize on ``Y``, to ensure we don't need to recompute
       # ``FeatureValue``s nor recheck the lengths.
-      return MemoizedFunction(_FeaturesGivenX)
+      return MemoizedFunction(meta_feature(x))
 
     # Memoize on ``X``, to ensure we share the memo tables on ``Y``.
     self._features = MemoizedFunction(_Features)
 
     # TODO(crbug.com/674752): we need better names for ``self._scores``.
-    # N.B., this is just the inner product of ``self.weights``
+    # N.B., this is just the inner product of ``self._meta_weight``
     # against ``self._features(x)``. If we can compute this in some
     # more efficient way, we should. In particular, we will want to
     # make the weights sparse, in which case we need to use a sparse
     # variant of the dot product.
     self._scores = MemoizedFunction(lambda x: self._features(x).map(
-        lambda fxy: math.fsum(self.SingleFeatureScore(feature)
-                              for feature in fxy.itervalues())))
+        lambda fxy: self._meta_weight * fxy))
 
-  def IsNonZeroWeight(self, weight):
-    """Determines whether a weight is zero or not using ``self._epsilon``."""
-    return isinstance(weight, float) and math.fabs(weight) > self._epsilon
+  def ClearWeightBasedMemos(self):
+    """Clear all the memos that depend on the weight covector."""
+    self._quadrance = None
+    self._scores.ClearMemos()
 
-  def SingleFeatureScore(self, feature_value):
-    """Returns the score (aka weighted value) of a ``FeatureValue``.
+  def ClearAllMemos(self):
+    """Clear all memos, even those independent of the weight covector."""
+    self.ClearWeightBasedMemos()
+    self._features.ClearMemos()
 
-    Args:
-      feature_value (FeatureValue): the feature value to check.
+  @property
+  def meta_weight(self):
+    """The weight covector.
 
-    Returns:
-      The score of the feature value.
+    At present we return the weights as an dict mapping feature name to its
+    weight, but in the future that may be replaced by a more general type which
+    specifies the semantics rather than the implementation details.
     """
-    return feature_value.value * self._weights.get(feature_value.name, 0.)
+    return self._meta_weight
+
+  @meta_weight.setter
+  def meta_weight(self, new_meta_weight):
+    self._meta_weight = new_meta_weight
+    self._meta_weight.DropZeroWeights(self._epsilon)
+
+  @property
+  def l0(self): # pragma: no cover
+    """The l0-norm of the weight covector.
+
+    N.B., despite being popularly called the "l0-norm", this isn't
+    actually a norm in the mathematical sense."""
+    return self._meta_weight.l0
+
+  @property
+  def l1(self): # pragma: no cover
+    """The l1 (aka: Manhattan) norm of the weight covector."""
+    return self._meta_weight.l1
+
+  @property
+  def quadrance(self):
+    """The square of the l2 norm of the weight covector.
+
+    This value is often more helpful to have direct access to, as it
+    avoids the need for non-rational functions (e.g., sqrt) and shows up
+    as its own quantity in many places. Also, computing it directly avoids
+    the error introduced by squaring the square-root of an IEEE-754 float.
+    """
+    return self._meta_weight.quadrance
+
+  @property
+  def l2(self):
+    """The l2 (aka Euclidean) norm of the weight covector.
+
+    If you need the square of the l2-norm, do not use this property.
+    Instead, use the ``quadrance`` property which is more accurate than
+    squaring this one.
+    """
+    return math.sqrt(self.quadrance)
 
   # TODO(crbug.com/673964): something better for detecting "close to log(0)".
   def LogZeroish(self, x):
@@ -143,64 +166,6 @@ class UnnormalizedLogLinearModel(object):
       ``True`` if ``x`` is close enough to log(0); else ``False``.
     """
     return x < 0 and math.isinf(x)
-
-  def ClearWeightBasedMemos(self):
-    """Clear all the memos that depend on the weight covector."""
-    self._quadrance = None
-    self._scores.ClearMemos()
-
-  def ClearAllMemos(self):
-    """Clear all memos, even those independent of the weight covector."""
-    self.ClearWeightBasedMemos()
-    self._features.ClearMemos()
-
-  @property
-  def weights(self):
-    """The weight covector.
-
-    At present we return the weights as an dict mapping feature name to its
-    weight, but in the future that may be replaced by a more general type which
-    specifies the semantics rather than the implementation details.
-    """
-    return self._weights
-
-  @property
-  def l0(self): # pragma: no cover
-    """The l0-norm of the weight covector.
-
-    N.B., despite being popularly called the "l0-norm", this isn't
-    actually a norm in the mathematical sense."""
-    return float(len(self.weights) - self.weights.values().count(0.))
-
-  @property
-  def l1(self): # pragma: no cover
-    """The l1 (aka: Manhattan) norm of the weight covector."""
-    return math.fsum(math.fabs(w) for w in self.weights.itervalues())
-
-  @property
-  def quadrance(self):
-    """The square of the l2 norm of the weight covector.
-
-    This value is often more helpful to have direct access to, as it
-    avoids the need for non-rational functions (e.g., sqrt) and shows up
-    as its own quantity in many places. Also, computing it directly avoids
-    the error introduced by squaring the square-root of an IEEE-754 float.
-    """
-    if self._quadrance is None:
-      self._quadrance = math.fsum(
-          math.fabs(w)**2 for w in self.weights.itervalues())
-
-    return self._quadrance
-
-  @property
-  def l2(self):
-    """The l2 (aka Euclidean) norm of the weight covector.
-
-    If you need the square of the l2-norm, do not use this property.
-    Instead, use the ``quadrance`` property which is more accurate than
-    squaring this one.
-    """
-    return math.sqrt(self.quadrance)
 
   def Features(self, x):
     """Returns a function mapping ``y`` to its feature vector given ``x``.
@@ -234,77 +199,6 @@ class UnnormalizedLogLinearModel(object):
     """
     return self._scores(x)
 
-  def FormatReasons(self, features):
-    """Collect and format a list of all ``FeatureValue.reason`` strings.
-
-    Args:
-      features (iterable of FeatureValue): the values whose ``reason``
-        strings should be collected.
-
-    Returns:
-      A list of ``(str, float, str)`` triples; where the first string is
-      the feature name, the float is some numeric representation of how
-      much influence this feature exerts on the ``Suspect`` being blamed,
-      and the final string is the ``FeatureValue.reason``. The list is
-      sorted by feature name, just to ensure that it comes out in some
-      canonical order.
-
-      At present, the float is the log-domain score of the feature
-      value. However, this isn't the best thing for UX reasons. In the
-      future it might be replaced by the normal-domain score, or by
-      the probability.
-    """
-    formatted_reasons = []
-    for feature in features:
-      feature_score = self.SingleFeatureScore(feature)
-      if self.LogZeroish(feature_score): # pragma: no cover
-        logging.debug('Discarding reasons from feature %s'
-            ' because it has zero probability' % feature.name)
-        continue
-
-      formatted_reasons.append((feature.name, feature_score, feature.reason))
-
-    formatted_reasons.sort(key=lambda formatted_reason: formatted_reason[0])
-    return formatted_reasons
-
-  def AggregateChangedFiles(self, features):
-    """Merge multiple``FeatureValue.changed_files`` lists into one.
-
-    Args:
-      features (iterable of FeatureValue): the values whose ``changed_files``
-        lists should be aggregated.
-
-    Returns:
-      A list of ``ChangedFile`` objects sorted by file name. The sorting
-      is not essential, but is provided to ease testing by ensuring the
-      output is in some canonical order.
-
-    Raises:
-      ``ValueError`` if any file name is given inconsistent ``blame_url``s.
-    """
-    all_changed_files = {}
-    for feature in features:
-      if self.LogZeroish(self.SingleFeatureScore(feature)): # pragma: no cover
-        logging.debug('Discarding changed files from feature %s'
-            ' because it has zero probability' % feature.name)
-        continue
-
-      for changed_file in feature.changed_files or []:
-        accumulated_changed_file = all_changed_files.get(changed_file.name)
-        if accumulated_changed_file is None:
-          all_changed_files[changed_file.name] = changed_file
-          continue
-
-        if (accumulated_changed_file.blame_url !=
-            changed_file.blame_url): # pragma: no cover
-          raise ValueError('Blame URLs do not match: %s != %s'
-              % (accumulated_changed_file.blame_url, changed_file.blame_url))
-        accumulated_changed_file.reasons.extend(changed_file.reasons or [])
-
-    changed_files = all_changed_files.values()
-    changed_files.sort(key=lambda changed_file: changed_file.name)
-    return changed_files
-
 
 class LogLinearModel(UnnormalizedLogLinearModel):
   """A loglinear probability model.
@@ -313,7 +207,7 @@ class LogLinearModel(UnnormalizedLogLinearModel):
   we can provide probabilities (not just scores). However, to do so we
   require a specification of the subsets of ``Y`` for each ``x``.
   """
-  def __init__(self, Y_given_X, feature_function, weights, epsilon=None):
+  def __init__(self, Y_given_X, meta_feature, meta_weight, epsilon=None):
     """Construct a new probabilistic model.
 
     Args:
@@ -325,11 +219,12 @@ class LogLinearModel(UnnormalizedLogLinearModel):
         needed for computing the partition function and expectation. N.B.,
         we do not actually need to know/enumerate of *all* of ``Y``,
         only the subsets for each ``x``.
-      feature_function: A function ``X -> Y -> list(float)``. N.B.,
-        for all ``x`` and ``y`` the length of ``feature_function(x)(y)``
+      meta_feature (MetaFeature): A function ``X -> Y -> MetaFeatureValue``.
+        N.B., for all ``x`` and ``y`` the length of ``wrapped_feature(x)(y)``
         must be the same as the length of ``weights``.
-      weights (dict of float): the weights for the features. The keys of
-        the dictionary are the names of the feature that weight is
+       All features.
+      meta_weight (MetaWeight): All weights. the weights for the features.
+        The keys of the dictionary are the names of the feature that weight is
         for. We take this argument as a dict rather than as a list so that
         callers needn't worry about what order to provide the weights in.
       epsilon (float): The absolute-error threshold for considering a
@@ -337,7 +232,7 @@ class LogLinearModel(UnnormalizedLogLinearModel):
         number, as we will compare it against the absolute value of
         each weight.
     """
-    super(LogLinearModel, self).__init__(feature_function, weights, epsilon)
+    super(LogLinearModel, self).__init__(meta_feature, meta_weight, epsilon)
 
     self._Y = Y_given_X
 
@@ -380,7 +275,7 @@ class LogLinearModel(UnnormalizedLogLinearModel):
   def Probability(self, x):
     """The normal-domain distribution over ``y`` given ``x``.
 
-    That is, ``self.Probability(x)(y)`` returns ``p(y | x; self.weights)``
+    That is, ``self.Probability(x)(y)`` returns ``p(y | x; self._meta_weight)``
     which is the model's estimation of ``Pr(y|x)``.
 
     If you need the log-probability, don't use this method. Instead,
@@ -421,4 +316,3 @@ class LogLinearModel(UnnormalizedLogLinearModel):
     # method polymorphic in the return type of ``f`` then we'll need an
     # API that provides both scaling and ``vsum``.
     return vsum([prob_given_x(y) * f(y) for y in self._Y(x)])
-

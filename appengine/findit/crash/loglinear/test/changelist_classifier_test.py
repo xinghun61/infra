@@ -13,6 +13,12 @@ from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 import crash.changelist_classifier as scorer_changelist_classifier
 from crash.crash_report import CrashReport
 from crash.loglinear.changelist_classifier import LogLinearChangelistClassifier
+from crash.loglinear.changelist_features.min_distance import MinDistanceFeature
+from crash.loglinear.changelist_features.top_frame_index import (
+    TopFrameIndexFeature)
+from crash.loglinear.feature import WrapperMetaFeature
+from crash.loglinear.weight import Weight
+from crash.loglinear.weight import MetaWeight
 from crash.suspect import AnalysisInfo
 from crash.suspect import Suspect
 from crash.suspect import StackInfo
@@ -120,13 +126,16 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
 
   def setUp(self):
     super(LogLinearChangelistClassifierTest, self).setUp()
-    weights = {
-        'MinDistance': 1.,
-        'TopFrameIndex': 1.,
-    }
+    meta_weight = MetaWeight({
+        'MinDistance': Weight(1.),
+        'TopFrameIndex': Weight(1.),
+    })
+    meta_feature = WrapperMetaFeature([MinDistanceFeature(),
+                                       TopFrameIndexFeature()])
 
     self.changelist_classifier = LogLinearChangelistClassifier(
-        GitilesRepository.Factory(self.GetMockHttpClient()), weights)
+        GitilesRepository.Factory(self.GetMockHttpClient()),
+        meta_feature, meta_weight)
 
   # TODO(http://crbug.com/659346): why do these mocks give coverage
   # failures? That's almost surely hiding a bug in the tests themselves.
@@ -205,10 +214,8 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
             'project_path': 'src/',
             'revision': '3',
             'confidence': math.log(0.2857142857142857 * 0.6),
-            'reasons': [
-                ('MinDistance', math.log(0.6), 'Minimum distance is 20'),
-                ('TopFrameIndex', math.log(0.2857142857142857),
-                    'Top frame is #5')],
+            'reasons': ('MinDistance: -0.510826 -- Minimum distance is 20\n'
+                        'TopFrameIndex: -1.252763 -- Top frame is #5'),
             'changed_files': [
                 {
                     'file': 'a.cc',
@@ -223,9 +230,8 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
             'project_path': 'src/',
             'revision': '1',
             'confidence': 0.,
-            'reasons': [
-                ('MinDistance', 0., 'Minimum distance is 0'),
-                ('TopFrameIndex', 0., 'Top frame is #0')],
+            'reasons': ('MinDistance: 0.000000 -- Minimum distance is 0\n'
+                        'TopFrameIndex: 0.000000 -- Top frame is #0'),
             'changed_files': [
                 {
                     'file': 'a.cc',
@@ -287,10 +293,8 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
             ],
             'confidence': math.log(0.98),
             'project_path': 'src/',
-            'reasons': [
-                ('MinDistance', math.log(0.98), 'Minimum distance is 1'),
-                ('TopFrameIndex', 0., 'Top frame is #0'),
-            ],
+            'reasons': ('MinDistance: -0.020203 -- Minimum distance is 1\n'
+                        'TopFrameIndex: 0.000000 -- Top frame is #0'),
             'review_url': 'https://codereview.chromium.org/3281',
             'revision': '1',
             'time': 'Thu Mar 31 21:24:43 2016',
