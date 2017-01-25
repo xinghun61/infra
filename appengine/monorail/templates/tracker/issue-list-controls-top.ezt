@@ -68,7 +68,8 @@
   <input type="hidden" id="bulk_spam_value" name="spam" value="true">
 </form>
 
-<form id='bulkremoveissues' method="POST" action=[if-any is_hotlist]"/u/[viewed_user_id]/hotlists/[hotlist.name].do"[end]>
+[if-any is_hotlist]
+<form id='bulkremoveissues' method="POST" action="/u/[viewed_user_id]/hotlists/[hotlist.name].do">
 <input type="hidden" name="token" value="[remove_issues_token]">
   <input type="hidden" id="bulk_remove_local_ids" name="remove_local_ids">
   <input type ="hidden" id="bulk_remove_value" name = "remove" value="false">
@@ -87,6 +88,7 @@
     </span>
   </div>
 </form>
+[end]
 
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
