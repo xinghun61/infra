@@ -7,7 +7,7 @@
 
 from tracker import tracker_constants
 
-DEFAULT_COL_SPEC = 'Rank Project ID Stars Owner Summary Modified'
+DEFAULT_COL_SPEC = 'Rank Project Status Type ID Stars Owner Summary Modified'
 DEFAULT_RESULTS_PER_PAGE = 100
 OTHER_BUILT_IN_COLS = (
     tracker_constants.OTHER_BUILT_IN_COLS + ['Adder', 'Added'])
