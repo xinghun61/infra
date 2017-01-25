@@ -1,22 +1,26 @@
-<a id="transfer-ownership">Transfer ownership</a>
 <div id="transfer-ownership-container" style="display: [if-any open_dialog]block[else]none[end]">
   <div id="transfer-ownership-dialog">
-    <section>
-    Transfer hotlist ownership to: <input name="changeowners" value="[initial_new_owner_username]" placeholder=[placeholder]>
-    [if-any errors.transfer_ownership]
-    <div class="fielderror">[errors.transfer_ownership]</div>
-    [end]
+    <h2 style="margin-top:0">
+      <a id="hotlist_star"
+            style="color:[if-any hotlist.is_starred]cornflowerblue[else]gray[end]"
+            title="[if-any hotlist.is_starred]Un-s[else]S[end]tar this hotlist">
+            [if-any hotlist.is_starred]&#9733;[else]&#9734;[end]
+            </a>
+      Hotlist: [hotlist.name]
+    </h2>
+
+    <section style="margin: 1em 0">
+      Transfer hotlist ownership to: <input name="changeowners" value="[initial_new_owner_username]" placeholder=[placeholder]>
+      [if-any errors.transfer_ownership]
+        <div class="fielderror">[errors.transfer_ownership]</div>
+      [end]
     </section>
 
     <section>
-    Would you like to stay on as an editor of this hotlist?
-    <input type="checkbox" name=becomeeditor checked>
+      Would you like to stay on as an editor of this hotlist?
+      <input type="checkbox" name="becomeeditor" checked>
     </section>
-    <a id="hotlist_star"
-          style="color:[if-any hotlist.is_starred]cornflowerblue[else]gray[end]"
-          title="[if-any hotlist.is_starred]Un-s[else]S[end]tar this hotlist">
-          [if-any hotlist.is_starred]&#9733;[else]&#9734;[end]
-          </a>
+
     <menu>
       <button id="cancel" type="reset">Cancel</button>
       <button type="submit">Confirm</button>

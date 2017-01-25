@@ -35,7 +35,8 @@
             id="removebtn" name="removebtn" disabled="disabled">
      [# TOOD(jrobbins): extra confirmation when removing yourself as owner.]
      [if-any is_hotlist]
-     [include "../features/transfer-hotlist-form.ezt"]
+       <a id="transfer-ownership" class="buttonify" style="font-size:80%">Transfer ownership</a>
+       [include "../features/transfer-hotlist-form.ezt"]
      [end][end]
    </div>
 
