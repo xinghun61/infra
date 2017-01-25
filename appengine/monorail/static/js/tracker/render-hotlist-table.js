@@ -127,6 +127,7 @@ function fillNonColumnLabels(td, labels) {
     } else {
       aLabel.innerText = label['value'];
     }
+    td.appendChild(document.createTextNode(' '));
     td.appendChild(aLabel);
   });
 }
