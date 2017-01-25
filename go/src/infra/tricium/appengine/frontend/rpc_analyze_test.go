@@ -9,19 +9,57 @@ import (
 
 	tq "github.com/luci/gae/service/taskqueue"
 
+	"github.com/luci/luci-go/server/auth"
+	"github.com/luci/luci-go/server/auth/authtest"
+	"github.com/luci/luci-go/server/auth/identity"
 	. "github.com/smartystreets/goconvey/convey"
+
+	"golang.org/x/net/context"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	trit "infra/tricium/appengine/common/testing"
 )
 
-func TestAnalyzeRequest(t *testing.T) {
+const (
+	project   = "playground/gerrit-tricium"
+	okACLUser = "user:ok@example.com"
+)
+
+// mockConfigProvider mocks the common.ConfigProvider interface.
+type mockConfigProvider struct {
+}
+
+func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
+	return &tricium.ServiceConfig{
+		Projects: []*tricium.ProjectDetails{
+			{
+				Name: project,
+			},
+		},
+	}, nil
+}
+func (*mockConfigProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
+	return &tricium.ProjectConfig{
+		Name: project,
+		Acls: []*tricium.Acl{
+			{
+				Role:     tricium.Acl_READER,
+				Identity: okACLUser,
+			},
+			{
+				Role:     tricium.Acl_REQUESTER,
+				Identity: okACLUser,
+			},
+		},
+	}, nil
+}
+
+func TestAnalyze(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
 
-		project := "test-project"
 		gitref := "ref/test"
 		paths := []string{
 			"README.md",
@@ -29,11 +67,15 @@ func TestAnalyzeRequest(t *testing.T) {
 		}
 
 		Convey("Service request", func() {
-			_, err := server.Analyze(ctx, &tricium.AnalyzeRequest{
+			ctx = auth.WithState(ctx, &authtest.FakeState{
+				Identity: identity.Identity(okACLUser),
+			})
+
+			_, err := analyze(ctx, &tricium.AnalyzeRequest{
 				Project: project,
 				GitRef:  gitref,
 				Paths:   paths,
-			})
+			}, &mockConfigProvider{})
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues launch request", func() {
@@ -41,7 +83,7 @@ func TestAnalyzeRequest(t *testing.T) {
 			})
 
 			Convey("Adds tracking of run", func() {
-				r, err := runs(ctx)
+				r, err := runs(ctx, &mockConfigProvider{})
 				So(err, ShouldBeNil)
 				So(len(r), ShouldEqual, 1)
 			})

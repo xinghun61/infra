@@ -32,7 +32,7 @@ func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*adm
 	if req.IsolatedInputHash == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
 	}
-	if err := collect(c, req, &common.DatastoreConfigProvider{}); err != nil {
+	if err := collect(c, req, &common.DatastoreWorkflowConfigProvider{}); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to trigger worker: %v", err)
 	}
 	return &admin.CollectResponse{}, nil

@@ -8,8 +8,6 @@ package launcher
 import (
 	"net/http"
 
-	"github.com/luci/luci-go/grpc/discovery"
-	"github.com/luci/luci-go/grpc/prpc"
 	"github.com/luci/luci-go/server/router"
 
 	admin "infra/tricium/api/admin/v1"
@@ -23,11 +21,9 @@ func init() {
 	r.POST("/launcher/internal/launch", base, launchHandler)
 
 	// Configure pRPC server.
-	// TODO(emso): Enable authentication
-	s := prpc.Server{Authenticator: prpc.NoAuthenticator}
-	admin.RegisterLauncherServer(&s, server)
-	discovery.Enable(&s)
-	s.InstallHandlers(r, base)
+	s := common.NewRPCServer()
+	admin.RegisterLauncherServer(s, server)
+	s.InstallHandlers(r, common.MiddlewareForRPC())
 
 	http.DefaultServeMux.Handle("/", r)
 }

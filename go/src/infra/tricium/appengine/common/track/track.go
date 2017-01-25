@@ -19,6 +19,8 @@ type Run struct {
 	Received time.Time
 	// State of this run; received, launched, or done-*, with done indicating success.
 	State RunState
+	// The project of the request.
+	Project string
 }
 
 // ServiceRequest lists the fields included in a request to the Tricium service.

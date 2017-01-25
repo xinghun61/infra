@@ -5,6 +5,7 @@
 package frontend
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -31,6 +32,8 @@ type TriciumServer struct{}
 // Server instance to use within this module/package.
 var server = &TriciumServer{}
 
+const repo = "https://chromium-review.googlesource.com/playground/gerrit-tricium"
+
 // Analyze processes one analysis request to Tricium.
 //
 // Launched a workflow customized to the project and listed paths.  The run ID
@@ -46,14 +49,41 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	if len(req.Paths) == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
-	// TODO(emso): Verify that the project in the request is known.
-	// TODO(emso): Verify that the user making the request has permission.
+	runID, err := analyze(c, req, &common.LuciConfigProvider{})
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "failed to execute analyze request")
+	}
+	logging.Infof(c, "[frontend] Run ID: %s", runID)
+	return &tricium.AnalyzeResponse{runID}, nil
+}
+
+func analyze(c context.Context, req *tricium.AnalyzeRequest, cp common.ConfigProvider) (string, error) {
+	// TODO(emso): let a failed project config request mean project is unknown and skip getting the service config?
+	sc, err := cp.GetServiceConfig(c)
+	if err != nil {
+		return "", fmt.Errorf("failed to get service config: %v", err)
+	}
+	if !sc.ProjectIsKnown(req.Project) {
+		return "", errors.New("unknown project")
+	}
+	pc, err := cp.GetProjectConfig(c, req.Project)
+	if err != nil {
+		return "", fmt.Errorf("failed to get project config: %v", err)
+	}
+	ok, err := pc.CanRequest(c)
+	if err != nil {
+		return "", fmt.Errorf("failed to authorize: %v", err)
+	}
+	if !ok {
+		// TODO(emso): make this bubble up as a permission denied error
+		return "", fmt.Errorf("no request access for project %s, context: %v", req.Project, c)
+	}
 	// TODO(emso): Verify that there is no current run for this request (map hashed requests to run IDs).
 	// TODO(emso): Read Git repo info from the configuration projects/ endpoint.
-	repo := "https://chromium-review.googlesource.com/playground/gerrit-tricium"
 	run := &track.Run{
 		Received: clock.Now(c).UTC(),
 		State:    track.Pending,
+		Project:  req.Project,
 	}
 	sr := &track.ServiceRequest{
 		Project: req.Project,
@@ -69,7 +99,7 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	}
 	// This is a cross-group transaction because first Run is stored to get the ID,
 	// and then ServiceRequest is stored, with Run key as parent.
-	err := ds.RunInTransaction(c, func(c context.Context) (err error) {
+	err = ds.RunInTransaction(c, func(c context.Context) (err error) {
 		// Add tracking entries for run.
 		if err := ds.Put(c, run); err != nil {
 			return fmt.Errorf("failed to store run entry: %v", err)
@@ -101,10 +131,7 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 		return tq.Add(c, common.LauncherQueue, t)
 	}, &ds.TransactionOptions{XG: true})
 	if err != nil {
-		return nil, grpc.Errorf(codes.Internal, "failed to track and launch request: %v", err)
+		return "", fmt.Errorf("failed to track and launch request: %v", err)
 	}
-	logging.Infof(c, "[frontend] Run ID: %d", run.ID)
-	return &tricium.AnalyzeResponse{
-		RunId: strconv.FormatInt(run.ID, 10),
-	}, nil
+	return strconv.FormatInt(run.ID, 10), nil
 }

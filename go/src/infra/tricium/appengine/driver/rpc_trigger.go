@@ -35,7 +35,7 @@ func (*driverServer) Trigger(c context.Context, req *admin.TriggerRequest) (*adm
 	if req.IsolatedInputHash == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
 	}
-	if err := trigger(c, req, &common.DatastoreConfigProvider{}); err != nil {
+	if err := trigger(c, req, &common.DatastoreWorkflowConfigProvider{}); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to trigger worker: %v", err)
 	}
 	return &admin.TriggerResponse{}, nil

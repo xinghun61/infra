@@ -9,8 +9,6 @@ import (
 	"net/http"
 
 	"github.com/luci/luci-go/appengine/gaemiddleware"
-	"github.com/luci/luci-go/grpc/discovery"
-	"github.com/luci/luci-go/grpc/prpc"
 	"github.com/luci/luci-go/server/router"
 
 	"infra/tricium/api/v1"
@@ -20,24 +18,26 @@ import (
 func init() {
 	r := router.New()
 	base := common.MiddlewareForUI()
+	baseInternal := common.MiddlewareForInternal()
 
 	// LUCI frameworks needs a bunch of routes exposed via default module.
 	gaemiddleware.InstallHandlers(r, base)
 
-	// TODO(emso): Should these use MiddlewareForInternal? Are they called by
-	// end-users?
+	// This is the URL called from the analyze form, expose to end-users.
+	// TODO(emso): Should this be internal?
+	// NB! With polymer this goes a way and we call Tricium.Analyze directly.
 	r.POST("/internal/analyze-form", base, analyzeFormHandler)
-	r.POST("/internal/analyze", base, analyzeHandler)
+
+	// This is the analyze queue handler
+	r.POST("/internal/analyze", baseInternal, analyzeHandler)
 
 	r.GET("/results", base, resultsHandler)
 	r.GET("/", base, landingPageHandler)
 
 	// Configure pRPC server.
-	// TODO(emso): Enable authentication
-	s := prpc.Server{Authenticator: prpc.NoAuthenticator}
-	tricium.RegisterTriciumServer(&s, server)
-	discovery.Enable(&s)
-	s.InstallHandlers(r, base)
+	s := common.NewRPCServer()
+	tricium.RegisterTriciumServer(s, server)
+	s.InstallHandlers(r, common.MiddlewareForRPC())
 
 	http.DefaultServeMux.Handle("/", r)
 }

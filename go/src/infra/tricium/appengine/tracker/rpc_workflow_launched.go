@@ -30,7 +30,7 @@ func (*trackerServer) WorkflowLaunched(c context.Context, req *admin.WorkflowLau
 	if req.RunId == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
 	}
-	if err := workflowLaunched(c, req, &common.DatastoreConfigProvider{}); err != nil {
+	if err := workflowLaunched(c, req, &common.DatastoreWorkflowConfigProvider{}); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to track workflow launched: %v", err)
 	}
 	return &admin.WorkflowLaunchedResponse{}, nil

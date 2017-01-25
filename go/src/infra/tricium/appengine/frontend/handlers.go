@@ -22,6 +22,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"infra/tricium/api/v1"
+	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/pipeline"
 	"infra/tricium/appengine/common/track"
 )
@@ -34,12 +35,7 @@ func landingPageHandler(c *router.Context) {
 
 func resultsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
-	if _, err := runs(c); err != nil {
-		logging.WithError(err).Errorf(c, "results handler encountered errors")
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	r, err := runs(c)
+	r, err := runs(c, &common.LuciConfigProvider{})
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to retrieve runs")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -50,14 +46,36 @@ func resultsHandler(ctx *router.Context) {
 	})
 }
 
-func runs(c context.Context) ([]*track.Run, error) {
+// runs returns list of runs for projects readable to the current user.
+func runs(c context.Context, cp common.ConfigProvider) ([]*track.Run, error) {
+	// TODO(emso): This only lists the last 20 runs, when the UI is ready improve to list more.
 	var runs []*track.Run
 	q := ds.NewQuery("Run").Order("-Received").Limit(20)
 	if err := ds.GetAll(c, q, &runs); err != nil {
 		logging.WithError(err).Errorf(c, "failed to read run entries from datastore")
 		return nil, err
 	}
-	return runs, nil
+	// Only include readable runs.
+	checked := map[string]bool{}
+	var rs []*track.Run
+	for _, r := range runs {
+		if _, ok := checked[r.Project]; !ok {
+			pc, err := cp.GetProjectConfig(c, r.Project)
+			if err != nil {
+				logging.WithError(err).Errorf(c, "failed to get config for project %s: %v", r.Project, err)
+				return nil, err
+			}
+			checked[r.Project], err = pc.CanRead(c)
+			if err != nil {
+				logging.WithError(err).Errorf(c, "failed to check read access %s: %v", r.Project, err)
+				return nil, err
+			}
+		}
+		if checked[r.Project] {
+			rs = append(rs, r)
+		}
+	}
+	return rs, nil
 }
 
 func analyzeFormHandler(ctx *router.Context) {

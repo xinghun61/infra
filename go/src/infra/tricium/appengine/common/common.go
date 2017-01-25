@@ -52,6 +52,7 @@ const (
 // Workflow config entry for storing in datastore.
 type Workflow struct {
 	ID int64 `gae:"$id"`
+
 	// Serialized workflow config proto.
 	SerializedWorkflow []byte `gae:",noindex"`
 }
@@ -186,12 +187,12 @@ type WorkflowProvider interface {
 	ReadConfigForRun(context.Context, int64) (*admin.Workflow, error)
 }
 
-// LuciConfigProvider provides workflow configurations from the Luci-config service.
-type LuciConfigProvider struct {
+// LuciConfigWorkflowProvider provides workflow configurations from the Luci-config service.
+type LuciConfigWorkflowProvider struct {
 }
 
 // ReadConfigForProject reads a workflow config for a project from Luci-config.
-func (*LuciConfigProvider) ReadConfigForProject(c context.Context, project string) (*admin.Workflow, error) {
+func (*LuciConfigWorkflowProvider) ReadConfigForProject(c context.Context, project string) (*admin.Workflow, error) {
 	// TODO(emso): Replace this dummy config with one read from luci-config.
 	return &admin.Workflow{
 		WorkerTopic:    "projects/tricium-dev/topics/worker-completion",
@@ -220,21 +221,21 @@ func (*LuciConfigProvider) ReadConfigForProject(c context.Context, project strin
 }
 
 // ReadConfigForRun is not supported by this workflow provider, included to match the interface.
-func (*LuciConfigProvider) ReadConfigForRun(c context.Context, runID int64) (*admin.Workflow, error) {
+func (*LuciConfigWorkflowProvider) ReadConfigForRun(c context.Context, runID int64) (*admin.Workflow, error) {
 	return nil, errors.New("Luci-config workflow provider cannot provide config for run ID")
 }
 
-// DatastoreConfigProvider provides workflow configurations from Datastore.
-type DatastoreConfigProvider struct {
+// DatastoreWorkflowConfigProvider provides workflow configurations from Datastore.
+type DatastoreWorkflowConfigProvider struct {
 }
 
 // ReadConfigForProject is not supported by this workflow provider, included to match the interface.
-func (*DatastoreConfigProvider) ReadConfigForProject(c context.Context, project string) (*admin.Workflow, error) {
+func (*DatastoreWorkflowConfigProvider) ReadConfigForProject(c context.Context, project string) (*admin.Workflow, error) {
 	return nil, errors.New("Datastore workflow provider cannot provide config for project name")
 }
 
 // ReadConfigForRun provides workflow configurations for a run ID from Datastore.
-func (*DatastoreConfigProvider) ReadConfigForRun(c context.Context, runID int64) (*admin.Workflow, error) {
+func (*DatastoreWorkflowConfigProvider) ReadConfigForRun(c context.Context, runID int64) (*admin.Workflow, error) {
 	wfb := &Workflow{ID: runID}
 	if err := ds.Get(c, wfb); err != nil {
 		return nil, err
@@ -244,4 +245,84 @@ func (*DatastoreConfigProvider) ReadConfigForRun(c context.Context, runID int64)
 		return nil, err
 	}
 	return wf, nil
+}
+
+// ConfigProvider supplies Tricium service and project configs.
+type ConfigProvider interface {
+	GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error)
+	GetProjectConfig(c context.Context, project string) (*tricium.ProjectConfig, error)
+}
+
+// LuciConfigProvider supplies Tricium configs stored in luci-config.
+type LuciConfigProvider struct {
+}
+
+// GetServiceConfig loads the service config from luci-config.
+func (*LuciConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
+	// TODO(emso): Read service config from luci-config.
+	// TODO(emso): Should return a result comment.
+	return &tricium.ServiceConfig{
+		SwarmingWorkerTopic: "projects/tricium-dev/topics/worker-completion",
+		Platforms: []*tricium.Platform{
+			{
+				Name: "Ubuntu-14.04-x86-64",
+				Dimensions: []string{
+					"pool:default",
+					"os:Ubuntu-14.04",
+					"cpu:x86-64",
+				},
+			},
+		},
+		Analyzers: []*tricium.Analyzer{
+			{
+				Name:      "Hello",
+				Needs:     tricium.Data_GIT_FILE_DETAILS,
+				Provides:  tricium.Data_RESULTS,
+				Owner:     "emso@chromium.org",
+				Component: "monorail:Infra>CodeAnalysis",
+				Impls: []*tricium.Impl{
+					{
+						Cmd: &tricium.Cmd{
+							Exec: "echo",
+							Args: []string{
+								"hello",
+							},
+						},
+					},
+				},
+			},
+		},
+		Projects: []*tricium.ProjectDetails{
+			{
+				Name: "playground/gerrit-tricium",
+				RepoDetails: &tricium.RepoDetails{
+					Kind: tricium.RepoDetails_GIT,
+					GitDetails: &tricium.GitRepoDetails{
+						Repository: "https://chromium.googlesource.com/playground/gerrit-tricium",
+						Ref:        "master",
+					},
+				},
+			},
+		},
+	}, nil
+}
+
+// GetProjectConfig loads the project config for the provided project from luci-config.
+func (*LuciConfigProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
+	// TODO(emso): Read project config from luci-config.
+	return &tricium.ProjectConfig{
+		Name: "playground/gerrit-tricium",
+		Acls: []*tricium.Acl{
+			{
+				Role:  tricium.Acl_REQUESTER,
+				Group: "tricium-playground-requesters",
+			},
+		},
+		Selections: []*tricium.Selection{
+			{
+				Analyzer: "Hello",
+				Platform: "Ubuntu-14.04-x86-64",
+			},
+		},
+	}, nil
 }

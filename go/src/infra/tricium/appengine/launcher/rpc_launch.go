@@ -44,7 +44,7 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 	if len(req.Paths) == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
-	if err := launch(c, req, &common.LuciConfigProvider{}); err != nil {
+	if err := launch(c, req, &common.LuciConfigWorkflowProvider{}); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to launch workflow: %v", err)
 	}
 	return &admin.LaunchResponse{}, nil

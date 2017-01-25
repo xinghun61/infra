@@ -8,8 +8,6 @@ package driver
 import (
 	"net/http"
 
-	"github.com/luci/luci-go/grpc/discovery"
-	"github.com/luci/luci-go/grpc/prpc"
 	"github.com/luci/luci-go/server/router"
 
 	"infra/tricium/api/admin/v1"
@@ -25,11 +23,9 @@ func init() {
 	r.POST("/_ah/push-handlers/notify", base, notifyHandler)
 
 	// Configure pRPC server.
-	// TODO(emso): Enable authentication
-	s := prpc.Server{Authenticator: prpc.NoAuthenticator}
-	admin.RegisterDriverServer(&s, server)
-	discovery.Enable(&s)
-	s.InstallHandlers(r, base)
+	s := common.NewRPCServer()
+	admin.RegisterDriverServer(s, server)
+	s.InstallHandlers(r, common.MiddlewareForRPC())
 
 	http.DefaultServeMux.Handle("/", r)
 }

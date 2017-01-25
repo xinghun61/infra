@@ -14,10 +14,32 @@ import "infra/tricium/api/v1/data.proto";
 // to Tricium.
 message ServiceConfig {
   // Supported platforms.
-  repeated Platform platform = 1;
+  repeated Platform platforms = 1;
 
   // List of shared analyzers.
-  repeated Analyzer analyzer = 2;
+  repeated Analyzer analyzers = 2;
+
+  // Details for connected projects.
+  repeated ProjectDetails projects = 3;
+
+  // PubSub topic used to collect worker completion notifications from Swarming.
+  string swarming_worker_topic = 4;
+}
+
+message ProjectDetails {
+  // Project name used to map these project details to the config for a project.
+  string name = 1;
+
+  // General service account for this project.
+  // Used for any service interaction, with the exception of swarming.
+  string service_account = 2;
+
+  // Project-specific swarming service account.
+  string swarming_service_account = 3;
+ 
+  // Details of the repository connected to the project. This should be the
+  // repository hosting the files that should be analyzed for this project.
+  RepoDetails repo_details = 4;
 }
 
 // Tricium project configuration.
@@ -29,19 +51,15 @@ message ProjectConfig {
   // Project name,
   string name = 1;
 
-  // Details of the repository connected to the project. This should be the
-  // repository hosting the files that should be analyzed for this project.
-  RepoDetails repo_details = 2;
-
   // Access control rules for the project.
-  repeated Acl acls = 3;
+  repeated Acl acls = 2;
 
   // Project-specific analyzer details. This includes project-specific analyzer
   // implementations and full project-specific analyzer specifications.
-  repeated Analyzer analyzer = 4;
+  repeated Analyzer analyzers = 3;
 
   // Selection of analyzer implementations to run for this project.
-  repeated Selection selection = 5;
+  repeated Selection selections = 4;
 }
 
 // Repository details for a project.
@@ -108,7 +126,7 @@ message Selection {
   string platform = 2;
 
   // Analyzer configuration to use on this platform.
-  repeated Config config = 3;
+  repeated Config configs = 3;
 }
 
 // Analyzer specification.
@@ -143,7 +161,7 @@ message Analyzer {
   // Analyzer implementations. An analyzer may run on many platforms and this
   // may require many different implementations of the analyzer. An
   // implementation may be shared between several platforms if possible.
-  repeated Impl impl = 9;
+  repeated Impl impls = 9;
 }
 
 // Definition of an analyzer configuration, e.g., ClangTidy is configured with
@@ -160,10 +178,10 @@ message ConfigDef {
 // recipe-based or binary-based.
 message Impl {
   // Platforms this implementation applies to.
-  repeated Platform platform = 1;
+  repeated Platform platforms = 1;
 
   // Cipd packages needed by this implementation.
-  repeated CipdPackage cipd_package = 2;
+  repeated CipdPackage cipd_packages = 2;
 
   // Recipe for recipe-based implementation. Either recipe or cmd, not both.
   Recipe recipe = 3;
