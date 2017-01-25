@@ -318,6 +318,23 @@ h4 {
     width: 44em;
 }
 
+.x_icon::before {
+    content: "\00D7";
+}
+
+.x_icon {
+    text-decoration: none;
+    font-size: 130%;
+    color: #444 !important;
+    padding: 0 2px;
+    vertical-align:middle;
+}
+
+.x_icon:active {
+    color: #fff !important;
+    background: #444;
+}
+
 /* Google standard */
 .gbh {
     border-top: 1px solid #C9D7F1;

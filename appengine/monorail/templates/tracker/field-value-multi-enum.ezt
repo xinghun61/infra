@@ -38,9 +38,7 @@
     <span class="enum_checkbox"
           title="This is not a defined choice for this field"
           id="span_[arg0]_oddball_[fields.values.idx]">
-      <a id="[arg0]_oddball_[fields.values.idx]" class="remove_oddball">
-        <img src="/static/images/close_icon.png" width="13" height="13">
-      </a>[fields.values.val]
+      <a id="[arg0]_oddball_[fields.values.idx]" class="remove_oddball x_icon"></a>[fields.values.val]
       [# Below hidden input contains the value of the field for tracker_helpers._ParseIssueRequestFields ]
       <input type="text" class="labelinput" id="input_[arg0]_oddball_[fields.values.idx]" size="20" name="label"
              value="[fields.field_name]-[fields.values.val]" hidden>

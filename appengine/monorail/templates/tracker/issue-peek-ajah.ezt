@@ -13,8 +13,8 @@
          ><img src="/static/images/pagination-next.png" width="16" height="16"></a
      ><a href="#" title="Last comment (Key: L)" class="paginate" [#_lastComment()]
          ><img src="/static/images/pagination-last.png" width="16" height="16"></a
-     ><a href="#"  title="Close (Key: Esc)" class="close" [#_hideInfoPeek()]
-         ><img src="/static/images/close_icon.png" width="16" height="16"></a
+     ><a href="#"  title="Close (Key: Esc)" class="close x_icon" [#_hideInfoPeek()]
+         ></a
     ></div>
 
     [if-any page_perms.SetStar]

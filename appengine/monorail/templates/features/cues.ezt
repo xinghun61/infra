@@ -119,8 +119,7 @@
     [# Link to dismiss the cue card.]
     [if-any logged_in_user]
      [if-any read_only][else]
-      <a href="#" title="Don't show this message again" style="margin-left:3em;vertical-align:middle;" class="dismiss_cue"
-         ><img src="/static/images/close_icon.png" width="13" height="13"></a>
+      <a href="#" title="Don't show this message again" style="margin-left: 1em" class="dismiss_cue x_icon"></a>
      [end]
     [end]
   </td></tr>
