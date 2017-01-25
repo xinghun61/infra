@@ -45,10 +45,11 @@ function createWidgets(tableRow, readOnly, userLoggedIn) {
       // TODO(jojwang): for bulk edit, only show a checkbox next to an issue that
       // the user has permission to edit.
         var checkbox = document.createElement('input');
-        setAttributes(checkbox, {'name': 'checkRangeSelect',
+        setAttributes(checkbox, {'class': 'checkRangeSelect',
                                  'id': 'cb_' + tableRow['issueRef'],
                                  'type': 'checkbox'});
       widgets.appendChild(checkbox);
+      widgets.appendChild(document.createTextNode(' '));
 
       var star = document.createElement('a');
       var starColor = tableRow['isStarred'] ? 'cornflowerblue' : 'gray';

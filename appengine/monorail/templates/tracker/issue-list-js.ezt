@@ -42,6 +42,15 @@ runOnLoad(function() {
     _addClickListener($("resultstable"), _handleResultsClick);
   [end]
 
+  var issueCheckboxes = document.getElementsByClassName("checkRangeSelect");
+  for (var i = 0; i < issueCheckboxes.length; ++i) {
+    var el = issueCheckboxes[[]i];
+    el.addEventListener("click", function (event) {
+        _checkRangeSelect(event, event.target);
+        _highlightRow(event.target);
+    });
+  }
+
   function _handleHeaderClick(event) {
     var target = event.target;
     while (target && target.tagName != "TH") target = target.parentNode;
