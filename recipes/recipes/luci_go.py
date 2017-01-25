@@ -19,7 +19,7 @@ DEPS = [
 
 PROPERTIES = {
   'presubmit': Property(
-    default=None,
+    default=False,
     kind=bool,
     help=(
       "if set, will run presubmit for the luci-go repo, otherwise runs tests."
@@ -75,11 +75,7 @@ def RunSteps(api, presubmit, GOARCH):
       break
   bot_update_step = api.bot_update.ensure_checkout(patch_root=patch_root)
 
-  if presubmit is None:
-    is_presubmit = 'presubmit' in api.properties.get('buildername', '').lower()
-  else:
-    is_presubmit = presubmit
-  if is_presubmit:
+  if presubmit:
     _commit_change(api, patch_root)
   api.gclient.runhooks()
 
@@ -96,7 +92,7 @@ def RunSteps(api, presubmit, GOARCH):
         ['go', 'version'],
         infra_step=True)
 
-    if is_presubmit:
+    if presubmit:
       with api.tryserver.set_failure_hash():
         _run_presubmit(api, patch_root, bot_update_step)
     else:
@@ -130,15 +126,6 @@ def GenTests(api):
         path_config='kitchen',
         mastername='tryserver.infra',
         buildername='Luci-go Presubmit',
-    ) + api.step_data('presubmit', api.json.output([[]]))
-  )
-
-  yield (
-    api.test('explicit_presubmit') +
-    api.properties.tryserver(
-        path_config='kitchen',
-        mastername='tryserver.infra',
-        buildername='Luci-go Pre-commit validation',
         presubmit=True,
     ) + api.step_data('presubmit', api.json.output([[]]))
   )
