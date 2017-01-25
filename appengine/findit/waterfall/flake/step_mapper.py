@@ -2,194 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import base64
-import cStringIO
-import json
 import logging
-import os
-import sys
-
-import google
 
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from waterfall import buildbot
 from waterfall import swarming_util
-
-# protobuf and GAE have package name conflict on 'google'.
-# Add this to solve the conflict.
-third_party = os.path.join(
-    os.path.dirname(__file__), os.path.pardir, os.path.pardir, 'third_party')
-sys.path.insert(0, third_party)
-google.__path__.append(os.path.join(third_party, 'google'))
-from logdog import annotations_pb2
-
-
-_LOGDOG_ENDPOINT = 'https://luci-logdog.appspot.com/prpc/logdog.Logs'
-_LOGDOG_TAIL_ENDPOINT = '%s/Tail' % _LOGDOG_ENDPOINT
-_LOGDOG_GET_ENDPOINT = '%s/Get' % _LOGDOG_ENDPOINT
-_BASE_LOGDOG_REQUEST_PATH = 'bb/%s/%s/%s/+/%s'
-_LOGDOG_RESPONSE_PREFIX = ')]}\'\n'
-
-
-def _ProcessStringForLogDog(base_string):
-  """Processes base string and replaces all special characters to '_'.
-
-  Special characters are non alphanumeric nor ':_-.'.
-  Reference: https://chromium.googlesource.com/chromium/tools/build/+/refs/
-      heads/master/scripts/slave/logdog_bootstrap.py#349
-  """
-  new_string_list = []
-  for c in base_string:
-    if not c.isalnum() and not c in ':_-.':
-      new_string_list.append('_')
-    else:
-      new_string_list.append(c)
-  return ''.join(new_string_list)
-
-
-def _GetAnnotationsProto(cq_build_step, http_client):
-  """Gets annotations message for the build."""
-
-  master_name = cq_build_step.master_name
-  builder_name = cq_build_step.builder_name
-  build_number = cq_build_step.build_number
-
-  base_error_log = 'Error when load annotations protobuf: %s'
-
-  path = _BASE_LOGDOG_REQUEST_PATH % (
-      master_name, _ProcessStringForLogDog(builder_name), build_number,
-      'annotations')
-
-  data = {
-      'project': 'chromium',
-      'path': path
-  }
-
-  response_json = buildbot.DownloadJsonData(
-      _LOGDOG_TAIL_ENDPOINT, data, http_client)
-  if not response_json:
-    # Due to a bug(crbug.com/678831) in LogDog, Tail request might return
-    # empty data. So use Get request as a backup.
-    response_json = buildbot.DownloadJsonData(
-        _LOGDOG_GET_ENDPOINT, data, http_client)
-    if not response_json:
-      return None
-
-  # Gets data for proto. Data format as below:
-  # {
-  #    'logs': [
-  #        {
-  #            'datagram': {
-  #                'data': (base64 encoded data)
-  #            }
-  #        }
-  #     ]
-  # }
-  logs = response_json.get('logs')
-  if not logs or not isinstance(logs, list):
-    logging.error(base_error_log % 'Wrong format - "logs"')
-    return None
-
-  annotations_b64 = logs[-1].get('datagram', {}).get('data')
-  if not annotations_b64:
-    logging.error(base_error_log % 'Wrong format - "data"')
-    return None
-
-  # Gets proto.
-  try:
-    annotations = base64.b64decode(annotations_b64)
-    step = annotations_pb2.Step()
-    step.ParseFromString(annotations)
-    return step
-  except Exception:
-    logging.error(base_error_log % 'could not get annotations.')
-    return None
-
-
-def _GetStepMetadataFromLogDog(cq_build_step, logdog_stream, http_client):
-  """Gets step_metadata from LogDog in json format."""
-
-  master_name = cq_build_step.master_name
-  builder_name = cq_build_step.builder_name
-  build_number = cq_build_step.build_number
-
-  path = _BASE_LOGDOG_REQUEST_PATH % (
-      master_name, _ProcessStringForLogDog(builder_name), build_number,
-      logdog_stream)
-
-  data = {
-      'project': 'chromium',
-      'path': path
-  }
-
-  base_error_log = 'Error when fetch step_metadata log: %s'
-
-  response_json = buildbot.DownloadJsonData(
-      _LOGDOG_GET_ENDPOINT, data, http_client)
-  if not response_json:
-    logging.error(base_error_log % 'cannot get json log.')
-    return None
-
-  # Gets data for step_metadata log. Data format as below:
-  # {
-  #    'logs': [
-  #        {
-  #            'text': {
-  #                'lines': [
-  #                   {
-  #                       'value': 'line'
-  #                   }
-  #                ]
-  #            }
-  #        }
-  #     ]
-  # }
-  logs = response_json.get('logs')
-  if not logs or not isinstance(logs, list):
-    logging.error(base_error_log % 'Wrong format - "logs"')
-    return None
-
-  sio = cStringIO.StringIO()
-  for log in logs:
-    for line in log.get('text', {}).get('lines', []):
-      sio.write(line.get('value', ''))
-  step_metadata = sio.getvalue()
-  sio.close()
-
-  try:
-    return json.loads(step_metadata)
-  except Exception:
-    logging.error(base_error_log % 'step_metadata is broken.')
-    return None
-
-
-def _ProcessAnnotationsToGetStream(cq_build_step, step):
-  for substep in step.substep:
-    if substep.step.name != cq_build_step.step_name:
-      continue
-
-    for link in substep.step.other_links:
-      if link.label.lower() == 'step_metadata':
-        return link.logdog_stream.name
-
-  return None
-
-
-def _GetStepMetadata(cq_build_step, http_client):
-  """Returns the step metadata."""
-  # 1. Get annotations proto for the build.
-  step = _GetAnnotationsProto(cq_build_step, http_client)
-  if not step:
-    return None
-
-  # 2. Find the log stream info for this step's step_metadata.
-  logdog_stream = _ProcessAnnotationsToGetStream(cq_build_step, step)
-
-  # 3. Get the step_metadata.
-  if not logdog_stream:
-    return None
-
-  return _GetStepMetadataFromLogDog(cq_build_step, logdog_stream, http_client)
 
 
 def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
@@ -207,7 +24,10 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
   no_matching_result = (None, None, None, None, None)
 
   # 0. Get step_metadata.
-  step_metadata = _GetStepMetadata(cq_build_step, http_client)
+  step_metadata = buildbot.GetStepMetadata(
+      cq_build_step.master_name, cq_build_step.builder_name,
+      cq_build_step.build_number, cq_build_step.step_name,
+      http_client)
   if not step_metadata:
     logging.error('Couldn\'t get step_metadata')
     return no_matching_result
@@ -294,7 +114,9 @@ def FindMatchingWaterfallStep(build_step, test_name):
     build_step.wf_builder_name = build_step.builder_name
     build_step.wf_build_number = build_step.build_number
     build_step.wf_step_name = build_step.step_name
-    metadata = _GetStepMetadata(build_step, http_client)
+    metadata = buildbot.GetStepMetadata(
+        build_step.master_name, build_step.builder_name,
+        build_step.build_number, build_step.step_name, http_client)
     if not metadata:
       logging.error('Couldn\'t get step_metadata')
       return

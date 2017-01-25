@@ -124,6 +124,7 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
     'dive_rate_threshold': 0.4,
 }
 
+
 _DEFAULT_CHECK_FLAKE_TRY_JOB_SETTINGS = {
     'lower_flake_threshold': 0.02,
     'upper_flake_threshold': 0.98,
@@ -143,6 +144,29 @@ DEFAULT_CONFIG_DATA = {
     'action_settings': _DEFAULT_ACTION_SETTINGS,
     'check_flake_settings': _DEFAULT_CHECK_FLAKE_SETTINGS,
     'check_flake_try_job_settings': _DEFAULT_CHECK_FLAKE_TRY_JOB_SETTINGS,
+}
+
+
+SAMPLE_STEP_METADATA = {
+    'waterfall_mastername': 'm',
+    'waterfall_buildername': 'b',
+    'canonical_step_name': 'browser_tests',
+    'full_step_name': 'browser_tests on platform',
+    'dimensions': {
+        'os': 'platform'
+    },
+    'swarm_task_ids': ['1000']
+}
+
+
+SAMPLE_STEP_METADATA_NOT_SWARMED = {
+    'waterfall_mastername': 'm',
+    'waterfall_buildername': 'b',
+    'canonical_step_name': 'browser_tests',
+    'full_step_name': 'browser_tests on platform',
+    'dimensions': {
+        'os': 'platform'
+    }
 }
 
 

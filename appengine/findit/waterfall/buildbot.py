@@ -4,18 +4,29 @@
 
 import base64
 import contextlib
+import cStringIO
 from datetime import datetime
 import gzip
 import io
 import logging
 import json
+import os
 import re
+import sys
 import urllib
 
 import cloudstorage as gcs
+import google
 
 from waterfall.build_info import BuildInfo
 
+# protobuf and GAE have package name conflict on 'google'.
+# Add this to solve the conflict.
+third_party = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, os.path.pardir, 'third_party')
+sys.path.insert(0, third_party)
+google.__path__.append(os.path.join(third_party, 'google'))
+from logdog import annotations_pb2
 
 _HOST_NAME_PATTERN = (
     r'https?://(?:build\.chromium\.org/p|uberchromegw\.corp\.google\.com/i)')
@@ -35,9 +46,7 @@ _MILO_BUILD_URL_PATTERN = re.compile(
     '(?:/.*)?$')
 
 _MILO_ENDPOINT = 'https://luci-milo.appspot.com/prpc/milo.Buildbot'
-
 _MILO_ENDPOINT_BUILD = '%s/GetBuildbotBuildJSON' % _MILO_ENDPOINT
-
 _MILO_ENDPOINT_MASTER = '%s/GetCompressedMasterJSON' % _MILO_ENDPOINT
 
 _STEP_URL_PATTERN = re.compile(
@@ -48,6 +57,11 @@ _COMMIT_POSITION_PATTERN = re.compile(
     r'refs/heads/master@{#(\d+)}$', re.IGNORECASE)
 
 _RESPONSE_PREFIX = ')]}\'\n'
+
+_LOGDOG_ENDPOINT = 'https://luci-logdog.appspot.com/prpc/logdog.Logs'
+_LOGDOG_TAIL_ENDPOINT = '%s/Tail' % _LOGDOG_ENDPOINT
+_LOGDOG_GET_ENDPOINT = '%s/Get' % _LOGDOG_ENDPOINT
+_BASE_LOGDOG_REQUEST_PATH = 'bb/%s/%s/%s/+/%s'
 
 
 # These values are buildbot constants used for Build and BuildStep.
@@ -63,7 +77,8 @@ def _DownloadData(url, data, http_client):
     'Accept': 'application/json'
   }
 
-  status_code, response = http_client.Post(url, json.dumps(data), headers)
+  status_code, response = http_client.Post(
+      url, json.dumps(data), headers=headers)
   if status_code != 200 or not response:
     logging.error('Post request to %s failed' % url)
     return None
@@ -82,7 +97,7 @@ def _GetResultJson(response):
 def DownloadJsonData(url, data, http_client):
   """Downloads data from rpc endpoints and converts response in json format."""
   response = _DownloadData(url, data, http_client)
-  return _GetResultJson(response, url) if response else None
+  return _GetResultJson(response) if response else None
 
 
 def GetRecentCompletedBuilds(master_name, builder_name, http_client):
@@ -342,3 +357,154 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
       build_info.failed_steps.append(step_name)
 
   return build_info
+
+
+def _ProcessStringForLogDog(base_string):
+  """Processes base string and replaces all special characters to '_'.
+
+  Special characters are non alphanumeric nor ':_-.'.
+  Reference: https://chromium.googlesource.com/chromium/tools/build/+/refs/
+      heads/master/scripts/slave/logdog_bootstrap.py#349
+  """
+  new_string_list = []
+  for c in base_string:
+    if not c.isalnum() and not c in ':_-.':
+      new_string_list.append('_')
+    else:
+      new_string_list.append(c)
+  return ''.join(new_string_list)
+
+
+def _GetAnnotationsProto(master_name, builder_name, build_number, http_client):
+  """Gets annotations message for the build."""
+
+  base_error_log = 'Error when load annotations protobuf: %s'
+
+  path = _BASE_LOGDOG_REQUEST_PATH % (
+      master_name, _ProcessStringForLogDog(builder_name), build_number,
+      'annotations')
+
+  data = {
+      'project': 'chromium',
+      'path': path
+  }
+
+  response_json = DownloadJsonData(_LOGDOG_TAIL_ENDPOINT, data, http_client)
+  if not response_json:
+    return None
+
+  # Gets data for proto. Data format as below:
+  # {
+  #    'logs': [
+  #        {
+  #            'datagram': {
+  #                'data': (base64 encoded data)
+  #            }
+  #        }
+  #     ]
+  # }
+  logs = json.loads(response_json).get('logs')
+  if not logs or not isinstance(logs, list):
+    logging.error(base_error_log % 'Wrong format - "logs"')
+    return None
+
+  annotations_b64 = logs[-1].get('datagram', {}).get('data')
+  if not annotations_b64:
+    logging.error(base_error_log % 'Wrong format - "data"')
+    return None
+
+  # Gets proto.
+  try:
+    annotations = base64.b64decode(annotations_b64)
+    step = annotations_pb2.Step()
+    step.ParseFromString(annotations)
+    return step
+  except Exception:
+    logging.error(base_error_log % 'could not get annotations.')
+    return None
+
+
+def _GetStepMetadataFromLogDog(
+      master_name, builder_name, build_number, logdog_stream, http_client):
+  """Gets step_metadata from LogDog in json format."""
+
+  path = _BASE_LOGDOG_REQUEST_PATH % (
+      master_name, _ProcessStringForLogDog(builder_name), build_number,
+      logdog_stream)
+
+  data = {
+      'project': 'chromium',
+      'path': path
+  }
+
+  base_error_log = 'Error when fetch step_metadata log: %s'
+
+  response_json = DownloadJsonData(
+      _LOGDOG_GET_ENDPOINT, data, http_client)
+  if not response_json:
+    logging.error(base_error_log % 'cannot get json log.')
+    return None
+
+  # Gets data for step_metadata log. Data format as below:
+  # {
+  #    'logs': [
+  #        {
+  #            'text': {
+  #                'lines': [
+  #                   {
+  #                       'value': 'line'
+  #                   }
+  #                ]
+  #            }
+  #        }
+  #     ]
+  # }
+  logs = json.loads(response_json).get('logs')
+  if not logs or not isinstance(logs, list):
+    logging.error(base_error_log % 'Wrong format - "logs"')
+    return None
+
+  sio = cStringIO.StringIO()
+  for log in logs:
+    for line in log.get('text', {}).get('lines', []):
+      sio.write(line.get('value', ''))
+  step_metadata = sio.getvalue()
+  sio.close()
+
+  try:
+    return json.loads(step_metadata)
+  except Exception:
+    logging.error(base_error_log % 'step_metadata is broken.')
+    return None
+
+
+def _ProcessAnnotationsToGetStream(step_name, step):
+  for substep in step.substep:
+    if substep.step.name != step_name:
+      continue
+
+    for link in substep.step.other_links:
+      if link.label.lower() == 'step_metadata':
+        return link.logdog_stream.name
+
+  return None
+
+
+def GetStepMetadata(
+    master_name, builder_name, build_number, full_step_name, http_client):
+  """Returns the step metadata."""
+  # 1. Get annotations proto for the build.
+  step = _GetAnnotationsProto(
+      master_name, builder_name, build_number, http_client)
+  if not step:
+    return None
+
+  # 2. Find the log stream info for this step's step_metadata.
+  logdog_stream = _ProcessAnnotationsToGetStream(full_step_name, step)
+
+  # 3. Get the step_metadata.
+  if not logdog_stream:
+    return None
+
+  return _GetStepMetadataFromLogDog(
+      master_name, builder_name, build_number, logdog_stream, http_client)
