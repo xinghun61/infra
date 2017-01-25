@@ -1,3 +1,23 @@
+# Release Notes sheriff-o-matic 2017-01-24
+
+- 6 commits, 1 bugs affected since a427d6d (2017-01-17T23:08:47Z)
+- 2 Authors:
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [SoM: Adjust trooper queue to load unstale data after loading cached data.](https://chromium-review.googlesource.com/431839) (zhangtiff@google.com)
+- [[som] increase instance size to f4 so analyzer crons can run.](https://chromium-review.googlesource.com/431096) (seanmccullough@chromium.org)
+- [[som] add useMilo url param to optionally display cron-generated alerts.](https://chromium-review.googlesource.com/431054) (seanmccullough@chromium.org)
+- [SoM: Fix polylint errors and removed unused Bower dependencies.](https://chromium-review.googlesource.com/430895) (zhangtiff@google.com)
+- [SoM: Removed unused imports.](https://chromium-review.googlesource.com/430260) (zhangtiff@google.com)
+- [[som] re-enable cron jobs to run the analyzers for our trees.](https://chromium-review.googlesource.com/428354) (seanmccullough@chromium.org)
+
+## Bugs updated, by author
+- zhangtiff@google.com:
+  -  [https://crbug.com/683253](https://crbug.com/683253)
+
 # Release Notes sheriff-o-matic 2017-01-17
 
 - 6 commits, 2 bugs affected since ffb69b1 (2017-01-12T19:35:06Z)
