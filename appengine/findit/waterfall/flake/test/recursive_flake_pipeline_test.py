@@ -361,7 +361,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         build_numbers=[100, 99, 97, 95, 94, 93, 92, 91, 90])
 
     next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertEqual(result, 95)
     self.assertEqual(next_run, -1)
 
@@ -380,7 +381,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         build_numbers=[100, 99, 97, 96, 95, 94, 93, 92, 91, 90])
 
     next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertEqual(result, 96)
     self.assertEqual(next_run, -1)
 
@@ -389,7 +391,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         pass_rates=[0.8, 1.0, 1.0, -1], build_numbers=[100, 80, 70, 60])
 
     next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertEqual(-1, result)
     self.assertEqual(81, next_run)
 
@@ -398,7 +401,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         pass_rates=[0.8, 0.7, 0.75, -1], build_numbers=[100, 80, 70, 60])
 
     next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertEqual(-1, result)
     self.assertEqual(61, next_run)
 
@@ -407,7 +411,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         pass_rates=[0.3, 0.8], build_numbers=[100, 80])
 
     next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertEqual(-1, result)
     self.assertEqual(79, next_run)
 
@@ -416,7 +421,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         pass_rates=[0.3, 0.8, 0.3], build_numbers=[100, 99, 98])
 
     next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertEqual(-1, result)
     self.assertEqual(95, next_run)
 
@@ -426,7 +432,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         build_numbers=[100, 99, 98, 97, 96, 95])
 
     next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertEquals(100, result)
     self.assertEqual(-1, next_run)
 
@@ -436,7 +443,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         build_numbers=[100, 99, 97, 96, 05, 94, 93])
 
     next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertEqual(-1, result)
     self.assertEqual(98, next_run)
 

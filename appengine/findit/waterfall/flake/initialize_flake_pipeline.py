@@ -15,7 +15,7 @@ from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 
 
 def _NeedANewAnalysis(
-    normalized_test, original_test, algorithm_parameters,
+    normalized_test, original_test, flake_settings,
     bug_id=None, allow_new_analysis=False, force=False,
     user_email='', triggering_source=triggering_sources.FINDIT_PIPELINE):
   """Checks status of analysis for the test and decides if a new one is needed.
@@ -29,7 +29,7 @@ def _NeedANewAnalysis(
        a CQ trybot step to a Waterfall buildbot step, striping prefix "PRE_"
        from a gtest, etc.
     original_test (TestInfo): Info of the original flaky test.
-    algorithm_parameters (dict): Algorithm parameters to run the analysis.
+    flake_settings (dict): The flake settings run on this analysis.
     bug_id (int): The monorail bug id to update when analysis is done.
     allow_new_analysis (bool): Indicate whether a new analysis is allowed.
     force (bool): Indicate whether to force a rerun of current analysis.
@@ -50,7 +50,7 @@ def _NeedANewAnalysis(
     analysis.Reset()
     analysis.request_time = time_util.GetUTCNow()
     analysis.status = analysis_status.PENDING
-    analysis.algorithm_parameters = algorithm_parameters
+    analysis.algorithm_parameters = flake_settings
     analysis.version = appengine_util.GetCurrentVersion()
     analysis.triggering_user_email = user_email
     analysis.triggering_source = triggering_source
@@ -112,11 +112,12 @@ def ScheduleAnalysisIfNeeded(
     A MasterFlakeAnalysis instance.
     None if no analysis was scheduled and the user has no permission to.
   """
-  algorithm_parameters = waterfall_config.GetCheckFlakeSettings()
-  use_nearby_neighbor = algorithm_parameters.get('use_nearby_neighbor', False)
+  flake_settings = waterfall_config.GetCheckFlakeSettings()
+  use_nearby_neighbor = flake_settings.get('swarming_rerun', {}).get(
+      'use_nearby_neighbor', False)
 
   need_new_analysis, analysis = _NeedANewAnalysis(
-      normalized_test, original_test, algorithm_parameters, bug_id=bug_id,
+      normalized_test, original_test, flake_settings, bug_id=bug_id,
       allow_new_analysis=allow_new_analysis, force=force, user_email=user_email,
       triggering_source=triggering_source)
 

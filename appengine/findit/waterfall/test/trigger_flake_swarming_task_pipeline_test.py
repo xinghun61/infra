@@ -58,7 +58,8 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     expected_iterations = 50
     self.UpdateUnitTestConfigSettings(
         config_property='check_flake_settings',
-        override_data={'iterations_to_rerun': expected_iterations})
+        override_data={'swarming_rerun': {
+                           'iterations_to_rerun': expected_iterations}})
     self.assertEqual(
         expected_iterations,
         TriggerFlakeSwarmingTaskPipeline()._GetIterationsToRerun())

@@ -89,21 +89,28 @@ class FinditConfig(VersionedConfig):
   # }
   action_settings = ndb.JsonProperty(indexed=False, default={})
 
-  # A dict containing settings for identifying the regression range that
-  # introduces test flakiness. For example,
+  # A dict containing settings for identifying the CL that introduced test
+  # flakiness. For example,
   # {
-  #     'lower_flake_threshold': 0.02,
-  #     'upper_flake_threshold': 0.98,
-  #     'max_flake_in_a_row': 4,
-  #     'max_stable_in_a_row': 4,
-  #     'iterations_to_rerun': 100,
-  #     'max_build_numbers_to_look_back': 500,
+  #     'swarming_rerun': {
+  #         'lower_flake_threshold': 0.02,
+  #         'upper_flake_threshold': 0.98,
+  #         'max_flake_in_a_row': 4,
+  #         'max_stable_in_a_row': 4,
+  #         'iterations_to_rerun': 100,
+  #         'max_build_numbers_to_look_back': 500,
+  #         'dive_rate_threshold': 0.4,
+  #         'max_dive_in_a_row': 4,
+  #     },
+  #     'try_job_rerun': {
+  #         'lower_flake_threshold': 0.02,
+  #         'upper_flake_threshold': 0.98,
+  #         'max_flake_in_a_row': 4,
+  #         'max_stable_in_a_row': 0,
+  #         'iterations_to_rerun': 100
+  #     }
   #     'update_monorail_bug': False,
-  #     'dive_rate_threshold': 0.4,
-  #     'max_dive_in_a_row': 4,
+  #     'minimum_confidence_score_to_run_tryjobs': 0.6
   # }
   check_flake_settings = ndb.JsonProperty(indexed=False, default={})
 
-  # A dict containing try job settings for identifying a cl that introduced
-  # test flakiness.
-  check_flake_try_job_settings = ndb.JsonProperty(indexed=False, default={})

@@ -142,14 +142,25 @@ class MastersTest(wf_testcase.WaterfallTestCase):
   def testGetCheckFlakeSettings(self):
     self.assertEqual(
         {
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True,
-            'max_dive_in_a_row': 4,
-            'dive_rate_threshold': 0.4,
+            'swarming_rerun': {
+                'lower_flake_threshold': 0.02,
+                'upper_flake_threshold': 0.98,
+                'max_flake_in_a_row': 4,
+                'max_stable_in_a_row': 4,
+                'iterations_to_rerun': 100,
+                'max_build_numbers_to_look_back': 1000,
+                'use_nearby_neighbor': True,
+                'max_dive_in_a_row': 4,
+                'dive_rate_threshold': 0.4
+            },
+            'try_job_rerun': {
+                'lower_flake_threshold': 0.02,
+                'upper_flake_threshold': 0.98,
+                'max_flake_in_a_row': 1,
+                'max_stable_in_a_row': 0,
+                'iterations_to_rerun': 100
+            },
+            'update_monorail_bug': False,
+            'minimum_confidence_score_to_run_tryjobs': 0.6
         },
         waterfall_config.GetCheckFlakeSettings())

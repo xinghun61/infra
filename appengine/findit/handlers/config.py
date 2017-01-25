@@ -189,7 +189,7 @@ def _ValidateActionSettings(settings):
               settings.get('cr_notification_latency_limit_minutes'), int))
 
 
-def _ValidateCheckFlakeSettings(settings):
+def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):
   return (isinstance(settings, dict) and
           isinstance(settings.get('lower_flake_threshold'), float) and
           isinstance(settings.get('upper_flake_threshold'), float) and
@@ -198,9 +198,28 @@ def _ValidateCheckFlakeSettings(settings):
           isinstance(settings.get('iterations_to_rerun'), int) and
           isinstance(settings.get('max_build_numbers_to_look_back'), int) and
           isinstance(settings.get('use_nearby_neighbor'), bool) and
-          isinstance(settings.get('update_monorail_bug'), bool) and
           isinstance(settings.get('max_dive_in_a_row'), int) and
           isinstance(settings.get('dive_rate_threshold'), float))
+
+
+def _ValidateFlakeAnalyzerTryJobRerunSettings(settings):
+  return (isinstance(settings, dict) and
+          isinstance(settings.get('lower_flake_threshold'), float) and
+          isinstance(settings.get('upper_flake_threshold'), float) and
+          isinstance(settings.get('max_flake_in_a_row'), int) and
+          isinstance(settings.get('max_stable_in_a_row'), int) and
+          isinstance(settings.get('iterations_to_rerun'), int))
+
+
+def _ValidateCheckFlakeSettings(settings):
+  return (isinstance(settings, dict) and
+          _ValidateFlakeAnalyzerSwarmingRerunSettings(
+              settings.get('swarming_rerun')) and
+          _ValidateFlakeAnalyzerTryJobRerunSettings(
+              settings.get('try_job_rerun')) and
+          isinstance(settings.get('minimum_confidence_score_to_run_tryjobs'),
+                     float) and
+          isinstance(settings.get('update_monorail_bug'), bool))
 
 
 # Maps config properties to their validation functions.

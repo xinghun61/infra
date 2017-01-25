@@ -401,7 +401,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   def testGetNextFlakySingleFlakyDataPoint(self):
     data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=100)]
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_try_job_settings'], 0)
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
     self.assertEqual(99, next_commit_position)
     self.assertIsNone(suspected_commit_position)
 
@@ -411,7 +412,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                    _GenerateDataPoint(pass_rate=0.8, commit_position=97),
                    _GenerateDataPoint(pass_rate=0.8, commit_position=94)]
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_try_job_settings'], 0)
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
     self.assertEqual(90, next_commit_position)
     self.assertIsNone(suspected_commit_position)
 
@@ -419,7 +421,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=2),
                    _GenerateDataPoint(pass_rate=0.8, commit_position=1)]
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_try_job_settings'], 0)
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
 
     self.assertEqual(0, next_commit_position)
     self.assertIsNone(suspected_commit_position)
@@ -429,7 +432,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                    _GenerateDataPoint(pass_rate=0.8, commit_position=3),
                    _GenerateDataPoint(pass_rate=1.0, commit_position=0)]
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_try_job_settings'], 0)
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
     self.assertEqual(1, next_commit_position)
     self.assertIsNone(suspected_commit_position)
 
@@ -438,7 +442,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                    _GenerateDataPoint(pass_rate=0.8, commit_position=3),
                    _GenerateDataPoint(pass_rate=0.8, commit_position=0)]
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_try_job_settings'], 0)
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
 
     self.assertIsNone(next_commit_position)
     self.assertEqual(0, suspected_commit_position)
@@ -451,7 +456,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                    _GenerateDataPoint(pass_rate=1.0, commit_position=90)]
 
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_try_job_settings'], 0)
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
 
     self.assertIsNone(suspected_commit_position)
     self.assertEqual(next_commit_position, 91)
@@ -465,7 +471,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                    _GenerateDataPoint(pass_rate=1.0, commit_position=91),
                    _GenerateDataPoint(pass_rate=1.0, commit_position=90)]
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_try_job_settings'], 0)
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
 
     self.assertIsNone(suspected_commit_position)
     self.assertEqual(next_commit_position, 93)
@@ -474,7 +481,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=100),
                    _GenerateDataPoint(pass_rate=1.0, commit_position=99)]
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_try_job_settings'], 0)
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
 
     self.assertIsNone(next_commit_position)
     self.assertEqual(suspected_commit_position, 100)
@@ -489,7 +497,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                    _GenerateDataPoint(pass_rate=1.0, commit_position=91),
                    _GenerateDataPoint(pass_rate=1.0, commit_position=90)]
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_try_job_settings'], 0)
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
 
     self.assertEqual(94, suspected_commit_position)
     self.assertIsNone(next_commit_position)
@@ -498,7 +507,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=100),
                    _GenerateDataPoint(pass_rate=-1, commit_position=99)]
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_try_job_settings'], 0)
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
 
     # This case should be handled by the caller of _GetNextCommitPosition
     self.assertIsNone(suspected_commit_position)
@@ -509,7 +519,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     # not have been None and not triggered try jobs to begin with.
     data_points = [_GenerateDataPoint(pass_rate=-1, commit_position=100)]
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_try_job_settings'], 0)
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
 
     self.assertIsNone(suspected_commit_position)
     self.assertIsNone(next_commit_position)

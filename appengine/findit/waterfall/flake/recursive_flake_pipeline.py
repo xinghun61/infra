@@ -28,6 +28,14 @@ from waterfall.trigger_flake_swarming_task_pipeline import (
 
 
 _NO_BUILD_NUMBER = -1
+_DEFAULT_LOWER_FLAKE_THRESHOLD = 0.02
+_DEFAULT_UPPER_FLAKE_THRESHOLD = 0.98
+_DEFAULT_MAX_STABLE_IN_A_ROW = 4
+_DEFAULT_MAX_FLAKE_IN_A_ROW = 4
+_DEFAULT_MAX_DIVE_IN_A_ROW = 4
+_DEFAULT_DIVE_RATE_THRESHOLD = 0.4
+_DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
+_DEFAULT_MAX_BUILD_NUMBERS = 500
 
 
 def _UpdateAnalysisStatusUponCompletion(
@@ -253,7 +261,7 @@ class RecursiveFlakePipeline(BasePipeline):
 
     # TODO(lijeffrey): Allow custom parameters supplied by user.
     iterations = waterfall_config.GetCheckFlakeSettings().get(
-        'iterations_to_rerun')
+        'swarming_rerun', {}).get('iterations_to_rerun', 100)
     actual_run_build_number = _GetBestBuildNumberToRun(
         master_name, builder_name, preferred_run_build_number, step_name,
         test_name, step_size, iterations) if use_nearby_neighbor else (
@@ -280,14 +288,14 @@ def _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
       pass_rate < lower_flake_threshold or pass_rate > upper_flake_threshold)
 
 
-def _GetNextBuildNumber(data_points, flake_settings):
+def _GetNextBuildNumber(data_points, algorithm_settings):
   """Finds the next build to be checked flakiness on, or gets final result.
 
   Args:
     data_points (list): A list of data points of already-completed tasks
         for this analysis. Data_points are sorted by build_numbers in descending
         order.
-    flake_settings (dict): A dict of parameters for algorithms.
+    algorithm_settings (dict): A dict of parameters for algorithms.
 
   Returns:
     (next_build_number, suspected_build): The next build number to check
@@ -300,12 +308,18 @@ def _GetNextBuildNumber(data_points, flake_settings):
   # A description of this algorithm can be found at:
   # https://docs.google.com/document/d/1wPYFZ5OT998Yn7O8wGDOhgfcQ98mknoX13AesJaS6ig/edit
   # Get the last result.
-  lower_flake_threshold = flake_settings.get('lower_flake_threshold')
-  upper_flake_threshold = flake_settings.get('upper_flake_threshold')
-  max_stable_in_a_row = flake_settings.get('max_stable_in_a_row')
-  max_flake_in_a_row = flake_settings.get('max_flake_in_a_row')
-  max_dive_in_a_row = flake_settings.get('max_dive_in_a_row')
-  dive_rate_threshold = flake_settings.get('dive_rate_threshold')
+  lower_flake_threshold = algorithm_settings.get(
+      'lower_flake_threshold', _DEFAULT_LOWER_FLAKE_THRESHOLD)
+  upper_flake_threshold = algorithm_settings.get(
+      'upper_flake_threshold', _DEFAULT_UPPER_FLAKE_THRESHOLD)
+  max_stable_in_a_row = algorithm_settings.get(
+      'max_stable_in_a_row', _DEFAULT_MAX_STABLE_IN_A_ROW)
+  max_flake_in_a_row = algorithm_settings.get(
+      'max_flake_in_a_row', _DEFAULT_MAX_STABLE_IN_A_ROW)
+  max_dive_in_a_row = algorithm_settings.get(
+      'max_dive_in_a_row', _DEFAULT_MAX_DIVE_IN_A_ROW)
+  dive_rate_threshold = algorithm_settings.get(
+      'dive_rate_threshold', _DEFAULT_DIVE_RATE_THRESHOLD)
 
   stables_in_a_row = 0
   flakes_in_a_row = 0
@@ -440,15 +454,17 @@ class NextBuildNumberPipeline(BasePipeline):
       return
 
     flake_settings = waterfall_config.GetCheckFlakeSettings()
+    algorithm_settings = flake_settings.get('swarming_rerun', {})
+
     data_points = sorted(
         analysis.data_points, key=lambda k: k.build_number,
         reverse=True)
     # Figure out what build_number to trigger a swarming rerun on next, if any.
     next_build_number, suspected_build = _GetNextBuildNumber(
-        data_points, flake_settings)
+        data_points, algorithm_settings)
 
-    max_build_numbers_to_look_back = flake_settings.get(
-        'max_build_numbers_to_look_back')
+    max_build_numbers_to_look_back = algorithm_settings.get(
+        'max_build_numbers_to_look_back', _DEFAULT_MAX_BUILD_NUMBERS)
     last_build_number = max(
         0, triggering_build_number - max_build_numbers_to_look_back)
 
@@ -465,7 +481,11 @@ class NextBuildNumberPipeline(BasePipeline):
           analysis, suspected_build, analysis_status.COMPLETED,
           None, build_confidence_score=build_confidence_score)
 
-      if build_confidence_score is None or build_confidence_score < 0.6:
+      minimum_confidence_score_to_run_tryjobs = flake_settings.get(
+          'minimum_confidence_score_to_run_tryjobs',
+          _DEFAULT_MINIMUM_CONFIDENCE_SCORE)
+      if (build_confidence_score is None or
+          build_confidence_score < minimum_confidence_score_to_run_tryjobs):
         # If no suspected build or confidence is too low, bail out on try jobs.
         # Based on analysis of historical data, 60% confidence could filter out
         # almost all false positives.

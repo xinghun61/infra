@@ -87,16 +87,26 @@ _MOCK_ACTION_SETTINGS = {
 }
 
 _MOCK_CHECK_FLAKE_SETTINGS = {
-    'lower_flake_threshold': 0.02,
-    'upper_flake_threshold': 0.98,
-    'max_flake_in_a_row': 4,
-    'max_stable_in_a_row': 4,
-    'iterations_to_rerun': 100,
-    'max_build_numbers_to_look_back': 1000,
-    'use_nearby_neighbor': True,
+    'swarming_rerun': {
+        'lower_flake_threshold': 0.02,
+        'upper_flake_threshold': 0.98,
+        'max_flake_in_a_row': 4,
+        'max_stable_in_a_row': 4,
+        'iterations_to_rerun': 100,
+        'max_build_numbers_to_look_back': 1000,
+        'max_dive_in_a_row': 4,
+        'dive_rate_threshold': 0.4,
+        'use_nearby_neighbor': True,
+    },
+    'try_job_rerun': {
+        'lower_flake_threshold': 0.02,
+        'upper_flake_threshold': 0.98,
+        'max_flake_in_a_row': 0,
+        'max_stable_in_a_row': 0,
+        'iterations_to_rerun': 100,
+    },
     'update_monorail_bug': True,
-    'max_dive_in_a_row': 4,
-    'dive_rate_threshold': 0.4,
+    'minimum_confidence_score_to_run_tryjobs': 0.6
 }
 
 _MOCK_VERSION_NUMBER = 12
@@ -814,9 +824,60 @@ class ConfigTest(testing.AppengineTestCase):
             'cr_notification_latency_limit_minutes': 1000,
         }))
 
-  def testValidateCheckFlakeSettings(self):
-    self.assertFalse(config._ValidateCheckFlakeSettings({}))
-    self.assertFalse(config._ValidateCheckFlakeSettings(
+  def testValidateFlakeAnalyzerTryJobRerunSettings(self):
+    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings({}))
+    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings(
+        {
+            'lower_flake_threshold': 1,  # Should be a float.
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100,
+        }))
+    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 'a',  # Should be a float.
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100,
+        }))
+    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': [],  # Should be an int.
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100,
+        }))
+    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': {},  # Should be an int.
+            'iterations_to_rerun': 100,
+        }))
+    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 3.2,  # Should be an int.
+        }))
+    self.assertTrue(config._ValidateFlakeAnalyzerTryJobRerunSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 4,
+        }))
+
+  def testValidateFlakeAnalyzerSwarmingRerunSettings(self):
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings({}))
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
             'lower_flake_threshold': 1,  # Should be a float.
             'upper_flake_threshold': 0.98,
@@ -826,7 +887,7 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'use_nearby_neighbor': True
         }))
-    self.assertFalse(config._ValidateCheckFlakeSettings(
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 'a',  # Should be a float.
@@ -836,7 +897,7 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'use_nearby_neighbor': True
         }))
-    self.assertFalse(config._ValidateCheckFlakeSettings(
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
@@ -846,7 +907,7 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'use_nearby_neighbor': True
         }))
-    self.assertFalse(config._ValidateCheckFlakeSettings(
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
@@ -856,7 +917,7 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'use_nearby_neighbor': True
         }))
-    self.assertFalse(config._ValidateCheckFlakeSettings(
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
@@ -866,7 +927,7 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'use_nearby_neighbor': True
         }))
-    self.assertFalse(config._ValidateCheckFlakeSettings(
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
@@ -876,7 +937,7 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 'a',  # Should be an int.
             'use_nearby_neighbor': True
         }))
-    self.assertFalse(config._ValidateCheckFlakeSettings(
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
@@ -886,7 +947,7 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 100,
             'use_nearby_neighbor': []  # Should be a bool.
         }))
-    self.assertFalse(config._ValidateCheckFlakeSettings(
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
@@ -896,7 +957,7 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'update_monorail_bug': 'True',  # Should be a bool.
         }))
-    self.assertFalse(config._ValidateCheckFlakeSettings(
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
@@ -908,7 +969,7 @@ class ConfigTest(testing.AppengineTestCase):
             'max_dive_in_a_row': 4.0,  # Should be an int.
             'dive_rate_threshold': 0.4,
         }))
-    self.assertFalse(config._ValidateCheckFlakeSettings(
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
@@ -919,7 +980,7 @@ class ConfigTest(testing.AppengineTestCase):
             'update_monorail_bug': True,
             'dive_rate_threshold': 40,  # Should be a float.
         }))
-    self.assertTrue(config._ValidateCheckFlakeSettings(
+    self.assertTrue(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,

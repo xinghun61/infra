@@ -19,6 +19,7 @@ from model import analysis_status
 from model import result_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
+from waterfall import waterfall_config
 from waterfall.flake import confidence
 from waterfall.flake.process_flake_try_job_result_pipeline import (
     ProcessFlakeTryJobResultPipeline)
@@ -36,6 +37,12 @@ from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 _GIT_REPO = CachedGitilesRepository(
     HttpClientAppengine(),
     'https://chromium.googlesource.com/chromium/src.git')
+
+
+_DEFAULT_LOWER_FLAKE_THRESHOLD = 0.02
+_DEFAULT_UPPER_FLAKE_THRESHOLD = 0.98
+_DEFAULT_MAX_STABLE_IN_A_ROW = 0
+_DEFAULT_MAX_FLAKE_IN_A_ROW = 1
 
 
 def CreateCulprit(revision, commit_position, confidence_score,
@@ -136,13 +143,13 @@ def _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
       pass_rate < lower_flake_threshold or pass_rate > upper_flake_threshold)
 
 
-def _GetNextCommitPosition(data_points, flake_settings,
+def _GetNextCommitPosition(data_points, algorithm_settings,
                            lower_boundary_commit_position):
   """Finds the next commit_position to analyze, or gets final result.
 
   Args:
     data_points (list): Already-completed data points.
-    flake_settings (dict): Parameters for flakiness algorithm.
+    algorithm_settings (dict): Parameters for flakiness lookback algorithm.
     lower_boundary_commit_position (int): The commit position not to pass when
         looking back.
 
@@ -154,10 +161,14 @@ def _GetNextCommitPosition(data_points, flake_settings,
         suspected_commit_position is found, next_commit_position will be
         None. If no findings eventually, both will be None.
   """
-  lower_flake_threshold = flake_settings.get('lower_flake_threshold')
-  upper_flake_threshold = flake_settings.get('upper_flake_threshold')
-  max_stable_in_a_row = flake_settings.get('max_stable_in_a_row')
-  max_flake_in_a_row = flake_settings.get('max_flake_in_a_row')
+  lower_flake_threshold = algorithm_settings.get(
+      'lower_flake_threshold', _DEFAULT_LOWER_FLAKE_THRESHOLD)
+  upper_flake_threshold = algorithm_settings.get(
+      'upper_flake_threshold', _DEFAULT_UPPER_FLAKE_THRESHOLD)
+  max_stable_in_a_row = algorithm_settings.get(
+      'max_stable_in_a_row', _DEFAULT_MAX_STABLE_IN_A_ROW)
+  max_flake_in_a_row = algorithm_settings.get(
+      'max_flake_in_a_row', _DEFAULT_MAX_FLAKE_IN_A_ROW)
 
   stables_in_a_row = 0
   flakes_in_a_row = 0
@@ -284,14 +295,6 @@ class NextCommitPositionPipeline(BasePipeline):
       yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
       return
 
-    # TODO(lijeffrey) Move parameters to config.
-    flake_settings = {
-        'lower_flake_threshold': 0.02,
-        'upper_flake_threshold': 0.98,
-        'max_flake_in_a_row': 1,
-        'max_stable_in_a_row': 0,
-    }
-
     suspected_build_data_point = flake_analysis.GetDataPointOfSuspectedBuild()
     lower_boundary_commit_position = (
         suspected_build_data_point.previous_build_commit_position + 1)
@@ -301,9 +304,12 @@ class NextCommitPositionPipeline(BasePipeline):
     # when determining the next commit position to test.
     try_job_data_points = _GetTryJobDataPoints(flake_analysis)
 
+    algorithm_settings = waterfall_config.GetCheckFlakeSettings().get(
+        'try_job_rerun', {})
+
     # Figure out what commit position to trigger the next try job on, if any.
     next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        try_job_data_points, flake_settings, lower_boundary_commit_position)
+        try_job_data_points, algorithm_settings, lower_boundary_commit_position)
 
     if (next_commit_position is None or
         next_commit_position == suspected_build_data_point.commit_position):
@@ -312,7 +318,7 @@ class NextCommitPositionPipeline(BasePipeline):
         suspected_commit_position = next_commit_position
 
       confidence_score = confidence.SteppinessForCommitPosition(
-         flake_analysis.data_points, suspected_commit_position)
+          flake_analysis.data_points, suspected_commit_position)
       culprit_revision = suspected_build_data_point.GetRevisionAtCommitPosition(
           suspected_commit_position)
       culprit = CreateCulprit(

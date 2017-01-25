@@ -37,7 +37,9 @@ class TriggerFlakeSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
     return swarming_task
 
   def _GetIterationsToRerun(self):
-    return waterfall_config.GetCheckFlakeSettings().get('iterations_to_rerun')
+    flake_settings = waterfall_config.GetCheckFlakeSettings()
+    swarming_rerun_settings = flake_settings.get('swarming_rerun', {})
+    return swarming_rerun_settings.get('iterations_to_rerun', 100)
 
   def _OnTaskTriggered(self):  # pragma: no cover.
     monitoring.swarming_tasks.increment(
