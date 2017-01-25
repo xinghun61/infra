@@ -1218,18 +1218,14 @@ class _HotlistFlipper(_Flipper):
     harmonized_config = tracker_bizobj.HarmonizeConfigs(config_list)
 
 
-    (sorted_issues, hotlist_issues_context,
+    (sorted_issues, _hotlist_issues_context,
      _users) = hotlist_helpers.GetSortedHotlistIssues(
          mr, self.hotlist.items, issues_list, harmonized_config,
          self.profiler, self.services)
 
     (prev_iid, cur_index,
      next_iid) = features_bizobj.DetermineHotlistIssuePosition(
-         current_issue, [(issue.issue_id,
-                          hotlist_issues_context[issue.issue_id]) for
-                         issue in sorted_issues])
-    # TODO(jojwang): confirm DeterminhotlistsissuePosition does not
-    # need each issue's rank
+         current_issue, [issue.issue_id for issue in sorted_issues])
 
     logging.info('prev_iid, cur_index, next_iid is %r %r %r',
                  prev_iid, cur_index, next_iid)

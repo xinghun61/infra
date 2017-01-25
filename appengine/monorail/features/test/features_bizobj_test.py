@@ -20,8 +20,7 @@ class FeaturesBizobjTest(unittest.TestCase):
     self.hotlistitems = [features_pb2.MakeHotlistItem(
         issue.issue_id, rank=rank*10, adder_id=111L, date_added=3) for
                            rank, issue in enumerate(self.issues)]
-    self.iid_rank_tuples = [(item.issue_id, item.rank) for item
-                            in self.hotlistitems]
+    self.iids = [item.issue_id for item in self.hotlistitems]
 
   def testIssueIsInHotlist(self):
     hotlist = features_pb2.Hotlist(items=self.hotlistitems)
@@ -88,34 +87,34 @@ class FeaturesBizobjTest(unittest.TestCase):
   def testDetermineHotlistIssuePosition(self):
     # normal
     prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
-        self.issues[2], self.iid_rank_tuples)
+        self.issues[2], self.iids)
     self.assertEqual(prev_iid, self.hotlistitems[1].issue_id)
     self.assertEqual(index, 2)
     self.assertEqual(next_iid, self.hotlistitems[3].issue_id)
 
     # end of list
     prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
-        self.issues[4], self.iid_rank_tuples)
+        self.issues[4], self.iids)
     self.assertEqual(prev_iid, self.hotlistitems[3].issue_id)
     self.assertEqual(index, 4)
     self.assertEqual(next_iid, None)
 
     # beginning of list
     prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
-        self.issues[0], self.iid_rank_tuples)
+        self.issues[0], self.iids)
     self.assertEqual(prev_iid, None)
     self.assertEqual(index, 0)
     self.assertEqual(next_iid, self.hotlistitems[1].issue_id)
 
     # one item in list
     prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
-        self.issues[2], [self.iid_rank_tuples[2]])
+        self.issues[2], [self.iids[2]])
     self.assertEqual(prev_iid, None)
     self.assertEqual(index, 0)
     self.assertEqual(next_iid, None)
 
     prev_iid, index, next_iid = features_bizobj.DetermineHotlistIssuePosition(
-        self.issues[2], [self.iid_rank_tuples[3]])
+        self.issues[2], [self.iids[3]])
     self.assertEqual(prev_iid, None)
     self.assertEqual(index, None)
     self.assertEqual(next_iid, None)
