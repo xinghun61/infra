@@ -8,7 +8,6 @@ import mock
 from common import constants
 from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
-from model import result_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
@@ -290,7 +289,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(-1, result)
     self.assertEqual(next_run, -1)
 
-
   def testGetNextRunFlakedOut(self):
     master_name = 'm'
     builder_name = 'b'
@@ -367,7 +365,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(result, 95)
     self.assertEqual(next_run, -1)
 
-
   def testSequentialNextRunDone(self):
     master_name = 'm'
     builder_name = 'b'
@@ -432,7 +429,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
     self.assertEquals(100, result)
     self.assertEqual(-1, next_run)
-
 
   def testNextBuildWhenDivedOutSequence(self):
     data_points = self._GenerateDataPoints(
@@ -795,10 +791,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
       recursive_flake_pipeline.confidence, 'SteppinessForCommitPosition',
       return_value=0.8)
   @mock.patch.object(
-      recursive_flake_pipeline.MasterFlakeAnalysis,
-      'GetDataPointOfSuspectedBuild',
-      return_value=DataPoint(blame_list=['r1'], commit_position=10))
-  @mock.patch.object(
       recursive_flake_try_job_pipeline, 'CreateCulprit',
       return_value=FlakeCulprit.Create('cr', 'r1', 10, 'http://', 0.8))
   def testNextBuildPipelineForSuspectedBuildWithOnlyOneCommit(self, *_):
@@ -821,6 +813,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     data_point = DataPoint()
     data_point.pass_rate = .08
+    data_point.blame_list = ['r1']
+    data_point.commit_position = 10
     data_point.build_number = 100
     analysis.data_points.append(data_point)
     analysis.put()
@@ -856,10 +850,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       recursive_flake_pipeline.confidence, 'SteppinessForBuild',
       return_value=0.7)
-  @mock.patch.object(
-      recursive_flake_pipeline.MasterFlakeAnalysis,
-      'GetDataPointOfSuspectedBuild',
-      return_value=DataPoint(blame_list=['r1', 'r2', 'r3'], commit_position=10))
   def testNextBuildPipelineForSuspectedBuildWithMultipleCommits(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -881,6 +871,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     data_point = DataPoint()
     data_point.pass_rate = .08
     data_point.build_number = 100
+    data_point.blame_list = ['r1', 'r2', 'r3']
+    data_point.commit_position = 10
     analysis.data_points.append(data_point)
     analysis.put()
 

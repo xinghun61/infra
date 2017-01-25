@@ -5,7 +5,6 @@
 from datetime import timedelta
 import logging
 import random
-import textwrap
 
 from common import appengine_util
 from common import constants
@@ -32,8 +31,7 @@ _NO_BUILD_NUMBER = -1
 
 
 def _UpdateAnalysisStatusUponCompletion(
-    analysis, suspected_build, status, error,
-    build_confidence_score=None, culprit=None):
+    analysis, suspected_build, status, error, build_confidence_score=None):
   if suspected_build == _NO_BUILD_NUMBER:
     analysis.end_time = time_util.GetUTCNow()
     analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
@@ -43,7 +41,6 @@ def _UpdateAnalysisStatusUponCompletion(
   analysis.error = error
   analysis.status = status
   analysis.confidence_in_suspected_build = build_confidence_score
-  analysis.culprit = culprit
 
   analysis.put()
 
@@ -157,7 +154,7 @@ def _GetBestBuildNumberToRun(
 
       # Keep searching, but keeping this candidate in mind. Pending tasks are
       # considered, but running tasks are given higher priority.
-      # TODO (lijeffrey): A further optimization can be to pick the swarming
+      # TODO(lijeffrey): A further optimization can be to pick the swarming
       # task with the earliest ETA.
       if (candidate_build_number is None or
           (candidate_flake_swarming_task_status == analysis_status.PENDING and
@@ -335,8 +332,9 @@ def _GetNextBuildNumber(data_points, flake_settings):
       dives_in_a_row = 0
       stables_happened = True
 
-      # TODO (crbug.com/670888): Pin point a stable build rather than looking
-      # for stable region to further narrow down the sequential search range.
+      # TODO(http://crbug.com/670888): Pin point a stable build rather than
+      # looking for stable region to further narrow down the sequential search
+      # range.
       if stables_in_a_row <= max_stable_in_a_row:
         # No stable region yet, keep searching.
         next_build_number = build_number - 1
@@ -415,7 +413,7 @@ class NextBuildNumberPipeline(BasePipeline):
   # Unused argument - pylint: disable=W0613
   def run(
       self, master_name, builder_name, triggering_build_number,
-       current_build_number, step_name, test_name, version_number,
+      current_build_number, step_name, test_name, version_number,
       use_nearby_neighbor=False, manually_triggered=False):
     # Get MasterFlakeAnalysis success list corresponding to parameters.
     analysis = MasterFlakeAnalysis.GetVersion(
@@ -462,49 +460,42 @@ class NextBuildNumberPipeline(BasePipeline):
         build_confidence_score = confidence.SteppinessForBuild(
             analysis.data_points, suspected_build)
 
-      if (build_confidence_score is None or build_confidence_score < 0.6):
+      # Update suspected build and the confidence score.
+      _UpdateAnalysisStatusUponCompletion(
+          analysis, suspected_build, analysis_status.COMPLETED,
+          None, build_confidence_score=build_confidence_score)
+
+      if build_confidence_score is None or build_confidence_score < 0.6:
         # If no suspected build or confidence is too low, bail out on try jobs.
         # Based on analysis of historical data, 60% confidence could filter out
-        # almost all false positive.
-        _UpdateAnalysisStatusUponCompletion(
-            analysis, suspected_build, analysis_status.COMPLETED,
-            None, build_confidence_score=build_confidence_score)
-        logging.info('Skipping try jobs due to insufficient confidence.')
+        # almost all false positives.
+        logging.info('Skipping try jobs due to insufficient confidence')
       else:
+        # Hook up with try-jobs.
         suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
+
         if suspected_build_point and suspected_build_point.blame_list:
           if len(suspected_build_point.blame_list) > 1:
-            # Update suspected build and the confidence score.
-            _UpdateAnalysisStatusUponCompletion(
-                analysis, suspected_build, analysis_status.COMPLETED,
-                None, build_confidence_score=build_confidence_score)
             logging.info('Running try-jobs against commits in suspected build')
-
-            # Hook up with try-job.
             start_commit_position = suspected_build_point.commit_position - 1
             start_revision = suspected_build_point.GetRevisionAtCommitPosition(
                 start_commit_position)
             yield RecursiveFlakeTryJobPipeline(
-               analysis.key.urlsafe(), start_commit_position, start_revision)
+                analysis.key.urlsafe(), start_commit_position, start_revision)
             return  # No update to bug yet.
           else:
             # Single commit is the culprit.
-            culprit_confidence_score = confidence.SteppinessForCommitPosition(
-               analysis.data_points, suspected_build_point.commit_position)
-            culprit = recursive_flake_try_job_pipeline.CreateCulprit(
-               suspected_build_point.git_hash,
-               suspected_build_point.commit_position,
-               culprit_confidence_score)
-            # Update suspected build and the confidence score.
-            _UpdateAnalysisStatusUponCompletion(
-                analysis, suspected_build, analysis_status.COMPLETED,
-                None, build_confidence_score=build_confidence_score,
-                culprit=culprit)
             logging.info('Single commit in the blame list of suspected build')
+            culprit_confidence_score = confidence.SteppinessForCommitPosition(
+                analysis.data_points, suspected_build_point.commit_position)
+            culprit = recursive_flake_try_job_pipeline.CreateCulprit(
+                suspected_build_point.git_hash,
+                suspected_build_point.commit_position,
+                culprit_confidence_score)
+
+            analysis.culprit = culprit
+            analysis.put()
         else:
-          _UpdateAnalysisStatusUponCompletion(
-              analysis, suspected_build, analysis_status.COMPLETED,
-              None, build_confidence_score=build_confidence_score)
           logging.info('No suspected build or empty blame list')
 
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())
