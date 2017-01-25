@@ -184,7 +184,7 @@ def GetResults(crashes, client_id, app_id, git_hash, result_path,
 # TODO(crbug.com/662540): Add unittests.
 def DeltaEvaluator(git_hash1, git_hash2,
                    client_id, app_id,
-                   start_date, end_date, batch_size,
+                   start_date, end_date, batch_size, max_n,
                    property_values=None, verbose=False):  # pragma: no cover.
   """Evaluates delta between git_hash1 and git_hash2 on a set of Testcases.
 
@@ -199,6 +199,7 @@ def DeltaEvaluator(git_hash1, git_hash2,
       'cluterfuzz'.
     app_id (str): Appengine app id to query.
     batch_size (int): Size of a batch that can be queried at one time.
+    max_n: (int): Maximum total number of crashes.
     property_values (dict): Property values to query.
     batch_size (int): The size of crashes that can be queried at one time.
     verbose (bool): If True, print all the findit results.
@@ -221,12 +222,17 @@ def DeltaEvaluator(git_hash1, git_hash2,
                                            end_date=end_date,
                                            batch_size=batch_size,
                                            batch_run=True)):
+      # Truncate crashes and make it contain at most max_n crashes.
+      if crash_count + len(crashes) > max_n:
+        crashes = crashes[:(max_n - crash_count)]
+
       results = []
       for git_hash in [git_hash1, git_hash2]:
+        # Generate result path to store culprit results for this batch.
         result_path = os.path.join(
             PREDATOR_RESULTS_DIRECTORY, delta_util.GenerateFileName(
                 client_id, property_values, start_date, end_date,
-                batch_size, index, git_hash))
+                batch_size, index, max_n, git_hash))
         # Get the culprit results of this batch of crashes.
         results.append(GetResults(crashes, client_id, app_id,
                                   git_hash, result_path,
@@ -239,6 +245,8 @@ def DeltaEvaluator(git_hash1, git_hash2,
       print '========= Delta of this batch ========='
       delta_util.PrintDelta(batch_deltas, len(crashes), app_id)
       deltas.update(batch_deltas)
+      if crash_count >= max_n:
+        break
 
     return deltas, crash_count
   finally:

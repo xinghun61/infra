@@ -28,10 +28,20 @@ _A_YEAR_AGO = (date.today() - timedelta(days=365)).strftime('%Y-%m-%d')
 # App Engine APIs will fail if batch size is more than 1000.
 _MAX_BATCH_SIZE = 1000
 _DEFAULT_BATCH_SIZE = _MAX_BATCH_SIZE
+_DEFAULT_MAX_N = 100
 
 DELTA_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
                                        'delta_results')
 CHROMIUM_REPO = 'https://chromium.googlesource.com/chromium/src'
+
+
+def GenerateDeltaResultPath(directory, git_hash1, git_hash2,
+                            since_date, until_date, max_n):
+  """Returns the file path of delta result."""
+  delta_result_prefix = '%s_%s_%s..%s_max_%d.delta' % (
+      git_hash1[:7], git_hash2[:7], since_date, until_date, max_n)
+
+  return os.path.join(directory, delta_result_prefix)
 
 
 def RunDeltaTest():
@@ -51,7 +61,9 @@ def RunDeltaTest():
       nargs='+',
       default=['HEAD^', 'HEAD'],
       help=('The Predator revisions to be compared. It can take '
-            'one or two revisions seperated by empty spaces.\n'
+            'one or two revisions seperated by empty spaces. N.B. The revision '
+            'can be any format that git can recognize, for example, it can be '
+            'either "97312dbc1" or "HEAD~5"\n'
             '(1) -r rev1 rev2: compare rev1 and rev2\n'
             '(2) -r rev: compare rev and current HEAD\n'
             '(3) no revisions provided, default to compare HEAD^ and HEAD'))
@@ -101,6 +113,13 @@ def RunDeltaTest():
             'APIs would fail, defaults to 1000.'))
 
   argparser.add_argument(
+      '--max',
+      '-m',
+      type=int,
+      default=_DEFAULT_MAX_N,
+      help='The maximum number of crashes we want to check, defaults to 100.')
+
+  argparser.add_argument(
       '--verbose',
       '-v',
       action='store_true',
@@ -124,20 +143,18 @@ def RunDeltaTest():
                   'would fail.', _MAX_BATCH_SIZE)
     sys.exit(1)
 
+  args.batch = min(args.max, args.batch)
+
   # If only one revision provided, default the rev2 to HEAD.
   if len(args.revisions) == 1:
     args.revisions.append('HEAD')
 
   git_hash1 = delta_util.ParseGitHash(args.revisions[0])
   git_hash2 = delta_util.ParseGitHash(args.revisions[1])
-
-  delta_result_prefix = '%s_%s_%s..%s.delta' % (git_hash1[:7], git_hash2[:7],
-                                                args.since, args.until)
-  delta_csv_path = os.path.join(DELTA_RESULTS_DIRECTORY,
-                                '%s.csv' % delta_result_prefix)
-  delta_path = os.path.join(DELTA_RESULTS_DIRECTORY,
-                            delta_result_prefix)
-
+  delta_path = GenerateDeltaResultPath(DELTA_RESULTS_DIRECTORY,
+                                       git_hash1, git_hash1,
+                                       args.since, args.until, args.max)
+  delta_csv_path = delta_path + '.csv'
   # Check if delta results already existed.
   # TODO: this code has race conditions for interacting with the file system.
   if os.path.exists(delta_csv_path):
@@ -155,7 +172,7 @@ def RunDeltaTest():
     # Get delta of results between git_hash1 and git_hash2.
     deltas, crash_num = delta_test.DeltaEvaluator(
         git_hash1, git_hash2, args.client, args.app,
-        start_date=args.since, end_date=args.until,
+        start_date=args.since, end_date=args.until, max_n=args.max,
         batch_size=args.batch, verbose=args.verbose)
     delta_util.FlushResult([deltas, crash_num], delta_path)
     delta_util.WriteDeltaToCSV(deltas, crash_num, args.app,
