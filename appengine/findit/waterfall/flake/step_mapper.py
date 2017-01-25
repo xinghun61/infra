@@ -24,10 +24,10 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
   no_matching_result = (None, None, None, None, None)
 
   # 0. Get step_metadata.
-  step_metadata = buildbot.GetStepMetadata(
+  step_metadata = buildbot.GetStepLog(
       cq_build_step.master_name, cq_build_step.builder_name,
       cq_build_step.build_number, cq_build_step.step_name,
-      http_client)
+      http_client, 'step_metadata')
   if not step_metadata:
     logging.error('Couldn\'t get step_metadata')
     return no_matching_result
@@ -114,9 +114,10 @@ def FindMatchingWaterfallStep(build_step, test_name):
     build_step.wf_builder_name = build_step.builder_name
     build_step.wf_build_number = build_step.build_number
     build_step.wf_step_name = build_step.step_name
-    metadata = buildbot.GetStepMetadata(
+    metadata = buildbot.GetStepLog(
         build_step.master_name, build_step.builder_name,
-        build_step.build_number, build_step.step_name, http_client)
+        build_step.build_number, build_step.step_name, http_client,
+        'step_metadata')
     if not metadata:
       logging.error('Couldn\'t get step_metadata')
       return

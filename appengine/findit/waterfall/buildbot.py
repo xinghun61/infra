@@ -108,16 +108,16 @@ def GetRecentCompletedBuilds(master_name, builder_name, http_client):
   data = {
     'name': master_name
   }
-  response = DownloadJsonData(_MILO_ENDPOINT_MASTER, data, http_client)
-  if not response:
+  response_json = DownloadJsonData(_MILO_ENDPOINT_MASTER, data, http_client)
+  if not response_json:
     return []
   try:
-    response_json = json.loads(response)
+    response_data = json.loads(response_json)
   except Exception:  # pragma: no cover
     logging.error('Failed to load json data for master %s' % master_name)
     return []
   try:
-    decoded_data = base64.b64decode(response_json.get('data'))
+    decoded_data = base64.b64decode(response_data.get('data'))
   except Exception:  # pragma: no cover
     logging.error('Failed to b64decode data for master %s' % master_name)
     return []
@@ -198,14 +198,6 @@ def CreateBuildUrl(master_name, builder_name, build_number):
       master_name, builder_name, build_number)
 
 
-def CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
-  builder_name = urllib.quote(builder_name)
-  step_name = urllib.quote(step_name)
-  return ('https://build.chromium.org/p/%s/builders/%s/builds/%s/'
-          'steps/%s/logs/stdio/text') % (
-              master_name, builder_name, build_number, step_name)
-
-
 def CreateGtestResultPath(master_name, builder_name, build_number, step_name):
   return ('/chrome-gtest-results/buildbot/%s/%s/%s/%s.json.gz') % (
       master_name, builder_name, build_number, step_name)
@@ -227,17 +219,6 @@ def GetBuildDataFromArchive(master_name,
   """Returns the json-format data of the build from build archive."""
   status_code, data = http_client.Get(
       CreateArchivedBuildUrl(master_name, builder_name, build_number))
-  if status_code != 200:
-    return None
-  else:
-    return data
-
-
-def GetStepStdio(master_name, builder_name, build_number,
-                 step_name, http_client):
-  """Returns the raw string of stdio of the specified step."""
-  status_code, data = http_client.Get(
-      CreateStdioLogUrl(master_name, builder_name, build_number, step_name))
   if status_code != 200:
     return None
   else:
@@ -424,7 +405,7 @@ def _GetAnnotationsProto(master_name, builder_name, build_number, http_client):
     return None
 
 
-def _GetStepMetadataFromLogDog(
+def _GetLogFromLogDog(
       master_name, builder_name, build_number, logdog_stream, http_client):
   """Gets step_metadata from LogDog in json format."""
 
@@ -478,33 +459,40 @@ def _GetStepMetadataFromLogDog(
     return None
 
 
-def _ProcessAnnotationsToGetStream(step_name, step):
+def _ProcessAnnotationsToGetStream(step_name, step, log_type='stdout'):
   for substep in step.substep:
     if substep.step.name != step_name:
       continue
 
-    for link in substep.step.other_links:
-      if link.label.lower() == 'step_metadata':
-        return link.logdog_stream.name
+    if log_type.lower() == 'stdout':
+      # Gets stdout_stream.
+      return substep.step.stdout_stream.name
+
+    if log_type.lower() == 'step_metadata':  # pragma: no branch
+      # Gets stream for step_metadata.
+      for link in substep.step.other_links:
+        if link.label.lower() == 'step_metadata':
+          return link.logdog_stream.name
 
   return None
 
 
-def GetStepMetadata(
-    master_name, builder_name, build_number, full_step_name, http_client):
-  """Returns the step metadata."""
+def GetStepLog(master_name, builder_name, build_number,
+               full_step_name, http_client, log_type='stdout'):
+  """Returns the raw string of sepcific log of the specified step."""
+
   # 1. Get annotations proto for the build.
   step = _GetAnnotationsProto(
       master_name, builder_name, build_number, http_client)
   if not step:
     return None
 
-  # 2. Find the log stream info for this step's step_metadata.
-  logdog_stream = _ProcessAnnotationsToGetStream(full_step_name, step)
+  # 2. Find the log stream info for this step's stdout log.
+  logdog_stream = _ProcessAnnotationsToGetStream(full_step_name, step, log_type)
 
-  # 3. Get the step_metadata.
+  # 3. Get the stdout log.
   if not logdog_stream:
     return None
 
-  return _GetStepMetadataFromLogDog(
+  return _GetLogFromLogDog(
       master_name, builder_name, build_number, logdog_stream, http_client)

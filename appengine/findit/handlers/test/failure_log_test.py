@@ -4,20 +4,27 @@
 
 import os
 import re
+import urllib
 
-from google.appengine.ext import testbed
 import webapp2
 import webtest
 
 from testing_utils import testing
 
 from handlers import failure_log
-from waterfall import buildbot
 from model.wf_step import WfStep
 
 # Root directory appengine/findit.
 ROOT_DIR = os.path.join(os.path.dirname(__file__),
                         os.path.pardir, os.path.pardir)
+
+
+def CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
+  builder_name = urllib.quote(builder_name)
+  step_name = urllib.quote(step_name)
+  return ('https://build.chromium.org/p/%s/builders/%s/builds/%s/'
+          'steps/%s/logs/stdio/text') % (
+              master_name, builder_name, build_number, step_name)
 
 
 class FailureLogTest(testing.AppengineTestCase):
@@ -40,7 +47,7 @@ class FailureLogTest(testing.AppengineTestCase):
     builder_name = 'b 1'
     build_number = 123
     step_name = 'compile'
-    step_url = buildbot.CreateStdioLogUrl(
+    step_url = CreateStdioLogUrl(
         master_name, builder_name, build_number, step_name)
 
     self.mock_current_user(user_email='test@google.com', is_admin=True)
@@ -57,7 +64,7 @@ class FailureLogTest(testing.AppengineTestCase):
     builder_name = 'b 1'
     build_number = 123
     step_name = 'compile'
-    step_url = buildbot.CreateStdioLogUrl(
+    step_url = CreateStdioLogUrl(
         master_name, builder_name, build_number, step_name)
 
     step_log = WfStep.Create(master_name, builder_name, build_number, step_name)
@@ -84,7 +91,7 @@ class FailureLogTest(testing.AppengineTestCase):
     builder_name = 'b'
     build_number = 123
     step_name = 'browser_test'
-    step_url = buildbot.CreateStdioLogUrl(
+    step_url = CreateStdioLogUrl(
         master_name, builder_name, build_number, step_name)
 
     step_log = WfStep.Create(master_name, builder_name, build_number, step_name)

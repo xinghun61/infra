@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 import os
 
 from common.pipeline_wrapper import pipeline_handlers
@@ -12,6 +13,38 @@ from waterfall import extract_signal_pipeline
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 from waterfall.test import wf_testcase
 
+ABC_TEST_FAILURE_LOG = """
+    ...
+    ../../content/common/gpu/media/v4l2_video_encode_accelerator.cc:306:12:
+    ...
+"""
+
+
+FAILURE_SIGNALS = {
+  'abc_test': {
+    'files': {
+      'content/common/gpu/media/v4l2_video_encode_accelerator.cc': [306]
+    },
+    'keywords': {}
+  }
+}
+
+
+FAILURE_INFO = {
+  'master_name': 'm',
+  'builder_name': 'b',
+  'build_number': 123,
+  'failed': True,
+  'chromium_revision': 'a_git_hash',
+  'failed_steps': {
+    'abc_test': {
+      'last_pass': 122,
+      'current_failure': 123,
+      'first_failure': 123,
+    }
+  }
+}
+
 
 class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
@@ -20,36 +53,6 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
       self, master_name, builder_name, build_number):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
-
-  ABC_TEST_FAILURE_LOG = """
-      ...
-      ../../content/common/gpu/media/v4l2_video_encode_accelerator.cc:306:12:
-      ...
-  """
-
-  FAILURE_SIGNALS = {
-      'abc_test': {
-          'files': {
-              'content/common/gpu/media/v4l2_video_encode_accelerator.cc': [306]
-          },
-          'keywords': {}
-      }
-  }
-
-  FAILURE_INFO = {
-      'master_name': 'm',
-      'builder_name': 'b',
-      'build_number': 123,
-      'failed': True,
-      'chromium_revision': 'a_git_hash',
-      'failed_steps': {
-          'abc_test': {
-              'last_pass': 122,
-              'current_failure': 123,
-              'first_failure': 123,
-          }
-      }
-  }
 
   def testExtractStorablePortionOfLogWithSmallLogData(self):
     self.mock(ExtractSignalPipeline, 'LOG_DATA_BYTE_LIMIT', 500)
@@ -67,45 +70,37 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     result = extract_signal_pipeline._ExtractStorablePortionOfLog(log_data)
     self.assertEqual(expected_result, result)
 
-  def testWfStepStdioLogAlreadyDownloaded(self):
+  @mock.patch.object(buildbot, 'GetStepLog',
+                     return_value='If used, test should fail!')
+  def testWfStepStdioLogAlreadyDownloaded(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
     step_name = 'abc_test'
     step = WfStep.Create(master_name, builder_name, build_number, step_name)
-    step.log_data = self.ABC_TEST_FAILURE_LOG
+    step.log_data = ABC_TEST_FAILURE_LOG
     step.put()
-
-    step_log_url = buildbot.CreateStdioLogUrl(
-        master_name, builder_name, build_number, step_name)
-    with self.mock_urlfetch() as urlfetch:
-      urlfetch.register_handler(step_log_url, 'If used, test should fail!')
 
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
 
-    pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
-    signals = pipeline.run(self.FAILURE_INFO)
+    pipeline = ExtractSignalPipeline(FAILURE_INFO)
+    signals = pipeline.run(FAILURE_INFO)
 
-    self.assertEqual(self.FAILURE_SIGNALS, signals)
+    self.assertEqual(FAILURE_SIGNALS, signals)
 
-  def MockGetStdiolog(self, master_name, builder_name, build_number, step_name):
-    step_log_url = buildbot.CreateStdioLogUrl(
-        master_name, builder_name, build_number, step_name)
-    with self.mock_urlfetch() as urlfetch:
-      urlfetch.register_handler(step_log_url, self.ABC_TEST_FAILURE_LOG)
-
-  def testWfStepStdioLogNotDownloadedYet(self):
+  @mock.patch.object(buildbot, 'GetStepLog',
+                     return_value=ABC_TEST_FAILURE_LOG)
+  def testWfStepStdioLogNotDownloadedYet(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
     step_name = 'abc_test'
 
-    self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
 
-    pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
+    pipeline = ExtractSignalPipeline(FAILURE_INFO)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -177,7 +172,9 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
   def MockGetGtestJsonResult(self):
     self.mock(buildbot, 'GetGtestResultLog', self._GetGtestResultLog)
 
-  def testGetSignalFromStepLog(self):
+  @mock.patch.object(buildbot, 'GetStepLog',
+                     return_value=ABC_TEST_FAILURE_LOG)
+  def testGetSignalFromStepLog(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -185,13 +182,12 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
 
     # Mock both stdiolog and gtest json results to test whether Findit will
     # go to step log first when both logs exist.
-    self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
     self.MockGetGtestJsonResult()
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
 
-    pipeline = ExtractSignalPipeline(self.FAILURE_INFO)
-    signals = pipeline.run(self.FAILURE_INFO)
+    pipeline = ExtractSignalPipeline(FAILURE_INFO)
+    signals = pipeline.run(FAILURE_INFO)
 
     step = WfStep.Get(master_name, builder_name, build_number, step_name)
 
@@ -204,7 +200,9 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(step.log_data)
     self.assertEqual(expected_files, signals['abc_test']['files'])
 
-  def testGetSignalFromStepLogFlaky(self):
+  @mock.patch.object(buildbot, 'GetStepLog',
+                     return_value=ABC_TEST_FAILURE_LOG)
+  def testGetSignalFromStepLogFlaky(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -225,7 +223,6 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
     self.MockGetGtestJsonResult()
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
@@ -240,7 +237,9 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('flaky', step.log_data)
     self.assertEqual({}, signals['abc_test']['files'])
 
-  def testGetSignalFromStepLogInvalid(self):
+  @mock.patch.object(buildbot, 'GetStepLog',
+                     return_value=ABC_TEST_FAILURE_LOG)
+  def testGetSignalFromStepLogInvalid(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 125
@@ -261,7 +260,6 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    self.MockGetStdiolog(master_name, builder_name, build_number, step_name)
     self.MockGetGtestJsonResult()
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
@@ -426,7 +424,9 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     signals = pipeline.run(failure_info)
     self.assertEqual(expected_signals, signals)
 
-  def testBailOutForUnsupportedStep(self):
+  @mock.patch.object(buildbot, 'GetStepLog',
+                     return_value=ABC_TEST_FAILURE_LOG)
+  def testBailOutForUnsupportedStep(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -449,15 +449,14 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
 
+
     def MockGetGtestResultLog(*_):
       return None
 
-    self.MockGetStdiolog(master_name, builder_name, build_number,
-                         supported_step_name)
     self.mock(buildbot, 'GetGtestResultLog', MockGetGtestResultLog)
     self._CreateAndSaveWfAnanlysis(
         master_name, builder_name, build_number)
 
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
-    self.assertEqual(self.FAILURE_SIGNALS, signals)
+    self.assertEqual(FAILURE_SIGNALS, signals)

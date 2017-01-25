@@ -138,7 +138,7 @@ class ExtractSignalPipeline(BasePipeline):
             raise pipeline.Retry('Failed to pull log of step %s of master %s'
                                  % (step_name, master_name))
           try:
-            failure_log = buildbot.GetStepStdio(
+            failure_log = buildbot.GetStepLog(
                 master_name, builder_name, build_number, step_name,
                 self.HTTP_CLIENT)
           except ResponseTooLargeError:  # pragma: no cover.
