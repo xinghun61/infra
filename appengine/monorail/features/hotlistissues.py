@@ -187,7 +187,8 @@ class HotlistIssues(servlet.Servlet):
       if pattern.match(project_and_local_ids):
         issue_refs_tuples = [(pair.split(':')[0].strip(),
                           int(pair.split(':')[1].strip()))
-                         for pair in project_and_local_ids.split(',')]
+                             for pair in project_and_local_ids.split(',')
+                             if pair.strip()]
         project_names = {project_name for (project_name, _) in
                          issue_refs_tuples}
         projects_dict = self.services.project.GetProjectsByName(
