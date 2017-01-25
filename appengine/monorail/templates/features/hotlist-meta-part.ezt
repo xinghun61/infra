@@ -21,4 +21,11 @@
       </div>
     </td>
   </tr>
+  <tr><th align="left" style="padding-right:.3em">Access:</th>
+    <td width="100%">
+      <div style="margin-left:1em">
+      [if-any hotlist.access_is_private]Private[else]Public[end]
+      </div>
+    </td>
+  </tr>
 </table>

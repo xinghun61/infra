@@ -50,6 +50,7 @@ class HotlistView(template_helpers.PBProxy):
     if not self.visible:
       return
 
+    self.access_is_private = ezt.boolean(hotlist_pb.is_private)
     owner_id = hotlist_pb.owner_ids[0]  # only one owner allowed
     owner = users_by_id[owner_id]
     if owner.obscure_email:
