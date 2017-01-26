@@ -58,6 +58,8 @@ class Suspect(object):
     self.reasons = reasons
     self.changed_files = changed_files
 
+    # TODO(katesonia): These file_to_* should be deprecated once we deprecate
+    # the scorer-based changelist_classifier.
     # TODO(wrengr): (a) make these two fields private/readonly
     # TODO(wrengr): (b) zip them together.
     # TODO(wrengr): (c) move them to the relevant features instead.

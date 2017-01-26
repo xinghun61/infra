@@ -23,6 +23,12 @@ def IsSameFilePath(path_1, path_2):
   Returns:
     Boolean, True if it they are thought to be a same path, False otherwise.
   """
+  if not path_1 and not path_2:
+    return True
+
+  if not path_1 or not path_2:
+    return False
+
   # TODO(katesonia): Think of better way to determine whether 2 paths are the
   # same or not.
   path_parts_1 = path_1.lower().split('/')

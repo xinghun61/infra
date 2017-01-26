@@ -22,4 +22,7 @@ class CrashUtilTest(testing.AppengineTestCase):
     path_1 = 'a/b/c/d/e/file.cc'
     path_2 = 'f/g/file.cc'
 
+    self.assertTrue(crash_util.IsSameFilePath(None, None))
     self.assertFalse(crash_util.IsSameFilePath(path_1, path_2))
+    self.assertFalse(crash_util.IsSameFilePath(None, path_2))
+    self.assertFalse(crash_util.IsSameFilePath(path_1, None))

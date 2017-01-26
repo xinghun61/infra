@@ -71,6 +71,8 @@ def GetRevertedRevision(message):
       return reverted_revision_match.group(1)
 
 
+# TODO(katesonia): Deprecate this copy (there is a copy in min_distance
+# feature), after scorer-based classfier got depecated.
 def DistanceBetweenLineRanges((start1, end1), (start2, end2)):
   """Given two ranges, compute the (unsigned) distance between them.
 

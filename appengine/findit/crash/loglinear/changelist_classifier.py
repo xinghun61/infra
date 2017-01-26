@@ -4,19 +4,12 @@
 
 from collections import defaultdict
 import logging
-import math
 
 from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from crash import changelist_classifier
+from crash.changelist_classifier import StackInfo
 from crash.crash_report_with_dependencies import CrashReportWithDependencies
-from crash.loglinear.changelist_features.min_distance import MinDistanceFeature
-from crash.loglinear.changelist_features.top_frame_index import (
-    TopFrameIndexFeature)
-from crash.loglinear.feature import WrapperMetaFeature
 from crash.loglinear.model import UnnormalizedLogLinearModel
-from crash.stacktrace import CallStack
-from crash.stacktrace import Stacktrace
-from crash.suspect import StackInfo
 
 
 class LogLinearChangelistClassifier(object):
@@ -24,7 +17,8 @@ class LogLinearChangelistClassifier(object):
 
   def __init__(self, get_repository, meta_feature, meta_weight,
                top_n_frames=7, top_n_suspects=3):
-    """Args:
+    """
+    Args:
       get_repository (callable): a function from DEP urls to ``Repository``
         objects, so we can get changelogs and blame for each dep. Notably,
         to keep the code here generic, we make no assumptions about

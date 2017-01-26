@@ -55,7 +55,7 @@ class MetaFeatureValueTest(unittest.TestCase):
     super(MetaFeatureValueTest, self).setUp()
     self.feature = MetaFeatureValue(
         'dummy', {feature.name: feature(3)(False)
-                  for feature in [Feature0(), Feature1()]})
+                  for feature in [Feature0(), Feature1(), Feature3()]})
 
   def testEqaul(self):
     """Tests overriding ``__eq__`` and ``__ne__``."""
@@ -66,7 +66,7 @@ class MetaFeatureValueTest(unittest.TestCase):
 
   def testLen(self):
     """Tests overriding ``__len__``."""
-    self.assertEqual(len(self.feature), 2)
+    self.assertEqual(len(self.feature), 3)
 
   def testFormatReasons(self):
     """Tests ``FormatReasons`` returnes a list of formated reasons."""

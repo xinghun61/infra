@@ -100,7 +100,6 @@ class ChromeDependencyFetcher(object):
 
     return dependencies
 
-
   def GetDependencyRolls(self, old_cr_revision, new_cr_revision, platform,
                          skip_chromium_roll=True):
     """Returns a list of dependency rolls between the given Chromium revisions.
@@ -142,7 +141,6 @@ class ChromeDependencyFetcher(object):
                 path, old_dep.repo_url, old_dep.revision, None))
 
     return rolls
-
 
   def GetDependencyRollsDict(self, old_cr_revision, new_cr_revision, platform):
     """Gets dep_path to DependencyRoll dictionary for deps between revisions.

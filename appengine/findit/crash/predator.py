@@ -4,6 +4,7 @@
 
 from crash.culprit import Culprit
 
+
 # TODO(http://crbug.com/659346): write coverage tests.
 class Predator(object): # pragma: no cover
   """The Main entry point into the Predator library."""

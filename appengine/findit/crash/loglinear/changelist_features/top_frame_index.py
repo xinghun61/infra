@@ -9,9 +9,6 @@ from crash.loglinear.feature import FeatureValue
 from crash.loglinear.feature import LogLinearlyScaled
 import libs.math.logarithms as lmath
 
-# TODO(katesonia): Move this to the config saved in datastore.
-_MAX_FRAME_INDEX = 7
-
 
 class TopFrameIndexFeature(Feature):
   """Returns the minimum frame index scaled between -inf and 0.
@@ -31,15 +28,12 @@ class TopFrameIndexFeature(Feature):
   between we scale the normal-domain values linearly, which means the
   log-domain values are scaled exponentially.
   """
-  def __init__(self, max_frame_index=None):
+  def __init__(self, max_frame_index):
     """
     Args:
       max_frame_index (int): An upper bound on the minimum frame index
-        to consider. This argument is optional and defaults to
-        ``_MAX_FRAME_INDEX``.
+        to consider.
     """
-    if max_frame_index is None:
-      max_frame_index = _MAX_FRAME_INDEX
     self.max_frame_index = max_frame_index
 
   @property
@@ -50,21 +44,38 @@ class TopFrameIndexFeature(Feature):
     """The minimum ``StackFrame.index`` across all files and stacks.
 
     Args:
-      report (CrashReport): the crash report being analyzed.
+      report (CrashReportWithDependencies): the crash report being analyzed.
 
     Returns:
       A function from ``Suspect`` to the scaled minimum frame index, as a
       log-domain ``float``.
     """
-    def FeatureValueGivenReport(result):
-      if not result.file_to_stack_infos:
-        logging.warning('No StackInfo for any file: %s' % str(result))
-        return FeatureValue(self.name, lmath.LOG_ZERO,
-            "No StackInfo for any file", None)
+    def FeatureValueGivenReport(
+        suspect, touched_file_to_stack_infos):  # pylint: disable=W0613
+      """Computes ``FeatureValue`` for a suspect.
 
-      top_frame_index = min(min(frame.index for frame, _ in stack_infos)
-                            for stack_infos
-                            in result.file_to_stack_infos.itervalues())
+      Args:
+        suspect (Suspect): The suspected changelog and some meta information
+          about it.
+        touched_file_to_stack_infos(dict): Dict mapping ``FileChangeInfo`` to
+          a list of ``StackInfo``s representing all the frames that the suspect
+          touched.
+
+      Returns:
+        The ``FeatureValue`` of this feature.
+      """
+      if not touched_file_to_stack_infos:
+        return FeatureValue(
+            self.name, lmath.LOG_ZERO,
+            'No frame got touched by the suspect.', None)
+
+      def TopFrameIndexForTouchedFile(stack_infos):
+        return min([stack_info.frame.index for stack_info in stack_infos])
+
+      top_frame_index = min([
+          TopFrameIndexForTouchedFile(stack_infos) for _, stack_infos in
+          touched_file_to_stack_infos.iteritems()])
+
       return FeatureValue(
           name = self.name,
           value = LogLinearlyScaled(float(top_frame_index),
