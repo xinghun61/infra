@@ -540,6 +540,8 @@ class FeaturesService(object):
     self.hotlist_tbl.Update(cnxn, delta, id=hotlist_id)
 
     self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
+    self.hotlist_names_owner_to_ids.InvalidateKeys(
+        cnxn,(hotlist.name, hotlist.owner_ids[0]))
 
     # Update the hotlist PB in RAM
     if name is not None:

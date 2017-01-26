@@ -21,7 +21,8 @@ _MSG_SUMMARY_MISSING = 'Summary is missing.'
 _MSG_NAME_MISSING = 'Hotlist name is missing.'
 _MSG_COL_SPEC_MISSING = 'Hotlist default columns are missing.'
 _MSG_HOTLIST_NAME_NOT_AVAIL = 'You already have a hotlist with that name.'
-_MSG_INVALID_HOTLIST_NAME = 'Invalid hotlist name.'
+# pylint: disable=line-too-long
+_MSG_INVALID_HOTLIST_NAME = "Invalid hotlist name. Please make sure your hotlist name begins with a letter followed by any number of letters, numbers, -'s, and .'s"
 
 
 class HotlistDetails(servlet.Servlet):

@@ -501,7 +501,7 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, delta, id=hotlist_id)
 
   def testUpdateHotlist(self):
-    self.SetUpGetHotlists(456)
+    self.SetUpGetHotlists(456, role_rows=[(456, 111, 'owner')])
     delta = {'summary': 'A better one-line summary'}
     self.SetUpUpdateHotlist(456, delta)
     self.mox.ReplayAll()
