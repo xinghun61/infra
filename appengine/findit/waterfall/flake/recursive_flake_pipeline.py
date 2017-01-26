@@ -39,7 +39,8 @@ _DEFAULT_MAX_BUILD_NUMBERS = 500
 
 
 def _UpdateAnalysisStatusUponCompletion(
-    analysis, suspected_build, status, error, build_confidence_score=None):
+    analysis, suspected_build, status, error, build_confidence_score=None,
+    try_job_status=analysis_status.SKIPPED):
   if suspected_build == _NO_BUILD_NUMBER:
     analysis.end_time = time_util.GetUTCNow()
     analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
@@ -48,6 +49,7 @@ def _UpdateAnalysisStatusUponCompletion(
 
   analysis.error = error
   analysis.status = status
+  analysis.try_job_status = try_job_status
   analysis.confidence_in_suspected_build = build_confidence_score
 
   analysis.put()
@@ -484,6 +486,7 @@ class NextBuildNumberPipeline(BasePipeline):
       minimum_confidence_score_to_run_tryjobs = flake_settings.get(
           'minimum_confidence_score_to_run_tryjobs',
           _DEFAULT_MINIMUM_CONFIDENCE_SCORE)
+
       if (build_confidence_score is None or
           build_confidence_score < minimum_confidence_score_to_run_tryjobs):
         # If no suspected build or confidence is too low, bail out on try jobs.
@@ -514,6 +517,7 @@ class NextBuildNumberPipeline(BasePipeline):
                 culprit_confidence_score)
 
             analysis.culprit = culprit
+            analysis.try_job_status = analysis_status.COMPLETED
             analysis.put()
         else:
           logging.info('No suspected build or empty blame list')

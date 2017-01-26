@@ -102,11 +102,10 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
       revision (str): The revision to run the try job against corresponding to
         |commit_position|.
     """
-    flake_analysis = ndb.Key(urlsafe=urlsafe_flake_analysis_key).get()
-    assert flake_analysis
+    analysis = ndb.Key(urlsafe=urlsafe_flake_analysis_key).get()
+    assert analysis
 
-    if (flake_analysis.error or
-        flake_analysis.status != analysis_status.COMPLETED):
+    if analysis.error or analysis.status != analysis_status.COMPLETED:
       # Don't start try-jobs if analysis at the build level did not complete
       # successfully.
       return
@@ -114,18 +113,19 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
     # TODO(lijeffrey): support force/rerun.
 
     try_job = _CreateTryJobEntity(
-        flake_analysis.master_name, flake_analysis.builder_name,
-        flake_analysis.canonical_step_name, flake_analysis.test_name, revision)
+        analysis.master_name, analysis.builder_name,
+        analysis.canonical_step_name, analysis.test_name, revision)
 
-    if flake_analysis.try_job_status is None:  # pragma: no branch
-      flake_analysis.try_job_status = analysis_status.RUNNING
-      flake_analysis.put()
+    if analysis.try_job_status != analysis_status.RUNNING:  # pragma: no branch
+      # Set try_job_status as RUNNING to indicate the analysis is in try-job
+      # mode.
+      analysis.try_job_status = analysis_status.RUNNING
+      analysis.put()
 
     with pipeline.InOrder():
       try_job_id = yield ScheduleFlakeTryJobPipeline(
-          flake_analysis.master_name, flake_analysis.builder_name,
-          flake_analysis.canonical_step_name, flake_analysis.test_name,
-          revision)
+          analysis.master_name, analysis.builder_name,
+          analysis.canonical_step_name, analysis.test_name, revision)
 
       try_job_result = yield MonitorTryJobPipeline(
           try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)

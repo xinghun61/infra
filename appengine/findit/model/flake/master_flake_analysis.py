@@ -244,10 +244,10 @@ class MasterFlakeAnalysis(
   # The culprit CL associated with the try job results, if any.
   culprit = ndb.LocalStructuredProperty(FlakeCulprit)
 
-  # The status of try jobs, if any. None if try jobs have not been triggered.
-  # Status should be PENDING or STARTED when the first try job is triggered,
-  # and COMPLETED when the last one finishes. If any try job ends in error,
-  # status will be ERROR.
+  # The status of try jobs, if any. None if analysis is still performing
+  # swarming reruns, SKIPPED if try jobs will not be triggered, RUNNING when
+  # the first try job is triggered, COMPLETED when the last one finishes, and
+  # ERROR if any try job ends with error.
   try_job_status = ndb.IntegerProperty(indexed=False)
 
   # The data points used to plot the flakiness graph build over build.

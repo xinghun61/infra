@@ -234,6 +234,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     mocked_pipeline.assert_not_called()
     self.assertEqual(swarming_task_error, analysis.error)
+    self.assertEqual(analysis_status.SKIPPED, analysis.try_job_status)
 
   def testGetNextRunSetStableAfterFlaky(self):
     master_name = 'm'
@@ -731,6 +732,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(analysis.completed)
     self.assertEqual(100, analysis.suspected_flake_build_number)
     self.assertEqual(0.4, analysis.confidence_in_suspected_build)
+    self.assertEqual(analysis_status.SKIPPED, analysis.try_job_status)
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
@@ -787,6 +789,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(analysis.completed)
     self.assertEqual(100, analysis.suspected_flake_build_number)
     self.assertEqual(0.7, analysis.confidence_in_suspected_build)
+    self.assertEqual(analysis_status.SKIPPED, analysis.try_job_status)
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
@@ -850,6 +853,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(analysis.culprit)
     self.assertEqual(10, analysis.culprit.commit_position)
     self.assertEqual(0.8, analysis.culprit.confidence)
+    self.assertEqual(analysis_status.COMPLETED, analysis.try_job_status)
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
