@@ -17,30 +17,30 @@
         box-sizing: border-box;
         font-size: 18px;
         font-weight: bold;
-        padding: 0 5px 3px;
+        padding: 0 4px 3px;
         width: 95%;
-        margin: 15px auto 5px;
+        margin: 0.5em auto;
         border-bottom: 1px solid #bbb;
       }
       h2 iron-icon {
-        padding-right: 5px;
-        width: 18px;
-        height: 18px;
+        padding-right: 4px;
+        width: 16px;
+        height: 16px;
       }
       paper-checkbox, paper-radio-button {
-        padding-left: 30px;
-        padding-bottom: 10px;
+        padding-left: 32px;
+        padding-bottom: 0.5em;
       }
       label {
         padding-top: 0.5em;
-        padding-left: 20px;
+        padding-left: 16px;
       }
       ul {
-        margin-top: 0.3em;
-        padding-left: 50px;
+        margin-top: 0.5em;
+        padding-left: 48px;
       }
       paper-item {
-        padding-left: 35px;
+        padding-left: 32px;
         font-size: 18px;
         -webkit-transition: background .3s ease;
         transition: background .3s ease;
@@ -77,6 +77,7 @@
         use-compact-view="{{useCompactView}}"
         default-tree="{{defaultTree}}"
     ></som-settings>
+
     <paper-menu attr-for-selected="value" selected="[[tree]]" selectable="paper-item" id="menu">
       <h2><iron-icon icon="folder"></iron-icon>Trees</h2>
       <template is="dom-repeat" items="[[_treeList]]" as="tree">

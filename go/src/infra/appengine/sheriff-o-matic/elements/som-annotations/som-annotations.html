@@ -17,12 +17,14 @@
         width: 300px;
       }
       #commentsDialog {
-        width: 400px;
+        width: 80%;
+        min-width: 300px;
+        max-width: 600px;
       }
       #commentsDialog paper-icon-button {
         color: #666;
         padding: 0;
-        margin-left: 3px;
+        margin-left: 4px;
         height: 20px;
         width: 20px;
         -webkit-transition: all .3s ease;
@@ -36,18 +38,18 @@
       }
       #commentsList {
         display: block;
-        max-height: 300px;
+        max-height: 400px;
         overflow: auto;
       }
       #commentsList li {
         list-style-type: none;
         box-sizing: border-box;
-        padding: 5px 10px;
+        padding: 0.5em 16px;
         display: block;
         width: 100%;
-        margin-bottom: 5px;
+        margin-bottom: 0.5em;
         background: #eee;
-        border-radius: 15px;
+        border-radius: 16px;
         word-wrap: break-word;
       }
       #commentsList .comment-context {
@@ -61,8 +63,8 @@
         margin-top: 0;
       }
       .header {
-        padding: 0.5em 0.5em 0.2em;
-        margin: 1em 0.5em;
+        padding: 0.5em 8px 0.25em;
+        margin: 1em 4px;
         background-color: #eee;
       }
       marked-element {

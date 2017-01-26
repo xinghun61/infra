@@ -58,11 +58,11 @@
       }
       h2 {
         font-size: 22px;
-        padding: 0.5em 0.5em 0.2em;
+        padding: 0.5em 0.5em 0.25em;
         margin: 1em 0.5em;
       }
       h3 {
-        padding: 0.3em 0.5em 0.1em;
+        padding: 0.25em 0.5em 0.1em;
         margin: 1em 0.5em;
         height: 45px;
         align-items: center;
@@ -106,6 +106,7 @@
         @apply(--layout-vertical);
         margin: 1em;
         border-bottom: 1px solid #ddd;
+        padding-bottom: 0.5em;
       }
       .notification {
         box-sizing: border-box;
@@ -252,21 +253,21 @@
                   </template>
                 </h3>
                 <template is="dom-repeat" items="[[_alertsWithCategory(_alerts, cat, _isTrooperPage)]]" as="alert">
-                  <div class="list-item" tabindex$="[[tabIndex]]">
-                    <som-alert-item
-                        alert="{{alert}}"
-                        tree="[[_tree]]"
-                        selected="[[selected]]"
-                        annotation="[[computeAnnotation(annotations, alert)]]"
-                        link-style="[[linkStyle]]"
-                        on-annotation-change="_handleAnnotation"
-                        on-comment="_handleComment"
-                        on-link-bug="_handleLinkBug"
-                        on-snooze="_handleSnooze"
-                        on-opened-change="_handleOpenedChange"
-                        use-compact-view="[[useCompactView]]"
-                    ></som-alert-item>
-                  </div>
+                  <som-alert-item
+                      class="list-item"
+                      tabindex="0"
+                      alert="{{alert}}"
+                      tree="[[_tree]]"
+                      selected="[[selected]]"
+                      annotation="[[computeAnnotation(annotations, alert)]]"
+                      link-style="[[linkStyle]]"
+                      on-annotation-change="_handleAnnotation"
+                      on-comment="_handleComment"
+                      on-link-bug="_handleLinkBug"
+                      on-snooze="_handleSnooze"
+                      on-opened-change="_handleOpenedChange"
+                      use-compact-view="[[useCompactView]]"
+                  ></som-alert-item>
                 </template>
               </template>
             </div>
