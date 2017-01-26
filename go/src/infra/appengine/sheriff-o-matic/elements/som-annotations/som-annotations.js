@@ -244,7 +244,7 @@
     ////////////////////// Bugs ///////////////////////////
 
     _commentForBug: function(bugModel) {
-      let result = bugModel.title + '\n\nType: ' + bugModel.type + '\n\n';
+      let result = bugModel.title + '\n\n';
       if (bugModel.extension) {
         if (bugModel.extension.builders &&
             bugModel.extension.builders.length > 0) {
