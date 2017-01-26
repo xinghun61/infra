@@ -49,6 +49,10 @@ class FeaturesBizobjTest(unittest.TestCase):
     self.assertEqual(iid_rank_tuples, first_pairs)
     self.assertEqual(second_pairs, [])
 
+  def testGetOwnerIds(self):
+    hotlist = features_pb2.Hotlist(owner_ids=[111L])
+    self.assertEqual(features_bizobj.GetOwnerIds(hotlist), [111L])
+
   def testUsersInvolvedInHotlists_Empty(self):
     self.assertEqual(set(), features_bizobj.UsersInvolvedInHotlists([]))
 

@@ -124,7 +124,45 @@ class HotlistCreateTest(unittest.TestCase):
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('/u/111/hotlists/Hotlist' in url)
 
-  def testProcessFormData_RejectTemplate(self):
+  def testProcessFormData_RejectTemplateInvalid(self):
+    mr = testing_helpers.MakeMonorailRequest()
+    # invalid hotlist name and nonexistent editor
+    post_data = fake.PostData(hotlistname=['123BadName'], summary=['summ'],
+                              description=['hey'],
+                              editors=['test@email.com'], is_private=['yes'])
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        mr, initial_name = '123BadName', initial_summary='summ',
+        initial_description='hey',initial_issues=None,
+        initial_editors='test@email.com', initial_privacy='yes')
+    self.mox.ReplayAll()
+    url = self.servlet.ProcessFormData(mr, post_data)
+    self.mox.VerifyAll()
+    self.assertEqual(mr.errors.hotlistname, 'Invalid hotlist name')
+    self.assertEqual(mr.errors.editors,
+                     'One or more editor emails is not valid.')
+    self.assertIsNone(url)
+
+  def testProcessFormData_RejectTemplateMissing(self):
+    mr = testing_helpers.MakeMonorailRequest()
+    # missing name and summary
+    post_data = fake.PostData()
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(mr, initial_name = None, initial_summary=None,
+                               initial_description='',initial_issues=None,
+                               initial_editors='', initial_privacy=None)
+    self.mox.ReplayAll()
+    url = self.servlet.ProcessFormData(mr, post_data)
+    self.mox.VerifyAll()
+    self.assertEqual(mr.errors.hotlistname, 'Missing hotlist name')
+    self.assertEqual(mr.errors.summary,'Missing hotlist summary')
+    self.assertIsNone(url)
+
+  # TODO(jojwang): Created another RejectTemplate test because the one
+  # below only tests invalid issues input. The ability to add issues
+  # during hotlist creation may be take away so this test will become
+  # irrelevant soon anyways.
+  def testProcessFormData_RejectTemplateIssues(self):
     mr = testing_helpers.MakeMonorailRequest()
     post_data = fake.PostData(hotlistname=['Hotlist'], summary=['summ'],
                               description=['hey'],
