@@ -46,7 +46,6 @@ class DataPoint(ndb.Model):
   # relevant if this data point is generated as the result of a flake swarming
   # task.
   blame_list = ndb.StringProperty(repeated=True)
-  try_job_url = ndb.StringProperty(indexed=False)
 
   # The URL to the try job that generated this data point, if any.
   try_job_url = ndb.StringProperty(indexed=False)
@@ -148,13 +147,22 @@ class MasterFlakeAnalysis(
 
   def UpdateTriageResult(self, triage_result, suspect_info, user_name,
                          version_number=None):
+    """Updates triage result for a flake analysis.
+
+    If there is culprit for the analysis, triage will be at CL level;
+    otherwise the triage will be for suspected_flake_build.
+    """
     super(MasterFlakeAnalysis, self).UpdateTriageResult(
         triage_result, suspect_info, user_name, version_number=version_number)
 
     if triage_result == triage_status.TRIAGED_CORRECT:
       self.result_status = result_status.FOUND_CORRECT
+      if suspect_info.get('culprit_revision'):
+        self.correct_culprit = True
     else:
       self.result_status = result_status.FOUND_INCORRECT
+      if suspect_info.get('culprit_revision'):
+        self.correct_culprit = False
 
   def GetDataPointOfSuspectedBuild(self):
     """Gets the corresponding data point to the suspected flake build."""

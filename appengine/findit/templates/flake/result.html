@@ -386,11 +386,18 @@
       <b>Feedback:</b>
       <table class="triage-table">
         <tr>
-          <th class="triage-header" title="The test became flaky at this build">Suspected Build</th>
+          <th class="triage-header" title="Type of Findit's result: Suspected Build or Culprit">Suspect Type</th>
+          <th class="triage-header" title="The build or revision where the test became flaky">Suspect Info</th>
           <th class="triage-header">Feedback</th>
         </tr>
         <tr>
-          <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a></a></td>
+          {% if (culprit.commit_position or culprit.revision) and culprit.url %}
+            <td class="triage-cell">Culprit</td>
+            <td class="triage-cell"><a href="{{culprit.url}}">{{culprit.commit_position or culprit.git_hash}}</a></td>
+          {% else %}
+            <td class="triage-cell">Suspected Build</td>
+            <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a></a></td>
+          {% endif %}
           <td class="triage-cell">
             {% if suspected_flake.triage_result == 1 %}
               <input type="radio" name="triage-radio-button" value="2" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
@@ -417,7 +424,8 @@
         <tr>
           <th class="triage-header">When</th>
           <th class="triage-header">Who</th>
-          <th class="triage-header">Suspected Build Number</th>
+          <th class="triage-header">Suspect Type</th>
+          <th class="triage-header">Suspect Info</th>
           <th class="triage-header">Result</th>
           <th class="triage-header">Analysis Version Number</th>
         </tr>
@@ -426,7 +434,13 @@
             <tr>
               <td class="triage-cell">{{ triage_record.triaged_time }}</td>
               <td class="triage-cell">{{ triage_record.user_name }}</td>
-              <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ triage_record.suspect_info.build_number }}" target="_blank">{{ triage_record.suspect_info.build_number }}</a></a></td>
+              {% if triage_record.suspect_info.culprit_revision %}
+                <td class="triage-cell">Culprit</td>
+                <td class="triage-cell"><a href="{{ triage_record.suspect_info.culprit_url }}">{{triage_record.suspect_info.culprit_commit_position or triage_record.suspect_info.culprit_revision}}</a></td>
+              {% else %}
+                <td class="triage-cell">Suspected Build</td>
+                <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ triage_record.suspect_info.build_number }}" target="_blank">{{ triage_record.suspect_info.build_number }}</a></a></td>
+              {% endif %}
               <td class="triage-cell">{{ triage_record.triage_result }}</td>
               <td class="triage-cell">{{ triage_record.version_number }}</td>
             </tr>

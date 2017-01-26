@@ -13,7 +13,6 @@ from google.appengine.api import users
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from model import analysis_status
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 
 def _UpdateSuspectedFlakeAnalysis(key_urlsafe, triage_result, user_name):
@@ -23,9 +22,16 @@ def _UpdateSuspectedFlakeAnalysis(key_urlsafe, triage_result, user_name):
   assert master_flake_analysis.status == analysis_status.COMPLETED
   assert master_flake_analysis.suspected_flake_build_number is not None
 
-  suspect_info = {
-      'build_number': master_flake_analysis.suspected_flake_build_number
-  }
+  if master_flake_analysis.culprit:
+    suspect_info = {
+      'culprit_revision': master_flake_analysis.culprit.revision,
+      'culprit_commit_position': master_flake_analysis.culprit.commit_position,
+      'culprit_url': master_flake_analysis.culprit.url
+    }
+  else:
+    suspect_info = {
+        'build_number': master_flake_analysis.suspected_flake_build_number
+    }
 
   master_flake_analysis.UpdateTriageResult(
       triage_result, suspect_info, user_name,

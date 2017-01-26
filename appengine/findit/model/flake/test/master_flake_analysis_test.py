@@ -102,6 +102,20 @@ class MasterFlakeAnalysisTest(TestCase):
         triage_status.TRIAGED_INCORRECT, {'build_number': 100}, 'test')
     self.assertEqual(analysis.result_status, result_status.FOUND_INCORRECT)
 
+  def testMasterFlakeAnalysisUpdateTriageResultCorrectCulprit(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.UpdateTriageResult(
+        triage_status.TRIAGED_CORRECT, {'culprit_revision': 'rev'}, 'test')
+    self.assertEqual(analysis.result_status, result_status.FOUND_CORRECT)
+    self.assertTrue(analysis.correct_culprit)
+
+  def testMasterFlakeAnalysisUpdateTriageResultIncorrectCulprit(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.UpdateTriageResult(
+        triage_status.TRIAGED_INCORRECT, {'culprit_revision': 'rev'}, 'test')
+    self.assertEqual(analysis.result_status, result_status.FOUND_INCORRECT)
+    self.assertFalse(analysis.correct_culprit)
+
   def testReset(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.swarming_rerun_results = [{}]
