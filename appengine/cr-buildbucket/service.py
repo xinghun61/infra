@@ -110,6 +110,9 @@ def add_async(
 
   Returns:
     A new Build.
+
+  Raises:
+    errors.InvalidInputError: if build creation parameters are invalid.
   """
   if client_operation_id is not None:
     if not isinstance(client_operation_id, basestring):  # pragma: no cover

@@ -107,28 +107,21 @@ def get_task_template_async(canary, canary_required=True):
   raise ndb.Return(json.loads(text) if text else None, canary)
 
 
-@utils.memcache_async(
-  'swarming/is_for_swarming', ['bucket_name', 'builder_name'], time=10 * 60)
+@utils.memcache_async('swarming/is_for_swarming', ['bucket_name'], time=10 * 60)
 @ndb.tasklet
-def _is_for_swarming_async(bucket_name, builder_name):
-  """Returns True if swarming is configured for |builder_name|."""
+def _is_for_swarming_async(bucket_name):
+  """Returns True if swarming is configured for the bucket."""
   _, cfg = yield config.get_bucket_async(bucket_name)
-  if cfg and cfg.swarming:  # pragma: no branch
-    for b in cfg.swarming.builders:
-      if b.name == builder_name:
-        raise ndb.Return(True)
-  raise ndb.Return(False)
+  raise ndb.Return(bool(cfg and cfg.swarming))
 
 
 @ndb.tasklet
 def is_for_swarming_async(build):
-  """Returns True if |build|'s bucket and builder are designed for swarming."""
+  """Returns True if |build|'s bucket are designed for swarming."""
   result = False
   task_template, _ = yield get_task_template_async(False)
-  if task_template and isinstance(build.parameters, dict):  # pragma: no branch
-    builder = build.parameters.get(BUILDER_PARAMETER)
-    if builder:  # pragma: no branch
-      result = yield _is_for_swarming_async(build.bucket, builder)
+  if task_template:  # pragma: no branch
+    result = yield _is_for_swarming_async(build.bucket)
   raise ndb.Return(result)
 
 
@@ -420,18 +413,29 @@ def create_task_async(build):
   """Creates a swarming task for the build and mutates the build.
 
   May be called only if is_for_swarming(build) == True.
+
+  Raises:
+    errors.InvalidInputError if build attribute values are inavlid.
   """
   if build.lease_key:
     raise errors.InvalidInputError(
-      'swarming builders do not support creation of leased builds')
-  builder_name = build.parameters[BUILDER_PARAMETER]
+      'Swarming buckets do not support creation of leased builds')
+  if not build.parameters:
+    raise errors.InvalidInputError(
+        'A build for bucket %r must have parameters' % build.bucket)
+  builder_name = build.parameters.get(BUILDER_PARAMETER)
+  if not isinstance(builder_name, basestring):
+    raise errors.InvalidInputError('Invalid builder name %r' % builder_name)
   project_id, bucket_cfg = yield config.get_bucket_async(build.bucket)
+
   builder_cfg = None
   for b in bucket_cfg.swarming.builders:  # pragma: no branch
     if b.name == builder_name:  # pragma: no branch
       builder_cfg = b
       break
-  assert builder_cfg, 'Builder %s not found' % builder_name
+  if not builder_cfg:
+    raise errors.InvalidInputError(
+        'Builder %r is not defined in bucket %r' % (builder_name, build.bucket))
 
   task = yield create_task_def_async(
       project_id, bucket_cfg.swarming, builder_cfg, build)

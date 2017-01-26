@@ -168,7 +168,9 @@ class SwarmingTest(testing.AppengineTestCase):
     self.assertTrue(swarming.is_for_swarming_async(build).get_result())
 
     build.parameters['builder_name'] = 'other'
-    self.assertFalse(swarming.is_for_swarming_async(build).get_result())
+    # This build is still destined for Swarming, even though such builder
+    # does not exist.
+    self.assertTrue(swarming.is_for_swarming_async(build).get_result())
 
   def test_is_for_swarming_no_template(self):
     build = model.Build(
@@ -372,6 +374,22 @@ class SwarmingTest(testing.AppengineTestCase):
     })
     self.assertEqual(
       build.url, 'https://example.com/chromium-swarm.appspot.com/deadbeef')
+
+  def test_create_task_async_bad_request(self):
+    build = model.Build(bucket='bucket')
+
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.create_task_async(build).get_result()
+
+    with self.assertRaises(errors.InvalidInputError):
+      build.parameters = {
+        'builder_name': 'non-existent builder',
+      }
+      swarming.create_task_async(build).get_result()
+
+    with self.assertRaises(errors.InvalidInputError):
+      build.parameters['builder_name'] = 2
+      swarming.create_task_async(build).get_result()
 
   def test_create_task_async_canary_template(self):
     build = model.Build(
