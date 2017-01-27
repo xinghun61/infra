@@ -55,15 +55,14 @@
         font-weight: bold;
         background-color: #eee;
         border-bottom: 1px solid #ddd;
+        margin: 1em 16px;
       }
       h2 {
         font-size: 22px;
-        padding: 0.5em 0.5em 0.25em;
-        margin: 1em 0.5em;
+        padding: 0.5em 8px 0.25em;
       }
       h3 {
-        padding: 0.25em 0.5em 0.1em;
-        margin: 1em 0.5em;
+        padding: 0.25em 8px 0.1em;
         height: 45px;
         align-items: center;
       }
@@ -101,18 +100,22 @@
         text-align: right;
         padding-right: 1em;
       }
-      .list-item {
+      .list-item,
+      .page-section {
         @apply(--layout-flex);
         @apply(--layout-vertical);
-        margin: 1em;
+        margin: 1em 32px;
         border-bottom: 1px solid #ddd;
         padding-bottom: 0.5em;
+      }
+      .page-section {
+        margin: 1em 16px;
       }
       .notification {
         box-sizing: border-box;
         width: 100%;
-        padding: 8px 10px;
-        margin: 5px auto 10px;
+        padding: 0.5em 8px;
+        margin: 0.25em auto 0.5em;
         border: 1px solid #666;
         border-radius: 5px;
       }
@@ -205,7 +208,7 @@
           local-state="{{localState}}" user="{{user}}" xsrf-token="{{xsrfToken}}"></som-annotations>
         <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
           <div id="alertsList" class="page-body">
-            <div class="list-item">
+            <div class="page-section">
               <som-tree-status tree="[[_tree]]" id="treeStatus"></som-tree-status>
               <som-master-restarts tree="[[_tree]]" id="masterRestarts"></som-master-restarts>
               <div class="notification" hidden$="[[_isTrooperPage]]">

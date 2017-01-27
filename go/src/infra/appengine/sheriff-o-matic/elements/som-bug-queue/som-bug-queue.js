@@ -1,6 +1,8 @@
 (function() {
   'use strict';
 
+  const UNSET_PRIORITY = Number.MAX_SAFE_INTEGER;
+
   Polymer({
     is: 'som-bug-queue',
 
@@ -21,6 +23,10 @@
         type: Array,
         notify: true,
         computed: '_computeBugs(_bugQueueJson, _uncachedBugsJson)',
+      },
+      _bugsByPriority: {
+        type: Array,
+        computed: '_computeBugsByPriority(bugs)',
       },
       _bugQueueJson: {
         type: Object,
@@ -52,6 +58,11 @@
       treeDisplayName: String,
     },
 
+    ready: function() {
+      // This is to expose the UNSET_PRIORITY constant for use in unit testing.
+      this.UNSET_PRIORITY = UNSET_PRIORITY;
+     },
+
     refresh: function() {
       if (this._hideBugQueue) {
         return;
@@ -78,6 +89,35 @@
       return uncachedBugsJson.items;
     },
 
+    _computeBugsByPriority: function(bugs) {
+      let buckets = bugs.reduce((function(obj, b) {
+        let p = this._computePriority(b);
+        if (!(p in obj)) {
+          obj[p] = [b];
+        } else {
+          obj[p].push(b);
+        }
+        return obj;
+      }).bind(this), {});
+
+      // Flatten the buckets into an array for use in dom-repeat.
+      let result = Object.keys(buckets).sort().map(function(key) {
+        return {
+          'priority': key,
+          'bugs': buckets[key]
+        };
+      });
+      return result;
+    },
+
+    _computeCollapseId: function(pri) {
+      return `collapsePri${pri}`;
+    },
+
+    _computeCollapseIcon: function(opened) {
+      return opened ? 'remove' : 'add';
+    },
+
     _computeHideBugQueue: function(bugQueueLabel) {
       // No loading or empty message is shown unless a bug queue exists.
       return !bugQueueLabel || bugQueueLabel === '' ||
@@ -90,16 +130,16 @@
 
     _computePriority: function(bug) {
       if (!bug || !bug.labels) {
-        return '';
+        return this.UNSET_PRIORITY;
       }
       for (let i in bug.labels) {
         let match = bug.labels[i].match(/^Pri-(\d)$/);
         if (match) {
           let result = parseInt(match[1]);
-          return result !== NaN ? result : '';
+          return result !== NaN ? result : this.UNSET_PRIORITY;
         }
       }
-      return '';
+      return this.UNSET_PRIORITY;
     },
 
     _computeShowNoBugs: function(bugs, bugsLoaded, error) {
@@ -129,10 +169,6 @@
       });
     },
 
-    _hasPriority: function(bug) {
-      return this._computePriority(bug) !== '';
-    },
-
     _haveNoBugs: function(bugs) {
       return !bugs || bugs.length == 0;
     },
@@ -141,28 +177,34 @@
       return !error;
     },
 
+    _priorityText: function(pri) {
+      if (this._validPriority(pri)) {
+        return `Priority ${pri}`;
+      }
+      return 'No Priority';
+    },
+
     _showBugsLoading: function(bugsLoaded, error) {
       return !bugsLoaded && this._haveNoErrors(error);
     },
 
-    _sortBugs: function(bugs) {
-      if (bugs) {
-        // Sort bugs by priority.
-        bugs.sort((a, b) => {
-          let pA = this._computePriority(a);
-          let pB = this._computePriority(b);
-          if (pA === '' && pB === '') {
-            return 0;
-          } else if (pA === '') {
-            // Put blank priority bugs after all other bugs.
-            return 1;
-          } else if (pB === '') {
-            return -1;
-          }
-          return pA - pB;
-        });
+    _togglePriorityCollapse: function(evt) {
+      let i = evt.model.index;
+      let pri = this._bugsByPriority[i].priority;
+      let id = this._computeCollapseId(pri);
+      let collapse = this.$$('#' + id);
+      if (!collapse) {
+        console.error(id + ' is not a valid Id.');
+      } else {
+        collapse.toggle();
+
+        this.$$('#toggleIconPri' + pri).icon = this._computeCollapseIcon(
+          collapse.opened);
       }
-      return bugs;
+    },
+
+    _validPriority: function(pri) {
+      return pri != this.UNSET_PRIORITY;
     }
   });
 })();
