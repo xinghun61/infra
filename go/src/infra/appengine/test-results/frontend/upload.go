@@ -20,6 +20,7 @@ import (
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/taskqueue"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 
 	"infra/appengine/test-results/masters"
@@ -130,7 +131,29 @@ func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 // uploadHandler is the HTTP handler for upload
 // requests.
 func uploadHandler(ctx *router.Context) {
+	// Only bots should upload test results. Check IP address against a whitelist.
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
+	whitelisted, err := auth.GetState(c).DB().IsInWhitelist(
+		c, auth.GetState(c).PeerIP(), "bots")
+	if err != nil {
+		logging.WithError(err).Errorf(c, "uploadHandler: check IP whitelist")
+		http.Error(w, "Failed IP whitelist check", http.StatusInternalServerError)
+		return
+	}
+
+	if !whitelisted {
+		logging.WithError(err).Warningf(
+			c, "Uploading IP %s is not whitelisted", auth.GetState(c).PeerIP())
+		// TODO(sergiyb): Uncomment code below and change warning to error above
+		// after checking that whitelist "bots" is sufficient.
+		//http.Error(w, "IP is not whitelisted", http.StatusUnauthorized)
+		//return
+	}
+
+	if r.URL.Scheme != "https" {
+		logging.Warningf(c, "Non-https scheme was used to upload test results")
+	}
+
 	fileheaders := r.MultipartForm.File["file"]
 
 	for _, fh := range fileheaders {

@@ -31,5 +31,10 @@ handlers:
     upload: static/pages/uploadform.html
     mime_type: text/html; charset=utf-8
 
+  - url: /internal/.*
+    script: _go_app
+    login: admin
+    secure: always
+
   - url: /.*
     script: _go_app

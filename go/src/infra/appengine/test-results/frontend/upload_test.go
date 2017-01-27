@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -22,10 +23,20 @@ import (
 
 	"github.com/luci/gae/impl/memory"
 	"github.com/luci/gae/service/datastore"
+	"github.com/luci/luci-go/server/auth"
+	"github.com/luci/luci-go/server/auth/authtest"
 	"github.com/luci/luci-go/server/router"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+type AlwaysInWhitelistAuthDB struct {
+	authtest.FakeDB
+}
+
+func (db AlwaysInWhitelistAuthDB) IsInWhitelist(c context.Context, ip net.IP, whitelist string) (bool, error) {
+	return true, nil
+}
 
 func TestUploadAndGetHandlers(t *testing.T) {
 	t.Parallel()
@@ -38,7 +49,10 @@ func TestUploadAndGetHandlers(t *testing.T) {
 	datastore.GetTestable(ctx).AddIndexes(testFileIdx...)
 
 	withTestingContext := func(c *router.Context, next router.Handler) {
-		c.Context = ctx
+		c.Context = auth.WithState(ctx, &authtest.FakeState{
+			PeerIPOverride: net.IP{1, 2, 3, 4},
+			FakeDB:         AlwaysInWhitelistAuthDB{},
+		})
 		datastore.GetTestable(ctx).CatchupIndexes()
 		next(c)
 	}

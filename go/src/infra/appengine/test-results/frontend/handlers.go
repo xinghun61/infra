@@ -14,8 +14,10 @@ import (
 
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/info"
+	"github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 )
@@ -36,6 +38,14 @@ func init() {
 
 	baseMW := gaemiddleware.BaseProd()
 	getMW := baseMW.Extend(templatesMiddleware())
+	authMW := baseMW.Extend(
+		// Declare what auth methods are supported.
+		auth.Use(auth.Authenticator{
+			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
+		}),
+		// Actually do the authentication.
+		auth.Authenticate,
+	)
 
 	gaemiddleware.InstallHandlers(r, baseMW)
 
@@ -46,7 +56,7 @@ func init() {
 
 	r.GET("/testfile", getMW, getHandler)
 	r.GET("/testfile/", getMW, getHandler)
-	r.POST("/testfile/upload", baseMW.Extend(withParsedUploadForm), uploadHandler)
+	r.POST("/testfile/upload", authMW.Extend(withParsedUploadForm), uploadHandler)
 
 	r.GET("/builders", baseMW, getBuildersHandler)
 
