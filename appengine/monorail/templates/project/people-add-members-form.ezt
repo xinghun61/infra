@@ -24,7 +24,10 @@
    <td rowspan="3">
        <div class="tip" style="margin-top:0; margin-left:4px">
            Enter the email addresses of users that you would like to
-           add to this [is arg0 "project"]project[else][is arg0 "hotlist"]hotlist[else]group[end][end].<br><br>
+           add to this [is arg0 "project"]project[else]
+	   [is arg0 "hotlist"]hotlist.
+	   <strong>You can also add group lists to give every member of the group permission to edit this hotlist</strong>
+	   [else]group[end][end].<br><br>
            Each email address must correspond to an existing Google Account.
        </div>
     </td>
