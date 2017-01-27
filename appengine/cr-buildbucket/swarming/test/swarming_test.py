@@ -96,9 +96,12 @@ class SwarmingTest(testing.AppengineTestCase):
         ],
       ),
     )
-    self.mock(
-        config, 'get_bucket_async',
-        lambda name: futuristic(('chromium', self.bucket_cfg)))
+    def get_bucket_async(name):
+      if name == 'bucket':
+        return futuristic(('chromium', self.bucket_cfg))
+      else:
+        return futuristic(('chromium', project_config_pb2.Bucket(name=name)))
+    self.mock(config, 'get_bucket_async', get_bucket_async)
 
     self.task_template = {
       'name': 'buildbucket-$bucket-$builder',
@@ -171,6 +174,10 @@ class SwarmingTest(testing.AppengineTestCase):
     # This build is still destined for Swarming, even though such builder
     # does not exist.
     self.assertTrue(swarming.is_for_swarming_async(build).get_result())
+
+    self.assertFalse(
+        swarming.is_for_swarming_async(model.Build(bucket='other'))
+          .get_result())
 
   def test_is_for_swarming_no_template(self):
     build = model.Build(
