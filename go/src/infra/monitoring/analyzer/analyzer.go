@@ -36,6 +36,9 @@ const (
 	// This is pretty aggressive, and tuned mainly for chromium.perf. Consider
 	// making this a per-tree setting.
 	maxConcurrentBuilders = 2
+
+	// This is a guess, and should be tuned
+	maxConcurrentBuilds = 4
 )
 
 var (
@@ -571,7 +574,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 	sort.Sort(buildNums(recentBuildIDs))
 	// Check for alertable step failures.  We group them by key to de-duplicate and merge values
 	// once we've scanned everything.
-	stepAlertsByKey := map[string][]messages.Alert{}
+	stepAlertsByKey := map[string][]*messages.Alert{}
 
 	importantFailures, err := a.findImportantFailures(ctx, master, builderName, recentBuildIDs)
 
@@ -606,37 +609,85 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 		logging.Errorf(ctx, "while getting findit results for build: %s", err)
 	}
 
-	for _, buildNum := range recentBuildIDs {
-		failures, err := a.stepFailures(ctx, master, builderName, buildNum)
-		if err != nil {
-			errs = append(errs, err)
-		}
-		if len(failures) == 0 {
-			// Bail as soon as we find a successful build.
-			break
-		}
+	type r struct {
+		alrs     []messages.Alert
+		buildNum int64
+	}
+	alertsPerBuild := make([][]messages.Alert, len(recentBuildIDs))
+	goodBuilds := make([]int64, len(recentBuildIDs))
 
-		fResults := []*messages.FinditResult{}
-		if buildNum == latestBuild {
-			fResults = finditResults
-		} else {
-			// Get findit results for other build.
-			f, err := client.Findit(ctx, master, builderName, buildNum, []string{})
-			if err != nil {
-				logging.Errorf(ctx, "while getting findit results for build: %s", err)
-			} else {
-				fResults = f
+	workers := len(recentBuildIDs)
+	if workers > maxConcurrentBuilds {
+		workers = maxConcurrentBuilds
+	}
+	err = parallel.WorkPool(workers, func(workC chan<- func() error) {
+		for i, buildNum := range recentBuildIDs {
+			buildNum := buildNum
+			i := i
+			// Initialize to -1, since 0 is a valid build number
+			goodBuilds[i] = -1
+			workC <- func() error {
+				failures, err := a.stepFailures(ctx, master, builderName, buildNum)
+				if err != nil {
+					return err
+				}
+
+				if len(failures) == 0 {
+					// Bail as soon as we find a successful build.
+					goodBuilds[i] = buildNum
+					return nil
+				}
+
+				fResults := []*messages.FinditResult{}
+				if buildNum == latestBuild {
+					fResults = finditResults
+				} else {
+					// Get findit results for other build.
+					stepNames := make([]string, len(failures))
+					for i, f := range failures {
+						stepNames[i] = f.Step.Name
+					}
+
+					f, err := client.Findit(ctx, master, builderName, buildNum, stepNames)
+					if err != nil {
+						logging.Errorf(ctx, "while getting findit results for build: %s", err)
+					} else {
+						fResults = f
+					}
+				}
+
+				as, err := a.stepFailureAlerts(ctx, tree, failures, fResults)
+				if err != nil {
+					return err
+				}
+				alertsPerBuild[i] = as
+				return nil
 			}
 		}
-		as, err := a.stepFailureAlerts(ctx, tree, failures, fResults)
-		if err != nil {
-			errs = append(errs, err)
+	})
+
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	firstSuccessfulBuild := int64(-1)
+	for _, num := range goodBuilds {
+		if firstSuccessfulBuild == -1 || num < firstSuccessfulBuild {
+			firstSuccessfulBuild = num
+		}
+	}
+
+	for i, alrs := range alertsPerBuild {
+		buildNum := recentBuildIDs[i]
+		if buildNum >= firstSuccessfulBuild && firstSuccessfulBuild != -1 {
+			continue
 		}
 
 		// Group alerts by key so they can be merged across builds/regression ranges.
-		for _, alr := range as {
+		for _, alr := range alrs {
+			alr := alr
 			if importantKeys.Has(alr.Key) {
-				stepAlertsByKey[alr.Key] = append(stepAlertsByKey[alr.Key], alr)
+				stepAlertsByKey[alr.Key] = append(stepAlertsByKey[alr.Key], &alr)
 			}
 		}
 	}
@@ -718,7 +769,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 			}
 		}
 
-		alerts = append(alerts, mergedAlert)
+		alerts = append(alerts, *mergedAlert)
 	}
 
 	return alerts, errs
