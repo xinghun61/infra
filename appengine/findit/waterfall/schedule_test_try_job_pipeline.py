@@ -75,7 +75,8 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
     additional_parameters = {'tests': targeted_tests}
 
     build_id = self._TriggerTryJob(
-        master_name, builder_name, properties, additional_parameters)
+        master_name, builder_name, properties, additional_parameters,
+        failure_type.GetDescriptionForFailureType(failure_type.TEST))
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     try_job.test_results.append({'try_job_id': build_id})

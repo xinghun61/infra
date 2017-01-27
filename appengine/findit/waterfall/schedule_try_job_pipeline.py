@@ -7,6 +7,7 @@ from common.pipeline_wrapper import pipeline
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from waterfall import buildbot
+from waterfall import monitoring
 from waterfall import waterfall_config
 
 
@@ -31,8 +32,19 @@ class ScheduleTryJobPipeline(BasePipeline):
 
     return properties
 
+  def _OnTryJobTriggered(
+      self, try_job_type, master_name, builder_name):  # pragma: no cover.
+    monitoring.try_jobs.increment(
+        {
+            'operation': 'trigger',
+            'type': try_job_type,
+            'master_name': master_name,
+            'builder_name': builder_name
+        })
+
   def _TriggerTryJob(
-      self, master_name, builder_name, properties, additional_parameters):
+      self, master_name, builder_name, properties, additional_parameters,
+      try_job_type):
     tryserver_mastername, tryserver_buildername = (
         waterfall_config.GetTrybotForWaterfallBuilder(
             master_name, builder_name))
@@ -41,6 +53,8 @@ class ScheduleTryJobPipeline(BasePipeline):
         tryserver_mastername, tryserver_buildername, None, properties, [],
         additional_parameters)
     error, build = buildbucket_client.TriggerTryJobs([try_job])[0]
+
+    self._OnTryJobTriggered(try_job_type, master_name, builder_name)
 
     if error:  # pragma: no cover
       raise pipeline.Retry(

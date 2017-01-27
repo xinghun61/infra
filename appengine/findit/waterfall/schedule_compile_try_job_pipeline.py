@@ -56,7 +56,8 @@ class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
     additional_parameters = {'compile_targets': compile_targets}
 
     build_id = self._TriggerTryJob(
-        master_name, builder_name, properties, additional_parameters)
+        master_name, builder_name, properties, additional_parameters,
+        failure_type.GetDescriptionForFailureType(failure_type.COMPILE))
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     try_job.compile_results.append({'try_job_id': build_id})

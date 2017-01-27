@@ -16,3 +16,9 @@ issues = gae_ts_mon.CounterMetric(
 
 flakes = gae_ts_mon.CounterMetric(
     'findit/flakes', description='Flakes requested or analyzed')
+
+try_jobs = gae_ts_mon.CounterMetric(
+    'findit/try-jobs', description='Try jobs triggered')
+
+try_job_errors = gae_ts_mon.CounterMetric(
+    'findit/try-job-errors', description='Try job errors encountered')

@@ -46,8 +46,8 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
         'bad_revision': 2,
         'target_mastername': master_name,
         'referenced_build_url': (
-             'https://luci-milo.appspot.com/buildbot/%s/%s/%s') % (
-                 master_name, builder_name, build_number)
+            'https://luci-milo.appspot.com/buildbot/%s/%s/%s') % (
+                master_name, builder_name, build_number)
     }
     try_job_pipeline = ScheduleTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(
@@ -71,6 +71,7 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
 
     try_job_pipeline = ScheduleTryJobPipeline()
     build_id = try_job_pipeline._TriggerTryJob(
-        master_name, builder_name, {}, [])
+        master_name, builder_name, {}, [],
+        failure_type.GetDescriptionForFailureType(failure_type.COMPILE))
 
     self.assertEqual(build_id, '1')

@@ -4,6 +4,7 @@
 
 from google.appengine.ext import ndb
 
+from common.waterfall import failure_type
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from waterfall import waterfall_config
@@ -55,7 +56,9 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
     """
     properties = self._GetBuildProperties(
         master_name, builder_name, canonical_step_name, test_name, git_hash)
-    build_id = self._TriggerTryJob(master_name, builder_name, properties, {})
+    build_id = self._TriggerTryJob(
+        master_name, builder_name, properties, {},
+        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST))
 
     try_job = FlakeTryJob.Get(
         master_name, builder_name, canonical_step_name, test_name, git_hash)

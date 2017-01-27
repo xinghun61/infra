@@ -17,6 +17,7 @@ from libs import time_util
 from model import analysis_status
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job_data import WfTryJobData
+from waterfall import monitoring
 from waterfall import waterfall_config
 
 
@@ -108,6 +109,17 @@ def _GetError(buildbucket_response, buildbucket_error, timed_out):
   return None, None
 
 
+def _OnTryJobError(try_job_type, error_dict,
+                   master_name, builder_name):  # pragma: no cover
+  monitoring.try_job_errors.increment(
+      {
+          'type': try_job_type,
+          'error': error_dict.get('message', 'unknown'),
+          'master_name': master_name,
+          'builder_name': builder_name
+      })
+
+
 def _UpdateTryJobMetadata(try_job_data, try_job_type, start_time,
                           buildbucket_build, buildbucket_error, timed_out):
   buildbucket_response = {}
@@ -137,6 +149,8 @@ def _UpdateTryJobMetadata(try_job_data, try_job_type, start_time,
   if error_dict:
     try_job_data.error = error_dict
     try_job_data.error_code = error_code
+    _OnTryJobError(try_job_type, error_dict, try_job_data.master_name,
+                   try_job_data.builder_name)
 
   try_job_data.put()
 
