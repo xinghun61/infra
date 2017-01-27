@@ -179,6 +179,10 @@
       return date.toISOString().substring(0, 10);
     },
 
+    _formatDateShort(date) {
+      return moment(date).format('MMM D');
+    },
+
     _onSelected: function(evt) {
       let tree = evt.srcElement.value;
       this.path = '/' + tree;

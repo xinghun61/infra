@@ -10,6 +10,7 @@
 
 <link rel="import" href="../../elements/som-settings/som-settings.html">
 
+<script src="../../bower_components/moment/min/moment.min.js"></script>
 <dom-module id="som-drawer">
   <template>
     <style>
@@ -102,7 +103,7 @@
         <label>[[_computeTreeDisplayName(tree, trees)]] Sheriffs</label>
         <ul id="currentSheriffs">
           <template is="dom-repeat" items="[[_sheriffs]]" as="sheriff">
-            <li>[[sheriff.username]] <small>(ends [[_formatDate(sheriff.endDate)]] PST)</small></li>
+            <li>[[sheriff.username]] <small>(ends [[_formatDateShort(sheriff.endDate)]] PST)</small></li>
           </template>
         </ul>
       </template>
