@@ -44,7 +44,7 @@ def RunSteps(api):
       delete_branch(name)
 
   def update_w3c_repo(name):
-    script = blink_dir.join('Tools', 'Scripts', 'update-w3c-deps')
+    script = blink_dir.join('Tools', 'Scripts', 'wpt-import')
     args = [
       '--auto-update',
       '--auth-refresh-token-json',

@@ -152,7 +152,7 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/src/third_party/WebKit/Tools/Scripts/update-w3c-deps",
+      "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-import",
       "--auto-update",
       "--auth-refresh-token-json",
       "/creds/refresh_tokens/blink-w3c-test-autoroller",
@@ -234,7 +234,7 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/src/third_party/WebKit/Tools/Scripts/update-w3c-deps",
+      "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-import",
       "--auto-update",
       "--auth-refresh-token-json",
       "/creds/refresh_tokens/blink-w3c-test-autoroller",
