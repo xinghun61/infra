@@ -20,7 +20,6 @@ import (
 	"github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
 	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/grpc/discovery"
 	"github.com/luci/luci-go/grpc/prpc"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/xsrf"
@@ -124,19 +123,18 @@ func MiddlewareForRPC() router.MiddlewareChain {
 //
 // Usage:
 //   srv := NewRPCServer()
-//   someapi.RegisterSomeAPIServer(&srv)
+//   someapi.RegisterSomeAPIServer(srv, ...)
 //   ...
+//   discovery.Enable(srv)
 //   srv.InstallHandlers(router, MiddlewareForRPC())
 func NewRPCServer() *prpc.Server {
-	srv := &prpc.Server{
+	return &prpc.Server{
 		Authenticator: auth.Authenticator{
 			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
 		},
 		// TODO(vadimsh): Enable monitoring interceptor.
 		// UnaryServerInterceptor: grpcmon.NewUnaryServerInterceptor(nil),
 	}
-	discovery.Enable(srv)
-	return srv
 }
 
 // NewGAEContext constructs a context compatible with standard appengine lib.

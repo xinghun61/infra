@@ -8,6 +8,7 @@ package launcher
 import (
 	"net/http"
 
+	"github.com/luci/luci-go/grpc/discovery"
 	"github.com/luci/luci-go/server/router"
 
 	admin "infra/tricium/api/admin/v1"
@@ -23,6 +24,7 @@ func init() {
 	// Configure pRPC server.
 	s := common.NewRPCServer()
 	admin.RegisterLauncherServer(s, server)
+	discovery.Enable(s)
 	s.InstallHandlers(r, common.MiddlewareForRPC())
 
 	http.DefaultServeMux.Handle("/", r)

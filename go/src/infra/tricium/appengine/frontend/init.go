@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/luci/luci-go/appengine/gaemiddleware"
+	"github.com/luci/luci-go/grpc/discovery"
 	"github.com/luci/luci-go/server/router"
 
 	"infra/tricium/api/v1"
@@ -37,6 +38,7 @@ func init() {
 	// Configure pRPC server.
 	s := common.NewRPCServer()
 	tricium.RegisterTriciumServer(s, server)
+	discovery.Enable(s)
 	s.InstallHandlers(r, common.MiddlewareForRPC())
 
 	http.DefaultServeMux.Handle("/", r)
