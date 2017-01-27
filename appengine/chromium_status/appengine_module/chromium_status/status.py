@@ -148,6 +148,11 @@ class LinkableText(object):
         r'("cbuildbot" on "([^"]+)")',
         r'%s/builders/\2' % cls.WATERFALL_URLS['chromiumos'], r'\1', False)
 
+    # Convert all other URLs into links. Regexp based on @stephenhay's idea from
+    # https://mathiasbynens.be/demo/url-regex.
+    cls.register_converter(
+        r'\b(https?://[^\s/$.?#].[^\s]*)\b', r'\1', r'\1', False)
+
     if is_chromiumos:
       # Match the string '"builder name"-internal/public-buildnumber:'. E.g.,
       #   "Canary master"-i-120:
