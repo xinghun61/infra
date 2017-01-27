@@ -23,7 +23,7 @@ from waterfall.build_info import BuildInfo
 # protobuf and GAE have package name conflict on 'google'.
 # Add this to solve the conflict.
 third_party = os.path.join(
-    os.path.dirname(__file__), os.path.pardir, os.path.pardir, 'third_party')
+    os.path.dirname(__file__), os.path.pardir, 'third_party')
 sys.path.insert(0, third_party)
 google.__path__.append(os.path.join(third_party, 'google'))
 from logdog import annotations_pb2
