@@ -420,6 +420,9 @@
         let aHasBugs = aAnn.bugs && aAnn.bugs.length > 0;
         let bHasBugs = bAnn.bugs && bAnn.bugs.length > 0;
 
+        let aBuilders = a.extension && a.extension.builders ? a.extension.builders.length : 1;
+        let bBuilders = b.extension && b.extension.builders ? b.extension.builders.length : 1;
+
         if (a.severity != b.severity) {
           // Note: 3 is the severity number for Infra Failures.
           // We want these at the bottom of the severities for sheriffs.
@@ -432,6 +435,12 @@
         }
 
         if (aAnn.snoozed == bAnn.snoozed && aHasBugs == bHasBugs) {
+          if (aBuilders < bBuilders) {
+            return 1;
+          }
+          if (aBuilders > bBuilders) {
+            return -1;
+          }
           if (a.title < b.title) {
             return -1;
           }

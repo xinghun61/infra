@@ -198,12 +198,16 @@
     test('sort works correctly', function() {
       let alertsData = {
         test: [
-          {extension: { builders: [{name: 'a'}], reasons: [ {step: 'a'} ]},
-            key: 'test'},
-          {extension: { builders: [{name: 'b'}], reasons: [ {step: 'b'} ]},
-            key: 'hello'},
-          {extension: { builders: [{name: 'c'}], reasons: [ {step: 'c'} ]} },
-          {extension: { builders: [{name: 'd'}], reasons: [ {step: 'd'} ]} },
+          {extension: { builders: [{name: 'a'}, {name: 'b'}, {name: 'z'}], reasons: [ {step: 'a'} ]},
+            title: 'a'},
+          {extension: { builders: [{name: 'c'}], reasons: [ {step: 'a'} ]},
+            title: 'b'},
+          {extension: { builders: [{name: 'd'}], reasons: [ {step: 'c'} ]}, title: 'd' },
+          {extension: { builders: [{name: 'e'}], reasons: [ {step: 'd'} ]}, title: 'e' },
+          {extension: { builders: [{name: 'f'}], reasons: [ {step: 'b'} ]},
+            key: 'hello', title: 'd'},
+          {extension: { builders: [{name: 'g'}], reasons: [ {step: 'a'} ]},
+            key: 'test', title: 'c'},
         ]
       };
 
@@ -219,14 +223,13 @@
       });
 
 
-      assert.equal('c', sortedAlerts[0].extension.builders[0].name);
-      assert.equal('d', sortedAlerts[1].extension.builders[0].name);
-
+      debugger;
+      let names = sortedAlerts.map((alr) => {
+        return alr.extension.builders[0].name;
+      })
+      assert.deepEqual(names, ['a', 'c', 'd', 'e', 'f', 'g']);
       // b has a bug so it goes between c/d (no annotations) and a (snoozed).
-      assert.equal('b', sortedAlerts[2].extension.builders[0].name);
-
       // a is snoozed, goes to the bottom.
-      assert.equal('a', sortedAlerts[3].extension.builders[0].name);
     });
   });
 
