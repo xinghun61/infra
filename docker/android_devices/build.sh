@@ -10,6 +10,7 @@ else
   cache="--no-cache=false"
 fi
 
-$DOCKER_BIN_PATH build $cache -t ${IMAGE}:${date} .
+par_dir=$(dirname $0)
+$DOCKER_BIN_PATH build $cache -t ${IMAGE}:${date} ${par_dir}
 $DOCKER_BIN_PATH tag ${IMAGE}:$date ${IMAGE}:latest
 exit 0
