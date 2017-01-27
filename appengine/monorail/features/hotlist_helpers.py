@@ -24,13 +24,15 @@ def GetSortedHotlistIssues(
   with profiler.Phase('Checking issue permissions and getting ranks'):
 
     allowed_issues = FilterIssues(mr, issues_list, services)
+    allowed_iids = [issue.issue_id for issue in allowed_issues]
     # The values for issues in a hotlist are specific to the hotlist
     # (rank, adder, added) without invalidating the keys, an issue will retain
     # the rank value it has in one hotlist when navigating to another hotlist.
     sorting.InvalidateArtValuesKeys(
         mr.cnxn, [issue.issue_id for issue in allowed_issues])
     sorted_ranks = sorted(
-        [hotlist_issue.rank for hotlist_issue in hotlist_issues])
+        [hotlist_issue.rank for hotlist_issue in hotlist_issues if
+         hotlist_issue.issue_id in allowed_iids])
     friendly_ranks = {
         rank: friendly for friendly, rank in enumerate(sorted_ranks, 1)}
     issue_adders = framework_views.MakeAllUserViews(
@@ -42,7 +44,8 @@ def GetSortedHotlistIssues(
                                  'adder_id': hotlist_issue.adder_id,
                                  'date_added': timestr.FormatRelativeDate(
                                      hotlist_issue.date_added)}
-        for hotlist_issue in hotlist_issues}
+        for hotlist_issue in hotlist_issues if
+        hotlist_issue.issue_id in allowed_iids}
 
   with profiler.Phase('Making user views'):
     issues_users_by_id = framework_views.MakeAllUserViews(
