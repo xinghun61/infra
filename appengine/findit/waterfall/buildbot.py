@@ -99,6 +99,36 @@ def DownloadJsonData(url, data, http_client):
   response = _DownloadData(url, data, http_client)
   return _GetResultJson(response) if response else None
 
+def _ProcessMiloData(response_json, master_name, builder_name, build_number=''):
+  if not response_json:
+    return None
+  try:
+    response_data = json.loads(response_json)
+  except Exception:  # pragma: no cover
+    logging.error('Failed to load json data for %s-%s-%s' % (
+        master_name, builder_name, build_number))
+    return None
+  try:
+    decoded_data = base64.b64decode(response_data.get('data'))
+  except Exception:  # pragma: no cover
+    logging.error('Failed to b64decode data for %s-%s-%s' % (
+        master_name, builder_name, build_number))
+    return None
+
+  if build_number:
+    # Build data is not compressed.
+    return decoded_data
+
+  try:
+    with io.BytesIO(decoded_data) as compressed_file:
+      with gzip.GzipFile(fileobj=compressed_file) as decompressed_file:
+        data_json = decompressed_file.read()
+  except Exception:  # pragma: no cover
+    logging.error('Failed to decompress data for %s-%s-%s' % (
+        master_name, builder_name, build_number))
+    return None
+
+  return data_json
 
 def GetRecentCompletedBuilds(master_name, builder_name, http_client):
   """Returns a sorted list of recent completed builds for the given builder.
@@ -109,28 +139,11 @@ def GetRecentCompletedBuilds(master_name, builder_name, http_client):
     'name': master_name
   }
   response_json = DownloadJsonData(_MILO_ENDPOINT_MASTER, data, http_client)
-  if not response_json:
-    return []
-  try:
-    response_data = json.loads(response_json)
-  except Exception:  # pragma: no cover
-    logging.error('Failed to load json data for master %s' % master_name)
-    return []
-  try:
-    decoded_data = base64.b64decode(response_data.get('data'))
-  except Exception:  # pragma: no cover
-    logging.error('Failed to b64decode data for master %s' % master_name)
+  master_data_json = _ProcessMiloData(response_json, master_name, builder_name)
+  if not master_data_json:
     return []
 
-  try:
-    with io.BytesIO(decoded_data) as compressed_file:
-      with gzip.GzipFile(fileobj=compressed_file) as decompressed_file:
-        master_data_json = decompressed_file.read()
-        master_data = json.loads(master_data_json)
-  except Exception:  # pragma: no cover
-    logging.error('Failed to decompress data for master %s' % master_name)
-    return []
-
+  master_data = json.loads(master_data_json)
   meta_data = master_data.get('builders', {}).get(builder_name, {})
   cached_builds = meta_data.get('cachedBuilds', [])
   current_builds = meta_data.get('currentBuilds', [])
@@ -211,7 +224,9 @@ def GetBuildDataFromBuildMaster(
       'builder': builder_name,
       'buildNum': build_number
   }
-  return DownloadJsonData(_MILO_ENDPOINT_BUILD, data, http_client)
+  response_json = DownloadJsonData(_MILO_ENDPOINT_BUILD, data, http_client)
+  return _ProcessMiloData(
+      response_json, master_name, builder_name, str(build_number))
 
 
 def GetBuildDataFromArchive(master_name,
@@ -407,7 +422,7 @@ def _GetAnnotationsProto(master_name, builder_name, build_number, http_client):
 
 def _GetLogFromLogDog(
       master_name, builder_name, build_number, logdog_stream, http_client):
-  """Gets step_metadata from LogDog in json format."""
+  """Gets log from LogDog."""
 
   path = _BASE_LOGDOG_REQUEST_PATH % (
       master_name, _ProcessStringForLogDog(builder_name), build_number,
@@ -418,7 +433,7 @@ def _GetLogFromLogDog(
       'path': path
   }
 
-  base_error_log = 'Error when fetch step_metadata log: %s'
+  base_error_log = 'Error when fetch log: %s'
 
   response_json = DownloadJsonData(
       _LOGDOG_GET_ENDPOINT, data, http_client)
@@ -426,7 +441,7 @@ def _GetLogFromLogDog(
     logging.error(base_error_log % 'cannot get json log.')
     return None
 
-  # Gets data for step_metadata log. Data format as below:
+  # Gets data for log. Data format as below:
   # {
   #    'logs': [
   #        {
@@ -448,15 +463,11 @@ def _GetLogFromLogDog(
   sio = cStringIO.StringIO()
   for log in logs:
     for line in log.get('text', {}).get('lines', []):
-      sio.write(line.get('value', ''))
-  step_metadata = sio.getvalue()
+      sio.write('%s\n' % line.get('value', '').encode('utf-8'))
+  data = sio.getvalue()
   sio.close()
 
-  try:
-    return json.loads(step_metadata)
-  except Exception:
-    logging.error(base_error_log % 'step_metadata is broken.')
-    return None
+  return data
 
 
 def _ProcessAnnotationsToGetStream(step_name, step, log_type='stdout'):
@@ -479,7 +490,7 @@ def _ProcessAnnotationsToGetStream(step_name, step, log_type='stdout'):
 
 def GetStepLog(master_name, builder_name, build_number,
                full_step_name, http_client, log_type='stdout'):
-  """Returns the raw string of sepcific log of the specified step."""
+  """Returns sepcific log of the specified step."""
 
   # 1. Get annotations proto for the build.
   step = _GetAnnotationsProto(
@@ -494,5 +505,10 @@ def GetStepLog(master_name, builder_name, build_number,
   if not logdog_stream:
     return None
 
-  return _GetLogFromLogDog(
+  data = _GetLogFromLogDog(
       master_name, builder_name, build_number, logdog_stream, http_client)
+
+  if log_type == 'step_metadata':
+    return json.loads(data)
+
+  return data

@@ -256,15 +256,21 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(1, len(http_client.requests))
     self.assertEqual(expected_url, http_client.requests[0])
 
-  @mock.patch.object(buildbot, 'DownloadJsonData', return_value='response')
-  def testGetBuildDataFromBuildMasterSuccess(self, _):
+  @mock.patch.object(buildbot, 'DownloadJsonData')
+  def testGetBuildDataFromBuildMasterSuccess(self, mock_fn):
     master_name = 'a'
     builder_name = 'b c'
     build_number = 1
 
+    response = {
+      'data': base64.b64encode('response')
+    }
+    mock_fn.return_value = json.dumps(response)
+
     self.assertEqual('response',
                      buildbot.GetBuildDataFromBuildMaster(
-                       master_name, builder_name, build_number, _))
+                         master_name, builder_name, build_number,
+                         self.http_client))
 
   def testGetBuildProperty(self):
     properties = [
@@ -550,15 +556,8 @@ class BuildBotTest(unittest.TestCase):
     step_metadata = buildbot._GetLogFromLogDog(
       self.master_name, self.builder_name, self.build_number,
       'stream', self.http_client)
-    self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
-
-  @mock.patch.object(buildbot, 'DownloadJsonData')
-  def testGetStepMetadataFromLogDogMalFormated(self, mock_fn):
-    mock_fn.return_value = _GenerateGetResJson('data')
-    step_metadata = buildbot._GetLogFromLogDog(
-      self.master_name, self.builder_name, self.build_number,
-      'stream', self.http_client)
-    self.assertIsNone(step_metadata)
+    self.assertEqual(json.loads(step_metadata),
+                     wf_testcase.SAMPLE_STEP_METADATA)
 
   @mock.patch.object(buildbot, 'DownloadJsonData',
                      return_value=None)
@@ -581,7 +580,7 @@ class BuildBotTest(unittest.TestCase):
   @mock.patch.object(buildbot, '_ProcessAnnotationsToGetStream',
                      return_value='log_stream')
   @mock.patch.object(buildbot, '_GetLogFromLogDog',
-                     return_value=wf_testcase.SAMPLE_STEP_METADATA)
+                     return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
   def testGetStepMetadata(self, *_):
     step_metadata = buildbot.GetStepLog(
       self.master_name, self.builder_name, self.build_number, self.step_name,
@@ -688,3 +687,12 @@ class BuildBotTest(unittest.TestCase):
       self.master_name, self.builder_name, self.build_number,
       self.http_client)
     self.assertIsNone(step)
+
+  @mock.patch.object(buildbot, '_GetAnnotationsProto', return_value='step')
+  @mock.patch.object(buildbot, '_ProcessAnnotationsToGetStream',
+                     return_value='stream')
+  @mock.patch.object(buildbot, '_GetLogFromLogDog', return_value='log1/nlog2')
+  def testGetStepLogStdio(self, *_):
+    self.assertEqual('log1/nlog2', buildbot.GetStepLog(
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        self.http_client))
