@@ -21,7 +21,7 @@ class ActionLimitTest(unittest.TestCase):
   def testNeedCaptchaAuthUserNoPreviousActions(self):
     action = actionlimit.ISSUE_COMMENT
     user = user_pb2.User()
-    self.assertFalse(actionlimit.NeedCaptcha(user, action))
+    self.assertTrue(actionlimit.NeedCaptcha(user, action))
 
   def testNeedCaptchaAuthUserLifetimeExcessiveActivityException(self):
     action = actionlimit.ISSUE_COMMENT
@@ -76,8 +76,11 @@ class ActionLimitTest(unittest.TestCase):
     for _i in range(0, hard_limit):
       actionlimit.CountAction(user, action, now=now)
 
+    self.assertRaises(
+        actionlimit.ExcessiveActivityException,
+        actionlimit.NeedCaptcha, user, action)
     # if we didn't pass later, we'd get an exception
-    self.assertFalse(actionlimit.NeedCaptcha(user, action, now=later))
+    self.assertTrue(actionlimit.NeedCaptcha(user, action, now=later))
 
   def testNeedCaptchaNoLifetimeLimit(self):
     action = actionlimit.ISSUE_COMMENT
@@ -88,6 +91,10 @@ class ActionLimitTest(unittest.TestCase):
     self.assertRaises(
         actionlimit.ExcessiveActivityException,
         actionlimit.NeedCaptcha, user, action, skip_lifetime_check=False)
+    self.assertTrue(
+        actionlimit.NeedCaptcha(user, action, skip_lifetime_check=True))
+    actionlimit.GetLimitPB(user, action).recent_count = 1
+    actionlimit.GetLimitPB(user, action).reset_timestamp = int(time.time()) + 5
     self.assertFalse(
         actionlimit.NeedCaptcha(user, action, skip_lifetime_check=True))
 

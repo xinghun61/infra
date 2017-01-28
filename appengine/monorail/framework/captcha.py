@@ -12,6 +12,7 @@ import urllib2
 
 from services import secrets_svc
 
+
 def Verify(remote_ip, response):
   """Check the user's guess at a captcha solution.
 
@@ -38,6 +39,7 @@ def Verify(remote_ip, response):
       return False, 'incorrect-captcha-sol'
 
   return True, ''
+
 
 def _AskRecaptcha(remote_ip, response):
   """Ask the ReCAPTCHA backend to verify the user's guess."""

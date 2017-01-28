@@ -462,8 +462,13 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     mr.project_name = self.project.project_name
     mr.project = self.project
 
+    self.mox.StubOutWithMock(self.servlet, 'CheckCaptcha')
+    self.servlet.CheckCaptcha(mr, mox.IgnoreArg())
+    self.mox.ReplayAll()
+
     # The form should be processed and redirect back to viewing the issue.
     redirect_url = self.servlet.ProcessFormData(mr, post_data)
+    self.mox.VerifyAll()
     self.assertTrue(redirect_url.startswith(
         'http://127.0.0.1/p/proj/issues/detail?id=%d' % local_id_2))
 
@@ -510,8 +515,14 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     mr.project_name = self.project.project_name
     mr.project = self.project
 
+    self.mox.StubOutWithMock(self.servlet, 'CheckCaptcha')
+    self.servlet.CheckCaptcha(mr, mox.IgnoreArg())
+    self.mox.ReplayAll()
+
     # The form should be processed and redirect back to viewing the issue.
     redirect_url = self.servlet.ProcessFormData(mr, post_data)
+    self.mox.VerifyAll()
+
     self.assertTrue(redirect_url.startswith(
         'http://127.0.0.1/p/proj/issues/detail?id=%d' % local_id_2))
 

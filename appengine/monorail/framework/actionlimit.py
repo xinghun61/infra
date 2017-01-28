@@ -86,11 +86,9 @@ def NeedCaptcha(user, action_type, now=None, skip_lifetime_check=False):
   period, soft, hard, life_max = ACTION_LIMITS[action_type]
   actionlimit_pb = GetLimitPB(user, action_type)
 
-  # First, users with no action limits recorded must be below limits.
-  # And, users that we explicitly trust as non-abusers are allowed to take
+  # First, users that we explicitly trust as non-abusers are allowed to take
   # and unlimited number of actions. And, site admins are trusted non-abusers.
-  if (not actionlimit_pb or user.ignore_action_limits or
-      user.is_site_admin):
+  if user.ignore_action_limits or user.is_site_admin:
     return False
 
   # Second, check if user has reached lifetime limit.
@@ -104,13 +102,15 @@ def NeedCaptcha(user, action_type, now=None, skip_lifetime_check=False):
       and actionlimit_pb.lifetime_count >= life_max):
     raise ExcessiveActivityException()
 
-  # Third, if user can begin a new time period, they are free to go ahead.
-  if now - actionlimit_pb.reset_timestamp > period:
-    return False
-
-  # Fourth, check for hard rate limits.
-  if hard is not None and actionlimit_pb.recent_count >= hard:
+  # Third, check for unexpired hard rate limits.
+  if (hard is not None and actionlimit_pb.recent_count >= hard and
+      now - actionlimit_pb.reset_timestamp <= period):
     raise ExcessiveActivityException()
+
+  # Fourth, users with no previous actions or at the start of a new period must
+  # solve one captcha as a barrier to spam accounts.
+  if not actionlimit_pb or now - actionlimit_pb.reset_timestamp > period:
+    return True
 
   # Finally, check the soft limit in this time period.
   action_limit = False

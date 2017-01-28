@@ -160,7 +160,13 @@ class IssueEntryTest(unittest.TestCase):
         summary=['fake summary'],
         comment=['fake comment'],
         status=['New'])
+
+    self.mox.StubOutWithMock(self.servlet, 'CheckCaptcha')
+    self.servlet.CheckCaptcha(mr, mox.IgnoreArg())
+    self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(mr, post_data)
+
+    self.mox.VerifyAll()
     self.assertTrue('/p/proj/issues/detail?id=' in url)
 
   def testProcessFormData_RejectPlacedholderSummary(self):
