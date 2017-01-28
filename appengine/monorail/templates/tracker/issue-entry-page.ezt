@@ -71,7 +71,7 @@
          <div style="color:#666">Issue attachment storage quota exceeded.</div>
         [end]
        </td>
-       <td id="star_cell">
+       <td id="star_cell" style="vertical-align: initial">
         [# Note: if the user is permitted to enter an issue, they are permitted to star it.]
         <a class="star" id="star" style="color:cornflowerblue;">&#9733;</a>
         Notify me of issue changes, if enabled in <a id="settings" target="new" href="/hosting/settings">settings</a>
