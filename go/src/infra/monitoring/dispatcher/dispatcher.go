@@ -74,9 +74,8 @@ var (
 	// gk is the gatekeeper config.
 	gks = []*messages.GatekeeperConfig{}
 	// gkt is the gatekeeper trees config.
-	gkts             = map[string][]messages.TreeMasterConfig{}
-	filteredFailures = uint64(0)
-	expvars          = expvar.NewMap("dispatcher")
+	gkts    = map[string][]messages.TreeMasterConfig{}
+	expvars = expvar.NewMap("dispatcher")
 
 	// tsmon metrics
 	iterations = metric.NewCounter("alerts_dispatcher/iterations",
@@ -222,7 +221,7 @@ func mainLoop(ctx context.Context, a *analyzer.Analyzer, trees map[string]bool, 
 				errs <- err
 			}
 
-			logging.Infof(ctx, "Filtered failures: %v", filteredFailures)
+			logging.Infof(ctx, "Alerts posted: %v", len(alerts.Alerts))
 			done <- nil
 		}()
 	}
