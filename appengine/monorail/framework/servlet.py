@@ -753,6 +753,7 @@ class Servlet(webapp2.RequestHandler):
 
     show_captcha = any(actionlimit.NeedCaptcha(mr.auth.user_pb, action_type)
                        for action_type in self._CAPTCHA_ACTION_TYPES)
+    logging.info('show_captcha: %r', show_captcha)
     return {'show_captcha': ezt.boolean(show_captcha)}
 
   def GatherPageData(self, mr):
@@ -807,16 +808,20 @@ class Servlet(webapp2.RequestHandler):
     """Check the provided CAPTCHA solution and add an error if it is wrong."""
     if (mr.project and
         framework_bizobj.UserIsInProject(mr.project, mr.auth.effective_ids)):
+      logging.info('Project member is exempt from CAPTCHA')
       return  # Don't check a user's actions within their own projects.
 
     if not any(actionlimit.NeedCaptcha(mr.auth.user_pb, action_type)
                for action_type in self._CAPTCHA_ACTION_TYPES):
+      logging.info('No CAPTCHA was required')
       return  # no captcha was needed.
 
     remote_ip = mr.request.remote_addr
     captcha_response = post_data.get('g-recaptcha-response')
     correct, _msg = captcha.Verify(remote_ip, captcha_response)
-    if not correct:
+    if correct:
+      logging.info('CAPTCHA was solved')
+    else:
       logging.info('BZzzz! Bad captcha solution.')
       mr.errors.captcha = 'Captcha check failed.'
 
