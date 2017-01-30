@@ -266,7 +266,7 @@ def SearchIssueFullText(project_ids, query_ast_conj, shard_id):
     return None, False
 
   if project_ids:
-    project_clause = ' or '.join(
+    project_clause = ' OR '.join(
         'project_id:%d' % pid for pid in project_ids)
     fulltext_query = '(%s) %s' % (project_clause, fulltext_query)
 

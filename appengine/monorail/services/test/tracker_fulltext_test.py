@@ -193,6 +193,25 @@ class TrackerFulltextTest(unittest.TestCase):
     self.assertItemsEqual([123, 234], issue_ids)
     self.assertFalse(capped)
 
+  def testSearchIssueFullText_CrossProject(self):
+    self.mox.StubOutWithMock(fulltext_helpers, 'ComprehensiveSearch')
+    fulltext_helpers.ComprehensiveSearch(
+        '(project_id:789 OR project_id:678) (summary:"test")',
+        settings.search_index_name_format % 1).AndReturn([123, 234])
+    self.mox.ReplayAll()
+
+    summary_fd = tracker_pb2.FieldDef(
+        field_name='summary', field_type=tracker_pb2.FieldTypes.STR_TYPE)
+    query_ast_conj = ast_pb2.Conjunction(conds=[
+        ast_pb2.Condition(
+            op=ast_pb2.QueryOp.TEXT_HAS, field_defs=[summary_fd],
+            str_values=['test'])])
+    issue_ids, capped = tracker_fulltext.SearchIssueFullText(
+        [789, 678], query_ast_conj, 1)
+    self.mox.VerifyAll()
+    self.assertItemsEqual([123, 234], issue_ids)
+    self.assertFalse(capped)
+
   def testSearchIssueFullText_Capped(self):
     try:
       orig = settings.fulltext_limit_per_shard
