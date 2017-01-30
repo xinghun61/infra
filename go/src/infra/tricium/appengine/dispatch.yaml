@@ -22,5 +22,11 @@ dispatch:
 - url: "*/config/*"
   module: config
 
+- url: "*/rpcexplorer/*"
+  module: static
+
+- url: "*/static/*"
+  module: static
+
 - url: "*/*"
   module: default
