@@ -41,15 +41,9 @@ DEFAULT_CONFIG_DATA = {
         'top_n': 4
     },
     'project_classifier': {
-        'file_path_marker_to_project_name': {
-            'googleplex-android/': 'android_os',
-        },
-        'function_marker_to_project_name': {
-            'org.chromium': 'chromium',
-            'android.': 'android_os',
-        },
-        'host_directories': [
-            'src/'
+        'project_path_function_hosts': [
+            ['android_os', ['googleplex-android/'], ['android.'], None],
+            ['chromium', None, ['org.chromium'], ['src/']]
         ],
         'non_chromium_project_rank_priority': {
             'android_os': '-1',

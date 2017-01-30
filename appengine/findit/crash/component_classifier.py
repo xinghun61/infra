@@ -18,100 +18,87 @@ class ComponentClassifier(object):
   For example: ['Blink>DOM', 'Blink>HTML'].
   """
 
-  def __init__(self, components, top_n):
+  def __init__(self, components, top_n_frames):
     """Build a classifier for components.
 
     Args:
       components (list of crash.component.Component): the components to
         check for.
-      top_n (int): how many frames of the callstack to look at"""
-    super(ComponentClassifier, self).__init__()
-    if not components:
-      logging.warning('Empty configuration for component classifier.')
-      components = [] # Ensure self.components is not None
-    self.components = components
-    self.top_n = top_n
-
-  def GetClassFromStackFrame(self, frame):
-    """Determine which component is responsible for this frame."""
-    for component in self.components:
-      if component.MatchesStackFrame(frame):
-        return component.component_name
-
-    return ''
-
-  # TODO(wrengr): refactor this into a method on Suspect which returns
-  # the cannonical frame (and documents why it's the one we return).
-  def GetClassFromSuspect(self, suspect):
-    """Determine which component is responsible for this suspect.
-
-    Note that Findit assumes files that the culprit suspect touched come from
-    the same component.
+      top_n_frames (int): how many frames of the callstack to look at.
     """
-    if suspect.file_to_stack_infos:
-      # file_to_stack_infos is a dict mapping file_path to stack_infos,
-      # where stack_infos is a list of (frame, callstack_priority)
-      # pairs. So ``.values()`` returns a list of the stack_infos in an
-      # arbitrary order; the first ``[0]`` grabs the "first" stack_infos;
-      # the second ``[0]`` grabs the first pair from the list; and
-      # the third ``[0]`` grabs the ``frame`` from the pair.
-      # TODO(wrengr): why is that the right frame to look at?
-      frame = suspect.file_to_stack_infos.values()[0][0][0]
-      return self.GetClassFromStackFrame(frame)
-
-    return ''
+    super(ComponentClassifier, self).__init__()
+    self.components = components or []
+    self.top_n_frames = top_n_frames
 
   # TODO(http://crbug.com/657177): return the Component objects
   # themselves, rather than strings naming them.
-  def Classify(self, suspects, crash_stack):
+  def ClassifyCallStack(self, stack, top_n_components=2):
     """Classifies component of a crash.
 
     Args:
+      stack (CallStack): The callstack that caused the crash.
+      top_n_components (int): The number of top components for the stack,
+        defaults to 2.
+
+    Returns:
+      List of top n components.
+    """
+    def GetComponentFromStackFrame(frame):
+      """Determine which component is responsible for this frame."""
+      for component in self.components:
+        if component.MatchesStackFrame(frame):
+          return component.component_name
+
+      return None
+
+    components = map(GetComponentFromStackFrame,
+                     stack.frames[:self.top_n_frames])
+    return RankByOccurrence(components, top_n_components)
+
+  # TODO(http://crbug.com/657177): return the Component objects
+  # themselves, rather than strings naming them.
+  def ClassifySuspects(self, suspects, top_n_components=2):
+    """Classifies component of a list of suspects.
+
+    Args:
       suspects (list of Suspect): Culprit suspects.
-      crash_stack (CallStack): The callstack that caused the crash.
+      top_n_components (int): The number of top components for the stack,
+        defaults to 2.
 
     Returns:
       List of top 2 components.
     """
-    # If ``suspects`` are available, we use the components from there since
-    # they're more reliable than the ones from the ``crash_stack``.
-    if suspects:
-      classes = map(self.GetClassFromSuspect, suspects[:self.top_n])
-    else:
-      classes = map(self.GetClassFromStackFrame,
-          crash_stack.frames[:self.top_n])
+    components = []
+    for suspect in suspects:
+      components.extend(self.ClassifySuspect(suspect))
 
-    return RankByOccurrence(classes, 2)
+    return RankByOccurrence(components, top_n_components,
+                            rank_function=lambda x: -len(x))
 
-  # TODO(ymzhang): use component of new path as default. RENAME might
-  # need to return two (old path new path may have different components)
-  def GetClassFromFileChangeInfo(self, file_change_info):
-    """Determine which component is responsible for a touched file."""
-    if not file_change_info:
+  def ClassifySuspect(self, suspect, top_n_components=2):
+    """ Classifies components of a suspect.
+
+    Args:
+      suspect (Suspect): a change log
+      top_n_components (int): number of components assigned to this suspect,
+        defaults to 2.
+
+    Returns:
+      List of components
+    """
+    if not suspect or not suspect.changelog:
       return None
 
-    for component in self.components:
-      if (file_change_info.change_type == ChangeType.DELETE):
-        if component.MatchesFile(file_change_info.old_path):
+    def GetComponentFromTouchedFile(touched_file):
+      """Determine which component is responsible for a touched file."""
+      for component in self.components:
+        if component.MatchesTouchedFile(suspect.dep_path,
+                                        touched_file.changed_path):
           return component.component_name
-      else:
-        if component.MatchesFile(file_change_info.new_path):
-          return component.component_name
 
-    return ''
-
-  def ClassifyChangeLog(self, change_log, top_n=2):
-    """ Classifies components of a change log.
-
-     Args:
-       change_log: a change log
-       top_n: number of components assigned to this change log, default is 2
-
-     Returns:
-       List of components
-     """
-    if not change_log:
       return None
 
-    classes = map(self.GetClassFromFileChangeInfo, change_log.touched_files)
-    return RankByOccurrence(classes, top_n, rank_function=lambda x:-len(x))
+    components = map(GetComponentFromTouchedFile,
+                     suspect.changelog.touched_files)
+    return RankByOccurrence(components, top_n_components,
+                            rank_function=lambda x: -len(x))

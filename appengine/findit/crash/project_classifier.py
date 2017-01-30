@@ -5,6 +5,7 @@
 import logging
 
 from crash.occurrence import RankByOccurrence
+from crash.project import Project
 from crash.type_enums import LanguageType
 from model.crash.crash_config import CrashConfig
 
@@ -16,79 +17,36 @@ class ProjectClassifier(object):
   """
 
   # TODO(http://crbug.com/657177): remove dependency on CrashConfig.
-  def __init__(self):
+  def __init__(self, projects, top_n_frames,
+               non_chromium_project_rank_priority=None):
     super(ProjectClassifier, self).__init__()
-    self.project_classifier_config = CrashConfig.Get().project_classifier
-    if self.project_classifier_config:
-      self.project_classifier_config['host_directories'].sort(
-          key=lambda host: -len(host.split('/')))
+    self.projects = projects
+    self.top_n_frames = top_n_frames
+    self.non_chromium_project_rank_priority = non_chromium_project_rank_priority
 
-  # TODO(http://crbug.com/657177): refactor this into a method on Project.
-  def _GetProjectFromDepPath(self, dep_path):
-    """Returns the project name from a dep path."""
-    if not dep_path:
-      return ''
+  @staticmethod
+  def _GetTopProject(projects, rank_function=None):
+    """Gets the highest ranking class among projects."""
+    projects = RankByOccurrence(projects, 1, rank_function=rank_function)
 
-    if dep_path == 'src/':
-      return 'chromium'
+    if projects:
+      return projects[0]
 
-    for host_directory in self.project_classifier_config['host_directories']:
-      if dep_path.startswith(host_directory):
-        path = dep_path[len(host_directory):]
-        return 'chromium-%s' % path.split('/')[0].lower()
+    logging.warning('ProjectClassifier.Classify: no projects found.')
+    return None
 
-    # Unknown path, return the whole path as project name.
-    return 'chromium-%s' % '_'.join(dep_path.split('/'))
-
-  # TODO(http://crbug.com/657177): refactor this into Project.MatchesStackFrame.
-  def GetClassFromStackFrame(self, frame):
-    """Determine which project is responsible for this frame."""
-    for marker, name in self.project_classifier_config[
-        'function_marker_to_project_name'].iteritems():
-      if frame.function.startswith(marker):
-        return name
-
-    for marker, name in self.project_classifier_config[
-        'file_path_marker_to_project_name'].iteritems():
-      if marker in frame.file_path or marker in frame.raw_file_path:
-        return name
-
-    return self._GetProjectFromDepPath(frame.dep_path)
-
-  # TODO(wrengr): refactor this into a method on Suspect which returns
-  # the cannonical frame (and documents why it's the one we return).
-  def GetClassFromSuspect(self, suspect):
-    """Determine which project is responsible for this suspect."""
-    if suspect.file_to_stack_infos:
-      # file_to_stack_infos is a dict mapping file_path to stack_infos,
-      # where stack_infos is a list of (frame, callstack_priority)
-      # pairs. So ``.values()`` returns a list of the stack_infos in an
-      # arbitrary order; the first ``[0]`` grabs the "first" stack_infos;
-      # the second ``[0]`` grabs the first pair from the list; and
-      # the third ``[0]`` grabs the ``frame`` from the pair.
-      # TODO(wrengr): why is that the right frame to look at?
-      frame = suspect.file_to_stack_infos.values()[0][0][0]
-      return self.GetClassFromStackFrame(frame)
-
-    return ''
-
-  def Classify(self, suspects, crash_stack):
-    """Classify project of a crash.
+  def ClassifyCallStack(self, crash_stack):
+    """Determines which project is responsible for this crash stack.
 
     Args:
       suspects (list of Suspect): culprit suspects.
-      crash_stack (CallStack): the callstack that caused the crash.
 
     Returns:
       The name of the most-suspected project; or the empty string on failure.
     """
-    if not self.project_classifier_config:
-      logging.warning('ProjectClassifier.Classify: Empty configuration.')
-      return None
-
     rank_function = None
     if crash_stack.language_type == LanguageType.JAVA:
-      def _RankFunctionForJava(occurrence):
+      def RankFunctionForJava(occurrence):
         # TODO(wrengr): why are we weighting by the length, instead of
         # the negative length as we do in the DefaultOccurrenceRanging?
         weight = len(occurrence)
@@ -96,27 +54,51 @@ class ProjectClassifier(object):
         if 'chromium' in project_name:
           index = 0
         else:
-          index = self.project_classifier_config[
-              'non_chromium_project_rank_priority'][project_name]
+          index = self.non_chromium_project_rank_priority[project_name]
         return (weight, index)
 
-      rank_function = _RankFunctionForJava
+      rank_function = RankFunctionForJava
 
-    top_n_frames = self.project_classifier_config['top_n']
-    # If ``suspects`` are available, we use the projects from there since
-    # they're more reliable than the ones from the ``crash_stack``.
-    if suspects:
-      classes = map(self.GetClassFromSuspect, suspects[:top_n_frames])
-    else:
-      classes = map(self.GetClassFromStackFrame,
-          crash_stack.frames[:top_n_frames])
+    def GetProjectFromStackFrame(frame):
+      """Determine which project is responsible for this frame."""
+      for project in self.projects:
+        if project.MatchesStackFrame(frame):
+          return project.GetName(frame.dep_path)
 
-    # Since we're only going to return the highest-ranked class, might
-    # as well set ``max_classes`` to 1.
-    projects = RankByOccurrence(classes, 1, rank_function=rank_function)
+      return None
 
-    if projects:
-      return projects[0]
+    projects = map(GetProjectFromStackFrame,
+                   crash_stack.frames[:self.top_n_frames])
 
-    logging.warning('ProjectClassifier.Classify: no projects found.')
-    return ''
+    return ProjectClassifier._GetTopProject(projects,
+                                            rank_function=rank_function)
+
+  def ClassifySuspect(self, suspect):
+    """Determine which project is responsible for this suspect."""
+    if not suspect or not suspect.changelog:
+      return None
+
+    def GetProjectFromTouchedFile(touched_file):
+      for project in self.projects:
+        if project.MatchesTouchedFile(suspect.dep_path,
+                                      touched_file.changed_path):
+          return project.GetName(suspect.dep_path)
+
+      return None
+
+    projects = map(GetProjectFromTouchedFile, suspect.changelog.touched_files)
+    return ProjectClassifier._GetTopProject(projects,
+                                            rank_function=lambda x:-len(x))
+
+  def ClassifySuspects(self, suspects):
+    """Determines which project is resposible for these suspects.
+
+    Args:
+      suspects (list of Suspect): culprit suspects.
+
+    Returns:
+      The name of the most-suspected project; or the empty string on failure.
+    """
+    projects = map(self.ClassifySuspect, suspects)
+    return ProjectClassifier._GetTopProject(projects,
+                                            rank_function=lambda x:-len(x))

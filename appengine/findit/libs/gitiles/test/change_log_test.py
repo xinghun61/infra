@@ -17,6 +17,20 @@ class ChangeLogTest(unittest.TestCase):
     filechange_info = FileChangeInfo.FromDict(filechange_dict)
     self.assertEqual(filechange_dict, filechange_info.ToDict())
 
+  def testFileChangeinfoChangedPathProperty(self):
+    """Test ``changed_file`` property of ``FileChangeInfo``."""
+    modified_file = FileChangeInfo.Modify('a.cc')
+    self.assertEqual(modified_file.changed_path, 'a.cc')
+
+    added_file = FileChangeInfo.Modify('a.cc')
+    self.assertEqual(added_file.changed_path, 'a.cc')
+
+    copied_file = FileChangeInfo.Copy('old.cc', 'new.cc')
+    self.assertEqual(copied_file.changed_path, 'new.cc')
+
+    deleted_file = FileChangeInfo.Delete('old.cc')
+    self.assertEqual(deleted_file.changed_path, 'old.cc')
+
   def testChangeLog(self):
     change_log_dict = {
       'author': {

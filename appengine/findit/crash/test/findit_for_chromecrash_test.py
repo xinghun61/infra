@@ -205,8 +205,10 @@ class FinditForFracasTest(PredatorTestCase):
         lambda _self, report:
             [dummy_suspect] if report.regression_range else [])
 
-    self.mock(ComponentClassifier, 'Classify', lambda *_: [])
-    self.mock(ProjectClassifier, 'Classify', lambda *_: '')
+    self.mock(ComponentClassifier, 'ClassifySuspects', lambda *_: [])
+    self.mock(ComponentClassifier, 'ClassifyCallStack', lambda *_: [])
+    self.mock(ProjectClassifier, 'ClassifySuspects', lambda *_: '')
+    self.mock(ProjectClassifier, 'ClassifyCallStack', lambda *_: '')
 
     # TODO(wrengr): for both these tests, we should compare Culprit
     # objects directly rather than calling ToDicts and comparing the

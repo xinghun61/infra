@@ -10,10 +10,11 @@ from common import appengine_util
 from crash import detect_regression_range
 from crash.changelist_classifier import ChangelistClassifier
 from crash.chromecrash_parser import ChromeCrashParser
-from crash.component_classifier import Component
+from crash.component import Component
 from crash.component_classifier import ComponentClassifier
 from crash.findit import Findit
 from crash.predator import Predator
+from crash.project import Project
 from crash.project_classifier import ProjectClassifier
 from crash.type_enums import CrashClient
 from model.crash.cracas_crash_analysis import CracasCrashAnalysis
@@ -51,10 +52,17 @@ class FinditForChromeCrash(Findit):
   # entirely, by passing the relevant data as arguments to this constructor.
   def __init__(self, get_repository):
     super(FinditForChromeCrash, self).__init__(get_repository)
+    project_classifier_config = CrashConfig.Get().project_classifier
     component_classifier_config = CrashConfig.Get().component_classifier
 
     self._stacktrace_parser = ChromeCrashParser()
 
+    projects = [Project(name, path_regexs, function_regexs, host_directories)
+                for name, path_regexs, function_regexs, host_directories
+                in project_classifier_config['project_path_function_hosts']]
+    components = [Component(component_name, path_regex, function_regex)
+                  for path_regex, function_regex, component_name
+                  in component_classifier_config['path_function_component']],
     # The top_n is the number of components we should return as
     # components suggestion results.
     # TODO(http://crbug.com/679964) Deprecate the scorer-based changelist
@@ -62,11 +70,10 @@ class FinditForChromeCrash(Findit):
     self._predator = Predator(
         cl_classifier = ChangelistClassifier(get_repository),
         component_classifier = ComponentClassifier(
-            [Component(component_name, path_regex, function_regex)
-            for path_regex, function_regex, component_name
-            in component_classifier_config['path_function_component']],
-            component_classifier_config['top_n']),
-        project_classifier = ProjectClassifier())
+            components, component_classifier_config['top_n']),
+        project_classifier = ProjectClassifier(
+            projects, project_classifier_config['top_n'],
+            project_classifier_config['non_chromium_project_rank_priority']))
 
   def _InitializeAnalysis(self, model, crash_data):
     super(FinditForChromeCrash, self)._InitializeAnalysis(model, crash_data)

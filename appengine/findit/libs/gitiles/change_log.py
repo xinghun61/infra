@@ -50,6 +50,20 @@ class FileChangeInfo(namedtuple('FileChangeInfo',
         'new_path': self.new_path
     }
 
+  @property
+  def changed_path(self):
+    """Returns the changed path to check when analyzing component or project.
+
+    Except for delete change type, the changed path means the new path after
+    change, for delete type, it is the old path.
+    """
+    # TODO(crbug.com/685884): use component of new path as default. RENAME might
+    # need to return two (old path new path may have different components)
+    if self.change_type == ChangeType.DELETE:
+      return self.old_path
+
+    return self.new_path
+
 
 class Contributor(namedtuple('Contributor', ['name', 'email', 'time'])):
   """A generalization of the "author" and "committer" in Git's terminology."""

@@ -3,7 +3,10 @@
 # found in the LICENSE file.
 
 from collections import namedtuple
+import os
 import re
+
+from libs.gitiles.diff import ChangeType
 
 
 # TODO(http://crbug.com/659346): write the coverage tests.
@@ -23,10 +26,9 @@ class Component(namedtuple('Component',
       re.compile(path_regex),
       re.compile(function_regex) if function_regex else None)
 
-
   def MatchesStackFrame(self, frame):
     """Returns true if this component matches the frame."""
-    if not self.path_regex.match(frame.dep_path + frame.file_path):
+    if not self.path_regex.match(os.path.join(frame.dep_path, frame.file_path)):
       return False
 
     # We interpret function_regex=None to mean the regex that matches
@@ -35,6 +37,6 @@ class Component(namedtuple('Component',
       return True
     return self.function_regex.match(frame.function)
 
-  def MatchesFile(self, file_path):
-    """Returns true if this component matches file path."""
-    return self.path_regex.match(file_path)
+  def MatchesTouchedFile(self, dep_path, file_path):
+    """Returns true if the touched file belongs to this component."""
+    return self.path_regex.match(os.path.join(dep_path, file_path))
