@@ -259,9 +259,9 @@ class SpamService(object):
 
   def _predict(self, body):
     return self.prediction_service.trainedmodels().predict(
-        settings.classifier_prorect_id,
-        settings.classifier_model_id,
-        body).execute()
+        project=settings.classifier_project_id,
+        id=settings.classifier_model_id,
+        body=body).execute()
 
   def ClassifyIssue(self, issue, firstComment, author_email):
     """Classify an issue as either spam or ham.
@@ -302,9 +302,9 @@ class SpamService(object):
              }
            )
         return result
-      except Exception:
+      except Exception as ex:
         remaining_retries = remaining_retries - 1
-        logging.error('Error calling prediction API: %s' % sys.exc_info()[2])
+        logging.error('Error calling prediction API: %s' % ex)
 
     return result
 
@@ -345,9 +345,9 @@ class SpamService(object):
              }
            )
         return result
-      except Exception:
+      except Exception as ex:
         remaining_retries = remaining_retries - 1
-        logging.error('Error calling prediction API: %s' % sys.exc_info()[0])
+        logging.error('Error calling prediction API: %s' % ex)
 
     return result
 
