@@ -247,12 +247,12 @@ func TestMain(t *testing.T) {
 							return &http.Client{}, nil
 						}
 
+						swarmingBasePath = "http://fakeurl"
+
 						sa := getSwarmingAlerts(c)
 
 						getOAuthClient = oldOAClient
-						So(sa, ShouldResemble, &swarmingAlerts{
-							Error: []string{"googleapi: Error 403: , forbidden", "googleapi: Error 403: , forbidden"},
-						})
+						So(sa.Error, ShouldNotBeNil)
 					})
 				})
 
