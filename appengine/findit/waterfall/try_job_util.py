@@ -309,9 +309,9 @@ def NeedANewWaterfallTryJob(
     heuristic_result, force_try_job=False):
 
   tryserver_mastername, tryserver_buildername = (
-      waterfall_config.GetTrybotForWaterfallBuilder(master_name, builder_name))
-
+      waterfall_config.GetWaterfallTrybot(master_name, builder_name))
   try_job_type = failure_info['failure_type']
+
   if not tryserver_mastername or not tryserver_buildername:
     logging.info('%s, %s is not supported yet.', master_name, builder_name)
     return False, None

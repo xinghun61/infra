@@ -54,6 +54,45 @@ def _ConvertOldMastersFormatToNew(masters_to_blacklisted_steps):
   return steps_for_masters_rules_in_latest_format
 
 
+def _ConvertOldTrybotFormatToNew(builders_to_trybots):
+  """Converts the legacy trybot mapping format into the updated one.
+
+  Args:
+    builders_to_trybots (dict): A dict in the legacy format
+        {
+            'master': {
+                'builder': {
+                    'mastername': 'tryserver master name',
+                    'buildername': 'waterfall_trybot',
+                },
+                ...
+            },
+            ...
+        }
+
+  Returns:
+        {
+            'master': {
+                'builder': {
+                    'mastername': 'tryserver master name',
+                    'waterfall_trybot': 'waterfall_trybot',
+                    'flake_trybot': 'flake_trybot'
+                },
+                ...
+            },
+            ...
+        }
+  """
+  for builders in builders_to_trybots.itervalues():
+    for trybot_mapping in builders.itervalues():
+      trybot = trybot_mapping.get('buildername')
+      if trybot:
+        trybot_mapping.update({'waterfall_trybot': trybot})
+        trybot_mapping.update({'flake_trybot': trybot})
+        trybot_mapping.pop('buildername')
+  return builders_to_trybots
+
+
 def GetStepsForMastersRules(settings=None, version=None):
   if settings is None:
     settings = FinditConfig.Get(version)
@@ -112,8 +151,8 @@ def StepIsSupportedForMaster(step_name, master_name):
            step_name not in global_unsupported_steps))
 
 
-def GetTrybotForWaterfallBuilder(wf_mastername, wf_buildername):
-  """Returns trybot mastername and buildername for the given waterfall builder.
+def GetFlakeTrybot(wf_mastername, wf_buildername):
+  """Returns tryserver master and builder for running flake try jobs.
 
   Args:
     wf_mastername: The mastername of a waterfall builder.
@@ -121,13 +160,33 @@ def GetTrybotForWaterfallBuilder(wf_mastername, wf_buildername):
 
   Returns:
     (tryserver_mastername, tryserver_buildername)
-    The trybot mastername and buildername to re-run compile in exactly the same
-    configuration as the given waterfall builder. If the given waterfall builder
-    is not supported yet, (None, None) is returned instead.
+    The trybot mastername and buildername to re-run flake try jobs, or
+    (None, None) if not supported.
   """
-  trybot_config = FinditConfig.Get().builders_to_trybots.get(
-      wf_mastername, {}).get(wf_buildername, {})
-  return trybot_config.get('mastername'), trybot_config.get('buildername')
+  trybot_config = _ConvertOldTrybotFormatToNew(
+      FinditConfig.Get().builders_to_trybots)
+  bot_dict = trybot_config.get(wf_mastername, {}).get(wf_buildername, {})
+  return bot_dict.get('mastername'), bot_dict.get('flake_trybot')
+
+
+def GetWaterfallTrybot(wf_mastername, wf_buildername):
+  """Returns tryserver master and builder for running reliable failure try jobs.
+
+  Args:
+    wf_mastername: The mastername of a waterfall builder.
+    wf_buildername: The buildername of a waterfall builder.
+
+  Returns:
+    (tryserver_mastername, tryserver_buildername)
+    The trybot mastername and buildername to rerun reliable failures
+    (compile/test) in exactly the same configuration as the given main waterfall
+    builder. If the given waterfall builder is not supported yet, (None, None)
+    is returned.
+  """
+  trybot_config = _ConvertOldTrybotFormatToNew(
+      FinditConfig.Get().builders_to_trybots)
+  bot_dict = trybot_config.get(wf_mastername, {}).get(wf_buildername, {})
+  return bot_dict.get('mastername'), bot_dict.get('waterfall_trybot')
 
 
 def EnableStrictRegexForCompileLinkFailures(wf_mastername, wf_buildername):

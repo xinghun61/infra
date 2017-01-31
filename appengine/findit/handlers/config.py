@@ -136,7 +136,14 @@ def _ValidateTrybotMapping(builders_to_trybots):
       if not isinstance(trybot_config, dict):
         return False
       if (not trybot_config.get('mastername') or
-          not trybot_config.get('buildername')):
+          not trybot_config.get('waterfall_trybot') or
+          not isinstance(trybot_config['waterfall_trybot'], basestring)):
+        return False
+      if (trybot_config.get('flake_trybot') is not None and not
+          isinstance(trybot_config['flake_trybot'], basestring)):
+        # Specifying a flake_trybot is optional in case flake analysis is not
+        # supported, i.e. in case not_run_tests is True. If it is set, it must
+        # be a string.
         return False
       if (trybot_config.has_key('strict_regex') and
           not isinstance(trybot_config['strict_regex'], bool)):

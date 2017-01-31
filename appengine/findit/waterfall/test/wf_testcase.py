@@ -49,26 +49,30 @@ _DEFAULT_TRY_BOT_MAPPING = {
     'master1': {
         'builder1': {
             'mastername': 'tryserver1',
-            'buildername': 'trybot1',
+            'waterfall_trybot': 'trybot1',
+            'flake_trybot': 'trybot1_flake',
             'strict_regex': True,
         }
     },
     'master2': {
         'builder2': {
             'mastername': 'tryserver2',
-            'buildername': 'trybot2',
+            'waterfall_trybot': 'trybot2',
+            'flake_trybot': 'trybot2_flake',
             'not_run_tests': True,
         },
         'builder3': {
             'mastername': 'tryserver2',
-            'buildername': 'trybot2',
+            'waterfall_trybot': 'trybot2',
+            'flake_trybot': 'trybot2_flake',
             'not_run_tests': False,
         },
     },
     'm': {
         'b': {
             'mastername': 'tryserver.master',
-            'buildername': 'tryserver.builder',
+            'waterfall_trybot': 'tryserver.builder',
+            'flake_trybot': 'tryserver.flake_builder'
         },
     },
 }

@@ -46,7 +46,8 @@ _MOCK_BUILDERS_TO_TRYBOTS = {
     'master1': {
         'builder1': {
             'mastername': 'tryserver1',
-            'buildername': 'trybot1',
+            'waterfall_trybot': 'trybot1',
+            'flake_trybot': 'trybot1_flake'
         }
     }
 }
@@ -444,7 +445,7 @@ class ConfigTest(testing.AppengineTestCase):
         'master1': {
             'builder1': {
                 'mastername': 'tryserver1',
-                'buildername': 'trybot1',
+                'waterfall_trybot': 'trybot1',
             }
         }
     }))
@@ -452,7 +453,16 @@ class ConfigTest(testing.AppengineTestCase):
         'master1': {
             'builder1': {
                 'mastername': 'tryserver1',
-                'buildername': 'trybot1',
+                'waterfall_trybot': 'trybot1',
+                'flake_trybot': 'trybot1_flake'
+            }
+        }
+    }))
+    self.assertTrue(config._ValidateTrybotMapping({
+        'master1': {
+            'builder1': {
+                'mastername': 'tryserver1',
+                'waterfall_trybot': 'trybot1',
                 'strict_regex': True,
             }
         }
@@ -461,7 +471,7 @@ class ConfigTest(testing.AppengineTestCase):
         'master1': {
             'builder1': {
                 'mastername': 'tryserver1',
-                'buildername': 'trybot1',
+                'waterfall_trybot': 'trybot1',
                 'strict_regex': 'a',
             }
         }
@@ -470,7 +480,7 @@ class ConfigTest(testing.AppengineTestCase):
         'master1': {
             'builder1': {
                 'mastername': 'tryserver1',
-                'buildername': 'trybot1',
+                'waterfall_trybot': 'trybot1',
                 'not_run_tests': True,
             }
         }
@@ -479,8 +489,26 @@ class ConfigTest(testing.AppengineTestCase):
         'master1': {
             'builder1': {
                 'mastername': 'tryserver1',
-                'buildername': 'trybot1',
+                'waterfall_trybot': 'trybot1',
                 'not_run_tests': 1,  # Should be a bool.
+            }
+        }
+    }))
+    self.assertFalse(config._ValidateTrybotMapping({
+        'master1': {
+            'builder1': {
+                'mastername': 'tryserver1',
+                'waterfall_trybot': {},  # Should be a string.
+                'flake_trybot': 'trybot2',
+            }
+        }
+    }))
+    self.assertFalse(config._ValidateTrybotMapping({
+        'master1': {
+            'builder1': {
+                'mastername': 'tryserver1',
+                'waterfall_trybot': 'trybot1',
+                'flake_trybot': 1,  # Should be a string.
             }
         }
     }))

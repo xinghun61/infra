@@ -48,7 +48,22 @@ class FinditConfig(VersionedConfig):
   steps_for_masters_rules = ndb.JsonProperty(indexed=False, default={})
 
   # Mapping of waterfall builders to try-server trybots, which are used to
-  # re-run compile to identify culprits for compile failures.
+  # re-run compile, test, and flake try jobs. Bots for failures on the main
+  # waterfall (compile, test) have a dedicated pool separate from the bots
+  # used to run flake try jobs.
+  # {
+  #     'Chromium':
+  #         'Linux': {
+  #              'waterfall_trybot': 'linux_chromium_variable',
+  #              'flake_trybot': 'linux_chromium_variable_deflake',
+  #              'mastername': 'tryserver.chromium.linux',
+  #              'strict_regex": true
+  #         },
+  #         ...
+  #      },
+  #      ...
+  # }
+
   builders_to_trybots = ndb.JsonProperty(indexed=False, default={})
 
   # A dict containing common settings for try jobs. For example,
@@ -113,4 +128,3 @@ class FinditConfig(VersionedConfig):
   #     'minimum_confidence_score_to_run_tryjobs': 0.6
   # }
   check_flake_settings = ndb.JsonProperty(indexed=False, default={})
-

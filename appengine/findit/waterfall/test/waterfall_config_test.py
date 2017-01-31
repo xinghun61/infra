@@ -25,6 +25,110 @@ class MastersTest(wf_testcase.WaterfallTestCase):
                 'master2': {}
             }))
 
+  def testConvertOldTrybotFormatToNew(self):
+    self.assertEqual(
+        {
+            'master_1': {
+                'builder_1': {
+                    'mastername': 'tryserver.chromium.master_1',
+                    'waterfall_trybot': 'trybot_1',
+                    'flake_trybot': 'trybot_1',
+                },
+                'builder_2': {
+                    'mastername': 'tryserver.chromium.master_1',
+                    'waterfall_trybot': 'trybot_2',
+                    'flake_trybot': 'trybot_2',
+                }
+            },
+            'master_2': {
+                'builder_3': {
+                    'mastername': 'tryserver.chromium.master_2',
+                    'waterfall_trybot': 'trybot_3',
+                    'flake_trybot': 'trybot_3',
+                },
+                'builder_4': {
+                    'mastername': 'tryserver.chromium.master_2',
+                    'waterfall_trybot': 'trybot_4',
+                    'flake_trybot': 'trybot_4',
+                }
+            },
+        },
+        waterfall_config._ConvertOldTrybotFormatToNew({
+            'master_1': {
+                'builder_1': {
+                    'mastername': 'tryserver.chromium.master_1',
+                    'buildername': 'trybot_1',
+                },
+                'builder_2': {
+                    'mastername': 'tryserver.chromium.master_1',
+                    'buildername': 'trybot_2'
+                }
+            },
+            'master_2': {
+                'builder_3': {
+                    'mastername': 'tryserver.chromium.master_2',
+                    'buildername': 'trybot_3'
+                },
+                'builder_4': {
+                    'mastername': 'tryserver.chromium.master_2',
+                    'buildername': 'trybot_4'
+                }
+            }
+        }))
+    self.assertEqual(
+        {
+            'master_1': {
+                'builder_1': {
+                    'mastername': 'tryserver.chromium.master_1',
+                    'waterfall_trybot': 'trybot_1',
+                    'flake_trybot': 'trybot_1',
+                },
+                'builder_2': {
+                    'mastername': 'tryserver.chromium.master_1',
+                    'waterfall_trybot': 'trybot_2',
+                    'flake_trybot': 'trybot_2',
+                }
+            },
+            'master_2': {
+                'builder_3': {
+                    'mastername': 'tryserver.chromium.master_2',
+                    'waterfall_trybot': 'trybot_3',
+                    'flake_trybot': 'trybot_3',
+                },
+                'builder_4': {
+                    'mastername': 'tryserver.chromium.master_2',
+                    'waterfall_trybot': 'trybot_4',
+                    'flake_trybot': 'trybot_4',
+                }
+            },
+        },
+        waterfall_config._ConvertOldTrybotFormatToNew({
+            'master_1': {
+                'builder_1': {
+                    'mastername': 'tryserver.chromium.master_1',
+                    'waterfall_trybot': 'trybot_1',
+                    'flake_trybot': 'trybot_1',
+                },
+                'builder_2': {
+                    'mastername': 'tryserver.chromium.master_1',
+                    'waterfall_trybot': 'trybot_2',
+                    'flake_trybot': 'trybot_2',
+                }
+            },
+            'master_2': {
+                'builder_3': {
+                    'mastername': 'tryserver.chromium.master_2',
+                    'waterfall_trybot': 'trybot_3',
+                    'flake_trybot': 'trybot_3',
+                },
+                'builder_4': {
+                    'mastername': 'tryserver.chromium.master_2',
+                    'waterfall_trybot': 'trybot_4',
+                    'flake_trybot': 'trybot_4',
+                }
+            }
+        }))
+
   def testGetStepsForMastersRulesWithSettingsProvided(self):
     class MockSettings():
       steps_for_masters_rules = {'blabla': 'blabla'}
@@ -70,13 +174,21 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         waterfall_config.StepIsSupportedForMaster('unsupported_step7',
                                                   'master3'))
 
-  def testGetTrybotForWaterfallBuilder(self):
+  def testGetWaterfallTrybot(self):
     self.assertEqual(
         ('tryserver1', 'trybot1'),
-        waterfall_config.GetTrybotForWaterfallBuilder('master1', 'builder1'))
+        waterfall_config.GetWaterfallTrybot('master1', 'builder1'))
     self.assertEqual(
         (None, None),
-        waterfall_config.GetTrybotForWaterfallBuilder('master3', 'builder3'))
+        waterfall_config.GetWaterfallTrybot('master3', 'builder3'))
+
+  def testGetFlakeTrybot(self):
+    self.assertEqual(
+        ('tryserver1', 'trybot1_flake'),
+        waterfall_config.GetFlakeTrybot('master1', 'builder1'))
+    self.assertEqual(
+        (None, None),
+        waterfall_config.GetFlakeTrybot('master3', 'builder3'))
 
   def testGetTryJobSettings(self):
     self.assertEqual(

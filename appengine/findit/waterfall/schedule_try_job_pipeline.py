@@ -46,8 +46,7 @@ class ScheduleTryJobPipeline(BasePipeline):
       self, master_name, builder_name, properties, additional_parameters,
       try_job_type):
     tryserver_mastername, tryserver_buildername = (
-        waterfall_config.GetTrybotForWaterfallBuilder(
-            master_name, builder_name))
+        waterfall_config.GetWaterfallTrybot(master_name, builder_name))
 
     try_job = buildbucket_client.TryJob(
         tryserver_mastername, tryserver_buildername, None, properties, [],
