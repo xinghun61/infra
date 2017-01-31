@@ -77,12 +77,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add_with_client_operation_id(self):
     build = service.add(
       bucket='chromium',
-      parameters={'buildername': 'linux_rel'},
+      parameters={'builder_name': 'linux_rel'},
       client_operation_id='1',
     )
     build2 = service.add(
       bucket='chromium',
-      parameters={'buildername': 'linux_rel'},
+      parameters={'builder_name': 'linux_rel'},
       client_operation_id='1',
     )
     self.assertIsNotNone(build.key)
@@ -127,6 +127,62 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       '', status_code=403, response='access denied')
     with self.assertRaises(auth.AuthorizationError):
       service.add(self.test_build.bucket)
+
+  def test_add_with_builder_name(self):
+    build = service.add(
+      bucket='chromium',
+      parameters={'builder_name': 'linux_rel'},
+      client_operation_id='1',
+    )
+    self.assertTrue('builder:linux_rel' in build.tags)
+
+  def test_validate_tags_none(self):
+    self.assertIsNone(service.validate_tags(None))
+
+  def test_validate_tags_nonlist(self):
+    with self.assertRaises(errors.InvalidInputError):
+      service.validate_tags('tag:value')
+
+  def test_validate_tags_nonstring(self):
+    with self.assertRaises(errors.InvalidInputError):
+      service.validate_tags(['tag:value', 123456])
+
+  def test_validate_tags_no_colon(self):
+    with self.assertRaises(errors.InvalidInputError):
+      service.validate_tags(['tag,value'])
+
+  def test_add_builder_tag(self):
+    self.assertEqual(service.add_builder_tag([], {'builder_name': 'foo'}),
+                     ['builder:foo'])
+
+  def test_add_builder_tag_none(self):
+    self.assertEqual(service.add_builder_tag(None, {}), [])
+
+  def test_add_builder_tag_no_params(self):
+    self.assertEqual(service.add_builder_tag([], None), [])
+
+  def test_add_builder_tag_unspecified(self):
+    self.assertEqual(service.add_builder_tag([], {'foo': 'bar'}), [])
+
+  def test_add_builder_tag_multi(self):
+    tags = ['builder:foo', 'builder:foo']
+    self.assertEqual(service.add_builder_tag(tags, {'foo': 'bar'}), tags)
+
+  def test_add_builder_tag_different(self):
+    tags = ['builder:foo', 'builder:bar']
+    with self.assertRaises(errors.InvalidInputError):
+        service.add_builder_tag(tags, {'foo': 'bar'})
+
+  def test_add_builder_tag_coincide(self):
+    tags = ['builder:foo']
+    self.assertEqual(service.add_builder_tag(tags, {'builder_name': 'foo'}),
+                     tags)
+
+  def test_add_builder_tag_conflict(self):
+    tags = ['builder:foo']
+    with self.assertRaises(errors.InvalidInputError):
+        service.add_builder_tag(tags, {'builder_name': 'bar'})
+
 
   ################################### RETRY ####################################
 

@@ -86,6 +86,37 @@ def validate_tags(tags):
       raise errors.InvalidInputError('Invalid tag "%s": does not contain ":"')
 
 
+def add_builder_tag(tags, parameters):
+  """Returns the tags with an additional builder: tag if necessary.
+
+  If no builder_name parameter is specified, returns the tags unchanged.
+  If the tags contain a builder: tag which conflicts with other pre-specified
+  tags or the calculated tag, raises an error.
+  """
+  if tags is None:
+    tags = []
+
+  prefix = 'builder:'
+  values = list(set(t[len(prefix):] for t in tags if t.startswith(prefix)))
+  if len(values) > 1:
+    raise errors.InvalidInputError(
+        'Invalid builder tags %s: different values' % values)
+
+  if not parameters or 'builder_name' not in parameters:
+    return tags
+
+  builder = parameters.get('builder_name')
+  if len(values) == 0:
+    return tags + [prefix + builder]
+
+  if builder != values[0]:
+    raise errors.InvalidInputError(
+        'Invalid builder tag "%s": conflicts with builder_name parameter "%s"'
+        % (values[0], builder))
+
+  return tags
+
+
 @ndb.tasklet
 def add_async(
     bucket, tags=None, parameters=None, lease_expiration_date=None,
@@ -124,7 +155,7 @@ def add_async(
     raise errors.InvalidInputError('parameters must be a dict or None')
   validate_lease_expiration_date(lease_expiration_date)
   validate_tags(tags)
-  tags = tags or []
+  tags = add_builder_tag(tags, parameters)
 
   ctx = ndb.get_context()
   identity = auth.get_current_identity()
