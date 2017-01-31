@@ -38,6 +38,11 @@ import (
 	"golang.org/x/net/context"
 )
 
+const (
+	// defaultRPCTimeout is the default LogDog RPC timeout to apply.
+	defaultRPCTimeout = 30 * time.Second
+)
+
 type runCmdFunc func(ctx context.Context, env environ.Env) (*exec.Cmd, error)
 
 type cookLogDogParams struct {
@@ -237,6 +242,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env en
 			SourceInfo: []string{
 				"Kitchen",
 			},
+			RPCTimeout:     defaultRPCTimeout,
 			PublishContext: withNonCancel(ctx),
 		}
 
