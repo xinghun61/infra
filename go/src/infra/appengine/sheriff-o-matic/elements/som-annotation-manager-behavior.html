@@ -31,23 +31,33 @@
       // We want to make sure snoozed is not undefined because this makes later
       // checks weirdly falsey
       returnVal.snoozed = false;
-      if (ann && ann.snoozeTime) {
-        returnVal.snoozed = Date.now() < ann.snoozeTime;
+
+      if (ann) {
+        if (ann.snoozeTime) {
+          returnVal.snoozed = Date.now() < ann.snoozeTime;
+        }
+
+        if (ann.bugs != undefined) {
+          returnVal.bugs = ann.bugs;
+        }
+
+        if (ann.bug_data != undefined) {
+          returnVal.bugData = ann.bug_data;
+        }
+
+        // TODO(zhangtiff): Replace this with actually deleting old annotations.
+        if (ann.comments != undefined) {
+          let dateCutoff = new Date(); // 10 days ago.
+          dateCutoff.setDate(dateCutoff.getDate() - 10);
+          returnVal.comments = ann.comments.filter(function (c, i) {
+            let time = new Date(c.time);
+            c.index = i;
+            return time.getTime() > dateCutoff.getTime();
+          });
+        }
       }
 
-      if (ann && ann.bugs != undefined)  {
-        returnVal.bugs = ann.bugs;
-      }
-
-      if (ann && ann.bug_data != undefined)  {
-        returnVal.bugData = ann.bug_data;
-      }
-
-      if (ann && ann.comments != undefined)  {
-        returnVal.comments = ann.comments;
-      }
-
-      returnVal.opened = (ann && ann.opened ) || false;
+      returnVal.opened = (ann && ann.opened) || false;
       return returnVal;
     },
 

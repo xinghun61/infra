@@ -373,7 +373,7 @@
 
     _removeComment: function(evt) {
       let request = this.sendAnnotation(this._commentsModel.key, 'remove', {
-        comments: [evt.model.index],
+        comments: [evt.model.comment.index],
       });
       if (request) {
         request.then(
