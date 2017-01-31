@@ -190,7 +190,7 @@ class GitLogEntry(object):
   def date(self):
     # TODO(mmoss): Maybe reformat this in svn log date string format, in case
     # anything tries to process it?
-    return self.author_date
+    return self.committer_date
 
   @property
   def author(self):

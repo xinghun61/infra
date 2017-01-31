@@ -157,7 +157,7 @@ class BugdroidGitPollerHandler(BugdroidPollerHandler):
     """Generate git-log style message, with links to files in the Web UI."""
     rtn = 'commit %s\n' % log_entry.commit
     rtn += 'Author: %s <%s>\n' % (log_entry.author_name, log_entry.author_email)
-    rtn += 'Date: %s\n' % log_entry.author_date
+    rtn += 'Date: %s\n' % log_entry.commiter_date
     if self.public_bugs:
       rtn += '\n%s\n' % log_entry.msg
       for path in log_entry.paths:
