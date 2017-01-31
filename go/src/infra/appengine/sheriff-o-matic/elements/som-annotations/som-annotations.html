@@ -1,7 +1,6 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
-<link rel="import" href="../../bower_components/marked-element/marked-element.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
 <link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
@@ -9,6 +8,7 @@
 <link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
 
 <link rel="import" href="../../elements/som-annotation-manager-behavior.html">
+<link rel="import" href="../../elements/som-marked-element/som-marked-element.html">
 
 <dom-module id="som-annotations">
   <template>
@@ -67,12 +67,6 @@
         margin: 1em 4px;
         background-color: #eee;
       }
-      marked-element {
-        display: inline-block;
-      }
-      marked-element p {
-        margin: 0;
-      }
     </style>
     <template is="dom-if" if="[[_haveAnnotationError(annotationError.*)]]">
       <span class="error header">
@@ -127,9 +121,7 @@
               <paper-icon-button icon="close" title="Remove" id="removeComment[[index]]"
                 hidden$="[[_computeHideDeleteComment(comment)]]" on-tap="_removeComment"></paper-icon-button>
             </span>
-            <marked-element class="comment-text" markdown="[[comment.text]]" sanitize>
-              <div class="markdown-html"></div>
-            </marked-element>
+            <som-marked-element class="comment-text" markdown="[[comment.text]]"></som-marked-element>
           </li>
         </template>
       </ul>

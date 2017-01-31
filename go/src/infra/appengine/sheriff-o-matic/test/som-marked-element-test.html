@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/som-marked-element/som-marked-element.html">
+<test-fixture id="basic">
+  <template>
+    <som-marked-element></som-marked-element>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('invalid hrefs caught', function() {
+      assert.equal(false, element._hrefIsAllowed('javascript:void;'));
+      assert.equal(false, element._hrefIsAllowed('jAvAsCrIpT:alert("hi");'));
+      assert.equal(false, element._hrefIsAllowed('vbscript:'));
+      assert.equal(false, element._hrefIsAllowed('data:'));
+    });
+
+    test('valid hrefs not caught', function() {
+      assert.equal(true, element._hrefIsAllowed('http://google.com'));
+      assert.equal(true, element._hrefIsAllowed('http://google.com/javascript'));
+    });
+
+    test('link renderer returns link', function() {
+      let renderer = element._getLinkRenderer();
+      assert.equal('<a href="http://link" target="_blank">text</a>',
+        renderer('http://link', null, 'text'));
+    });
+  });
+})();
+</script>

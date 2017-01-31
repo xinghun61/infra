@@ -61,7 +61,7 @@
     ready: function() {
       // This is to expose the UNSET_PRIORITY constant for use in unit testing.
       this.UNSET_PRIORITY = UNSET_PRIORITY;
-     },
+    },
 
     refresh: function() {
       if (this._hideBugQueue) {
@@ -90,22 +90,21 @@
     },
 
     _computeBugsByPriority: function(bugs) {
-      let buckets = bugs.reduce((function(obj, b) {
-        let p = this._computePriority(b);
-        if (!(p in obj)) {
-          obj[p] = [b];
-        } else {
-          obj[p].push(b);
-        }
-        return obj;
-      }).bind(this), {});
+      let buckets = bugs.reduce(
+          (function(obj, b) {
+            let p = this._computePriority(b);
+            if (!(p in obj)) {
+              obj[p] = [b];
+            } else {
+              obj[p].push(b);
+            }
+            return obj;
+          }).bind(this),
+          {});
 
       // Flatten the buckets into an array for use in dom-repeat.
       let result = Object.keys(buckets).sort().map(function(key) {
-        return {
-          'priority': key,
-          'bugs': buckets[key]
-        };
+        return {'priority': key, 'bugs': buckets[key]};
       });
       return result;
     },
@@ -198,8 +197,8 @@
       } else {
         collapse.toggle();
 
-        this.$$('#toggleIconPri' + pri).icon = this._computeCollapseIcon(
-          collapse.opened);
+        this.$$('#toggleIconPri' + pri).icon =
+            this._computeCollapseIcon(collapse.opened);
       }
     },
 

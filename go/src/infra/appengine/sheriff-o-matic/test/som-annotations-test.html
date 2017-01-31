@@ -328,8 +328,8 @@
         assert.equal('test', users[0].textContent.trim());
         assert.equal('hello', users[1].textContent.trim());
 
-        assert.equal('foo', text[0].textContent.trim());
-        assert.equal('bar', text[1].textContent.trim());
+        assert.equal('foo', text[0].markdown.trim());
+        assert.equal('bar', text[1].markdown.trim());
         done();
       });
     });

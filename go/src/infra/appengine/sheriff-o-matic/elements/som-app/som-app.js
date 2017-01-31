@@ -420,8 +420,12 @@
         let aHasBugs = aAnn.bugs && aAnn.bugs.length > 0;
         let bHasBugs = bAnn.bugs && bAnn.bugs.length > 0;
 
-        let aBuilders = a.extension && a.extension.builders ? a.extension.builders.length : 1;
-        let bBuilders = b.extension && b.extension.builders ? b.extension.builders.length : 1;
+        let aBuilders = a.extension && a.extension.builders ?
+            a.extension.builders.length :
+            1;
+        let bBuilders = b.extension && b.extension.builders ?
+            b.extension.builders.length :
+            1;
 
         if (a.severity != b.severity) {
           // Note: 3 is the severity number for Infra Failures.
