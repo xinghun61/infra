@@ -81,7 +81,8 @@ func getTrooperAlerts(c context.Context) ([]byte, error) {
 			result["revision_summaries"] = alertsSummary.RevisionSummaries
 
 			for _, a := range alertsSummary.Alerts {
-				if a.Type == messages.AlertInfraFailure {
+				if a.Type == messages.AlertInfraFailure ||
+					a.Type == messages.AlertOfflineBuilder {
 					newAlert := &TrooperAlert{a, t.Name}
 					alerts = append(alerts, newAlert)
 				}

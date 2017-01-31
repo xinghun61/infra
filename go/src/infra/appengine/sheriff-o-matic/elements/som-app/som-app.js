@@ -435,6 +435,14 @@
           } else if (b.severity == 3) {
             return -1;
           }
+
+          // 7 is the severity for offline builders. Note that we want these to
+          // appear above infra failures.
+          if (a.severity == 7) {
+            return 1;
+          } else if (b.severity == 7) {
+            return -1;
+          }
           return a.severity - b.severity;
         }
 
