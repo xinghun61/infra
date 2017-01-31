@@ -17,9 +17,11 @@ from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import waterfall_config
 from waterfall.flake import confidence
-from waterfall.flake import recursive_flake_try_job_pipeline
+from waterfall.flake.recursive_flake_try_job_pipeline import CreateCulprit
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
+from waterfall.flake.recursive_flake_try_job_pipeline import (
+    UpdateAnalysisTryJobStatusUponCompletion)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
@@ -51,7 +53,6 @@ def _UpdateAnalysisStatusUponCompletion(
   analysis.status = status
   analysis.try_job_status = try_job_status
   analysis.confidence_in_suspected_build = build_confidence_score
-
   analysis.put()
 
 
@@ -487,17 +488,22 @@ class NextBuildNumberPipeline(BasePipeline):
           'minimum_confidence_score_to_run_tryjobs',
           _DEFAULT_MINIMUM_CONFIDENCE_SCORE)
 
-      if (build_confidence_score is None or
-          build_confidence_score < minimum_confidence_score_to_run_tryjobs):
-        # If no suspected build or confidence is too low, bail out on try jobs.
-        # Based on analysis of historical data, 60% confidence could filter out
-        # almost all false positives.
+      if build_confidence_score is None:
+        logging.info(('Skipping try jobs due to no suspected flake build being '
+                      'identified'))
+      elif build_confidence_score < minimum_confidence_score_to_run_tryjobs:
+        # If confidence is too low, bail out on try jobs. Based on analysis of
+        # historical data, 60% confidence could filter out almost all false
+        # positives.
         logging.info('Skipping try jobs due to insufficient confidence')
+        analysis.result_status = result_status.FOUND_UNTRIAGED
+        analysis.put()
       else:
         # Hook up with try-jobs.
         suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
+        assert suspected_build_point
 
-        if suspected_build_point and suspected_build_point.blame_list:
+        if suspected_build_point.blame_list:
           if len(suspected_build_point.blame_list) > 1:
             logging.info('Running try-jobs against commits in suspected build')
             start_commit_position = suspected_build_point.commit_position - 1
@@ -507,20 +513,23 @@ class NextBuildNumberPipeline(BasePipeline):
                 analysis.key.urlsafe(), start_commit_position, start_revision)
             return  # No update to bug yet.
           else:
-            # Single commit is the culprit.
             logging.info('Single commit in the blame list of suspected build')
             culprit_confidence_score = confidence.SteppinessForCommitPosition(
                 analysis.data_points, suspected_build_point.commit_position)
-            culprit = recursive_flake_try_job_pipeline.CreateCulprit(
+            culprit = CreateCulprit(
                 suspected_build_point.git_hash,
                 suspected_build_point.commit_position,
                 culprit_confidence_score)
-
-            analysis.culprit = culprit
-            analysis.try_job_status = analysis_status.COMPLETED
-            analysis.put()
+            UpdateAnalysisTryJobStatusUponCompletion(
+                analysis, culprit, analysis_status.COMPLETED, None)
         else:
-          logging.info('No suspected build or empty blame list')
+          logging.error('Cannot run flake try jobs against empty blame list')
+          error = {
+              'error': 'Could not start try jobs',
+              'message': 'Empty blame list'
+          }
+          UpdateAnalysisTryJobStatusUponCompletion(
+              analysis, None, analysis_status.ERROR, error)
 
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())
       return

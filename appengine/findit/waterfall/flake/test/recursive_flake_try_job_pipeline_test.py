@@ -17,17 +17,17 @@ from model.flake.flake_try_job import FlakeTryJob
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake import recursive_flake_try_job_pipeline
-from waterfall.flake.recursive_flake_try_job_pipeline import CreateCulprit
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     _GetNextCommitPosition)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     _GetTryJobDataPoints)
-from waterfall.flake.recursive_flake_try_job_pipeline import (
-    _UpdateAnalysisTryJobStatusUponCompletion)
+from waterfall.flake.recursive_flake_try_job_pipeline import CreateCulprit
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     NextCommitPositionPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
+from waterfall.flake.recursive_flake_try_job_pipeline import (
+    UpdateAnalysisTryJobStatusUponCompletion)
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
@@ -345,7 +345,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   def testUpdateAnalysisTryJobStatusUponCompletionFound(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     culprit = FlakeCulprit.Create('repo_name', 'a1b2c3d4', 12345, 'url')
-    _UpdateAnalysisTryJobStatusUponCompletion(
+    UpdateAnalysisTryJobStatusUponCompletion(
         analysis, culprit, analysis_status.COMPLETED, None)
     self.assertIsNone(analysis.error)
     self.assertEqual(culprit.revision, analysis.culprit.revision)
@@ -354,7 +354,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testUpdateAnalysisTryJobStatusUponCompletionNotFound(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    _UpdateAnalysisTryJobStatusUponCompletion(
+    UpdateAnalysisTryJobStatusUponCompletion(
         analysis, None, analysis_status.COMPLETED, None)
     self.assertIsNone(analysis.error)
     self.assertIsNone(analysis.culprit)
@@ -363,7 +363,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testUpdateAnalysisTryJobStatusError(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    _UpdateAnalysisTryJobStatusUponCompletion(
+    UpdateAnalysisTryJobStatusUponCompletion(
         analysis, None, analysis_status.ERROR, {'error': 'errror'})
     self.assertIsNotNone(analysis.error)
     self.assertIsNone(analysis.culprit)

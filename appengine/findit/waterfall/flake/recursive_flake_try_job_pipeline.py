@@ -62,7 +62,7 @@ def CreateCulprit(revision, commit_position, confidence_score,
   return culprit
 
 
-def _UpdateAnalysisTryJobStatusUponCompletion(
+def UpdateAnalysisTryJobStatusUponCompletion(
     flake_analysis, culprit, status, error):
   flake_analysis.end_time = time_util.GetUTCNow()
   flake_analysis.try_job_status = status
@@ -290,7 +290,7 @@ class NextCommitPositionPipeline(BasePipeline):
           'error': 'Try job %s failed' % try_job.try_job_id,
           'message': 'The last try job did not complete as expected'
       }
-      _UpdateAnalysisTryJobStatusUponCompletion(
+      UpdateAnalysisTryJobStatusUponCompletion(
           flake_analysis, None, analysis_status.ERROR, error)
       yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
       return
@@ -303,7 +303,6 @@ class NextCommitPositionPipeline(BasePipeline):
     # bounds, only the data points involved in try jobs should be considered
     # when determining the next commit position to test.
     try_job_data_points = _GetTryJobDataPoints(flake_analysis)
-
     algorithm_settings = waterfall_config.GetCheckFlakeSettings().get(
         'try_job_rerun', {})
 
@@ -323,7 +322,7 @@ class NextCommitPositionPipeline(BasePipeline):
           suspected_commit_position)
       culprit = CreateCulprit(
           culprit_revision, suspected_commit_position, confidence_score)
-      _UpdateAnalysisTryJobStatusUponCompletion(
+      UpdateAnalysisTryJobStatusUponCompletion(
           flake_analysis, culprit, analysis_status.COMPLETED, None)
       yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
       return

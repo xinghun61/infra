@@ -789,7 +789,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(analysis.completed)
     self.assertEqual(100, analysis.suspected_flake_build_number)
     self.assertEqual(0.7, analysis.confidence_in_suspected_build)
-    self.assertEqual(analysis_status.SKIPPED, analysis.try_job_status)
+    self.assertEqual(analysis_status.ERROR, analysis.try_job_status)
+    self.assertIsNotNone(analysis.error)
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
