@@ -70,10 +70,20 @@ acls {
 ''')
 
 
+def parse_cfg(text):
+  cfg = project_config_pb2.BuildbucketCfg()
+  protobuf.text_format.Merge(text, cfg)
+  return cfg
+
+
 def text_to_binary(bucket_cfg_text):
   cfg = project_config_pb2.Bucket()
   protobuf.text_format.Merge(bucket_cfg_text, cfg)
   return cfg.SerializeToString()
+
+
+def errmsg(text):
+  return validation_context.Message(severity=logging.ERROR, text=text)
 
 
 class ConfigTest(testing.AppengineTestCase):
@@ -140,51 +150,51 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertEqual(actual, expected)
 
   def test_cron_update_buckets(self):
-    chromium_buildbucket_cfg = project_config_pb2.BuildbucketCfg(
-      buckets=[
-        project_config_pb2.Bucket(
-          name='master.tryserver.chromium.linux',
-          acls=[
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.READER, group='all'),
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
-          ],
-        ),
-        project_config_pb2.Bucket(
-          name='master.tryserver.chromium.win',
-          acls=[
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.READER, group='all'),
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
-          ],
-        ),
-      ])
+    chromium_buildbucket_cfg = parse_cfg("""
+      buckets {
+        name: "master.tryserver.chromium.linux"
+        acls {
+          role: READER
+          group: "all"
+        }
+        acls {
+          role: SCHEDULER
+          group: "tryjob-access"
+        }
+      }
 
-    v8_buildbucket_cfg = project_config_pb2.BuildbucketCfg(
-      buckets=[
-        project_config_pb2.Bucket(
-          name='master.tryserver.v8',
-          acls=[
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.WRITER, group='v8-team')
-          ],
-        ),
-      ]
-    )
+      buckets {
+        name: "master.tryserver.chromium.win"
+        acls {
+          role: READER
+          group: "all"
+        }
+        acls {
+          role: SCHEDULER
+          group: "tryjob-access"
+        }
+      }
+      """)
 
-    test_buildbucket_cfg = project_config_pb2.BuildbucketCfg(
-      buckets=[
-        project_config_pb2.Bucket(
-          name='master.tryserver.test',
-          acls=[
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.WRITER, identity='root@google.com')
-          ],
-        ),
-      ]
-    )
+    v8_buildbucket_cfg = parse_cfg("""
+      buckets {
+        name: "master.tryserver.v8"
+        acls {
+          role: WRITER
+          group: "v8-team"
+        }
+      }
+      """)
+
+    test_buildbucket_cfg = parse_cfg("""
+      buckets {
+        name: "master.tryserver.test"
+        acls {
+          role: WRITER
+          identity: "root@google.com"
+        }
+      }
+      """)
 
     self.mock(config_component, 'get_project_configs', mock.Mock())
     config_component.get_project_configs.return_value = {
@@ -260,49 +270,49 @@ class ConfigTest(testing.AppengineTestCase):
         MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT),
     ).put()
 
-    chromium_buildbucket_cfg = project_config_pb2.BuildbucketCfg(
-      buckets=[
-        project_config_pb2.Bucket(
-          name='master.tryserver.chromium.linux',
-          acls=[
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.READER, group='all'),
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
-          ],
-        ),
-        # Will be added.
-        project_config_pb2.Bucket(
-          name='master.tryserver.chromium.mac',
-          acls=[
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.READER, group='all'),
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
-          ],
-        ),
-      ])
+    chromium_buildbucket_cfg = parse_cfg("""
+      buckets {
+        name: "master.tryserver.chromium.linux"
+        acls {
+          role: READER
+          group: "all"
+        }
+        acls {
+          role: SCHEDULER
+          group: "tryjob-access"
+        }
+      }
 
-    v8_buildbucket_cfg = project_config_pb2.BuildbucketCfg(
-      buckets=[
-        # Reservation will fail.
-        project_config_pb2.Bucket(
-          name='master.tryserver.chromium.linux',
-          acls=[
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.WRITER, group='v8-team')
-          ],
-        ),
-        # Will not be updated.
-        project_config_pb2.Bucket(
-          name='master.tryserver.v8',
-          acls=[
-            project_config_pb2.Acl(
-              role=project_config_pb2.Acl.WRITER, group='v8-team')
-          ],
-        ),
-      ],
-    )
+      buckets {
+        name: "master.tryserver.chromium.mac"
+        acls {
+          role: READER
+          group: "all"
+        }
+        acls {
+          role: SCHEDULER
+          group: "tryjob-access"
+        }
+      }
+      """)
+
+    v8_buildbucket_cfg = parse_cfg("""
+      buckets {
+        name: "master.tryserver.chromium.linux"
+        acls {
+          role: WRITER
+          group: "v8-team"
+        }
+      }
+
+      buckets {
+        name: "master.tryserver.v8"
+        acls {
+          role: WRITER
+          group: "v8-team"
+        }
+      }
+      """)
 
     self.mock(config_component, 'get_project_configs', mock.Mock())
     config_component.get_project_configs.return_value = {
@@ -350,9 +360,7 @@ class ConfigTest(testing.AppengineTestCase):
       config_content_binary=text_to_binary('name: "bucket"'),
     ).put()
 
-    buildbucket_cfg = project_config_pb2.BuildbucketCfg(
-      buckets=[project_config_pb2.Bucket(name='bucket')]
-    )
+    buildbucket_cfg = parse_cfg("""buckets{ name: "bucket" }""")
     self.mock(config_component, 'get_project_configs', mock.Mock())
     config_component.get_project_configs.return_value = {
       'bar': ('deadbeef', buildbucket_cfg),
@@ -379,71 +387,69 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertEqual(expected_messages, ctx.result().messages)
 
   def test_validate_buildbucket_cfg_success(self):
-    self.cfg_validation_test(
-      project_config_pb2.BuildbucketCfg(
-        buckets=[
-          project_config_pb2.Bucket(
-            name='good.name',
-            acls=[
-              project_config_pb2.Acl(
-                group='writers', role=project_config_pb2.Acl.WRITER)
-            ],
-          ),
-          project_config_pb2.Bucket(
-            name='good.name2',
-            acls=[
-              project_config_pb2.Acl(
-                identity='a@a.com', role=project_config_pb2.Acl.READER),
-              project_config_pb2.Acl(
-                identity='user:b@a.com', role=project_config_pb2.Acl.READER),
-            ],
-          )
-        ]),
-      []
-    )
+    self.cfg_validation_test(parse_cfg("""
+      buckets {
+        name: "good.name"
+        acls {
+          role: WRITER
+          group: "writers"
+        }
+      }
+      buckets {
+        name: "good.name2"
+        acls {
+          role: READER
+          identity: "a@a.com"
+        }
+        acls {
+          role: READER
+          identity: "user:b@a.com"
+        }
+      }
+      """), [])
 
   def test_validate_buildbucket_cfg_fail(self):
-    self.cfg_validation_test(
-      project_config_pb2.BuildbucketCfg(
-        buckets=[
-          project_config_pb2.Bucket(
-            name='a',
-            acls=[
-              project_config_pb2.Acl(
-                group='writers', identity='a@a.com',
-                role=project_config_pb2.Acl.READER),
-              project_config_pb2.Acl(role=project_config_pb2.Acl.READER),
-            ]
-          ),
-          project_config_pb2.Bucket(
-            name='b',
-            acls=[
-              project_config_pb2.Acl(
-                identity='ldap', role=project_config_pb2.Acl.READER),
-              project_config_pb2.Acl(
-                group='a@a.com', role=project_config_pb2.Acl.READER),
-            ]
-          ),
-          project_config_pb2.Bucket(),
-        ]),
+    self.cfg_validation_test(parse_cfg("""
+      buckets {
+        name: "a"
+        acls {
+          role: READER
+          group: "writers"
+          identity: "a@a.com"
+        }
+        acls {
+          role: READER
+        }
+      }
+      buckets {
+        name: "b"
+        acls {
+          role: READER
+          identity: "ldap"
+        }
+        acls {
+          role: READER
+          group: ";%:"
+        }
+      }
+      buckets {}
+      """),
       [
         errmsg(
           'Bucket a: acl #1: either group or identity must be set, '
           'not both'),
         errmsg('Bucket a: acl #2: group or identity must be set'),
         errmsg('Bucket b: acl #1: Identity has invalid format: ldap'),
-        errmsg('Bucket b: acl #2: invalid group: a@a.com'),
+        errmsg('Bucket b: acl #2: invalid group: ;%:'),
         errmsg('Bucket #3: invalid name: Bucket not specified'),
       ]
     )
 
   def test_validate_buildbucket_cfg_unsorted(self):
-    self.cfg_validation_test(
-      project_config_pb2.BuildbucketCfg(
-        buckets=[
-          project_config_pb2.Bucket(name='b'),
-          project_config_pb2.Bucket(name='a')
-        ]),
+    self.cfg_validation_test(parse_cfg("""
+      buckets { name: "b" }
+      buckets { name: "a" }
+      """),
       [
         validation_context.Message(
           severity=logging.WARNING,
@@ -461,13 +467,12 @@ class ConfigTest(testing.AppengineTestCase):
     ).put()
 
     self.cfg_validation_test(
-      project_config_pb2.BuildbucketCfg(
-        buckets=[
-          project_config_pb2.Bucket(name='a'),
-          project_config_pb2.Bucket(name='a'),
-          project_config_pb2.Bucket(name='master.tryserver.chromium.linux'),
-          project_config_pb2.Bucket(name='master.tryserver.v8'),
-        ]),
+      parse_cfg("""
+          buckets { name: "a" }
+          buckets { name: "a" }
+          buckets { name: "master.tryserver.chromium.linux" }
+          buckets { name: "master.tryserver.v8" }
+      """),
       [
         errmsg('Bucket a: duplicate bucket name'),
         errmsg(
@@ -486,7 +491,3 @@ class ConfigTest(testing.AppengineTestCase):
       url,
       ('https://chromium.googlesource.com/chromium/src/+/'
        'infra/config/testbed-test.cfg'))
-
-
-def errmsg(text):
-  return validation_context.Message(severity=logging.ERROR, text=text)
