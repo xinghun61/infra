@@ -31,6 +31,7 @@ ISSUE_TABLE = 'Issue'
 REASON_MANUAL = 'manual'
 REASON_THRESHOLD = 'threshold'
 REASON_CLASSIFIER = 'classifier'
+REASON_FAIL_OPEN = 'fail_open'
 
 SPAMREPORT_COLS = ['issue_id', 'reported_user_id', 'user_id']
 MANUALVERDICT_COLS = ['user_id', 'issue_id', 'is_spam', 'reason', 'project_id']
@@ -41,6 +42,8 @@ class SpamService(object):
   """The persistence layer for spam reports."""
   issue_actions = ts_mon.CounterMetric('monorail/spam_svc/issue')
   comment_actions = ts_mon.CounterMetric('monorail/spam_svc/comment')
+  prediction_api_failures = ts_mon.CounterMetric(
+      'mononrail/spam_svc/prediction_api_failure')
 
   def __init__(self):
     self.report_tbl = sql.SQLTableManager(SPAMREPORT_TABLE_NAME)
@@ -204,9 +207,11 @@ class SpamService(object):
           cnxn, issue_id=issue_id, comment_id=comment_id,
           user_id=reporting_user_id)
 
-  def RecordClassifierIssueVerdict(self, cnxn, issue, is_spam, confidence):
+  def RecordClassifierIssueVerdict(self, cnxn, issue, is_spam, confidence,
+        fail_open):
+    reason = REASON_FAIL_OPEN if fail_open else REASON_CLASSIFIER
     self.verdict_tbl.InsertRow(cnxn, issue_id=issue.issue_id, is_spam=is_spam,
-        reason=REASON_CLASSIFIER, classifier_confidence=confidence)
+        reason=reason, classifier_confidence=confidence)
     if is_spam:
       self.issue_actions.increment({'type': 'classifier'})
     # This is called at issue creation time, so there's nothing else to do here.
@@ -250,9 +255,11 @@ class SpamService(object):
     if is_spam:
       self.comment_actions.increment({'type': 'manual'})
 
-  def RecordClassifierCommentVerdict(self, cnxn, comment, is_spam, confidence):
+  def RecordClassifierCommentVerdict(self, cnxn, comment, is_spam, confidence,
+      fail_open):
+    reason = REASON_FAIL_OPEN if fail_open else REASON_CLASSIFIER 
     self.verdict_tbl.InsertRow(cnxn, comment_id=comment.id, is_spam=is_spam,
-        reason=REASON_CLASSIFIER, classifier_confidence=confidence,
+        reason=reason, classifier_confidence=confidence,
         project_id=comment.project_id)
     if is_spam:
       self.comment_actions.increment({'type': 'classifier'})
@@ -276,7 +283,8 @@ class SpamService(object):
     """
     # Fail-safe: not spam.
     result = {'outputLabel': 'ham',
-              'outputMulti': [{'label':'ham', 'score': '1.0'}]}
+              'outputMulti': [{'label':'ham', 'score': '1.0'}],
+              'failed_open': False}
 
     if author_email is not None and author_email.endswith(
         settings.spam_whitelisted_suffixes):
@@ -301,11 +309,14 @@ class SpamService(object):
                }
              }
            )
+        result['failed_open'] = False
         return result
       except Exception as ex:
         remaining_retries = remaining_retries - 1
+        self.prediction_api_failures.increment()
         logging.error('Error calling prediction API: %s' % ex)
 
+      result['failed_open'] = True
     return result
 
   def ClassifyComment(self, comment_content, author_email):
@@ -319,7 +330,8 @@ class SpamService(object):
     """
     # Fail-safe: not spam.
     result = {'outputLabel': 'ham',
-              'outputMulti': [{'label':'ham', 'score': '1.0'}]}
+              'outputMulti': [{'label':'ham', 'score': '1.0'}],
+              'failed_open': False}
 
     if author_email is not None and author_email.endswith(
         settings.spam_whitelisted_suffixes):
@@ -328,12 +340,14 @@ class SpamService(object):
 
     if not self.prediction_service:
       logging.error("prediction_service not initialized.")
+      self.prediction_api_failures.increment()
+      result['failed_open'] = True
       return result
 
     features = spam_helpers.GenerateFeatures('', comment_content,
         author_email, settings.spam_feature_hashes,
         settings.spam_whitelisted_suffixes)
- 
+
     remaining_retries = 3
     while remaining_retries > 0:
       try:
@@ -344,11 +358,14 @@ class SpamService(object):
                }
              }
            )
+        result['failed_open'] = False
         return result
       except Exception as ex:
         remaining_retries = remaining_retries - 1
+        self.prediction_api_failures.increment()
         logging.error('Error calling prediction API: %s' % ex)
 
+      result['failed_open'] = True
     return result
 
   def GetModerationQueue(

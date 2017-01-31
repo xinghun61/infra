@@ -665,9 +665,12 @@ CREATE TABLE SpamVerdict (
   -- owner: a project owner marked it as spam
   -- threshhold: number of SpamReports from non-members was exceeded.
   -- classifier: the automatic classifier reports it as spam.
-  reason ENUM ("manual", "threshold", "classifier") NOT NULL,
+  reason ENUM ("manual", "threshold", "classifier", "fail_open") NOT NULL,
 
   overruled BOOL NOT NULL,
+
+  -- True indicates that the prediction service PRC failed and we gave up.
+  fail_open BOOL DEFAULT FALSE,
 
   INDEX (issue_id),
   INDEX (comment_id),

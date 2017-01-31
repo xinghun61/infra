@@ -1044,3 +1044,11 @@ ALTER TABLE Hotlist2Issue
       ADD COLUMN adder_id INT UNSIGNED,
       ADD COLUMN added INT,
       ADD FOREIGN KEY (adder_id) REFERENCES User(user_id);
+
+================================================================
+2017-01-30: Add one new column to SpamVerdict.
+
+ALTER TABLE SpamVerdict CHANGE reason
+  reason ENUM ("manual", "threshold", "classifier", "fail_open") NOT NULL;
+
+

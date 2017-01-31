@@ -506,8 +506,8 @@ class IssueService(object):
       issue.closed_timestamp = timestamp
 
     reporter_email = services.user.LookupUserEmail(cnxn, reporter_id)
-    classification = services.spam.ClassifyIssue(issue, comment,
-        reporter_email)
+
+    classification = services.spam.ClassifyIssue(issue, comment, reporter_email)
 
     label = classification['outputLabel']
     logging.info('issue/comment classification: %s' % classification)
@@ -532,7 +532,7 @@ class IssueService(object):
 
     issue.issue_id = issue_id
     services.spam.RecordClassifierIssueVerdict(
-      cnxn, issue, label=='spam', score)
+      cnxn, issue, label=='spam', score, classification['failed_open'])
 
     if permissions.HasRestrictions(issue, 'view'):
       self._config_service.InvalidateMemcache(
@@ -1547,6 +1547,7 @@ class IssueService(object):
     self._config_service.InvalidateMemcache([issue], key_prefix='nonviewable:')
 
     author_email = services.user.LookupUserEmail(cnxn, reporter_id)
+
     classification = services.spam.ClassifyComment(comment, author_email)
 
     label = classification['outputLabel']
@@ -1568,7 +1569,7 @@ class IssueService(object):
           inbound_message=inbound_message, is_spam=is_spam,
           is_description=is_description, kept_attachments=kept_attachments)
       services.spam.RecordClassifierCommentVerdict(
-          cnxn, comment_pb, is_spam, score)
+          cnxn, comment_pb, is_spam, score, classification['failed_open'])
     else:
       comment_pb = None
 

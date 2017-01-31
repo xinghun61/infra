@@ -1509,19 +1509,23 @@ class SpamService(object):
       sequnce_num, user_id, is_spam):
     self.manual_verdicts_by_comment_id[comment_id][user_id] = is_spam
 
-  def RecordClassifierIssueVerdict(self, cnxn, issue, is_spam, confidence):
+  def RecordClassifierIssueVerdict(self, cnxn, issue, is_spam, confidence,
+        failed_open):
     return
 
-  def RecordClassifierCommentVerdict(self, cnxn, issue, is_spam, confidence):
+  def RecordClassifierCommentVerdict(self, cnxn, issue, is_spam, confidence,
+        failed_open):
     return
 
   def ClassifyComment(self, comment):
     return {'outputLabel': 'ham',
-            'outputMulti': [{'label': 'ham', 'score': '1.0'}]}
+            'outputMulti': [{'label': 'ham', 'score': '1.0'}],
+            'failed_open': False}
 
   def ClassifyIssue(self, issue, firstComment):
     return {'outputLabel': 'ham',
-            'outputMulti': [{'label': 'ham', 'score': '1.0'}]}
+            'outputMulti': [{'label': 'ham', 'score': '1.0'}],
+            'failed_open': False}
 
 
 class FeaturesService(object):

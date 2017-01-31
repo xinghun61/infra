@@ -252,9 +252,10 @@ class IssueServiceTest(unittest.TestCase):
     self.orig_index_issues = tracker_fulltext.IndexIssues
     tracker_fulltext.IndexIssues = lambda *args: None
 
-  def classifierResult(self, label, score):
+  def classifierResult(self, label, score, failed_open=False):
     return {'outputLabel': label,
-            'outputMulti': [{'label': label, 'score': score}]}
+            'outputMulti': [{'label': label, 'score': score}],
+            'failed_open': failed_open}
 
   def tearDown(self):
     self.testbed.deactivate()
@@ -297,7 +298,7 @@ class IssueServiceTest(unittest.TestCase):
         mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
         self.classifierResult('ham', 1.0))
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
-       mox.IsA(tracker_pb2.Issue), False, 1.0)
+       mox.IsA(tracker_pb2.Issue), False, 1.0, False)
     self.SetUpUpdateIssuesModified(set())
 
     self.mox.ReplayAll()
@@ -317,7 +318,7 @@ class IssueServiceTest(unittest.TestCase):
         mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
         self.classifierResult('ham', 1.0))
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
-       mox.IsA(tracker_pb2.Issue), False, 1.0)
+       mox.IsA(tracker_pb2.Issue), False, 1.0, False)
     self.SetUpUpdateIssuesModified(set(), modified_timestamp=self.now)
 
     self.mox.ReplayAll()
@@ -333,6 +334,27 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, {'modified': modified_timestamp or self.now},
         id=iids, commit=False)
 
+  def testCreateIssue_SpamPredictionFailed(self):
+    settings.classifier_spam_thresh = 0.9
+    self.SetUpAllocateNextSpamID(789, None, None)
+    self.SetUpInsertSpamIssue()
+    self.SetUpInsertComment(7890101, is_description=True)
+
+    self.services.spam.ClassifyIssue(mox.IsA(tracker_pb2.Issue),
+        mox.IsA(tracker_pb2.IssueComment), None).AndReturn(
+        self.classifierResult('spam', 1.0, True))
+    self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
+       mox.IsA(tracker_pb2.Issue), True, 1.0, True)
+    self.SetUpUpdateIssuesModified(set())
+
+    self.mox.ReplayAll()
+    actual_local_id = self.services.issue.CreateIssue(
+        self.cnxn, self.services, 789, 'sum',
+        'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
+        index_now=False, timestamp=self.now)
+    self.mox.VerifyAll()
+    self.assertEqual(-1, actual_local_id)
+
   def testCreateIssue_Spam(self):
     settings.classifier_spam_thresh = 0.9
     self.SetUpAllocateNextSpamID(789, None, None)
@@ -343,7 +365,7 @@ class IssueServiceTest(unittest.TestCase):
         mox.IsA(tracker_pb2.IssueComment), None).AndReturn(
         self.classifierResult('spam', 1.0))
     self.services.spam.RecordClassifierIssueVerdict(self.cnxn,
-       mox.IsA(tracker_pb2.Issue), True, 1.0)
+       mox.IsA(tracker_pb2.Issue), True, 1.0, False)
     self.SetUpUpdateIssuesModified(set())
 
     self.mox.ReplayAll()
@@ -797,7 +819,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.spam.ClassifyComment('comment text', None).AndReturn(
       self.classifierResult('ham', 1.0))
     self.services.spam.RecordClassifierCommentVerdict(self.cnxn,
-       None, False, 1.0)
+       None, False, 1.0, False)
     self.services.issue._UpdateIssuesModified(
         self.cnxn, set(), modified_timestamp=self.now)
 
@@ -835,7 +857,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.spam.ClassifyComment('comment text', None).AndReturn(
         self.classifierResult('spam', 1.0))
     self.services.spam.RecordClassifierCommentVerdict(self.cnxn,
-        mox.IsA(tracker_pb2.IssueComment), True, 1.0)
+        mox.IsA(tracker_pb2.IssueComment), True, 1.0, False)
     self.services.issue.CreateIssueComment(self.cnxn, issue.project_id,
         issue.local_id, issue.reporter_id, 'comment text',
         amendments=[], attachments=None, inbound_message=None, is_spam=True,
@@ -882,7 +904,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.spam.ClassifyComment('comment text', None).AndReturn(
         self.classifierResult('ham', 1.0))
     self.services.spam.RecordClassifierCommentVerdict(self.cnxn,
-        mox.IsA(tracker_pb2.IssueComment), False, 1.0)
+        mox.IsA(tracker_pb2.IssueComment), False, 1.0, False)
     self.services.issue.CreateIssueComment(self.cnxn, issue.project_id,
         issue.local_id, issue.reporter_id, 'comment text',
         amendments=[
