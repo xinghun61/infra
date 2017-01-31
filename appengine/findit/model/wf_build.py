@@ -29,7 +29,7 @@ class WfBuild(BaseBuildModel):
     return WfBuild._CreateKey(master_name, builder_name, build_number).get()
 
   data = ndb.JsonProperty(indexed=False, compressed=True)
-  last_crawled_time = ndb.DateTimeProperty(indexed=False)
+  last_crawled_time = ndb.DateTimeProperty(indexed=True)
 
   start_time = ndb.DateTimeProperty(indexed=False)
   completed = ndb.BooleanProperty(default=False, indexed=False)
