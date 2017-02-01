@@ -1,5 +1,6 @@
 .PHONY: test
 WCT_PATH = ./node_modules/web-component-tester/bin/wct
+VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
 
 default: help
 
@@ -19,7 +20,7 @@ lint:
 	polylint -i elements/som-app/som-app.html
 
 build: deps
-	vulcanize elements/som-app/som-app.html -o elements/som-app/som-app.vulcanized.html
+	$(VULCANIZE_PATH) elements/som-app/som-app.html -o elements/som-app/som-app.vulcanized.html
 
 clean:
 	rm elements/som-app/som-app.vulcanized.html
