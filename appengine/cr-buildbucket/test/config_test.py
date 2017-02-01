@@ -151,12 +151,21 @@ class ConfigTest(testing.AppengineTestCase):
 
   def test_cron_update_buckets(self):
     chromium_buildbucket_cfg = parse_cfg("""
-      buckets {
-        name: "master.tryserver.chromium.linux"
+      acl_sets {
+        name: "public"
         acls {
           role: READER
           group: "all"
         }
+        acls {
+          role: READER
+          group: "all"
+        }
+      }
+      buckets {
+        name: "master.tryserver.chromium.linux"
+        acl_sets: "public"
+        acl_sets: "undefined_acl_set_will_cause_an_error_in_log_but_not_failure"
         acls {
           role: SCHEDULER
           group: "tryjob-access"
@@ -388,6 +397,13 @@ class ConfigTest(testing.AppengineTestCase):
 
   def test_validate_buildbucket_cfg_success(self):
     self.cfg_validation_test(parse_cfg("""
+      acl_sets {
+        name: "public"
+        acls {
+          role: READER
+          group: "all"
+        }
+      }
       buckets {
         name: "good.name"
         acls {
@@ -397,6 +413,7 @@ class ConfigTest(testing.AppengineTestCase):
       }
       buckets {
         name: "good.name2"
+        acl_sets: "public"
         acls {
           role: READER
           identity: "a@a.com"
@@ -410,8 +427,16 @@ class ConfigTest(testing.AppengineTestCase):
 
   def test_validate_buildbucket_cfg_fail(self):
     self.cfg_validation_test(parse_cfg("""
+      acl_sets {}
+      acl_sets {
+        name: "^"
+        acls {}
+      }
+      acl_sets { name: "a" }
+      acl_sets { name: "a" }
       buckets {
         name: "a"
+        acl_sets: "does_not_exist"
         acls {
           role: READER
           group: "writers"
@@ -435,10 +460,19 @@ class ConfigTest(testing.AppengineTestCase):
       buckets {}
       """),
       [
+        errmsg('ACL set #1 (): name is unspecified'),
+        errmsg(
+            'ACL set #2 (^): invalid name "^" does not match regex '
+            '\'^[a-z0-9_]+$\''),
+        errmsg('ACL set #2 (^): acl #1: group or identity must be set'),
+        errmsg('ACL set #4 (a): duplicate name "a"'),
         errmsg(
           'Bucket a: acl #1: either group or identity must be set, '
           'not both'),
         errmsg('Bucket a: acl #2: group or identity must be set'),
+        errmsg(
+            'Bucket a: undefined ACL set "does_not_exist". '
+            'It must be defined in the same file'),
         errmsg('Bucket b: acl #1: Identity has invalid format: ldap'),
         errmsg('Bucket b: acl #2: invalid group: ;%:'),
         errmsg('Bucket #3: invalid name: Bucket not specified'),

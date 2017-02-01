@@ -10,6 +10,7 @@ project repositories: `projects/<project_id>:<buildbucket-app-id>.cfg`.
 
 import hashlib
 import logging
+import re
 
 from components import utils
 utils.fix_protobuf_package()
@@ -27,6 +28,7 @@ from proto import project_config_pb2
 from swarming import swarmingcfg
 import errors
 
+ACL_SET_NAME_RE = re.compile('^[a-z0-9_]+$')
 
 @utils.cache
 def cfg_path():
@@ -52,8 +54,38 @@ def validate_identity(identity, ctx):
     ctx.error(ex)
 
 
+def validate_access_list(acl_list, ctx):
+  """Validates a list of Acl messages."""
+  for i, acl in enumerate(acl_list):
+    with ctx.prefix('acl #%d: ', i + 1):
+      if acl.group and acl.identity:
+        ctx.error('either group or identity must be set, not both')
+      elif acl.group:
+        if not auth.is_valid_group_name(acl.group):
+          ctx.error('invalid group: %s', acl.group)
+      elif acl.identity:
+        validate_identity(acl.identity, ctx)
+      else:
+        ctx.error('group or identity must be set')
+
+
 @validation.project_config_rule(cfg_path(), project_config_pb2.BuildbucketCfg)
 def validate_buildbucket_cfg(cfg, ctx):
+  acl_set_names = set()
+  for i, acl_set in enumerate(cfg.acl_sets):
+    with ctx.prefix('ACL set #%d (%s): ', i+1, acl_set.name):
+      if not acl_set.name:
+        ctx.error('name is unspecified')
+      elif not ACL_SET_NAME_RE.match(acl_set.name):
+        ctx.error(
+            'invalid name "%s" does not match regex %r',
+            acl_set.name, ACL_SET_NAME_RE.pattern)
+      elif acl_set.name in acl_set_names:
+        ctx.error('duplicate name "%s"', acl_set.name)
+      acl_set_names.add(acl_set.name)
+
+      validate_access_list(acl_set.acls, ctx)
+
   is_sorted = True
   bucket_names = set()
 
@@ -77,17 +109,14 @@ def validate_buildbucket_cfg(cfg, ctx):
           if bucket.name < cfg.buckets[i - 1].name:
             is_sorted = False
 
-      for i, acl in enumerate(bucket.acls):
-        with ctx.prefix('acl #%d: ', i + 1):
-          if acl.group and acl.identity:
-            ctx.error('either group or identity must be set, not both')
-          elif acl.group:
-            if not auth.is_valid_group_name(acl.group):
-              ctx.error('invalid group: %s', acl.group)
-          elif acl.identity:
-            validate_identity(acl.identity, ctx)
-          else:
-            ctx.error('group or identity must be set')
+      validate_access_list(bucket.acls, ctx)
+      for name in bucket.acl_sets:
+        if name not in acl_set_names:
+          ctx.error(
+              'undefined ACL set "%s". '
+              'It must be defined in the same file',
+              name)
+
       if bucket.HasField('swarming'):  # pragma: no cover
         with ctx.prefix('swarming: '):
           swarmingcfg.validate_cfg(bucket.swarming, ctx)
@@ -155,8 +184,26 @@ def get_bucket_async(name):
   ))
 
 
+def _normalize_acls(acls):
+  """Normalizes a RepeatedCompositeContainer of Acl messages."""
+  for a in acls:
+    if a.identity and ':' not in a.identity:
+      a.identity = 'user:%s' % a.identity
+
+  sort_key = lambda a: (a.role, a.group, a.identity)
+  acls.sort(key=sort_key)
+
+  for i in xrange(len(acls)-1, 0, -1):
+    if sort_key(acls[i]) == sort_key(acls[i-1]):
+      del acls[i]
+
+
 def cron_update_buckets():
-  """Synchronizes Bucket entities with configs fetched from luci-config."""
+  """Synchronizes Bucket entities with configs fetched from luci-config.
+
+  When storing in the datastore, inlines the referenced ACL sets and clears
+  the acl_sets message field.
+  """
   config_map = config.get_project_configs(
     cfg_path(), project_config_pb2.BuildbucketCfg)
 
@@ -169,6 +216,7 @@ def cron_update_buckets():
     # revision is None in file-system mode. Use SHA1 of the config as revision.
     revision = revision or 'sha1:%s' % hashlib.sha1(
       project_cfg.SerializeToString()).hexdigest()
+    acl_sets_by_name = {a.name: a for a in project_cfg.acl_sets}
     for bucket_cfg in project_cfg.buckets:
       bucket = Bucket.get_by_id(bucket_cfg.name)
       if (bucket and
@@ -177,9 +225,25 @@ def cron_update_buckets():
           bucket.config_content_binary):
         continue
 
-      for acl in bucket_cfg.acls:
-        if acl.identity and ':' not in acl.identity:
-          acl.identity = 'user:%s' % acl.identity
+      # Inline ACL sets.
+      for name in bucket_cfg.acl_sets:
+        acl_set = acl_sets_by_name.get(name)
+        if not acl_set:
+          logging.error(
+            'referenced acl_set not found.\n'
+            'Bucket: %r\n'
+            'ACL set name: %r\n'
+            'Project id: %r\n'
+            'Config revision: %r',
+            bucket_cfg.name,
+            name,
+            project_id,
+            revision)
+          continue
+        bucket_cfg.acls.extend(acl_set.acls)
+      del bucket_cfg.acl_sets[:]
+
+      _normalize_acls(bucket_cfg.acls)
 
       @ndb.transactional
       def update_bucket():
