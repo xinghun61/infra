@@ -93,11 +93,11 @@ func update(c context.Context) error {
 		// usual case on most machines.
 		return nil
 	}
+	metricSecondsStale.Set(c, staleness)
 	if err != nil {
 		return err
 	}
 
-	metricSecondsStale.Set(c, staleness)
 	updateFromFile(c, file)
 	return nil
 }
