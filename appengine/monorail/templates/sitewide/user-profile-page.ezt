@@ -242,6 +242,25 @@
 </table>
 [end]
 
+[if-any can_ban]
+ <form action="ban.do" method="POST">
+  <input type="hidden" name="token" value="[ban_token]">
+  <h4>Banned for abuse</h4>
+  <div style="margin:0 0 2em 2em">
+   <input type="checkbox" name="banned" id="banned" value="1"
+          [if-any settings_user_is_banned]checked="checked"[end] >
+   <label for="banned">This user is banned because:</label>
+   <input type="text" size="50" name="banned_reason" id="banned_reason" value="[settings_user_pb.banned]">
+  </div>
+
+  <div style="margin:0 0 2em 2em">
+   <input id="submit_btn" type="submit" name="btn"
+          value="Update banned status">
+  </div>
+
+ </form>
+[end]
+
 [if-any perms._EditOtherUsers]
 <h3 style="clear:both">Edit user</h3>
  <form action="edit.do" method="POST">

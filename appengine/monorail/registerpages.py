@@ -324,6 +324,7 @@ class ServletRegistry(object):
 
     self._SetupUserServlets({
         urls.USER_PROFILE: userprofile.UserProfile,
+        urls.BAN_USER: userprofile.BanUser,
         urls.USER_CLEAR_BOUNCING: userclearbouncing.UserClearBouncing,
         urls.USER_UPDATES_PROJECTS: userupdates.UserUpdatesProjects,
         urls.USER_UPDATES_DEVELOPERS: userupdates.UserUpdatesDevelopers,

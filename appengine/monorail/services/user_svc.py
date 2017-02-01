@@ -431,6 +431,20 @@ class UserService(object):
     cnxn.Commit()
     self.user_2lc.InvalidateKeys(cnxn, [user_id])
 
+  def UpdateUserBan(
+      self, cnxn, user_id, user,
+      is_banned=None, banned_reason=None):
+    if is_banned is not None:
+      if is_banned:
+        user.banned = banned_reason or 'No reason given'
+      else:
+        user.reset('banned')
+
+    # Write the user settings to the database.
+    self.UpdateUser(cnxn, user_id, user)
+
+
+
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,
       email_compact_subject=None, email_view_widget=None,

@@ -697,6 +697,15 @@ def IsBanned(user, user_view):
   return False
 
 
+def CanBan(mr, services):
+  """Return True if the user is allowed to ban other users, site-wide."""
+  if mr.perms.HasPerm(ADMINISTER_SITE, None, None):
+    return True
+
+  owned, _, _ = services.project.GetUserRolesInAllProjects(mr.cnxn,
+      mr.auth.effective_ids)
+  return len(owned) > 0
+
 def CanViewContributorList(mr):
   """Return True if we should display the list project contributors.
 

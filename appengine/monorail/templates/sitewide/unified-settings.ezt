@@ -64,16 +64,7 @@
         [if-any read_only]disabled="disabled"[end] >
 </div>
 
-
 [if-any perms._EditOtherUsers]
-  <h4>Banned for abuse</h4>
-  <div style="margin:0 0 2em 2em">
-   <input type="checkbox" name="banned" id="banned" value="1"
-          [if-any settings_user_is_banned]checked="checked"[end] >
-   <label for="banned">This user is banned because:</label>
-   <input type="text" size="50" name="banned_reason" id="banned_reason" value="[settings_user_pb.banned]">
-  </div>
-
   <h4>Action limits</h4>
    <div style="margin:0 0 2em 2em; width:50em">
    <input type="checkbox" name="ignore_action_limits" id="ignore_action_limits" value="1"

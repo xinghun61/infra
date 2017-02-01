@@ -15,6 +15,7 @@ from framework import framework_views
 from framework import permissions
 from framework import servlet
 from framework import timestr
+from framework import xsrf
 from project import project_views
 from sitewide import sitewide_helpers
 
@@ -76,6 +77,12 @@ class UserProfile(servlet.Servlet):
     else:
       last_bounce_str = None
 
+    can_ban = permissions.CanBan(mr, self.services)
+    ban_token = None
+    if mr.auth.user_id and can_ban:
+      form_token_path = mr.request.path + 'ban.do'
+      ban_token = xsrf.GenerateToken(mr.auth.user_id, form_token_path)
+
     page_data = {
         'user_tab_mode': 'st2',
         'viewed_user_display_name': viewed_user_display_name,
@@ -106,6 +113,8 @@ class UserProfile(servlet.Servlet):
         'last_visit_str': last_visit_str,
         'last_bounce_str': last_bounce_str,
         'vacation_message': viewed_user.vacation_message,
+        'can_ban': ezt.boolean(can_ban),
+        'ban_token': ban_token
         }
 
     settings = framework_helpers.UserSettings.GatherUnifiedSettingsPageData(
@@ -127,6 +136,25 @@ class UserProfile(servlet.Servlet):
     framework_helpers.UserSettings.ProcessSettingsForm(
         mr.cnxn, self.services.user, post_data, mr.viewed_user_auth.user_id,
         mr.viewed_user_auth.user_pb, admin=has_admin_perm)
+
+    # TODO(jrobbins): Check all calls to FormatAbsoluteURL for include_project.
+    return framework_helpers.FormatAbsoluteURL(
+        mr, mr.viewed_user_auth.user_view.profile_url, include_project=False,
+        saved=1, ts=int(time.time()))
+
+
+class BanUser(servlet.Servlet):
+  """Bans or un-bans a user."""
+
+  def ProcessFormData(self, mr, post_data):
+    """Process the posted form."""
+    if not permissions.CanBan(mr, self.services):
+      raise permissions.PermissionException(
+          "You do not have permission to ban users.")
+
+    framework_helpers.UserSettings.ProcessBanForm(
+        mr.cnxn, self.services.user, post_data, mr.viewed_user_auth.user_id,
+        mr.viewed_user_auth.user_pb)
 
     # TODO(jrobbins): Check all calls to FormatAbsoluteURL for include_project.
     return framework_helpers.FormatAbsoluteURL(

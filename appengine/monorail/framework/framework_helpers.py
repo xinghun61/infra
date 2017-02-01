@@ -487,6 +487,23 @@ class UserSettings(object):
         }
 
   @classmethod
+  def ProcessBanForm(
+      cls, cnxn, user_service, post_data, user_id, user):
+    """Process the posted form data from the ban user form.
+
+    Args:
+      cnxn: connection to the SQL database.
+      user_service: An instance of UserService for saving changes.
+      post_data: The parsed post data from the form submission request.
+      user_id: The user id of the target user.
+      user: The user PB of the target user.
+    """
+    user_service.UpdateUserBan(
+        cnxn, user_id, user, is_banned='banned' in post_data,
+            banned_reason=post_data.get('banned_reason', ''))
+
+
+  @classmethod
   def ProcessSettingsForm(
       cls, cnxn, user_service, post_data, user_id, user, admin=False):
     """Process the posted form data from the unified user settings form.

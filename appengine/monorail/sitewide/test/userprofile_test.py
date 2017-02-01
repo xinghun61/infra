@@ -6,6 +6,7 @@
 """Tests for the user profile page."""
 
 import unittest
+import webapp2
 
 import mox
 
@@ -16,7 +17,9 @@ from proto import user_pb2
 from services import service_manager
 from sitewide import userprofile
 from testing import fake
+from testing import testing_helpers
 
+from google.appengine.ext import testbed
 
 REGULAR_USER_ID = 111L
 ADMIN_USER_ID = 222L
@@ -29,7 +32,9 @@ STATES = {
 
 def MakeReqInfo(
     user_pb, user_id, viewed_user_pb, viewed_user_id, viewed_user_name,
-    _reveal_email=False, _params=None):
+    path=None, _reveal_email=False, _params=None):
+  if path is None:
+    path = "/u/%d" % viewed_user_id
   mr = fake.MonorailRequest()
   mr.auth.user_pb = user_pb
   mr.auth.user_id = user_id
@@ -40,6 +45,7 @@ def MakeReqInfo(
   mr.viewed_user_auth.effective_ids = {viewed_user_id}
   mr.viewed_user_auth.user_view = framework_views.UserView(viewed_user_pb)
   mr.viewed_user_name = viewed_user_name
+  mr.request = webapp2.Request.blank("/")
   return mr
 
 
@@ -88,7 +94,13 @@ class UserProfileTest(unittest.TestCase):
     self.admin_user.is_site_admin = True
     self.other_user = services.user.GetUser('fake cnxn', OTHER_USER_ID)
 
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_memcache_stub()
+    self.testbed.init_datastore_v3_stub()
+
   def tearDown(self):
+    self.testbed.deactivate()
     self.mox.UnsetStubs()
 
   def assertProjectsAnyOrder(self, value_to_test, *expected_project_names):
