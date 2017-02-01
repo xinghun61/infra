@@ -16,7 +16,17 @@ import (
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/tsmon/field"
+	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/server/router"
+
+	dmp "github.com/sergi/go-diff/diffmatchpatch"
+)
+
+var (
+	alertDiffs = metric.NewCounter("analyzer/cron_alert_diffs",
+		"Number of diffs between alerts-dispatcher and cron alerts json", nil,
+		field.String("tree"))
 )
 
 type bySeverity []messages.Alert
@@ -106,6 +116,8 @@ func getAnalyzeHandler(ctx *router.Context) {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 	}
 
+	// This is just to measure the tsmon metric for number of diffs.
+	_, _, _ = getMiloDiffs(c, tree)
 	w.Write([]byte("ok"))
 }
 
@@ -135,10 +147,74 @@ func storeAlertsSummary(c context.Context, a *analyzer.Analyzer, tree string, al
 	}
 
 	alertsJSON := &AlertsJSON{
+		// TODO(seanmccullough): remove "milo." prefix.
 		Tree:     datastore.MakeKey(c, "Tree", "milo."+tree),
 		Date:     clock.Now(c).UTC(),
 		Contents: b,
 	}
 
 	return datastore.Put(c, alertsJSON)
+}
+
+func getMiloDiffs(c context.Context, tree string) (*dmp.DiffMatchPatch, []dmp.Diff, error) {
+	oldAlerts, err := getAlertsForTree(c, tree)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	newAlerts, err := getAlertsForTree(c, "milo."+tree)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	differ := dmp.New()
+	diffs := differ.DiffMain(string(oldAlerts.Contents), string(newAlerts.Contents), true)
+	alertDiffs.Add(c, int64(differ.DiffLevenshtein(diffs)), tree)
+	return differ, diffs, nil
+}
+
+func getMiloDiffHandler(ctx *router.Context) {
+	c, w, p := ctx.Context, ctx.Writer, ctx.Params
+
+	tree := p.ByName("tree")
+
+	trees, err := getGatekeeperTrees(c)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("getting gatekeeper trees: %v", err))
+		return
+	}
+
+	_, ok := trees[tree]
+	if !ok {
+		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("unrecoginzed tree: %s", tree))
+		return
+	}
+
+	differ, diffs, err := getMiloDiffs(c, tree)
+	if err != nil {
+		logging.Errorf(c, "error storing alerts: %v", err)
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Write([]byte(differ.DiffPrettyHtml(diffs)))
+}
+
+func getAlertsForTree(c context.Context, tree string) (*AlertsJSON, error) {
+	results := []*AlertsJSON{}
+	q := datastore.NewQuery("AlertsJSON")
+	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
+	q = q.Order("-Date")
+	q = q.Limit(1)
+
+	err := datastore.GetAll(c, q, &results)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(results) == 0 {
+		return nil, fmt.Errorf("AlertsJSON for Tree \"%s\" not found", tree)
+	}
+
+	return results[0], nil
 }

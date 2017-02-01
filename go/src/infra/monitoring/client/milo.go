@@ -51,8 +51,9 @@ func NewMiloReader(ctx context.Context, host string) readerType {
 
 func (r *miloReader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	miloClient := &prpc.Client{
-		Host: r.host,
-		C:    &http.Client{Transport: urlfetch.Get(ctx)},
+		Host:    r.host,
+		C:       &http.Client{Transport: urlfetch.Get(ctx)},
+		Options: prpc.DefaultOptions(),
 	}
 
 	req := &milo.BuildbotBuildRequest{Master: master.Name(), Builder: builder, BuildNum: buildNum}
@@ -73,8 +74,9 @@ func (r *miloReader) Build(ctx context.Context, master *messages.MasterLocation,
 
 func (r *miloReader) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
 	miloClient := &prpc.Client{
-		Host: r.host,
-		C:    &http.Client{Transport: urlfetch.Get(ctx)},
+		Host:    r.host,
+		C:       &http.Client{Transport: urlfetch.Get(ctx)},
+		Options: prpc.DefaultOptions(),
 	}
 
 	req := &milo.BuildbotBuildsRequest{Master: master.Name(), Builder: builder, IncludeCurrent: true}
@@ -101,12 +103,14 @@ func (r *miloReader) BuildExtract(ctx context.Context, master *messages.MasterLo
 	defer cancelFunc()
 
 	miloClient := &prpc.Client{
-		Host: r.host,
-		C:    &http.Client{Transport: urlfetch.Get(ctx)},
+		Host:    r.host,
+		C:       &http.Client{Transport: urlfetch.Get(ctx)},
+		Options: prpc.DefaultOptions(),
 	}
 
 	req := &milo.MasterRequest{Name: master.Name()}
 	resp := &milo.CompressedMasterJSON{}
+
 	if err := miloClient.Call(ctx, buildBotSvcName, "GetCompressedMasterJSON", req, resp); err != nil {
 		logging.Errorf(ctx, "error getting build extract for %s: %v", master.Name(), err)
 		return nil, err

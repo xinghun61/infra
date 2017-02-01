@@ -409,6 +409,7 @@ func init() {
 	r.GET("/api/v1/bugqueue/:label/uncached/", protected, getUncachedBugsHandler)
 	r.GET("/api/v1/revrange/:start/:end", basemw, getRevRangeHandler)
 	r.GET("/logos/:tree", protected, getTreeLogoHandler)
+	r.GET("/alertdiff/:tree", protected, getMiloDiffHandler)
 
 	// Non-public endpoints.
 	r.GET("/_cron/refresh/bugqueue/:label", basemw, refreshBugQueueHandler)
@@ -434,6 +435,7 @@ func init() {
 	http.DefaultServeMux.Handle("/_/", r)
 	http.DefaultServeMux.Handle("/logos/", r)
 	http.DefaultServeMux.Handle("/alerts", r)
+	http.DefaultServeMux.Handle("/alertdiff/", r)
 
 	http.DefaultServeMux.Handle("/", rootRouter)
 }

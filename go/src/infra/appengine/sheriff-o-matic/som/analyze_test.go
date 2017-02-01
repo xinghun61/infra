@@ -184,3 +184,100 @@ func TestStoreAlertsSummary(t *testing.T) {
 		So(err, ShouldBeNil)
 	})
 }
+
+func TestGetMiloDiffHandler(t *testing.T) {
+	Convey("MiloDiffHandler", t, func() {
+		c := gaetesting.TestingContext()
+		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+			return giMock{dummy.Info(), "", time.Now(), nil}
+		})
+		c = setUpGitiles(c)
+		w := httptest.NewRecorder()
+
+		Convey("bad request", func() {
+			ctx := &router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makeGetRequest(),
+				Params:  makeParams("tree", "unknown.tree"),
+			}
+			getMiloDiffHandler(ctx)
+
+			So(w.Code, ShouldEqual, http.StatusNotFound)
+		})
+
+		Convey("ok request", func() {
+			c = client.WithReader(c, testhelper.MockReader{
+				BuildExtracts: map[string]*messages.BuildExtract{
+					"chromium": {},
+				},
+			})
+
+			ta := datastore.GetTestable(c)
+			ta.AddIndexes(&datastore.IndexDefinition{
+				Kind:     "AlertsJSON",
+				Ancestor: true,
+				SortBy: []datastore.IndexColumn{
+					{
+						Property:   "Date",
+						Descending: true,
+					},
+				},
+			})
+
+			alertsJSON := &AlertsJSON{
+				Tree:     datastore.MakeKey(c, "Tree", "chromium"),
+				Date:     clock.Now(c).UTC(),
+				Contents: []byte("{}"),
+			}
+
+			err := datastore.Put(c, alertsJSON)
+			So(err, ShouldBeNil)
+
+			alertsJSONMilo := &AlertsJSON{
+				Tree:     datastore.MakeKey(c, "Tree", "milo.chromium"),
+				Date:     clock.Now(c).UTC(),
+				Contents: []byte("{'some': 'value'}"),
+			}
+
+			err = datastore.Put(c, alertsJSONMilo)
+			So(err, ShouldBeNil)
+
+			ctx := &router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makeGetRequest(),
+				Params:  makeParams("tree", "chromium"),
+			}
+
+			alertsJSON, err = getAlertsForTree(c, "chromium")
+			So(err, ShouldBeNil)
+
+			getMiloDiffHandler(ctx)
+			So(w.Code, ShouldEqual, http.StatusOK)
+		})
+
+		Convey("ok request, no gitiles", func() {
+			c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+				return giMock{dummy.Info(), "", time.Now(), nil}
+			})
+			c = urlfetch.Set(c, &testhelper.MockGitilesTransport{})
+
+			c = client.WithReader(c, testhelper.MockReader{
+				BuildExtracts: map[string]*messages.BuildExtract{
+					"chromium": {},
+				},
+			})
+
+			ctx := &router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makeGetRequest(),
+				Params:  makeParams("tree", "chromium"),
+			}
+			getMiloDiffHandler(ctx)
+
+			So(w.Code, ShouldEqual, http.StatusInternalServerError)
+		})
+	})
+}
