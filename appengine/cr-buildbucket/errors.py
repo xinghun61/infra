@@ -27,10 +27,16 @@ class LeaseExpiredError(Error):
   """Raised when provided lease_key does not match the current one."""
 
 
-def validate_bucket_name(bucket):
+def validate_bucket_name(bucket, project_id=None):
   """Raises InvalidInputError if bucket name is invalid."""
   if not bucket:
     raise InvalidInputError('Bucket not specified')
+  if (project_id and bucket.startswith('luci.')
+      and not bucket.startswith('luci.%s.' % project_id)):
+    raise InvalidInputError(
+        'Bucket must start with "luci.%s." because it starts with "luci." '
+        'and is defined in the %s project' % (project_id, project_id))
+
   if not isinstance(bucket, basestring):
     raise InvalidInputError(
       'Bucket must be a string. It is %s.' % type(bucket).__name__)

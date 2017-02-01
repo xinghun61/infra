@@ -458,6 +458,7 @@ class ConfigTest(testing.AppengineTestCase):
         }
       }
       buckets {}
+      buckets { name: "luci.x" }
       """),
       [
         errmsg('ACL set #1 (): name is unspecified'),
@@ -476,6 +477,10 @@ class ConfigTest(testing.AppengineTestCase):
         errmsg('Bucket b: acl #1: Identity has invalid format: ldap'),
         errmsg('Bucket b: acl #2: invalid group: ;%:'),
         errmsg('Bucket #3: invalid name: Bucket not specified'),
+        errmsg(
+            'Bucket luci.x: invalid name: Bucket must start with '
+            '"luci.chromium." because it starts with "luci." and is defined in '
+            'the chromium project'),
       ]
     )
 

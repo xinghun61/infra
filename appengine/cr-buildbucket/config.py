@@ -92,7 +92,7 @@ def validate_buildbucket_cfg(cfg, ctx):
   for i, bucket in enumerate(cfg.buckets):
     with ctx.prefix('Bucket %s: ', bucket.name or ('#%d' % (i + 1))):
       try:
-        errors.validate_bucket_name(bucket.name)
+        errors.validate_bucket_name(bucket.name, project_id=ctx.project_id)
       except errors.InvalidInputError as ex:
         ctx.error('invalid name: %s', ex.message)
       else:
