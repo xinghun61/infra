@@ -82,6 +82,23 @@ def ensure_depot_tools():
   return TEMP_DEPOT_TOOLS
 
 
+def maybe_clean_rootdir(root_dir):
+  """Clean out root_dir if the disk is over 90% full."""
+  # TODO(hinoka): Windows support.
+  if sys.platform.startswith('win'):
+    return
+  st = os.statvfs(root_dir)
+  percent = st.f_bavail * 100 / st.f_blocks
+  if percent > 10:
+    return
+  # else: Less than 10% disk free.  Delete everything in the root dir.
+  print 'Free space less than 10%%, clearing out %s' % root_dir
+  for dirname in os.listdir(root_dir):
+    fullname = os.path.join(root_dir, dirname)
+    print 'Deleting %s' % fullname
+    infra_libs.rmtree(fullname)
+
+
 def inject_path_in_environ(env, path):
   """Appends a directory to PATH env var if it's not there."""
   paths = env.get('PATH', '').split(os.pathsep)
@@ -222,6 +239,7 @@ def start(root_dir, depot_tools, password_file, slave_name):
     # depot_tools msysgit can't find ~/.gitconfig unless we explicitly set HOME
     os.environ['HOME'] = '%s%s' % (
         os.environ.get('HOMEDRIVE'), os.environ.get('HOMEPATH'))
+  maybe_clean_rootdir(root_dir)
   bot_entry = get_botmap_entry(slave_name)
   is_internal = bot_entry.get('internal', False)
   ensure_checkout(root_dir, depot_tools, is_internal)
