@@ -150,7 +150,7 @@ func uploadHandler(ctx *router.Context) {
 		//return
 	}
 
-	if r.URL.Scheme != "https" {
+	if r.TLS == nil {
 		logging.Warningf(c, "Non-https scheme was used to upload test results")
 	}
 
