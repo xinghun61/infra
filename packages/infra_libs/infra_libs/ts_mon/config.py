@@ -250,7 +250,7 @@ def process_argparse_options(args):
                     'available')
   elif endpoint.startswith('https://'):
     interface.state.global_monitor = monitors.HttpsMonitor(
-        endpoint, credentials)
+        endpoint, credentials, ca_certs=args.ts_mon_ca_certs)
   elif endpoint.lower() == 'none':
     logging.info('ts_mon monitoring has been explicitly disabled')
   else:
