@@ -142,16 +142,16 @@ func uploadHandler(ctx *router.Context) {
 	}
 
 	if !whitelisted {
-		logging.WithError(err).Warningf(
+		logging.WithError(err).Errorf(
 			c, "Uploading IP %s is not whitelisted", auth.GetState(c).PeerIP())
-		// TODO(sergiyb): Uncomment code below and change warning to error above
-		// after checking that whitelist "bots" is sufficient.
-		//http.Error(w, "IP is not whitelisted", http.StatusUnauthorized)
-		//return
+		http.Error(w, "IP is not whitelisted", http.StatusUnauthorized)
+		return
 	}
 
 	if r.TLS == nil {
-		logging.Warningf(c, "Non-https scheme was used to upload test results")
+		logging.Errorf(c, "uploadHandler: only allow HTTPS")
+		http.Error(w, "Only HTTPS requests are allowed", http.StatusUnauthorized)
+		return
 	}
 
 	fileheaders := r.MultipartForm.File["file"]

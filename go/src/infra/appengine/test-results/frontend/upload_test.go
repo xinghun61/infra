@@ -6,6 +6,7 @@ package frontend
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"infra/appengine/test-results/model"
 	"io"
@@ -61,8 +62,15 @@ func TestUploadAndGetHandlers(t *testing.T) {
 	mw := router.NewMiddlewareChain(withTestingContext)
 	r.GET("/testfile", mw.Extend(templatesMiddleware()), getHandler)
 	r.POST("/testfile/upload", mw.Extend(withParsedUploadForm), uploadHandler)
-	srv := httptest.NewServer(r)
-	client := &http.Client{}
+	srv := httptest.NewTLSServer(r)
+
+	// Create a client that ignores bad certificates. This is needed to generate
+	// mock HTTPS requests below.
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
 
 	Convey("Upload and Get handlers", t, func() {
 		Convey("upload full_results.json", func() {
