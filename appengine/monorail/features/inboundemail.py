@@ -5,8 +5,10 @@
 
 """Handler to process inbound email with issue comments and commands."""
 
+import email
 import logging
 import os
+import re
 import time
 import urllib
 
@@ -264,6 +266,9 @@ def _MakeErrorMessageReplyTask(
   return [email_task]
 
 
+BAD_WRAP_RE = re.compile('=\r\n')
+BAD_EQ_RE = re.compile('=3D')
+
 class BouncedEmail(BounceNotificationHandler):
   """Handler to notice when email to given user is bouncing."""
 
@@ -272,21 +277,38 @@ class BouncedEmail(BounceNotificationHandler):
   # Source code is in file:
   # google_appengine/google/appengine/ext/webapp/mail_handlers.py
 
+  def post(self):
+    try:
+      super(BouncedEmail, self).post()
+    except AttributeError:
+      # Work-around for
+      # https://code.google.com/p/googleappengine/issues/detail?id=13512
+      raw_message = self.request.POST.get('raw-message')
+      logging.info('raw_message %r', raw_message)
+      raw_message = BAD_WRAP_RE.sub('', raw_message)
+      raw_message = BAD_EQ_RE.sub('=', raw_message)
+      logging.info('fixed raw_message %r', raw_message)
+      mime_message = email.message_from_string(raw_message)
+      logging.info('get_payload gives %r', mime_message.get_payload())
+      self.request.POST['raw-message'] = mime_message
+      super(BouncedEmail, self).post()  # Retry with mime_message
+
+
   def receive(self, bounce_message):
-    email = bounce_message.original.get('to')
-    logging.info('Bounce was sent to: %r', email)
+    email_addr = bounce_message.original.get('to')
+    logging.info('Bounce was sent to: %r', email_addr)
 
     app_config = webapp2.WSGIApplication.app.config
     services = app_config['services']
     cnxn = sql.MonorailConnection()
 
     try:
-      user_id = services.user.LookupUserID(cnxn, email)
+      user_id = services.user.LookupUserID(cnxn, email_addr)
       user = services.user.GetUser(cnxn, user_id)
       user.email_bounce_timestamp = int(time.time())
       services.user.UpdateUser(cnxn, user_id, user)
     except user_svc.NoSuchIssueException:
-      logging.info('User %r not found, ignoring', email)
+      logging.info('User %r not found, ignoring', email_addr)
       logging.info('Received bounce post ... [%s]', self.request)
       logging.info('Bounce original: %s', bounce_message.original)
       logging.info('Bounce notification: %s', bounce_message.notification)
