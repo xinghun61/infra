@@ -28,7 +28,8 @@ count_metric = ts_mon.CounterMetric('proc/outer_loop/count',
                 'failure')
 success_metric = ts_mon.BooleanMetric('proc/outer_loop/success',
     description='Set immediately before the loop exits')
-durations_metric = ts_mon.DistributionMetric('proc/outer_loop/durations',
+durations_metric = ts_mon.CumulativeDistributionMetric(
+    'proc/outer_loop/durations',
     description='Times (in seconds) taken to execute the task')
 
 
