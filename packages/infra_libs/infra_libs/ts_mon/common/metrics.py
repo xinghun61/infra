@@ -477,7 +477,7 @@ class FloatMetric(NumericMetric):
     return False
 
 
-class DistributionMetric(Metric):
+class _DistributionMetricBase(Metric):
   """A metric that holds a distribution of values.
 
   By default buckets are chosen from a geometric progression, each bucket being
@@ -493,7 +493,7 @@ class DistributionMetric(Metric):
 
   def __init__(self, name, is_cumulative=True, bucketer=None, fields=None,
                start_time=None, description=None, units=None):
-    super(DistributionMetric, self).__init__(
+    super(_DistributionMetricBase, self).__init__(
         name, fields=fields, description=description, units=units)
     self._start_time = start_time
 
@@ -607,10 +607,10 @@ class DistributionMetric(Metric):
     self._set(fields, target_fields, value)
 
   def is_cumulative(self):
-    raise NotImplementedError()  # Keep this class abstract.
+    return self._is_cumulative
 
 
-class CumulativeDistributionMetric(DistributionMetric):
+class CumulativeDistributionMetric(_DistributionMetricBase):
   """A DistributionMetric with is_cumulative set to True."""
 
   def __init__(self, name, bucketer=None, fields=None,
@@ -623,11 +623,8 @@ class CumulativeDistributionMetric(DistributionMetric):
         description=description,
         units=units)
 
-  def is_cumulative(self):
-    return True
 
-
-class NonCumulativeDistributionMetric(DistributionMetric):
+class NonCumulativeDistributionMetric(_DistributionMetricBase):
   """A DistributionMetric with is_cumulative set to False."""
 
   def __init__(self, name, bucketer=None, fields=None,
@@ -639,9 +636,6 @@ class NonCumulativeDistributionMetric(DistributionMetric):
         fields=fields,
         description=description,
         units=units)
-
-  def is_cumulative(self):
-    return False
 
 
 class MetaMetricsDataUnits(type):

@@ -491,7 +491,7 @@ class RunningZeroGeneratorTest(TestBase):
 
   def assertZeroes(self, expected, sequence):
     self.assertEquals(expected,
-        list(metrics.DistributionMetric._running_zero_generator(sequence)))
+        list(metrics._DistributionMetricBase._running_zero_generator(sequence)))
 
   def test_running_zeroes(self):
     self.assertZeroes([1, -1, 1], [1, 0, 1])
@@ -519,7 +519,7 @@ class DistributionMetricTest(TestBase):
 
   def test_populate_canonical(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.DistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test')
     m._populate_value(pb,
         distribution.Distribution(distribution.GeometricBucketer()),
         1234)
@@ -540,7 +540,7 @@ class DistributionMetricTest(TestBase):
 
   def test_populate_custom(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.DistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test')
     m._populate_value(pb,
         distribution.Distribution(distribution.GeometricBucketer(4)),
         1234)
@@ -561,7 +561,7 @@ class DistributionMetricTest(TestBase):
 
   def test_populate_buckets(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.DistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test')
     d = distribution.Distribution(
         distribution.FixedWidthBucketer(10))
     d.add(5)
@@ -590,7 +590,7 @@ class DistributionMetricTest(TestBase):
 
   def test_populate_buckets_last_zero(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.DistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test')
     d = distribution.Distribution(
         distribution.FixedWidthBucketer(10, num_finite_buckets=10))
     d.add(5)
@@ -602,7 +602,7 @@ class DistributionMetricTest(TestBase):
 
   def test_populate_buckets_underflow(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.DistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test')
     d = distribution.Distribution(
         distribution.FixedWidthBucketer(10, num_finite_buckets=10))
     d.add(-5)
@@ -692,7 +692,7 @@ class DistributionMetricTest(TestBase):
     self.assertFalse(pb.distribution.is_cumulative)
 
   def test_add(self):
-    m = metrics.DistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test')
     m.add(1)
     m.add(10)
     m.add(100)
@@ -701,7 +701,7 @@ class DistributionMetricTest(TestBase):
     self.assertEquals(3, m.get().count)
 
   def test_add_custom_bucketer(self):
-    m = metrics.DistributionMetric('test',
+    m = metrics.CumulativeDistributionMetric('test',
         bucketer=distribution.FixedWidthBucketer(10))
     m.add(1)
     m.add(10)
