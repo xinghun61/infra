@@ -321,6 +321,11 @@ runOnLoad(function() {
     $("archivedtable").addEventListener("click", _handleProjectClick);
   }
 
+  if ($("banned_reason")) {
+    $("banned_reason").addEventListener("keyup", function() {
+      $("banned").checked = $("banned_reason").value != "";
+    });
+  }
 });
 </script>
 

@@ -192,12 +192,4 @@
 
 [end]
 
-<script type="text/javascript" nonce="[nonce]">
-runOnLoad(function() {
-  $("banned_reason").addEventListener("keyup", function() {
-    $("banned").checked = $("banned_reason").value != "";
-  });
-});
-</script>
-
 [include "../framework/footer-script.ezt"]
