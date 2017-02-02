@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import base64
+import datetime
 import hashlib
 import json
 import re
@@ -80,6 +81,12 @@ ROLL_SUCCESS, ROLL_EMPTY, ROLL_FAILURE = range(3)
 
 _AUTH_REFRESH_TOKEN_FLAG = (
     '--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller')
+
+
+_TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
+
+
+_ROLL_STALE_THRESHOLD = datetime.timedelta(hours=2)
 
 
 def get_commit_message(roll_result, tbrs=()):
@@ -176,13 +183,36 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     repo_data, cl_status = self._get_pending_cl_status(
         project_data['repo_url'], workdir)
     if repo_data:
+      last_roll_elapsed = None
+      timestamp_str = repo_data.get('last_roll', {}).get('utc_timestamp')
+      if timestamp_str:
+        last_roll_timestamp = datetime.datetime.strptime(
+            timestamp_str, _TIME_FORMAT)
+        last_roll_elapsed = self.m.time.utcnow() - last_roll_timestamp
+
       # Allow trivial rolls in CQ to finish.
       if repo_data['trivial'] and cl_status == 'commit':
+        if (last_roll_elapsed and
+            last_roll_elapsed > _ROLL_STALE_THRESHOLD):
+          self.m.python.failing_step(
+              'stale roll',
+              'manual intervention needed: automated roll attempt is stale')
+
         return ROLL_SUCCESS
 
       # Allow non-trivial rolls to wait for review comments.
       if not repo_data['trivial'] and cl_status != 'closed':
+        if (last_roll_elapsed and
+            last_roll_elapsed > _ROLL_STALE_THRESHOLD):
+          self.m.python.failing_step(
+              'stale roll',
+              'manual intervention needed: automated roll attempt is stale')
+
         return ROLL_SUCCESS
+
+      # TODO(phajdan.jr): detect staleness by creating CLs in a loop.
+      # It's possible that the roller keeps creating new CLs (especially
+      # trivial rolls), but they e.g. fail to land, causing staleness.
 
       # We're about to upload a new CL, so close the old one.
       # Pass --rietveld flag to match upload args below.
@@ -278,7 +308,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       'trivial': roll_result['trivial'],
       'issue': str(issue_result['issue']),
       'issue_url': issue_result['issue_url'],
-      'utc_timestamp': self.m.time.utcnow().strftime('%Y-%m-%dT%H:%M:%S'),
+      'utc_timestamp': self.m.time.utcnow().strftime(_TIME_FORMAT),
     }
 
     repo_data = {

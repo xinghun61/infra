@@ -13,6 +13,7 @@ DEPS = [
   'recipe_engine/properties',
   'recipe_engine/raw_io',
   'recipe_engine/step',
+  'recipe_engine/time',
 ]
 
 from recipe_engine import recipe_api
@@ -122,20 +123,49 @@ def GenTests(api):
       api.test('repo_data_trivial_cq') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.repo_data('build', trivial=True, status='commit')
+      api.recipe_autoroller.repo_data(
+          'build', trivial=True, status='commit',
+          timestamp='2016-02-01T01:23:45') +
+      api.time.seed(1451606400)
+  )
+
+  yield (
+      api.test('repo_data_trivial_cq_stale') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.repo_data(
+          'build', trivial=True, status='commit',
+          timestamp='2016-02-01T01:23:45') +
+      api.time.seed(1454371200)
   )
 
   yield (
       api.test('repo_data_trivial_closed') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.repo_data('build', trivial=True, status='closed') +
-      api.recipe_autoroller.roll_data('build')
+      api.recipe_autoroller.repo_data(
+          'build', trivial=True, status='closed',
+          timestamp='2016-02-01T01:23:45') +
+      api.recipe_autoroller.roll_data('build') +
+      api.time.seed(1451606400)
   )
 
   yield (
       api.test('repo_data_nontrivial_open') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.repo_data('build', trivial=False, status='waiting')
+      api.recipe_autoroller.repo_data(
+          'build', trivial=False, status='waiting',
+          timestamp='2016-02-01T01:23:45') +
+      api.time.seed(1451606400)
+  )
+
+  yield (
+      api.test('repo_data_nontrivial_open_stale') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.repo_data(
+          'build', trivial=False, status='waiting',
+          timestamp='2016-02-01T01:23:45') +
+      api.time.seed(1454371200)
   )

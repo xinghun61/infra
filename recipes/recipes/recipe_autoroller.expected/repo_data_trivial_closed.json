@@ -428,7 +428,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
-      "{\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"last_nontrivial\": null, \"last_roll\": {\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"spec\": \"api_version: 1\\netc: \\\"etc\\\"\\n\", \"trivial\": true, \"utc_timestamp\": \"2012-05-14T12:53:21\"}, \"last_trivial\": {\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"spec\": \"api_version: 1\\netc: \\\"etc\\\"\\n\", \"trivial\": true, \"utc_timestamp\": \"2012-05-14T12:53:21\"}, \"trivial\": true}",
+      "{\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"last_nontrivial\": null, \"last_roll\": {\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"spec\": \"api_version: 1\\netc: \\\"etc\\\"\\n\", \"trivial\": true, \"utc_timestamp\": \"2016-01-01T00:00:03\"}, \"last_trivial\": {\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"spec\": \"api_version: 1\\netc: \\\"etc\\\"\\n\", \"trivial\": true, \"utc_timestamp\": \"2016-01-01T00:00:03\"}, \"trivial\": true}",
       "gs://recipe-roller-cl-uploads/repo_metadata/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ="
     ],
     "name": "build.gsutil upload",

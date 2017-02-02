@@ -60,13 +60,20 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
     ret += self.step_data('%s.roll' % project, self.m.json.output(roll_result))
     return ret
 
-  def repo_data(self, project, trivial, status):
+  def repo_data(self, project, trivial, status, timestamp):
     return (self.override_step_data('%s.gsutil repo_state' % project,
           self.m.raw_io.stream_output(json.dumps(
               {
                 'issue': '123456789',
                 'issue_url': 'https://codereview.chromium.org/123456789',
                 'trivial': trivial,
+                'last_roll': {
+                  'spec': 'api_version: 1\netc: "etc"\n',
+                  'trivial': trivial,
+                  'issue': '123456789',
+                  'issue_url': 'https://codereview.chromium.org/123456789',
+                  'utc_timestamp': timestamp,
+                },
               }),
               stream='stdout'),
           self.m.raw_io.stream_output('', stream='stderr')) +
