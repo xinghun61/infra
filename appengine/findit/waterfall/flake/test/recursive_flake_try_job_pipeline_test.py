@@ -18,9 +18,7 @@ from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
-    _GetNextCommitPosition)
-from waterfall.flake.recursive_flake_try_job_pipeline import (
-    _GetTryJobDataPoints)
+    _GetNormalizedTryJobDataPoints)
 from waterfall.flake.recursive_flake_try_job_pipeline import CreateCulprit
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     NextCommitPositionPipeline)
@@ -29,7 +27,6 @@ from waterfall.flake.recursive_flake_try_job_pipeline import (
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     UpdateAnalysisTryJobStatusUponCompletion)
 from waterfall.test import wf_testcase
-from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
 
 def _GenerateDataPoint(
@@ -379,7 +376,10 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.suspected_flake_build_number = suspected_flake_build_number
     analysis.data_points = data_points
 
-    self.assertEqual(data_points, _GetTryJobDataPoints(analysis))
+    normalized_data_points = _GetNormalizedTryJobDataPoints(analysis)
+    self.assertEqual(normalized_data_points[0].run_point_number, 100)
+    self.assertEqual(normalized_data_points[0].pass_rate, 0.8)
+    self.assertEqual(len(normalized_data_points), 1)
 
   def testGetTryJobDataPointsWithTryJobs(self):
     suspected_flake_build_number = 12345
@@ -390,137 +390,14 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                            build_number=suspected_flake_build_number - 1),
         _GenerateDataPoint(pass_rate=0.8, commit_position=99,
                            try_job_url='url')]
-    expected_data_points = [all_data_points[0], all_data_points[2]]
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.suspected_flake_build_number = suspected_flake_build_number
     analysis.data_points = all_data_points
 
-    self.assertEqual(expected_data_points, _GetTryJobDataPoints(analysis))
+    normalized_data_points = _GetNormalizedTryJobDataPoints(analysis)
 
-  def testGetNextFlakySingleFlakyDataPoint(self):
-    data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=100)]
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
-    self.assertEqual(99, next_commit_position)
-    self.assertIsNone(suspected_commit_position)
-
-  def testGetNextMultipleFlakyDataPoints(self):
-    data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=100),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=99),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=97),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=94)]
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
-    self.assertEqual(90, next_commit_position)
-    self.assertIsNone(suspected_commit_position)
-
-  def testGetNextLowerBoundary(self):
-    data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=2),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=1)]
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
-
-    self.assertEqual(0, next_commit_position)
-    self.assertIsNone(suspected_commit_position)
-
-  def testSequentialSearchAtLowerBoundaryStable(self):
-    data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=8),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=3),
-                   _GenerateDataPoint(pass_rate=1.0, commit_position=0)]
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
-    self.assertEqual(1, next_commit_position)
-    self.assertIsNone(suspected_commit_position)
-
-  def testSequentialSearchAtLowerBoundaryFlaky(self):
-    data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=8),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=3),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=0)]
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
-
-    self.assertIsNone(next_commit_position)
-    self.assertEqual(0, suspected_commit_position)
-
-  def testReadyForSequential(self):
-    data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=100),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=99),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=97),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=94),
-                   _GenerateDataPoint(pass_rate=1.0, commit_position=90)]
-
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
-
-    self.assertIsNone(suspected_commit_position)
-    self.assertEqual(next_commit_position, 91)
-
-  def testSequentialSearch(self):
-    data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=100),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=99),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=97),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=94),
-                   _GenerateDataPoint(pass_rate=1.0, commit_position=92),
-                   _GenerateDataPoint(pass_rate=1.0, commit_position=91),
-                   _GenerateDataPoint(pass_rate=1.0, commit_position=90)]
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
-
-    self.assertIsNone(suspected_commit_position)
-    self.assertEqual(next_commit_position, 93)
-
-  def testSuspectedCommitPosition(self):
-    data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=100),
-                   _GenerateDataPoint(pass_rate=1.0, commit_position=99)]
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
-
-    self.assertIsNone(next_commit_position)
-    self.assertEqual(suspected_commit_position, 100)
-
-  def testSuspectedCommitPositionAfterSequentialSearch(self):
-    data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=100),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=99),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=97),
-                   _GenerateDataPoint(pass_rate=0.8, commit_position=94),
-                   _GenerateDataPoint(pass_rate=1.0, commit_position=93),
-                   _GenerateDataPoint(pass_rate=1.0, commit_position=92),
-                   _GenerateDataPoint(pass_rate=1.0, commit_position=91),
-                   _GenerateDataPoint(pass_rate=1.0, commit_position=90)]
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
-
-    self.assertEqual(94, suspected_commit_position)
-    self.assertIsNone(next_commit_position)
-
-  def testCommitIntroducedFlakiness(self):
-    data_points = [_GenerateDataPoint(pass_rate=0.8, commit_position=100),
-                   _GenerateDataPoint(pass_rate=-1, commit_position=99)]
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
-
-    # This case should be handled by the caller of _GetNextCommitPosition
-    self.assertIsNone(suspected_commit_position)
-    self.assertEqual(100, next_commit_position)
-
-  def testTestDoesNotExist(self):
-    # This case should not be valid, since suspected flake build number would
-    # not have been None and not triggered try jobs to begin with.
-    data_points = [_GenerateDataPoint(pass_rate=-1, commit_position=100)]
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
-
-    self.assertIsNone(suspected_commit_position)
-    self.assertIsNone(next_commit_position)
+    self.assertEqual(normalized_data_points[0].run_point_number, 100)
+    self.assertEqual(normalized_data_points[0].pass_rate, 0.8)
+    self.assertEqual(normalized_data_points[1].run_point_number, 99)
+    self.assertEqual(normalized_data_points[1].pass_rate, 0.8)

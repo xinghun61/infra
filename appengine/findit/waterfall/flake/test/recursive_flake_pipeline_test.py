@@ -12,13 +12,13 @@ from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from waterfall.flake import lookback_algorithm
 from waterfall.flake import recursive_flake_pipeline
 from waterfall.flake import recursive_flake_try_job_pipeline
-from waterfall.flake.recursive_flake_pipeline import _GetNextBuildNumber
+from waterfall.flake.recursive_flake_pipeline import _NormalizeDataPoints
 from waterfall.flake.recursive_flake_pipeline import NextBuildNumberPipeline
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 from waterfall.test import wf_testcase
-from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
 
 class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
@@ -235,219 +235,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     mocked_pipeline.assert_not_called()
     self.assertEqual(swarming_task_error, analysis.error)
     self.assertEqual(analysis_status.SKIPPED, analysis.try_job_status)
-
-  def testGetNextRunSetStableAfterFlaky(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.8, 1.0], build_numbers=[100, 80])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
-    self.assertEqual(-1, result)
-    self.assertEqual(next_run, 79)
-
-  def testGetNextRunFlakeAfterStable(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    data_points = self._GenerateDataPoints(
-        pass_rates=[1.0, 0.8], build_numbers=[100, 80])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
-    self.assertEqual(-1, result)
-    self.assertEqual(next_run, 79)
-
-  def testGetNextRunNoTestAfterStable(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    data_points = self._GenerateDataPoints(
-        pass_rates=[1.0, -1], build_numbers=[100, 80])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
-    self.assertEqual(-1, result)
-    self.assertEqual(next_run, -1)
-
-  def testGetNextRunFlakedOut(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.6, 0.7, 0.5, 0.6, 0.7],
-        build_numbers=[100, 99, 97, 94, 90])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
-    self.assertEqual(-1, result)
-    self.assertEqual(next_run, 85)
-
-  def testSequentialNextRunReady(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.6, 0.8, 0.7, 1.0, 1.0, 1.0, 1.0, 1.0],
-        build_numbers=[100, 99, 97, 94, 93, 92, 91, 90])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
-    self.assertEqual(-1, result)
-    self.assertEqual(next_run, 95)
-
-  def testSequentialNextRunFirstTime(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.6, 0.8, 0.7, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        build_numbers=[100, 99, 97, 95, 94, 93, 92, 91, 90])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points, DEFAULT_CONFIG_DATA['check_flake_settings'])
-    self.assertEqual(-1, result)
-    self.assertEqual(next_run, 96)
-
-  def testSequentialNextRunFoundFlaky(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.6, 0.8, 0.7, 0.8, 1.0, 1.0, 1.0, 1.0, 1.0],
-        build_numbers=[100, 99, 97, 95, 94, 93, 92, 91, 90])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertEqual(result, 95)
-    self.assertEqual(next_run, -1)
-
-  def testSequentialNextRunDone(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.6, 0.8, 0.7, 0.8, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
-        build_numbers=[100, 99, 97, 96, 95, 94, 93, 92, 91, 90])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertEqual(result, 96)
-    self.assertEqual(next_run, -1)
-
-  def testNextBuildWhenTestNotExistingAfterStableInARow(self):
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.8, 1.0, 1.0, -1], build_numbers=[100, 80, 70, 60])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertEqual(-1, result)
-    self.assertEqual(81, next_run)
-
-  def testNextBuildWhenTestNotExistingAfterFlakeInARow(self):
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.8, 0.7, 0.75, -1], build_numbers=[100, 80, 70, 60])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertEqual(-1, result)
-    self.assertEqual(61, next_run)
-
-  def testNextBuildWhenDiveHappened(self):
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.3, 0.8], build_numbers=[100, 80])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertEqual(-1, result)
-    self.assertEqual(79, next_run)
-
-  def testNextBuildWhenRiseHappened(self):
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.3, 0.8, 0.3], build_numbers=[100, 99, 98])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertEqual(-1, result)
-    self.assertEqual(95, next_run)
-
-  def testNextBuildWhenDivedOut(self):
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.3, 0.8, 0.8, 0.7, 0.8, 0.9],
-        build_numbers=[100, 99, 98, 97, 96, 95])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertEquals(100, result)
-    self.assertEqual(-1, next_run)
-
-  def testNextBuildWhenDivedOutSequence(self):
-    data_points = self._GenerateDataPoints(
-        pass_rates=[0.3, 0.2, 0.8, 0.7, 0.8, 0.9, 0.8],
-        build_numbers=[100, 99, 97, 96, 05, 94, 93])
-
-    next_run, result = _GetNextBuildNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertEqual(-1, result)
-    self.assertEqual(98, next_run)
 
   def testNextBuildNumberIsSmallerThanLastBuildNumber(self):
     master_name = 'm'
@@ -681,10 +468,20 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
             test_name, step_size, number_of_iterations),
         running_cached_build_number_2)
 
+  def testNormalizeDataPoints(self):
+    data_points = self._GenerateDataPoints([0.9, 0.8, 1.0], [2, 1, 3])
+    normalized_data_points = _NormalizeDataPoints(data_points)
+    self.assertEqual(normalized_data_points[0].run_point_number, 3)
+    self.assertEqual(normalized_data_points[1].run_point_number, 2)
+    self.assertEqual(normalized_data_points[2].run_point_number, 1)
+    self.assertEqual(normalized_data_points[0].pass_rate, 1.0)
+    self.assertEqual(normalized_data_points[1].pass_rate, 0.9)
+    self.assertEqual(normalized_data_points[2].pass_rate, 0.8)
+
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
   @mock.patch.object(
-      recursive_flake_pipeline, '_GetNextBuildNumber', return_value=(-1, 100))
+      lookback_algorithm, 'GetNextRunPointNumber', return_value=(None, 100))
   @mock.patch.object(
       recursive_flake_pipeline.confidence, 'SteppinessForBuild',
       return_value=0.4)
@@ -737,7 +534,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
   @mock.patch.object(
-      recursive_flake_pipeline, '_GetNextBuildNumber', return_value=(-1, 100))
+      lookback_algorithm, 'GetNextRunPointNumber', return_value=(None, 100))
   @mock.patch.object(
       recursive_flake_pipeline.confidence, 'SteppinessForBuild',
       return_value=0.7)
@@ -795,7 +592,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
   @mock.patch.object(
-      recursive_flake_pipeline, '_GetNextBuildNumber', return_value=(-1, 100))
+      lookback_algorithm, 'GetNextRunPointNumber', return_value=(None, 100))
   @mock.patch.object(
       recursive_flake_pipeline.confidence, 'SteppinessForBuild',
       return_value=0.7)
@@ -859,7 +656,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis', return_value=None)
   @mock.patch.object(
-      recursive_flake_pipeline, '_GetNextBuildNumber', return_value=(-1, 100))
+      lookback_algorithm, 'GetNextRunPointNumber', return_value=(None, 100))
   @mock.patch.object(
       recursive_flake_pipeline.confidence, 'SteppinessForBuild',
       return_value=0.7)

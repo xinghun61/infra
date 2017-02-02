@@ -17,6 +17,8 @@ from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import waterfall_config
 from waterfall.flake import confidence
+from waterfall.flake import lookback_algorithm
+from waterfall.flake.lookback_algorithm import NormalizedDataPoint
 from waterfall.flake.recursive_flake_try_job_pipeline import CreateCulprit
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
@@ -29,13 +31,6 @@ from waterfall.trigger_flake_swarming_task_pipeline import (
     TriggerFlakeSwarmingTaskPipeline)
 
 
-_NO_BUILD_NUMBER = -1
-_DEFAULT_LOWER_FLAKE_THRESHOLD = 0.02
-_DEFAULT_UPPER_FLAKE_THRESHOLD = 0.98
-_DEFAULT_MAX_STABLE_IN_A_ROW = 4
-_DEFAULT_MAX_FLAKE_IN_A_ROW = 4
-_DEFAULT_MAX_DIVE_IN_A_ROW = 4
-_DEFAULT_DIVE_RATE_THRESHOLD = 0.4
 _DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
 _DEFAULT_MAX_BUILD_NUMBERS = 500
 
@@ -43,7 +38,7 @@ _DEFAULT_MAX_BUILD_NUMBERS = 500
 def _UpdateAnalysisStatusUponCompletion(
     analysis, suspected_build, status, error, build_confidence_score=None,
     try_job_status=analysis_status.SKIPPED):
-  if suspected_build == _NO_BUILD_NUMBER:
+  if suspected_build is None:
     analysis.end_time = time_util.GetUTCNow()
     analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
   else:
@@ -286,142 +281,13 @@ class RecursiveFlakePipeline(BasePipeline):
           manually_triggered=manually_triggered)
 
 
-def _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
-  return (
-      pass_rate < lower_flake_threshold or pass_rate > upper_flake_threshold)
-
-
-def _GetNextBuildNumber(data_points, algorithm_settings):
-  """Finds the next build to be checked flakiness on, or gets final result.
-
-  Args:
-    data_points (list): A list of data points of already-completed tasks
-        for this analysis. Data_points are sorted by build_numbers in descending
-        order.
-    algorithm_settings (dict): A dict of parameters for algorithms.
-
-  Returns:
-    (next_build_number, suspected_build): The next build number to check
-        and suspected build number that the flakiness was introduced in.
-        If needs to check next_build_number, suspected_build will be
-        _NO_BUILD_NUMBER; If suspected_build is found, next_build_number will be
-        _NO_BUILD_NUMBER; If no findings eventually, both will be
-        _NO_BUILD_NUMBER.
-  """
-  # A description of this algorithm can be found at:
-  # https://docs.google.com/document/d/1wPYFZ5OT998Yn7O8wGDOhgfcQ98mknoX13AesJaS6ig/edit
-  # Get the last result.
-  lower_flake_threshold = algorithm_settings.get(
-      'lower_flake_threshold', _DEFAULT_LOWER_FLAKE_THRESHOLD)
-  upper_flake_threshold = algorithm_settings.get(
-      'upper_flake_threshold', _DEFAULT_UPPER_FLAKE_THRESHOLD)
-  max_stable_in_a_row = algorithm_settings.get(
-      'max_stable_in_a_row', _DEFAULT_MAX_STABLE_IN_A_ROW)
-  max_flake_in_a_row = algorithm_settings.get(
-      'max_flake_in_a_row', _DEFAULT_MAX_STABLE_IN_A_ROW)
-  max_dive_in_a_row = algorithm_settings.get(
-      'max_dive_in_a_row', _DEFAULT_MAX_DIVE_IN_A_ROW)
-  dive_rate_threshold = algorithm_settings.get(
-      'dive_rate_threshold', _DEFAULT_DIVE_RATE_THRESHOLD)
-
-  stables_in_a_row = 0
-  flakes_in_a_row = 0
-  dives_in_a_row = 0
-  stables_happened = False
-  flakes_first = 0
-  flaked_out = False
-  next_build_number = 0
-
-  for i in xrange(len(data_points)):
-    pass_rate = data_points[i].pass_rate
-    build_number = data_points[i].build_number
-    if pass_rate < 0:   # Test doesn't exist in this build.
-      if flaked_out or flakes_first:
-        stables_in_a_row += 1
-        lower_boundary = data_points[i - stables_in_a_row + 1].build_number
-        return lower_boundary + 1, _NO_BUILD_NUMBER
-      else:  # No flaky region has been identified, no findings.
-        return _NO_BUILD_NUMBER, _NO_BUILD_NUMBER
-
-    elif _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
-      stables_in_a_row += 1
-      flakes_in_a_row = 0
-      dives_in_a_row = 0
-      stables_happened = True
-
-      # TODO(http://crbug.com/670888): Pin point a stable build rather than
-      # looking for stable region to further narrow down the sequential search
-      # range.
-      if stables_in_a_row <= max_stable_in_a_row:
-        # No stable region yet, keep searching.
-        next_build_number = build_number - 1
-        continue
-      # Stable region found.
-      if not flaked_out and not flakes_first:
-        # Already stabled_out but no flake region yet, no findings.
-        return _NO_BUILD_NUMBER, _NO_BUILD_NUMBER
-
-      # Flake region is also found, ready for sequential search.
-      lower_boundary_index = i - stables_in_a_row + 1
-      lower_boundary = data_points[lower_boundary_index].build_number
-      previous_build = data_points[lower_boundary_index - 1].build_number
-      if previous_build == lower_boundary + 1:
-        # Sequential search is Done.
-        return _NO_BUILD_NUMBER, previous_build
-      # Continue sequential search.
-      return lower_boundary + 1, _NO_BUILD_NUMBER
-
-    else:  # Flaky result.
-      flakes_in_a_row += 1
-      stables_in_a_row = 0
-
-      if flakes_in_a_row > max_flake_in_a_row:  # Identified a flaky region.
-        flaked_out = True
-
-      if not stables_happened:
-        # No stables yet.
-        flakes_first += 1
-
-      # Check the pass_rate of previous run, if this is the first data_point,
-      # consider the virtual previous run is stable.
-      previous_pass_rate = data_points[i - 1].pass_rate if i > 0 else 0
-      if _IsStable(
-          previous_pass_rate, lower_flake_threshold, upper_flake_threshold):
-        next_build_number = build_number - flakes_in_a_row
-        continue
-
-      # Checks for dives. A dive is a sudden drop in pass rate.
-      if pass_rate - previous_pass_rate > dive_rate_threshold:
-        # Possibly a dive just happened.
-        # Set dives_in_a_row to one since this is the first sign of diving.
-        # For cases where we have pass rates like 0.1, 0.51, 0.92, we will use
-        # the earliest dive.
-        dives_in_a_row = 1
-      elif previous_pass_rate - pass_rate > dive_rate_threshold:
-        # A rise just happened, sets dives_in_a_row back to 0.
-        dives_in_a_row = 0
-      else:
-        # Two last results are close, increases dives_in_a_row if not 0.
-        dives_in_a_row = dives_in_a_row + 1 if dives_in_a_row else 0
-
-      if dives_in_a_row <= max_dive_in_a_row:
-        step_size = 1 if dives_in_a_row else flakes_in_a_row
-        next_build_number = build_number - step_size
-        continue
-
-      # Dived out.
-      # Flake region must have been found, ready for sequential search.
-      lower_boundary_index = i - dives_in_a_row + 1
-      lower_boundary = data_points[lower_boundary_index].build_number
-      build_after_lower_boundary = (
-          data_points[lower_boundary_index - 1].build_number)
-      if build_after_lower_boundary == lower_boundary + 1:
-        # Sequential search is Done.
-        return _NO_BUILD_NUMBER, build_after_lower_boundary
-      # Sequential search.
-      return lower_boundary + 1, _NO_BUILD_NUMBER
-
-  return next_build_number, _NO_BUILD_NUMBER
+def _NormalizeDataPoints(data_points):
+  normalized_data_points = [
+      (lambda data_point: NormalizedDataPoint(
+          data_point.build_number, data_point.pass_rate))(
+              d) for d in data_points]
+  return sorted(
+      normalized_data_points, key=lambda k: k.run_point_number, reverse=True)
 
 
 class NextBuildNumberPipeline(BasePipeline):
@@ -459,12 +325,11 @@ class NextBuildNumberPipeline(BasePipeline):
     flake_settings = waterfall_config.GetCheckFlakeSettings()
     algorithm_settings = flake_settings.get('swarming_rerun', {})
 
-    data_points = sorted(
-        analysis.data_points, key=lambda k: k.build_number,
-        reverse=True)
+    data_points = _NormalizeDataPoints(analysis.data_points)
     # Figure out what build_number to trigger a swarming rerun on next, if any.
-    next_build_number, suspected_build = _GetNextBuildNumber(
-        data_points, algorithm_settings)
+    (next_build_number,
+     suspected_build) = lookback_algorithm.GetNextRunPointNumber(
+         data_points, algorithm_settings)
 
     max_build_numbers_to_look_back = algorithm_settings.get(
         'max_build_numbers_to_look_back', _DEFAULT_MAX_BUILD_NUMBERS)
@@ -474,7 +339,7 @@ class NextBuildNumberPipeline(BasePipeline):
     if (next_build_number < last_build_number or
         next_build_number >= triggering_build_number):  # Finished.
       build_confidence_score = None
-      if suspected_build != _NO_BUILD_NUMBER:
+      if suspected_build is not None:
         # Use steppiness as the confidence score.
         build_confidence_score = confidence.SteppinessForBuild(
             analysis.data_points, suspected_build)
@@ -495,7 +360,6 @@ class NextBuildNumberPipeline(BasePipeline):
         # If confidence is too low, bail out on try jobs. Based on analysis of
         # historical data, 60% confidence could filter out almost all false
         # positives.
-        logging.info('Skipping try jobs due to insufficient confidence')
         analysis.result_status = result_status.FOUND_UNTRIAGED
         analysis.put()
       else:

@@ -21,6 +21,8 @@ from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
 from waterfall import waterfall_config
 from waterfall.flake import confidence
+from waterfall.flake import lookback_algorithm
+from waterfall.flake.lookback_algorithm import NormalizedDataPoint
 from waterfall.flake.process_flake_try_job_result_pipeline import (
     ProcessFlakeTryJobResultPipeline)
 from waterfall.flake.schedule_flake_try_job_pipeline import (
@@ -29,20 +31,9 @@ from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
 
-# TODO(lijeffrey): The lookback algorithms for RecursiveFlakePipeline and
-# RecursiveFlakeTryJob are to be identical. Refactor both files to use a base
-# algorithm.
-
-
 _GIT_REPO = CachedGitilesRepository(
     HttpClientAppengine(),
     'https://chromium.googlesource.com/chromium/src.git')
-
-
-_DEFAULT_LOWER_FLAKE_THRESHOLD = 0.02
-_DEFAULT_UPPER_FLAKE_THRESHOLD = 0.98
-_DEFAULT_MAX_STABLE_IN_A_ROW = 0
-_DEFAULT_MAX_FLAKE_IN_A_ROW = 1
 
 
 def CreateCulprit(revision, commit_position, confidence_score,
@@ -138,112 +129,17 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
           urlsafe_flake_analysis_key, try_job.key.urlsafe())
 
 
-def _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
-  return (
-      pass_rate < lower_flake_threshold or pass_rate > upper_flake_threshold)
+def _NormalizeDataPoints(data_points):
+  normalized_data_points = [
+      (lambda data_point: NormalizedDataPoint(
+           data_point.commit_position,
+           data_point.pass_rate))(d) for d in data_points]
+
+  return sorted(normalized_data_points, key=lambda k: k.run_point_number,
+                reverse=True)
 
 
-def _GetNextCommitPosition(data_points, algorithm_settings,
-                           lower_boundary_commit_position):
-  """Finds the next commit_position to analyze, or gets final result.
-
-  Args:
-    data_points (list): Already-completed data points.
-    algorithm_settings (dict): Parameters for flakiness lookback algorithm.
-    lower_boundary_commit_position (int): The commit position not to pass when
-        looking back.
-
-  Returns:
-    (next_commit_position, suspected_commit_position): The commit position of
-        the next revision to check and suspected commit position that that the
-        flakiness was introduced in. If next_commit_position needs to be
-        checked, suspected_commit_position will be None. If
-        suspected_commit_position is found, next_commit_position will be
-        None. If no findings eventually, both will be None.
-  """
-  lower_flake_threshold = algorithm_settings.get(
-      'lower_flake_threshold', _DEFAULT_LOWER_FLAKE_THRESHOLD)
-  upper_flake_threshold = algorithm_settings.get(
-      'upper_flake_threshold', _DEFAULT_UPPER_FLAKE_THRESHOLD)
-  max_stable_in_a_row = algorithm_settings.get(
-      'max_stable_in_a_row', _DEFAULT_MAX_STABLE_IN_A_ROW)
-  max_flake_in_a_row = algorithm_settings.get(
-      'max_flake_in_a_row', _DEFAULT_MAX_FLAKE_IN_A_ROW)
-
-  stables_in_a_row = 0
-  flakes_in_a_row = 0
-  stables_happened = False
-  flakes_first = 0
-  flaked_out = False
-  next_commit_position = None
-
-  total_data_points = len(data_points)
-
-  for i in xrange(total_data_points):
-    pass_rate = data_points[i].pass_rate
-    commit_position = data_points[i].commit_position
-
-    if pass_rate < 0:  # Test doesn't exist at this revision.
-      if flaked_out or flakes_first:
-        stables_in_a_row += 1
-        lower_boundary = data_points[i - stables_in_a_row + 1].commit_position
-        return lower_boundary + 1, None
-      else:
-        return None, None
-    elif _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
-      stables_in_a_row += 1
-      flakes_in_a_row = 0
-      stables_happened = True
-
-      if stables_in_a_row <= max_stable_in_a_row:  # pragma: no cover.
-        # No stable region yet, keep searching.
-        next_commit_position = commit_position - 1
-        continue
-      # Stable region found.
-      if not flaked_out and not flakes_first:  # pragma: no cover.
-        # Already stabled_out but no flake region yet, no findings.
-        return None, None
-
-      # Flake region is also found, ready for sequential search.
-      lower_boundary_index = i - stables_in_a_row + 1
-      lower_boundary = data_points[lower_boundary_index].commit_position
-      previous_commit_position = data_points[
-          lower_boundary_index - 1].commit_position
-
-      if previous_commit_position == lower_boundary + 1:
-        # Sequential search is Done.
-        return None, previous_commit_position
-      # Continue sequential search.
-      return lower_boundary + 1, None
-
-    else:  # Flaky result.
-      flakes_in_a_row += 1
-      stables_in_a_row = 0
-
-      if flakes_in_a_row > max_flake_in_a_row:  # Identified a flaky region.
-        flaked_out = True
-
-      if not stables_happened:  # pragma: no branch
-        # No stables yet.
-        flakes_first += 1
-
-      if commit_position == lower_boundary_commit_position:  # pragma: no branch
-        # The earliest commit_position to look back is already flaky. This is
-        # the culprit.
-        return None, commit_position
-
-      step_size = flakes_in_a_row
-      next_commit_position = commit_position - step_size
-      continue
-
-  if next_commit_position < lower_boundary_commit_position:
-    # Do not run past the bounds of the blame list.
-    return lower_boundary_commit_position, None
-
-  return next_commit_position, None
-
-
-def _GetTryJobDataPoints(analysis):
+def _GetNormalizedTryJobDataPoints(analysis):
   """Gets which data points should be used to determine the next revision.
 
   Args:
@@ -251,8 +147,9 @@ def _GetTryJobDataPoints(analysis):
         points to run on.
 
   Returns:
-    A list of data points used to analyze and determine what try job to trigger
-        next.
+    A list of normalized data points used to analyze and determine what try job
+        to trigger next. A normalized data point has only pass_rate and
+        run_point_number.
   """
   all_data_points = analysis.data_points
 
@@ -263,7 +160,7 @@ def _GetTryJobDataPoints(analysis):
     if all_data_points[i].try_job_url:
       data_points.append(all_data_points[i])
 
-  return sorted(data_points, key=lambda k: k.commit_position, reverse=True)
+  return _NormalizeDataPoints(data_points)
 
 
 class NextCommitPositionPipeline(BasePipeline):
@@ -302,13 +199,15 @@ class NextCommitPositionPipeline(BasePipeline):
     # Because |suspected_build_data_point| already sets hard lower and upper
     # bounds, only the data points involved in try jobs should be considered
     # when determining the next commit position to test.
-    try_job_data_points = _GetTryJobDataPoints(flake_analysis)
+    try_job_data_points = _GetNormalizedTryJobDataPoints(flake_analysis)
     algorithm_settings = waterfall_config.GetCheckFlakeSettings().get(
         'try_job_rerun', {})
 
     # Figure out what commit position to trigger the next try job on, if any.
-    next_commit_position, suspected_commit_position = _GetNextCommitPosition(
-        try_job_data_points, algorithm_settings, lower_boundary_commit_position)
+    (next_commit_position,
+     suspected_commit_position) = lookback_algorithm.GetNextRunPointNumber(
+         try_job_data_points, algorithm_settings,
+         lower_boundary_commit_position)
 
     if (next_commit_position is None or
         next_commit_position == suspected_build_data_point.commit_position):
