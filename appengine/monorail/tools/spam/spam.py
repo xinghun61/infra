@@ -48,7 +48,7 @@ from functools import wraps
 
 credentials = GoogleCredentials.get_application_default()
 service = build(
-    'prediction', 'v1.6', http=httplib2.Http(), credentials=credentials)
+    'prediction', 'v1.6', credentials=credentials)
 
 def Status(args):
   result = service.trainedmodels().get(
