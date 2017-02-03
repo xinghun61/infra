@@ -14,6 +14,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/luci/luci-go/common/cli"
+	"github.com/luci/luci-go/common/data/rand/mathrand"
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
@@ -38,6 +39,8 @@ var application = cli.Application{
 }
 
 func main() {
+	mathrand.SeedRandomly()
+
 	logConfig.AddFlags(flag.CommandLine)
 	flag.Parse()
 

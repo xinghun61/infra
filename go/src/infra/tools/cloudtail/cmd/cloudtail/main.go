@@ -23,20 +23,14 @@ import (
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/clock"
+	"github.com/luci/luci-go/common/data/rand/mathrand"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/common/tsmon"
 
+	"infra/libs/infraenv"
 	"infra/tools/cloudtail"
 )
-
-var authOptions = auth.Options{
-	ServiceAccountJSONPath: defaultServiceAccountJSONPath(),
-	Scopes: []string{
-		auth.OAuthScopeEmail,
-		"https://www.googleapis.com/auth/logging.write",
-	},
-}
 
 // Where to look for service account JSON creds if not provided via CLI.
 const (
@@ -68,11 +62,11 @@ type state struct {
 }
 
 // registerFlags adds all CLI flags to the flag set.
-func (opts *commonOptions) registerFlags(f *flag.FlagSet, defaultAutoFlush bool) {
+func (opts *commonOptions) registerFlags(f *flag.FlagSet, defaultAuthOpts auth.Options, defaultAutoFlush bool) {
 	// Default log level.
 	opts.localLogLevel = logging.Warning
 
-	opts.authFlags.Register(f, authOptions)
+	opts.authFlags.Register(f, defaultAuthOpts)
 	f.Var(&opts.localLogLevel, "local-log-level",
 		"The logging level of local logger (for cloudtail own logs): debug, info, warning, error")
 	f.DurationVar(&opts.flushTimeout, "flush-timeout", 5*time.Second,
@@ -219,17 +213,19 @@ func catchCtrlC(handler func() error) {
 ////////////////////////////////////////////////////////////////////////////////
 // 'send' subcommand: sends a single line passed as CLI argument.
 
-var cmdSend = &subcommands.Command{
-	UsageLine: "send [options] -severity SEVERITY -text TEXT",
-	ShortDesc: "sends a single entry to a cloud log",
-	LongDesc:  "Sends a single entry to a cloud log.",
-	CommandRun: func() subcommands.CommandRun {
-		c := &sendRun{}
-		c.commonOptions.registerFlags(&c.Flags, false)
-		c.Flags.Var(&c.severity, "severity", "Log entry severity")
-		c.Flags.StringVar(&c.text, "text", "", "Log entry to send")
-		return c
-	},
+func cmdSend(defaultAuthOpts auth.Options) *subcommands.Command {
+	return &subcommands.Command{
+		UsageLine: "send [options] -severity SEVERITY -text TEXT",
+		ShortDesc: "sends a single entry to a cloud log",
+		LongDesc:  "Sends a single entry to a cloud log.",
+		CommandRun: func() subcommands.CommandRun {
+			c := &sendRun{}
+			c.commonOptions.registerFlags(&c.Flags, defaultAuthOpts, false)
+			c.Flags.Var(&c.severity, "severity", "Log entry severity")
+			c.Flags.StringVar(&c.text, "text", "", "Log entry to send")
+			return c
+		},
+	}
 }
 
 type sendRun struct {
@@ -283,18 +279,20 @@ func (c *sendRun) Run(a subcommands.Application, args []string, env subcommands.
 ////////////////////////////////////////////////////////////////////////////////
 // 'pipe' subcommand: reads stdin and sends each line as a separate log entry.
 
-var cmdPipe = &subcommands.Command{
-	UsageLine: "pipe [options]",
-	ShortDesc: "sends each line of stdin as a separate log entry",
-	LongDesc:  "Sends each line of stdin as a separate log entry",
-	CommandRun: func() subcommands.CommandRun {
-		c := &pipeRun{}
-		c.commonOptions.registerFlags(&c.Flags, true)
-		c.Flags.IntVar(&c.lineBufferSize, "line-buffer-size", 100000,
-			"Number of log lines to buffer in-memory.  0 disables buffering and "+
-				"makes cloudtail block while flushing lines to the API.")
-		return c
-	},
+func cmdPipe(defaultAuthOpts auth.Options) *subcommands.Command {
+	return &subcommands.Command{
+		UsageLine: "pipe [options]",
+		ShortDesc: "sends each line of stdin as a separate log entry",
+		LongDesc:  "Sends each line of stdin as a separate log entry",
+		CommandRun: func() subcommands.CommandRun {
+			c := &pipeRun{}
+			c.commonOptions.registerFlags(&c.Flags, defaultAuthOpts, true)
+			c.Flags.IntVar(&c.lineBufferSize, "line-buffer-size", 100000,
+				"Number of log lines to buffer in-memory.  0 disables buffering and "+
+					"makes cloudtail block while flushing lines to the API.")
+			return c
+		},
+	}
 }
 
 type pipeRun struct {
@@ -369,16 +367,18 @@ func (c *pipeRun) Run(a subcommands.Application, args []string, env subcommands.
 ////////////////////////////////////////////////////////////////////////////////
 // 'tail' subcommand: tails a file and sends each line as a log entry.
 
-var cmdTail = &subcommands.Command{
-	UsageLine: "tail [options] -path PATH",
-	ShortDesc: "tails a file and sends each line as a log entry",
-	LongDesc:  "Tails a file and sends each line as a log entry. Stops by SIGINT.",
-	CommandRun: func() subcommands.CommandRun {
-		c := &tailRun{}
-		c.commonOptions.registerFlags(&c.Flags, true)
-		c.Flags.StringVar(&c.path, "path", "", "Path to a file to tail")
-		return c
-	},
+func cmdTail(defaultAuthOpts auth.Options) *subcommands.Command {
+	return &subcommands.Command{
+		UsageLine: "tail [options] -path PATH",
+		ShortDesc: "tails a file and sends each line as a log entry",
+		LongDesc:  "Tails a file and sends each line as a log entry. Stops by SIGINT.",
+		CommandRun: func() subcommands.CommandRun {
+			c := &tailRun{}
+			c.commonOptions.registerFlags(&c.Flags, defaultAuthOpts, true)
+			c.Flags.StringVar(&c.path, "path", "", "Path to a file to tail")
+			return c
+		},
+	}
 }
 
 type tailRun struct {
@@ -445,35 +445,46 @@ func (c *tailRun) Run(a subcommands.Application, args []string, env subcommands.
 
 ////////////////////////////////////////////////////////////////////////////////
 
-var application = &cli.Application{
-	Name:  "cloudtail",
-	Title: "Tail logs and send them to Cloud Logging",
-	Context: func(ctx context.Context) context.Context {
-		return gologger.StdConfig.Use(ctx)
-	},
-	EnvVars: map[string]subcommands.EnvVarDefinition{
-		"CLOUDTAIL_DEBUG_EMULATE_429": {
-			Advanced:  true,
-			ShortDesc: "DEBUG/TEST: Non-empty values emulate a server response of 'Too Many Requests'.",
+func getApplication(defaultAuthOpts auth.Options) *cli.Application {
+	return &cli.Application{
+		Name:  "cloudtail",
+		Title: "Tail logs and send them to Cloud Logging",
+		Context: func(ctx context.Context) context.Context {
+			return gologger.StdConfig.Use(ctx)
 		},
-	},
+		EnvVars: map[string]subcommands.EnvVarDefinition{
+			"CLOUDTAIL_DEBUG_EMULATE_429": {
+				Advanced:  true,
+				ShortDesc: "DEBUG/TEST: Non-empty values emulate a server response of 'Too Many Requests'.",
+			},
+		},
 
-	Commands: []*subcommands.Command{
-		subcommands.CmdHelp,
-		version.SubcommandVersion,
+		Commands: []*subcommands.Command{
+			subcommands.CmdHelp,
+			version.SubcommandVersion,
 
-		// Main commands.
-		cmdSend,
-		cmdPipe,
-		cmdTail,
+			// Main commands.
+			cmdSend(defaultAuthOpts),
+			cmdPipe(defaultAuthOpts),
+			cmdTail(defaultAuthOpts),
 
-		// Authentication related commands.
-		authcli.SubcommandInfo(authOptions, "whoami", false),
-		authcli.SubcommandLogin(authOptions, "login", false),
-		authcli.SubcommandLogout(authOptions, "logout", false),
-	},
+			// Authentication related commands.
+			authcli.SubcommandInfo(defaultAuthOpts, "whoami", false),
+			authcli.SubcommandLogin(defaultAuthOpts, "login", false),
+			authcli.SubcommandLogout(defaultAuthOpts, "logout", false),
+		},
+	}
 }
 
 func main() {
-	os.Exit(subcommands.Run(application, nil))
+	mathrand.SeedRandomly()
+
+	authOpts := infraenv.DefaultAuthOptions()
+	authOpts.ServiceAccountJSONPath = defaultServiceAccountJSONPath()
+	authOpts.Scopes = []string{
+		auth.OAuthScopeEmail,
+		"https://www.googleapis.com/auth/logging.write",
+	}
+
+	os.Exit(subcommands.Run(getApplication(authOpts), nil))
 }

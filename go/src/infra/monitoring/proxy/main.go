@@ -8,6 +8,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"infra/libs/infraenv"
 	"net/http"
 	"os"
 	"os/signal"
@@ -91,10 +92,9 @@ func (c *config) createAuthenticatedClient(ctx context.Context) (*http.Client, e
 	}
 
 	// Get our authenticated client.
-	options := auth.Options{
-		Scopes:                 scopes,
-		ServiceAccountJSONPath: c.serviceAccountJSONPath,
-	}
+	options := infraenv.DefaultAuthOptions()
+	options.Scopes = scopes
+	options.ServiceAccountJSONPath = c.serviceAccountJSONPath
 	return auth.NewAuthenticator(ctx, mode, options).Client()
 }
 

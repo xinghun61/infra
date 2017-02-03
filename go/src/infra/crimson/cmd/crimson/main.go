@@ -21,6 +21,7 @@ import (
 	"infra/crimson/cmd/cmdhelper"
 	"infra/crimson/common/datautil"
 	crimson "infra/crimson/proto"
+	"infra/libs/infraenv"
 )
 
 // Flag definitions
@@ -91,6 +92,7 @@ func commonFlagVars(c *commonFlags) {
 		datautil.FormatTypeEnum.Choices())
 	c.format = datautil.DefaultFormat
 	c.Flags.BoolVar(&c.skipHeader, "skip-header", false, "Skip column names in the output")
+	c.authFlags.Register(&c.Flags, infraenv.DefaultAuthOptions())
 }
 
 func vlanFlagVars(c *vlanFlags) {
@@ -509,12 +511,13 @@ func (c *commonFlags) newCrimsonClient(ctx context.Context) crimson.CrimsonClien
 	client := crimson.NewCrimsonPRPCClient(
 		&prpc.Client{
 			C:    httpClient,
-			Host: c.backendHost})
+			Host: c.backendHost,
+		})
 	return client
 }
 
 func main() {
-	opts := auth.Options{}
+	opts := infraenv.DefaultAuthOptions()
 	application := &cli.Application{
 		Name:  "crimson",
 		Title: "Crimson DB Command-line Interface",

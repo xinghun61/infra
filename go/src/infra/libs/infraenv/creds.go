@@ -10,6 +10,7 @@ import (
 
 	"cloud.google.com/go/compute/metadata"
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/hardcoded/chromeinfra"
 )
 
 // ErrNotFound is returned if the requested credential is not found.
@@ -18,6 +19,10 @@ var ErrNotFound = errors.New("not found")
 // OnGCE will return true if the current system is a Google Compute Engine
 // system.
 var OnGCE = metadata.OnGCE
+
+// DefaultAuthOptions returns auth.Options struct prefilled with chrome-infra
+// defaults (such as OAuth client ID and path to a token cache directory).
+var DefaultAuthOptions = chromeinfra.DefaultAuthOptions
 
 // GetLogDogServiceAccountJSON scans the credential directories for the LogDog
 // service account JSON file.

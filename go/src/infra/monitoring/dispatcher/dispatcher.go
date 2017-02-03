@@ -32,6 +32,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"infra/libs/infraenv"
 	"infra/monitoring/analyzer"
 	"infra/monitoring/client"
 	"infra/monitoring/looper"
@@ -314,13 +315,12 @@ func main() {
 }
 
 func loadConfigsAndRun(ctx context.Context) error {
-	authOptions := auth.Options{
-		ServiceAccountJSONPath: *serviceAccountJSON,
-		Scopes: []string{
-			auth.OAuthScopeEmail,
-			"https://www.googleapis.com/auth/projecthosting",
-		},
-		Method: auth.ServiceAccountMethod,
+	authOptions := infraenv.DefaultAuthOptions()
+	authOptions.Method = auth.ServiceAccountMethod
+	authOptions.ServiceAccountJSONPath = *serviceAccountJSON
+	authOptions.Scopes = []string{
+		auth.OAuthScopeEmail,
+		"https://www.googleapis.com/auth/projecthosting",
 	}
 
 	mode := auth.SilentLogin

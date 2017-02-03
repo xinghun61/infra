@@ -209,15 +209,15 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env en
 	}
 
 	// Set up authentication.
-	authOpts := auth.Options{
-		Scopes: out.Scopes(),
-	}
+	authOpts := infraenv.DefaultAuthOptions()
+	authOpts.Scopes = out.Scopes()
 	switch {
 	case c.logdog.serviceAccountJSONPath != "":
 		authOpts.ServiceAccountJSONPath = c.logdog.serviceAccountJSONPath
+		authOpts.Method = auth.ServiceAccountMethod
 
 	case infraenv.OnGCE():
-		// Do nothing, auth will automatically use GCE metadata.
+		authOpts.Method = auth.GCEMetadataMethod
 		break
 
 	default:
@@ -228,6 +228,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env en
 			return 0, errors.Annotate(err).Reason("failed to get LogDog service account JSON path").Err()
 		}
 		authOpts.ServiceAccountJSONPath = credPath
+		authOpts.Method = auth.ServiceAccountMethod
 	}
 	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
 

@@ -7,6 +7,7 @@ package main
 import (
 	"os"
 
+	"github.com/luci/luci-go/common/data/rand/mathrand"
 	"github.com/luci/luci-go/logdog/client/cli"
 
 	"infra/libs/infraenv"
@@ -15,8 +16,10 @@ import (
 )
 
 func main() {
+	mathrand.SeedRandomly()
 	os.Exit(cli.Main(context.Background(), cli.Parameters{
-		Args: os.Args[1:],
-		Host: infraenv.ProdLogDogHost,
+		Args:               os.Args[1:],
+		Host:               infraenv.ProdLogDogHost,
+		DefaultAuthOptions: infraenv.DefaultAuthOptions(),
 	}))
 }

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"infra/libs/infraenv"
 	"io/ioutil"
 	"net/http"
 
@@ -67,14 +68,12 @@ func (c *endpointConfig) createService(ctx context.Context) (endpointService, er
 		return nil, errors.New("endpoint: you must supply a monitoring endpoint")
 	}
 
-	authenticator := auth.NewAuthenticator(
-		ctx,
-		auth.SilentLogin,
-		auth.Options{
-			Method:                 auth.ServiceAccountMethod,
-			Scopes:                 endpointScopes,
-			ServiceAccountJSONPath: c.serviceAccountJSONPath,
-		})
+	authOpts := infraenv.DefaultAuthOptions()
+	authOpts.Method = auth.ServiceAccountMethod
+	authOpts.Scopes = endpointScopes
+	authOpts.ServiceAccountJSONPath = c.serviceAccountJSONPath
+
+	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
 	client, err := authenticator.Client()
 	if err != nil {
 		log.Errorf(log.SetError(ctx, err), "Failed to configure endpoint client.")
