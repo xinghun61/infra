@@ -7,7 +7,7 @@
         <td>
           <input type="checkbox" id="cb_hotlist_[user_hotlists.hotlist_id]" class="checkRangeSelect">
         <td>
-        <td class="hotlistname">[user_hotlists.name]</td>
+        <td class="hotlistname"><label for="cb_hotlist_[user_hotlists.hotlist_id]">[user_hotlists.name]</label></td>
       </tr>
     [end]
   [else]
