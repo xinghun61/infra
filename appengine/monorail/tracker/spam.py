@@ -133,18 +133,21 @@ class ModerationQueue(servlet.Servlet):
         permissions.EDIT_ISSUE, permissions.CREATE_ISSUE,
         permissions.SET_STAR)
 
-    queue_items, total_count = self.services.spam.GetModerationQueue(mr.cnxn,
-        self.services.issue, mr.project.project_id, mr.start, mr.num)
+    # TODO(seanmccullough): Figure out how to get the IssueFlagQueue either
+    # integrated into this page data, or on its own subtab of spam moderation.
+    # Also figure out the same for Comments.
+    issue_items, total_count = self.services.spam.GetIssueClassifierQueue(
+        mr.cnxn, self.services.issue, mr.project.project_id, mr.start, mr.num)
 
-    decorated_queue = spam_helpers.DecorateModerationQueue(mr.cnxn,
+    issue_queue = spam_helpers.DecorateIssueClassifierQueue(mr.cnxn,
         self.services.issue, self.services.spam, self.services.user,
-        queue_items)
+        issue_items)
 
     p = paginate.ArtifactPagination(mr, [], mr.num, urls.SPAM_MODERATION_QUEUE,
         total_count)
 
     return {
-        'spam_queue': decorated_queue,
+        'issue_queue': issue_queue,
         'projectname': mr.project.project_name,
         'pagination': p,
         'page_perms': page_perms,

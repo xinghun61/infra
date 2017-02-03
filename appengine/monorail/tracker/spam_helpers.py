@@ -10,7 +10,7 @@ from third_party import ezt
 
 from datetime import datetime
 
-def DecorateModerationQueue(
+def DecorateIssueClassifierQueue(
     cnxn, issue_service, spam_service, user_service, moderation_items):
   issue_ids = [item.issue_id for item in moderation_items]
   issues = issue_service.GetIssues(cnxn, issue_ids)

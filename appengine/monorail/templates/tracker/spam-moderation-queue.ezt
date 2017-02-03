@@ -9,7 +9,7 @@
 [end]
 [include "../framework/js-placeholders.ezt" "showtabs"]
 
-<h2>Spam Moderation Queue</h2>
+<h2>Spam Moderation Queue: Automatic Classifier Close Calls</h2>
 [include "../framework/artifact-list-pagination-part.ezt"]
 
 <form method="POST" action="spamqueue.do">
@@ -36,22 +36,22 @@
   <td>Verdict at</td>
   <td>Flag count</td>
 </tr>
-[for spam_queue]
+[for issue_queue]
 <tr>
-  <td><input type='checkbox' name='issue_local_id' value='[spam_queue.issue.local_id]'/></td>
-  <td><a href='/p/[projectname]/issues/detail?id=[spam_queue.issue.local_id]'>[spam_queue.issue.local_id]</a></td>
-  <td><a href='/u/[spam_queue.reporter.email]'>[spam_queue.reporter.email]</a></td>
-  <td><a href='/p/[projectname]/issues/detail?id=[spam_queue.issue.local_id]'>[spam_queue.summary]</a></td>
+  <td><input type='checkbox' name='issue_local_id' value='[issue_queue.issue.local_id]'/></td>
+  <td><a href='/p/[projectname]/issues/detail?id=[issue_queue.issue.local_id]'>[issue_queue.issue.local_id]</a></td>
+  <td><a href='/u/[issue_queue.reporter.email]'>[issue_queue.reporter.email]</a></td>
+  <td><a href='/p/[projectname]/issues/detail?id=[issue_queue.issue.local_id]'>[issue_queue.summary]</a></td>
   <td>
-  [spam_queue.comment_text]
+  [issue_queue.comment_text]
   </td>
-  <td>[spam_queue.issue.opened_timestamp]</td>
-  <td>[spam_queue.issue.is_spam]</td>
+  <td>[issue_queue.issue.opened_timestamp]</td>
+  <td>[issue_queue.issue.is_spam]</td>
 
-  <td>[spam_queue.reason]</td>
-  <td>[spam_queue.classifier_confidence]</td>
-  <td>[spam_queue.verdict_time]</td>
-  <td>[spam_queue.flag_count]</td>
+  <td>[issue_queue.reason]</td>
+  <td>[issue_queue.classifier_confidence]</td>
+  <td>[issue_queue.verdict_time]</td>
+  <td>[issue_queue.flag_count]</td>
 </tr>
 [end]
 </table>

@@ -171,7 +171,7 @@ class SpamServiceTest(unittest.TestCase):
     self.assertNotIn(issue, self.issue_service.updated_issues)
     self.assertEqual(True, issue.is_spam)
 
-  def testGetModerationQueue_noVerdicts(self):
+  def testGetIssueClassifierQueue_noVerdicts(self):
     self.mock_verdict_tbl.Select(self.cnxn,
         cols=['issue_id', 'is_spam', 'reason', 'classifier_confidence',
               'created'],
@@ -202,14 +202,14 @@ class SpamServiceTest(unittest.TestCase):
         ]).AndReturn(0)
 
     self.mox.ReplayAll()
-    res, count = self.spam_service.GetModerationQueue(
+    res, count = self.spam_service.GetIssueClassifierQueue(
         self.cnxn, self.issue_service, 789)
     self.mox.VerifyAll()
 
     self.assertEqual([], res)
     self.assertEqual(0, count)
 
-  def testGetModerationQueue_someVerdicts(self):
+  def testGetIssueClassifierQueue_someVerdicts(self):
     self.mock_verdict_tbl.Select(self.cnxn,
         cols=['issue_id', 'is_spam', 'reason', 'classifier_confidence',
               'created'],
@@ -240,7 +240,7 @@ class SpamServiceTest(unittest.TestCase):
         ]).AndReturn(10)
 
     self.mox.ReplayAll()
-    res, count  = self.spam_service.GetModerationQueue(
+    res, count  = self.spam_service.GetIssueClassifierQueue(
         self.cnxn, self.issue_service, 789)
     self.mox.VerifyAll()
     self.assertEqual(1, len(res))

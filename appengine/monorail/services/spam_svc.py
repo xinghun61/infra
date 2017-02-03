@@ -33,9 +33,15 @@ REASON_THRESHOLD = 'threshold'
 REASON_CLASSIFIER = 'classifier'
 REASON_FAIL_OPEN = 'fail_open'
 
-SPAMREPORT_COLS = ['issue_id', 'reported_user_id', 'user_id']
-MANUALVERDICT_COLS = ['user_id', 'issue_id', 'is_spam', 'reason', 'project_id']
-THRESHVERDICT_COLS = ['issue_id', 'is_spam', 'reason', 'project_id']
+SPAMREPORT_ISSUE_COLS = ['issue_id', 'reported_user_id', 'user_id']
+MANUALVERDICT_ISSUE_COLS = ['user_id', 'issue_id', 'is_spam', 'reason',
+    'project_id']
+THRESHVERDICT_ISSUE_COLS = ['issue_id', 'is_spam', 'reason', 'project_id']
+
+SPAMREPORT_COMMENT_COLS = ['comment_id', 'reported_user_id', 'user_id']
+MANUALVERDICT_COMMENT_COLS = ['user_id', 'comment_id', 'is_spam', 'reason',
+    'project_id']
+THRESHVERDICT_COMMENT_COLS = ['comment_id', 'is_spam', 'reason', 'project_id']
 
 
 class SpamService(object):
@@ -150,7 +156,8 @@ class SpamService(object):
     if flagged_spam:
       rows = [(issue.issue_id, issue.reporter_id, reporting_user_id)
           for issue in issues]
-      self.report_tbl.InsertRows(cnxn, SPAMREPORT_COLS, rows, ignore=True)
+      self.report_tbl.InsertRows(cnxn, SPAMREPORT_ISSUE_COLS, rows,
+          ignore=True)
     else:
       issue_ids = [issue.issue_id for issue in issues]
       self.report_tbl.Delete(
@@ -180,7 +187,8 @@ class SpamService(object):
     # and mark as spam in those cases.
     rows = [(issue_id, flagged_spam, REASON_THRESHOLD, project_id)
         for issue_id in verdict_updates]
-    self.verdict_tbl.InsertRows(cnxn, THRESHVERDICT_COLS, rows, ignore=True)
+    self.verdict_tbl.InsertRows(cnxn, THRESHVERDICT_ISSUE_COLS, rows,
+        ignore=True)
     update_issues = []
     for issue in issues:
       if issue.issue_id in verdict_updates:
@@ -211,7 +219,8 @@ class SpamService(object):
         fail_open):
     reason = REASON_FAIL_OPEN if fail_open else REASON_CLASSIFIER
     self.verdict_tbl.InsertRow(cnxn, issue_id=issue.issue_id, is_spam=is_spam,
-        reason=reason, classifier_confidence=confidence)
+        reason=reason, classifier_confidence=confidence,
+        project_id=issue.project_id)
     if is_spam:
       self.issue_actions.increment({'type': 'classifier'})
     # This is called at issue creation time, so there's nothing else to do here.
@@ -227,7 +236,8 @@ class SpamService(object):
         ('issue_id IN (%s)' % sql.PlaceHolders(issue_ids), issue_ids)
         ], commit=False)
 
-    self.verdict_tbl.InsertRows(cnxn, MANUALVERDICT_COLS, rows, ignore=True)
+    self.verdict_tbl.InsertRows(cnxn, MANUALVERDICT_ISSUE_COLS, rows,
+        ignore=True)
 
     for issue in issues:
       issue.is_spam = is_spam
@@ -257,7 +267,7 @@ class SpamService(object):
 
   def RecordClassifierCommentVerdict(self, cnxn, comment, is_spam, confidence,
       fail_open):
-    reason = REASON_FAIL_OPEN if fail_open else REASON_CLASSIFIER 
+    reason = REASON_FAIL_OPEN if fail_open else REASON_CLASSIFIER
     self.verdict_tbl.InsertRow(cnxn, comment_id=comment.id, is_spam=is_spam,
         reason=reason, classifier_confidence=confidence,
         project_id=comment.project_id)
@@ -298,7 +308,7 @@ class SpamService(object):
     features = spam_helpers.GenerateFeatures(issue.summary,
         firstComment.content, author_email, settings.spam_feature_hashes,
         settings.spam_whitelisted_suffixes)
- 
+
     remaining_retries = 3
     while remaining_retries > 0:
       try:
@@ -368,7 +378,7 @@ class SpamService(object):
       result['failed_open'] = True
     return result
 
-  def GetModerationQueue(
+  def GetIssueClassifierQueue(
       self, cnxn, _issue_service, project_id, offset=0, limit=10):
      """Returns list of recent issues with spam verdicts,
      ranked in ascending order of confidence (so uncertain items are first).
@@ -377,8 +387,7 @@ class SpamService(object):
      # slower as the number of SpamVerdicts grows, regardless of offset
      # and limit values used here.  Using offset,limit in general may not
      # be the best way to do this.
-     # Also: add comments to the moderation queue.
-     results = self.verdict_tbl.Select(cnxn,
+     issue_results = self.verdict_tbl.Select(cnxn,
          cols=['issue_id', 'is_spam', 'reason', 'classifier_confidence',
                'created'],
          where=[
@@ -398,7 +407,7 @@ class SpamService(object):
          )
 
      ret = []
-     for row in results:
+     for row in issue_results:
        ret.append(ModerationItem(
          issue_id=long(row[0]),
          is_spam=row[1] == 1,
@@ -418,6 +427,87 @@ class SpamService(object):
          ])
 
      return ret, count
+
+  def GetIssueFlagQueue(
+      self, cnxn, _issue_service, project_id, offset=0, limit=10):
+     """Returns list of recent issues that have been flagged by users"""
+     issue_flags = self.report_tbl.Select(cnxn,
+         cols = ["Issue.project_id", "Report.issue_id", "count(*) as count",
+                 "max(Report.created) as latest",
+                 "count(distinct Report.user_id) as users"],
+         left_joins=["Issue ON Issue.id = Report.issue_id"],
+         where=[('Report.issue_id IS NOT NULL', []),
+                ("Issue.project_id == %v", [project_id])],
+         order_by=[('count DESC', [])],
+         group_by=['Report.issue_id'],
+         offset=offset, limit=limit)
+     ret = []
+     for row in issue_flags:
+       ret.append(ModerationItem(
+         project_id=row[0],
+         issue_id=row[1],
+         count=row[2],
+         latest_report=row[3],
+         num_users=row[4],
+       ))
+
+     count = self.verdict_tbl.SelectValue(cnxn,
+         col='COUNT(DISTINCT Report.issue_id)',
+         where=[('Issue.project_id = %s', [project_id])],
+         left_joins=["Issue ON Issue.id = SpamReport.issue_id"])
+     return ret, count
+
+
+  def GetCommentClassifierQueue(
+      self, cnxn, _issue_service, project_id, offset=0, limit=10):
+     """Returns list of recent comments with spam verdicts,
+     ranked in ascending order of confidence (so uncertain items are first).
+     """
+     # TODO(seanmccullough): Optimize pagination. This query probably gets
+     # slower as the number of SpamVerdicts grows, regardless of offset
+     # and limit values used here.  Using offset,limit in general may not
+     # be the best way to do this.
+     comment_results = self.verdict_tbl.Select(cnxn,
+         cols=['issue_id', 'is_spam', 'reason', 'classifier_confidence',
+               'created'],
+         where=[
+             ('project_id = %s', [project_id]),
+             ('classifier_confidence <= %s',
+                 [settings.classifier_moderation_thresh]),
+             ('overruled = %s', [False]),
+             ('comment_id IS NOT NULL', []),
+         ],
+         order_by=[
+             ('classifier_confidence ASC', []),
+             ('created ASC', []),
+             ],
+         group_by=['comment_id'],
+         offset=offset,
+         limit=limit,
+         )
+
+     ret = []
+     for row in comment_results:
+       ret.append(ModerationItem(
+         comment_id=long(row[0]),
+         is_spam=row[1] == 1,
+         reason=row[2],
+         classifier_confidence=row[3],
+         verdict_time='%s' % row[4],
+       ))
+
+     count = self.verdict_tbl.SelectValue(cnxn,
+         col='COUNT(*)',
+         where=[
+             ('project_id = %s', [project_id]),
+             ('classifier_confidence <= %s',
+                 [settings.classifier_moderation_thresh]),
+             ('overruled = %s', [False]),
+             ('comment_id IS NOT NULL', []),
+         ])
+
+     return ret, count
+
 
   def GetTrainingIssues(self, cnxn, issue_service, since, offset=0, limit=100):
     """Returns list of recent issues with spam verdicts,
