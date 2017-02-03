@@ -10,11 +10,13 @@ from common import appengine_util
 from common import constants
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model import analysis_status
 from model import result_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
 from waterfall.flake import lookback_algorithm
@@ -33,6 +35,11 @@ from waterfall.trigger_flake_swarming_task_pipeline import (
 
 _DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
 _DEFAULT_MAX_BUILD_NUMBERS = 500
+
+
+_BASE_COUNT_DOWN_SECONDS = 2 * 60
+# Tries to start the RecursiveFlakePipeline on peak hours at most 5 times.
+_MAX_RETRY_TIMES = 5
 
 
 def _UpdateAnalysisStatusUponCompletion(
@@ -207,15 +214,33 @@ class RecursiveFlakePipeline(BasePipeline):
     super(RecursiveFlakePipeline, self).__init__(*args, **kwargs)
     self.manually_triggered = kwargs.get('manually_triggered', False)
 
-  def StartOffPSTPeakHours(self, *args, **kwargs):
+  def _StartOffPSTPeakHours(self, *args, **kwargs):
     """Starts the pipeline off PST peak hours if not triggered manually."""
     kwargs['eta'] = _GetETAToStartAnalysis(self.manually_triggered)
     self.start(*args, **kwargs)
 
+  def _RetryWithDelay(self, *args, **kwargs):
+    """Trys to start the pipeline later."""
+    kwargs['countdown'] = kwargs.get('retries', 1) * _BASE_COUNT_DOWN_SECONDS
+    self.start(*args, **kwargs)
+
+  def _BotsAvailableForTask(self, step_metadata):
+    """Check if there are available bots for this task's dimensions."""
+    if not step_metadata:
+      return False
+
+    dimensions = step_metadata.get('dimensions')
+    available_count = swarming_util.GetAvailableBotsCount(
+        dimensions, HttpClientAppengine())
+
+    return available_count > 0
+
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, preferred_run_build_number,
           step_name, test_name, version_number, triggering_build_number,
-          manually_triggered=False, use_nearby_neighbor=False, step_size=0):
+          step_metadata=None, manually_triggered=False,
+          use_nearby_neighbor=False, step_size=0, retries=0):
     """Pipeline to determine the regression range of a flaky test.
 
     Args:
@@ -229,6 +254,7 @@ class RecursiveFlakePipeline(BasePipeline):
       version_number (int): The version to save analysis results and data to.
       triggering_build_number (int): The build number that triggered this
         analysis.
+      step_metadata (dict): Step_metadata for the test.
       manually_triggered (bool): True if the analysis is from manual request,
         like by a Chromium sheriff.
       use_nearby_neighbor (bool): Whether the optimization for using the
@@ -239,46 +265,85 @@ class RecursiveFlakePipeline(BasePipeline):
         RecursiveFlakePipeline to determine the bounds for how far a nearby
         build's swarming task results should be used. Only relevant if
         use_nearby_neighbor is True.
+      retries (int): Number of retries of this pipeline. If reties exceeds the
+        _MAX_RETRY_TIMES, start this pipeline off peak hours.
     Returns:
       A dict of lists for reliable/flaky tests.
     """
-    flake_analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, triggering_build_number, step_name,
-        test_name, version=version_number)
-    logging.info(
-        'Running RecursiveFlakePipeline on MasterFlakeAnalysis %s/%s/%s/%s/%s',
-        master_name, builder_name, triggering_build_number, step_name,
-        test_name)
-    logging.info(
-        'MasterFlakeAnalysis %s version %s', flake_analysis, version_number)
 
-    if flake_analysis.status != analysis_status.RUNNING:  # pragma: no branch
-      flake_analysis.status = analysis_status.RUNNING
-      flake_analysis.start_time = time_util.GetUTCNow()
-      flake_analysis.put()
+    # If retries has not exceeded max count and there are available bots,
+    # we can start the analysis.
+    can_start_analysis = (self._BotsAvailableForTask(step_metadata)
+                          if retries <= _MAX_RETRY_TIMES else True)
 
-    # TODO(lijeffrey): Allow custom parameters supplied by user.
-    iterations = waterfall_config.GetCheckFlakeSettings().get(
-        'swarming_rerun', {}).get('iterations_to_rerun', 100)
-    actual_run_build_number = _GetBestBuildNumberToRun(
+    if not can_start_analysis:
+      retries += 1
+      pipeline_job = RecursiveFlakePipeline(
         master_name, builder_name, preferred_run_build_number, step_name,
-        test_name, step_size, iterations) if use_nearby_neighbor else (
-            preferred_run_build_number)
+        test_name, version_number, triggering_build_number, step_metadata,
+        manually_triggered=manually_triggered,
+        use_nearby_neighbor=use_nearby_neighbor, step_size=step_size,
+        retries=retries)
+      # Disable attribute 'target' defined outside __init__ pylint warning,
+      # because pipeline generates its own __init__ based on run function.
+      pipeline_job.target = (  # pylint: disable=W0201
+        appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
 
-    # Call trigger pipeline (flake style).
-    task_id = yield TriggerFlakeSwarmingTaskPipeline(
-        master_name, builder_name, actual_run_build_number, step_name,
-        [test_name])
+      if retries > _MAX_RETRY_TIMES:
+        pipeline_job._StartOffPSTPeakHours(
+            queue_name=self.queue_name or constants.DEFAULT_QUEUE)
+        logging.info('Retrys exceed max count, RecursiveFlakePipeline on '
+                     'MasterFlakeAnalysis %s/%s/%s/%s/%s will start off peak '
+                     'hour', master_name, builder_name, triggering_build_number,
+                     step_name, test_name)
+      else:
+        pipeline_job._RetryWithDelay(
+            queue_name=self.queue_name or constants.DEFAULT_QUEUE)
+        countdown = retries * _BASE_COUNT_DOWN_SECONDS
+        logging.info('No available swarming bots, RecursiveFlakePipeline on '
+                     'MasterFlakeAnalysis %s/%s/%s/%s/%s will be tried after'
+                     '%d seconds', master_name, builder_name,
+                     triggering_build_number, step_name, test_name, countdown)
+    else:
+      # Bots are available or pipeline starts off peak hours, trigger the task.
+      flake_analysis = MasterFlakeAnalysis.GetVersion(
+          master_name, builder_name, triggering_build_number, step_name,
+          test_name, version=version_number)
 
-    with pipeline.InOrder():
-      yield ProcessFlakeSwarmingTaskResultPipeline(
+      logging.info(
+          'Running RecursiveFlakePipeline on MasterFlakeAnalysis'
+          ' %s/%s/%s/%s/%s', master_name, builder_name, triggering_build_number,
+          step_name, test_name)
+      logging.info(
+          'MasterFlakeAnalysis %s version %s', flake_analysis, version_number)
+
+      if flake_analysis.status != analysis_status.RUNNING:  # pragma: no branch
+        flake_analysis.status = analysis_status.RUNNING
+        flake_analysis.start_time = time_util.GetUTCNow()
+        flake_analysis.put()
+
+      # TODO(lijeffrey): Allow custom parameters supplied by user.
+      iterations = waterfall_config.GetCheckFlakeSettings().get(
+          'swarming_rerun', {}).get('iterations_to_rerun', 100)
+      actual_run_build_number = _GetBestBuildNumberToRun(
+          master_name, builder_name, preferred_run_build_number, step_name,
+          test_name, step_size, iterations) if use_nearby_neighbor else (
+              preferred_run_build_number)
+      # Call trigger pipeline (flake style).
+      task_id = yield TriggerFlakeSwarmingTaskPipeline(
           master_name, builder_name, actual_run_build_number, step_name,
-          task_id, triggering_build_number, test_name, version_number)
-      yield NextBuildNumberPipeline(
-          master_name, builder_name, triggering_build_number,
-          actual_run_build_number, step_name, test_name, version_number,
-          use_nearby_neighbor=use_nearby_neighbor,
-          manually_triggered=manually_triggered)
+          [test_name])
+
+      with pipeline.InOrder():
+        yield ProcessFlakeSwarmingTaskResultPipeline(
+            master_name, builder_name, actual_run_build_number, step_name,
+            task_id, triggering_build_number, test_name, version_number)
+        yield NextBuildNumberPipeline(
+            master_name, builder_name, triggering_build_number,
+            actual_run_build_number, step_name, test_name, version_number,
+            step_metadata=step_metadata,
+            use_nearby_neighbor=use_nearby_neighbor,
+            manually_triggered=manually_triggered)
 
 
 def _NormalizeDataPoints(data_points):
@@ -297,7 +362,7 @@ class NextBuildNumberPipeline(BasePipeline):
   def run(
       self, master_name, builder_name, triggering_build_number,
       current_build_number, step_name, test_name, version_number,
-      use_nearby_neighbor=False, manually_triggered=False):
+      step_metadata=None, use_nearby_neighbor=False, manually_triggered=False):
     # Get MasterFlakeAnalysis success list corresponding to parameters.
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, triggering_build_number, step_name,
@@ -400,7 +465,7 @@ class NextBuildNumberPipeline(BasePipeline):
 
     pipeline_job = RecursiveFlakePipeline(
         master_name, builder_name, next_build_number, step_name, test_name,
-        version_number, triggering_build_number,
+        version_number, triggering_build_number, step_metadata=step_metadata,
         manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor,
         step_size=(current_build_number - next_build_number))
@@ -408,5 +473,4 @@ class NextBuildNumberPipeline(BasePipeline):
     # because pipeline generates its own __init__ based on run function.
     pipeline_job.target = (  # pylint: disable=W0201
         appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
-    pipeline_job.StartOffPSTPeakHours(
-        queue_name=self.queue_name or constants.DEFAULT_QUEUE)
+    pipeline_job.start(queue_name=self.queue_name or constants.DEFAULT_QUEUE)

@@ -6,9 +6,11 @@ import logging
 
 from common import appengine_util
 from common import constants
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model import analysis_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from waterfall import buildbot
 from waterfall import waterfall_config
 from waterfall.flake import triggering_sources
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
@@ -130,15 +132,21 @@ def ScheduleAnalysisIfNeeded(
         'will be captured in version %s', repr(normalized_test),
         repr(original_test), analysis.version_number)
 
+    step_metadata = buildbot.GetStepLog(
+      normalized_test.master_name, normalized_test.builder_name,
+      normalized_test.build_number, normalized_test.step_name,
+      HttpClientAppengine(), 'step_metadata')
+
     pipeline_job = RecursiveFlakePipeline(
         normalized_test.master_name, normalized_test.builder_name,
         normalized_test.build_number, normalized_test.step_name,
         normalized_test.test_name, analysis.version_number,
         triggering_build_number=normalized_test.build_number,
+        step_metadata=step_metadata,
         manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor)
     pipeline_job.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
-    pipeline_job.StartOffPSTPeakHours(queue_name=queue_name)
+    pipeline_job.start(queue_name=queue_name)
 
   return analysis

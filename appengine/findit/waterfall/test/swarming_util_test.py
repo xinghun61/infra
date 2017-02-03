@@ -719,3 +719,36 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     expected_result = json.loads(zlib.decompress(
         self.http_client._GetData('isolated', 'shard1')))
     self.assertEqual(expected_result, result)
+
+  def testGetAvailableBotsCountNodimentsions(self):
+    self.assertEqual(0, swarming_util.GetAvailableBotsCount(None, None))
+
+  @mock.patch.object(swarming_util, '_SendRequestToServer',
+                     return_value=(None, {'code': 1, 'message': 'error'}))
+  def testGetAvailableBotsCountError(self, _):
+
+    dimensions = {
+      'os': 'OS',
+      'cpu': 'cpu'
+    }
+    self.assertEqual(0, swarming_util.GetAvailableBotsCount(
+        dimensions, self.http_client))
+
+  @mock.patch.object(swarming_util, '_SendRequestToServer')
+  def testGetAvailableBotsCount(self, mock_fn):
+
+    dimensions = {
+      'os': 'OS',
+      'cpu': 'cpu'
+    }
+
+    content_data = {
+        'count': '10',
+        'dead': '1',
+        'quarantined': '0',
+        'busy': '5'
+    }
+    mock_fn.return_value = (json.dumps(content_data), None)
+
+    self.assertEqual(4, swarming_util.GetAvailableBotsCount(
+        dimensions, self.http_client))

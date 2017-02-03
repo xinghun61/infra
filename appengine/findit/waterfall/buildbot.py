@@ -16,10 +16,10 @@ import sys
 import urllib
 
 import cloudstorage as gcs
-import google
 
 from waterfall.build_info import BuildInfo
 
+import google
 # protobuf and GAE have package name conflict on 'google'.
 # Add this to solve the conflict.
 third_party = os.path.join(
@@ -509,6 +509,6 @@ def GetStepLog(master_name, builder_name, build_number,
       master_name, builder_name, build_number, logdog_stream, http_client)
 
   if log_type == 'step_metadata':
-    return json.loads(data)
+    return json.loads(data) if data else None
 
   return data

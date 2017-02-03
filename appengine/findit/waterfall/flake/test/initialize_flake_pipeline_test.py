@@ -5,9 +5,9 @@
 import mock
 
 from common import constants
-from common.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from waterfall import buildbot
 from waterfall.flake import initialize_flake_pipeline
 from waterfall.test import wf_testcase
 from waterfall.test_info import TestInfo
@@ -91,9 +91,10 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
       self.assertFalse(need_analysis)
       self.assertIsNotNone(analysis)
 
+  @mock.patch.object(buildbot, 'GetStepLog', return_value={})
   @mock.patch(
       'waterfall.flake.initialize_flake_pipeline.RecursiveFlakePipeline')
-  def testStartPipelineForNewAnalysis(self, mocked_pipeline):
+  def testStartPipelineForNewAnalysis(self, mocked_pipeline, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -108,7 +109,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertIsNotNone(analysis)
     mocked_pipeline.assert_has_calls(
-        [mock.call().StartOffPSTPeakHours(queue_name=constants.DEFAULT_QUEUE)])
+        [mock.call().start(queue_name=constants.DEFAULT_QUEUE)])
 
   @mock.patch(
       'waterfall.flake.recursive_flake_pipeline.RecursiveFlakePipeline')
