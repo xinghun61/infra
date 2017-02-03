@@ -62,7 +62,7 @@ run_unittests() {
   # TODO: move this directory autovivification to test.py itself
   mkdir -p ${coverage_report_parent_dir}
   python ${INFRA_DIR}/test.py test ${findit} --html-report ${coverage_report_parent_dir}
-  [ $? -ne 0 ] || echo "Code coverage report file://${coverage_report_parent_dir}/${findit}/index.html"
+  echo "Code coverage report file://${coverage_report_parent_dir}/${findit}/index.html"
 }
 
 run_findit_locally() {
