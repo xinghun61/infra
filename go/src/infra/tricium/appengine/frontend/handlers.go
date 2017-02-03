@@ -65,7 +65,7 @@ func runs(c context.Context, cp common.ConfigProvider) ([]*track.Run, error) {
 				logging.WithError(err).Errorf(c, "failed to get config for project %s: %v", r.Project, err)
 				return nil, err
 			}
-			checked[r.Project], err = pc.CanRead(c)
+			checked[r.Project], err = tricium.CanRead(c, pc)
 			if err != nil {
 				logging.WithError(err).Errorf(c, "failed to check read access %s: %v", r.Project, err)
 				return nil, err

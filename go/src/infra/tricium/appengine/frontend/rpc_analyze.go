@@ -63,14 +63,14 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp common.ConfigPro
 	if err != nil {
 		return "", fmt.Errorf("failed to get service config: %v", err)
 	}
-	if !sc.ProjectIsKnown(req.Project) {
+	if !tricium.ProjectIsKnown(sc, req.Project) {
 		return "", errors.New("unknown project")
 	}
 	pc, err := cp.GetProjectConfig(c, req.Project)
 	if err != nil {
 		return "", fmt.Errorf("failed to get project config: %v", err)
 	}
-	ok, err := pc.CanRequest(c)
+	ok, err := tricium.CanRequest(c, pc)
 	if err != nil {
 		return "", fmt.Errorf("failed to authorize: %v", err)
 	}

@@ -38,7 +38,7 @@ type LaunchRequest struct {
 func (m *LaunchRequest) Reset()                    { *m = LaunchRequest{} }
 func (m *LaunchRequest) String() string            { return proto.CompactTextString(m) }
 func (*LaunchRequest) ProtoMessage()               {}
-func (*LaunchRequest) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (*LaunchRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
 
 func (m *LaunchRequest) GetRunId() int64 {
 	if m != nil {
@@ -81,7 +81,7 @@ type LaunchResponse struct {
 func (m *LaunchResponse) Reset()                    { *m = LaunchResponse{} }
 func (m *LaunchResponse) String() string            { return proto.CompactTextString(m) }
 func (*LaunchResponse) ProtoMessage()               {}
-func (*LaunchResponse) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
+func (*LaunchResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
 
 func init() {
 	proto.RegisterType((*LaunchRequest)(nil), "admin.LaunchRequest")
@@ -178,9 +178,9 @@ var _Launcher_serviceDesc = grpc.ServiceDesc{
 	Metadata: "infra/tricium/api/admin/v1/launcher.proto",
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/admin/v1/launcher.proto", fileDescriptor1) }
+func init() { proto.RegisterFile("infra/tricium/api/admin/v1/launcher.proto", fileDescriptor2) }
 
-var fileDescriptor1 = []byte{
+var fileDescriptor2 = []byte{
 	// 223 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x5c, 0xcf, 0xd1, 0x4a, 0xc3, 0x30,
 	0x14, 0xc6, 0x71, 0x6a, 0x6d, 0xb7, 0x1d, 0x50, 0xe4, 0xb0, 0x61, 0xf4, 0xaa, 0xec, 0xaa, 0xde,

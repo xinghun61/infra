@@ -31,7 +31,7 @@ type WorkflowLaunchedRequest struct {
 func (m *WorkflowLaunchedRequest) Reset()                    { *m = WorkflowLaunchedRequest{} }
 func (m *WorkflowLaunchedRequest) String() string            { return proto.CompactTextString(m) }
 func (*WorkflowLaunchedRequest) ProtoMessage()               {}
-func (*WorkflowLaunchedRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (*WorkflowLaunchedRequest) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
 
 func (m *WorkflowLaunchedRequest) GetRunId() int64 {
 	if m != nil {
@@ -46,7 +46,7 @@ type WorkflowLaunchedResponse struct {
 func (m *WorkflowLaunchedResponse) Reset()                    { *m = WorkflowLaunchedResponse{} }
 func (m *WorkflowLaunchedResponse) String() string            { return proto.CompactTextString(m) }
 func (*WorkflowLaunchedResponse) ProtoMessage()               {}
-func (*WorkflowLaunchedResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
+func (*WorkflowLaunchedResponse) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{1} }
 
 // WorkerLaunchedRequest specifies details needed to mark a worker as launched.
 // This includes details useful for the tracking UI.
@@ -65,7 +65,7 @@ type WorkerLaunchedRequest struct {
 func (m *WorkerLaunchedRequest) Reset()                    { *m = WorkerLaunchedRequest{} }
 func (m *WorkerLaunchedRequest) String() string            { return proto.CompactTextString(m) }
 func (*WorkerLaunchedRequest) ProtoMessage()               {}
-func (*WorkerLaunchedRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{2} }
+func (*WorkerLaunchedRequest) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{2} }
 
 func (m *WorkerLaunchedRequest) GetRunId() int64 {
 	if m != nil {
@@ -115,7 +115,7 @@ type WorkerLaunchedResponse struct {
 func (m *WorkerLaunchedResponse) Reset()                    { *m = WorkerLaunchedResponse{} }
 func (m *WorkerLaunchedResponse) String() string            { return proto.CompactTextString(m) }
 func (*WorkerLaunchedResponse) ProtoMessage()               {}
-func (*WorkerLaunchedResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{3} }
+func (*WorkerLaunchedResponse) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{3} }
 
 // WorkerDoneRequest specifies details needed to mark a worker as done.
 // This includes details useful for the tracking UI.
@@ -133,7 +133,7 @@ type WorkerDoneRequest struct {
 func (m *WorkerDoneRequest) Reset()                    { *m = WorkerDoneRequest{} }
 func (m *WorkerDoneRequest) String() string            { return proto.CompactTextString(m) }
 func (*WorkerDoneRequest) ProtoMessage()               {}
-func (*WorkerDoneRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{4} }
+func (*WorkerDoneRequest) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{4} }
 
 func (m *WorkerDoneRequest) GetRunId() int64 {
 	if m != nil {
@@ -176,7 +176,7 @@ type WorkerDoneResponse struct {
 func (m *WorkerDoneResponse) Reset()                    { *m = WorkerDoneResponse{} }
 func (m *WorkerDoneResponse) String() string            { return proto.CompactTextString(m) }
 func (*WorkerDoneResponse) ProtoMessage()               {}
-func (*WorkerDoneResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{5} }
+func (*WorkerDoneResponse) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{5} }
 
 func init() {
 	proto.RegisterType((*WorkflowLaunchedRequest)(nil), "admin.WorkflowLaunchedRequest")
@@ -365,9 +365,9 @@ var _Tracker_serviceDesc = grpc.ServiceDesc{
 	Metadata: "infra/tricium/api/admin/v1/tracker.proto",
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/admin/v1/tracker.proto", fileDescriptor2) }
+func init() { proto.RegisterFile("infra/tricium/api/admin/v1/tracker.proto", fileDescriptor3) }
 
-var fileDescriptor2 = []byte{
+var fileDescriptor3 = []byte{
 	// 383 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xb4, 0x93, 0xcd, 0x6e, 0xd3, 0x40,
 	0x10, 0x80, 0x65, 0x82, 0x1d, 0x32, 0x41, 0x88, 0x2c, 0xf9, 0x31, 0xe6, 0x27, 0xc1, 0xa7, 0x9c,

@@ -143,7 +143,7 @@ message Analyzer {
   Data.Type provides = 3;
 
   // Paths to run this analyzer on, defined as a glob.
-  repeated string path_filter = 4; // Default: "*"
+  repeated string path_filters = 4; // Default: "*"
 
   // Email to the owner of this analyzer.
   string owner = 6;
@@ -156,7 +156,7 @@ message Analyzer {
   // common for analyzers to provide a list of possible checks which can be
   // configured via a command line flag or similar. This field provides a way
   // to expose such flags as configuration options.
-  ConfigDef config_def = 8;
+  repeated ConfigDef config_defs = 8;
 
   // Analyzer implementations. An analyzer may run on many platforms and this
   // may require many different implementations of the analyzer. An
@@ -178,7 +178,7 @@ message ConfigDef {
 // recipe-based or binary-based.
 message Impl {
   // Platforms this implementation applies to.
-  repeated Platform platforms = 1;
+  repeated string platforms = 1;
 
   // Cipd packages needed by this implementation.
   repeated CipdPackage cipd_packages = 2;

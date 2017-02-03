@@ -2,31 +2,6 @@
 // source: infra/tricium/api/admin/v1/driver.proto
 // DO NOT EDIT!
 
-/*
-Package admin is a generated protocol buffer package.
-
-It is generated from these files:
-	infra/tricium/api/admin/v1/driver.proto
-	infra/tricium/api/admin/v1/launcher.proto
-	infra/tricium/api/admin/v1/tracker.proto
-	infra/tricium/api/admin/v1/workflow.proto
-
-It has these top-level messages:
-	TriggerRequest
-	TriggerResponse
-	CollectRequest
-	CollectResponse
-	LaunchRequest
-	LaunchResponse
-	WorkflowLaunchedRequest
-	WorkflowLaunchedResponse
-	WorkerLaunchedRequest
-	WorkerLaunchedResponse
-	WorkerDoneRequest
-	WorkerDoneResponse
-	Workflow
-	Worker
-*/
 package admin
 
 import prpc "github.com/luci/luci-go/grpc/prpc"
@@ -45,12 +20,6 @@ var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
 
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
-
 // TriggerRequest contains the details needed to launch a swarming task for a
 // Tricium worker.
 type TriggerRequest struct {
@@ -62,7 +31,7 @@ type TriggerRequest struct {
 func (m *TriggerRequest) Reset()                    { *m = TriggerRequest{} }
 func (m *TriggerRequest) String() string            { return proto.CompactTextString(m) }
 func (*TriggerRequest) ProtoMessage()               {}
-func (*TriggerRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (*TriggerRequest) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
 
 func (m *TriggerRequest) GetRunId() int64 {
 	if m != nil {
@@ -91,7 +60,7 @@ type TriggerResponse struct {
 func (m *TriggerResponse) Reset()                    { *m = TriggerResponse{} }
 func (m *TriggerResponse) String() string            { return proto.CompactTextString(m) }
 func (*TriggerResponse) ProtoMessage()               {}
-func (*TriggerResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*TriggerResponse) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
 
 // CollectRequest contains the details needed to collect results from a swarming task
 // running a Tricium worker and to launch succeeding Tricium workers.
@@ -108,7 +77,7 @@ type CollectRequest struct {
 func (m *CollectRequest) Reset()                    { *m = CollectRequest{} }
 func (m *CollectRequest) String() string            { return proto.CompactTextString(m) }
 func (*CollectRequest) ProtoMessage()               {}
-func (*CollectRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
+func (*CollectRequest) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{2} }
 
 func (m *CollectRequest) GetRunId() int64 {
 	if m != nil {
@@ -137,7 +106,7 @@ type CollectResponse struct {
 func (m *CollectResponse) Reset()                    { *m = CollectResponse{} }
 func (m *CollectResponse) String() string            { return proto.CompactTextString(m) }
 func (*CollectResponse) ProtoMessage()               {}
-func (*CollectResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
+func (*CollectResponse) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{3} }
 
 func init() {
 	proto.RegisterType((*TriggerRequest)(nil), "admin.TriggerRequest")
@@ -280,9 +249,9 @@ var _Driver_serviceDesc = grpc.ServiceDesc{
 	Metadata: "infra/tricium/api/admin/v1/driver.proto",
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/admin/v1/driver.proto", fileDescriptor0) }
+func init() { proto.RegisterFile("infra/tricium/api/admin/v1/driver.proto", fileDescriptor1) }
 
-var fileDescriptor0 = []byte{
+var fileDescriptor1 = []byte{
 	// 237 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xbc, 0x91, 0x31, 0x4f, 0xc3, 0x30,
 	0x10, 0x85, 0x15, 0xaa, 0x06, 0x71, 0x03, 0xa8, 0x46, 0xad, 0x22, 0xa6, 0xaa, 0x0b, 0x9d, 0x62,
