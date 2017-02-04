@@ -20,7 +20,7 @@ lint:
 	polylint -i elements/som-app/som-app.html
 
 build: deps
-	$(VULCANIZE_PATH) elements/som-app/som-app.html -o elements/som-app/som-app.vulcanized.html
+	$(VULCANIZE_PATH) elements/som-app/som-app.html -o elements/som-app/som-app.vulcanized.html --inline-scripts
 
 clean:
 	rm elements/som-app/som-app.vulcanized.html
