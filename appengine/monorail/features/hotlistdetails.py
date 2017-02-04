@@ -84,7 +84,7 @@ class HotlistDetails(servlet.Servlet):
   def _ParseMetaData(self, post_data, mr):
     """Process a POST on the hotlist metadata."""
     summary = None
-    description = None
+    description = ''
     name = None
     default_col_spec = None
 
@@ -94,8 +94,6 @@ class HotlistDetails(servlet.Servlet):
         mr.errors.summary = _MSG_SUMMARY_MISSING
     if 'description' in post_data:
       description = post_data['description']
-      if not description:
-        mr.errors.description = _MSG_DESCRIPTION_MISSING
     if 'name' in post_data:
       name = post_data['name']
       if not name:

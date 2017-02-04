@@ -25,9 +25,6 @@
   Hotlist description:<br>
   <textarea id="description" name="description" rows="20" cols="90" wrap="soft"
   	    >[initial_description]</textarea><br>
-  <div class="fielderror">&nbsp;
-    <span id="descriptionfeedback">[if-any errors.description][errors.description][end]</span>
-  </div>
 </div>
 
 <h4>Hotlist defaults</h4>
