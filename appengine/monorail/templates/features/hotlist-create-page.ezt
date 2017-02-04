@@ -31,16 +31,6 @@
   <textarea id="description" name="description" rows="20" cols="90" wrap="soft">[initial_description]</textarea>
   <br><br>
 
-  <label for="issues">Issues</label><br>
-  <input type="text" id="issues" name="issues" size="75" autocomplete="off"
-  value="[initial_issues]">
-  <span class="graytext">Example: monorail:1234, chromium:12345</span>
-  <div class="fielderror">&nbsp;
-    <span id="issuesfeedback">
-      [if-any errors.issues][errors.issues][end]
-    </span>
-  </div>
-
   <label for="editors">Editors</label><br>
   <input type="text" id="editors" name="editors" size="75" autocomplete="off"
   value="[initial_editors]">

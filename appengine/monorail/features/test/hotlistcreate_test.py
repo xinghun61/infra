@@ -29,41 +29,11 @@ class HotlistCreateTest(unittest.TestCase):
                                              features=fake.FeaturesService())
     self.servlet = hotlistcreate.HotlistCreate('req', 'res',
                                                services=self.services)
-    self.project = self.services.project.TestAddProject('projectname',
-                                                        project_id=123)
-    self.issue1_local_id = self.services.issue.CreateIssue(self.cnxn,
-                                                           self.services,
-                                                      self.project.project_id,
-                                                           'issue1_summary',
-                                                      'status', 111L, [], [],
-                                                           [], [], 111L,
-                                                           'issue1_description')
-    self.issue2_local_id = self.services.issue.CreateIssue(self.cnxn,
-                                                           self.services,
-                                                      self.project.project_id,
-                                                           'issue2_summary',
-                                                      'status', 111L, [], [],
-                                                           [], [], 111L,
-                                                      'issue2_description')
-    self.issue1 = self.services.issue.issues_by_project[
-        self.project.project_id][self.issue1_local_id]
-    self.issue2 = self.services.issue.issues_by_project[
-        self.project.project_id][self.issue2_local_id]
     self.mox = mox.Mox()
 
   def tearDown(self):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
-
-  def testParseIssueRefs(self):
-    issue_refs_string = "projectname: %d, projectname: %d" % (
-        self.issue1_local_id, self.issue2_local_id)
-    self.mr.project_name = 'projectname'
-    # list of global issue_ids
-    issue_ids, misses = self.servlet.ParseIssueRefs(self.mr, issue_refs_string)
-    self.assertEqual(misses, [])
-    self.assertIn(self.issue2.issue_id, issue_ids)
-    self.assertIn(self.issue1.issue_id, issue_ids)
 
   def CheckAssertBasePermissions(
       self, restriction, expect_admin_ok, expect_nonadmin_ok):
@@ -109,7 +79,6 @@ class HotlistCreateTest(unittest.TestCase):
     self.assertEqual('', page_data['initial_name'])
     self.assertEqual('', page_data['initial_summary'])
     self.assertEqual('', page_data['initial_description'])
-    self.assertEqual('', page_data['initial_issues'])
     self.assertEqual('', page_data['initial_editors'])
     self.assertEqual('no', page_data['initial_privacy'])
 
@@ -118,8 +87,6 @@ class HotlistCreateTest(unittest.TestCase):
     self.mr.auth.user_id = 111L
     post_data = fake.PostData(hotlistname=['Hotlist'], summary=['summ'],
                               description=['hey'],
-                              issue_refs_string=[
-                                  'projectname:1, projectname:2'],
                               editors=[''], is_private=['yes'])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('/u/111/hotlists/Hotlist' in url)
@@ -133,7 +100,7 @@ class HotlistCreateTest(unittest.TestCase):
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
     self.servlet.PleaseCorrect(
         mr, initial_name = '123BadName', initial_summary='summ',
-        initial_description='hey',initial_issues=None,
+        initial_description='hey',
         initial_editors='test@email.com', initial_privacy='yes')
     self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(mr, post_data)
@@ -149,32 +116,11 @@ class HotlistCreateTest(unittest.TestCase):
     post_data = fake.PostData()
     self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
     self.servlet.PleaseCorrect(mr, initial_name = None, initial_summary=None,
-                               initial_description='',initial_issues=None,
+                               initial_description='',
                                initial_editors='', initial_privacy=None)
     self.mox.ReplayAll()
     url = self.servlet.ProcessFormData(mr, post_data)
     self.mox.VerifyAll()
     self.assertEqual(mr.errors.hotlistname, 'Missing hotlist name')
     self.assertEqual(mr.errors.summary,'Missing hotlist summary')
-    self.assertIsNone(url)
-
-  # TODO(jojwang): Created another RejectTemplate test because the one
-  # below only tests invalid issues input. The ability to add issues
-  # during hotlist creation may be take away so this test will become
-  # irrelevant soon anyways.
-  def testProcessFormData_RejectTemplateIssues(self):
-    mr = testing_helpers.MakeMonorailRequest()
-    post_data = fake.PostData(hotlistname=['Hotlist'], summary=['summ'],
-                              description=['hey'],
-                              issues=['projectna, projectname:2'],
-                              editors=[''], is_private=['yes'])
-    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
-    self.servlet.PleaseCorrect(
-        mr, initial_name = 'Hotlist', initial_summary='summ',
-        initial_description='hey', initial_issues='projectna, projectname:2',
-        initial_editors='', initial_privacy='yes')
-    self.mox.ReplayAll()
-    url = self.servlet.ProcessFormData(mr, post_data)
-    self.mox.VerifyAll()
-    self.assertEqual('Issues input is invalid', mr.errors.issues)
     self.assertIsNone(url)

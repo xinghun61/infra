@@ -51,31 +51,9 @@ class HotlistCreate(servlet.Servlet):
         'initial_name': '',
         'initial_summary': '',
         'initial_description': '',
-        'initial_issues': '',
         'initial_editors': '',
         'initial_privacy': 'no',
         }
-
-  def ParseIssueRefs(self, mr, issue_refs_string):
-    """Parses the string or project:issue_id pairs to return global issue_ids.
-
-    Args:
-      mr: commonly used info parsed from the request.
-      issue_refs_string: a string list of project name and local_id for
-          relevant issues, eg.  'monorail:1234, chromium:12345'.
-
-    Returns:
-      A list of global issue_ids.
-    """
-    string_pairs = [pair.strip() for pair in issue_refs_string.split(',')]
-    issue_refs_tuples = [(pair.split(':')[0],
-                          int(pair.split(':')[1].strip())) for pair in
-                         string_pairs]
-    project_names = [pair.split(':')[0] for pair in string_pairs]
-    projects_dict = self.services.project.GetProjectsByName(
-        mr.cnxn, project_names)
-    return self.services.issue.ResolveIssueRefs(
-        mr.cnxn, projects_dict, mr.project_name, issue_refs_tuples)
 
   def ProcessFormData(self, mr, post_data):
     """Process the hotlist create form.
@@ -98,14 +76,6 @@ class HotlistCreate(servlet.Servlet):
       mr.errors.summary = _MSG_MISSING_HOTLIST_SUMMARY
 
     description = post_data.get('description', '')
-    issue_refs_string = post_data.get('issues')
-    issue_ids = []
-    if issue_refs_string:
-      pattern = re.compile(features_constants.ISSUE_INPUT_REGEX)
-      if pattern.match(issue_refs_string):
-        issue_ids, _misses = self.ParseIssueRefs(mr, issue_refs_string)
-      else:
-        mr.errors.issues = _MSG_INVALID_ISSUES_INPUT
 
     editors = post_data.get('editors', '')
     editor_ids = []
@@ -125,7 +95,7 @@ class HotlistCreate(servlet.Servlet):
         hotlist = self.services.features.CreateHotlist(
             mr.cnxn, hotlist_name, summary, description,
             owner_ids=[mr.auth.user_id], editor_ids=editor_ids,
-            issue_ids = issue_ids, is_private=(is_private == 'yes'),
+            is_private=(is_private == 'yes'),
             ts=int(time.time()))
       except features_svc.HotlistAlreadyExists:
         mr.errors.hotlistname = _MSG_HOTLIST_NAME_NOT_AVAIL
@@ -133,7 +103,7 @@ class HotlistCreate(servlet.Servlet):
     if mr.errors.AnyErrors():
       self.PleaseCorrect(
           mr, initial_name=hotlist_name, initial_summary=summary,
-          initial_description=description, initial_issues=issue_refs_string,
+          initial_description=description,
           initial_editors=editors, initial_privacy=is_private)
     else:
       return framework_helpers.FormatAbsoluteURL(
