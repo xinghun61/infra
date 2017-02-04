@@ -88,11 +88,11 @@
     "cmd": [
       "[START_DIR]\\cipd\\cipd",
       "ensure",
-      "--root",
+      "-root",
       "[START_DIR]\\infra",
-      "--list",
+      "-ensure-file",
       "infra/testing/sheriff-o-matic/bower_components/windows-386 0816e3e92d47f643d6cabca716d241d0ce6cc6fd",
-      "--json-output",
+      "-json-output",
       "/path/to/tmp/json"
     ],
     "name": "ensure_installed",
@@ -112,11 +112,11 @@
     "cmd": [
       "[START_DIR]\\cipd\\cipd",
       "ensure",
-      "--root",
+      "-root",
       "[START_DIR]\\packages",
-      "--list",
+      "-ensure-file",
       "infra/nodejs/nodejs/windows-386 node_version:4.5.0\ninfra/testing/wct/windows-386 prod",
-      "--json-output",
+      "-json-output",
       "/path/to/tmp/json"
     ],
     "name": "ensure_installed (2)",

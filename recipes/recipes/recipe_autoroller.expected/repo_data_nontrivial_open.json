@@ -38,11 +38,11 @@
     "cmd": [
       "[START_DIR]/cipd/cipd",
       "ensure",
-      "--root",
+      "-root",
       "[TMP_BASE]/recipes_tmp_1",
-      "--list",
+      "-ensure-file",
       "infra/recipes-py latest",
-      "--json-output",
+      "-json-output",
       "/path/to/tmp/json"
     ],
     "name": "ensure_installed",
