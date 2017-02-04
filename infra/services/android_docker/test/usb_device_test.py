@@ -36,7 +36,7 @@ class FakeLibusbDevice(object):
     self.vendor = vendor
     self.settings = settings
     self.serial = serial
-    self.port_list = port_list
+    self.port_list = port_list or [1,2,3]
 
   def getPortNumber(self):
     return self.port
@@ -130,9 +130,14 @@ class TestGetDevices(TestDevice):
     self.no_serial_device = FakeLibusbDevice(
         vendor=int(self.supported_vendor, 16),
         settings=[self.supported_setting])
+    self.libusb_device_long_port_list = FakeLibusbDevice(
+        serial='seriallllll', vendor=int(self.supported_vendor, 16),
+        settings=[self.supported_setting])
+    self.libusb_device_long_port_list.port_list.append(1)
 
     self.all_devices = [
         self.libusb_device,
+        self.libusb_device_long_port_list,
         self.wrong_vendor_device,
         self.wrong_interface_device,
         self.no_serial_device,
@@ -143,9 +148,11 @@ class TestGetDevices(TestDevice):
   @mock.patch('usb1.USBContext')
   def test_get_android_devices(self, mock_usb_context):
     mock_usb_context.return_value = self.usb_context
-    devices = usb_device.get_android_devices(None) 
-    self.assertEquals(len(devices), 1)
-    self.assertEquals(devices[0].serial, 'serial1')
+    devices = usb_device.get_android_devices(None)
+    self.assertEquals(len(devices), 2)
+    self.assertEquals(devices[0].serial, self.libusb_device.serial)
+    self.assertEquals(
+        devices[1].serial, self.libusb_device_long_port_list.serial)
 
   @mock.patch('usb1.USBContext')
   def test_no_android_devices(self, mock_usb_context):
@@ -159,10 +166,81 @@ class TestGetDevices(TestDevice):
     d1 = self.libusb_device
     d2 = copy.copy(self.libusb_device)
     d2.serial = 'serial2'
-    d3 = copy.copy(self.libusb_device)
+    d3 = copy.copy(self.libusb_device_long_port_list)
     d3.serial = 'serial3'
     self.usb_context = FakeUSBContext([d1, d2, d3])
     mock_usb_context.return_value = self.usb_context
-    devices = usb_device.get_android_devices(['serial2'])
-    self.assertEquals(len(devices), 1)
+    devices = usb_device.get_android_devices(['serial2', 'serial3'])
+    self.assertEquals(len(devices), 2)
     self.assertEquals(devices[0].serial, 'serial2')
+    self.assertEquals(devices[1].serial, 'serial3')
+
+
+class TestGetPhysicalPorts(TestDevice):
+  def setUp(self):
+    super(TestGetPhysicalPorts, self).setUp()
+    self.libusb_devices = []
+    for i in xrange(1, 8):
+      libusb_device = FakeLibusbDevice(
+          serial='serial%d' % i, vendor=int(self.supported_vendor, 16),
+          settings=[self.supported_setting])
+      self.libusb_devices.append(libusb_device)
+
+    self.libusb_devices[0].port_list = [1, 2, 1]
+    self.libusb_devices[1].port_list = [1, 2, 2]
+    self.libusb_devices[2].port_list = [1, 2, 3]
+    self.libusb_devices[3].port_list = [1, 2, 4, 1]
+    self.libusb_devices[4].port_list = [1, 2, 4, 2]
+    self.libusb_devices[5].port_list = [1, 2, 4, 3]
+    self.libusb_devices[6].port_list = [1, 2, 4, 4]
+
+  def test_full_hub(self):
+    devices = [usb_device.USBDevice(d) for d in self.libusb_devices]
+
+    usb_device.assign_physical_ports(devices)
+
+    self.assertEquals(devices[0].physical_port, 1)
+    self.assertEquals(devices[1].physical_port, 2)
+    self.assertEquals(devices[2].physical_port, 3)
+    self.assertEquals(devices[3].physical_port, 4)
+    self.assertEquals(devices[4].physical_port, 5)
+    self.assertEquals(devices[5].physical_port, 6)
+    self.assertEquals(devices[6].physical_port, 7)
+
+  def test_incomplete_hub_list_1(self):
+    # Skip the 5th device and make sure the physical ports stay the same.
+    devices = []
+    for i in range(0, 4) + range(5, 7):
+      devices.append(usb_device.USBDevice(self.libusb_devices[i]))
+
+    usb_device.assign_physical_ports(devices)
+
+    self.assertEquals(devices[0].physical_port, 1)
+    self.assertEquals(devices[1].physical_port, 2)
+    self.assertEquals(devices[2].physical_port, 3)
+    self.assertEquals(devices[3].physical_port, 4)
+    self.assertEquals(devices[4].physical_port, 6)
+    self.assertEquals(devices[5].physical_port, 7)
+
+  def test_incomplete_hub_list_2(self):
+    # Skip all but the first 2 devices.
+    devices = []
+    for i in range(0, 2):
+      devices.append(usb_device.USBDevice(self.libusb_devices[i]))
+
+    self.assertRaises(Exception, usb_device.assign_physical_ports, devices)
+
+  def test_unexpected_hub_list(self):
+    # Give the 7th device a crazy port list.
+    self.libusb_devices[6].port_list = [1, 2, 4, 4, 1]
+    devices = [usb_device.USBDevice(d) for d in self.libusb_devices]
+
+    self.assertRaises(Exception, usb_device.assign_physical_ports, devices)
+
+  def test_duplicate_physical_ports(self):
+    # Give the 1st and 2nd devices the same port list.
+    self.libusb_devices[0].port_list = [1, 2, 1]
+    self.libusb_devices[1].port_list = [1, 2, 1]
+    devices = [usb_device.USBDevice(d) for d in self.libusb_devices]
+
+    self.assertRaises(Exception, usb_device.assign_physical_ports, devices)
