@@ -154,7 +154,7 @@ class SQLTableManager(object):
       self, cnxn, distinct=False, cols=None, left_joins=None,
       joins=None, where=None, or_where_conds=False, group_by=None,
       order_by=None, limit=None, offset=None, shard_id=None, use_clause=None,
-      **kwargs):
+      having=None, **kwargs):
     """Compose and execute an SQL SELECT statement on this table.
 
     Args:
@@ -171,6 +171,7 @@ class SQLTableManager(object):
       offset: Optional OFFSET when using LIMIT.
       shard_id: Int ID of the shard to query.
       use_clause: Optional string USE clause to tell the DB which index to use.
+      having: List of (str, args) for Optional HAVING clause
       **kwargs: WHERE-clause equality and set-membership conditions.
 
     Keyword args are used to build up more WHERE conditions that compare
@@ -186,6 +187,8 @@ class SQLTableManager(object):
         or_where_conds=or_where_conds)
     if use_clause:
       stmt.AddUseClause(use_clause)
+    if having:
+      stmt.AddHavingTerms(having)
     stmt.AddJoinClauses(left_joins or [], left=True)
     stmt.AddJoinClauses(joins or [])
     stmt.AddWhereTerms(where or [], **kwargs)
@@ -457,6 +460,7 @@ class Statement(object):
     self.use_clauses = []
     self.join_clauses, self.join_args = [], []
     self.where_conds, self.where_args = [], []
+    self.having_conds, self.having_args = [], []
     self.group_by_terms, self.group_by_args = [], []
     self.order_by_terms, self.order_by_args = [], []
     self.limit, self.offset = None, None
@@ -471,6 +475,8 @@ class Statement(object):
         clauses.append('WHERE ' + '\n  AND '.join(self.where_conds))
     if self.group_by_terms:
       clauses.append('GROUP BY ' + ', '.join(self.group_by_terms))
+      if self.having_conds:
+        clauses.append('HAVING %s' % self.having_conds)
     if self.order_by_terms:
       clauses.append('ORDER BY ' + ', '.join(self.order_by_terms))
 
@@ -489,10 +495,10 @@ class Statement(object):
             ', '.join(['%s=VALUES(%s)' % (col, col)
                        for col in self.duplicate_update_cols])))
       assert not (self.join_args + self.update_args + self.where_args +
-                  self.group_by_args + self.order_by_args)
+                  self.group_by_args + self.order_by_args + self.having_args)
     else:
       args = (self.join_args + self.update_args + self.where_args +
-              self.group_by_args + self.order_by_args)
+              self.group_by_args + self.having_args + self.order_by_args)
       assert not (self.insert_args + self.duplicate_update_cols)
 
     args = _BoolsToInts(args)
@@ -534,7 +540,7 @@ class Statement(object):
     self.offset = offset
 
   def AddWhereTerms(self, where_cond_pairs, **kwargs):
-    """Gererate a WHERE clause."""
+    """Generate a WHERE clause."""
     where_cond_pairs = where_cond_pairs or []
 
     for cond, args in where_cond_pairs:
@@ -566,6 +572,14 @@ class Statement(object):
         op = '=' if eq else '!='
         self.where_conds.append(col + ' ' + op + ' %s')
         self.where_args.append(val)
+
+  def AddHavingTerms(self, having_cond_pairs):
+    """Generate a HAVING clause."""
+    for cond, args in having_cond_pairs:
+      assert _IsValidHavingCond(cond), cond
+      assert cond.count('%s') == len(args), cond
+      self.having_conds.append(cond)
+      self.having_args.extend(args)
 
 
 def PlaceHolders(sql_args):
@@ -605,6 +619,8 @@ TABLE_RE = _MakeRE('^{table}$')
 TAB_COL_RE = _MakeRE('^{tab_col}$')
 USE_CLAUSE_RE = _MakeRE(
     r'^USE INDEX \({column}\) USE INDEX FOR ORDER BY \({column}\)$')
+HAVING_RE_LIST = [
+    _MakeRE(r'^COUNT\(\*\) {compare_op} {placeholder}$')]
 COLUMN_RE_LIST = [
     TAB_COL_RE,
     _MakeRE(r'\*'),
@@ -713,6 +729,18 @@ def _IsValidColumnName(column_expr):
 
 def _IsValidUseClause(use_clause):
   return USE_CLAUSE_RE.match(use_clause)
+
+def _IsValidHavingCond(cond):
+  if cond.startswith('(') and cond.endswith(')'):
+    cond = cond[1:-1]
+
+  if ' OR ' in cond:
+    return all(_IsValidHavingCond(c) for c in cond.split(' OR '))
+
+  if ' AND ' in cond:
+    return all(_IsValidHavingCond(c) for c in cond.split(' AND '))
+
+  return HAVING_RE_LIST.match(cond)
 
 
 def _IsValidJoin(join):
