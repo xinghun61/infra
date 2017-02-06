@@ -123,7 +123,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "/creds/service_accounts/service-account-container-registry-push.json",
+      "/creds/service_accounts/service-account-container_registry_pusher.json",
       "/path/to/tmp/"
     ],
     "name": "Read service account creds"
