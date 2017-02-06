@@ -31,13 +31,9 @@ import webapp2
 import gae_ts_mon
 import gae_event_mon
 from appengine_module.test_results.handlers import monitoring
-from appengine_module.test_results.handlers import redirector
 
 routes = [
     ('/internal/monitoring/upload', monitoring.EventMonUploader),
-    ('/internal/v2/monitoring/upload', monitoring.MonitoringUploadV2),
-    webapp2.Route('/revision_range', webapp2.RedirectHandler, defaults={
-        '_uri': redirector.get_googlesource_url}),
 ]
 
 app = webapp2.WSGIApplication(routes, debug=True)

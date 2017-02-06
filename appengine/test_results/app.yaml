@@ -6,12 +6,6 @@ threadsafe: true
 instance_class: F4
 
 handlers:
-- url: /appengine_module/components
-  static_dir: appengine_module/components
-
-- url: /.*
-  script: appengine_module.test_results.main.app
-
 - url: /internal/monitoring/upload
   script: appengine_module.test_results.main.app
   login: admin
