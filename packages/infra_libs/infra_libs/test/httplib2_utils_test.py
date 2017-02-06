@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
+import json
 import os
 import socket
 import time
@@ -362,3 +364,59 @@ class HttpMockTest(unittest.TestCase):
     self.assertEqual(http.requests_made[0].method, 'GET')
     self.assertEqual(http.requests_made[0].body, None)
     self.assertEqual(http.requests_made[0].headers, None)
+
+
+class DelegateServiceAccountCredentialsTest(unittest.TestCase):
+
+  def setUp(self):
+    self.mock_http = mock.Mock()
+    self.c = httplib2_utils.DelegateServiceAccountCredentials(
+        self.mock_http, 'test@example.com', ['scope'])
+
+  def tearDown(self):
+    mock.patch.stopall()
+
+  def test_sign_blob(self):
+    self.mock_http.request.return_value = (
+        httplib2.Response({'status': 200}),
+        '{"keyId": "foo", "signature": "bar"}')
+    key_id, signature = self.c.sign_blob('foo')
+
+    self.mock_http.request.assert_called_once_with(
+        'https://iam.googleapis.com/v1/projects/-/serviceAccounts/'
+        'test@example.com:signBlob',
+        method='POST',
+        body='{"bytesToSign": "Zm9v"}',
+        headers={'Content-Type': 'application/json'})
+    self.assertEqual('foo', key_id)
+    self.assertEqual('bar', signature)
+
+  def test_sign_blob_http_error(self):
+    self.mock_http.request.return_value = (
+        httplib2.Response({'status': 404}), 'Oh dear')
+    with self.assertRaises(httplib2_utils.AuthError):
+      self.c.sign_blob('foo')
+
+  @mock.patch('infra_libs.httplib2_utils.DelegateServiceAccountCredentials.'
+              'sign_blob', autospec=True)
+  def test_generate_assertion(self, mock_sign_blob):
+    mock_sign_blob.return_value = ('key_id', 'aGVsbG8=')
+    ret = self.c._generate_assertion()
+
+    header, payload, signature = (
+        self._unpadded_b64decode(x) for x in ret.split('.'))
+    payload = json.loads(payload)
+
+    self.assertEqual('{"alg":"RS256","typ":"JWT"}', header)
+    self.assertEqual('test@example.com', payload['iss'])
+    self.assertEqual('scope', payload['scope'])
+    self.assertEqual('https://accounts.google.com/o/oauth2/token',
+                     payload['aud'])
+    self.assertIn('exp', payload)
+    self.assertIn('iat', payload)
+    self.assertEqual('hello', signature)
+
+  def _unpadded_b64decode(self, encoded):
+    # Pad to a multiple of 4 bytes.
+    return base64.b64decode(encoded + ('=' * (len(encoded) % 4)))
+

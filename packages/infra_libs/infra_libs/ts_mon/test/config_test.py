@@ -64,8 +64,8 @@ class GlobalsTest(auto_stub.TestCase):
 
   @mock.patch('requests.get', autospec=True)
   @mock.patch('socket.getfqdn', autospec=True)
-  @mock.patch('infra_libs.ts_mon.common.monitors.HttpsMonitor.'
-              '_load_credentials', autospec=True)
+  @mock.patch('infra_libs.ts_mon.common.monitors.CredentialFactory.'
+              'from_string')
   def test_https_monitor_args(self, _load_creds, fake_fqdn, fake_get):
     print [_load_creds, fake_fqdn, fake_get]
     fake_fqdn.return_value = 'slave1-a1.reg.tld'
@@ -170,8 +170,11 @@ class GlobalsTest(auto_stub.TestCase):
                          '--ts-mon-endpoint', 'pubsub://mytopic/myproject'])
     config.process_argparse_options(args)
     fake_monitor.assert_called_once_with(
-        '/path/to/creds.p8.json', 'mytopic', 'myproject',
+        mock.ANY, 'mytopic', 'myproject',
         ca_certs=None, use_instrumented_http=True)
+    cred_factory = fake_monitor.call_args[0][0]
+    self.assertIsInstance(cred_factory, monitors.FileCredentials)
+    self.assertEquals(cred_factory.path, '/path/to/creds.p8.json')
     self.assertIs(interface.state.global_monitor, singleton)
 
   @mock.patch('infra_libs.ts_mon.common.monitors.PubSubMonitor', autospec=True)
