@@ -15,6 +15,7 @@ import collections
 import logging
 import settings
 
+from features import features_constants
 from framework import framework_constants
 from framework import sorting
 from framework import table_view_helpers
@@ -352,8 +353,11 @@ def GetGridViewData(
   columns = mr.col_spec.split()
   ordered_columns = [template_helpers.EZTItem(col_index=i, name=col)
                      for i, col in enumerate(columns)]
+  other_built_in_cols = (features_constants.OTHER_BUILT_IN_COLS if
+                         hotlist_context_dict else
+                         tracker_constants.OTHER_BUILT_IN_COLS)
   unshown_columns = table_view_helpers.ComputeUnshownColumns(
-      results, columns, config, tracker_constants.OTHER_BUILT_IN_COLS)
+      results, columns, config, other_built_in_cols)
 
   grid_x_attr = (mr.x or config.default_x_attr or '--').lower()
   grid_y_attr = (mr.y or config.default_y_attr or '--').lower()
