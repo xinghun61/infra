@@ -16,8 +16,8 @@
       [end]
       <a href="[hotlist.url]">Hotlist [hotlist.name]</a>
     </td>
-    <td nowrap="nowrap" width="80%" style="border-right: 2px solid white" class="issueheader">
-      <span class="h3" style="padding-left:4px">Description: [hotlist.description]</span>
+    <td width="80%" style="border-right: 2px solid white" class="issueheader">
+      <span class="h3" style="padding-left:4px">Description: </span> [hotlist.description]
     </td>
   </tr>
   <tr>
