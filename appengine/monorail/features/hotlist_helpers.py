@@ -42,7 +42,7 @@ def GetSortedHotlistIssues(
         hotlist_issue.issue_id: {'issue_rank':
                                  friendly_ranks[hotlist_issue.rank],
                                  'adder_id': hotlist_issue.adder_id,
-                                 'date_added': timestr.FormatRelativeDate(
+                                 'date_added': timestr.FormatAbsoluteDate(
                                      hotlist_issue.date_added)}
         for hotlist_issue in hotlist_issues if
         hotlist_issue.issue_id in allowed_iids}
