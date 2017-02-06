@@ -267,7 +267,7 @@ if dev_mode:
 else:
   classifier_project_id = app_identity.get_application_id()
 
-classifier_model_id = '20160729'
+classifier_model_id = '20170203'
 
 # Number of distinct users who have to flag an issue before it
 # is autmatically removed as spam.
@@ -283,7 +283,7 @@ classifier_moderation_thresh = 1.0
 # If the classifier's confidence is greater than this value,
 # and the label is 'spam', the item will automatically be created
 # with is_spam=True, and will be filtered out from search results.
-classifier_spam_thresh = 1.0
+classifier_spam_thresh = 0.995
 
 # Users with email addresses ending with these will not be subject to
 # spam filtering.
