@@ -454,12 +454,8 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   opacity: 1;
 }
 
-.drag_container, .drag-item td {
-  border-collapse: collapse;
-}
-
 .drag_container th, .drag_container td {
-  padding: 0.5em;
+    padding: 0.5em;
 }
 
 .drag_container th {

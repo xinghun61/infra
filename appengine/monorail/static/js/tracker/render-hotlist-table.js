@@ -277,6 +277,7 @@ function renderHotlistTable(tableData, pageSettings) {
     }
     tbody.appendChild(renderHotlistRow(tableRow, pageSettings));
   });
+  tbody.appendChild(document.createElement('tr'));
   table.appendChild(tbody);
 
   var stars = document.getElementsByClassName("star");
