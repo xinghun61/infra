@@ -17,8 +17,8 @@
       .error,
       #loadingBugs,
       #noBugs {
-        padding: 0.25em 0.5em;
-        margin: 0 1em;
+        padding: 0.25em 8px;
+        margin: 0 16px;
       }
       h2, h4 {
         font-weight: bold;
@@ -98,11 +98,11 @@
       <template is="dom-repeat" items="[[_bugsByPriority]]" as="bucket">
         <h4 on-tap="_togglePriorityCollapse">
           <iron-icon
-            icon="[[_computeCollapseIcon(_isTrooperQueue)]]" 
+            icon="[[_computeCollapseIcon(_defaultOpenState)]]"
             id$="toggleIconPri[[bucket.priority]]"></iron-icon>
           [[_priorityText(bucket.priority)]] ([[bucket.bugs.length]] total)
         </h4>
-        <iron-collapse id$="[[_computeCollapseId(bucket.priority)]]" opened="[[_isTrooperQueue]]">
+        <iron-collapse id$="[[_computeCollapseId(bucket.priority)]]" opened="[[_defaultOpenState]]">
           <template is="dom-repeat" items="[[bucket.bugs]]" as="bug">
             <div class="bug">
               <div class="summary-box">

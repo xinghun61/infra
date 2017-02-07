@@ -12,7 +12,7 @@
 
 <dom-module id="som-alert-item">
   <template>
-    <style include="iron-flex iron-flex-alignment">
+    <style include="iron-flex iron-flex-alignment"></style>
     <style>
       paper-button {
         -webkit-transition: background .3s ease;
@@ -72,9 +72,6 @@
      .snooze-icon {
        color: #aaa;
      }
-     .list-item {
-       @apply(--layout-vertical);
-     }
      .snoozed {
        opacity: 0.5;
      }
@@ -122,75 +119,73 @@
      }
      #root {
        transition: opacity .25s;
+       border-bottom: 1px solid #ddd;
+       padding-bottom: 0.5em;
      }
      #usefulLinks {
        margin: .25em 0;
      }
     </style>
     <div id="root" class$="[[_cssClass]]">
-      <div class$="[[_classForAlert(alert, selected)]]">
-        <div class="list-item">
-          <div class="alert-title-bar horizontal layout justified" on-tap="toggle">
-            <paper-ripple>
-            </paper-ripple>
-            <div class="horizontal layout wrap">
-              <div class="layout horizontal flex-child">
-                <div class="alert-title self-center">[[alert.title]]</div>
-                <div id="handleLink" class="self-center" hidden$="[[!_helpLinkForAlert(alert)]]">
-                  [<a href$="[[_helpLinkForAlert(alert)]]" target="_blank">Help</a>]
-                </div>
-              </div>
-              <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links self-center flex">
-                <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
-                  <div class="bug">
-                    <a target="_blank" href="[[_bugUrl(bug)]]">[[_bugLabel(bug)]]</a>
-                    [[_bugSummary(bug, annotation.bugData)]]
-                    <paper-icon-button icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></paper-icon-button>
-                  </div>
-                </template>
-              </div>
-            </div>
-            <div class="horizontal layout end">
-              <template is="dom-if" if="[[useCompactView]]">
-                <span id="expand-tip" class="layout end">
-                  Click to expand
-                </span>
-              </template>
-              <div class="alert-times">
-                [[_duration]]
-              </div>
+      <div class="alert-title-bar horizontal layout justified" on-tap="toggle">
+        <paper-ripple>
+        </paper-ripple>
+        <div class="horizontal layout wrap">
+          <div class="layout horizontal flex-child">
+            <div class="alert-title self-center">[[alert.title]]</div>
+            <div id="handleLink" class="self-center" hidden$="[[!_helpLinkForAlert(alert)]]">
+              [<a href$="[[_helpLinkForAlert(alert)]]" target="_blank">Help</a>]
             </div>
           </div>
-          <div id="collapse" hidden$="[[_isHidden(annotation.opened, useCompactView)]]" class="alert-expanded layout horizontal wrap">
-            <div class="alert-controls layout horizontal center flex-child">
-              <div class="layout vertical alert-controls-links">
-                <a href$="[[tree]]/examine/[[alert.key]]" hidden$="[[examining]]">Examine</a>
-                <a href$="[[tree]]" hidden$="[[!examining]]">[[tree]]</a>
-                <span class$="link [[_commentsClass]]" on-tap="_comment" id="commentsLink">
-                  <iron-icon icon="question-answer"></iron-icon> ([[_numComments]])
-                </span>
+          <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links self-center flex">
+            <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
+              <div class="bug">
+                <a target="_blank" href="[[_bugUrl(bug)]]">[[_bugLabel(bug)]]</a>
+                [[_bugSummary(bug, annotation.bugData)]]
+                <paper-icon-button icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></paper-icon-button>
               </div>
-              <paper-button class="horizontal layout center" id="link-bug" on-tap="_linkBug" alt="Link a bug" raised noink>
-                <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
-                Link/File Bug
-              </paper-button>
-              <paper-button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" raised noink>
-                <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
-                </iron-icon>
-                [[_snoozeText]]
-              </paper-button>
-            </div>
-            <div class="alert-info flex">
-              <div id="usefulLinks" hidden$="[[!_haveLinks(alert)]]">
-                Useful Links:
-                <template is="dom-repeat" items="[[alert.links]]" as="link">
-                  <a class="alert-link" target="_blank" href$="[[_linkify(linkStyle, link.href)]]">[[link.title]]</a>
-                </template>
-              </div>
-              <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-build-failure>
-              <som-extension-cros-failure type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-cros-failure>
-            </div>
+            </template>
           </div>
+        </div>
+        <div class="horizontal layout end">
+          <template is="dom-if" if="[[useCompactView]]">
+            <span id="expand-tip" class="layout end">
+              Click to expand
+            </span>
+          </template>
+          <div class="alert-times">
+            [[_duration]]
+          </div>
+        </div>
+      </div>
+      <div id="collapse" hidden$="[[_isHidden(annotation.opened, useCompactView)]]" class="alert-expanded layout horizontal wrap">
+        <div class="alert-controls layout horizontal center flex-child">
+          <div class="layout vertical alert-controls-links">
+            <a href$="[[tree]]/examine/[[alert.key]]" hidden$="[[examining]]">Examine</a>
+            <a href$="[[tree]]" hidden$="[[!examining]]">[[tree]]</a>
+            <span class$="link [[_commentsClass]]" on-tap="_comment" id="commentsLink">
+              <iron-icon icon="question-answer"></iron-icon> ([[_numComments]])
+            </span>
+          </div>
+          <paper-button class="horizontal layout center" id="link-bug" on-tap="_linkBug" alt="Link a bug" raised noink>
+            <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
+            Link/File Bug
+          </paper-button>
+          <paper-button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" raised noink>
+            <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
+            </iron-icon>
+            [[_snoozeText]]
+          </paper-button>
+        </div>
+        <div class="alert-info flex">
+          <div id="usefulLinks" hidden$="[[!_haveLinks(alert)]]">
+            Useful Links:
+            <template is="dom-repeat" items="[[alert.links]]" as="link">
+              <a class="alert-link" target="_blank" href$="[[_linkify(linkStyle, link.href)]]">[[link.title]]</a>
+            </template>
+          </div>
+          <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-build-failure>
+          <som-extension-cros-failure type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-cros-failure>
         </div>
       </div>
     </div>

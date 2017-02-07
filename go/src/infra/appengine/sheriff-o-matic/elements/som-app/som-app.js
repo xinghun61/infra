@@ -118,6 +118,15 @@
         type: String,
         computed: '_computeTreeLogo(_tree, _trees)',
       },
+      _sections: {
+        type: Object,
+        value: {
+          // The order the sections appear in the array is the order they
+          // appear on the page.
+          'default': ['notifications', 'alertsList', 'bugQueue'],
+          'trooper': ['notifications', 'bugQueue', 'swarmingBots', 'alertsList']
+        },
+      },
       _staticPages: {
         type: Object,
         value: {
@@ -233,9 +242,15 @@
       return tree;
     },
 
-    _treeChanged: function() {
+    _treeChanged: function(tree) {
       this._alertsData = {};
       this._fetchedAlerts = false;
+
+      // Reorder sections on page based on per tree priorities.
+      let sections = this._sections[tree] || this._sections.default;
+      for (let i in sections) {
+        this.$$('#' + sections[i]).style.order = i;
+      }
     },
 
     _computeAlertsGroups: function(tree, trees) {
@@ -252,7 +267,7 @@
     },
 
     _computeRefreshEnabled: function(selectedPage) {
-      return selectedPage == 'alertsList';
+      return selectedPage == 'mainView';
     },
 
     _computeSelectedPage: function(path) {
@@ -270,7 +285,7 @@
           return this._staticPages[pathParts[1]].pageId;
         } else {
           // On the page for a tree
-          return 'alertsList';
+          return 'mainView';
         }
       }
       if (pathParts[2] == 'examine') {

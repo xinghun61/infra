@@ -5,6 +5,7 @@
       iframe {
         border: 0;
         overflow: scroll;
+        flex-grow: 1;
       }
     </style>
     <h2>Rotation Calendar
@@ -12,12 +13,9 @@
         <iron-icon icon="link"></iron-icon>
       </a>
     </h2>
-    <div class="flex layout vertical">
-      <iframe
-          src="https://chromium-build.appspot.com/static/rotations.html"
-          class="flex"
-      ></iframe>
-    </div>
+    <iframe
+        src="https://chromium-build.appspot.com/static/rotations.html"
+    ></iframe>
   </template>
   <script>
   (function() {

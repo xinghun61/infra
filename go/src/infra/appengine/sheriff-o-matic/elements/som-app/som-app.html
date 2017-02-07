@@ -30,6 +30,10 @@
 <dom-module id="som-app">
   <template>
     <style>
+      iron-pages {
+        @apply(--layout-vertical);
+        min-height: 100%;
+      }
       paper-button {
         font-size: 0.85em;
         padding: 0.5em;
@@ -39,9 +43,6 @@
       }
       paper-toolbar a {
         color: #fff;
-      }
-      paper-header-panel /deep/ #mainContainer {
-        @apply(--layout-vertical);
       }
       paper-header-panel[main] {
         --paper-header-panel-body: {
@@ -55,7 +56,7 @@
         font-weight: bold;
         background-color: #eee;
         border-bottom: 1px solid #ddd;
-        margin: 1em 16px;
+        margin: 0.5em 16px 1em;
       }
       h2 {
         font-size: 22px;
@@ -66,20 +67,23 @@
         height: 45px;
         align-items: center;
       }
-      #alertsList {
-        padding: 0;
-      }
-      #examineAlert {
-        height: 100%;
-      }
       #fetchAlertsError {
         color: #f00;
         margin: 1em;
+      }
+      #mainView {
+        padding: 0;
+        padding-bottom: 5em;
       }
       #noAlerts {
         text-align: center;
         font-size: 2.5em;
         line-height: 150%;
+      }
+      #notifications {
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 0.5em;
+        margin: 1em 16px;
       }
       #refresh {
         max-width: 30px;
@@ -88,6 +92,12 @@
         width: 25px;
         height: 25px;
         padding: 0;
+      }
+      .alert-item {
+        box-sizing: border-box;
+        float: left;
+        width: 100%;
+        padding: 0.5em 16px;
       }
       .error {
         color: #c00;
@@ -100,29 +110,27 @@
         text-align: right;
         padding-right: 1em;
       }
-      .list-item,
-      .page-section {
-        @apply(--layout-flex);
-        @apply(--layout-vertical);
-        margin: 1em 32px;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 0.5em;
-      }
-      .page-section {
-        margin: 1em 16px;
-      }
       .notification {
         box-sizing: border-box;
         width: 100%;
         padding: 0.5em 8px;
-        margin: 0.25em auto 0.5em;
+        margin: 0.5em auto;
         border: 1px solid #666;
         border-radius: 5px;
       }
       .page-body {
+        @apply(--layout-vertical);
+        align-items: stretch;
+        justify-content: flex-start;
         background: white;
         border-left: 1px solid #ddd;
         padding: 1em;
+        min-height: 100%;
+        flex-grow: 1;
+      }
+      .page-section {
+        flex-grow: 0;
+        flex-shrink: 0;
       }
       .section-buttons {
         font-weight: normal;
@@ -184,7 +192,7 @@
             use-compact-view="{{useCompactView}}"
             ></som-drawer>
       </paper-header-panel>
-      <paper-header-panel main id="mainHeaderPanel" class="flex layout vertical">
+      <paper-header-panel main id="mainHeaderPanel">
         <paper-toolbar>
           <div class="layout horizontal flex">
             <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
@@ -206,9 +214,9 @@
         </paper-toolbar>
         <som-annotations id="annotations" annotations="{{annotations}}" bug-queue-label="[[_bugQueueLabel]]"
           local-state="{{localState}}" user="{{user}}" xsrf-token="{{xsrfToken}}"></som-annotations>
-        <iron-pages attr-for-selected='id' selected="[[_selectedPage]]" class="flex layout vertical">
-          <div id="alertsList" class="page-body">
-            <div class="page-section">
+        <iron-pages attr-for-selected='id' selected="[[_selectedPage]]">
+          <div id="mainView" class="page-body">
+            <div id="notifications" class="page-section">
               <som-tree-status tree="[[_tree]]" id="treeStatus"></som-tree-status>
               <som-master-restarts tree="[[_tree]]" id="masterRestarts"></som-master-restarts>
               <div class="notification" hidden$="[[_isTrooperPage]]">
@@ -226,12 +234,13 @@
                 For additional guidance, see: <a href="http://go/trooper" target="_blank">The Trooper Playbook</a>
               </div>
             </div>
-            <som-bug-queue id="bugQueue" bugs="{{_bugs}}" bug-queue-label="[[_bugQueueLabel]]" tree-display-name="[[_treeDisplayName]]"></som-bug-queue>
-            <template is="dom-if" if="[[_showSwarmingAlerts]]">
-              <h2>Swarming Bots (<a target="_blank" href="https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/troopers/playbook.md#Swarming">Help?</a>)</h2>
-              <som-swarming-bots bots="[[_swarmingAlerts]]"></som-swarming-bots>
-            </template>
-            <div id="alertsListInner">
+            <div id="swarmingBots" class="page-section">
+              <template is="dom-if" if="[[_showSwarmingAlerts]]">
+                <h2>Swarming Bots (<a target="_blank" href="https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/troopers/playbook.md#Swarming">Help?</a>)</h2>
+                <som-swarming-bots bots="[[_swarmingAlerts]]"></som-swarming-bots>
+              </template>
+            </div>
+            <div id="alertsList" class="page-section">
               <h2>[[_treeDisplayName]] Failure Alerts (<a href="/help-som">Help?</a>)</h2>
               <div id="fetchAlertsError" hidden$=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
               <template is="dom-if" if="[[!_hideJulie]]">
@@ -242,7 +251,7 @@
                 </div>
               </template>
               <template is="dom-repeat" items="[[_computeCategories(_alerts, _isTrooperPage)]]" as="cat">
-                <h3 class="category-title self-center layout horizontal justified">
+                <h3 class="category-title layout horizontal justified">
                   [[_getCategoryTitle(cat, _isTrooperPage)]]:
                   <template is="dom-if" if="[[useCompactView]]">
                     <div class="self-center end section-buttons">
@@ -257,7 +266,7 @@
                 </h3>
                 <template is="dom-repeat" items="[[_alertsWithCategory(_alerts, cat, _isTrooperPage)]]" as="alert">
                   <som-alert-item
-                      class="list-item"
+                      class="alert-item"
                       tabindex="0"
                       alert="{{alert}}"
                       tree="[[_tree]]"
@@ -274,9 +283,15 @@
                 </template>
               </template>
             </div>
+            <som-bug-queue
+              id="bugQueue"
+              class="page-section"
+              bugs="{{_bugs}}"
+              bug-queue-label="[[_bugQueueLabel]]"
+              tree-display-name="[[_treeDisplayName]]"></som-bug-queue>
           </div>
           <template is="dom-if" if="[[_examinedAlert]]">
-            <div id="examineAlert" class="flex layout vertical page-body">
+            <div id="examineAlert" class="page-body">
               <som-alert-item
                   alert="{{_examinedAlert}}"
                   tree="[[_tree]]"
@@ -293,7 +308,7 @@
           </template>
           <som-help id="helpSOM" class="page-body"></som-help>
           <template is="dom-if" if="[[_showRotationCalendar]]">
-            <som-rotation-calendar id="rotationCalendar" class="flex layout vertical page-body"></som-rotation-calendar>
+            <som-rotation-calendar id="rotationCalendar" class="page-body"></som-rotation-calendar>
           </template>
         </iron-pages>
       </paper-header-panel>

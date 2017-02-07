@@ -40,6 +40,10 @@
         type: Boolean,
         value: false,
       },
+      _defaultOpenState: {
+        type: Boolean,
+        value: true,
+      },
       _hideBugQueue: {
         type: Boolean,
         value: true,

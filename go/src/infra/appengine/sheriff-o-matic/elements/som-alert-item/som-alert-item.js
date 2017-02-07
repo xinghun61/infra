@@ -115,10 +115,6 @@
       return alert.key && alert.key.includes('chromium.webkit');
     },
 
-    _classForAlert: function(alert, selected) {
-      return 'alert' + (selected ? ' selected' : '');
-    },
-
     _comment: function(evt) {
       this.fire('comment');
       evt.preventDefault();
