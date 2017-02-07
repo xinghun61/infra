@@ -29,6 +29,24 @@ class FakeClient(object):
   """
   def __init__(self):
     self.containers = None
+    self.images = FakeImageList()
+    self.creds = None
+
+  def login(self, **kwargs):
+    self.creds = (kwargs['username'], kwargs['password'])
+
+
+class FakeImageList(object):
+  def __init__(self):
+    self.images = []
+
+  def get(self, image):
+    if image not in self.images:
+      raise docker.errors.ImageNotFound('omg no image')
+    return True
+
+  def pull(self, image):
+    self.images.append(image)
 
 
 class FakeContainer(object):
@@ -119,6 +137,55 @@ class TestDockerClient(unittest.TestCase):
     self.container_names = ['android_serial1', 'android_serial2']
     self.fake_client.containers = FakeContainerList(
         [FakeContainerBackend(name) for name in self.container_names])
+
+  @mock.patch('docker.from_env')
+  @mock.patch('os.path.exists')
+  def test_login_no_creds(self, mock_path_exists, mock_from_env):
+    mock_from_env.return_value = self.fake_client
+    mock_path_exists.return_value = False
+
+    client = containers.DockerClient()
+    self.assertRaises(
+        OSError, client.login, 'registry_url.com', '/path/to/creds')
+
+  @mock.patch('docker.from_env')
+  @mock.patch('os.path.exists')
+  def test_login(self, mock_path_exists, mock_from_env):
+    mock_from_env.return_value = self.fake_client
+    mock_path_exists.return_value = True
+
+    client = containers.DockerClient()
+    with mock.patch('__builtin__.open', mock.mock_open(read_data='omg creds')):
+      client.login('registry_url.com', '/path/to/creds')
+
+    self.assertTrue(client.logged_in, True)
+    self.assertEquals(self.fake_client.creds[1], 'omg creds')
+
+  @mock.patch('docker.from_env')
+  def test_has_image(self, mock_from_env):
+    self.fake_client.images.images.append('image1')
+    mock_from_env.return_value = self.fake_client
+
+    client = containers.DockerClient()
+    self.assertTrue(client.has_image('image1'))
+    self.assertFalse(client.has_image('image99'))
+
+  @mock.patch('docker.from_env')
+  def test_pull(self, mock_from_env):
+    mock_from_env.return_value = self.fake_client
+
+    client = containers.DockerClient()
+    client.logged_in = True
+    client.pull('image1')
+    self.assertTrue('image1' in self.fake_client.images.images)
+
+  @mock.patch('docker.from_env')
+  def test_pull_not_logged_in(self, mock_from_env):
+    mock_from_env.return_value = self.fake_client
+
+    client = containers.DockerClient()
+    client.logged_in = False
+    self.assertRaises(Exception, client.pull, 'image1')
 
   @mock.patch('docker.from_env')
   def test_get_running_containers(self, mock_from_env):

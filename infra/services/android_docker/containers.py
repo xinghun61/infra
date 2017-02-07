@@ -47,6 +47,38 @@ def get_container_hostname(device):
 class DockerClient(object):
   def __init__(self):
     self._client = docker.from_env()
+    self.logged_in = False
+
+  def login(self, registry_url, creds_path):
+    if not os.path.exists(creds_path):
+      raise OSError('Credential file (%s) not found.' % creds_path)
+
+    # The container registry api requires the contents of the service account
+    # to be passed in as the plaintext password. See
+    # https://cloud.google.com/container-registry/docs/advanced-authentication
+    with open(creds_path) as f:
+      creds = f.read().strip()
+
+    self._client.login(
+        username='_json_key',  # Required to be '_json_key' by registry api.
+        password=creds,
+        registry=registry_url,
+        reauth=True,
+    )
+    self.logged_in = True
+
+  def pull(self, image):
+    if not self.logged_in:
+      raise Exception('Must login before pulling an image.')
+
+    self._client.images.pull(image)
+
+  def has_image(self, image):
+    try:
+      self._client.images.get(image)
+      return True
+    except docker.errors.ImageNotFound:
+      return False
 
   def get_running_containers(self):
     return [
