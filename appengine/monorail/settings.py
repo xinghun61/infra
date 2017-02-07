@@ -283,7 +283,7 @@ classifier_moderation_thresh = 1.0
 # If the classifier's confidence is greater than this value,
 # and the label is 'spam', the item will automatically be created
 # with is_spam=True, and will be filtered out from search results.
-classifier_spam_thresh = 0.995
+classifier_spam_thresh = 1.0
 
 # Users with email addresses ending with these will not be subject to
 # spam filtering.
