@@ -272,7 +272,7 @@ CREATE TABLE IssueVisitHistory (
   user_id INT UNSIGNED NOT NULL,
   viewed INT NOT NULL,
 
-  PRIMARY KEY (user_id, issue_id)
+  PRIMARY KEY (user_id, issue_id),
   FOREIGN KEY (issue_id) REFERENCES Issue(id),
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;
