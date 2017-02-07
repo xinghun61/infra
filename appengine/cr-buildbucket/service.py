@@ -85,6 +85,8 @@ def validate_tags(tags):
       raise errors.InvalidInputError('Invalid tag "%s": must be a string')
     if ':' not in t:
       raise errors.InvalidInputError('Invalid tag "%s": does not contain ":"')
+    if t[0] == ':':
+      raise errors.InvalidInputError('Invalid tag "%s": starts with ":"')
 
 
 _BuildRequestBase = collections.namedtuple('_BuildRequestBase', [
