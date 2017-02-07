@@ -263,32 +263,54 @@ class SpamServiceTest(unittest.TestCase):
 
     comment_pb = tracker_pb2.IssueComment()
     comment_pb.content = "this is spam"
-    res = self.spam_service.ClassifyIssue(issue, comment_pb, 'test@test.com')
+    reporter = user_pb2.MakeUser(111L, email='test@test.com')
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
     self.assertEqual('spam', res['outputLabel'])
 
-    res = self.spam_service.ClassifyIssue(issue, comment_pb,
-        'test@chromium.org.spam.com')
+    reporter.email = 'test@chromium.org.spam.com'
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
     self.assertEqual('spam', res['outputLabel'])
 
-    res = self.spam_service.ClassifyIssue(issue, comment_pb,
-        'test.google.com@test.com')
+    reporter.email = 'test.google.com@test.com'
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
     self.assertEqual('spam', res['outputLabel'])
 
-  def testClassifyIssue_spamExempt(self):
+  def testClassifyIssue_Whitelisted(self):
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, reporter_id=111L, owner_id=456,
         summary='sum', status='Live', issue_id=78901, is_spam=True)
-    self.spam_service._predict = 'unused function'
- 
+    self.spam_service._predict = lambda *args: {
+        'outputLabel': 'this should not be called'
+        }
+
     # Prevent missing service inits to fail the test.
     self.spam_service.prediction_service = True
 
     comment_pb = tracker_pb2.IssueComment()
     comment_pb.content = "this is spam"
-    res = self.spam_service.ClassifyIssue(issue, comment_pb, 'test@google.com')
+    reporter = user_pb2.MakeUser(111L, email='test@google.com')
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
     self.assertEqual('ham', res['outputLabel'])
-    res = self.spam_service.ClassifyIssue(issue, comment_pb,
-        'test@chromium.org')
+    reporter.email = 'test@chromium.org'
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
+    self.assertEqual('ham', res['outputLabel'])
+
+  def testClassifyIssue_IgnoreActionLimitsAndSpam(self):
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, reporter_id=111L, owner_id=456,
+        summary='sum', status='Live', issue_id=78901, is_spam=True)
+    self.spam_service._predict = lambda *args: {
+        'outputLabel': 'this should not be called'
+        }
+
+    # Prevent missing service inits to fail the test.
+    self.spam_service.prediction_service = True
+
+    comment_pb = tracker_pb2.IssueComment()
+    comment_pb.content = "this is spam"
+    reporter = user_pb2.MakeUser(111L, email='test@example.com')
+    reporter.ignore_action_limits = True
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
     self.assertEqual('ham', res['outputLabel'])
 
   def testClassifyComment_spam(self):
@@ -298,26 +320,44 @@ class SpamServiceTest(unittest.TestCase):
     # Prevent missing service inits to fail the test.
     self.spam_service.prediction_service = True
 
-    res = self.spam_service.ClassifyComment('this is spam', 'test@test.com')
+    commenter = user_pb2.MakeUser(111L, email='test@test.com')
+    res = self.spam_service.ClassifyComment('this is spam', commenter)
     self.assertEqual('spam', res['outputLabel'])
 
-    res = self.spam_service.ClassifyComment('this is spam',
-        'test@chromium.org.spam.com')
+    commenter.email = 'test@chromium.org.spam.com'
+    res = self.spam_service.ClassifyComment('this is spam', commenter)
     self.assertEqual('spam', res['outputLabel'])
 
-    res = self.spam_service.ClassifyComment('this is spam',
-        'test.google.com@test.com')
+    commenter.email = 'test.google.com@test.com'
+    res = self.spam_service.ClassifyComment('this is spam', commenter)
     self.assertEqual('spam', res['outputLabel'])
 
-  def testClassifyComment_spamExempt(self):
-    self.spam_service._predict = 'unused function'
+  def testClassifyComment_Whitelisted(self):
+    self.spam_service._predict = lambda *args: {
+        'outputLabel': 'this should not be called'
+        }
 
     # Prevent missing service inits to fail the test.
     self.spam_service.prediction_service = True
 
-    res = self.spam_service.ClassifyComment('this is spam', 'test@google.com')
+    commenter = user_pb2.MakeUser(111L, email='test@google.com')
+    res = self.spam_service.ClassifyComment('this is spam', commenter)
     self.assertEqual('ham', res['outputLabel'])
 
-    res = self.spam_service.ClassifyComment('this is spam',
-        'test@chromium.org')
+    commenter.email = 'test@chromium.org'
+    res = self.spam_service.ClassifyComment('this is spam', commenter)
     self.assertEqual('ham', res['outputLabel'])
+
+  def testClassifyComment_IgnoreActionLimitsAndSpam(self):
+    self.spam_service._predict = lambda *args: {
+        'outputLabel': 'this should not be called'
+        }
+
+    # Prevent missing service inits to fail the test.
+    self.spam_service.prediction_service = True
+
+    commenter = user_pb2.MakeUser(111L, email='test@example.com')
+    commenter.ignore_action_limits = True
+    res = self.spam_service.ClassifyComment('this is spam', commenter)
+    self.assertEqual('ham', res['outputLabel'])
+

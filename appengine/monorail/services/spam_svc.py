@@ -280,13 +280,13 @@ class SpamService(object):
         id=settings.classifier_model_id,
         body=body).execute()
 
-  def ClassifyIssue(self, issue, firstComment, author_email):
+  def ClassifyIssue(self, issue, firstComment, reporter):
     """Classify an issue as either spam or ham.
 
     Args:
       issue: the Issue.
       firstComment: the first Comment on issue.
-      author_email: the email address of the Issue reporter.
+      reporter: User PB for the Issue reporter.
 
     Returns a JSON dict of classifier prediction results from
     the Cloud Prediction API.
@@ -296,9 +296,18 @@ class SpamService(object):
               'outputMulti': [{'label':'ham', 'score': '1.0'}],
               'failed_open': False}
 
-    if author_email is not None and author_email.endswith(
+    if reporter.email is not None and reporter.email.endswith(
         settings.spam_whitelisted_suffixes):
-      logging.info('%s excempted from spam filtering', author_email)
+      logging.info('%s whitelisted from spam filtering', reporter.email)
+      return result
+
+    if reporter.email is not None and reporter.email.endswith(
+        settings.spam_whitelisted_suffixes):
+      logging.info('%s whitelisted from spam filtering', reporter.email)
+      return result
+
+    if reporter.ignore_action_limits:
+      logging.info('%s trusted not to spam', reporter.email)
       return result
 
     if not self.prediction_service:
@@ -306,7 +315,7 @@ class SpamService(object):
       return result
 
     features = spam_helpers.GenerateFeatures(issue.summary,
-        firstComment.content, author_email, settings.spam_feature_hashes,
+        firstComment.content, reporter.email, settings.spam_feature_hashes,
         settings.spam_whitelisted_suffixes)
 
     remaining_retries = 3
@@ -329,11 +338,12 @@ class SpamService(object):
       result['failed_open'] = True
     return result
 
-  def ClassifyComment(self, comment_content, author_email):
+  def ClassifyComment(self, comment_content, commenter):
     """Classify a comment as either spam or ham.
 
     Args:
       comment: the comment text.
+      commenter: User PB for the user who authored the comment.
 
     Returns a JSON dict of classifier prediction results from
     the Cloud Prediction API.
@@ -343,9 +353,13 @@ class SpamService(object):
               'outputMulti': [{'label':'ham', 'score': '1.0'}],
               'failed_open': False}
 
-    if author_email is not None and author_email.endswith(
+    if commenter.email is not None and commenter.email.endswith(
         settings.spam_whitelisted_suffixes):
-      logging.info('%s excempted from spam filtering', author_email)
+      logging.info('%s whitelisted from spam filtering', commenter.email)
+      return result
+
+    if commenter.ignore_action_limits:
+      logging.info('%s trusted not to spam', commenter.email)
       return result
 
     if not self.prediction_service:
@@ -355,7 +369,7 @@ class SpamService(object):
       return result
 
     features = spam_helpers.GenerateFeatures('', comment_content,
-        author_email, settings.spam_feature_hashes,
+        commenter.email, settings.spam_feature_hashes,
         settings.spam_whitelisted_suffixes)
 
     remaining_retries = 3

@@ -15,6 +15,7 @@ import zlib
 _LINKIFY_SCHEMES = r'(https?://|ftp://|mailto:)'
 _IS_A_LINK_RE = re.compile(r'(%s)([^\s<]+)' % _LINKIFY_SCHEMES, re.UNICODE)
 
+
 def _ExtractUrls(text):
   matches = _IS_A_LINK_RE.findall(text)
   if not matches:
@@ -23,14 +24,18 @@ def _ExtractUrls(text):
   ret = [''.join(match[1:]).replace('\\r', '') for match in matches]
   return ret
 
+
 SKETCHY_EMAIL_RE = re.compile('[a-za-z]+[0-9]+\@.+')
+
 
 def _EmailIsSketchy(email, whitelisted_suffixes):
   if email.endswith(whitelisted_suffixes):
     return False
   return SKETCHY_EMAIL_RE.match(email) is not None
 
+
 DELIMITERS = ['\s', '\,', '\.', '\?', '!', '\:', '\(', '\)']
+
 
 def _HashFeatures(content, num_features):
   """
@@ -53,6 +58,7 @@ def _HashFeatures(content, num_features):
     features = [ f / total for f in features ]
 
   return features
+
 
 def GenerateFeatures(summary, description, author_email, num_hashes,
       whitelisted_email_suffixes):

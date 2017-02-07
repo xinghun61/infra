@@ -505,10 +505,8 @@ class IssueService(object):
         tracker_bizobj.GetStatus(issue), config):
       issue.closed_timestamp = timestamp
 
-    reporter_email = services.user.LookupUserEmail(cnxn, reporter_id)
-
-    classification = services.spam.ClassifyIssue(issue, comment, reporter_email)
-
+    reporter = services.user.GetUser(cnxn, reporter_id)
+    classification = services.spam.ClassifyIssue(issue, comment, reporter)
     label = classification['outputLabel']
     logging.info('issue/comment classification: %s' % classification)
     score = 0
@@ -1546,10 +1544,8 @@ class IssueService(object):
     # restriction label, owner, cc, or user-type custom field.
     self._config_service.InvalidateMemcache([issue], key_prefix='nonviewable:')
 
-    author_email = services.user.LookupUserEmail(cnxn, reporter_id)
-
-    classification = services.spam.ClassifyComment(comment, author_email)
-
+    author = services.user.GetUser(cnxn, reporter_id)
+    classification = services.spam.ClassifyComment(comment, author)
     label = classification['outputLabel']
     logging.info('comment classification: %s' % classification)
     score = 0

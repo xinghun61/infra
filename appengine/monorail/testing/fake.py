@@ -1517,12 +1517,12 @@ class SpamService(object):
         failed_open):
     return
 
-  def ClassifyComment(self, comment):
+  def ClassifyComment(self, comment, commenter):
     return {'outputLabel': 'ham',
             'outputMulti': [{'label': 'ham', 'score': '1.0'}],
             'failed_open': False}
 
-  def ClassifyIssue(self, issue, firstComment):
+  def ClassifyIssue(self, issue, firstComment, reporter):
     return {'outputLabel': 'ham',
             'outputMulti': [{'label': 'ham', 'score': '1.0'}],
             'failed_open': False}
