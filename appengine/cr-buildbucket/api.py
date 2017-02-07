@@ -245,14 +245,14 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def put(self, request):
     """Creates a new build."""
-    build = service.add(
+    build = service.add(service.BuildRequest(
       bucket=request.bucket,
       tags=request.tags,
       parameters=parse_json(request.parameters_json, 'parameters_json'),
       lease_expiration_date=parse_datetime(request.lease_expiration_ts),
       client_operation_id=request.client_operation_id,
       pubsub_callback=pubsub_callback_from_message(request.pubsub_callback),
-    )
+    ))
     return build_to_response_message(build, include_lease_key=True)
 
   ################################  PUT_BATCH  #################################
@@ -275,14 +275,14 @@ class BuildBucketApi(remote.Service):
   def put_batch(self, request):
     """Creates builds."""
     build_futures = [
-      service.add_async(
+      service.add_async(service.BuildRequest(
         bucket=put_req.bucket,
         tags=put_req.tags,
         parameters=parse_json(put_req.parameters_json, 'parameters_json'),
         lease_expiration_date=parse_datetime(put_req.lease_expiration_ts),
         client_operation_id=put_req.client_operation_id,
         pubsub_callback=pubsub_callback_from_message(put_req.pubsub_callback),
-      )
+      ))
       for put_req in request.builds
     ]
 

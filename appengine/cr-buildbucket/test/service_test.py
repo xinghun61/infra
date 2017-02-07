@@ -62,9 +62,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   #################################### ADD #####################################
 
+  def add(self, bucket, **request_fields):
+    return service.add(service.BuildRequest(bucket, **request_fields))
+
   def test_add(self):
     params = {'buildername': 'linux_rel'}
-    build = service.add(
+    build = self.add(
       bucket='chromium',
       parameters=params,
     )
@@ -75,12 +78,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(build.created_by, auth.get_current_identity())
 
   def test_add_with_client_operation_id(self):
-    build = service.add(
+    build = self.add(
       bucket='chromium',
       parameters={'builder_name': 'linux_rel'},
       client_operation_id='1',
     )
-    build2 = service.add(
+    build2 = self.add(
       bucket='chromium',
       parameters={'builder_name': 'linux_rel'},
       client_operation_id='1',
@@ -90,12 +93,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_add_with_bad_bucket_name(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.add(bucket='chromium as')
+      self.add(bucket='chromium as')
     with self.assertRaises(errors.InvalidInputError):
-      service.add(bucket='')
+      self.add(bucket='')
 
   def test_add_with_leasing(self):
-    build = service.add(
+    build = self.add(
       bucket='chromium',
       lease_expiration_date=utils.utcnow() + datetime.timedelta(seconds=10),
     )
@@ -106,11 +109,11 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add_with_auth_error(self):
     self.mock_cannot(acl.Action.ADD_BUILD)
     with self.assertRaises(auth.AuthorizationError):
-      service.add(self.test_build.bucket)
+      self.add(bucket=self.test_build.bucket)
 
   def test_add_with_bad_parameters(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.add('bucket', parameters=[])
+      self.add(bucket='bucket', parameters=[])
 
   def test_add_with_swarming_400(self):
     swarming.is_for_swarming_async.return_value = ndb.Future()
@@ -118,7 +121,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     swarming.create_task_async.side_effect = net.Error(
         '', status_code=400, response='bad request')
     with self.assertRaises(errors.InvalidInputError):
-      service.add(self.test_build.bucket)
+      self.add(bucket=self.test_build.bucket)
 
   def test_add_with_swarming_403(self):
     swarming.is_for_swarming_async.return_value = ndb.Future()
@@ -126,10 +129,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     swarming.create_task_async.side_effect = net.AuthError(
       '', status_code=403, response='access denied')
     with self.assertRaises(auth.AuthorizationError):
-      service.add(self.test_build.bucket)
+      self.add(bucket=self.test_build.bucket)
 
   def test_add_with_builder_name(self):
-    build = service.add(
+    build = self.add(
       bucket='chromium',
       parameters={'builder_name': 'linux_rel'},
       client_operation_id='1',
@@ -151,38 +154,41 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       service.validate_tags(['tag,value'])
 
+  def normalize_tags(self, tags, parameters):
+    req = service.BuildRequest(bucket='a', tags=tags, parameters=parameters)
+    return req.normalize().tags
+
   def test_add_builder_tag(self):
-    self.assertEqual(service.add_builder_tag([], {'builder_name': 'foo'}),
-                     ['builder:foo'])
+    self.assertEqual(
+      self.normalize_tags([], {'builder_name': 'foo'}), ['builder:foo'])
 
   def test_add_builder_tag_none(self):
-    self.assertEqual(service.add_builder_tag(None, {}), [])
+    self.assertEqual(self.normalize_tags(None, {}), [])
 
   def test_add_builder_tag_no_params(self):
-    self.assertEqual(service.add_builder_tag([], None), [])
+    self.assertEqual(self.normalize_tags([], None), [])
 
   def test_add_builder_tag_unspecified(self):
-    self.assertEqual(service.add_builder_tag([], {'foo': 'bar'}), [])
+    self.assertEqual(self.normalize_tags([], {'foo': 'bar'}), [])
 
   def test_add_builder_tag_multi(self):
-    tags = ['builder:foo', 'builder:foo']
-    self.assertEqual(service.add_builder_tag(tags, {'foo': 'bar'}), tags)
+    self.assertEqual(
+      self.normalize_tags(['builder:foo', 'builder:foo'], {'foo': 'bar'}),
+      ['builder:foo'])
 
   def test_add_builder_tag_different(self):
     tags = ['builder:foo', 'builder:bar']
     with self.assertRaises(errors.InvalidInputError):
-        service.add_builder_tag(tags, {'foo': 'bar'})
+        self.normalize_tags(tags, {'foo': 'bar'})
 
   def test_add_builder_tag_coincide(self):
     tags = ['builder:foo']
-    self.assertEqual(service.add_builder_tag(tags, {'builder_name': 'foo'}),
-                     tags)
+    self.assertEqual(self.normalize_tags(tags, {'builder_name': 'foo'}), tags)
 
   def test_add_builder_tag_conflict(self):
     tags = ['builder:foo']
     with self.assertRaises(errors.InvalidInputError):
-        service.add_builder_tag(tags, {'builder_name': 'bar'})
-
+        self.normalize_tags(tags, {'builder_name': 'bar'})
 
   ################################### RETRY ####################################
 
