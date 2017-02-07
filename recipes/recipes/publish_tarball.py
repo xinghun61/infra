@@ -15,6 +15,7 @@ DEPS = [
   'build/omahaproxy',
   'build/trigger',
   'depot_tools/bot_update',
+  'depot_tools/depot_tools',
   'depot_tools/gclient',
   'depot_tools/git',
   'recipe_engine/path',
@@ -194,6 +195,21 @@ def RunSteps(api):
       ['touch', api.path['checkout'].join(
           'chrome', 'test', 'data', 'webui', 'i18n_process_css_test.html')])
 
+  node_modules_sha_path = api.path['checkout'].join(
+      'third_party', 'node', 'node_modules.tar.gz.sha1')
+  if api.path.exists(node_modules_sha_path):
+    api.python(
+        'webui_node_modules',
+        api.depot_tools.download_from_google_storage_path,
+        [
+            '--no_resume',
+            '--extract',
+            '--no_auth',
+            '--bucket', 'chromium-nodejs',
+            '-s', node_modules_sha_path,
+        ]
+    )
+
   with api.step.defer_results():
     # Export full tarball.
     export_tarball(
@@ -230,7 +246,9 @@ def GenTests(api):
     api.test('basic') +
     api.properties.generic(version='38.0.2125.122') +
     api.platform('linux', 64) +
-    api.step_data('gsutil ls', stdout=api.raw_io.output(''))
+    api.step_data('gsutil ls', stdout=api.raw_io.output('')) +
+    api.path.exists(api.path['checkout'].join(
+        'third_party', 'node', 'node_modules.tar.gz.sha1'))
   )
 
   yield (

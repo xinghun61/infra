@@ -147,6 +147,21 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_PACKAGE_REPO[depot_tools]/download_from_google_storage.py",
+      "--no_resume",
+      "--extract",
+      "--no_auth",
+      "--bucket",
+      "chromium-nodejs",
+      "-s",
+      "[START_DIR]/src/third_party/node/node_modules.tar.gz.sha1"
+    ],
+    "name": "webui_node_modules"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_MODULE[build::chromium]/resources/export_tarball.py",
       "--remove-nonessential-files",
       "chromium-38.0.2125.122",
