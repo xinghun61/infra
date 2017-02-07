@@ -126,3 +126,18 @@ class TemporaryDirectoryTest(unittest.TestCase):
 
     # And everything should have been cleaned up afterward
     self.assertFalse(os.path.isdir(tempdir))
+
+
+class RmtreeTest(unittest.TestCase):
+  def test_rmtree_directory(self):
+    with infra_libs.temporary_directory() as tempdir:
+      infra_libs.rmtree(tempdir)
+      self.assertFalse(os.path.exists(tempdir))
+
+  def test_rmtree_file(self):
+    with infra_libs.temporary_directory() as tempdir:
+      tmpfile = os.path.join(tempdir, 'foo')
+      with open(tmpfile, 'w') as f:
+        f.write('asdfasdf')
+      infra_libs.rmtree(tmpfile)
+      self.assertFalse(os.path.exists(tmpfile))
