@@ -1,0 +1,11 @@
+{
+  "logs": [],
+  "urls": [
+    {
+      "kargs": {
+        "timeout": 60
+      },
+      "url": "bar"
+    }
+  ]
+}
