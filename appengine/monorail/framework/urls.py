@@ -67,6 +67,7 @@ RAMCACHE_CONSOLIDATE_CRON = '/_cron/ramCacheConsolidate'
 REAP_CRON = '/_cron/reap'
 SPAM_DATA_EXPORT_CRON = '/_cron/spamDataExport'
 LOAD_API_CLIENT_CONFIGS_CRON = '/_cron/loadApiClientConfigs'
+TRIM_VISITED_PAGES_CRON = '/_cron/trimVisitedPages'
 
 # URLs of User pages
 SAVED_QUERIES = '/queries'

@@ -1051,4 +1051,26 @@ ALTER TABLE Hotlist2Issue
 ALTER TABLE SpamVerdict CHANGE reason
   reason ENUM ("manual", "threshold", "classifier", "fail_open") NOT NULL;
 
+================================================================
+2017-02-1: Add two tables to keep track of hotlists and bugs
+that users have visited
 
+CREATE TABLE HotlistVisitHistory (
+  hotlist_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  viewed INT NOT NULL,
+
+  PRIMARY KEY (user_id, hotlist_id),
+  FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+CREATE TABLE IssueVisitHistory (
+  issue_id INT NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  viewed INT NOT NULL,
+
+  PRIMARY KEY (user_id, issue_id)
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;

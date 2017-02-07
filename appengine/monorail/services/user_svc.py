@@ -9,6 +9,7 @@ Business objects are described in user_pb2.py.
 """
 
 import logging
+import time
 
 import settings
 from framework import actionlimit
@@ -24,6 +25,7 @@ from services import caches
 USER_TABLE_NAME = 'User'
 ACTIONLIMIT_TABLE_NAME = 'ActionLimit'
 DISMISSEDCUES_TABLE_NAME = 'DismissedCues'
+HOTLISTVISITHISTORY_TABLE_NAME = 'HotlistVisitHistory'
 
 USER_COLS = [
     'user_id', 'email', 'is_site_admin', 'notify_issue_change',
@@ -36,6 +38,7 @@ ACTIONLIMIT_COLS = [
     'lifetime_count', 'lifetime_limit', 'period_soft_limit',
     'period_hard_limit']
 DISMISSEDCUES_COLS = ['user_id', 'cue']
+HOTLISTVISITHISTORY_COLS = ['hotlist_id', 'user_id', 'viewed']
 
 
 class UserTwoLevelCache(caches.AbstractTwoLevelCache):
@@ -155,6 +158,8 @@ class UserService(object):
     self.user_tbl = sql.SQLTableManager(USER_TABLE_NAME)
     self.actionlimit_tbl = sql.SQLTableManager(ACTIONLIMIT_TABLE_NAME)
     self.dismissedcues_tbl = sql.SQLTableManager(DISMISSEDCUES_TABLE_NAME)
+    self.hotlistvisithistory_tbl = sql.SQLTableManager(
+        HOTLISTVISITHISTORY_TABLE_NAME)
 
     # Like a dictionary {user_id: email}
     self.email_cache = cache_manager.MakeCache('user', max_size=50000)
@@ -443,7 +448,34 @@ class UserService(object):
     # Write the user settings to the database.
     self.UpdateUser(cnxn, user_id, user)
 
+  def GetRecentlyVisitedHotlists(self, cnxn, user_id):
+    recent_hotlist_rows = self.hotlistvisithistory_tbl.Select(
+        cnxn, cols=['hotlist_id'], user_id=[user_id],
+        order_by=[('viewed DESC')], limit=10)
+    return recent_hotlist_rows
 
+  def AddVisitedHotlist(self, cnxn, user_id, hotlist_id, commit=True):
+    self.hotlistvisithistory_tbl.Delete(
+        cnxn, hotlist_id=hotlist_id, user_id=user_id, commit=False)
+    self.hotlistvisithistory_tbl.InsertRows(
+        cnxn, HOTLISTVISITHISTORY_COLS,
+        [(hotlist_id, user_id, int(time.time()))],
+        commit=commit)
+
+  def TrimUserVisitedHotlists(self, cnxn, commit=True):
+    user_id_rows = self.hotlistvisithistory_tbl.Select(
+        cnxn, cols=['user_id'], group_by='user_id',
+        having=[('COUNT(*) > %s', [10])], limit=1000)
+    user_ids = list(set([row[0] for row in user_id_rows]))
+
+    for user_id in user_ids:
+       viewed_hotlist_rows = self.hotlistvisithistory_tbl.Select(
+          cnxn, cols=[], user_id=user_id, order_by=[('viewed DESC', [])])
+       if len(viewed_hotlist_rows) > 10:
+         cut_off_date = viewed_hotlist_rows[9][2]
+         self.hotlistvisithistory_tbl.Delete(
+             cnxn, user_id=user_id, where=[('viewed < %s', [cut_off_date])],
+             commit=commit)
 
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,

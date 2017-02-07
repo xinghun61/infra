@@ -26,3 +26,6 @@ cron:
 - description: fetch api clients from luci-config
   url: /_cron/loadApiClientConfigs
   schedule: every 30 minutes synchronized
+- description: deletes old visited hotlists
+  url: /_cron/trimVisitedPages
+  schedule: every monday 01:00

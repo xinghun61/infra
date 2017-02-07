@@ -267,6 +267,16 @@ CREATE TABLE Issue2Notify (
   FOREIGN KEY (issue_id) REFERENCES Issue(id)
 ) ENGINE=INNODB;
 
+CREATE TABLE IssueVisitHistory (
+  issue_id INT NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  viewed INT NOT NULL,
+
+  PRIMARY KEY (user_id, issue_id)
+  FOREIGN KEY (issue_id) REFERENCES Issue(id),
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
 
 CREATE TABLE IssueStar (
   issue_id INT NOT NULL,
@@ -734,6 +744,16 @@ CREATE TABLE HotlistStar (
 
   PRIMARY KEY (hotlist_id, user_id),
   INDEX (user_id),
+  FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
+  FOREIGN KEY (user_id) REFERENCES User(user_id)
+) ENGINE=INNODB;
+
+CREATE TABLE HotlistVisitHistory (
+  hotlist_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  viewed INT NOT NULL,
+
+  PRIMARY KEY (user_id, hotlist_id),
   FOREIGN KEY (hotlist_id) REFERENCES Hotlist(id),
   FOREIGN KEY (user_id) REFERENCES User(user_id)
 ) ENGINE=INNODB;

@@ -32,6 +32,7 @@ from framework import banned
 from framework import clientmon
 from framework import csp_report
 from framework import excessiveactivity
+from framework import trimvisitedpages
 from framework import framework_bizobj
 from framework import reap
 from framework import registerpages_helpers
@@ -283,7 +284,7 @@ class ServletRegistry(object):
         urls.CSP_REPORT: csp_report.CSPReportPage,
         urls.TOKEN_REFRESH: tokenrefresh.TokenRefresh,
 
-        # These are only shown to users iff specific conditions are met.
+        # These are only shown to users if specific conditions are met.
         urls.NONPROJECT_COLLISION: artifactcollision.ArtifactCollision,
         urls.EXCESSIVE_ACTIVITY: excessiveactivity.ExcessiveActivity,
         urls.BANNED: banned.Banned,
@@ -296,6 +297,8 @@ class ServletRegistry(object):
         urls.LOAD_API_CLIENT_CONFIGS_CRON: (
             client_config_svc.LoadApiClientConfigs),
         urls.CLIENT_MON: clientmon.ClientMonitor,
+        urls.TRIM_VISITED_PAGES_CRON:
+        trimvisitedpages.TrimVisitedPages
         })
 
     self._SetupProjectServlets({
