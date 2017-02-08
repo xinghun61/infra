@@ -40,6 +40,9 @@ def GetOccurrences(names):
   """
   occurrences = {}
   for index, name in enumerate(names or []):
+    if not name:
+      continue
+
     if name not in occurrences:
       occurrences[name] = Occurrence(name, [index])
     else:
@@ -100,12 +103,7 @@ def RankByOccurrence(names, top_n, rank_function=None):
   if not rank_function:  # pragma: no cover.
     rank_function = DefaultOccurrenceRanking
 
-  # TODO(wrengr): can't we do this sorting/filtering/truncation in one pass?
+  # TODO(wrengr): generalize the filter function into another parameter.
   occurrences = sorted(GetOccurrences(names).values(), key=rank_function)
 
-  # Filter out unnamed classes. Alas, we can't sort these out before
-  # constructing the concordance, because then our indices would be off.
-  # TODO(wrengr): generalize the filter function into another parameter.
-  classes = [occurrence.name for occurrence in occurrences if occurrence.name]
-
-  return classes[:top_n]
+  return [occurrence.name for occurrence in occurrences[:top_n]]

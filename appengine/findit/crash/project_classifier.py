@@ -47,15 +47,11 @@ class ProjectClassifier(object):
     rank_function = None
     if crash_stack.language_type == LanguageType.JAVA:
       def RankFunctionForJava(occurrence):
-        # TODO(wrengr): why are we weighting by the length, instead of
-        # the negative length as we do in the DefaultOccurrenceRanging?
-        weight = len(occurrence)
-        project_name = occurrence.name
-        if 'chromium' in project_name:
+        if 'chromium' in occurrence.name:
           index = 0
         else:
-          index = self.non_chromium_project_rank_priority[project_name]
-        return (weight, index)
+          index = self.non_chromium_project_rank_priority[occurrence.name]
+        return -len(occurrence), index
 
       rank_function = RankFunctionForJava
 

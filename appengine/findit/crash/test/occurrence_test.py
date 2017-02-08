@@ -19,6 +19,9 @@ class DummyClassifier(object):
     if frame.dep_path == 'src/':
       return 'class_1'
 
+    if frame.dep_path == 'dummy/':
+      return None
+
     return 'class_2'
 
   def GetClassFromSuspect(self, _result):  # pragma: no cover.
@@ -56,7 +59,8 @@ class ClassifierTest(PredatorTestCase):
     crash_stack = CallStack(0, frame_list=[
         StackFrame(0, 'src/', 'a::c(p* &d)', 'f0.cc', 'src/f0.cc', [177]),
         StackFrame(1, 'src/', 'a::d(a* c)', 'f1.cc', 'src/f1.cc', [227]),
-        StackFrame(2, 'src/dummy', 'a::e(int)', 'f2.cc', 'src/f2.cc', [87])])
+        StackFrame(2, 'src/dummy', 'a::e(int)', 'f2.cc', 'src/f2.cc', [87]),
+        StackFrame(3, 'dummy/', 'a::g(int)', 'f3.cc', 'src/f3.cc', [87])])
 
     self.assertEqual(dummy_classifier.Classify([], crash_stack), 'class_1')
 

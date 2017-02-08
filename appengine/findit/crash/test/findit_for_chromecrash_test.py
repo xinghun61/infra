@@ -10,7 +10,7 @@ from crash import chromecrash_parser
 from crash import detect_regression_range
 from crash import findit
 from crash import findit_for_chromecrash
-from crash.changelist_classifier import ChangelistClassifier
+from crash.loglinear.changelist_classifier import LogLinearChangelistClassifier
 from crash.chromecrash_parser import ChromeCrashParser
 from crash.component_classifier import ComponentClassifier
 from crash.crash_report import CrashReport
@@ -201,9 +201,8 @@ class FinditForFracasTest(PredatorTestCase):
     })
 
     dummy_suspect = Suspect(self.GetDummyChangeLog(), 'src/')
-    self.mock(ChangelistClassifier, '__call__',
-        lambda _self, report:
-            [dummy_suspect] if report.regression_range else [])
+    self.mock(LogLinearChangelistClassifier, '__call__',
+        lambda _, report: [dummy_suspect] if report.regression_range else [])
 
     self.mock(ComponentClassifier, 'ClassifySuspects', lambda *_: [])
     self.mock(ComponentClassifier, 'ClassifyCallStack', lambda *_: [])
