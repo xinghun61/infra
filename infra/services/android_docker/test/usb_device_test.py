@@ -228,14 +228,18 @@ class TestGetPhysicalPorts(TestDevice):
     for i in range(0, 2):
       devices.append(usb_device.USBDevice(self.libusb_devices[i]))
 
-    self.assertRaises(Exception, usb_device.assign_physical_ports, devices)
+    usb_device.assign_physical_ports(devices)
+    for d in devices:
+      self.assertEquals(d.physical_port, None)
 
   def test_unexpected_hub_list(self):
     # Give the 7th device a crazy port list.
     self.libusb_devices[6].port_list = [1, 2, 4, 4, 1]
     devices = [usb_device.USBDevice(d) for d in self.libusb_devices]
 
-    self.assertRaises(Exception, usb_device.assign_physical_ports, devices)
+    usb_device.assign_physical_ports(devices)
+    for d in devices:
+      self.assertEquals(d.physical_port, None)
 
   def test_duplicate_physical_ports(self):
     # Give the 1st and 2nd devices the same port list.
@@ -243,4 +247,6 @@ class TestGetPhysicalPorts(TestDevice):
     self.libusb_devices[1].port_list = [1, 2, 1]
     devices = [usb_device.USBDevice(d) for d in self.libusb_devices]
 
-    self.assertRaises(Exception, usb_device.assign_physical_ports, devices)
+    usb_device.assign_physical_ports(devices)
+    for d in devices:
+      self.assertEquals(d.physical_port, None)

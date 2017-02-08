@@ -41,7 +41,10 @@ def get_container_name(device):
 def get_container_hostname(device):
   """Maps a device to its container hostname."""
   this_host = socket.gethostname()
-  return '%s--device%d' % (this_host, device.physical_port)
+  if device.physical_port is not None:
+    return '%s--device%d' % (this_host, device.physical_port)
+  else:
+    return '%s--%s' % (this_host, device.serial)
 
 
 class DockerClient(object):

@@ -41,11 +41,7 @@ def is_android_device(device):
 def get_android_devices(filter_devices):
   ctx = usb1.USBContext()
   usb_devices = [USBDevice(d) for d in ctx.getDeviceList(skip_on_error=True)]
-  android_devices = []
-  for d in usb_devices:
-    if is_android_device(d):
-      if not filter_devices or d.serial in filter_devices:
-        android_devices.append(d)
+  android_devices = [d for d in usb_devices if is_android_device(d)]
 
   if not android_devices:
     logging.error('Unable to find devices: %s', filter_devices or 'all')
@@ -54,6 +50,11 @@ def get_android_devices(filter_devices):
   # only be done once all devices have been discovered.
   if android_devices:
     assign_physical_ports(android_devices)
+
+  # Filter out the requested devices only after the physical ports have been
+  # assigned.
+  if filter_devices:
+    android_devices = [d for d in android_devices if d.serial in filter_devices]
 
   return android_devices
 
@@ -94,14 +95,18 @@ def assign_physical_ports(devices):
       else:
         d.physical_port = d.port_list[-1] + 3
   else:
-    raise Exception(
-        'Unable to assign physical ports based on port lists: '
-        '%s' % str(port_lists))
+    logging.error(
+        'Unable to assign physical ports based on port lists: %s',
+        str(port_lists))
+    return
 
   # Ensure all physical ports that were assigned are unique.
   if len(set(d.physical_port for d in devices)) < len(devices):
-    raise Exception('Multiple devices were assigned the same physical port: %s',
-                    str(port_lists))
+    logging.error(
+        'Multiple devices were assigned the same physical port: %s',
+        str(port_lists))
+    for d in devices:
+      d.physical_port = None
 
 
 class USBDevice(object):

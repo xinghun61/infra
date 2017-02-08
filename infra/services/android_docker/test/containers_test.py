@@ -125,10 +125,17 @@ class TestGetNames(unittest.TestCase):
     self.assertEqual(container_name, 'android_serial123')
 
   @mock.patch('socket.gethostname')
-  def test_container_hostname(self, mock_gethostname):
+  def test_container_hostname_with_port(self, mock_gethostname):
     mock_gethostname.return_value = 'build123-a4'
     container_hostname = containers.get_container_hostname(self.device)
     self.assertEqual(container_hostname, 'build123-a4--device1')
+
+  @mock.patch('socket.gethostname')
+  def test_container_hostname_with_serial(self, mock_gethostname):
+    mock_gethostname.return_value = 'build123-a4'
+    self.device.physical_port = None
+    container_hostname = containers.get_container_hostname(self.device)
+    self.assertEqual(container_hostname, 'build123-a4--serial123')
 
 
 class TestDockerClient(unittest.TestCase):
