@@ -1,3 +1,28 @@
+# Release Notes sheriff-o-matic 2017-02-07
+
+- 5 commits, 2 bugs affected since 1955610 (2017-02-01T00:21:28Z)
+- 3 Authors:
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+  - martiniss@google.com
+
+## Changes in this release
+
+- [SoM: Inline JavaScript when vulcanizing.](https://chromium-review.googlesource.com/437659) (zhangtiff@google.com)
+- [[som] automatically diff cron and alerts-dispatcher alerts json.](https://chromium-review.googlesource.com/435511) (seanmccullough@chromium.org)
+- [[som] don't check for chromeos master restarts](https://chromium-review.googlesource.com/435504) (seanmccullough@chromium.org)
+- [SoM: Fix failing som-drawer test.](https://chromium-review.googlesource.com/435444) (zhangtiff@google.com)
+- [SOM: New release](https://chromium-review.googlesource.com/435422) (martiniss@google.com)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/686154](https://crbug.com/686154)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/674205](https://crbug.com/674205)
+
+
 # Release Notes sheriff-o-matic 2017-01-31
 
 - 10 commits, 9 bugs affected since 7886237 (2017-01-25T00:23:35Z)
@@ -23,7 +48,7 @@
 ## Bugs updated, by author
 - davidriley@chromium.org:
   -  [https://crbug.com/639901](https://crbug.com/639901)
-  
+
 - zhangtiff@google.com:
   -  [https://crbug.com/637006](https://crbug.com/637006)
   -  [https://crbug.com/658781](https://crbug.com/658781)
@@ -100,7 +125,7 @@
 ## Bugs updated, by author
 - seanmccullough@chromium.org:
   -  [https://crbug.com/675688](https://crbug.com/675688)
-  
+
 - zhangtiff@google.com:
   -  [https://crbug.com/427715](https://crbug.com/427715)
   -  [https://crbug.com/658781](https://crbug.com/658781)
@@ -140,7 +165,7 @@
 
 - zhangtiff@google.com:
   -  [https://crbug.com/673969](https://crbug.com/673969)
-  -  [https://crbug.com/674205](https://crbug.com/674205) 
+  -  [https://crbug.com/674205](https://crbug.com/674205)
 
 # Release Notes sheriff-o-matic 2016-12-13
 
