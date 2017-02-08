@@ -251,6 +251,25 @@ class SpamServiceTest(unittest.TestCase):
     self.assertEqual(0.9, res[0].classifier_confidence)
     self.assertEqual("2015-12-10 11:06:24", res[0].verdict_time)
 
+  def testIsExempt_RegularUser(self):
+    author = user_pb2.MakeUser(111L, email='test@example.com')
+    self.assertFalse(self.spam_service._IsExempt(author, False))
+    author = user_pb2.MakeUser(111L, email='test@chromium.org.example.com')
+    self.assertFalse(self.spam_service._IsExempt(author, False))
+
+  def testIsExempt_ProjectMember(self):
+    author = user_pb2.MakeUser(111L, email='test@example.com')
+    self.assertTrue(self.spam_service._IsExempt(author, True))
+
+  def testIsExempt_WhitelistedDomain(self):
+    author = user_pb2.MakeUser(111L, email='test@google.com')
+    self.assertTrue(self.spam_service._IsExempt(author, False))
+
+  def testIsExempt_TrustedNotToSpam(self):
+    author = user_pb2.MakeUser(111L, email='test@example.com')
+    author.ignore_action_limits = True
+    self.assertTrue(self.spam_service._IsExempt(author, False))
+
   def testClassifyIssue_spam(self):
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, reporter_id=111L, owner_id=456,
@@ -264,15 +283,15 @@ class SpamServiceTest(unittest.TestCase):
     comment_pb = tracker_pb2.IssueComment()
     comment_pb.content = "this is spam"
     reporter = user_pb2.MakeUser(111L, email='test@test.com')
-    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter, False)
     self.assertEqual('spam', res['outputLabel'])
 
     reporter.email = 'test@chromium.org.spam.com'
-    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter, False)
     self.assertEqual('spam', res['outputLabel'])
 
     reporter.email = 'test.google.com@test.com'
-    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter, False)
     self.assertEqual('spam', res['outputLabel'])
 
   def testClassifyIssue_Whitelisted(self):
@@ -289,10 +308,10 @@ class SpamServiceTest(unittest.TestCase):
     comment_pb = tracker_pb2.IssueComment()
     comment_pb.content = "this is spam"
     reporter = user_pb2.MakeUser(111L, email='test@google.com')
-    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter, False)
     self.assertEqual('ham', res['outputLabel'])
     reporter.email = 'test@chromium.org'
-    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter, False)
     self.assertEqual('ham', res['outputLabel'])
 
   def testClassifyIssue_IgnoreActionLimitsAndSpam(self):
@@ -310,7 +329,7 @@ class SpamServiceTest(unittest.TestCase):
     comment_pb.content = "this is spam"
     reporter = user_pb2.MakeUser(111L, email='test@example.com')
     reporter.ignore_action_limits = True
-    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter)
+    res = self.spam_service.ClassifyIssue(issue, comment_pb, reporter, False)
     self.assertEqual('ham', res['outputLabel'])
 
   def testClassifyComment_spam(self):
@@ -321,15 +340,15 @@ class SpamServiceTest(unittest.TestCase):
     self.spam_service.prediction_service = True
 
     commenter = user_pb2.MakeUser(111L, email='test@test.com')
-    res = self.spam_service.ClassifyComment('this is spam', commenter)
+    res = self.spam_service.ClassifyComment('this is spam', commenter, False)
     self.assertEqual('spam', res['outputLabel'])
 
     commenter.email = 'test@chromium.org.spam.com'
-    res = self.spam_service.ClassifyComment('this is spam', commenter)
+    res = self.spam_service.ClassifyComment('this is spam', commenter, False)
     self.assertEqual('spam', res['outputLabel'])
 
     commenter.email = 'test.google.com@test.com'
-    res = self.spam_service.ClassifyComment('this is spam', commenter)
+    res = self.spam_service.ClassifyComment('this is spam', commenter, False)
     self.assertEqual('spam', res['outputLabel'])
 
   def testClassifyComment_Whitelisted(self):
@@ -341,11 +360,11 @@ class SpamServiceTest(unittest.TestCase):
     self.spam_service.prediction_service = True
 
     commenter = user_pb2.MakeUser(111L, email='test@google.com')
-    res = self.spam_service.ClassifyComment('this is spam', commenter)
+    res = self.spam_service.ClassifyComment('this is spam', commenter, False)
     self.assertEqual('ham', res['outputLabel'])
 
     commenter.email = 'test@chromium.org'
-    res = self.spam_service.ClassifyComment('this is spam', commenter)
+    res = self.spam_service.ClassifyComment('this is spam', commenter, False)
     self.assertEqual('ham', res['outputLabel'])
 
   def testClassifyComment_IgnoreActionLimitsAndSpam(self):
@@ -358,6 +377,6 @@ class SpamServiceTest(unittest.TestCase):
 
     commenter = user_pb2.MakeUser(111L, email='test@example.com')
     commenter.ignore_action_limits = True
-    res = self.spam_service.ClassifyComment('this is spam', commenter)
+    res = self.spam_service.ClassifyComment('this is spam', commenter, False)
     self.assertEqual('ham', res['outputLabel'])
 

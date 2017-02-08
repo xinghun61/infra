@@ -280,13 +280,31 @@ class SpamService(object):
         id=settings.classifier_model_id,
         body=body).execute()
 
-  def ClassifyIssue(self, issue, firstComment, reporter):
+  def _IsExempt(self, author, is_project_member):
+    """Return True if the user is exempt from spam checking."""
+    if author.email is not None and author.email.endswith(
+        settings.spam_whitelisted_suffixes):
+      logging.info('%s whitelisted from spam filtering', author.email)
+      return True
+
+    if author.ignore_action_limits:
+      logging.info('%s trusted not to spam', author.email)
+      return True
+
+    if is_project_member:
+      logging.info('%s is a project member, assuming ham', author.email)
+      return True
+
+    return False
+
+  def ClassifyIssue(self, issue, firstComment, reporter, is_project_member):
     """Classify an issue as either spam or ham.
 
     Args:
       issue: the Issue.
       firstComment: the first Comment on issue.
       reporter: User PB for the Issue reporter.
+      is_project_member: True if reporter is a member of issue's project.
 
     Returns a JSON dict of classifier prediction results from
     the Cloud Prediction API.
@@ -296,18 +314,7 @@ class SpamService(object):
               'outputMulti': [{'label':'ham', 'score': '1.0'}],
               'failed_open': False}
 
-    if reporter.email is not None and reporter.email.endswith(
-        settings.spam_whitelisted_suffixes):
-      logging.info('%s whitelisted from spam filtering', reporter.email)
-      return result
-
-    if reporter.email is not None and reporter.email.endswith(
-        settings.spam_whitelisted_suffixes):
-      logging.info('%s whitelisted from spam filtering', reporter.email)
-      return result
-
-    if reporter.ignore_action_limits:
-      logging.info('%s trusted not to spam', reporter.email)
+    if self._IsExempt(reporter, is_project_member):
       return result
 
     if not self.prediction_service:
@@ -338,7 +345,7 @@ class SpamService(object):
       result['failed_open'] = True
     return result
 
-  def ClassifyComment(self, comment_content, commenter):
+  def ClassifyComment(self, comment_content, commenter, is_project_member=True):
     """Classify a comment as either spam or ham.
 
     Args:
@@ -353,13 +360,7 @@ class SpamService(object):
               'outputMulti': [{'label':'ham', 'score': '1.0'}],
               'failed_open': False}
 
-    if commenter.email is not None and commenter.email.endswith(
-        settings.spam_whitelisted_suffixes):
-      logging.info('%s whitelisted from spam filtering', commenter.email)
-      return result
-
-    if commenter.ignore_action_limits:
-      logging.info('%s trusted not to spam', commenter.email)
+    if self._IsExempt(commenter, is_project_member):
       return result
 
     if not self.prediction_service:

@@ -506,7 +506,11 @@ class IssueService(object):
       issue.closed_timestamp = timestamp
 
     reporter = services.user.GetUser(cnxn, reporter_id)
-    classification = services.spam.ClassifyIssue(issue, comment, reporter)
+    project = services.project.GetProject(cnxn, project_id)
+    effective_ids = services.usergroup.LookupMemberships(cnxn, reporter_id)
+    is_project_member = framework_bizobj.UserIsInProject(project, effective_ids)
+    classification = services.spam.ClassifyIssue(
+        issue, comment, reporter, is_project_member)
     label = classification['outputLabel']
     logging.info('issue/comment classification: %s' % classification)
     score = 0
@@ -521,8 +525,10 @@ class IssueService(object):
       # This can be fixed later if a human declares it to be ham.
       issue.local_id = self.AllocateNextSpamLocalID(cnxn, project_id)
       issue.is_spam = True
+      logging.info('classified new issue as spam')
     else:
       issue.local_id = self.AllocateNextLocalID(cnxn, project_id)
+      logging.info('classified new issue as ham')
 
     issue_id = self.InsertIssue(cnxn, issue)
     comment.issue_id = issue_id
@@ -1545,7 +1551,11 @@ class IssueService(object):
     self._config_service.InvalidateMemcache([issue], key_prefix='nonviewable:')
 
     author = services.user.GetUser(cnxn, reporter_id)
-    classification = services.spam.ClassifyComment(comment, author)
+    project = services.project.GetProject(cnxn, project_id)
+    effective_ids = services.usergroup.LookupMemberships(cnxn, reporter_id)
+    is_project_member = framework_bizobj.UserIsInProject(project, effective_ids)
+    classification = services.spam.ClassifyComment(
+        comment, author, is_project_member)
     label = classification['outputLabel']
     logging.info('comment classification: %s' % classification)
     score = 0
@@ -1554,8 +1564,10 @@ class IssueService(object):
       if output['label'] == label:
         score = float(output['score'])
     if label == 'spam' and score > settings.classifier_spam_thresh:
-       logging.info('spam comment: %s' % comment)
+       logging.info('classified comment as spam: %s' % comment)
        is_spam = True
+    else:
+      logging.info('classified comment as ham')
 
     if amendments or (comment and comment.strip()) or attachments:
       logging.info('amendments = %r', amendments)
