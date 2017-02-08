@@ -150,7 +150,7 @@ class Container(object):
 
   def get_swarming_bot_pid(self):
     output = self._container.exec_run(
-        'su chrome-bot -c "lsof -t /b/swarm_slave/swarming.lck"').strip()
+        'su chrome-bot -c "lsof -t /b/swarming/swarming.lck"').strip()
     if 'rpc error:' in output:
       logging.error(
           'Unable to get bot pid of %s: %s', self._container.name, output)
