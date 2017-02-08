@@ -38,7 +38,7 @@ class EventMonUploader(webapp2.RequestHandler):
     builder = payload.get('builder')
     build_number = payload.get('build_number')
     test_type = payload.get('test_type')
-    if not master or not builder or not build_number or not test_type:
+    if not master or not builder or build_number is None or not test_type:
       logging.error(
           'Missing required parameters: (master=%s, builder=%s, '
           'build_number=%s, test_type=%s)' %
