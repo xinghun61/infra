@@ -7,6 +7,7 @@
 
 from features import hotlist_helpers
 from framework import jsonfeed
+from framework import permissions
 
 
 class HotlistsJsonFeed(jsonfeed.JsonFeed):
@@ -51,7 +52,9 @@ class HotlistsJsonFeed(jsonfeed.JsonFeed):
                      h in user_hotlists if mr.auth.user_id in h.editor_ids],
         'starred_hotlists': [(h.name, hotlist_helpers.GetURLOfHotlist(
             mr.cnxn, h, self.services.user)) for
-                             h in user_starred_hotlists.values()],
+                             h in user_starred_hotlists.values() if
+                             permissions.CanViewHotlist(
+                                 mr.auth.effective_ids, h)],
         'user': mr.auth.email
         }
     return hotlists_dict
