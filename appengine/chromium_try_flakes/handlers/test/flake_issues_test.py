@@ -935,8 +935,8 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
 
     urlfetch_mock.assert_has_calls([
       # Verify that we've used correct URL to access buildbot JSON endpoint.
-      mock.call(
-        'http://build.chromium.org/p/abc/json/builders/test-builder/builds/100')
+      mock.call('https://build.chromium.org/p/abc/json/builders/test-builder/'
+                'builds/100')
     ])
 
   def test_handles_incorrect_parameters(self):
@@ -1004,19 +1004,19 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     urlfetch_mock.assert_has_calls([
       # Verify that we've used correct URL to access buildbot JSON endpoint.
       mock.call(
-        'http://build.chromium.org/p/test.master/json/builders/test-builder/'
+        'https://build.chromium.org/p/test.master/json/builders/test-builder/'
         'builds/100'),
       # Verify that we've used correct URLs to retrieve test-results GTest JSON.
       mock.call(
-        'http://test-results.appspot.com/testfile?builder=test-builder&'
+        'https://test-results.appspot.com/testfile?builder=test-builder&'
         'name=full_results.json&master=test.master&testtype=foo1&'
         'buildnumber=100'),
       mock.call(
-        'http://test-results.appspot.com/testfile?builder=test-builder&'
+        'https://test-results.appspot.com/testfile?builder=test-builder&'
         'name=full_results.json&master=test.master&testtype=Patch&'
         'buildnumber=100'),
       mock.call(
-        'http://test-results.appspot.com/testfile?builder=test-builder&'
+        'https://test-results.appspot.com/testfile?builder=test-builder&'
         'name=full_results.json&master=test.master&'
         'testtype=foo8%20%28with%20patch%29&buildnumber=100')])
 

@@ -39,7 +39,7 @@ class BuildRun(ndb.Model):  # pragma: no cover
 
   def getURL(self):
     parent = self.key.parent().get()
-    return ('http://build.chromium.org/p/' +
+    return ('https://build.chromium.org/p/' +
             self.removeMasterPrefix(parent.master) + '/builders/' +
             parent.builder + '/builds/' + str(self.buildnumber))
 

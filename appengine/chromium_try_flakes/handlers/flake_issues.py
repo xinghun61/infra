@@ -75,7 +75,7 @@ REOPENED_DESCRIPTION_TEMPLATE = (
 FLAKES_URL_TEMPLATE = (
     'https://chromium-try-flakes.appspot.com/all_flake_occurrences?key=%s')
 TEST_RESULTS_URL_TEMPLATE = (
-    'http://test-results.appspot.com/testfile?builder=%(buildername)s&name='
+    'https://test-results.appspot.com/testfile?builder=%(buildername)s&name='
     'full_results.json&master=%(mastername)s&testtype=%(stepname)s&buildnumber='
     '%(buildnumber)s')
 NUM_DAYS_IGNORED_IN_QUEUE_FOR_STALENESS = 7
@@ -569,9 +569,9 @@ class CreateFlakyRun(webapp2.RequestHandler):
     return passed, failed, skipped
 
   # see examples:
-  # compile http://build.chromium.org/p/tryserver.chromium.mac/json/builders/
+  # compile https://build.chromium.org/p/tryserver.chromium.mac/json/builders/
   #         mac_chromium_compile_dbg/builds/11167?as_text=1
-  # gtest http://build.chromium.org/p/tryserver.chromium.win/json/builders/
+  # gtest https://build.chromium.org/p/tryserver.chromium.win/json/builders/
   #       win_chromium_x64_rel_swarming/builds/4357?as_text=1
   # TODO(jam): get specific problem with compile so we can use that as name
   @classmethod
@@ -652,7 +652,7 @@ class CreateFlakyRun(webapp2.RequestHandler):
     # buildbot to tools like flakiness dashboard (test-results.appspot.com),
     # which uses a standartized JSON format.
     master = BuildRun.removeMasterPrefix(patchset_builder_runs.master)
-    url = ('http://build.chromium.org/p/' + master +
+    url = ('https://build.chromium.org/p/' + master +
            '/json/builders/' + patchset_builder_runs.builder +'/builds/' +
            str(failure_run.buildnumber))
     urlfetch.set_default_fetch_deadline(60)

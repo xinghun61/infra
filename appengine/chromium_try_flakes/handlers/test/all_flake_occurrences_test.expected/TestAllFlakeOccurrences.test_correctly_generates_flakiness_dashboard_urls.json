@@ -1,10 +1,10 @@
 [
   {
     "step_name": "foo",
-    "url": "http://test-results.appspot.com/dashboards/flakiness_dashboard.html#testType=foo&tests=foo.bar"
+    "url": "https://test-results.appspot.com/dashboards/flakiness_dashboard.html#testType=foo&tests=foo.bar"
   },
   {
     "step_name": "bar",
-    "url": "http://test-results.appspot.com/dashboards/flakiness_dashboard.html#testType=bar&tests=foo.bar"
+    "url": "https://test-results.appspot.com/dashboards/flakiness_dashboard.html#testType=bar&tests=foo.bar"
   }
 ]

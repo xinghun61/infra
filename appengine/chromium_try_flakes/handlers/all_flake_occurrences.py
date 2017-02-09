@@ -22,7 +22,7 @@ from test_results.util import normalize_test_type
 MAX_GROUP_DISTANCE = datetime.timedelta(days=3)
 MAX_OCCURRENCES_DEFAULT = 50
 FLAKINESS_DASHBOARD_URL = (
-  'http://test-results.appspot.com/dashboards/flakiness_dashboard.html#'
+  'https://test-results.appspot.com/dashboards/flakiness_dashboard.html#'
   'testType=%(normalized_step_name)s&tests=%(test_name)s')
 
 

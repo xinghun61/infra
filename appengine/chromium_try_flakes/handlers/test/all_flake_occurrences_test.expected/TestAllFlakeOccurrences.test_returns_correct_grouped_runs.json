@@ -6,7 +6,7 @@
     "milo_url": "https://luci-milo.appspot.com/buildbot/tryserver.test/test-builder/1",
     "patchset_url": "https://codereview.chromium.org/123456/#ps1",
     "time_finished": "datetime.datetime(2016, 8, 6, 10, 20, 30)",
-    "url": "http://build.chromium.org/p/tryserver.test/builders/test-builder/builds/1"
+    "url": "https://build.chromium.org/p/tryserver.test/builders/test-builder/builds/1"
   },
   {
     "builder": "test-builder",
@@ -15,7 +15,7 @@
     "milo_url": "https://luci-milo.appspot.com/buildbot/tryserver.test/test-builder/3",
     "patchset_url": "https://codereview.chromium.org/123456/#ps1",
     "time_finished": "datetime.datetime(2016, 8, 6, 10, 20, 30)",
-    "url": "http://build.chromium.org/p/tryserver.test/builders/test-builder/builds/3"
+    "url": "https://build.chromium.org/p/tryserver.test/builders/test-builder/builds/3"
   },
   {
     "builder": "test-builder",
@@ -24,6 +24,6 @@
     "milo_url": "https://luci-milo.appspot.com/buildbot/tryserver.test/test-builder/0",
     "patchset_url": "https://codereview.chromium.org/123456/#ps1",
     "time_finished": "datetime.datetime(2016, 8, 1, 10, 20, 30)",
-    "url": "http://build.chromium.org/p/tryserver.test/builders/test-builder/builds/0"
+    "url": "https://build.chromium.org/p/tryserver.test/builders/test-builder/builds/0"
   }
 ]
