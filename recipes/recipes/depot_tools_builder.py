@@ -135,5 +135,5 @@ def GenTests(api):
   yield (
     api.test('identical_normal_bleeding_edge_git_versions') +
     api.properties(path_config='kitchen', revision='deadbeef') +
-    api.step_data('read git version', api.raw_io.output('2.2.3'))
+    api.step_data('read git version', api.raw_io.output_text('2.2.3'))
   )
