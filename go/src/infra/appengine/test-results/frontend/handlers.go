@@ -36,7 +36,7 @@ const (
 func init() {
 	r := router.New()
 
-	baseMW := gaemiddleware.BaseProd()
+	baseMW := gaemiddleware.BaseProd().Extend(reportNonHTTPSRequests)
 	getMW := baseMW.Extend(templatesMiddleware())
 	authMW := baseMW.Extend(
 		// Declare what auth methods are supported.
@@ -88,6 +88,14 @@ func templatesMiddleware() router.Middleware {
 			},
 		},
 	})
+}
+
+func reportNonHTTPSRequests(c *router.Context, next router.Handler) {
+	if c.Request.TLS == nil {
+		logging.Debugf(c.Context, "HTTP request to %s", c.Request.URL)
+	}
+
+	next(c)
 }
 
 // deleteKeysHandler is task queue handler for deleting keys.
