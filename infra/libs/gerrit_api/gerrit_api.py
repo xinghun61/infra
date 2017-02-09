@@ -493,6 +493,27 @@ class Gerrit(object):
       raise UnexpectedResponseException(code, body)
     return body
 
+  def get_related_changes(self, change_id, revision_id):
+    """Returns related changes.
+
+    Documentation:
+    https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#get-related-changes
+
+
+    Args:
+      change_id: (str) The id of the change list.
+      current_revision_id: (str) The id of the revision (patchset).
+    """
+    code, body = self._request(
+        method='GET',
+        request_path='/changes/%s/revisions/%s/related' % (
+            urllib.quote(change_id, safe='~'),
+            urllib.quote(revision_id, safe='')))
+    if code != 200:
+      raise UnexpectedResponseException(code, body)
+    return body
+
+
 def _is_response_cached(method, full_url):
   """Returns True if response to GET request is in requests_cache.
 

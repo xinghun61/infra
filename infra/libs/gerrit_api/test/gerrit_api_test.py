@@ -563,3 +563,21 @@ class GerritAgentTestCase(unittest.TestCase):
     mock_method.return_value = _create_mock_return(None, 500)
     self.assertRaises(gerrit_api.UnexpectedResponseException,
                       self.gerrit.submit_revision, 'change_id', 'revision_id')
+
+  @mock.patch.object(requests.Session, 'request')
+  def test_get_related_changes(self, mock_method):
+    mock_method.side_effect = iter([
+      _create_mock_return('{"changes": []}', 200),
+      _create_mock_return('error', 500),
+    ])
+    self.gerrit.get_related_changes('change_id', 'revision_id')
+    mock_method.assert_called_once_with(
+        data=None,
+        method='GET',
+        params=None,
+        url=('https://chromium-review.googlesource.com/a/changes/'
+             'change_id/revisions/revision_id/related'),
+        headers=HEADERS,
+        hooks=self.gerrit._instrumentation_hooks)
+    with self.assertRaises(gerrit_api.UnexpectedResponseException):
+      self.gerrit.get_related_changes('change_id', 'revision_id')
