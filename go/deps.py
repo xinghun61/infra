@@ -554,8 +554,8 @@ def install(workspace, force=False, update_out=None, skip_bundle=False):
     # Don't retry, cipd does retries itself.
     ensure_spec = '%s %s' % (pkg, ver)
     with temp_file(body=ensure_spec, root=workspace.gobase) as tmp:
-      ret = cipd(
-          workspace, ['ensure', '-list', tmp, '-root', workspace.vendor_root])
+      ret = cipd(workspace, ['ensure', '-ensure-file', tmp, '-root',
+                              workspace.vendor_root])
     if ret:
       print 'Failed to install dependencies from the bundle. See logs.'
       return ret

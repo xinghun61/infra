@@ -113,7 +113,7 @@ def install_gae_sdk(root_path, plat, version, dry_run):
         CIPD_PATH,
         'ensure',
         '-root', outdir,
-        '-list', list_path,
+        '-ensure-file', list_path,
     ])
 
 
