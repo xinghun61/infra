@@ -11,6 +11,9 @@ from waterfall import waterfall_config
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 
 
+_DEFAULT_ITERATIONS_TO_RERUN = 100
+
+
 class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
   """A pipeline for scheduling a new flake try job for a flaky test."""
 
@@ -19,7 +22,8 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
       self, master_name, builder_name, canonical_step_name, test_name,
       git_hash):
     iterations = waterfall_config.GetCheckFlakeSettings().get(
-        'iterations_to_rerun')
+        'try_job_rerun', {}).get(
+            'iterations_to_rerun', _DEFAULT_ITERATIONS_TO_RERUN)
 
     return {
         'recipe': 'findit/chromium/flake',
