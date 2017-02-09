@@ -7,6 +7,10 @@ import mock
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from waterfall import schedule_try_job_pipeline
+from waterfall.flake.schedule_flake_try_job_pipeline import (
+    ScheduleFlakeTryJobPipeline)
+from waterfall.schedule_compile_try_job_pipeline import (
+    ScheduleCompileTryJobPipeline)
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 from waterfall.test import wf_testcase
 
@@ -56,7 +60,7 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(properties, expected_properties)
 
   @mock.patch.object(schedule_try_job_pipeline, 'buildbucket_client')
-  def testTriggerTryJob(self, mock_module):
+  def testTriggerTryJobFlake(self, mock_module):
     master_name = 'm'
     builder_name = 'b'
     response = {
@@ -69,8 +73,27 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     results = [(None, buildbucket_client.BuildbucketBuild(response['build']))]
     mock_module.TriggerTryJobs.return_value = results
 
-    try_job_pipeline = ScheduleTryJobPipeline()
-    build_id = try_job_pipeline._TriggerTryJob(
+    build_id = ScheduleFlakeTryJobPipeline()._TriggerTryJob(
+        master_name, builder_name, {}, [],
+        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST))
+
+    self.assertEqual(build_id, '1')
+
+  @mock.patch.object(schedule_try_job_pipeline, 'buildbucket_client')
+  def testTriggerTryJobWaterfall(self, mock_module):
+    master_name = 'm'
+    builder_name = 'b'
+    response = {
+        'build': {
+            'id': '1',
+            'url': 'url',
+            'status': 'SCHEDULED',
+        }
+    }
+    results = [(None, buildbucket_client.BuildbucketBuild(response['build']))]
+    mock_module.TriggerTryJobs.return_value = results
+
+    build_id = ScheduleCompileTryJobPipeline()._TriggerTryJob(
         master_name, builder_name, {}, [],
         failure_type.GetDescriptionForFailureType(failure_type.COMPILE))
 

@@ -5,6 +5,7 @@
 import mock
 
 from common.waterfall import buildbucket_client
+from common.waterfall import failure_type
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from waterfall import schedule_try_job_pipeline
@@ -93,3 +94,24 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(build_id, try_job.flake_results[-1]['try_job_id'])
     self.assertTrue(build_id in try_job.try_job_ids)
     self.assertEqual(try_job_data.try_job_key, try_job.key)
+
+  @mock.patch.object(schedule_try_job_pipeline, 'buildbucket_client')
+  def testTriggerTryJob(self, mock_module):
+    master_name = 'm'
+    builder_name = 'b'
+    response = {
+        'build': {
+            'id': '1',
+            'url': 'url',
+            'status': 'SCHEDULED',
+        }
+    }
+    results = [(None, buildbucket_client.BuildbucketBuild(response['build']))]
+    mock_module.TriggerTryJobs.return_value = results
+
+    build_id = ScheduleFlakeTryJobPipeline()._TriggerTryJob(
+        master_name, builder_name, {}, [],
+        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST))
+
+    self.assertEqual(build_id, '1')
+
