@@ -64,3 +64,5 @@ libraries:
   version: latest
 - name: endpoints
   version: 1.0
+- name: numpy
+  version: 1.6.1
