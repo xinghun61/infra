@@ -175,6 +175,10 @@ def warm_cache():
 
 def run_slave(root_dir, slave_name):
   slave_dir = os.path.join(root_dir, 'build', 'slave')
+  shutdown_stamp = os.path.join(slave_dir, 'shutdown.stamp')
+  if os.path.exists(shutdown_stamp):
+    print 'Exiting due to shutdown stamp %s' % shutdown_stamp
+    return
   run_slave_path = os.path.join(slave_dir, 'run_slave.py')
   twistd_pid_path = os.path.join(slave_dir, 'twistd.pid')
   env = inject_path_in_environ(
