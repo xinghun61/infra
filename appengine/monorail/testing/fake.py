@@ -8,6 +8,7 @@
 import collections
 import logging
 import re
+import time
 
 import settings
 from framework import framework_helpers
@@ -395,6 +396,7 @@ class UserService(object):
     self.users_by_email = {}
     self.users_by_id = {}
     self.test_users = {}
+    self.visited_hotlists = {} # user_id:[(hotlist_id, viewed), ...]
 
   def TestAddUser(self, email, user_id, add_user=True, banned=False):
     """Add a user to the fake UserService instance.
@@ -497,6 +499,21 @@ class UserService(object):
       vacation_message=None):
     self.UpdateUser(cnxn, user_id, user)
 
+  def GetRecentlyVisitedHotlists(self, _cnxn, user_id):
+    try:
+      return self.visited_hotlists[user_id][0]
+    except KeyError:
+      return []
+
+  def AddVisitedHotlist(self, _cnxn, user_id, hotlist_id, commit=True):
+    try:
+      user_visited_tuples = self.visited_hotlists[user_id]
+      self.visited_hotlists[user_id] = [(hid, ts) for (hid, ts) in
+                                        user_visited_tuples if
+                                        hid != hotlist_id]
+    except KeyError:
+      self.visited_hotlists[user_id] = []
+    self.visited_hotlists[user_id].append((hotlist_id, int(time.time())))
 
 class AbstractStarService(object):
   """Fake StarService."""

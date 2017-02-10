@@ -452,7 +452,7 @@ class UserService(object):
     recent_hotlist_rows = self.hotlistvisithistory_tbl.Select(
         cnxn, cols=['hotlist_id'], user_id=[user_id],
         order_by=[('viewed DESC')], limit=10)
-    return recent_hotlist_rows
+    return [row[0] for row in recent_hotlist_rows]
 
   def AddVisitedHotlist(self, cnxn, user_id, hotlist_id, commit=True):
     self.hotlistvisithistory_tbl.Delete(
