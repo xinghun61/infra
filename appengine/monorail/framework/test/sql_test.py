@@ -441,6 +441,22 @@ class StatementTest(unittest.TestCase):
         stmt_str)
     self.assertEqual([2, 0, 222, 1], args)
 
+  def testAddHavingTerms_NoGroupBy(self):
+    stmt = sql.Statement.MakeSelect('Employee', ['emp_id', 'fulltime'])
+    stmt.AddHavingTerms([('COUNT(*) > %s', [10])])
+    self.assertRaises(AssertionError, stmt.Generate)
+
+  def testAddHavingTerms_WithGroupBy(self):
+    stmt = sql.Statement.MakeSelect('Employee', ['emp_id', 'fulltime'])
+    stmt.AddGroupByTerms(['dept_id', 'location_id'])
+    stmt.AddHavingTerms([('COUNT(*) > %s', [10])])
+    stmt_str, args = stmt.Generate()
+    self.assertEqual(
+        'SELECT emp_id, fulltime FROM Employee'
+        '\nGROUP BY dept_id, location_id'
+        '\nHAVING COUNT(*) > %s',
+        stmt_str)
+    self.assertEqual([10], args)
 
 
 class FunctionsTest(unittest.TestCase):

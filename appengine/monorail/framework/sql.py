@@ -475,8 +475,9 @@ class Statement(object):
         clauses.append('WHERE ' + '\n  AND '.join(self.where_conds))
     if self.group_by_terms:
       clauses.append('GROUP BY ' + ', '.join(self.group_by_terms))
-      if self.having_conds:
-        clauses.append('HAVING %s' % self.having_conds)
+    if self.having_conds:
+      assert self.group_by_terms
+      clauses.append('HAVING %s' % ','.join(self.having_conds))
     if self.order_by_terms:
       clauses.append('ORDER BY ' + ', '.join(self.order_by_terms))
 
@@ -740,7 +741,7 @@ def _IsValidHavingCond(cond):
   if ' AND ' in cond:
     return all(_IsValidHavingCond(c) for c in cond.split(' AND '))
 
-  return HAVING_RE_LIST.match(cond)
+  return any(regex.match(cond) for regex in HAVING_RE_LIST)
 
 
 def _IsValidJoin(join):
