@@ -75,4 +75,9 @@ class TestCase(testing.AppengineTestCase):  # pragma: no cover.
 
   def GetMockHttpClient(self, response_for_url=None):
     """Returns mocked http client class."""
-    return MockHttpClient(response_for_url)
+    return MockHttpClient(response_for_url or {})
+
+  def GetMockRepoFactory(self, response_for_url=None):
+    """Returns mocked repository factory."""
+    return GitilesRepository.Factory(
+        self.GetMockHttpClient(response_for_url or {}))

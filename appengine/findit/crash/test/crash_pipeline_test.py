@@ -15,48 +15,11 @@ from model import analysis_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 
-def DummyCrashData(
-    client_id=None,
-    version='1',
-    signature='signature',
-    platform='win',
-    stack_trace=None,
-    regression_range=None,
-    channel='canary',
-    historical_metadata=None,
-    crash_identifiers=True,
-    process_type='browser'):
-  if crash_identifiers is True: # pragma: no cover
-    crash_identifiers = {
-        'chrome_version': version,
-        'signature': signature,
-        'channel': channel,
-        'platform': platform,
-        'process_type': process_type,
-    }
-  crash_data = {
-      'crashed_version': version,
-      'signature': signature,
-      'platform': platform,
-      'stack_trace': stack_trace,
-      'regression_range': regression_range,
-      'crash_identifiers': crash_identifiers,
-      'customized_data': {
-          'historical_metadata': historical_metadata,
-          'channel': channel,
-      },
-  }
-  # This insertion of client_id is used for debugging ScheduleNewAnalysis.
-  if client_id is not None: # pragma: no cover
-    crash_data['client_id'] = client_id
-  return crash_data
-
-
 class CrashPipelineTest(PredatorTestCase):
   app_module = pipeline_handlers._APP
 
   def testAnalysisAborted(self):
-    crash_identifiers = DummyCrashData()['crash_identifiers']
+    crash_identifiers = self.GetDummyCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.RUNNING
     analysis.put()
@@ -69,7 +32,7 @@ class CrashPipelineTest(PredatorTestCase):
     self.assertEqual(analysis_status.ERROR, analysis.status)
 
   def testFindCulpritFails(self):
-    crash_identifiers = DummyCrashData()['crash_identifiers']
+    crash_identifiers = self.GetDummyCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.RUNNING
     analysis.put()
@@ -88,7 +51,7 @@ class CrashPipelineTest(PredatorTestCase):
     self.assertFalse(analysis.found_components)
 
   def testFindCulpritSucceeds(self):
-    crash_identifiers = DummyCrashData()['crash_identifiers']
+    crash_identifiers = self.GetDummyCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.RUNNING
     analysis.put()

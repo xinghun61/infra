@@ -21,7 +21,6 @@ from crash.project_classifier import ProjectClassifier
 from crash.suspect import Suspect
 from crash.stacktrace import CallStack
 from crash.stacktrace import Stacktrace
-from crash.test.crash_pipeline_test import DummyCrashData
 from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
 from gae_libs.http.http_client_appengine import HttpClientAppengine
@@ -100,15 +99,15 @@ class FinditForFracasTest(PredatorTestCase):
     self.assertEqual(_FinditForFracas().RenamePlatform('linux'), 'unix')
 
   def testCheckPolicyUnsupportedPlatform(self):
-    self.assertIsNone(_FinditForFracas().CheckPolicy(DummyCrashData(
+    self.assertIsNone(_FinditForFracas().CheckPolicy(self.GetDummyCrashData(
         platform = 'unsupported_platform')))
 
   def testCheckPolicyBlacklistedSignature(self):
-    self.assertIsNone(_FinditForFracas().CheckPolicy(DummyCrashData(
+    self.assertIsNone(_FinditForFracas().CheckPolicy(self.GetDummyCrashData(
         signature = 'Blacklist marker signature')))
 
   def testCheckPolicyPlatformRename(self):
-    new_crash_data = _FinditForFracas().CheckPolicy(DummyCrashData(
+    new_crash_data = _FinditForFracas().CheckPolicy(self.GetDummyCrashData(
         platform = 'linux'))
     self.assertIsNotNone(new_crash_data,
         'FinditForFracas.CheckPolicy unexpectedly returned None')
@@ -128,7 +127,7 @@ class FinditForFracasTest(PredatorTestCase):
                      analysis)
 
   def testInitializeAnalysisForFracas(self):
-    crash_data = DummyCrashData(platform = 'linux')
+    crash_data = self.GetDummyCrashData(platform = 'linux')
     crash_identifiers = crash_data['crash_identifiers']
 
     findit_client = _FinditForFracas()
@@ -139,7 +138,7 @@ class FinditForFracasTest(PredatorTestCase):
     self.assertIsNotNone(analysis,
         'FinditForFracas.GetAnalysis unexpectedly returned None')
 
-    self.assertEqual(analysis.crashed_version, crash_data['crashed_version'])
+    self.assertEqual(analysis.crashed_version, crash_data['chrome_version'])
     self.assertEqual(analysis.signature, crash_data['signature'])
     self.assertEqual(analysis.platform, crash_data['platform'])
     self.assertEqual(analysis.stack_trace, crash_data['stack_trace'])
@@ -149,11 +148,12 @@ class FinditForFracasTest(PredatorTestCase):
     self.assertEqual(analysis.channel, channel)
 
   def testNeedsNewAnalysisIsTrueIfNoAnalysisYet(self):
-    self.assertTrue(_FinditForFracas()._NeedsNewAnalysis(DummyCrashData()))
+    self.assertTrue(_FinditForFracas()._NeedsNewAnalysis(
+        self.GetDummyCrashData()))
 
   def testNeedsNewAnalysisIsTrueIfLastOneFailed(self):
     findit_client = _FinditForFracas()
-    crash_data = DummyCrashData()
+    crash_data = self.GetDummyCrashData()
     analysis = findit_client.CreateAnalysis(crash_data['crash_identifiers'])
     analysis.status = analysis_status.ERROR
     analysis.put()
@@ -161,7 +161,7 @@ class FinditForFracasTest(PredatorTestCase):
 
   def testNeedsNewAnalysisIsFalseIfLastOneIsNotFailed(self):
     findit_client = _FinditForFracas()
-    crash_data = DummyCrashData()
+    crash_data = self.GetDummyCrashData()
     crash_identifiers = crash_data['crash_identifiers']
     for status in (analysis_status.PENDING, analysis_status.RUNNING,
                    analysis_status.COMPLETED, analysis_status.SKIPPED):

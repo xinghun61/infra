@@ -16,7 +16,6 @@ from common import chrome_dependency_fetcher
 from crash import crash_pipeline
 from crash.findit import Findit
 from crash.findit_for_chromecrash import FinditForFracas
-from crash.test.crash_pipeline_test import DummyCrashData
 from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
 from handlers.crash import crash_handler
@@ -58,11 +57,11 @@ class CrashHandlerTest(PredatorTestCase):
             "called _MockFindit._NeedsNewAnalysis, when it shouldn't.")
 
     self.mock(crash_pipeline, 'FinditForClientID', lambda *_: _MockFindit())
-    self.assertFalse(crash_handler.ScheduleNewAnalysis(DummyCrashData(
+    self.assertFalse(crash_handler.ScheduleNewAnalysis(self.GetDummyCrashData(
         client_id = 'MOCK_CLIENT')))
 
   def testScheduleNewAnalysisWithPlatformRename(self):
-    original_crash_data = DummyCrashData(
+    original_crash_data = self.GetDummyCrashData(
         client_id = 'MOCK_CLIENT',
         version = None,
         platform = 'unix',
@@ -99,7 +98,7 @@ class CrashHandlerTest(PredatorTestCase):
     self.assertFalse(crash_handler.ScheduleNewAnalysis(original_crash_data))
 
   def testScheduleNewAnalysisSkipsUnsupportedChannel(self):
-    self.assertFalse(crash_handler.ScheduleNewAnalysis(DummyCrashData(
+    self.assertFalse(crash_handler.ScheduleNewAnalysis(self.GetDummyCrashData(
         client_id = CrashClient.FRACAS,
         version = None,
         signature = None,
@@ -107,7 +106,7 @@ class CrashHandlerTest(PredatorTestCase):
         channel = 'unsupported_channel')))
 
   def testScheduleNewAnalysisSkipsUnsupportedPlatform(self):
-    self.assertFalse(crash_handler.ScheduleNewAnalysis(DummyCrashData(
+    self.assertFalse(crash_handler.ScheduleNewAnalysis(self.GetDummyCrashData(
         client_id = CrashClient.FRACAS,
         version = None,
         signature = None,
@@ -115,7 +114,7 @@ class CrashHandlerTest(PredatorTestCase):
         crash_identifiers = {})))
 
   def testScheduleNewAnalysisSkipsBlackListSignature(self):
-    self.assertFalse(crash_handler.ScheduleNewAnalysis(DummyCrashData(
+    self.assertFalse(crash_handler.ScheduleNewAnalysis(self.GetDummyCrashData(
         client_id = CrashClient.FRACAS,
         version = None,
         signature = 'Blacklist marker signature',
@@ -123,7 +122,7 @@ class CrashHandlerTest(PredatorTestCase):
 
   def testScheduleNewAnalysisSkipsIfAlreadyCompleted(self):
     findit_client = FinditForFracas(MOCK_GET_REPOSITORY)
-    crash_data = DummyCrashData(client_id = findit_client.client_id)
+    crash_data = self.GetDummyCrashData(client_id = findit_client.client_id)
     crash_identifiers = crash_data['crash_identifiers']
     analysis = findit_client.CreateAnalysis(crash_identifiers)
     analysis.status = analysis_status.COMPLETED
@@ -244,7 +243,7 @@ class CrashHandlerTest(PredatorTestCase):
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
         'GetDependency', _MockGetChromeDependency)
 
-    crash_data = DummyCrashData(
+    crash_data = self.GetDummyCrashData(
         client_id = CrashClient.FRACAS,
         version = '50.2500.0.1',
         stack_trace = 'frame1\nframe2\nframe3')
@@ -280,7 +279,7 @@ class CrashHandlerTest(PredatorTestCase):
     self.assertEqual(crash_data['signature'], analysis.signature)
     self.assertEqual(crash_data['platform'], analysis.platform)
     self.assertEqual(crash_data['stack_trace'], analysis.stack_trace)
-    self.assertEqual(crash_data['crashed_version'], analysis.crashed_version)
+    self.assertEqual(crash_data['chrome_version'], analysis.crashed_version)
     self.assertEqual(crash_data['regression_range'], analysis.regression_range)
 
     analysis = FracasCrashAnalysis.Get(crash_data['crash_identifiers'])

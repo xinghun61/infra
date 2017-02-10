@@ -9,7 +9,6 @@ from google.appengine.api import app_identity
 
 from crash.findit import Findit
 from crash.type_enums import CrashClient
-from crash.test.crash_pipeline_test import DummyCrashData
 from crash.test.predator_testcase import PredatorTestCase
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
@@ -60,7 +59,7 @@ class FinditTest(PredatorTestCase):
         self.findit.RenamePlatform('linux'), 'unix')
 
   def testCheckPolicyUnsupportedClient(self):
-    self.assertIsNone(UnsupportedClient().CheckPolicy(DummyCrashData(
+    self.assertIsNone(UnsupportedClient().CheckPolicy(self.GetDummyCrashData(
         platform = 'canary',
         signature = 'sig',
     )))
