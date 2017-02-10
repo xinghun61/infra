@@ -78,6 +78,7 @@ class FinditForChromeCrash(Findit):
     components = [Component(component_name, path_regex, function_regex)
                   for path_regex, function_regex, component_name
                   in component_classifier_config['path_function_component']]
+
     # The top_n is the number of frames we want to check to get component or
     # project classifications.
     self._predator = Predator(

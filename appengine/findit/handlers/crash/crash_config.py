@@ -11,6 +11,9 @@ from google.appengine.api import users
 from common.base_handler import BaseHandler, Permission
 from model.crash.crash_config import CrashConfig as CrashConfigModel
 
+# TODO(katesonia): Have the validate function return error messages, and make
+# the error page surface those messages.
+
 
 def _SortConfig(config):
   """Sorts ``host_direcotries`` list in config dict.
@@ -29,6 +32,71 @@ def _SortConfig(config):
 
     if hosts:
       hosts.sort(key=lambda host: -len(host.split('/')))
+
+
+def _IsListOfStrings(obj):
+  """Determines whether an object is a list of strings."""
+  return isinstance(obj, list) and all(isinstance(entry, basestring)
+                                       for entry in obj)
+
+
+def _ValidateChromeCrashConfig(chrome_crash_config):
+  """Checks that a chrome_crash__config dict is properly formatted.
+
+  Args:
+    chrome_crash_config (dict): A dictionary that provides configuration of
+      chrome crash clients - Cracas and Fracas.
+  {
+    'analysis_result_pubsub_topic': (
+        'projects/google.com:findit-for-me/topics/result-for-cracas'),
+    'platform_rename': {
+      'linux': 'unix'
+    },
+    'signature_blacklist_markers': ['black sig1', 'black sig2'],
+    'supported_platform_list_by_channel': {
+      'canary': [
+        'win',
+        'mac',
+        'android',
+        'linux'
+      ]
+    },
+    'top_n': 7
+  }
+  """
+  if not isinstance(chrome_crash_config, dict):
+    return False
+
+  analysis_result_pubsub_topic = chrome_crash_config.get(
+      'analysis_result_pubsub_topic')
+  if not isinstance(analysis_result_pubsub_topic, basestring):
+    return False
+
+  platform_rename = chrome_crash_config.get('platform_rename')
+  if not isinstance(platform_rename, dict):
+    return False
+
+  signature_blacklist_markers = chrome_crash_config.get(
+      'signature_blacklist_markers')
+  if not _IsListOfStrings(signature_blacklist_markers):
+    return False
+
+  supported_platform_list_by_channel = chrome_crash_config.get(
+      'supported_platform_list_by_channel')
+  if not isinstance(supported_platform_list_by_channel, dict):
+    return False
+
+  for channel, platform_list in supported_platform_list_by_channel.iteritems():
+    if not isinstance(channel, basestring):
+      return False
+    if not _IsListOfStrings(platform_list):
+      return False
+
+  top_n = chrome_crash_config.get('top_n')
+  if not isinstance(top_n, int):
+    return False
+
+  return True
 
 
 def _ValidateComponentClassifierConfig(component_classifier_config):
@@ -65,6 +133,10 @@ def _ValidateComponentClassifierConfig(component_classifier_config):
   path_function_component = component_classifier_config.get(
       'path_function_component')
   if not isinstance(path_function_component, list):
+    return False
+
+  if not all(_IsListOfStrings(component)
+             for component in path_function_component):
     return False
 
   top_n = component_classifier_config.get('top_n')
@@ -121,11 +193,9 @@ def _ValidateProjectClassifierConfig(project_classifier_config):
   return True
 
 
-# TODO(katesonia): Add validation function for ``cracas`` and ``fracas``.
-# Maps config properties to their validation functions.
 _CONFIG_VALIDATION_FUNCTIONS = {
-    'fracas': None,
-    'cracas': None,
+    'fracas': _ValidateChromeCrashConfig,
+    'cracas': _ValidateChromeCrashConfig,
     'component_classifier': _ValidateComponentClassifierConfig,
     'project_classifier': _ValidateProjectClassifierConfig
 }
@@ -156,10 +226,6 @@ def _ConfigurationDictIsValid(configuration_dict):
       _CONFIG_VALIDATION_FUNCTIONS.iteritems()):
     if configurable_property not in configuration_dict:
       return False
-
-    # No validation rules specified for this property.
-    if validation_function is None:
-      continue
 
     configuration = configuration_dict[configurable_property]
     if not validation_function(configuration):

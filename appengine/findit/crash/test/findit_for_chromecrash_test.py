@@ -32,6 +32,7 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 MOCK_GET_REPOSITORY = lambda _: None # pragma: no cover
 
+
 class _FinditForChromeCrash(FinditForChromeCrash):  # pylint: disable = W
   # We allow overriding the default ``get_repository`` because one unittest
   # needs to.

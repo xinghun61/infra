@@ -78,20 +78,93 @@ class CrashConfigTest(TestCase):
                                                 'src/']
     self.assertDictEqual(expected_config, config)
 
+  def testValidateChromeCrashConfig(self):
+    """Tests ``_ValidateChromeCrashConfig`` function."""
+    # Return False if config is not a dict
+    self.assertFalse(crash_config._ValidateChromeCrashConfig(None))
+
+    # Return False if config doesn't have "analysis_result_pubsub_topic".
+    self.assertFalse(crash_config._ValidateChromeCrashConfig({}))
+
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name'
+    }
+    # Return False if config dict has not "platform_rename".
+    self.assertFalse(crash_config._ValidateChromeCrashConfig(config))
+
+    # Return False if config doesn't have "signature_blacklist_markers".
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'platform_rename': {}
+    }
+    self.assertFalse(crash_config._ValidateChromeCrashConfig(config))
+
+    # Return False if entries of "signature_blacklist_markers" are not strs.
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'platform_rename': {},
+        'signature_blacklist_markers': [None]
+    }
+    self.assertFalse(crash_config._ValidateChromeCrashConfig(config))
+
+    # Return False if config doesn't have
+    # "supported_platform_list_by_channel".
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'platform_rename': {},
+        'signature_blacklist_markers': []
+    }
+    self.assertFalse(crash_config._ValidateChromeCrashConfig(config))
+
+    # Return False if "supported_platform_list_by_channel" is not well
+    # formatted.
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'platform_rename': {},
+        'signature_blacklist_markers': [],
+        'supported_platform_list_by_channel': {None: None}
+    }
+    self.assertFalse(crash_config._ValidateChromeCrashConfig(config))
+
+    # Return False if "supported_platform_list_by_channel" is not well
+    # formatted.
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'platform_rename': {},
+        'signature_blacklist_markers': [],
+        'supported_platform_list_by_channel': {'canary': None}
+    }
+    self.assertFalse(crash_config._ValidateChromeCrashConfig(config))
+
+    # Return False if config doesn't have "top_n".
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'platform_rename': {},
+        'signature_blacklist_markers': [],
+        'supported_platform_list_by_channel': {}
+    }
+    self.assertFalse(crash_config._ValidateChromeCrashConfig(config))
+
+    self.assertTrue(crash_config._ValidateChromeCrashConfig(
+        _MOCK_FRACAS_CONFIG))
 
   def testValidateComponentClassifierConfig(self):
     """Tests ``_ValidateComponentClassifierConfig`` function."""
     # Return False if config is not a dict
     self.assertFalse(crash_config._ValidateComponentClassifierConfig(None))
 
-    # Return False if config dict has not ``path_function_component``.
+    # Return False if config dict has not "path_function_component".
     self.assertFalse(crash_config._ValidateComponentClassifierConfig({}))
 
-    # Return False if config ``path_function_component`` is not list.
+    # Return False if config "path_function_component" is not list.
     config = {'path_function_component': {}}
     self.assertFalse(crash_config._ValidateComponentClassifierConfig(config))
 
-    # Return False if config ``top_n`` is not int.
+    # Return False if config "path_function_component" is not a list of strings.
+    config = {'path_function_component': [None]}
+    self.assertFalse(crash_config._ValidateComponentClassifierConfig(config))
+
+    # Return False if config "top_n" is not int.
     config = {'path_function_component':
               _MOCK_COMPONENT_CONFIG['path_function_component'],
               'top_n': []}
@@ -105,20 +178,20 @@ class CrashConfigTest(TestCase):
     # Return False if config is not a dict
     self.assertFalse(crash_config._ValidateProjectClassifierConfig(None))
 
-    # Return False if config dict has not ``project_path_function_hosts``.
+    # Return False if config dict has not "project_path_function_hosts".
     self.assertFalse(crash_config._ValidateProjectClassifierConfig({}))
 
-    # Return False if config ``project_path_function_hosts`` is not list.
+    # Return False if config "project_path_function_hosts" is not list.
     config = {'project_path_function_hosts': {}}
     self.assertFalse(crash_config._ValidateProjectClassifierConfig(config))
 
-    # Return False if config ``non_chromium_project_rank_priority`` is not dict.
+    # Return False if config "non_chromium_project_rank_priority" is not dict.
     config = {'project_path_function_hosts':
               _MOCK_PROJECT_CONFIG['project_path_function_hosts'],
               'non_chromium_project_rank_priority': []}
     self.assertFalse(crash_config._ValidateProjectClassifierConfig(config))
 
-    # Return False if config ``top_n`` is not int.
+    # Return False if config "top_n" is not int.
     config = {'project_path_function_hosts':
               _MOCK_PROJECT_CONFIG['project_path_function_hosts'],
               'non_chromium_project_rank_priority':
@@ -135,9 +208,12 @@ class CrashConfigTest(TestCase):
     self.assertFalse(crash_config._ConfigurationDictIsValid(None))
 
     # Return False if there is one configuration failed validation.
-    config = {'component_classifier': None}
+    config = {
+        'fracas': None,
+        'cracas': None,
+        'component_classifier': None
+    }
     self.assertFalse(crash_config._ConfigurationDictIsValid(config))
-
     self.assertTrue(crash_config._ConfigurationDictIsValid(_MOCK_CONFIG))
 
   def testHandleGet(self):
