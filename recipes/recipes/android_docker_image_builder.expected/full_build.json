@@ -153,7 +153,11 @@
       "push",
       "gcr.io/chromium-container-registry/android_docker:2012-05-14-12-53"
     ],
-    "name": "Push image"
+    "name": "Push image",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@image = android_docker:1-2-3: digest: sha256:deadbeef size:123@@@"
+    ]
   },
   {
     "name": "$result",

@@ -101,7 +101,17 @@ def RunSteps(api):
   api.step('Tag image', tag_cmd)
 
   # Push the image to the registry.
-  api.step('Push image', [docker_bin, 'push', registry_image_name])
+  upload_step = api.step(
+      'Push image', [docker_bin, 'push', registry_image_name],
+      stdout=api.raw_io.output(),
+      step_test_data=lambda: api.raw_io.test_api.stream_output(
+          '1-2-3: digest: sha256:deadbeef size:123'))
+  image_spec = 'unknown'
+  for line in upload_step.stdout.splitlines():
+    if 'digest' in line:
+      image_spec = 'image = android_docker:' + line.strip()
+      break
+  upload_step.presentation.step_text = image_spec
 
 
 def GenTests(api):
