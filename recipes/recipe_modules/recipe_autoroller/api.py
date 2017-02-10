@@ -5,7 +5,6 @@
 import base64
 import datetime
 import hashlib
-import json
 import re
 
 from recipe_engine import recipe_api
@@ -353,7 +352,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         raise Exception('gsutil failed in an unexpected way; see stderr log')
       return None, None
 
-    repo_data = json.loads(cat_result.stdout)
+    repo_data = self.m.json.loads(cat_result.stdout)
     # TODO(phajdan.jr): remove when all repos have this key.
     if 'issue_url' in repo_data:
       cat_result.presentation.links['Issue %s' % repo_data['issue']] = (
