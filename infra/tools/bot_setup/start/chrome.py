@@ -11,7 +11,6 @@ import os
 import shutil
 import subprocess
 import sys
-import time
 
 import infra_libs
 
@@ -153,26 +152,6 @@ def seed_passwords(root_dir, password_file):
     f.write(passwords['bot_password'])
 
 
-def warm_cache():
-  """Read all the files in /b/c/git_cache so that they're warm.
-
-  GCE bots with standard persistent disks have slow read times.  This is
-  a problem particularly when the bot restarts between every build, and
-  the git cache needs to be updated again.  Since a git fetch requires a lot
-  of disk reads (most of them random access too), doing a fetch on a cold
-  cache can take a long time.
-  """
-  # TODO(hinoka): Find something that works on Windows.
-  if sys.platform == 'linux2':
-    print 'Warming /b/c/git_cache...'
-    start_time = time.time()
-    code = subprocess.call(
-        'find /b/c/git_cache -type f -exec cat {} \; > /dev/null', shell=True)
-    duration = time.time() - start_time
-    print 'Git cache warming finished with code %s (%f seconds)' % (
-        code, duration)
-
-
 def run_slave(root_dir, slave_name):
   slave_dir = os.path.join(root_dir, 'build', 'slave')
   shutdown_stamp = os.path.join(slave_dir, 'shutdown.stamp')
@@ -249,5 +228,4 @@ def start(root_dir, depot_tools, password_file, slave_name):
   ensure_checkout(root_dir, depot_tools, is_internal)
   if password_file:
     seed_passwords(root_dir, password_file)
-  warm_cache()
   run_slave(root_dir, slave_name)
