@@ -1,8 +1,0 @@
-#!/bin/bash
-./swarmbucketcheck -bucket master.tryserver.infra -builder "\
-    Infra Presubmit,\
-    Infra Linux Trusty 64 Tester,\
-    Infra Linux Precise 32 Tester,\
-    Infra Mac Tester,\
-    Infra Win Tester,\
-    " $@

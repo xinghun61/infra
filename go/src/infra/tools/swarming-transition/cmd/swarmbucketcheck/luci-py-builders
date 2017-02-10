@@ -1,4 +1,0 @@
-#!/bin/bash
-./swarmbucketcheck -bucket master.tryserver.infra -builder "\
-    Luci-py Presubmit,\
-    " $@
