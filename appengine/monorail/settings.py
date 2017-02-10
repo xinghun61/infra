@@ -333,5 +333,6 @@ hotlist_whitelist = ['jojwang@google.com', 'jrobbins@chromium.org',
                      'laforge@chromium.org', 'ojan@chromium.org',
                      'scheib@chromium.org', 'benhenry@chromium.org',
                      'efoo@chromium.org', 'eae@chromium.org',
-                     'nodir@chromium.com', 'sergeyberezin@chromium.org',
-                     'estaab@chromium.org']
+                     'nodir@chromium.org', 'sergeyberezin@chromium.org',
+                     'estaab@chromium.org', 'cbentzel@chromium.org',
+                     'animohan@chromium.org']
