@@ -198,9 +198,21 @@ class IssueDetailTest(unittest.TestCase):
     self.assertEqual('search_for_numbers', help_data['cue'])
     self.assertEqual(123, help_data['jump_local_id'])
 
+    # User is viewing an issue that was classified as spam (negative ID).
+    mr.query = ''
+    issue_view = testing_helpers.Blank(
+        local_id=-3,
+        owner=testing_helpers.Blank(user_id=111L, avail_message=''),
+        derived_owner=testing_helpers.Blank(user_id=0L, avail_message=''),
+        cc=[], derived_cc=[])
+    page_data = {'issue': issue_view}
+    help_data = servlet.GatherHelpData(mr, page_data)
+    self.assertEqual('negative_id_means_spam', help_data['cue'])
+
     # User is viewing an issue with an unavailable owner.
     mr.query = ''
     issue_view = testing_helpers.Blank(
+        local_id=1234,
         owner=testing_helpers.Blank(user_id=111L, avail_message='On vacation'),
         derived_owner=testing_helpers.Blank(user_id=0L, avail_message=''),
         cc=[testing_helpers.Blank(user_id=222L, avail_message='')],
@@ -212,6 +224,7 @@ class IssueDetailTest(unittest.TestCase):
     # User is viewing an issue with all participants available.
     # No help cue is shown.
     issue_view = testing_helpers.Blank(
+        local_id=1234,
         owner=testing_helpers.Blank(user_id=0L, avail_message='Never visited'),
         derived_owner=testing_helpers.Blank(user_id=0L, avail_message=''),
         cc=[testing_helpers.Blank(user_id=222L, avail_message='')],

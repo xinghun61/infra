@@ -442,6 +442,9 @@ class IssueDetail(issuepeek.IssuePeek):
     if (mr.auth.user_id and
         'privacy_click_through' not in dismissed):
       help_data['cue'] = 'privacy_click_through'
+    elif (iv and iv.local_id < 0 and
+          'negative_id_means_spam' not in dismissed):
+      help_data['cue'] = 'negative_id_means_spam'
     elif (tracker_constants.JUMP_RE.match(mr.query) and
           'search_for_numbers' not in dismissed):
       jump_local_id = int(mr.query)
