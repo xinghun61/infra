@@ -8,6 +8,7 @@
 import unittest
 
 import mox
+import time
 
 from google.appengine.ext import testbed
 
@@ -34,6 +35,7 @@ def MakeUserService(cache_manager, my_mox):
   user_service.user_tbl = my_mox.CreateMock(sql.SQLTableManager)
   user_service.actionlimit_tbl = my_mox.CreateMock(sql.SQLTableManager)
   user_service.dismissedcues_tbl = my_mox.CreateMock(sql.SQLTableManager)
+  user_service.hotlistvisithistory_tbl = my_mox.CreateMock(sql.SQLTableManager)
   return user_service
 
 
@@ -230,6 +232,56 @@ class UserServiceTest(unittest.TestCase):
     self.user_service.UpdateUser(self.cnxn, 111L, user_a)
     self.mox.VerifyAll()
     self.assertFalse(self.user_service.user_2lc.HasItem(111L))
+
+  def SetUpGetRecentlyVisitedHotlists(self):
+    self.user_service.hotlistvisithistory_tbl.Select(
+        self.cnxn, cols=['hotlist_id'], user_id=[111L],
+        order_by=[('viewed DESC')], limit=10).AndReturn(
+            ((123,), (234,)))
+
+  def testGetRecentlyVisitedHotlists(self):
+    self.SetUpGetRecentlyVisitedHotlists()
+    self.mox.ReplayAll()
+    recent_hotlist_rows = self.user_service.GetRecentlyVisitedHotlists(
+        self.cnxn, 111L)
+    self.mox.VerifyAll()
+    self.assertEqual(recent_hotlist_rows, [123, 234])
+
+  def SetUpAddVisitedHotlist(self):
+    self.user_service.hotlistvisithistory_tbl.Delete(
+        self.cnxn, hotlist_id=123, user_id=111L, commit=False)
+    self.user_service.hotlistvisithistory_tbl.InsertRows(
+        self.cnxn, user_svc.HOTLISTVISITHISTORY_COLS,
+        [(123, 111L, int(time.time()))],
+        commit=False)
+
+  def testAddVisitedHotlist(self):
+    self.SetUpAddVisitedHotlist()
+    self.mox.ReplayAll()
+    self.user_service.AddVisitedHotlist(self.cnxn, 111L, 123, commit=False)
+    self.mox.VerifyAll()
+
+  def SetUpTrimUserVisitedHotlists(self, user_ids):
+    self.user_service.hotlistvisithistory_tbl.Select(
+        self.cnxn, cols=['user_id'], group_by='user_id',
+        having=[('COUNT(*) > %s', [10])], limit=1000).AndReturn((
+            (111L,), (222L,), (333L,)))
+    ts = int(time.time())
+    for user_id in user_ids:
+      self.user_service.hotlistvisithistory_tbl.Select(
+          self.cnxn, cols=['viewed'], user_id=user_id,
+          order_by=[('viewed DESC', [])]).AndReturn([
+              (ts,), (ts,), (ts,), (ts,), (ts,), (ts,),
+              (ts,), (ts,), (ts,), (ts,), (ts+1,)])
+      self.user_service.hotlistvisithistory_tbl.Delete(
+          self.cnxn, user_id=user_id, where=[('viewed < %s', [ts])],
+          commit=False)
+
+  def testTrimUserVisitedHotlists(self):
+    self.SetUpTrimUserVisitedHotlists([111L, 222L, 333L])
+    self.mox.ReplayAll()
+    self.user_service.TrimUserVisitedHotlists(self.cnxn, commit=False)
+    self.mox.VerifyAll()
 
   def testUpdateUserSettings(self):
     self.SetUpUpdateUser()

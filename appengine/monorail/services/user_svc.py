@@ -466,13 +466,13 @@ class UserService(object):
     user_id_rows = self.hotlistvisithistory_tbl.Select(
         cnxn, cols=['user_id'], group_by='user_id',
         having=[('COUNT(*) > %s', [10])], limit=1000)
-    user_ids = list(set([row[0] for row in user_id_rows]))
 
-    for user_id in user_ids:
+    for user_id in [row[0] for row in user_id_rows]:
        viewed_hotlist_rows = self.hotlistvisithistory_tbl.Select(
-          cnxn, cols=[], user_id=user_id, order_by=[('viewed DESC', [])])
+          cnxn, cols=['viewed'], user_id=user_id,
+          order_by=[('viewed DESC', [])])
        if len(viewed_hotlist_rows) > 10:
-         cut_off_date = viewed_hotlist_rows[9][2]
+         cut_off_date = viewed_hotlist_rows[9][0]
          self.hotlistvisithistory_tbl.Delete(
              cnxn, user_id=user_id, where=[('viewed < %s', [cut_off_date])],
              commit=commit)
