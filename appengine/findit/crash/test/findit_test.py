@@ -10,8 +10,8 @@ from google.appengine.api import app_identity
 from crash.findit import Findit
 from crash.type_enums import CrashClient
 from crash.test.predator_testcase import PredatorTestCase
+from model.crash.crash_config import CrashConfig
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
-
 
 MOCK_GET_REPOSITORY = lambda _: None # pragma: no cover
 
@@ -23,22 +23,22 @@ class UnsupportedClient(Findit): # pylint: disable=W0223
     return self._client_id
 
   @property
-  def config(self): # pragma: no cover
+  def client_config(self): # pragma: no cover
     """Don't return None, so that PlatformRename doesn't crash."""
     return {}
 
-  def __init__(self, client_id=None):
-    super(UnsupportedClient, self).__init__(MOCK_GET_REPOSITORY)
+  def __init__(self, client_id=None, config=None):
     if client_id is None:
       client_id = 'unsupported_client'
     self._client_id = client_id
+    super(UnsupportedClient, self).__init__(MOCK_GET_REPOSITORY, config)
 
 
 class MockFindit(Findit):  # pylint: disable = W
   """Overwrite abstract method of Findit for testing."""
 
-  def __init__(self):
-    super(MockFindit, self).__init__(MOCK_GET_REPOSITORY)
+  def __init__(self, config=None):
+    super(MockFindit, self).__init__(MOCK_GET_REPOSITORY, config)
 
   @classmethod
   def _ClientID(cls):
@@ -52,21 +52,23 @@ class FinditTest(PredatorTestCase):
 
   def setUp(self):
     super(FinditTest, self).setUp()
-    self.findit = MockFindit()
+    self.findit = MockFindit(CrashConfig.Get())
 
   def testPlatformRename(self):
     self.assertEqual(
         self.findit.RenamePlatform('linux'), 'unix')
 
   def testCheckPolicyUnsupportedClient(self):
-    self.assertIsNone(UnsupportedClient().CheckPolicy(self.GetDummyCrashData(
-        platform = 'canary',
-        signature = 'sig',
-    )))
+    self.assertIsNone(UnsupportedClient(config=CrashConfig.Get()).CheckPolicy(
+        self.GetDummyCrashData(
+            platform = 'canary',
+            signature = 'sig',
+        )))
 
   def testCreateAnalysisForUnsupportedClientId(self):
-    self.assertIsNone(UnsupportedClient('unsupported_id').CreateAnalysis(
-        {'signature': 'sig'}))
+    unsupported_client = UnsupportedClient('unsupported_id',
+                                           config=CrashConfig.Get())
+    self.assertIsNone(unsupported_client.CreateAnalysis({'signature': 'sig'}))
 
   def testGetAnalysisForUnsuportedClient(self):
     crash_identifiers = {'signature': 'sig'}
@@ -76,8 +78,10 @@ class FinditTest(PredatorTestCase):
     # base class.
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.put()
+    unsupported_client = UnsupportedClient('Unsupported_client',
+                                           config=CrashConfig.Get())
     self.assertIsNone(
-        UnsupportedClient('Unsupported_client').GetAnalysis(crash_identifiers),
+        unsupported_client.GetAnalysis(crash_identifiers),
         'Unsupported client unexpectedly got analysis %s via identifiers %s'
         % (analysis, crash_identifiers))
 

@@ -33,11 +33,12 @@ _FRACAS_FEEDBACK_URL_TEMPLATE = (
     'https://%s.appspot.com/crash/fracas-result-feedback?key=%s')
 
 
-def StoreResults(crash, client_id, app_id, id_to_culprits, lock, verbose=False):
+def StoreResults(crash, client_id, app_id, id_to_culprits, lock, config,
+                 verbose=False):
   """Stores findit result of crash into id_to_culprits dict."""
   crash_url = _FRACAS_FEEDBACK_URL_TEMPLATE % (app_id, crash['id'])
   try:
-    findit = FinditForClientID(client_id, LocalGitRepository)
+    findit = FinditForClientID(client_id, LocalGitRepository, config)
     stacktrace = findit._stacktrace_parser.Parse(
         crash['stack_trace'],
         ChromeDependencyFetcher(LocalGitRepository.Factory()).GetDependency(
@@ -69,29 +70,21 @@ def GetCulprits(crashes, client_id, app_id, verbose=False):
   """Run predator analysis on crashes locally."""
   # Enable remote access to app engine services.
   remote_api.EnableRemoteApi(app_id)
-  origin_get = CrashConfig.Get
-  try:
-    # This hack is to solve flaky BadStatusLine excepion(crbug.com/666150) in
-    # remote api when key.get() gets called in threads.
-    # TODO(katesonia): Remove this hack after crbug.com/659354 is done.
-    CrashConfig.Get = script_util.GetLockedMethod(CrashConfig, 'Get',
-                                                  threading.Lock())
-    id_to_culprits = {}
-    tasks = []
-    lock = threading.Lock()
-    for crash in crashes:
-      crash['regression_range'] = DetectRegressionRange(
-          crash['historical_metadata'])
-      tasks.append({
-          'function': StoreResults,
-          'args': [crash, client_id, app_id, id_to_culprits, lock],
-          'kwargs': {'verbose': verbose}
-      })
-    script_util.RunTasks(tasks)
+  id_to_culprits = {}
+  tasks = []
+  lock = threading.Lock()
+  config = CrashConfig.Get()
+  for crash in crashes:
+    crash['regression_range'] = DetectRegressionRange(
+        crash['historical_metadata'])
+    tasks.append({
+        'function': StoreResults,
+        'args': [crash, client_id, app_id, id_to_culprits, lock, config],
+        'kwargs': {'verbose': verbose}
+    })
+  script_util.RunTasks(tasks)
 
-    return id_to_culprits
-  finally:
-    CrashConfig.Get = origin_get
+  return id_to_culprits
 
 
 def RunPredator():

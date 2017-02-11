@@ -21,6 +21,7 @@ from crash.type_enums import CrashClient
 from handlers.crash import crash_handler
 from libs.gitiles import gitiles_repository
 from model import analysis_status
+from model.crash.crash_config import CrashConfig
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 
@@ -44,19 +45,9 @@ class CrashHandlerTest(PredatorTestCase):
   ], debug=True)
 
   def testScheduleNewAnalysisWithFailingPolicy(self):
-    class _MockFindit(Findit): # pylint: disable=W0223
-      def __init__(self):
-        super(_MockFindit, self).__init__(MOCK_GET_REPOSITORY)
-
-      def CheckPolicy(self, crash_data):
-        """This is the same as inherited, but just to be explicit."""
-        return None
-
-      def _NeedsNewAnalysis(self, _crash_data):
-        raise AssertionError('testScheduleNewAnalysisWithFailingPolicy: '
-            "called _MockFindit._NeedsNewAnalysis, when it shouldn't.")
-
-    self.mock(crash_pipeline, 'FinditForClientID', lambda *_: _MockFindit())
+    mock_findit = self.GetMockFindit()
+    self.mock(mock_findit, 'CheckPolicy', lambda *_: None)
+    self.mock(crash_pipeline, 'FinditForClientID', lambda *_: mock_findit)
     self.assertFalse(crash_handler.ScheduleNewAnalysis(self.GetDummyCrashData(
         client_id = 'MOCK_CLIENT')))
 
@@ -69,32 +60,8 @@ class CrashHandlerTest(PredatorTestCase):
     renamed_crash_data = copy.deepcopy(original_crash_data)
     renamed_crash_data['platform'] = 'linux'
 
-    testcase = self
-    class _MockFindit(Findit): # pylint: disable=W0223
-      def __init__(self):
-        super(_MockFindit, self).__init__(MOCK_GET_REPOSITORY)
-
-      @property
-      def config(self):
-        """Make PlatformRename work as expected."""
-        return {'platform_rename': {'unix': 'linux'}}
-
-      def CheckPolicy(self, crash_data):
-        """Call PlatformRename, and return successfully.
-
-        N.B., if we did not override this method, then our overridden
-        ``_NeedsNewAnalysis`` would never be called either."""
-        # TODO(wrengr): should we clone ``crash_data`` rather than mutating it?
-        crash_data['platform'] = self.RenamePlatform(crash_data['platform'])
-        return crash_data
-
-      def _NeedsNewAnalysis(self, new_crash_data):
-        logging.debug('Called _MockFindit._NeedsNewAnalysis, as desired')
-        testcase.assertDictEqual(new_crash_data, renamed_crash_data)
-        return False
-
     self.mock(crash_pipeline, 'FinditForClientID',
-        lambda _client_id, repository: _MockFindit())
+        lambda *_: self.GetMockFindit(client_id='fracas'))
     self.assertFalse(crash_handler.ScheduleNewAnalysis(original_crash_data))
 
   def testScheduleNewAnalysisSkipsUnsupportedChannel(self):
@@ -121,7 +88,7 @@ class CrashHandlerTest(PredatorTestCase):
         crash_identifiers = {})))
 
   def testScheduleNewAnalysisSkipsIfAlreadyCompleted(self):
-    findit_client = FinditForFracas(MOCK_GET_REPOSITORY)
+    findit_client = FinditForFracas(MOCK_GET_REPOSITORY, CrashConfig.Get())
     crash_data = self.GetDummyCrashData(client_id = findit_client.client_id)
     crash_identifiers = crash_data['crash_identifiers']
     analysis = findit_client.CreateAnalysis(crash_identifiers)

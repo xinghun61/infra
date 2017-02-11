@@ -11,7 +11,11 @@ from google.appengine.ext import ndb
 from common import appengine_util
 from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from common import constants
+from crash.component import Component
+from crash.component_classifier import ComponentClassifier
 from crash.crash_report import CrashReport
+from crash.project import Project
+from crash.project_classifier import ProjectClassifier
 from libs import time_util
 from model import analysis_status
 from model.crash.crash_config import CrashConfig
@@ -29,7 +33,7 @@ from model.crash.crash_config import CrashConfig
 # Think of a good name (e.g.'PredatorApp') for this class.
 class Findit(object):
 
-  def __init__(self, get_repository):
+  def __init__(self, get_repository, config):
     """
     Args:
       get_repository (callable): a function from DEP urls to ``Repository``
@@ -39,9 +43,29 @@ class Findit(object):
         it is up to the caller to decide what class to return and handle
         any other arguments that class may require (e.g., an http client
         for ``GitilesRepository``).
+      config (ndb.CrashConfig): Config for clients and project and component
+        classifiers.
     """
     self._get_repository = get_repository
     self._dep_fetcher = ChromeDependencyFetcher(get_repository)
+
+    # The top_n is the number of frames we want to check to get project
+    # classifications.
+    projects = [Project(name, path_regexs, function_regexs, host_directories)
+                for name, path_regexs, function_regexs, host_directories
+                in config.project_classifier['project_path_function_hosts']]
+    self._project_classifier = ProjectClassifier(
+        projects, config.project_classifier['top_n'],
+        config.project_classifier['non_chromium_project_rank_priority'])
+
+    components = [Component(component_name, path_regex, function_regex)
+                  for path_regex, function_regex, component_name
+                  in config.component_classifier['path_function_component']]
+    self._component_classifier = ComponentClassifier(
+        components, config.component_classifier['top_n'])
+
+    self._config = config
+
     # TODO(http://crbug.com/659354): because self.client is volatile,
     # we need some way of updating the Predator instance whenever the
     # config changes. How to do that cleanly?
@@ -87,7 +111,7 @@ class Findit(object):
   # what in particular changed) so that we can update our internal state
   # as appropriate.
   @property
-  def config(self):
+  def client_config(self):
     """Get the current value of the client config for the class of this object.
 
     N.B., this property is volatile and may change asynchronously.
@@ -103,7 +127,7 @@ class Findit(object):
     returned the empty dict, then calls to ``get`` would "work" just
     fine; thereby masking the underlying bug!
     """
-    return CrashConfig.Get().GetClientConfig(self.client_id)
+    return self._config.GetClientConfig(self.client_id)
 
   # TODO(http://crbug.com/644476): rename to CanonicalizePlatform or
   # something like that.
@@ -111,7 +135,7 @@ class Findit(object):
     """Remap the platform to a different one, based on the config."""
     # TODO(katesonia): Remove the default value after adding validity check to
     # config.
-    return self.config.get('platform_rename', {}).get(platform, platform)
+    return self.client_config.get('platform_rename', {}).get(platform, platform)
 
   def CheckPolicy(self, crash_data): # pylint: disable=W0613
     """Check whether this client supports analyzing the given report.
@@ -214,12 +238,12 @@ class Findit(object):
     Returns:
       On success, returns a Stacktrace object; on failure, returns None.
     """
-    # Use up-to-date ``top_n`` in self.config to filter top n frames.
+    # Use up-to-date ``top_n`` in self.client_config to filter top n frames.
     stacktrace = self._stacktrace_parser.Parse(
         model.stack_trace,
         self._dep_fetcher.GetDependency(model.crashed_version, model.platform),
         model.signature,
-        self.config.get('top_n'))
+        self.client_config.get('top_n'))
     if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s', model.stack_trace)
       return None

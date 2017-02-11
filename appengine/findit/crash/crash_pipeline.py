@@ -19,10 +19,11 @@ from libs import time_util
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model import analysis_status
+from model.crash.crash_config import CrashConfig
 
 
 # TODO(http://crbug.com/659346): write complete coverage tests for this.
-def FinditForClientID(client_id, get_repository): # pragma: no cover
+def FinditForClientID(client_id, get_repository, config): # pragma: no cover
   """Construct a Findit object from a client id string specifying the class.
 
   We cannot pass Findit objects to the various methods in
@@ -52,7 +53,7 @@ def FinditForClientID(client_id, get_repository): # pragma: no cover
     raise ValueError('FinditForClientID: '
         'unknown or unsupported client %s' % client_id)
 
-  return cls(get_repository)
+  return cls(get_repository, config)
 
 
 # Some notes about the classes below, for people who are not familiar
@@ -93,7 +94,8 @@ class CrashBasePipeline(BasePipeline):
     self._crash_identifiers = crash_identifiers
     self._findit = FinditForClientID(
         client_id,
-        CachedGitilesRepository.Factory(HttpClientAppengine()))
+        CachedGitilesRepository.Factory(HttpClientAppengine()),
+        CrashConfig.Get())
 
   @property
   def client_id(self): # pragma: no cover
@@ -197,7 +199,7 @@ class PublishResultPipeline(CrashBasePipeline):
     messages_data = [json.dumps(result, sort_keys=True)]
 
     # TODO(http://crbug.com/659354): remove Findit's dependency on CrashConfig.
-    client_config = self._findit.config
+    client_config = self._findit.client_config
     # TODO(katesonia): Clean string uses in config.
     topic = client_config['analysis_result_pubsub_topic']
     pubsub_util.PublishMessagesToTopic(messages_data, topic)

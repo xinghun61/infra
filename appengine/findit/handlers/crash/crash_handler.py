@@ -14,6 +14,7 @@ from crash import crash_pipeline
 from crash.crash_report import CrashReport
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from model.crash.crash_config import CrashConfig
 
 
 class CrashHandler(BaseHandler):
@@ -130,8 +131,9 @@ def ScheduleNewAnalysis(crash_data):
   """
   client_id = crash_data['client_id']
   # N.B., must call FinditForClientID indirectly, for mock testing.
-  findit_client = crash_pipeline.FinditForClientID(client_id,
-      CachedGitilesRepository.Factory(HttpClientAppengine()))
+  findit_client = crash_pipeline.FinditForClientID(
+      client_id, CachedGitilesRepository.Factory(HttpClientAppengine()),
+      CrashConfig.Get())
 
   # Check policy and modify the crash_data as needed.
   crash_data = findit_client.CheckPolicy(crash_data)

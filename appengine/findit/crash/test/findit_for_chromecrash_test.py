@@ -27,6 +27,7 @@ from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_status
 from model.crash.crash_analysis import CrashAnalysis
+from model.crash.crash_config import CrashConfig
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 MOCK_GET_REPOSITORY = lambda _: None # pragma: no cover
@@ -35,8 +36,8 @@ MOCK_GET_REPOSITORY = lambda _: None # pragma: no cover
 class _FinditForChromeCrash(FinditForChromeCrash):  # pylint: disable = W
   # We allow overriding the default ``get_repository`` because one unittest
   # needs to.
-  def __init__(self, get_repository=MOCK_GET_REPOSITORY):
-    super(_FinditForChromeCrash, self).__init__(get_repository)
+  def __init__(self, get_repository=MOCK_GET_REPOSITORY, config=None):
+    super(_FinditForChromeCrash, self).__init__(get_repository, config)
 
   @classmethod
   def _ClientID(cls): # pragma: no cover
@@ -47,13 +48,13 @@ class _FinditForChromeCrash(FinditForChromeCrash):  # pylint: disable = W
     exceptions since we want to be able to test the FinditForChromeCrash
     class itself.
     """
-    return ''
+    return 'fracas'
 
   @property
-  def config(self):
+  def client_config(self):
     """Avoid returning None.
 
-    The default ``Findit.config`` will return None if the client
+    The default ``Findit.client_config`` will return None if the client
     id is not found in the CrashConfig. This in turn will cause
     ``FinditForChromeCrash.__init__`` to crash, since NoneType doesn't
     have a ``get`` method. In general it's fine for things to crash, since
@@ -64,9 +65,9 @@ class _FinditForChromeCrash(FinditForChromeCrash):  # pylint: disable = W
     return {}
 
 
-def _FinditForFracas():
+def _FinditForFracas(config=None):
   """A helper to pass in the standard pipeline class."""
-  return FinditForFracas(MOCK_GET_REPOSITORY)
+  return FinditForFracas(MOCK_GET_REPOSITORY, config or {})
 
 
 class FinditForChromeCrashTest(PredatorTestCase):
@@ -88,33 +89,38 @@ class FinditForChromeCrashTest(PredatorTestCase):
     # the client_id?
     analysis.client_id = CrashClient.FRACAS
 
-    findit_client = (
-        _FinditForChromeCrash(GitilesRepository.Factory(HttpClientAppengine())))
+    findit_client = _FinditForChromeCrash(
+        GitilesRepository.Factory(HttpClientAppengine()),
+        config=CrashConfig.Get())
     self.assertIsNone(findit_client.FindCulprit(analysis))
 
 
 class FinditForFracasTest(PredatorTestCase):
 
+  def setUp(self):
+    super(FinditForFracasTest, self).setUp()
+    self.findit = _FinditForFracas(config=CrashConfig.Get())
+
   def testPlatformRename(self):
-    self.assertEqual(_FinditForFracas().RenamePlatform('linux'), 'unix')
+    self.assertEqual(self.findit.RenamePlatform('linux'), 'unix')
 
   def testCheckPolicyUnsupportedPlatform(self):
-    self.assertIsNone(_FinditForFracas().CheckPolicy(self.GetDummyCrashData(
+    self.assertIsNone(self.findit.CheckPolicy(self.GetDummyCrashData(
         platform = 'unsupported_platform')))
 
   def testCheckPolicyBlacklistedSignature(self):
-    self.assertIsNone(_FinditForFracas().CheckPolicy(self.GetDummyCrashData(
+    self.assertIsNone(self.findit.CheckPolicy(self.GetDummyCrashData(
         signature = 'Blacklist marker signature')))
 
   def testCheckPolicyPlatformRename(self):
-    new_crash_data = _FinditForFracas().CheckPolicy(self.GetDummyCrashData(
+    new_crash_data = self.findit.CheckPolicy(self.GetDummyCrashData(
         platform = 'linux'))
     self.assertIsNotNone(new_crash_data,
         'FinditForFracas.CheckPolicy unexpectedly returned None')
     self.assertEqual(new_crash_data['platform'], 'unix')
 
   def testCreateAnalysis(self):
-    self.assertIsNotNone(_FinditForFracas().CreateAnalysis(
+    self.assertIsNotNone(self.findit.CreateAnalysis(
         {'signature': 'sig'}))
 
   def testGetAnalysis(self):
@@ -123,18 +129,18 @@ class FinditForFracasTest(PredatorTestCase):
     # FinditForFracas.CreateAnalysis instead.
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.put()
-    self.assertEqual(_FinditForFracas().GetAnalysis(crash_identifiers),
+    self.assertEqual(self.findit.GetAnalysis(crash_identifiers),
                      analysis)
 
   def testInitializeAnalysisForFracas(self):
     crash_data = self.GetDummyCrashData(platform = 'linux')
     crash_identifiers = crash_data['crash_identifiers']
 
-    findit_client = _FinditForFracas()
-    analysis = findit_client.CreateAnalysis(crash_identifiers)
-    findit_client._InitializeAnalysis(analysis, crash_data)
+    self.findit = self.findit
+    analysis = self.findit.CreateAnalysis(crash_identifiers)
+    self.findit._InitializeAnalysis(analysis, crash_data)
     analysis.put()
-    analysis = findit_client.GetAnalysis(crash_identifiers)
+    analysis = self.findit.GetAnalysis(crash_identifiers)
     self.assertIsNotNone(analysis,
         'FinditForFracas.GetAnalysis unexpectedly returned None')
 
@@ -148,27 +154,25 @@ class FinditForFracasTest(PredatorTestCase):
     self.assertEqual(analysis.channel, channel)
 
   def testNeedsNewAnalysisIsTrueIfNoAnalysisYet(self):
-    self.assertTrue(_FinditForFracas()._NeedsNewAnalysis(
+    self.assertTrue(self.findit._NeedsNewAnalysis(
         self.GetDummyCrashData()))
 
   def testNeedsNewAnalysisIsTrueIfLastOneFailed(self):
-    findit_client = _FinditForFracas()
     crash_data = self.GetDummyCrashData()
-    analysis = findit_client.CreateAnalysis(crash_data['crash_identifiers'])
+    analysis = self.findit.CreateAnalysis(crash_data['crash_identifiers'])
     analysis.status = analysis_status.ERROR
     analysis.put()
-    self.assertTrue(findit_client._NeedsNewAnalysis(crash_data))
+    self.assertTrue(self.findit._NeedsNewAnalysis(crash_data))
 
   def testNeedsNewAnalysisIsFalseIfLastOneIsNotFailed(self):
-    findit_client = _FinditForFracas()
     crash_data = self.GetDummyCrashData()
     crash_identifiers = crash_data['crash_identifiers']
     for status in (analysis_status.PENDING, analysis_status.RUNNING,
                    analysis_status.COMPLETED, analysis_status.SKIPPED):
-      analysis = findit_client.CreateAnalysis(crash_identifiers)
+      analysis = self.findit.CreateAnalysis(crash_identifiers)
       analysis.status = status
       analysis.put()
-      self.assertFalse(findit_client._NeedsNewAnalysis(crash_data))
+      self.assertFalse(self.findit._NeedsNewAnalysis(crash_data))
 
   def testFindCulpritForChromeCrashEmptyStacktrace(self):
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
@@ -182,7 +186,8 @@ class FinditForFracasTest(PredatorTestCase):
     analysis.crashed_version = '50.0.1234.0'
     analysis.historical_metadata = [
         {'chrome_version': '51.0.1234.0', 'cpm': 0.6}]
-    self.assertIsNone(_FinditForChromeCrash().FindCulprit(analysis))
+    self.assertIsNone(_FinditForChromeCrash(
+        config=CrashConfig.Get()).FindCulprit(analysis))
 
   # TODO(http://crbug.com/659346): why do these mocks give coverage
   # failures? That's almost surely hiding a bug in the tests themselves.
@@ -224,7 +229,8 @@ class FinditForFracasTest(PredatorTestCase):
     analysis.crashed_version = '50.0.1234.0'
     dummy_regression_range = ('50.0.1233.0', '50.0.1234.0')
     analysis.regression_range = dummy_regression_range
-    culprit = _FinditForChromeCrash().FindCulprit(analysis)
+    culprit = _FinditForChromeCrash(config=CrashConfig.Get()).FindCulprit(
+        analysis)
     self.assertIsNotNone(culprit, 'FindCulprit failed unexpectedly')
     suspects, tag = culprit.ToDicts()
 
@@ -251,7 +257,8 @@ class FinditForFracasTest(PredatorTestCase):
     analysis.stack_trace = 'frame1\nframe2'
     analysis.crashed_version = '50.0.1234.0'
     # N.B., analysis.regression_range is None
-    suspects, tag = _FinditForChromeCrash().FindCulprit(analysis).ToDicts()
+    suspects, tag = _FinditForChromeCrash(config=CrashConfig.Get()).FindCulprit(
+        analysis).ToDicts()
 
     expected_suspects = {'found': False}
     expected_tag = {
@@ -277,7 +284,7 @@ class FinditForFracasTest(PredatorTestCase):
     crash_identifiers = {'signature': 'sig'}
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.result = {'other': 'data'}
-    findit_object = FinditForFracas(MOCK_GET_REPOSITORY)
+    findit_object = _FinditForFracas(config=CrashConfig.Get())
     expected_processed_suspect = {
         'client_id': findit_object.client_id,
         'crash_identifiers': {'signature': 'sig'},
