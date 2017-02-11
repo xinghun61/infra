@@ -1048,6 +1048,7 @@ function TKR_handleListActions(actionsMenu) {
     case 'addissues':
       _showID('addissuesspec');
       _hideID('columnspec');
+      setCurrentColSpec();
       break;
     case 'removeissues':
       HTL_removeIssues();
@@ -1539,10 +1540,15 @@ function HTL_removeIssues() {
     var selectedLocalIDString = selectedLocalIDs.join(',');
     $('bulk_remove_local_ids').value = selectedLocalIDString;
     $('bulk_remove_value').value = 'true';
+    setCurrentColSpec();
 
     var form = $('bulkremoveissues');
     form.submit();
   } else {
     alert('Please select some issues to remove');
   }
+}
+
+function setCurrentColSpec() {
+  $('current_col_spec').value = TKR_getColspecElement().value;
 }

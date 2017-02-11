@@ -71,6 +71,7 @@
 [if-any is_hotlist]
 <form id='bulkremoveissues' method="POST" action="/u/[viewed_user_id]/hotlists/[hotlist.name].do">
 <input type="hidden" name="token" value="[remove_issues_token]">
+  <input type="hidden" id="current_col_spec" name="current_col_spec" value="[col_spec]">
   <input type="hidden" id="bulk_remove_local_ids" name="remove_local_ids">
   <input type ="hidden" id="bulk_remove_value" name = "remove" value="false">
   <span id="addissuesspec" style="display:none; font-size:90%">

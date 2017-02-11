@@ -162,6 +162,7 @@ class HotlistIssues(servlet.Servlet):
         'add_local_ids': '',
         'placeholder': _INITIAL_ADD_ISSUES_MESSAGE,
         'add_issues_selected': ezt.boolean(False),
+        'col_spec': ''
         }
     table_view_data.update(table_related_dict)
 
@@ -170,9 +171,10 @@ class HotlistIssues(servlet.Servlet):
   def ProcessFormData(self, mr, post_data):
     hotlist_view_url = hotlist_helpers.GetURLOfHotlist(
         mr.cnxn, mr.hotlist, self.services.user)
+    current_col_spec = post_data.get('current_col_spec')
     default_url = framework_helpers.FormatAbsoluteURL(
           mr, hotlist_view_url,
-          include_project=False)
+          include_project=False, colspec=current_col_spec)
     sorting.InvalidateArtValuesKeys(
         mr.cnxn,
         [hotlist_item.issue_id for hotlist_item
@@ -203,11 +205,13 @@ class HotlistIssues(servlet.Servlet):
           # TODO(jojwang): give issues that were not found.
       else:
         mr.errors.issues = _MSG_INVALID_ISSUES_INPUT
-
+    # TODO(jojwang): fix: when there are errors, hidden column come back on
+    # the .do page but go away once the errors are fixed and the form
+    # is submitted again
     if mr.errors.AnyErrors():
       self.PleaseCorrect(
           mr, add_local_ids=project_and_local_ids,
-          add_issues_selected=ezt.boolean(True))
+          add_issues_selected=ezt.boolean(True), col_spec=current_col_spec)
 
     else:
       if post_data.get('remove') == 'true':
@@ -219,10 +223,9 @@ class HotlistIssues(servlet.Servlet):
                          selected_iids]
         self.services.features.UpdateHotlistItems(
             mr.cnxn, mr.hotlist_id, [], added_tuples)
-
       return framework_helpers.FormatAbsoluteURL(
-          mr, hotlist_view_url,
-          saved=1, ts=int(time.time()), include_project=False)
+          mr, hotlist_view_url, saved=1, ts=int(time.time()),
+          include_project=False, colspec=current_col_spec)
 
   def GetGridViewData(self, mr):
     """EZT template values to render a Table View of issues.
