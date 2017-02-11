@@ -112,6 +112,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
   def testGatherPageData(self):
     self.mr.mode = 'list'
     self.mr.auth.effective_ids = {111L}
+    self.mr.auth.user_id = 111L
     self.mr.sort_spec = 'rank stars'
     page_data = self.servlet.GatherPageData(self.mr)
     self.assertEqual(ezt.boolean(False), page_data['owner_permissions'])

@@ -68,6 +68,7 @@ class HotlistPeopleListTest(unittest.TestCase):
 
   def testGatherPageData(self):
     mr = testing_helpers.MakeMonorailRequest(hotlist=self.public_hotlist)
+    mr.auth.user_id = 111L
     mr.auth.effective_ids = {111L}
     mr.cnxn = 'fake cnxn'
     page_data = self.servlet.GatherPageData(mr)
@@ -77,10 +78,12 @@ class HotlistPeopleListTest(unittest.TestCase):
     self.assertEqual(len(page_data['pagination'].visible_results), 2)
 
     # non-owners cannot edit people list
+    mr.auth.user_id = 222L
     mr.auth.effective_ids = {222L}
     page_data = self.servlet.GatherPageData(mr)
     self.assertEqual(ezt.boolean(False), page_data['offer_membership_editing'])
 
+    mr.auth.user_id = 333L
     mr.auth.effective_ids = {333L}
     page_data = self.servlet.GatherPageData(mr)
     self.assertEqual(ezt.boolean(False), page_data['offer_membership_editing'])

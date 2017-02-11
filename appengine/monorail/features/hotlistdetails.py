@@ -39,6 +39,9 @@ class HotlistDetails(servlet.Servlet):
 
   def GatherPageData(self, mr):
     """Buil up a dictionary of data values to use when rendering the page."""
+    if mr.auth.user_id:
+      self.services.user.AddVisitedHotlist(
+          mr.cnxn, mr.auth.user_id, mr.hotlist_id)
     cant_administer_hotlist = not permissions.CanAdministerHotlist(
         mr.auth.effective_ids, mr.hotlist)
 

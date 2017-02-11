@@ -37,6 +37,10 @@ class HotlistPeopleList(servlet.Servlet):
 
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page."""
+    if mr.auth.user_id:
+      self.services.user.AddVisitedHotlist(
+          mr.cnxn, mr.auth.user_id, mr.hotlist_id)
+
     all_members = (mr.hotlist.owner_ids +
                    mr.hotlist.editor_ids + mr.hotlist.follower_ids)
 

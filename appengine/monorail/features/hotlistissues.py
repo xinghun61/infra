@@ -65,6 +65,9 @@ class HotlistIssues(servlet.Servlet):
     with self.profiler.Phase('getting hotlist'):
       if mr.hotlist_id is None:
         self.abort(404, 'no hotlist specified')
+    if mr.auth.user_id:
+      self.services.user.AddVisitedHotlist(
+          mr.cnxn, mr.auth.user_id, mr.hotlist_id)
 
     if mr.mode == 'grid':
       page_data = self.GetGridViewData(mr)
