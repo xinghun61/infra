@@ -150,7 +150,9 @@ type BuildFailure struct {
 	// Status of Findit analysis: RUNNING or FINISHED.
 	FinditStatus string `json:"findit_status"`
 	// Url to Findit result page.
-	FinditURL string `json:"findit_url"`
+	FinditURL   string `json:"findit_url"`
+	HasFindings bool   `json:"has_findings"`
+	IsFinished  bool   `json:"is_finished"`
 }
 
 // BuildStep is a step which was run in a particular build. Useful for analyzing

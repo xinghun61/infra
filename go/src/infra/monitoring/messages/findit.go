@@ -18,6 +18,8 @@ type FinditResult struct {
 	AnalysisApproach            string      `json:"analysis_approach"`
 	TryJobStatus                string      `json:"try_job_status"`
 	IsFlakyTest                 bool        `json:"is_flaky_test"`
+	HasFindings                 bool        `json:"has_findings"`
+	IsFinished                  bool        `json:"is_finished"`
 }
 
 // SuspectCL is a CL which is suspected to have caused a failure.

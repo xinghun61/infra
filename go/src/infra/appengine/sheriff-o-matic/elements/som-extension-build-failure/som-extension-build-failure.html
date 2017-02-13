@@ -143,35 +143,40 @@
             </template>
           </template>
         </div>
-        <template is="dom-if" if="[[_haveFinditData(extension)]]">
-          <div id="findit-results" class="section">
-            <template is="dom-if" if="[[_finditIsRunning(extension)]]">
+        <div id="findit-results" class="section">
+          <template is="dom-if" if="[[_finditIsRunning(extension)]]">
+            <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
+            <strong class="suspect-cl-results">
+              Findit is Analyzing...
+            </strong>
+            <br>
+          </template>
+          <template is="dom-if" if="[[_finditHasNoResult(extension)]]">
+            <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
+            <strong class="suspect-cl-results">
+              Findit found no culprit.
+            </strong>
+            <br>
+          </template>
+          <template is="dom-if" if="[[_haveSuspectCLs(extension)]]">
+            <template is="dom-repeat" items="[[_suspectedCls]]" as="cl">
               <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
               <strong class="suspect-cl-results">
-                Findit is Analyzing...
+                Findit
+                (<a target="_blank" href="http://go/findit-manual">?</a>)
+                [[_finditApproach(cl)]]
+                <a target="_blank" href$=[[_linkForCL(cl.revision)]] class="suspect-cl-link">
+                  [[_textForCL(cl.revision)]]
+                </a>
+                with [[_finditConfidence(cl)]]% confidence.
               </strong>
+              <a target="_blank" href$=[[extension.findit_url]]>
+                More details...
+              </a>
               <br>
             </template>
-            <template is="dom-if" if="[[_haveSuspectCLs(extension)]]">
-              <template is="dom-repeat" items="[[_suspectedCls]]" as="cl">
-                <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-                <strong class="suspect-cl-results">
-                  Findit
-                  (<a target="_blank" href="http://go/findit-manual">?</a>)
-                  [[_finditApproach(cl)]]
-                  <a target="_blank" href$=[[_linkForCL(cl.revision)]] class="suspect-cl-link">
-                    [[_textForCL(cl.revision)]]
-                  </a>
-                  with [[_finditConfidence(cl)]]% confidence.
-                </strong>
-                <a target="_blank" href$=[[extension.findit_url]]>
-                  More details...
-                </a>
-                <br>
-              </template>
-            </template>
-          </div>
-        </template>
+          </template>
+        </div>
       </div>
     </template>
   </template>

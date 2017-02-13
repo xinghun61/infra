@@ -58,8 +58,11 @@
     },
 
     _finditIsRunning: function(extension) {
-      return extension && extension.findit_status == 'RUNNING' &&
-          !this._haveSuspectCLs(extension);
+      return extension && !extension.is_finished && !extension.has_findings;
+    },
+
+    _finditHasNoResult: function(extension) {
+      return extension && extension.is_finished && !extension.has_findings;
     },
 
     _finditApproach: function(cl) {
@@ -72,11 +75,6 @@
 
     _finditConfidence: function(cl) {
       return cl.confidence.toString();
-    },
-
-    _haveFinditData: function(extension) {
-      return this._haveSuspectCLs(extension) ||
-          this._haveRegressionRanges(extension);
     },
 
     _haveSuspectCLs: function(extension) {
