@@ -236,7 +236,7 @@ class UserServiceTest(unittest.TestCase):
   def SetUpGetRecentlyVisitedHotlists(self):
     self.user_service.hotlistvisithistory_tbl.Select(
         self.cnxn, cols=['hotlist_id'], user_id=[111L],
-        order_by=[('viewed DESC')], limit=10).AndReturn(
+        order_by=[('viewed DESC', [])], limit=10).AndReturn(
             ((123,), (234,)))
 
   def testGetRecentlyVisitedHotlists(self):

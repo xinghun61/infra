@@ -38,10 +38,16 @@ class HotlistsJsonFeed(jsonfeed.JsonFeed):
     with self.profiler.Phase('GetUserHotlists'):
       user_hotlists = self.services.features.GetHotlistsByUserID(
           mr.cnxn, mr.auth.user_id)
+
       user_starred_hids = self.services.hotlist_star.LookupStarredItemIDs(
           mr.cnxn, mr.auth.user_id)
       user_starred_hotlists, _ = self.services.features.GetHotlistsByID(
           mr.cnxn, user_starred_hids)
+
+      recently_visited_hids = self.services.user.GetRecentlyVisitedHotlists(
+          mr.cnxn, mr.auth.user_id)
+      recently_visited_hotlists, _ = self.services.features.GetHotlistsByID(
+          mr.cnxn, [hid for hid in recently_visited_hids])
 
     hotlists_dict = {
         'ownerof': [(h.name, hotlist_helpers.GetURLOfHotlist(
@@ -54,7 +60,15 @@ class HotlistsJsonFeed(jsonfeed.JsonFeed):
             mr.cnxn, h, self.services.user)) for
                              h in user_starred_hotlists.values() if
                              permissions.CanViewHotlist(
-                                 mr.auth.effective_ids, h)],
+                                 mr.auth.effective_ids, h) and
+                             h not in user_hotlists],
+        'visited_hotlists': [(recently_visited_hotlists[hid].name,
+                              hotlist_helpers.GetURLOfHotlist(
+                                  mr.cnxn, recently_visited_hotlists[hid],
+                                  self.services.user)) for
+                             hid in recently_visited_hids if
+                             recently_visited_hotlists[hid] not in user_hotlists
+                             and hid not in user_starred_hids],
         'user': mr.auth.email
         }
     return hotlists_dict

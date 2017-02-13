@@ -58,6 +58,7 @@ function CS_updateHotlistsCallback(event) {
     }
     var hotlists = [];
     var starredHotlists = [];
+    var visitedHotlists = [];
 
     var json = CS_parseJSON(xhr);
     for (var category in json) {
@@ -72,6 +73,11 @@ function CS_updateHotlistsCallback(event) {
         case 'starred_hotlists':
           for (var i = 0; i < json[category].length; i++) {
             starredHotlists.push(json[category][i]);
+          }
+          break;
+        case 'visited_hotlists':
+          for (var i = 0; i < json[category].length; i++) {
+            visitedHotlists.push(json[category][i]);
           }
           break;
         case 'user':
@@ -100,6 +106,11 @@ function CS_updateHotlistsCallback(event) {
       myhotlists.addItem(name, url, 'starred_hotlists', 'Starred hotlists');
     }
 
+    for (var i = 0; i < visitedHotlists.length; i++) {
+      name = visitedHotlists[i][0];
+      url = visitedHotlists[i][1];
+      myhotlists.addItem(name, url, 'visited_hotlists', 'Recently Visited Hotlists');
+    }
     if (hotlists.length == 0 && starredHotlists.length == 0) {
       myhotlists.addItem('No hotlists. Create one.', '/u/' + user + '/hotlists', 'controls');
     }
