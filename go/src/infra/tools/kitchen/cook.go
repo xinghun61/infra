@@ -321,6 +321,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 	// https://chromium.googlesource.com/chromium/tools/depot_tools/+/248331450c05c59c8e966c806f00bd2475e36603/recipe_modules/infra_paths/path_config.py#57
 	if _, ok := props["path_config"]; ok {
 		fmt.Fprintln(os.Stderr, `"path_config" property must not be set; it is reserved by kitchen`)
+		return 1
 	}
 	if props == nil {
 		props = map[string]interface{}{}
