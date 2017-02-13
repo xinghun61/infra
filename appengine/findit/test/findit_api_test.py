@@ -145,7 +145,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_result, response.json_body.get('results', []))
 
-  def testNoResultIsReturnedWhenNoAnalysisIsCompleted(self):
+  def testResultIsReturnedWhenNoAnalysisIsCompleted(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -227,7 +227,20 @@ class FinditApiTest(testing.EndpointsTestCase):
             ],
             'analysis_approach': 'HEURISTIC',
             'try_job_status': 'FINISHED',
-            'is_flaky_test': False
+            'is_flaky_test': False,
+            'has_findings': True,
+            'is_finished': True
+        },
+        {
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': 'b',
+            'is_sub_test': False,
+            'analysis_approach': 'HEURISTIC',
+            'is_flaky_test': False,
+            'has_findings': False,
+            'is_finished': False
         },
     ]
 
@@ -238,7 +251,8 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
-    self.assertEqual(expected_results, response.json_body['results'])
+    self.assertEqual(sorted(expected_results),
+                     sorted(response.json_body['results']))
 
   def testAnalysisFindingNoSuspectedCLsIsNotReturned(self):
     master_name = 'm'
@@ -251,7 +265,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             {
                 'master_url': master_url,
                 'builder_name': builder_name,
-                'build_number': build_number
+                'build_number': build_number,
+                'failed_steps': ['test']
             }
         ]
     }
@@ -270,7 +285,21 @@ class FinditApiTest(testing.EndpointsTestCase):
     }
     analysis.put()
 
-    expected_result = []
+    expected_result = [
+        {
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': 'test',
+            'is_sub_test': False,
+            'first_known_failed_build_number': 3,
+            'analysis_approach': 'HEURISTIC',
+            'try_job_status': 'FINISHED',
+            'is_flaky_test': False,
+            'has_findings': False,
+            'is_finished': True
+        }
+    ]
 
     self._MockMasterIsSupported(supported=True)
 
@@ -355,7 +384,9 @@ class FinditApiTest(testing.EndpointsTestCase):
             ],
             'analysis_approach': 'HEURISTIC',
             'is_flaky_test': False,
-            'try_job_status': 'FINISHED'
+            'try_job_status': 'FINISHED',
+            'has_findings': True,
+            'is_finished': True
         }
     ]
 
@@ -376,7 +407,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             {
                 'master_url': master_url,
                 'builder_name': builder_name,
-                'build_number': build_number
+                'build_number': build_number,
+                'failed_steps': ['compile']
             }
         ]
     }
@@ -444,7 +476,9 @@ class FinditApiTest(testing.EndpointsTestCase):
             ],
             'analysis_approach': 'TRY_JOB',
             'is_flaky_test': False,
-            'try_job_status': 'FINISHED'
+            'try_job_status': 'FINISHED',
+            'has_findings': True,
+            'is_finished': True
         }
     ]
 
@@ -465,7 +499,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             {
                 'master_url': master_url,
                 'builder_name': builder_name,
-                'build_number': build_number
+                'build_number': build_number,
+                'failed_steps': ['compile']
             }
         ]
     }
@@ -521,7 +556,9 @@ class FinditApiTest(testing.EndpointsTestCase):
             ],
             'analysis_approach': 'HEURISTIC',
             'is_flaky_test': False,
-            'try_job_status': 'RUNNING'
+            'try_job_status': 'RUNNING',
+            'has_findings': True,
+            'is_finished': False
         }
     ]
 
@@ -542,7 +579,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             {
                 'master_url': master_url,
                 'builder_name': builder_name,
-                'build_number': build_number
+                'build_number': build_number,
+                'failed_steps': ['b on platform']
             }
         ]
     }
@@ -607,7 +645,9 @@ class FinditApiTest(testing.EndpointsTestCase):
             'first_known_failed_build_number': 3,
             'analysis_approach': 'HEURISTIC',
             'is_flaky_test': True,
-            'try_job_status': 'FINISHED'
+            'try_job_status': 'FINISHED',
+            'has_findings': True,
+            'is_finished': True
         },
         {
             'master_url': master_url,
@@ -619,7 +659,9 @@ class FinditApiTest(testing.EndpointsTestCase):
             'first_known_failed_build_number': 3,
             'analysis_approach': 'HEURISTIC',
             'is_flaky_test': True,
-            'try_job_status': 'FINISHED'
+            'try_job_status': 'FINISHED',
+            'has_findings': True,
+            'is_finished': True
         }
     ]
 
@@ -642,7 +684,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             {
                 'master_url': master_url,
                 'builder_name': builder_name,
-                'build_number': build_number
+                'build_number': build_number,
+                'failed_steps': ['a', 'b on platform']
             }
         ]
     }
@@ -855,7 +898,9 @@ class FinditApiTest(testing.EndpointsTestCase):
             ],
             'analysis_approach': 'TRY_JOB',
             'is_flaky_test': False,
-            'try_job_status': 'FINISHED'
+            'try_job_status': 'FINISHED',
+            'has_findings': True,
+            'is_finished': True
         },
         {
             'master_url': master_url,
@@ -875,7 +920,9 @@ class FinditApiTest(testing.EndpointsTestCase):
             ],
             'analysis_approach': 'HEURISTIC',
             'is_flaky_test': False,
-            'try_job_status': 'FINISHED'
+            'try_job_status': 'FINISHED',
+            'has_findings': True,
+            'is_finished': True
         },
         {
             'master_url': master_url,
@@ -895,7 +942,9 @@ class FinditApiTest(testing.EndpointsTestCase):
             ],
             'analysis_approach': 'HEURISTIC',
             'is_flaky_test': False,
-            'try_job_status': 'FINISHED'
+            'try_job_status': 'FINISHED',
+            'has_findings': True,
+            'is_finished': True
         },
         {
             'master_url': master_url,
@@ -916,7 +965,9 @@ class FinditApiTest(testing.EndpointsTestCase):
             ],
             'analysis_approach': 'TRY_JOB',
             'is_flaky_test': False,
-            'try_job_status': 'FINISHED'
+            'try_job_status': 'FINISHED',
+            'has_findings': True,
+            'is_finished': True
         }
     ]
 
@@ -1067,3 +1118,45 @@ class FinditApiTest(testing.EndpointsTestCase):
         try_job, None, None, None, None)
     self.assertEqual(status, findit_api._TryJobStatus.FINISHED)
     self.assertIsNone(culprit)
+
+  def testAnalysisIsStillRunning(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+
+    master_url = 'https://build.chromium.org/p/%s' % master_name
+    builds = {
+        'builds': [
+            {
+                'master_url': master_url,
+                'builder_name': builder_name,
+                'build_number': build_number,
+                'failed_steps': ['a']
+            }
+        ]
+    }
+
+    self._MockMasterIsSupported(supported=True)
+
+    expected_results = [
+        {
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'step_name': 'a',
+            'analysis_approach': 'HEURISTIC',
+            'is_sub_test': False,
+            'is_flaky_test': False,
+            'has_findings': False,
+            'is_finished': False
+        }
+    ]
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = analysis_status.RUNNING
+    analysis.result = None
+    analysis.put()
+
+    response = self.call_api('AnalyzeBuildFailures', body=builds)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual(expected_results, response.json_body['results'])
