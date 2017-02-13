@@ -8,6 +8,7 @@
 import logging
 import time
 
+from features import hotlist_helpers
 from framework import jsonfeed
 from framework import permissions
 
@@ -49,8 +50,19 @@ class AddToHotlist(jsonfeed.JsonFeed):
           mr.cnxn, miss[0]).project_name
       missed.append(('%s:%d' % (project_name, miss[1])))
 
-    hotlist_names = [self.services.features.GetHotlist(
-        mr.cnxn, hotlist_id).name for hotlist_id in mr.hotlist_ids]
-    return {'hotlistIDs': mr.hotlist_ids,
+    added_hotlist_pbs = [self.services.features.GetHotlist(
+        mr.cnxn, hotlist_id) for hotlist_id in mr.hotlist_ids]
+
+    user_issue_hotlists = list(set(self.services.features.GetHotlistsByUserID(
+        mr.cnxn, mr.auth.user_id)) &
+                               set(self.services.features.GetHotlistsByIssueID(
+                                   mr.cnxn, selected_iids[0])))
+    all_hotlist_urls = [hotlist_helpers.GetURLOfHotlist(
+        mr.cnxn, hotlist, self.services.user) for
+                        hotlist in user_issue_hotlists]
+    all_hotlist_names = [hotlist.name for hotlist in user_issue_hotlists]
+    return {'addedHotlistIDs': mr.hotlist_ids,
             'missed': missed,
-            'hotlist_names': hotlist_names}
+            'addedHotlistNames': [h.name for h in added_hotlist_pbs],
+            'allHotlistNames': all_hotlist_names,
+            'allHotlistUrls': all_hotlist_urls}

@@ -1146,17 +1146,18 @@ function TKR_addToHotlist() {
   }
 }
 
-function ShowAddToHotlistDialog(issueRefs){
+function ShowAddToHotlistDialog(issueRefs, opt_onResponse){
   addToHotlistDialog = $('add-to-hotlist');
   addToHotlistDialog.style.display = 'block';
   $('cancel-add-hotlist').addEventListener('click', function() {
     addToHotlistDialog.style.display = 'none';
   });
   $('add-issues').addEventListener('click', function () {
-    AddIssuesToHotlist(addToHotlistDialog, issueRefs)});
+    AddIssuesToHotlist(addToHotlistDialog, issueRefs, opt_onResponse)});
 }
 
-function AddIssuesToHotlist(dialogBox, issueRefs) {
+function AddIssuesToHotlist(dialogBox, issueRefs, opt_onResponse) {
+  onResponse = opt_onResponse || onAddIssuesResponse;
   var selectedHotlistIDs = [];
   for (var i = 0; i < usersHotlists.length; i++) {
     var checkbox = document.getElementById('cb_hotlist_' + usersHotlists[i]);
@@ -1169,24 +1170,54 @@ function AddIssuesToHotlist(dialogBox, issueRefs) {
       hotlist_ids: selectedHotlistIDs.join(','),
       issue_refs: issueRefs.join(','),
     }
-    CS_doPost('/hosting/addToHotlist.do', onAddIssuesResponse, data);
+    CS_doPost('/hosting/addToHotlist.do', onResponse, data);
   } else {
     alert('Please select some hotlists');
   }
 }
 
+function onResponseUpdateUI(event) {
+  var xhr = event.target;
+  if (xhr.readyState != 4) {
+    return;
+  }
+  if (xhr.status != 200) {
+    console.error('200 page error');
+    // TODO(jojwang): fill this in more
+    console.log(xhr.status)
+    return;
+  }
+  var response = CS_parseJSON(xhr);
+  var list = $('user-hotlists-list');
+  while (list.firstChild) {
+    list.removeChild(list.firstChild);
+  }
+  for (var i = 0; i < response['allHotlistNames'].length; i++) {
+    var url = response['allHotlistUrls'][i];
+    var name = response['allHotlistNames'][i];
+    var hotlistLink = document.createElement('a');
+    hotlistLink.setAttribute('href', url);
+    hotlistLink.textContent = name;
+    list.appendChild(hotlistLink);
+    list.appendChild(document.createElement('br'));
+  }
+  $('user-hotlists').style.display = 'block';
+  $('add-to-hotlist').style.display = 'none';
+}
+
 function onAddIssuesResponse(event) {
   var xhr = event.target;
-    if (xhr.readyState != 4) {
-      return;
-    }
-    if (xhr.status != 200) {
-      console.error('200 page error');
-      // TODO(jojwang): fill this in more
-      return;
-    }
+  if (xhr.readyState != 4) {
+    return;
+  }
+  if (xhr.status != 200) {
+    console.error('200 page error');
+    // TODO(jojwang): fill this in more
+    console.log(xhr.status);
+    return;
+  }
   var response = CS_parseJSON(xhr);
-  var hotlists = response['hotlist_names'].join(', ');
+  var hotlists = response['addedHotlistNames'].join(', ');
   var message = 'Issues successfully added to ' + hotlists;
   if (response['missed'] && response['missed'].length > 0) {
     missed = ' \n' + response['missed'].join(', ') + ' could not be added.';
