@@ -11,7 +11,6 @@ from common import appengine_util
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from crash import crash_pipeline
-from crash.crash_report import CrashReport
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model.crash.crash_config import CrashConfig
@@ -131,31 +130,26 @@ def ScheduleNewAnalysis(crash_data):
   """
   client_id = crash_data['client_id']
   # N.B., must call FinditForClientID indirectly, for mock testing.
-  findit_client = crash_pipeline.FinditForClientID(
-      client_id, CachedGitilesRepository.Factory(HttpClientAppengine()),
-      CrashConfig.Get())
-
-  # Check policy and modify the crash_data as needed.
-  crash_data = findit_client.CheckPolicy(crash_data)
-  if crash_data is None:
-    return False
+  findit_client = crash_pipeline.FinditForClientID(client_id,
+      CachedGitilesRepository.Factory(HttpClientAppengine()), CrashConfig.Get())
+  crash_data = findit_client.GetCrashData(crash_data)
 
   # Detect the regression range, and decide if we actually need to
   # run a new anlaysis or not.
-  if not findit_client._NeedsNewAnalysis(crash_data):
+  if not findit_client.NeedsNewAnalysis(crash_data):
     return False
 
-  crash_identifiers = crash_data['crash_identifiers']
-  # N.B., we cannot pass ``self`` directly to the _pipeline_cls, because
-  # it is not JSON-serializable (and there's no way to make it such,
+  # N.B., we cannot pass ``findit_client`` directly to the _pipeline_cls,
+  # because it is not JSON-serializable (and there's no way to make it such,
   # since JSON-serializability is defined by JSON-encoders rather than
   # as methods on the objects being encoded).
-  pipeline = crash_pipeline.CrashWrapperPipeline(client_id, crash_identifiers)
+  pipeline = crash_pipeline.CrashWrapperPipeline(client_id,
+                                                 crash_data.identifiers)
   # Attribute defined outside __init__ - pylint: disable=W0201
   pipeline.target = appengine_util.GetTargetNameForModule(
       constants.CRASH_BACKEND[client_id])
   queue_name = constants.CRASH_ANALYSIS_QUEUE[client_id]
   pipeline.start(queue_name=queue_name)
   logging.info('New %s analysis is scheduled for %s', client_id,
-               repr(crash_identifiers))
+               repr(crash_data.identifiers))
   return True

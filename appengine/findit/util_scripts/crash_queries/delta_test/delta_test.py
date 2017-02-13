@@ -6,6 +6,7 @@ import json
 import os
 import pickle
 import subprocess
+import zlib
 
 from crash_queries import crash_iterator
 from crash_queries.delta_test import delta_util
@@ -13,12 +14,10 @@ from crash_queries.delta_test import delta_util
 PREDATOR_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
                                           'predator_results')
 DELTA_TEST_DIRECTORY = os.path.dirname(__file__)
-CRASH_FIELDS = ['crashed_version', 'stack_trace', 'signature',
-                'platform', 'client_id', 'regression_range',
-                'customized_data', 'historical_metadata']
-
 
 # TODO(crbug.com/662540): Add unittests.
+
+
 class Delta(object):  # pragma: no cover.
   """Stands for delta between two results.
 
@@ -98,7 +97,6 @@ class Delta(object):  # pragma: no cover.
     return self.__bool__()
 
 
-# TODO(crbug.com/662540): Add unittests.
 def GetDeltasFromTwoSetsOfResults(set1, set2):  # pragma: no cover.
   """Gets delta from two sets of results.
 
@@ -125,13 +123,12 @@ def GetDeltasFromTwoSetsOfResults(set1, set2):  # pragma: no cover.
   return deltas
 
 
-# TODO(crbug.com/662540): Add unittests.
 def GetResults(crashes, client_id, app_id, git_hash, result_path,
                verbose=False):  # pragma: no cover.
   """Returns an evaluator function to compute delta between 2 findit githashes.
 
   Args:
-    crashes (list): A list of crash infos.
+    crashes (list): A list of ``CrashAnalysis``.
     client_id (str): Possible values - fracas/cracas/clustefuzz.
     app_id (str): Appengine app id to query.
     git_hash (str): A git hash of findit repository.
@@ -156,21 +153,23 @@ def GetResults(crashes, client_id, app_id, git_hash, result_path,
         shell=True)
 
   if not os.path.exists(result_path):
-    args = ['python', 'run-predator.py', result_path, client_id, app_id]
+    # Pass the crashes information to sub-routine ``run-predator`` to compute
+    # culprit results and write results to ``result_path``.
+    input_path = os.path.join(PREDATOR_RESULTS_DIRECTORY, 'input')
+    with open(input_path, 'wb') as f:
+      f.write(zlib.compress(pickle.dumps(crashes)))
+
+    args = ['python', 'run-predator.py', input_path, result_path,
+            client_id, app_id]
     if verbose:
       args.append('--verbose')
     p = subprocess.Popen(args, stdin=subprocess.PIPE)
-    # TODO(katesonia): Cache crashes for crash_iterator and let subprocess read
-    # corresponding cache file instead.
-    #
-    # Pass the crashes information to sub-routine ``run-predator`` to compute
-    # culprit results and write results to ``result_path``.
-    p.communicate(input=json.dumps(crashes))
+    p.communicate()
   else:
     print '\nLoading results from', result_path
 
   if not os.path.exists(result_path):
-    print 'Failed to get results.'
+    print 'Failed to get predator results.'
     return {}
 
   # Read culprit results from ``result_path``, which is computed by sub-routine
@@ -181,7 +180,6 @@ def GetResults(crashes, client_id, app_id, git_hash, result_path,
   return {}
 
 
-# TODO(crbug.com/662540): Add unittests.
 def DeltaEvaluator(git_hash1, git_hash2,
                    client_id, app_id,
                    start_date, end_date, batch_size, max_n,
@@ -216,7 +214,6 @@ def DeltaEvaluator(git_hash1, git_hash2,
     # Iterate batches of crash informations.
     for index, crashes in enumerate(
         crash_iterator.CachedCrashIterator(client_id, app_id,
-                                           fields=CRASH_FIELDS,
                                            property_values=property_values,
                                            start_date=start_date,
                                            end_date=end_date,

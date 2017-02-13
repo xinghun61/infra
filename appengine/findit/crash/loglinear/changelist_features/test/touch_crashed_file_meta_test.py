@@ -9,7 +9,6 @@ from common.dependency import Dependency
 from common.dependency import DependencyRoll
 from crash import changelist_classifier as scorer_changelist_classifier
 from crash.crash_report import CrashReport
-from crash.crash_report_with_dependencies import CrashReportWithDependencies
 from crash.loglinear.changelist_features.touch_crashed_file_meta import (
     TouchCrashedFileMetaFeature)
 from crash.loglinear.changelist_features.min_distance import ModifiedFrameInfo
@@ -66,53 +65,42 @@ _DUMMY_CHANGELOG = ChangeLog.FromDict({
 class TouchCrashedFileMetaFeatureTest(PredatorTestCase):
   """Tests ``TouchCrashedFileMetaFeature``."""
 
-  def _GetDummyReport(self):
+  def setUp(self):
+    super(TouchCrashedFileMetaFeatureTest, self).setUp()
+    get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
+    self._feature = TouchCrashedFileMetaFeature(get_repository)
+
+  def _GetDummyReport(self, deps=None, dep_rolls=None):
     crash_stack = CallStack(0, [StackFrame(0, 'src/', 'func', 'a.cc',
                                            'a.cc', [2], 'https://repo')])
     return CrashReport('rev', 'sig', 'win',
                        Stacktrace([crash_stack], crash_stack),
-                       ('rev0', 'rev9'))
+                       ('rev0', 'rev9'), deps, dep_rolls)
 
-  def _GetMockSuspect(self):
+  def _GetMockSuspect(self, dep_path='src/'):
     """Returns a ``Suspect`` with the desired min_distance."""
-    return Suspect(_DUMMY_CHANGELOG, 'src/')
+    return Suspect(_DUMMY_CHANGELOG, dep_path)
 
   def testAreLogZerosWhenNoMatchedFile(self):
     """Test that feature values are log(0)s when there is no matched file."""
-    self.mock(ChromeDependencyFetcher, 'GetDependency',
-              lambda *_: {'src':
-                          Dependency('src/dep', 'https://repo', '6')})
+    report = self._GetDummyReport(
+        deps={'src': Dependency('src/dep', 'https://repo', '6')})
+    feature_values = self._feature(report)(self._GetMockSuspect()).values()
 
-    get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
-    report = CrashReportWithDependencies(
-        self._GetDummyReport(), ChromeDependencyFetcher(get_repository))
-    suspect = self._GetMockSuspect()
-
-    feature_values = TouchCrashedFileMetaFeature(
-        get_repository)(report)(suspect).values()
     for feature_value in feature_values:
         self.assertEqual(lmath.LOG_ZERO, feature_value.value)
 
   def testMinDistanceFeatureIsLogOne(self):
     """Test that the feature returns log(1) when the min_distance is 0."""
-    suspect = self._GetMockSuspect()
-
-    self.mock(ChromeDependencyFetcher, 'GetDependency',
-              lambda *_: {'src/': Dependency('src/', 'https://repo', '6')})
-    self.mock(ChromeDependencyFetcher, 'GetDependencyRollsDict',
-              lambda *_: {'src/': DependencyRoll('src/', 'https://repo',
-                                                 '0', '4')})
-
-    get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
-    report = CrashReportWithDependencies(
-        self._GetDummyReport(), ChromeDependencyFetcher(get_repository))
+    report = self._GetDummyReport(
+        deps={'src/': Dependency('src/', 'https://repo', '6')},
+        dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
 
     frame = StackFrame(0, 'src/', 'func', 'a.cc', 'a.cc', [2], 'https://repo')
     self.mock(MinDistanceFeature,
               'DistanceBetweenTouchedFileAndStacktrace',
               lambda *_: ModifiedFrameInfo(0, frame))
 
-    feature_values = TouchCrashedFileMetaFeature(
-        get_repository)(report)(suspect)
+    feature_values = self._feature(report)(self._GetMockSuspect())
 
     self.assertEqual(lmath.LOG_ONE, feature_values['MinDistance'].value)

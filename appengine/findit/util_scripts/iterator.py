@@ -36,9 +36,9 @@ def Iterate(query,
   Args:
     query (ndb.Query): The query to fetch entities.
     app_id (str): App engine app id.
-    fields (list): Field names of an datastore model entity to be projected
-      to a dict. If None provided, return the entities instead of projected
-      dict.
+    fields (list or None): Field names of an datastore model entity to be
+      projected to a dict. If None provided, return the entities instead of
+      projected dict.
     filter_func (function): A function that does in memory filtering.
     batch_size (int): The number of entities to query at one time.
     batch_run (bool): If True, iterate batches of entities, if

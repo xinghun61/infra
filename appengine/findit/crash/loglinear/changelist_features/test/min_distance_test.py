@@ -8,7 +8,6 @@ from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from common.dependency import Dependency
 from common.dependency import DependencyRoll
 from crash.crash_report import CrashReport
-from crash.crash_report_with_dependencies import CrashReportWithDependencies
 from crash.loglinear.changelist_features import min_distance
 from crash.loglinear.feature import ChangedFile
 from crash.stacktrace import CallStack
@@ -70,17 +69,21 @@ class DistanceBetweenLineRangesTest(unittest.TestCase):
 class MinDistanceTest(PredatorTestCase):
   """Tests ``MinDistanceFeature``."""
 
-  def _GetDummyReport(self):
+  def setUp(self):
+    super(MinDistanceTest, self).setUp()
+    self._get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
+
+  def _GetDummyReport(self, deps=None, dep_rolls=None):
     """Gets dummy ``CrashReport``."""
     crash_stack = CallStack(0, [StackFrame(0, 'src/', 'func', 'f.cc',
                                            'f.cc', [232], 'https://repo')])
     return CrashReport('rev', 'sig', 'win',
                        Stacktrace([crash_stack], crash_stack),
-                       ('rev0', 'rev9'))
+                       ('rev0', 'rev9'), deps, dep_rolls)
 
-  def _GetMockSuspect(self):
+  def _GetMockSuspect(self, dep_path='src/'):
     """Returns a dummy ``Suspect``."""
-    return Suspect(self.GetDummyChangeLog(), 'src/')
+    return Suspect(self.GetDummyChangeLog(), dep_path)
 
   def testMinDistanceFeatureIsLogZero(self):
     """Test that the feature returns log(0) when there are no matched files."""
@@ -93,16 +96,9 @@ class MinDistanceTest(PredatorTestCase):
 
   def testMinDistanceFeatureIsLogOne(self):
     """Test that the feature returns log(1) when the min_distance is 0."""
-    self.mock(ChromeDependencyFetcher, 'GetDependency',
-              lambda *_: {'src/': Dependency('src/', 'https://repo', '6')})
-    self.mock(ChromeDependencyFetcher, 'GetDependencyRollsDict',
-              lambda *_: {'src/': DependencyRoll('src/', 'https://repo',
-                                                 '0', '4')})
-
-    get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
-    report = CrashReportWithDependencies(
-        self._GetDummyReport(), ChromeDependencyFetcher(get_repository))
-    suspect = self._GetMockSuspect()
+    report = self._GetDummyReport(
+        deps={'src/': Dependency('src/', 'https://repo', '6')},
+        dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
 
     touched_file_to_stack_infos = {
         FileChangeInfo(ChangeType.MODIFY, 'file', 'file'):
@@ -113,21 +109,14 @@ class MinDistanceTest(PredatorTestCase):
               lambda *_: min_distance.ModifiedFrameInfo(0, None))
     self.assertEqual(
         lmath.LOG_ONE,
-        min_distance.MinDistanceFeature(get_repository, _MAXIMUM)(report)(
-            suspect, touched_file_to_stack_infos).value)
+        min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
+            self._GetMockSuspect(), touched_file_to_stack_infos).value)
 
   def testMinDistanceFeatureMiddling(self):
     """Test that the feature returns middling scores for middling distances."""
-    self.mock(ChromeDependencyFetcher, 'GetDependency',
-              lambda *_: {'src/': Dependency('src/', 'https://repo', '6')})
-    self.mock(ChromeDependencyFetcher, 'GetDependencyRollsDict',
-              lambda *_: {'src/': DependencyRoll(
-                  'src/', 'https://repo', '0', '4')})
-
-    get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
-    report = CrashReportWithDependencies(
-        self._GetDummyReport(), ChromeDependencyFetcher(get_repository))
-    suspect = self._GetMockSuspect()
+    report = self._GetDummyReport(
+        deps={'src/': Dependency('src/', 'https://repo', '6')},
+        dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
 
     frame = StackFrame(0, 'src/', 'func', 'f.cc', 'f.cc', [232], 'https://repo')
     distance = 42.
@@ -140,21 +129,14 @@ class MinDistanceTest(PredatorTestCase):
               lambda *_: min_distance.ModifiedFrameInfo(distance, frame))
     self.assertEqual(
         lmath.log((_MAXIMUM - distance) / _MAXIMUM),
-        min_distance.MinDistanceFeature(get_repository, _MAXIMUM)(report)(
-            suspect, touched_file_to_stack_infos).value)
+        min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
+            self._GetMockSuspect(), touched_file_to_stack_infos).value)
 
   def testMinDistanceFeatureIsOverMax(self):
     """Test that we return log(0) when the min_distance is too large."""
-    self.mock(ChromeDependencyFetcher, 'GetDependency',
-              lambda *_: {'src/': Dependency('src/', 'https://repo', '6')})
-    self.mock(ChromeDependencyFetcher, 'GetDependencyRollsDict',
-              lambda *_: {'src/': DependencyRoll(
-                  'src/', 'https://repo', '0', '4')})
-
-    get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
-    report = CrashReportWithDependencies(
-        self._GetDummyReport(), ChromeDependencyFetcher(get_repository))
-    suspect = self._GetMockSuspect()
+    report = self._GetDummyReport(
+        deps={'src/': Dependency('src/', 'https://repo', '6')},
+        dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
 
     distance = _MAXIMUM + 1
     touched_file_to_stack_info = {
@@ -168,13 +150,12 @@ class MinDistanceTest(PredatorTestCase):
               lambda *_: min_distance.ModifiedFrameInfo(distance, None))
     self.assertEqual(
         lmath.log((_MAXIMUM - distance) / _MAXIMUM),
-        min_distance.MinDistanceFeature(get_repository, _MAXIMUM)(report)(
-            suspect, touched_file_to_stack_info).value)
+        min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
+            self._GetMockSuspect(), touched_file_to_stack_info).value)
 
   def testDistanceBetweenTouchedFileAndStacktrace(self):
     """Tests ``DistanceBetweenTouchedFileAndStacktrace`` method."""
-    get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
-    feature = min_distance.MinDistanceFeature(get_repository, _MAXIMUM)
+    feature = min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)
     frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7],
                         repo_url='https://repo_url')
     frame2 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [17],
@@ -209,15 +190,9 @@ class MinDistanceTest(PredatorTestCase):
     The infinity distance means the touched file get overwritten by other
     cls, and the change didn't show in the final blame file.
     """
-    self.mock(ChromeDependencyFetcher, 'GetDependency',
-              lambda *_: {'src/': Dependency('src/', 'https://repo', '6')})
-    self.mock(ChromeDependencyFetcher, 'GetDependencyRollsDict',
-              lambda *_: {'src/': DependencyRoll(
-                  'src/', 'https://repo', '0', '4')})
-
-    get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
-    report = CrashReportWithDependencies(
-        self._GetDummyReport(), ChromeDependencyFetcher(get_repository))
+    report = self._GetDummyReport(
+        deps={'src/': Dependency('src/', 'https://repo', '6')},
+        dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
     suspect = self._GetMockSuspect()
 
     distance = _MAXIMUM + 1
@@ -232,28 +207,21 @@ class MinDistanceTest(PredatorTestCase):
               lambda *_: None)
     self.assertEqual(
         lmath.LOG_ZERO,
-        min_distance.MinDistanceFeature(get_repository, _MAXIMUM)(report)(
+        min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
             suspect, touched_file_to_stack_info).value)
     self.mock(min_distance.MinDistanceFeature,
               'DistanceBetweenTouchedFileAndStacktrace',
               lambda *_: min_distance.ModifiedFrameInfo(float('inf'), None))
     self.assertEqual(
         lmath.LOG_ZERO,
-        min_distance.MinDistanceFeature(get_repository, 100)(report)(
+        min_distance.MinDistanceFeature(self._get_repository, 100)(report)(
             suspect, touched_file_to_stack_info).value)
 
   def testMinDistanceChangedFiles(self):
     """Tests ``ChangedFile`` method."""
-    self.mock(ChromeDependencyFetcher, 'GetDependency',
-              lambda *_: {'src/': Dependency('src/', 'https://repo', '6')})
-    self.mock(ChromeDependencyFetcher, 'GetDependencyRollsDict',
-              lambda *_: {'src/': DependencyRoll('src/', 'https://repo',
-                                                 '0', '4')})
-
-    get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
-    report = CrashReportWithDependencies(
-        self._GetDummyReport(), ChromeDependencyFetcher(get_repository))
-    suspect = self._GetMockSuspect()
+    report = self._GetDummyReport(
+        deps={'src/': Dependency('src/', 'https://repo', '6')},
+        dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
 
     distance = 42
     touched_file_to_stack_info = {
@@ -267,8 +235,8 @@ class MinDistanceTest(PredatorTestCase):
               'DistanceBetweenTouchedFileAndStacktrace',
               lambda *_: min_distance.ModifiedFrameInfo(distance, frame))
     self.assertEqual(
-        min_distance.MinDistanceFeature(get_repository, _MAXIMUM)(report)(
-            suspect, touched_file_to_stack_info).changed_files,
+        min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
+            self._GetMockSuspect(), touched_file_to_stack_info).changed_files,
             [ChangedFile(name='file',
                          blame_url=('%s/+blame/%s/f.cc#%d' %
                                     (frame.repo_url,

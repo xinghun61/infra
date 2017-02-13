@@ -32,7 +32,6 @@ class FracasResultFeedbackTest(testing.AppengineTestCase):
     analysis.stack_trace = 'dummy\nframe1\nframe2'
     analysis.platform = 'android'
     analysis.channel = 'canary'
-    analysis.client_id = 'fracas'
     analysis.status = analysis_status.COMPLETED
     analysis.historical_metadata = [
         {'chrome_version': '53.0.2748.0', 'cpm': 0},

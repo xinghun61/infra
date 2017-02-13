@@ -14,7 +14,6 @@ from libs.gitiles.diff import ChangeType
 import libs.math.logarithms as lmath
 
 
-
 class ModifiedFrameInfo(object):
   """Represents the closest frame to a changelog which modified it.
 

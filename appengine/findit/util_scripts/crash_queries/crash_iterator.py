@@ -56,7 +56,9 @@ def IterateCrashes(client_id,
     client_id (CrashClient): One of CrashClient.FRACAS, CrashClient.CRACAS,
       CrashClient.CLUSTERFUZZ.
     app_id (str): App engine app id.
-    fields (list): Field names of CrashAnalysis entity to project.
+    fields (list or None): Field names of CrashAnalysis entity to be projected
+      to a dict. If None provided, return the entities instead of a projected
+      dict.
     property_values (dict): Property values to filter.
     start_date (str): Only iterate testcases after this date including this
       date, format '%Y-%m-%d'.

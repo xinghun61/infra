@@ -126,8 +126,8 @@ DUMMY_CALLSTACKS = [
     CallStack(0, [], CallStackFormatType.DEFAULT, LanguageType.CPP),
     CallStack(1, [], CallStackFormatType.DEFAULT, LanguageType.CPP)]
 DUMMY_REPORT = CrashReport(
-    None, None, None, Stacktrace(DUMMY_CALLSTACKS, DUMMY_CALLSTACKS[0]),
-    (None, None))
+    'rev', 'sig', 'win', Stacktrace(DUMMY_CALLSTACKS, DUMMY_CALLSTACKS[0]),
+    (None, None), None, None)
 
 
 class ChangelistClassifierTest(CrashTestSuite):
@@ -170,11 +170,14 @@ class ChangelistClassifierTest(CrashTestSuite):
     self.mock(changelist_classifier, 'FindSuspects', lambda *_: None)
 
     stack = CallStack(0)
-    self.changelist_classifier(CrashReport(crashed_version = '5',
-                               signature = 'sig',
-                               platform = 'canary',
-                               stacktrace = Stacktrace([stack], stack),
-                               regression_range = ('4', '5')))
+    self.changelist_classifier(
+        CrashReport(crashed_version = '5',
+                    signature = 'sig',
+                    platform = 'canary',
+                    stacktrace = Stacktrace([stack], stack),
+                    regression_range = ('4', '5'),
+                    dependencies = {},
+                    dependency_rolls = {}))
     expected_regression_deps_rolls = copy.deepcopy(dep_rolls)
 
     # Regression of a dep added/deleted (old_revision/new_revision is None) can

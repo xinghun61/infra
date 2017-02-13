@@ -18,7 +18,8 @@ class ChromeCrashAnalysis(CrashAnalysis):
     self.historical_metadata = None
     self.channel = None
 
-  @property
-  def customized_data(self):
-    return {'historical_metadata': self.historical_metadata,
-            'channel': self.channel}
+  def Initialize(self, crash_data):
+    """(Re)Initializes a CrashAnalysis ndb.Model from ``ChromeCrashData``."""
+    super(ChromeCrashAnalysis, self).Initialize(crash_data)
+    self.channel = crash_data.channel
+    self.historical_metadata = crash_data.historical_metadata

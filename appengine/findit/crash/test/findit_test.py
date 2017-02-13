@@ -7,83 +7,73 @@ import logging
 
 from google.appengine.api import app_identity
 
-from crash.findit import Findit
 from crash.type_enums import CrashClient
 from crash.test.predator_testcase import PredatorTestCase
-from model.crash.crash_config import CrashConfig
-from model.crash.fracas_crash_analysis import FracasCrashAnalysis
-
-MOCK_GET_REPOSITORY = lambda _: None # pragma: no cover
-
-
-class UnsupportedClient(Findit): # pylint: disable=W0223
-  # TODO(http://crbug.com/659346): this isn't being called for some reason.
-  @property
-  def client_id(self): # pragma: no cover
-    return self._client_id
-
-  @property
-  def client_config(self): # pragma: no cover
-    """Don't return None, so that PlatformRename doesn't crash."""
-    return {}
-
-  def __init__(self, client_id=None, config=None):
-    if client_id is None:
-      client_id = 'unsupported_client'
-    self._client_id = client_id
-    super(UnsupportedClient, self).__init__(MOCK_GET_REPOSITORY, config)
-
-
-class MockFindit(Findit):  # pylint: disable = W
-  """Overwrite abstract method of Findit for testing."""
-
-  def __init__(self, config=None):
-    super(MockFindit, self).__init__(MOCK_GET_REPOSITORY, config)
-
-  @classmethod
-  def _ClientID(cls):
-    return CrashClient.FRACAS
-
-  def ProcessResultForPublishing(self, result, key):
-    return result
+from model import analysis_status
+from model.crash.cracas_crash_analysis import CracasCrashAnalysis
+from model.crash.crash_analysis import CrashAnalysis
 
 
 class FinditTest(PredatorTestCase):
 
   def setUp(self):
     super(FinditTest, self).setUp()
-    self.findit = MockFindit(CrashConfig.Get())
+    self.findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
 
   def testPlatformRename(self):
-    self.assertEqual(
-        self.findit.RenamePlatform('linux'), 'unix')
+    self.assertEqual(self.findit.RenamePlatform('linux'), 'unix')
 
-  def testCheckPolicyUnsupportedClient(self):
-    self.assertIsNone(UnsupportedClient(config=CrashConfig.Get()).CheckPolicy(
-        self.GetDummyCrashData(
+  def testCheckPolicyNoneClientConfig(self):
+    unsupported_client = self.GetMockFindit(client_id='unconfiged')
+    crash_data = unsupported_client.GetCrashData(
+        self.GetDummyChromeCrashData(
             platform = 'canary',
             signature = 'sig',
-        )))
+        ))
+    self.assertTrue(unsupported_client._CheckPolicy(crash_data))
 
-  def testCreateAnalysisForUnsupportedClientId(self):
-    unsupported_client = UnsupportedClient('unsupported_id',
-                                           config=CrashConfig.Get())
-    self.assertIsNone(unsupported_client.CreateAnalysis({'signature': 'sig'}))
+  def testCheckPolicyNoBlackList(self):
+    """Tests ``_CheckPolicy`` method with no black list configured."""
+    crash_data = self.findit.GetCrashData(self.GetDummyChromeCrashData())
+    self.assertTrue(self.findit._CheckPolicy(crash_data))
 
-  def testGetAnalysisForUnsuportedClient(self):
-    crash_identifiers = {'signature': 'sig'}
-    # TODO(wrengr): it'd be less fragile to call FinditForFracas.CreateAnalysis
-    # instead. But then we'd need to make UnsupportedClient inherit that
-    # implementation, rather than inheriting the one from the Findit
-    # base class.
-    analysis = FracasCrashAnalysis.Create(crash_identifiers)
-    analysis.put()
-    unsupported_client = UnsupportedClient('Unsupported_client',
-                                           config=CrashConfig.Get())
-    self.assertIsNone(
-        unsupported_client.GetAnalysis(crash_identifiers),
-        'Unsupported client unexpectedly got analysis %s via identifiers %s'
-        % (analysis, crash_identifiers))
+  def testCheckPolicyWithBlackList(self):
+    """Tests ``_CheckPolicy`` return false if signature is blacklisted."""
+    crash_data = self.findit.GetCrashData(self.GetDummyChromeCrashData(
+        client_id=CrashClient.FRACAS,
+        signature='Blacklist marker signature'))
+    self.assertFalse(self.findit._CheckPolicy(crash_data))
+
+  def testDoesNotNeedNewAnalysisIfCheckPolicyFailed(self):
+    """Tests that ``NeedsNewAnalysis`` returns False if policy check failed."""
+    raw_crash_data = self.GetDummyChromeCrashData(
+        client_id=CrashClient.FRACAS,
+        signature='Blacklist marker signature')
+    crash_data = self.findit.GetCrashData(raw_crash_data)
+    self.assertFalse(self.findit.NeedsNewAnalysis(crash_data))
+
+  def testDoesNotNeedNewAnalysisIfCrashAnalyzedBefore(self):
+    """Tests that ``NeedsNewAnalysis`` returns False if crash analyzed."""
+    crash_data = self.findit.GetCrashData(self.GetDummyChromeCrashData())
+    crash_analysis_model = self.findit.CreateAnalysis(crash_data.identifiers)
+    crash_analysis_model.regression_range = crash_data.regression_range
+    crash_analysis_model.put()
+    self.assertFalse(self.findit.NeedsNewAnalysis(crash_data))
+
+  def testNeedsNewAnalysisIfNoAnalysisYet(self):
+    """Tests that ``NeedsNewAnalysis`` returns True if crash not analyzed."""
+    crash_data = self.findit.GetCrashData(self.GetDummyChromeCrashData())
+    self.mock(CrashAnalysis, 'Initialize', lambda *_: None)
+    self.assertTrue(self.findit.NeedsNewAnalysis(crash_data))
+
+  def testNeedsNewAnalysisIfLastOneFailed(self):
+    """Tests that ``NeedsNewAnalysis`` returns True if last analysis failed."""
+    crash_data = self.findit.GetCrashData(self.GetDummyChromeCrashData())
+    crash_analysis_model = self.findit.CreateAnalysis(crash_data.identifiers)
+    crash_analysis_model.status = analysis_status.ERROR
+    crash_analysis_model.put()
+    self.mock(CrashAnalysis, 'Initialize', lambda *_: None)
+    self.assertTrue(self.findit.NeedsNewAnalysis(crash_data))
 
   def testGetPublishableResultFoundTrue(self):
     analysis_result = {
@@ -108,7 +98,7 @@ class FinditTest(PredatorTestCase):
         'result': processed_analysis_result,
     }
 
-    analysis = FracasCrashAnalysis.Create(crash_identifiers)
+    analysis = CracasCrashAnalysis.Create(crash_identifiers)
     analysis.result = analysis_result
 
     self.assertDictEqual(self.findit.GetPublishableResult(crash_identifiers,
@@ -126,7 +116,7 @@ class FinditTest(PredatorTestCase):
         'result': copy.deepcopy(analysis_result),
     }
 
-    analysis = FracasCrashAnalysis.Create(crash_identifiers)
+    analysis = CracasCrashAnalysis.Create(crash_identifiers)
     analysis.result = analysis_result
 
     self.assertDictEqual(self.findit.GetPublishableResult(crash_identifiers,

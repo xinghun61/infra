@@ -120,7 +120,7 @@ DUMMY_CALLSTACKS = [
     CallStack(1, [], CallStackFormatType.DEFAULT, LanguageType.CPP)]
 DUMMY_REPORT = CrashReport(
     None, None, None, Stacktrace(DUMMY_CALLSTACKS, DUMMY_CALLSTACKS[0]),
-    (None, None))
+    (None, None), None, None)
 
 
 class LogLinearChangelistClassifierTest(CrashTestSuite):
@@ -144,12 +144,10 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
   # TODO(http://crbug.com/659346): why do these mocks give coverage
   # failures? That's almost surely hiding a bug in the tests themselves.
   def testFindItForCrashNoRegressionRange(self): # pragma: no cover
-    self.mock(ChromeDependencyFetcher, 'GetDependencyRollsDict', lambda *_: {})
-    self.mock(ChromeDependencyFetcher, 'GetDependency', lambda *_: {})
     # N.B., for this one test we really do want regression_range=None.
     report = CrashReport(None, None, None, Stacktrace(DUMMY_CALLSTACKS,
                                                       DUMMY_CALLSTACKS[0]),
-                         None)
+                         None, {}, {})
     self.assertListEqual(self.changelist_classifier(report), [])
 
   def testFindItForCrashNoMatchFound(self):
@@ -192,80 +190,10 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
     frame4 = StackFrame(3, 'src/dep1', 'func', 'f.cc', 'src/dep1/f.cc', [1])
     stacks = [CallStack(0, frame_list=[frame1, frame2, frame3, frame4])]
     stacktrace = Stacktrace(stacks, stacks[0])
-    report = CrashReport('6', 'sig', 'win', stacktrace, ('0', '4'))
-    self.mock(ChromeDependencyFetcher, 'GetDependency',
-              lambda *_: {'src/': Dependency('src/', 'https://repo', '6')})
-    self.mock(ChromeDependencyFetcher, 'GetDependencyRollsDict',
-              lambda *_: {'src/': DependencyRoll('src/', 'https://repo',
-                                                 '0', '4')})
-
-    suspects = self.changelist_classifier(report)
-    self.assertTrue(suspects,
-                    'Expected suspects, but the classifier didn\'t return any')
-
-    expected_suspects = [
-        {
-            'author': 'r@chromium.org',
-            'changed_files': [
-                {
-                    'blame_url': None,
-                    'file': 'a.cc',
-                    'info': ('Distance from touched lines and crashed lines is '
-                             '0, in frame #0')
-                }
-            ],
-            'confidence': 0.,
-            'project_path': 'src/',
-            'reasons': ('MinDistance: 0.000000 -- Minimum distance is '
-                        '0\nTopFrameIndex: 0.000000 -- Top frame is #0\n'
-                        'TouchCrashedFile: 0.000000 -- Touched files - a.cc'),
-            'review_url': 'https://codereview.chromium.org/3281',
-            'revision': '1',
-            'time': 'Thu Mar 31 21:24:43 2016',
-            'url': 'https://repo.test/+/1'
-        },
-    ]
-    self.assertListEqual([suspect.ToDict() for suspect in suspects],
-                         expected_suspects)
-
-  def testFinditForCrashFilterZeroConfidenceSuspects(self):
-    suspect1 = Suspect(DUMMY_CHANGELOG1, 'src/')
-    suspect2 = Suspect(DUMMY_CHANGELOG3, 'src/')
-
-    a_cc_blame = Blame('6', 'src/')
-    a_cc_blame.AddRegions([Region(0, 10, suspect1.changelog.revision,
-                                  suspect1.changelog.author.name,
-                                  suspect1.changelog.author.email,
-                                  suspect1.changelog.author.time)])
-    f_cc_blame = Blame('6', 'src/')
-    f_cc_blame.AddRegions([Region(21, 10, suspect2.changelog.revision,
-                                  suspect2.changelog.author.name,
-                                  suspect2.changelog.author.email,
-                                  suspect2.changelog.author.time)])
-    url_to_blame = {'6/a.cc': a_cc_blame,
-                    '6/f.cc': f_cc_blame}
-
-    def _MockGetBlame(_, path, revision):
-      revision_path = '%s/%s' % (revision, path)
-      return url_to_blame.get(revision_path)
-
-    self.mock(GitilesRepository, 'GetBlame', _MockGetBlame)
-    self.mock(scorer_changelist_classifier,
-              'GetChangeLogsForFilesGroupedByDeps',
-              lambda *_: (None, None))
-    self.mock(scorer_changelist_classifier, 'FindSuspects',
-              lambda *_: [suspect1, suspect2])
-    frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [1])
-    frame2 = StackFrame(1, 'src/', 'func', 'a.cc', 'src/a.cc', [7])
-    frame3 = StackFrame(15, 'src/', 'func', 'f.cc', 'src/f.cc', [1])
-    stacks = [CallStack(0, frame_list=[frame1, frame2, frame3])]
-    stacktrace = Stacktrace(stacks, stacks[0])
-    report = CrashReport('6', 'sig', 'win', stacktrace, ('0', '4'))
-    self.mock(ChromeDependencyFetcher, 'GetDependency',
-              lambda *_: {'src/': Dependency('src/', 'https://repo', '6')})
-    self.mock(ChromeDependencyFetcher, 'GetDependencyRollsDict',
-              lambda *_: {'src/': DependencyRoll('src/', 'https://repo',
-                                                 '0', '4')})
+    report = CrashReport(
+        '6', 'sig', 'win', stacktrace, ('0', '4'),
+        {'src/': Dependency('src/', 'https://repo', '6')},
+        {'src/': DependencyRoll('src/', 'https://repo', '0', '4')} )
 
     suspects = self.changelist_classifier(report)
     self.assertTrue(suspects,

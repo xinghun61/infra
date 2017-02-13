@@ -141,7 +141,7 @@ class CrashAnalysisPipeline(CrashBasePipeline):
     analysis.put()
 
     # Actually do the analysis.
-    culprit = self._findit.FindCulprit(analysis)
+    culprit = self._findit.FindCulprit(analysis.ToCrashReport())
     if culprit is not None:
       result, tags = culprit.ToDicts()
     else:

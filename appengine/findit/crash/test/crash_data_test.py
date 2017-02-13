@@ -21,16 +21,16 @@ class CrashDataTest(PredatorTestCase):
 
   def testProperties(self):
     """Tests all properties."""
-    raw_crash_data = self.GetDummyCrashData()
+    raw_crash_data = self.GetDummyChromeCrashData()
     crash_data = CrashData(raw_crash_data)
 
-    self.assertEqual(crash_data.identifiers, 
+    self.assertEqual(crash_data.identifiers,
                      raw_crash_data['crash_identifiers'])
-    self.assertEqual(crash_data.crashed_version, 
+    self.assertEqual(crash_data.crashed_version,
                      raw_crash_data['chrome_version'])
-    self.assertEqual(crash_data.signature, 
+    self.assertEqual(crash_data.signature,
                      raw_crash_data['signature'])
-    self.assertEqual(crash_data.platform, 
+    self.assertEqual(crash_data.platform,
                      raw_crash_data['platform'])
 
     crash_data.platform = 'new platform'

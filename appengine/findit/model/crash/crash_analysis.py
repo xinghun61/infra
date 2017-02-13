@@ -9,7 +9,8 @@ import logging
 
 from google.appengine.ext import ndb
 
-from crash.type_enums import CrashClient
+from crash.crash_report import CrashReport
+from libs import time_util
 from model import analysis_status
 from model import triage_status
 
@@ -21,8 +22,8 @@ class CrashAnalysis(ndb.Model):
   # number for Chrome build or a git commit hash/position for chromium build.
   crashed_version = ndb.StringProperty(indexed=False)
 
-  # The stack_trace_string.
-  stack_trace = ndb.StringProperty(indexed=False)
+  # The parsed ``Stacktrace`` object.
+  stack_trace = ndb.PickleProperty(indexed=False)
 
   # The signature of the crash.
   signature = ndb.StringProperty(indexed=False)
@@ -30,11 +31,16 @@ class CrashAnalysis(ndb.Model):
   # The platform of this crash.
   platform = ndb.StringProperty(indexed=False)
 
-  # ID to differentiate different client.
-  client_id = ndb.StringProperty(indexed=False)
-
   # Chrome regression range.
   regression_range = ndb.JsonProperty(indexed=False)
+
+  # Dict of ``Dependency``s of ``crashed_version``, which appears in crash stack
+  # N.B. ``dependencies`` includes chromium itself.
+  dependencies = ndb.PickleProperty(indexed=False)
+
+  # Dict of ``DependencyRoll``s in ``regression_range``, which appears in crash
+  # stack. N.B. ``dependencies`` includes chromium itself.
+  dependency_rolls = ndb.PickleProperty(indexed=False)
 
   ################### Properties for the analysis progress. ###################
 
@@ -152,3 +158,37 @@ class CrashAnalysis(ndb.Model):
   @classmethod
   def Create(cls, crash_identifiers):
     return cls(key=cls._CreateKey(crash_identifiers))
+
+  def Initialize(self, crash_data):
+    """(Re)Initialize a CrashAnalysis ndb.Model from ``CrashData``.
+
+    This method is only ever called from _NeedsNewAnalysis which is only
+    ever called from ScheduleNewAnalysis. It is used for filling in the
+    fields of a CrashAnalysis ndb.Model for the first time (though it
+    can also be used to re-initialize a given CrashAnalysis). Subclasses
+    should extend (not override) this to (re)initialize any
+    client-specific fields they may have.
+    """
+    # Get rid of any previous values there may have been.
+    self.Reset()
+
+    # Set the version.
+    self.crashed_version = crash_data.crashed_version
+
+    # Set (other) common properties.
+    self.stack_trace = crash_data.stacktrace
+    self.signature = crash_data.signature
+    self.platform = crash_data.platform
+    self.regression_range = crash_data.regression_range
+    self.dependencies = crash_data.dependencies
+    self.dependency_rolls = crash_data.dependency_rolls
+
+    # Set progress properties.
+    self.status = analysis_status.PENDING
+    self.requested_time = time_util.GetUTCNow()
+
+  def ToCrashReport(self):
+    """Converts this model to ``CrashReport`` to give to Predator library."""
+    return CrashReport(self.crashed_version, self.signature, self.platform,
+                       self.stack_trace, self.regression_range,
+                       self.dependencies, self.dependency_rolls)

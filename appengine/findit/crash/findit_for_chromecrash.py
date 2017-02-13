@@ -7,8 +7,10 @@ import logging
 from google.appengine.ext import ndb
 
 from common import appengine_util
+from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from crash import detect_regression_range
 from crash.chromecrash_parser import ChromeCrashParser
+from crash.chrome_crash_data import ChromeCrashData
 from crash.findit import Findit
 from crash.loglinear.changelist_classifier import LogLinearChangelistClassifier
 from crash.loglinear.changelist_features.touch_crashed_file_meta import (
@@ -19,24 +21,14 @@ from crash.loglinear.weight import Weight
 from crash.predator import Predator
 from crash.type_enums import CrashClient
 from model.crash.cracas_crash_analysis import CracasCrashAnalysis
-from model.crash.crash_config import CrashConfig
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 # TODO(katesonia): Remove the default value after adding validity check to
 # config.
 _FRACAS_FEEDBACK_URL_TEMPLATE = 'https://%s/crash/fracas-result-feedback?key=%s'
 
-# TODO(wrengr): [Note#1] in many places below we have to do some ugly
-# defaulting in case crash_data is missing certain keys. If we had
-# crash_data be a proper class, rather than an anonymous dict, then we
-# could clean all this up by having the properties themselves do the check
-# and return the default whenever keys are missing. This would also
-# let us do things like have regression_range be automatically computed
-# from historical_metadata (when historical_metadata is provided and
-# regression_range is not).
 
-
-class FinditForChromeCrash(Findit):
+class FinditForChromeCrash(Findit):  # pylint: disable=W0223
   """Find culprits for crash reports from the Chrome Crash server."""
 
   @classmethod
@@ -52,8 +44,6 @@ class FinditForChromeCrash(Findit):
 
   def __init__(self, get_repository, config):
     super(FinditForChromeCrash, self).__init__(get_repository, config)
-
-    # TODO(http://crbug.com/687670): Move meta weight initial value to config.
     meta_weight = MetaWeight({
         'TouchCrashedFileMeta': MetaWeight({
             'MinDistance': Weight(1.),
@@ -64,89 +54,40 @@ class FinditForChromeCrash(Findit):
     meta_feature = WrapperMetaFeature(
         [TouchCrashedFileMetaFeature(get_repository)])
 
-    # The top_n is the number of frames we want to check to get component or
-    # project classifications.
-    self._predator = Predator(
-        cl_classifier = LogLinearChangelistClassifier(get_repository,
-                                                      meta_feature,
-                                                      meta_weight),
-        project_classifier = self._project_classifier,
-        component_classifier = self._component_classifier)
+    self._predator = Predator(LogLinearChangelistClassifier(get_repository,
+                                                            meta_feature,
+                                                            meta_weight),
+                              self._component_classifier,
+                              self._project_classifier)
 
-    self._stacktrace_parser = ChromeCrashParser()
+  def _Predator(self):  # pragma: no cover
+    return self._predator
 
-  def _InitializeAnalysis(self, model, crash_data):
-    super(FinditForChromeCrash, self)._InitializeAnalysis(model, crash_data)
-    # TODO(wrengr): see Note#1
-    customized_data = crash_data.get('customized_data', {})
-    model.channel = customized_data.get('channel', None)
-    model.historical_metadata = customized_data.get('historical_metadata', [])
-
-  # TODO(wrengr): see Note#1, which would allow us to lift this
-  # implementation to the Findit base class.
-  @ndb.transactional
-  def _NeedsNewAnalysis(self, crash_data):
-    crash_identifiers = crash_data['crash_identifiers']
-    historical_metadata = crash_data['customized_data']['historical_metadata']
-    model = self.GetAnalysis(crash_identifiers)
-    # N.B., for mocking reasons, we must not call DetectRegressionRange
-    # directly, but rather must access it indirectly through the module.
-    new_regression_range = detect_regression_range.DetectRegressionRange(
-        historical_metadata)
-    if (model and not model.failed and
-        new_regression_range == model.regression_range):
-      logging.info('The analysis of %s has already been done.',
-                   repr(crash_identifiers))
+  def _CheckPolicy(self, crash_data):
+    """Checks if ``CrashData`` meets policy requirements."""
+    if not super(FinditForChromeCrash, self)._CheckPolicy(crash_data):
       return False
 
-    if not model:
-      model = self.CreateAnalysis(crash_identifiers)
+    if crash_data.platform not in self.client_config[
+        'supported_platform_list_by_channel'].get(crash_data.channel, []):
+      # Bail out if either the channel or platform is not supported yet.
+      logging.info('Analysis of channel %s, platform %s is not supported.',
+                   crash_data.channel, crash_data.platform)
+      return False
 
-    crash_data['regression_range'] = new_regression_range
-    self._InitializeAnalysis(model, crash_data)
-    model.put()
     return True
 
-  def CheckPolicy(self, crash_data):
-    crash_identifiers = crash_data['crash_identifiers']
-    platform = crash_data['platform']
-    # TODO(wrengr): see Note#1
-    channel = crash_data.get('customized_data', {}).get('channel', None)
-    # TODO(katesonia): Remove the default value after adding validity check to
-    # config.
-    if platform not in self.client_config.get(
-        'supported_platform_list_by_channel', {}).get(channel, []):
-      # Bail out if either the channel or platform is not supported yet.
-      logging.info('Analysis of channel %s, platform %s is not supported. '
-                   'No analysis is scheduled for %s',
-                   channel, platform, repr(crash_identifiers))
-      return None
-
-    signature = crash_data['signature']
-    # TODO(wrengr): can this blacklist stuff be lifted to the base class?
-    # TODO(katesonia): Remove the default value after adding validity check to
-    # config.
-    for blacklist_marker in self.client_config.get(
-        'signature_blacklist_markers', []):
-      if blacklist_marker in signature:
-        logging.info('%s signature is not supported. '
-                     'No analysis is scheduled for %s', blacklist_marker,
-                     repr(crash_identifiers))
-        return None
-
-    # TODO(wrengr): should we clone ``crash_data`` rather than mutating it?
-    crash_data['platform'] = self.RenamePlatform(platform)
-    return crash_data
-
-  def ProcessResultForPublishing(self, result, key):  # pragma: no cover.
-    """Client specific processing of result data for publishing."""
-    # This method needs to get overwritten by subclasses FinditForCracas and
-    # FinditForFracas.
-    raise NotImplementedError()
+  def GetCrashData(self, raw_crash_data):
+    """Returns parsed ``ChromeCrashData`` from raw json crash data."""
+    return ChromeCrashData(raw_crash_data,
+                           ChromeDependencyFetcher(self._get_repository),
+                           top_n_frames=self.client_config['top_n'])
 
 
 # TODO(http://crbug.com/659346): we misplaced the coverage tests; find them!
-class FinditForCracas(FinditForChromeCrash): # pragma: no cover
+class FinditForCracas(  # pylint: disable=W0223
+    FinditForChromeCrash): # pragma: no cover
+
   @classmethod
   def _ClientID(cls):
     return CrashClient.CRACAS
@@ -166,7 +107,7 @@ class FinditForCracas(FinditForChromeCrash): # pragma: no cover
     return result
 
 
-class FinditForFracas(FinditForChromeCrash):
+class FinditForFracas(FinditForChromeCrash):  # pylint: disable=W0223
   @classmethod
   def _ClientID(cls):
     return CrashClient.FRACAS

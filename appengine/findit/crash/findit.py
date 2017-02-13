@@ -13,12 +13,10 @@ from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from common import constants
 from crash.component import Component
 from crash.component_classifier import ComponentClassifier
-from crash.crash_report import CrashReport
 from crash.project import Project
 from crash.project_classifier import ProjectClassifier
 from libs import time_util
 from model import analysis_status
-from model.crash.crash_config import CrashConfig
 
 
 # TODO(http://crbug.com/659346): since most of our unit tests are
@@ -47,7 +45,6 @@ class Findit(object):
         classifiers.
     """
     self._get_repository = get_repository
-    self._dep_fetcher = ChromeDependencyFetcher(get_repository)
 
     # The top_n is the number of frames we want to check to get project
     # classifications.
@@ -58,6 +55,8 @@ class Findit(object):
         projects, config.project_classifier['top_n'],
         config.project_classifier['non_chromium_project_rank_priority'])
 
+    # The top_n is the number of frames we want to check to get component
+    # classifications.
     components = [Component(component_name, path_regex, function_regex)
                   for path_regex, function_regex, component_name
                   in config.component_classifier['path_function_component']]
@@ -65,12 +64,6 @@ class Findit(object):
         components, config.component_classifier['top_n'])
 
     self._config = config
-
-    # TODO(http://crbug.com/659354): because self.client is volatile,
-    # we need some way of updating the Predator instance whenever the
-    # config changes. How to do that cleanly?
-    self._predator = None
-    self._stacktrace_parser = None
 
   # This is a class method because it should be the same for all
   # instances of this class. We can in fact call class methods on
@@ -98,6 +91,9 @@ class Findit(object):
           cls.__name__)
     raise NotImplementedError()
 
+  def _Predator(self):
+    raise NotImplementedError()
+
   @property
   def client_id(self):
     """Get the client id from the class of this object.
@@ -105,11 +101,6 @@ class Findit(object):
     N.B., this property is static and should not be overridden."""
     return self._ClientID()
 
-  # TODO(http://crbug.com/659354): can we remove the dependency on
-  # CrashConfig entirely? It'd be better to receive method calls
-  # whenever things change, so that we know the change happened (and
-  # what in particular changed) so that we can update our internal state
-  # as appropriate.
   @property
   def client_config(self):
     """Get the current value of the client config for the class of this object.
@@ -133,12 +124,39 @@ class Findit(object):
   # something like that.
   def RenamePlatform(self, platform):
     """Remap the platform to a different one, based on the config."""
-    # TODO(katesonia): Remove the default value after adding validity check to
-    # config.
-    return self.client_config.get('platform_rename', {}).get(platform, platform)
+    return self.client_config['platform_rename'].get(platform, platform)
 
-  def CheckPolicy(self, crash_data): # pylint: disable=W0613
-    """Check whether this client supports analyzing the given report.
+  # TODO(http://crbug.com/644476): rename this to something like
+  # _NewAnalysis, since it only does the "allocation" and needs to/will
+  # be followed up with _InitializeAnalysis anyways.
+  def CreateAnalysis(self, crash_identifiers): # pragma: no cover
+    raise NotImplementedError()
+
+  def GetAnalysis(self, crash_identifiers): # pragma: no cover
+    """Returns the CrashAnalysis for the ``crash_identifiers``, if one exists.
+
+    Args:
+      crash_identifiers (JSON): key, value pairs to uniquely identify a crash.
+
+    Returns:
+      If a CrashAnalysis ndb.Model already exists for the
+      ``crash_identifiers``, then we return it. Otherwise, returns None.
+    """
+    raise NotImplementedError()
+
+  def GetCrashData(self, raw_crash_data): # pragma: no cover
+    """Gets ``CrashData`` object for raw json crash data from clients.
+
+    Args:
+      crash_data (JSON): Json input message from clients.
+
+    Returns:
+      Parsed ``CrashData`` object.
+    """
+    raise NotImplementedError()
+
+  def _CheckPolicy(self, crash_data): # pylint: disable=W0613
+    """Checks whether this client supports analyzing the given report.
 
     Some clients only support analysis for crashes on certain platforms
     or channels, etc. This method checks to see whether this client can
@@ -147,115 +165,66 @@ class Findit(object):
     reject everything, as expected.
 
     Args:
-      crash_data (JSON): ??
+      crash_data (CrashData): Parsed crash data from clients.
 
     Returns:
-      If satisfied, we return the ``crash_data`` which may have had some
-      fields modified. Otherwise returns None.
+      Boolean to indicate whether the crash passed the policy check.
     """
-    return None
+    if not self.client_config:
+      logging.info('No configuration of client %s, analysis is not supported',
+                   self.client_id)
+      return True
 
-  # TODO(http://crbug.com/644476): rename this to something like
-  # _NewAnalysis, since it only does the "allocation" and needs to/will
-  # be followed up with _InitializeAnalysis anyways.
-  def CreateAnalysis(self, crash_identifiers): # pylint: disable=W0613
-    return None
+    for blacklist_marker in self.client_config['signature_blacklist_markers']:
+      if blacklist_marker in crash_data.signature:
+        logging.info('%s signature is not supported.', blacklist_marker)
+        return False
 
-  def GetAnalysis(self, crash_identifiers): # pylint: disable=W0613
-    """Returns the CrashAnalysis for the ``crash_identifiers``, if one exists.
-
-    Args:
-      crash_identifiers (JSON): ??
-
-    Returns:
-      If a CrashAnalysis ndb.Model already exists for the
-      ``crash_identifiers``, then we return it. Otherwise, returns None.
-    """
-    return None
-
-  # TODO(wrengr): this should be a method on CrashAnalysis, not on Findit.
-  # TODO(http://crbug.com/659346): coverage tests for this class, not
-  # just for FinditForFracas.
-  def _InitializeAnalysis(self, model, crash_data): # pragma: no cover
-    """(Re)Initialize a CrashAnalysis ndb.Model, but do not ``put()`` it yet.
-
-    This method is only ever called from _NeedsNewAnalysis which is only
-    ever called from ScheduleNewAnalysis. It is used for filling in the
-    fields of a CrashAnalysis ndb.Model for the first time (though it
-    can also be used to re-initialize a given CrashAnalysis). Subclasses
-    should extend (not override) this to (re)initialize any
-    client-specific fields they may have."""
-    # Get rid of any previous values there may have been.
-    model.Reset()
-
-    # Set the version.
-    # ``handlers.crash.test.crash_handler_test.testAnalysisScheduled``
-    # provides and expects this field to be called 'chrome_version',
-    # whereas everyone else (e.g., in ``crash.test.crash_pipeline_test``
-    # the tests ``testAnalysisNeededIfNoAnalysisYet``,
-    # ``testRunningAnalysisNoSuspectsFound``, ``testRunningAnalysis``,
-    # ``testAnalysisNeededIfLastOneFailed``,
-    # ``testRunningAnalysisWithSuspectsCls``) expects it to be called
-    # 'crashed_version'. The latter is the better/more general name,
-    # so the former needs to be changed in order to get rid of this
-    # defaulting ugliness.
-    model.crashed_version = crash_data.get('crashed_version',
-        crash_data.get('chrome_version', None))
-
-    # Set (other) common properties.
-    model.stack_trace = crash_data['stack_trace']
-    model.signature = crash_data['signature']
-    model.platform = crash_data['platform']
-    # TODO(wrengr): The only reason to have _InitializeAnalysis as a
-    # method of the Findit class rather than as a method on CrashAnalysis
-    # is so we can assert that crash_data['client_id'] == self.client_id.
-    # So, either we should do that, or else we should move this to be
-    # a method on CrashAnalysis.
-    model.client_id = self.client_id
-    model.regression_range = crash_data.get('regression_range', None)
-
-    # Set progress properties.
-    model.status = analysis_status.PENDING
-    model.requested_time = time_util.GetUTCNow()
+    return True
 
   @ndb.transactional
-  def _NeedsNewAnalysis(self, crash_data):
-    raise NotImplementedError()
+  def NeedsNewAnalysis(self, crash_data):
+    """Checks if the crash needs new anlysis.
 
-  # TODO(wrengr): does the parser actually need the version, signature,
-  # and platform? If not, then we should be able to just pass the string
-  # to be parsed (which would make a lot more sense than passing the
-  # whole model).
-  # TODO(http://crbug.com/659346): coverage tests for this class, not
-  # just for FinditForFracas.
-  def ParseStacktrace(self, model): # pragma: no cover
-    """Parse a CrashAnalysis's ``stack_trace`` string into a Stacktrace object.
+    If a new analysis needs to be scheduled, initialize a ``CrashAnalysis``
+    model using crash_data and put it in datastore for later culprit
+    analyzing.
 
     Args:
-      model (CrashAnalysis): The model containing the stack_trace string
-        to be parsed.
+      crash_data (CrashData): Parsed crash data that contains all the
+        information about the crash.
 
     Returns:
-      On success, returns a Stacktrace object; on failure, returns None.
+      Boolean of whether a new analysis needs to be scheduled.
     """
-    # Use up-to-date ``top_n`` in self.client_config to filter top n frames.
-    stacktrace = self._stacktrace_parser.Parse(
-        model.stack_trace,
-        self._dep_fetcher.GetDependency(model.crashed_version, model.platform),
-        model.signature,
-        self.client_config.get('top_n'))
-    if not stacktrace:
-      logging.warning('Failed to parse the stacktrace %s', model.stack_trace)
-      return None
+    # Check policy and modify the raw_crash_data as needed.
+    if not self._CheckPolicy(crash_data):
+      logging.info('The analysis of %s is not supported, task will not be '
+                   'scheduled.', str(crash_data.identifiers))
+      return False
 
-    return stacktrace
+    # Rename platform if configured.
+    crash_data.platform = self.RenamePlatform(crash_data.platform)
 
-  def ProcessResultForPublishing(self, result, key):
+    model = self.GetAnalysis(crash_data.identifiers)
+    if (model and not model.failed and
+        crash_data.regression_range == (tuple(model.regression_range)
+                                        if model.regression_range else None)):
+      logging.info('The analysis of %s has already been done.',
+                   repr(crash_data.identifiers))
+      return False
+
+    model = model or self.CreateAnalysis(crash_data.identifiers)
+    model.Initialize(crash_data)
+    model.put()
+    return True
+
+  def ProcessResultForPublishing(self, result, key):  # pragma: no cover
     """Client specific processing of result data for publishing."""
     raise NotImplementedError()
 
   def GetPublishableResult(self, crash_identifiers, analysis):
-    """Convert a culprit result into a publishable result for client.
+    """Converts a culprit result into a publishable result for client.
 
     Note, this function must be called by a concrete subclass of CrashAnalysis
     which implements the ProcessResultForPublishing method.
@@ -291,15 +260,6 @@ class Findit(object):
   # whole model. And/or, we should just inline this there.
   # TODO(http://crbug.com/659346): coverage tests for this class, not
   # just for FinditForFracas.
-  def FindCulprit(self, model): # pragma: no cover
-    """Given a CrashAnalysis ndb.Model, return a Culprit."""
-    stacktrace = self.ParseStacktrace(model)
-    if stacktrace is None:
-      return None
-
-    return self._predator.FindCulprit(CrashReport(
-        crashed_version = model.crashed_version,
-        signature = model.signature,
-        platform = model.platform,
-        stacktrace = stacktrace,
-        regression_range = model.regression_range))
+  def FindCulprit(self, crash_report): # pragma: no cover
+    """Given a ``CrashReport``, returns a ``Culprit``."""
+    return self._Predator().FindCulprit(crash_report)

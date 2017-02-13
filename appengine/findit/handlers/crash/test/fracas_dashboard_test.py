@@ -64,7 +64,6 @@ class FracasDashBoardTest(testing.AppengineTestCase):
       analysis.stack_trace = 'dummy\nframe1\nframe2'
       analysis.platform = 'android'
       analysis.channel = 'canary'
-      analysis.client_id = 'fracas'
       analyses.append(analysis)
 
     analyses[0].status = analysis_status.COMPLETED

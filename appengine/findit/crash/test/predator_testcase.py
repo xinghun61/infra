@@ -109,7 +109,6 @@ class PredatorTestCase(TestCase):  # pragma: no cover
 
   def GetMockFindit(self, get_repository=None, config=None,
                     client_id='mock_client'):
-    """Gets Mocked ``Findit`` object."""
     get_repository = (get_repository or
                       GitilesRepository.Factory(self.GetMockHttpClient()))
     config = config or CrashConfig.Get()
@@ -126,6 +125,27 @@ class PredatorTestCase(TestCase):  # pragma: no cover
       def ProcessResultForPublishing(self, result, key):
         return result
 
+      def GetCrashData(self, crash_data):
+
+        class MockCrashData(CrashData):
+          @property
+          def regression_range(self):
+            return crash_data.get('regression_range')
+
+          @property
+          def stacktrace(self):
+            return None
+
+          @property
+          def dependencies(self):
+            return {}
+
+          @property
+          def dependency_rolls(self):
+            return {}
+
+        return MockCrashData(crash_data)
+
       def GetAnalysis(self, crash_identifiers):
         return CrashAnalysis.Get(crash_identifiers)
 
@@ -134,20 +154,22 @@ class PredatorTestCase(TestCase):  # pragma: no cover
 
     return MockFindit()
 
-  def GetDummyCrashData(self, client_id='mock_client', version='1',
-                        signature='signature', platform='win',
-                        stack_trace=None, regression_range=None,
-                        channel='canary', historical_metadata=None,
-                        crash_identifiers=True, process_type='browser'):
-    """Gets Mocked crashed_data sent by clients."""
-    if crash_identifiers is True: # pragma: no cover
-      crash_identifiers = {
-          'chrome_version': version,
-          'signature': signature,
-          'channel': channel,
-          'platform': platform,
-          'process_type': process_type,
-      }
+  def GetDummyChromeCrashData(
+      self, client_id='mock_client', version='1', signature='signature',
+      platform='win', stack_trace=None, regression_range=None, channel='canary',
+      historical_metadata=None, process_type='browser'):
+    crash_identifiers = {
+        'chrome_version': version,
+        'signature': signature,
+        'channel': channel,
+        'platform': platform,
+        'process_type': process_type,
+    }
+    customized_data = {
+        'historical_metadata': historical_metadata,
+        'channel': channel,
+    }
+
     crash_data = {
         'chrome_version': version,
         'signature': signature,
@@ -155,10 +177,7 @@ class PredatorTestCase(TestCase):  # pragma: no cover
         'stack_trace': stack_trace,
         'regression_range': regression_range,
         'crash_identifiers': crash_identifiers,
-        'customized_data': {
-            'historical_metadata': historical_metadata,
-            'channel': channel,
-        },
+        'customized_data': customized_data
     }
     # This insertion of client_id is used for debugging ScheduleNewAnalysis.
     if client_id is not None: # pragma: no cover

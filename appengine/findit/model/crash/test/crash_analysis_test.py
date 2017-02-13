@@ -5,6 +5,7 @@
 import copy
 from datetime import datetime
 
+from crash.crash_report import CrashReport
 from crash.type_enums import CrashClient
 from crash.test.predator_testcase import PredatorTestCase
 from model import analysis_status
@@ -104,3 +105,48 @@ class CrashAnalysisTest(PredatorTestCase):
     analysis.put()
     self.assertIsNotNone(analysis)
     self.assertEqual(CrashAnalysis.Get(crash_identifiers), analysis)
+
+  def testInitializeByCrashData(self):
+    """Tests initializing ``CrashAnalysis`` from ``CrashData``."""
+    chrome_version = '50.2500.0.0'
+    signature = 'signature/here'
+    channel = 'canary'
+    platform = 'mac'
+    raw_crash_data = self.GetDummyChromeCrashData(
+        client_id=CrashClient.FRACAS,
+        channel=channel, platform=platform,
+        signature=signature, version=chrome_version,
+        process_type='renderer')
+    findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
+    crash_data = findit.GetCrashData(raw_crash_data)
+    analysis = CrashAnalysis()
+    analysis.Initialize(crash_data)
+
+    self.assertEqual(analysis.stack_trace, crash_data.stacktrace)
+    self.assertEqual(analysis.signature, crash_data.signature)
+    self.assertEqual(analysis.platform, crash_data.platform)
+    self.assertEqual(analysis.regression_range, crash_data.regression_range)
+    self.assertEqual(analysis.dependencies, crash_data.dependencies)
+    self.assertEqual(analysis.dependency_rolls, crash_data.dependency_rolls)
+
+  def testToCrashReport(self):
+    """Tests converting ``CrashAnalysis`` to ``CrashReport``."""
+    chrome_version = '50.2500.0.0'
+    signature = 'signature/here'
+    channel = 'canary'
+    platform = 'mac'
+    regression_range = ('50.2450.0.2', '50.2982.0.0')
+    raw_crash_data = self.GetDummyChromeCrashData(
+        client_id=CrashClient.FRACAS,
+        channel=channel, platform=platform,
+        signature=signature, version=chrome_version,
+        regression_range=regression_range,
+        process_type='renderer')
+    findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
+    crash_data = findit.GetCrashData(raw_crash_data)
+    analysis = CrashAnalysis()
+    analysis.Initialize(crash_data)
+
+    expected_crash_report = CrashReport(chrome_version, signature, platform,
+                                        None, regression_range, {}, {})
+    self.assertTupleEqual(analysis.ToCrashReport(), expected_crash_report)

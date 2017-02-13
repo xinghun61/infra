@@ -19,7 +19,7 @@ class CrashPipelineTest(PredatorTestCase):
   app_module = pipeline_handlers._APP
 
   def testAnalysisAborted(self):
-    crash_identifiers = self.GetDummyCrashData()['crash_identifiers']
+    crash_identifiers = self.GetDummyChromeCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.RUNNING
     analysis.put()
@@ -32,7 +32,7 @@ class CrashPipelineTest(PredatorTestCase):
     self.assertEqual(analysis_status.ERROR, analysis.status)
 
   def testFindCulpritFails(self):
-    crash_identifiers = self.GetDummyCrashData()['crash_identifiers']
+    crash_identifiers = self.GetDummyChromeCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.RUNNING
     analysis.put()
@@ -51,7 +51,7 @@ class CrashPipelineTest(PredatorTestCase):
     self.assertFalse(analysis.found_components)
 
   def testFindCulpritSucceeds(self):
-    crash_identifiers = self.GetDummyCrashData()['crash_identifiers']
+    crash_identifiers = self.GetDummyChromeCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.RUNNING
     analysis.put()

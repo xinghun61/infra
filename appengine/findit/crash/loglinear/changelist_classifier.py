@@ -8,7 +8,7 @@ import logging
 from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from crash import changelist_classifier
 from crash.changelist_classifier import StackInfo
-from crash.crash_report_with_dependencies import CrashReportWithDependencies
+from crash.crash_report import CrashReport
 from crash.loglinear.model import UnnormalizedLogLinearModel
 
 
@@ -49,27 +49,19 @@ class LogLinearChangelistClassifier(object):
     Returns:
       List of ``Suspect``s, sorted by probability from highest to lowest.
     """
-    annotated_report = CrashReportWithDependencies(
-        report, self._dependency_fetcher)
-    if annotated_report is None:
-      logging.warning('%s.__call__: '
-          'Could not obtain dependencies for report: %s',
+    suspects = self.GenerateSuspects(report)
+    if not suspects:
+      logging.warning('%s.__call__: Found no suspects for report: %s',
           self.__class__.__name__, str(report))
       return []
 
-    suspects = self.GenerateSuspects(annotated_report)
-    if not suspects:
-      logging.warning('%s.__call__: Found no suspects for report: %s',
-          self.__class__.__name__, str(annotated_report))
-      return []
-
-    return self.RankSuspects(annotated_report, suspects)
+    return self.RankSuspects(report, suspects)
 
   def GenerateSuspects(self, report):
     """Generate all possible suspects for the reported crash.
 
     Args:
-      report (CrashReportWithDependencies): the crash we seek to explain.
+      report (CrashReport): the crash we seek to explain.
 
     Returns:
       A list of ``Suspect``s who may be to blame for the
@@ -106,7 +98,7 @@ class LogLinearChangelistClassifier(object):
     will be filtered.
 
     Args:
-      report (CrashReportWithDependencies): the crash we seek to explain.
+      report (CrashReport): the crash we seek to explain.
       suspects (iterable of Suspect): the CLs to consider blaming for the crash.
 
     Returns:

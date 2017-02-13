@@ -4,6 +4,7 @@
 
 from datetime import datetime
 
+from crash.chrome_crash_data import ChromeCrashData
 from crash.test.predator_testcase import PredatorTestCase
 from model import analysis_status
 from model import result_status
@@ -34,12 +35,39 @@ class ChromeCrashAnalysisTest(PredatorTestCase):
     self.assertIsNone(analysis.channel)
     self.assertIsNone(analysis.historical_metadata)
 
-  def testChromeCrashAnalysisCustomizedProperty(self):
+  def testInitializeWithCrashData(self):
+    findit = self.GetMockFindit()
+    channel = 'dummy channel'
+    historical_metadata = []
+    crash_data = self.GetDummyChromeCrashData(
+        channel=channel, historical_metadata=historical_metadata)
+    class MockChromeCrashData(ChromeCrashData):
+
+      def __init__(self, crash_data):
+        super(MockChromeCrashData, self).__init__(crash_data, None)
+
+      @property
+      def stacktrace(self):
+        return None
+
+      @property
+      def regression_range(self):
+        return None
+
+      @property
+      def dependencies(self):
+        return {}
+
+      @property
+      def dependency_rolls(self):
+        return {}
+
+    self.mock(findit, 'GetCrashData',
+              lambda crash_data: MockChromeCrashData(  # pylint: disable=W0108
+                  crash_data))
+
+    crash_data = findit.GetCrashData(crash_data)
     analysis = ChromeCrashAnalysis()
-    analysis.historical_metadata = {'chrome_version': '50.0.1200.0',
-                                    'cpm': 0.5}
-    analysis.channel = 'canary'
-    self.assertEqual(analysis.customized_data,
-                     {'historical_metadata': {'chrome_version': '50.0.1200.0',
-                                              'cpm': 0.5},
-                      'channel': 'canary'})
+    analysis.Initialize(crash_data)
+    self.assertEqual(analysis.channel, channel)
+    self.assertEqual(analysis.historical_metadata, historical_metadata)

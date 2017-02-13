@@ -6,9 +6,11 @@ import argparse
 import json
 import logging
 import os
+import pickle
 import sys
 import threading
 import traceback
+import zlib
 
 _SCRIPT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
                            os.path.pardir)
@@ -35,33 +37,21 @@ _FRACAS_FEEDBACK_URL_TEMPLATE = (
 
 def StoreResults(crash, client_id, app_id, id_to_culprits, lock, config,
                  verbose=False):
-  """Stores findit result of crash into id_to_culprits dict."""
-  crash_url = _FRACAS_FEEDBACK_URL_TEMPLATE % (app_id, crash['id'])
+  """Stores predator result of crash into id_to_culprits dict."""
+  crash_id = crash.key.urlsafe()
+  crash_url = _FRACAS_FEEDBACK_URL_TEMPLATE % (app_id, crash_id)
   try:
     findit = FinditForClientID(client_id, LocalGitRepository, config)
-    stacktrace = findit._stacktrace_parser.Parse(
-        crash['stack_trace'],
-        ChromeDependencyFetcher(LocalGitRepository.Factory()).GetDependency(
-            crash['crashed_version'],
-            crash['platform']))
-    if stacktrace:
-      culprit = findit._predator.FindCulprit(CrashReport(
-          crashed_version=crash['crashed_version'],
-          signature=crash['signature'],
-          platform=crash['platform'],
-          stacktrace=stacktrace,
-          regression_range=crash['regression_range']))
-    else:
-      culprit = None
+    culprit = findit.FindCulprit(crash.ToCrashReport())
     with lock:
-      id_to_culprits[crash['id']] = culprit
+      id_to_culprits[crash_id] = culprit
       if verbose:
         print '\n\nCrash:', crash_url
         print json.dumps(culprit.ToDicts()[0] if culprit else {'found': False},
                          indent=4, sort_keys=True)
   except Exception:
     with lock:
-      id_to_culprits[crash['id']] = None
+      id_to_culprits[crash_id] = None
       print '\n\nCrash:', crash_url
       print traceback.format_exc()
 
@@ -75,8 +65,6 @@ def GetCulprits(crashes, client_id, app_id, verbose=False):
   lock = threading.Lock()
   config = CrashConfig.Get()
   for crash in crashes:
-    crash['regression_range'] = DetectRegressionRange(
-        crash['historical_metadata'])
     tasks.append({
         'function': StoreResults,
         'args': [crash, client_id, app_id, id_to_culprits, lock, config],
@@ -91,6 +79,7 @@ def RunPredator():
   """Runs delta testing between 2 different Findit versions."""
   argparser = argparse.ArgumentParser(
       description='Run Predator on a batch of crashes.')
+  argparser.add_argument('input_path', help='Path to read crash infos from')
   argparser.add_argument('result_path', help='Path to store results')
   argparser.add_argument('client', help=('Possible values are: fracas, cracas, '
                                          'clusterfuzz. Right now, only fracas '
@@ -104,7 +93,9 @@ def RunPredator():
       help='Print findit results.')
   args = argparser.parse_args()
 
-  crashes = json.loads(raw_input())
+  with open(args.input_path) as f:
+    crashes = pickle.loads(zlib.decompress(f.read()))
+
   if not crashes:
     logging.error('Failed to get crashes info.')
     return
