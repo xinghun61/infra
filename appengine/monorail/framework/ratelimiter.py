@@ -137,9 +137,9 @@ class RateLimiter(object):
       except Exception as e:
         logging.error(e)
         if not self.fail_open:
-          self.checks.increment({'type': 'fail_open'})
+          self.checks.increment({'type': 'fail_closed'})
           raise exception_obj
-        self.checks.increment({'type': 'fail_closed'})
+        self.checks.increment({'type': 'fail_open'})
 
       if count > limit:
         # Since webapp2 won't let us return a 429 error code
@@ -239,7 +239,7 @@ class ApiRateLimiter(RateLimiter):
         'API Rate Limit Cost Threshold Exceeded: %s, %s' % (
             client_id, client_email),
         settings.api_ratelimiting_cost_penalty)
-  
+
 
 class RateLimitExceeded(Exception):
   def __init__(self, country=None, ip=None, user_email=None, **_kwargs):
