@@ -180,11 +180,11 @@ runOnLoad(function() {
       feedback = document.getElementById('fieldnamefeedback');
       submit.disabled = 'disabled';
       if (name == '') {
-        feedback.innerText = 'Please choose a field name';
+        feedback.textContent = 'Please choose a field name';
       } else if (!fieldNameRE.test(name)) {
-        feedback.innerText = 'Invalid field name';
+        feedback.textContent = 'Invalid field name';
       } else if (name.length > 30) {
-        feedback.innerText = 'Field name is too long';
+        feedback.textContent = 'Field name is too long';
       } else {
         _checkFieldNameOnServer('[projectname]', name, CS_env.token);
       }

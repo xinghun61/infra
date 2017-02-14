@@ -330,7 +330,7 @@ runOnLoad(function() {
   [if-any  errors.custom_fields]
     [for errors.custom_fields]
       field_error = document.getElementById('error_custom_' + [errors.custom_fields.field_id]);
-      field_error.innerText = "[errors.custom_fields.message]";
+      field_error.textContent = "[errors.custom_fields.message]";
       field_error.style.display = "";
     [end]
   [end]
@@ -348,16 +348,16 @@ function checksubmit() {
   var component_required = [if-any component_required]true[else]false[end];
   var components = document.getElementById('components');
   if (components && component_required && components.value == "") {
-    component_blocksubmitmsg.innerText = "You must specify a component for this template.";
+    component_blocksubmitmsg.textContent = "You must specify a component for this template.";
   } else {
-    component_blocksubmitmsg.innerText = "";
+    component_blocksubmitmsg.textContent = "";
   }
 
   var submit = document.getElementById('submit_btn');
   var summary = document.getElementById('summary');
-  if ((restrict_to_known && confirmmsg && confirmmsg.innerText) ||
-      (label_blocksubmitmsg && label_blocksubmitmsg.innerText) ||
-      (component_blocksubmitmsg && component_blocksubmitmsg.innerText) ||
+  if ((restrict_to_known && confirmmsg && confirmmsg.textContent) ||
+      (label_blocksubmitmsg && label_blocksubmitmsg.textContent) ||
+      (component_blocksubmitmsg && component_blocksubmitmsg.textContent) ||
       (cg && cg.value == "") ||
       (!allowSubmit) ||
       (!summary.value [if-any must_edit_summary]|| summary.value == '[format "js"][template_summary][end]'[end])) {

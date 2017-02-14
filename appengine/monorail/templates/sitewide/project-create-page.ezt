@@ -72,19 +72,19 @@ runOnLoad(function() {
       feedback = document.getElementById('projectnamefeedback');
       submit.disabled='disabled';
       if (name == '') {
-        feedback.innerText = '';
+        feedback.textContent = '';
       } else if (hasUppercase.test(name)) {
-        feedback.innerText = 'Must be all lowercase';
+        feedback.textContent = 'Must be all lowercase';
       } else if (solelyDigits.test(name)) {
-        feedback.innerText = 'Must include a lowercase letter';
+        feedback.textContent = 'Must include a lowercase letter';
       } else if (!projectRE.test(name)) {
-        feedback.innerText = 'Invalid project name';
+        feedback.textContent = 'Invalid project name';
       } else if (name.length > [max_project_name_length]) {
-        feedback.innerText = 'Project name is too long';
+        feedback.textContent = 'Project name is too long';
       } else if(name[[]name.length - 1] == '-') {
-        feedback.innerText = "Project name cannot end with a '-'";
+        feedback.textContent = "Project name cannot end with a '-'";
       } else {
-        feedback.innerText = '';
+        feedback.textContent = '';
         checkname()
         checksubmit()
       }
@@ -99,9 +99,9 @@ runOnLoad(function() {
     var elem = document.getElementById(elemId);
     feedback = document.getElementById(elemId + 'feedback');
     if (elem.value.length == 0) {
-      feedback.innerText = 'Please enter a ' + elemId;
+      feedback.textContent = 'Please enter a ' + elemId;
     } else {
-      feedback.innerText = ' ';
+      feedback.textContent = ' ';
     }
     checksubmit();
   }
@@ -113,7 +113,7 @@ runOnLoad(function() {
        summary.value.length > 0 &&
        description.value.length > 0 &&
        (cg == undefined || cg.value.length > 1) &&
-       feedback.innerText == '') {
+       feedback.textContent == '') {
      submit.disabled='';
    }
   }

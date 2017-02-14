@@ -52,7 +52,7 @@ function TKR_gotFieldNameFeed(xhr) {
     return;
   }
   var errorMessage = json_data['error_message'];
-  $('fieldnamefeedback').innerText = errorMessage;
+  $('fieldnamefeedback').textContent = errorMessage;
 
   var choicesLines = [];
   if (json_data['choices'].length > 0) {
@@ -61,7 +61,7 @@ function TKR_gotFieldNameFeed(xhr) {
           json_data['choices'][i]['name'] + ' = ' +
           json_data['choices'][i]['doc']);
     }
-    $('choices').innerText = choicesLines.join('\n');
+    $('choices').textContent = choicesLines.join('\n');
     $('field_type').value = 'enum_type';
     $('choices_row').style.display = '';
     enableOtherTypeOptions(true);

@@ -408,7 +408,7 @@ runOnLoad(function() {
     [for errors.custom_fields]
       var field_error;
       field_error = document.getElementById('error_custom_' + [errors.custom_fields.field_id]);
-      field_error.innerText = "[errors.custom_fields.message]";
+      field_error.textContent = "[errors.custom_fields.message]";
       field_error.style.display = "";
     [end]
   [end]
@@ -424,7 +424,7 @@ function checksubmit() {
   var statusedit = $('statusedit');
   var merge_area = $('merge_area');
   var statuses_offer_merge = [[] [for statuses_offer_merge]"[statuses_offer_merge]"[if-index statuses_offer_merge last][else],[end][end] ];
-  if ((restrict_to_known && confirmmsg && confirmmsg.innerText) ||
+  if ((restrict_to_known && confirmmsg && confirmmsg.textContent) ||
       (blocksubmitmsg && blocksubmitmsg.innerHTML) ||
       (cg && cg.value == "") ||
       (!allowSubmit)) {

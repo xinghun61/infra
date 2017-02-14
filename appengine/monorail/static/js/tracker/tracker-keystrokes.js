@@ -65,7 +65,7 @@ function TKR_createChild(parentEl, tag, optClassName, optID, optText, optStyle) 
     var el = document.createElement(tag);
     if (optClassName) el.classList.add(optClassName);
     if (optID) el.id = optID;
-    if (optText) el.innerText = optText;
+    if (optText) el.textContent = optText;
     if (optStyle) el.setAttribute('style', optStyle);
     parentEl.appendChild(el);
     return el;

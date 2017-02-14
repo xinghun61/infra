@@ -32,7 +32,7 @@ function nameTaken(event) {
     return;
   var resp = CS_parseJSON(xhr);
   var errorMessage = resp['error_message'];
-  document.getElementById('projectnamefeedback').innerText = errorMessage;
+  document.getElementById('projectnamefeedback').textContent = errorMessage;
   if (errorMessage != '') {
     document.getElementById('submit_btn').disabled = 'disabled';
   }

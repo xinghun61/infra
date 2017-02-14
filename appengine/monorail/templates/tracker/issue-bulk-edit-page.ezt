@@ -319,7 +319,7 @@ function checksubmit() {
   var statusenter = $('statusenter');
   var merge_area = $('merge_area');
   var statuses_offer_merge = [[] [for statuses_offer_merge]"[statuses_offer_merge]"[if-index statuses_offer_merge last][else],[end][end] ];
-  if (restrict_to_known && confirmmsg && confirmmsg.innerText.length > 0) {
+  if (restrict_to_known && confirmmsg && confirmmsg.textContent.length > 0) {
     return;
   }
   if (cg == undefined || cg.value.length > 1) {
@@ -351,7 +351,7 @@ function bulkOnSubmit() {
   disableFormElement(document.getElementById('comment'));
   [if-any show_progress]
    var progress = document.getElementById('progress');
-   progress.innerText = 'Processing...';
+   progress.textContent = 'Processing...';
   [end]
 }
 

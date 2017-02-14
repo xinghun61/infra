@@ -340,7 +340,7 @@ Menu.prototype.addItem = function(html_or_element, opt_href, opt_category,
     menuItem = this.createElement('span', 'menuText', html_or_element);
   }
   var itemText = typeof html_or_element == 'string' ? html_or_element :
-      html_or_element.innerText || 'ERROR';
+      html_or_element.textContent || 'ERROR';
 
   menuItem.style.display = 'block';
   if (menuHref) {
@@ -467,7 +467,7 @@ Menu.prototype.append = function(text_or_element, opt_target) {
     element = this.categories[opt_target];
   }
   if (typeof text_or_element == 'string') {
-    element.innerText += text_or_element;
+    element.textContent += text_or_element;
   } else {
     element.appendChild(text_or_element);
   }

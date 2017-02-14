@@ -26,15 +26,15 @@ function TKR_checkLeafName(projectName, parentPath, originalName, token) {
   var feedback = $('leafnamefeedback');
   if (name == originalName) {
     $('submit_btn').disabled = '';
-    feedback.innerText = '';
+    feedback.textContent = '';
   } else if (name != TKR_oldName) {
     $('submit_btn').disabled = 'disabled';
     if (name == '') {
-      feedback.innerText = 'Please choose a name';
+      feedback.textContent = 'Please choose a name';
     } else if (!TKR_leafNameRE.test(name)) {
-      feedback.innerText = 'Invalid component name';
+      feedback.textContent = 'Invalid component name';
     } else if (name.length > 30) {
-      feedback.innerText = 'Name is too long';
+      feedback.textContent = 'Name is too long';
     } else {
       TKR_checkLeafNameOnServer(projectName, parentPath, name, token);
     }
@@ -86,7 +86,7 @@ function TKR_gotLeafNameFeed(xhr) {
     return;
   }
   var errorMessage = json_data['error_message'];
-  $('leafnamefeedback').innerText = errorMessage || '';
+  $('leafnamefeedback').textContent = errorMessage || '';
 
   $('submit_btn').disabled = errorMessage ? 'disabled' : '';
 }

@@ -153,7 +153,7 @@ function TKR_addAttachmentFields(id, attachprompt_id,
   el.querySelector('input').focus();
   ++TKR_nextFileID;
   if (TKR_nextFileID < 16) {
-    $(attachafile_id).innerText = 'Attach another file';
+    $(attachafile_id).textContent = 'Attach another file';
   } else {
     $(attachprompt_id).style.display = 'none';
   }
@@ -914,7 +914,7 @@ function TKR_highlightExclusiveLabelPrefixConflicts() {
     var severity = TKR_restrict_to_known ? 'Error' : 'Warning';
     var confirm_area = $(TKR_CONFIRMAREA_ID);
     if (confirm_area) {
-      $('confirmmsg').innerText = (severity +
+      $('confirmmsg').textContent = (severity +
           ': Multiple values for: ' + conflicts.join(', '));
       confirm_area.className = TKR_EXCL_CONFICT_CLASS;
       confirm_area.style.display = '';
@@ -948,9 +948,9 @@ function TKR_highlightQuestionMarks(textField) {
   var block_submit_msg = $('blocksubmitmsg');
   if (block_submit_msg) {
     if (TKR_labelsBlockingSubmit.length > 0) {
-      block_submit_msg.innerText = 'You must edit labels that contain "?".';
+      block_submit_msg.textContent = 'You must edit labels that contain "?".';
     } else {
-      block_submit_msg.innerText = '';
+      block_submit_msg.textContent = '';
     }
   }
 }
@@ -1009,7 +1009,7 @@ function TKR_updateConfirmBeforeSubmit() {
 
   var confirm_area = $(TKR_CONFIRMAREA_ID);
   if (confirm_area) {
-    $('confirmmsg').innerText = msg;
+    $('confirmmsg').textContent = msg;
     if (msg != '') {
       confirm_area.className = TKR_NOVEL_CLASS;
       confirm_area.style.display = '';
@@ -1224,7 +1224,7 @@ function onAddIssuesResponse(event) {
     message = message + missed;
   }
   noticeText = $('notice');
-  noticeText.innerText = message;
+  noticeText.textContent = message;
   $('add-to-hotlist').style.display = 'none';
   $('alert-table').style.display = 'table';
 }
@@ -1518,7 +1518,7 @@ function TKR_addMultiFieldValueWidget(
   del_button.onclick = function(event) {
       _removeMultiFieldValueWidget(event.target);
   };
-  del_button.innerText = 'X';
+  del_button.textContent = 'X';
   el.parentNode.insertBefore(del_button, el);
 }
 

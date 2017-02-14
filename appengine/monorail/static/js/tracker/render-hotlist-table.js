@@ -37,7 +37,7 @@ function createWidgets(tableRow, readOnly, userLoggedIn) {
 
   var gripper = document.createElement('a');
   gripper.setAttribute('class', 'gripper');
-  gripper.innerText = '\u2059';
+  gripper.textContent = '\u2059';
   widgets.appendChild(gripper);
 
   if (!readOnly) {
@@ -60,7 +60,7 @@ function createWidgets(tableRow, readOnly, userLoggedIn) {
                            'title': starred + 'tar this issue',
                            'data-project-name': tableRow['projectName'],
                            'data-local-id': tableRow['localID']});
-      star.innerText = (tableRow['isStarred'] ? '\u2605' : '\u2606');
+      star.textContent = (tableRow['isStarred'] ? '\u2605' : '\u2606');
       widgets.appendChild(star);
     }
   }
@@ -79,7 +79,7 @@ function createIDCell(td, tableRow, isCrossProject) {
   var aLink = document.createElement('a');
   aLink.setAttribute('href', tableRow['issueURL']);
   var aLinkContent = (isCrossProject ? (tableRow['projectName'] + ':') : '' ) + tableRow['localID'];
-  aLink.innerText = aLinkContent;
+  aLink.textContent = aLinkContent;
   td.appendChild(aLink);
 }
 
@@ -123,10 +123,10 @@ function fillNonColumnLabels(td, labels) {
     setAttributes(aLabel, {'class': 'label', 'href': 'list?q=label:' + label['value']});
     if (label['isDerived']) {
       var i = document.createElement('i');
-      i.innerText = label['value'];
+      i.textContent = label['value'];
       aLabel.appendChild(i);
     } else {
-      aLabel.innerText = label['value'];
+      aLabel.textContent = label['value'];
     }
     td.appendChild(document.createTextNode(' '));
     td.appendChild(aLabel);
@@ -145,21 +145,21 @@ function fillValues(td, values) {
       if (value['isDerived']) {
         var i = document.createElement('i');
         if (index == array.length-1) {
-          i.innerText = value['item'];
+          i.textContent = value['item'];
         } else {
-          i.innerText = (value['item'] + ',');
+          i.textContent = (value['item'] + ',');
         }
         td.appendChild(i);
       } else {
         if (index == array.length-1) {
-          td.innerText = td.innerText + value['item'];
+          td.textContent = td.textContent + value['item'];
         } else {
-          td.innerText = td.innerText + value['item'] + ',';
+          td.textContent = td.textContent + value['item'] + ',';
         }
       }
     });
   } else {
-    td.innerText = '---';
+    td.textContent = '---';
   }
 }
 
@@ -194,7 +194,7 @@ function renderHotlistRow(tableRow, pageSettings) {
     tr.appendChild(td);
   });
   spacing = document.createElement('td');
-  spacing.innerText = '\xa0';
+  spacing.textContent = '\xa0';
   tr.appendChild(spacing);
   return tr;
 }
@@ -219,9 +219,9 @@ function renderGroupRow(group) {
   tr.appendChild(td);
 
   div = document.createElement('div');
-  div.innerText += group['rowsInGroup'];
+  div.textContent += group['rowsInGroup'];
 
-  div.innerText += (group['rowsInGroup'] == '1' ? ' issue:': ' issues:')
+  div.textContent += (group['rowsInGroup'] == '1' ? ' issue:': ' issues:')
 
   group['cells'].forEach(function(cell) {
     var hasValue = false;
@@ -232,10 +232,10 @@ function renderGroupRow(group) {
     });
     if (hasValue) {
       cell.values.forEach(function(value) {
-        div.innerText += (' ' + cell['groupName'] + '=' + value['item']);
+        div.textContent += (' ' + cell['groupName'] + '=' + value['item']);
       });
     } else {
-      div.innerText += (' -has:' + cell['groupName']);
+      div.textContent += (' -has:' + cell['groupName']);
     }
   });
   td.appendChild(div);
