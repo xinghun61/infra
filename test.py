@@ -25,7 +25,6 @@ WIN_ENABLED_PACKAGES = [
   'infra/libs/state_machine',
 
   'infra/services/service_manager',
-  'infra/services/sysmon',
 
   'packages/infra_libs/infra_libs/event_mon',
   'packages/infra_libs/infra_libs/infra_types',
