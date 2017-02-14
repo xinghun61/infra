@@ -28,3 +28,13 @@ class FlakeCulprit(BaseSuspectedCL):
     instance.url = url
     instance.confidence = confidence
     return instance
+
+  def ToDict(self):
+    return {
+        'commit_position': self.commit_position,
+        'confidence': self.confidence,
+        'repo_name': self.repo_name,
+        'revision': self.revision,
+        'status': self.status,
+        'url': self.url,
+    }

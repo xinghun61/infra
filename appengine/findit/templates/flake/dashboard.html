@@ -6,7 +6,7 @@
   <link rel="stylesheet" href="/common.css">
   <style type="text/css">
     .truncated {
-      max-width: 500px;
+      max-width: 320px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -30,7 +30,9 @@
       cursor: pointer;
     }
   </style>
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
   <script>
     function getParameters() {
       parameters = {}
@@ -116,6 +118,23 @@
         $('#.previous').removeAttr('disabled');
       }
 
+      $('#swarming-rerun-status-explanation-dialog').dialog({
+        autoOpen: false,
+        modal: true,
+        width: 600,
+      });
+      $('.swarming-rerun-status-info').click(function() {
+        $('#swarming-rerun-status-explanation-dialog').dialog('open');
+      });
+
+      $('#try-job-status-explanation-dialog').dialog({
+        autoOpen: false,
+        modal: true,
+        width: 600,
+      });
+      $('.try-job-status-info').click(function() {
+        $('#try-job-status-explanation-dialog').dialog('open');
+      });
     });
   </script>
 </head>
@@ -159,13 +178,14 @@
   <table>
     <thead>
       <tr>
-        <th></th>
         <th>Analysis Request Time</th>
         <th>Build</th>
         <th>Step</th>
         <th>Test</th>
-        <th>Status</th>
-        <th>Suspected Build</th>
+        <th>Build Analysis Status (<a class="swarming-rerun-status-info" href="javascript:">?</a>)</th>
+        <th>Suspected Build (Confidence %)</th>
+        <th>Culprit Analysis Status (<a class="try-job-status-info" href="javascript:">?</a>)</th>
+        <th>Culprit</th>
         <th>Analysis</th>
         <th>
           <select id="result_status">
@@ -181,25 +201,41 @@
       </tr>
     </thead>
     <tbody>
-      {% for master_flake_analysis in master_flake_analyses %}
+      {% for analysis in master_flake_analyses %}
       <tr>
-        <td>{{loop.index}}</td>
-        <td>{{ master_flake_analysis.request_time or '' }}</td>
+        <td>{{ analysis.request_time or '' }}</td>
         <td>
-          {{ master_flake_analysis.master_name }}, {{ master_flake_analysis.builder_name }}, {{ master_flake_analysis.build_number }}
+          {{ analysis.master_name }}, {{ analysis.builder_name }}, {{ analysis.build_number }}
         </td>
-        <td class="truncated" title="{{ master_flake_analysis.step_name }}">{{ master_flake_analysis.step_name }}</td>
-        <td class="truncated" title="{{ master_flake_analysis.test_name }}">{{ master_flake_analysis.test_name }}</td>
-        <td>{{ master_flake_analysis.status }}</td>
+        <td class="truncated" title="{{ analysis.step_name }}">{{ analysis.step_name }}</td>
+        <td class="truncated" title="{{ analysis.test_name }}">{{ analysis.test_name }}</td>
+        <td>{{ analysis.build_analysis_status }}</td>
         <td>
-          {% if master_flake_analysis.suspected_build %}
-            <a href="https://luci-milo.appspot.com/buildbot/{{ master_flake_analysis.master_name }}/{{ master_flake_analysis.builder_name }}/{{ master_flake_analysis.suspected_build }}" target="_blank">{{ master_flake_analysis.suspected_build }}
-            </a>
+          {% if analysis.suspected_build %}
+            <a href="https://luci-milo.appspot.com/buildbot/{{ analysis.master_name }}/{{ analysis.builder_name }}/{{ analysis.suspected_build }}" target="_blank">{{ analysis.suspected_build }}</a>
+            {% if analysis.confidence_in_suspected_build %}
+              ({{ '%0.1f%%' % (analysis.confidence_in_suspected_build * 100) }})
+            {% endif %}
           {% endif %}
-        <td>
-          <a href="/waterfall/check-flake?key={{ master_flake_analysis.key }}">Link</a>
         </td>
-        <td>{{ master_flake_analysis.result_status }}</td>
+        <td>
+          {% if analysis.try_job_status %}
+            {{ analysis.try_job_status }}
+          {% endif %}
+        </td>
+        <td>
+          {% if analysis.culprit %}
+            {{ analysis.culprit.repo_name }}: <a href={{ analysis.culprit.url }} target="_blank">{{ analysis.culprit.commit_position }}</a>
+          {% endif %}
+        </td>
+        <td>
+          <a href="/waterfall/check-flake?key={{ analysis.key }}" target="_blank">Link</a>
+        </td>
+        <td>
+          {% if analysis.result_status %}
+            {{ analysis.result_status }}
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
@@ -207,5 +243,24 @@
   <div>
     <button class="previous">Previous</button>
     <button class="next">Next</button>
+  </div>
+  <div id="swarming-rerun-status-explanation-dialog" title="Build Analysis Status">
+    Swarming tasks are triggered on a series of builds to identify the build that may contain the CL that introduced test flakiness
+    <ul>
+      <li>Pending: A request for a build-level analysis has been made, however tasks have not yet begun</li>
+      <li>Running: Build-level analysis is in progress</li>
+      <li>Completed: Build-level analysis is complete</li>
+      <li>Error: The analysis was halted due to an unexpected error</li>
+    </ul>
+  </div>
+  <div id="try-job-status-explanation-dialog" title="Culprit Analysis Status">
+    Try jobs are triggered on the regression range of a build suspected to contain the CL that introduced test flakiness.
+    <ul>
+      <li>Running: A suspected build number has been identified and try jobs analysis is running</li>
+      <li>Completed: Try job analysis is complete</li>
+      <li>Error: The analysis was halted due to an unexpected error</li>
+      <li>Skipped: Try jobs will not be triggered either due to no suspected build being identified, insufficient confidence in the suspected build, or build-level analysis ending in error</li>
+      <li>(Blank): Try job analysis has not yet begun, since analysis at the build level is still in progress</li>
+    </ul>
   </div>
 </body>

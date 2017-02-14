@@ -167,28 +167,32 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
         params={'step_name': self.step_name1, 'format': 'json'}
     )
     expected_result = {
+        'cursor': self.cursor.urlsafe(),
         'master_flake_analyses': [
             {
+                'build_analysis_status': 'Completed',
+                'build_number': self.build_number1,
+                'builder_name': self.builder_name1,
+                'confidence_in_suspected_build': None,
+                'culprit': {},
                 'key': analysis_key,
                 'master_name': self.master_name1,
-                'builder_name': self.builder_name1,
-                'build_number': self.build_number1,
-                'step_name': self.step_name1,
-                'test_name': self.test_name1,
-                'status': 'Completed',
+                'request_time': '2016-10-01 00:00:00 UTC',
                 'result_status': result_status.RESULT_STATUS_TO_DESCRIPTION[
-                  self.result_status1],
+                    self.result_status1],
+                'step_name': self.step_name1,
                 'suspected_build': None,
-                'request_time': '2016-10-01 00:00:00 UTC'
+                'test_name': self.test_name1,
+                'try_job_status': None,
             }
         ],
+        'more': more,
+        'prev_cursor': '',
+        'result_status_filter': result_status.UNSPECIFIED,
         'step_name_filter': self.step_name1,
         'test_name_filter': '',
-        'result_status_filter': result_status.UNSPECIFIED,
-        'prev_cursor': "",
-        'cursor': self.cursor.urlsafe(),
-        'more': more,
     }
+
     self.assertEquals(response.json_body, expected_result)
     self.assertEquals(200, response.status_int)
 
@@ -228,25 +232,28 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
     expected_result = {
         'master_flake_analyses': [
             {
+                'build_analysis_status': 'Completed',
+                'build_number': self.build_number1,
+                'builder_name': self.builder_name1,
+                'confidence_in_suspected_build': None,
+                'culprit': {},
                 'key': analysis_key,
                 'master_name': self.master_name1,
-                'builder_name': self.builder_name1,
-                'build_number': self.build_number1,
-                'step_name': self.step_name1,
-                'test_name': self.test_name1,
-                'status': 'Completed',
                 'result_status': result_status.RESULT_STATUS_TO_DESCRIPTION[
-                  self.result_status1],
+                    self.result_status1],
+                'request_time': '2016-10-01 00:00:00 UTC',
+                'step_name': self.step_name1,
                 'suspected_build': None,
-                'request_time': '2016-10-01 00:00:00 UTC'
+                'test_name': self.test_name1,
+                'try_job_status': None
             }
         ],
-        'step_name_filter': self.step_name1,
-        'test_name_filter': '',
-        'result_status_filter': result_status.UNSPECIFIED,
-        'prev_cursor': '',
         'cursor': '',
         'more': more,
+        'prev_cursor': '',
+        'result_status_filter': result_status.UNSPECIFIED,
+        'step_name_filter': self.step_name1,
+        'test_name_filter': '',
     }
 
     self.assertEquals(response.json_body, expected_result)

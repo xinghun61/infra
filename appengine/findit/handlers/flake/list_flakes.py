@@ -11,6 +11,7 @@ from google.appengine.datastore.datastore_query import Cursor
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from libs import time_util
+from model import analysis_status
 from model import result_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
@@ -123,18 +124,24 @@ class ListFlakes(BaseHandler):
 
     for master_flake_analysis in master_flake_analyses:
       data['master_flake_analyses'].append({
+          'build_analysis_status': master_flake_analysis.status_description,
+          'build_number': master_flake_analysis.build_number,
+          'builder_name': master_flake_analysis.builder_name,
+          'confidence_in_suspected_build': (
+              master_flake_analysis.confidence_in_suspected_build),
+          'culprit': (master_flake_analysis.culprit.ToDict()
+                      if master_flake_analysis.culprit else {}),
           'key': master_flake_analysis.key.urlsafe(),
           'master_name': master_flake_analysis.master_name,
-          'builder_name': master_flake_analysis.builder_name,
-          'build_number': master_flake_analysis.build_number,
-          'step_name': master_flake_analysis.step_name,
-          'test_name': master_flake_analysis.test_name,
-          'status': master_flake_analysis.status_description,
-          'suspected_build': master_flake_analysis.suspected_flake_build_number,
           'request_time': time_util.FormatDatetime(
               master_flake_analysis.request_time),
           'result_status': result_status.RESULT_STATUS_TO_DESCRIPTION.get(
-              master_flake_analysis.result_status)
+              master_flake_analysis.result_status),
+          'step_name': master_flake_analysis.step_name,
+          'suspected_build': master_flake_analysis.suspected_flake_build_number,
+          'test_name': master_flake_analysis.test_name,
+          'try_job_status': analysis_status.STATUS_TO_DESCRIPTION.get(
+              master_flake_analysis.try_job_status),
       })
 
     return {
