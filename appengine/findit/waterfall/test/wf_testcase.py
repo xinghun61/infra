@@ -126,7 +126,8 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
         'max_build_numbers_to_look_back': 1000,
         'use_nearby_neighbor': True,
         'max_dive_in_a_row': 4,
-        'dive_rate_threshold': 0.4
+        'dive_rate_threshold': 0.4,
+        'max_iterations_to_rerun': 800,
     },
     'try_job_rerun': {
         'iterations_to_rerun': 100,

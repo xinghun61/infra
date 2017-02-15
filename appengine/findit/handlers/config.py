@@ -206,7 +206,8 @@ def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):
           isinstance(settings.get('max_build_numbers_to_look_back'), int) and
           isinstance(settings.get('use_nearby_neighbor'), bool) and
           isinstance(settings.get('max_dive_in_a_row'), int) and
-          isinstance(settings.get('dive_rate_threshold'), float))
+          isinstance(settings.get('dive_rate_threshold'), float) and
+          isinstance(settings.get('max_iterations_to_rerun'), int))
 
 
 def _ValidateFlakeAnalyzerTryJobRerunSettings(settings):

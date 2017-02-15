@@ -116,6 +116,7 @@ class FinditConfig(VersionedConfig):
   #         'max_build_numbers_to_look_back': 500,
   #         'dive_rate_threshold': 0.4,
   #         'max_dive_in_a_row': 4,
+  #         'max_iterations_to_rerun': 800,
   #     },
   #     'try_job_rerun': {
   #         'lower_flake_threshold': 0.02,

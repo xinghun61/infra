@@ -98,6 +98,7 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
         'max_dive_in_a_row': 4,
         'dive_rate_threshold': 0.4,
         'use_nearby_neighbor': True,
+        'max_iterations_to_rerun': 800,
     },
     'try_job_rerun': {
         'lower_flake_threshold': 0.02,
@@ -913,7 +914,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
             'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True
+            'use_nearby_neighbor': True,
+            'max_iterations_to_rerun': 800,
         }))
     self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
@@ -923,7 +925,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
             'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True
+            'use_nearby_neighbor': True,
+            'max_iterations_to_rerun': 800,
         }))
     self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
@@ -933,7 +936,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
             'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True
+            'use_nearby_neighbor': True,
+            'max_iterations_to_rerun': 800,
         }))
     self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
@@ -943,7 +947,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_stable_in_a_row': {},  # Should be an int.
             'iterations_to_rerun': 100,
             'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True
+            'use_nearby_neighbor': True,
+            'max_iterations_to_rerun': 800,
         }))
     self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
@@ -953,7 +958,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 3.2,  # Should be an int.
             'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True
+            'use_nearby_neighbor': True,
+            'max_iterations_to_rerun': 800,
         }))
     self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
@@ -963,7 +969,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 4,
             'max_build_numbers_to_look_back': 'a',  # Should be an int.
-            'use_nearby_neighbor': True
+            'use_nearby_neighbor': True,
+            'max_iterations_to_rerun': 800,
         }))
     self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
@@ -973,7 +980,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 4,
             'max_build_numbers_to_look_back': 100,
-            'use_nearby_neighbor': []  # Should be a bool.
+            'use_nearby_neighbor': [],  # Should be a bool.
+            'max_iterations_to_rerun': 800,
         }))
     self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
@@ -984,6 +992,7 @@ class ConfigTest(testing.AppengineTestCase):
             'iterations_to_rerun': 100,
             'max_build_numbers_to_look_back': 1000,
             'update_monorail_bug': 'True',  # Should be a bool.
+            'max_iterations_to_rerun': 800,
         }))
     self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
@@ -996,6 +1005,7 @@ class ConfigTest(testing.AppengineTestCase):
             'update_monorail_bug': True,
             'max_dive_in_a_row': 4.0,  # Should be an int.
             'dive_rate_threshold': 0.4,
+            'max_iterations_to_rerun': 800,
         }))
     self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
@@ -1007,6 +1017,21 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'update_monorail_bug': True,
             'dive_rate_threshold': 40,  # Should be a float.
+            'max_iterations_to_rerun': 800,
+        }))
+    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
+        {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100,
+            'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True,
+            'update_monorail_bug': True,
+            'max_dive_in_a_row': 4,
+            'dive_rate_threshold': 0.4,
+            'max_iterations_to_rerun': 800.0,  # Should be an int.
         }))
     self.assertTrue(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
         {
@@ -1020,4 +1045,5 @@ class ConfigTest(testing.AppengineTestCase):
             'update_monorail_bug': True,
             'max_dive_in_a_row': 4,
             'dive_rate_threshold': 0.4,
+            'max_iterations_to_rerun': 800,
         }))
