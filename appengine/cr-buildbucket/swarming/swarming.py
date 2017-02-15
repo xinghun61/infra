@@ -272,6 +272,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
     'bucket': build.bucket,
     'builder': builder_cfg.name,
     'project': project_id,
+    'swarming_hostname': swarming_cfg.hostname,
   }
 
   is_recipe = builder_cfg.HasField('recipe')
