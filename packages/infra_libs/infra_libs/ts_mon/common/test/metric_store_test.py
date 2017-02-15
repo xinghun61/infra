@@ -65,7 +65,7 @@ class MetricStoreTestBase(object):
 
     self.store = self.state.store
 
-    self.metric = metrics.Metric('foo')
+    self.metric = metrics.Metric('foo', 'desc', None)
 
   def create_store(self, *args, **kwargs):
     kwargs['time_fn'] = self.mock_time
@@ -80,8 +80,8 @@ class MetricStoreTestBase(object):
     self.metric._start_time = None
     self.mock_time.return_value = 1234
 
-    self.store.set('foo', (('field', 'value'),), None, 42)
-    self.store.set('foo', (('field', 'value2'),), None, 43)
+    self.store.set('foo', ('value',), None, 42)
+    self.store.set('foo', ('value2',), None, 43)
 
     all_metrics = list(self.store.get_all())
     self.assertEqual(1, len(all_metrics))
@@ -91,8 +91,8 @@ class MetricStoreTestBase(object):
   def test_uses_start_time_from_metric(self):
     self.metric._start_time = 5678
 
-    self.store.set('foo', (('field', 'value'),), None, 42)
-    self.store.set('foo', (('field', 'value2'),), None, 43)
+    self.store.set('foo', ('value',), None, 42)
+    self.store.set('foo', ('value2',), None, 43)
 
     all_metrics = list(self.store.get_all())
     self.assertEqual(1, len(all_metrics))
@@ -100,9 +100,9 @@ class MetricStoreTestBase(object):
     self.assertEqual(5678, all_metrics[0][2])
 
   def test_get(self):
-    fields1 = (('field', 'value'),)
-    fields2 = (('field', 'value2'),)
-    fields3 = (('field', 'value3'),)
+    fields1 = ('value',)
+    fields2 = ('value2',)
+    fields3 = ('value3',)
     target_fields1 = {'region': 'rrr'}
     target_fields2 = {'region': 'rrr', 'hostname': 'hhh'}
 
@@ -124,8 +124,8 @@ class MetricStoreTestBase(object):
     self.assertIsNone(self.store.get('bar', (), None))
 
   def test_iter_field_values(self):
-    fields1 = (('field', 'value'),)
-    fields2 = (('field', 'value2'),)
+    fields1 = ('value',)
+    fields2 = ('value2',)
     target_fields1 = {'region': 'rrr'}
 
     self.store.set('foo', fields1, None, 42)
@@ -134,26 +134,26 @@ class MetricStoreTestBase(object):
 
     field_values = list(self.store.iter_field_values('foo'))
     self.assertEquals([
-        ((('field', 'value'),), 42),
-        ((('field', 'value2'),), 43),
-        ((('field', 'value2'),), 44),
+        (('value',), 42),
+        (('value2',), 43),
+        (('value2',), 44),
     ], sorted(field_values))
 
   def test_set_enforce_ge(self):
-    self.store.set('foo', (('field', 'value'),), None, 42, enforce_ge=True)
-    self.store.set('foo', (('field', 'value'),), None, 43, enforce_ge=True)
+    self.store.set('foo', ('value',), None, 42, enforce_ge=True)
+    self.store.set('foo', ('value',), None, 43, enforce_ge=True)
 
     with self.assertRaises(errors.MonitoringDecreasingValueError):
-      self.store.set('foo', (('field', 'value'),), None, 42, enforce_ge=True)
+      self.store.set('foo', ('value',), None, 42, enforce_ge=True)
 
   def test_incr(self):
-    self.store.set('foo', (('field', 'value'),), None, 42)
-    self.store.incr('foo', (('field', 'value'),), None, 4)
+    self.store.set('foo', ('value',), None, 42)
+    self.store.incr('foo', ('value',), None, 4)
 
-    self.assertEquals(46, self.store.get('foo', (('field', 'value'),), None))
+    self.assertEquals(46, self.store.get('foo', ('value',), None))
 
     with self.assertRaises(errors.MonitoringDecreasingValueError):
-      self.store.incr('foo', (('field', 'value'),), None, -1)
+      self.store.incr('foo', ('value',), None, -1)
 
   def test_incr_modify_fn(self):
     def spec_fn(n, i): # pragma: no cover
@@ -161,24 +161,24 @@ class MetricStoreTestBase(object):
     modify_fn = mock.create_autospec(spec_fn, spec_set=True)
     modify_fn.return_value = 7
 
-    self.store.set('foo', (('field', 'value'),), None, 42)
-    self.store.incr('foo', (('field', 'value'),), None, 3, modify_fn=modify_fn)
+    self.store.set('foo', ('value',), None, 42)
+    self.store.incr('foo', ('value',), None, 3, modify_fn=modify_fn)
 
-    self.assertEquals(7, self.store.get('foo', (('field', 'value'),), None))
+    self.assertEquals(7, self.store.get('foo', ('value',), None))
     modify_fn.assert_called_once_with(42, 3)
 
   def test_reset_for_unittest(self):
-    self.store.set('foo', (('field', 'value'),), None, 42)
+    self.store.set('foo', ('value',), None, 42)
     self.store.reset_for_unittest()
-    self.assertIsNone(self.store.get('foo', (('field', 'value'),), None))
+    self.assertIsNone(self.store.get('foo', ('value',), None))
 
   def test_reset_for_unittest_name(self):
-    self.store.set('foo', (('field', 'value'),), None, 42)
+    self.store.set('foo', ('value',), None, 42)
     self.store.reset_for_unittest(name='bar')
-    self.assertEquals(42, self.store.get('foo', (('field', 'value'),), None))
+    self.assertEquals(42, self.store.get('foo', ('value',), None))
 
     self.store.reset_for_unittest(name='foo')
-    self.assertIsNone(self.store.get('foo', (('field', 'value'),), None))
+    self.assertIsNone(self.store.get('foo', ('value',), None))
 
   def test_unregister_metric(self):
     fields = (('field', 'value'),)

@@ -63,84 +63,85 @@ class TestBase(unittest.TestCase):
 class MetricTest(TestBase):
 
   def test_name_property(self):
-    m1 = metrics.Metric('/foo', fields={'asdf': 1})
+    m1 = metrics.Metric('/foo', 'foo', None)
     self.assertEquals(m1.name, 'foo')
 
-  def test_init_too_may_fields(self):
-    fields = {str(i): str(i) for i in xrange(8)}
+  def test_init_too_many_fields(self):
+    fields = [metrics.StringField('field%d' % i) for i in xrange(8)]
     with self.assertRaises(errors.MonitoringTooManyFieldsError) as e:
-      metrics.Metric('test', fields=fields)
+      metrics.Metric('test', 'test', fields)
     self.assertEquals(e.exception.metric, 'test')
     self.assertEquals(len(e.exception.fields), 8)
 
   def test_serialize(self):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
-    m = metrics.StringMetric('test')
+    m = metrics.StringMetric('test', 'test', None)
     m.set('val')
     p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p.data.add(), 1234, (('bar', 1), ('baz', False)), m.get(), t)
+    m.serialize_to(p.data.add(), 1234, (), m.get(), t)
     return str(p).splitlines()
 
   def test_serialize_with_description(self):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
-    m = metrics.StringMetric('test', description='a custom description')
+    m = metrics.StringMetric('test', 'a custom description', None)
     m.set('val')
     p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p.data.add(), 1234, (('bar', 1), ('baz', False)), m.get(), t)
+    m.serialize_to(p.data.add(), 1234, (), m.get(), t)
     return str(p).splitlines()
 
   def test_serialize_with_units(self):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
-    m = metrics.GaugeMetric('test', units=metrics.MetricsDataUnits.SECONDS)
+    m = metrics.GaugeMetric('test', 'test', None,
+                            units=metrics.MetricsDataUnits.SECONDS)
     m.set(1)
     p = metrics_pb2.MetricsCollection()
-    m.serialize_to(p.data.add(), 1234, (('bar', 1), ('baz', False)), m.get(), t)
+    m.serialize_to(p.data.add(), 1234, (), m.get(), t)
     self.assertEquals(p.data[0].units, metrics.MetricsDataUnits.SECONDS)
     return str(p).splitlines()
 
-  def test_serialize_too_many_fields(self):
-    m = metrics.StringMetric('test', fields={'a': 1, 'b': 2, 'c': 3, 'd': 4})
-    m.set('val', fields={'e': 5, 'f': 6, 'g': 7})
-    with self.assertRaises(errors.MonitoringTooManyFieldsError):
-      m.set('val', fields={'e': 5, 'f': 6, 'g': 7, 'h': 8})
+  def test_set_wrong_number_of_fields(self):
+    m = metrics.StringMetric('foo', 'foo', [metrics.IntegerField('asdf')])
+    with self.assertRaises(errors.WrongFieldsError):
+      m.set('bar', {'asdf': 1, 'foo': 2})
+
+  def test_set_list_fields(self):
+    m = metrics.StringMetric('foo', 'foo', [metrics.IntegerField('asdf')])
+    with self.assertRaises(ValueError):
+      m.set('bar', [1])
+
+  def test_set_object_fields(self):
+    m = metrics.StringMetric('foo', 'foo', [metrics.IntegerField('asdf')])
+    with self.assertRaises(ValueError):
+      m.set('bar', object())
 
   def test_populate_field_values(self):
     pb1 = metrics_pb2.MetricsData()
-    m1 = metrics.Metric('foo', fields={'asdf': 1})
-    m1._populate_fields(pb1, m1._normalized_fields)
+    m1 = metrics.Metric('foo', 'foo', [metrics.IntegerField('asdf')])
+    m1._populate_fields(pb1, (1,))
     self.assertEquals(pb1.fields[0].name, 'asdf')
     self.assertEquals(pb1.fields[0].int_value, 1)
 
     pb2 = metrics_pb2.MetricsData()
-    m2 = metrics.Metric('bar', fields={'qwer': True})
-    m2._populate_fields(pb2, m2._normalized_fields)
+    m2 = metrics.Metric('bar', 'bar', [metrics.BooleanField('qwer')])
+    m2._populate_fields(pb2, (True,))
     self.assertEquals(pb2.fields[0].name, 'qwer')
     self.assertEquals(pb2.fields[0].bool_value, True)
 
     pb3 = metrics_pb2.MetricsData()
-    m3 = metrics.Metric('baz', fields={'zxcv': 'baz'})
-    m3._populate_fields(pb3, m3._normalized_fields)
+    m3 = metrics.Metric('baz', 'baz', [metrics.StringField('zxcv')])
+    m3._populate_fields(pb3, ('baz',))
     self.assertEquals(pb3.fields[0].name, 'zxcv')
     self.assertEquals(pb3.fields[0].string_value, 'baz')
 
-  def test_invalid_field_value(self):
-    pb = metrics_pb2.MetricsData()
-    m = metrics.Metric('test', fields={'pi': 3.14})
-    with self.assertRaises(errors.MonitoringInvalidFieldTypeError) as e:
-      m._populate_fields(pb, m._normalized_fields)
-    self.assertEquals(e.exception.metric, 'test')
-    self.assertEquals(e.exception.field, 'pi')
-    self.assertEquals(e.exception.value, 3.14)
-
   def test_register_unregister(self):
     self.assertEquals(0, len(self.mock_state.metrics))
-    m = metrics.Metric('test', fields={'pi': 3.14})
+    m = metrics.Metric('test', 'test', None)
     self.assertEquals(1, len(self.mock_state.metrics))
     m.unregister()
     self.assertEquals(0, len(self.mock_state.metrics))
 
   def test_reset(self):
-    m = metrics.StringMetric('test')
+    m = metrics.StringMetric('test', 'test', None)
     self.assertIsNone(m.get())
     m.set('foo')
     self.assertEqual('foo', m.get())
@@ -159,20 +160,20 @@ class MetricTest(TestBase):
     interface.state.metric_name_prefix = '/infra/test/'
     scenarios = [
         (metrics.CounterMetric, 'desc', new_metrics_pb2.CUMULATIVE),
-        (metrics.GaugeMetric, None, new_metrics_pb2.GAUGE)]
+        (metrics.GaugeMetric, 'desc', new_metrics_pb2.GAUGE)]
     for m_ctor, desc, stream_kind in scenarios:
-      m = m_ctor(m_ctor.__name__, description=desc,
+      m = m_ctor(m_ctor.__name__, desc, None,
                  units=metrics.MetricsDataUnits.SECONDS)
       data_set = new_metrics_pb2.MetricsDataSet()
-      m._populate_data_set(data_set, fields={})
+      m._populate_data_set(data_set)
 
       self.assertEqual(stream_kind, data_set.stream_kind)
       self.assertEqual('/infra/test/%s' % m_ctor.__name__, data_set.metric_name)
-      self.assertEqual(desc or '', data_set.description)
+      self.assertEqual(desc, data_set.description)
       self.assertEqual('s', data_set.annotations.unit)
 
   def test_populate_data(self):
-    m = metrics.CounterMetric('test')
+    m = metrics.CounterMetric('test', 'test', None)
     data = new_metrics_pb2.MetricsData()
     m._populate_data(data, 100.4, 1000.6, {}, 5)
 
@@ -181,9 +182,12 @@ class MetricTest(TestBase):
 
   def test_populate_field_descriptor(self):
     data_set_pb = new_metrics_pb2.MetricsDataSet()
-    fields = [('a', 1), ('b', True), ('c', 'test')]
-    m = metrics.Metric('test')
-    m._populate_field_descriptors(data_set_pb, fields)
+    m = metrics.Metric('test', 'test', [
+        metrics.IntegerField('a'),
+        metrics.BooleanField('b'),
+        metrics.StringField('c'),
+    ])
+    m._populate_field_descriptors(data_set_pb)
 
     field_type = new_metrics_pb2.MetricsDataSet.MetricFieldDescriptor
     self.assertEqual(3, len(data_set_pb.field_descriptor))
@@ -200,19 +204,14 @@ class MetricTest(TestBase):
     self.assertEqual(field_type.STRING,
                      data_set_pb.field_descriptor[2].field_type)
 
-  def test_populate_field_descriptor_error(self):
-    data_set_pb = new_metrics_pb2.MetricsDataSet()
-    fields = [('a', 1.234)]
-    m = metrics.Metric('test')
-
-    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
-      m._populate_field_descriptors(data_set_pb, fields)
-
   def test_populate_fields(self):
     data = new_metrics_pb2.MetricsData()
-    fields = [('a', 1), ('b', True), ('c', 'test')]
-    m = metrics.Metric('test')
-    m._populate_fields_new(data, fields)
+    m = metrics.Metric('test', 'test', [
+        metrics.IntegerField('a'),
+        metrics.BooleanField('b'),
+        metrics.StringField('c'),
+    ])
+    m._populate_fields_new(data, (1, True, 'test'))
 
     self.assertEqual(3, len(data.field))
 
@@ -225,41 +224,108 @@ class MetricTest(TestBase):
     self.assertEqual('c', data.field[2].name)
     self.assertEqual('test', data.field[2].string_value)
 
-  def test_populate_fields_error(self):
-    data = new_metrics_pb2.MetricsData()
-    fields = [('a', 1.234)]
-    m = metrics.Metric('test')
+  def test_bad_description(self):
+    with self.assertRaises(errors.MetricDefinitionError):
+      metrics.Metric('test', 123, None)
+    with self.assertRaises(errors.MetricDefinitionError):
+      metrics.Metric('test', '', None)
+    with self.assertRaises(errors.MetricDefinitionError):
+      metrics.Metric('test', None, None)
 
+  def test_bad_field_spec(self):
+    with self.assertRaises(errors.MetricDefinitionError):
+      metrics.Metric('test', 'desc', ['abc'])
+    with self.assertRaises(errors.MetricDefinitionError):
+      metrics.Metric('test', 'desc', ('abc',))
+    with self.assertRaises(errors.MetricDefinitionError):
+      metrics.Metric('test', 'desc', [123])
+    with self.assertRaises(errors.MetricDefinitionError):
+      metrics.Metric('test', 'desc', [None])
+
+
+class FieldValidationTest(TestBase):
+  def test_string_field(self):
+    f = metrics.StringField('name')
+    f.validate_value('', 'string')
+    f.validate_value('', u'string')
     with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
-      m._populate_fields_new(data, fields)
+      f.validate_value('', 123)
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', long(123))
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', True)
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', None)
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', 12.34)
+
+  def test_integer_field(self):
+    f = metrics.IntegerField('name')
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', 'string')
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', u'string')
+    f.validate_value('', 123)
+    f.validate_value('', long(123))
+    f.validate_value('', True)  # Python allows this *shrug*
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', None)
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', 12.34)
+
+  def test_boolean_field(self):
+    f = metrics.BooleanField('name')
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', 'string')
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', u'string')
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', 123)
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', long(123))
+    f.validate_value('', True)
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', None)
+    with self.assertRaises(errors.MonitoringInvalidFieldTypeError):
+      f.validate_value('', 12.34)
+
+  def test_invalid_field_name(self):
+    with self.assertRaises(errors.MetricDefinitionError):
+      metrics.StringField('foo', 'desc', [metrics.StringField(' ')])
+    with self.assertRaises(errors.MetricDefinitionError):
+      metrics.StringField('foo', 'desc', [metrics.StringField('123')])
+    with self.assertRaises(errors.MetricDefinitionError):
+      metrics.StringField('foo', 'desc', [metrics.StringField('')])
+    with self.assertRaises(errors.MetricDefinitionError):
+      metrics.StringField('foo', 'desc', [metrics.StringField(u'\U0001F4A9')])
 
 
 class StringMetricTest(TestBase):
 
   def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.StringMetric('test')
+    m = metrics.StringMetric('test', 'test', None)
     m._populate_value(pb, 'foo', 1234)
     self.assertEquals(pb.string_value, 'foo')
 
   def test_generate_proto_new(self):
     proto = self._test_proto_new(
-        metrics.StringMetric('t'), lambda m: m.set('aaa'),
+        metrics.StringMetric('t', 't', None), lambda m: m.set('aaa'),
         new_metrics_pb2.STRING, new_metrics_pb2.GAUGE)
     self.assertEqual('aaa', proto.string_value)
 
   def test_set(self):
-    m = metrics.StringMetric('test')
+    m = metrics.StringMetric('test', 'test', None)
     m.set('hello world')
     self.assertEquals(m.get(), 'hello world')
 
   def test_non_string_raises(self):
-    m = metrics.StringMetric('test')
+    m = metrics.StringMetric('test', 'test', None)
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
       m.set(object())
 
   def test_is_cumulative(self):
-    m = metrics.StringMetric('test')
+    m = metrics.StringMetric('test', 'test', None)
     self.assertFalse(m.is_cumulative())
 
 
@@ -267,23 +333,24 @@ class BooleanMetricTest(TestBase):
 
   def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.BooleanMetric('test')
+    m = metrics.BooleanMetric('test', 'test', None)
     m._populate_value(pb, True, 1234)
     self.assertEquals(pb.boolean_value, True)
 
   def test_generate_proto_new(self):
     proto = self._test_proto_new(
-        metrics.BooleanMetric('test'), lambda m: m.set(True),
+        metrics.BooleanMetric('test', 'test', None),
+        lambda m: m.set(True),
         new_metrics_pb2.BOOL, new_metrics_pb2.GAUGE)
     self.assertTrue(proto.bool_value)
 
   def test_set(self):
-    m = metrics.BooleanMetric('test')
+    m = metrics.BooleanMetric('test', 'test', None)
     m.set(False)
     self.assertEquals(m.get(), False)
 
   def test_non_bool_raises(self):
-    m = metrics.BooleanMetric('test')
+    m = metrics.BooleanMetric('test', 'test', None)
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
       m.set(object())
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
@@ -292,7 +359,7 @@ class BooleanMetricTest(TestBase):
       m.set(123)
 
   def test_is_cumulative(self):
-    m = metrics.BooleanMetric('test')
+    m = metrics.BooleanMetric('test', 'test', None)
     self.assertFalse(m.is_cumulative())
 
 
@@ -300,23 +367,24 @@ class CounterMetricTest(TestBase):
 
   def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.CounterMetric('test')
+    m = metrics.CounterMetric('test', 'test', None)
     m._populate_value(pb, 1, 1234)
     self.assertEquals(pb.counter, 1)
 
   def test_generate_proto_new(self):
     proto = self._test_proto_new(
-        metrics.CounterMetric('c'), lambda m: m.increment_by(5),
+        metrics.CounterMetric('c', 'test', None),
+        lambda m: m.increment_by(5),
         new_metrics_pb2.INT64, new_metrics_pb2.CUMULATIVE)
     self.assertEqual(5, proto.int64_value)
 
   def test_set(self):
-    m = metrics.CounterMetric('test')
+    m = metrics.CounterMetric('test', 'test', None)
     m.set(10)
     self.assertEquals(m.get(), 10)
 
   def test_increment(self):
-    m = metrics.CounterMetric('test')
+    m = metrics.CounterMetric('test', 'test', None)
     m.set(1)
     self.assertEquals(m.get(), 1)
     m.increment()
@@ -325,7 +393,7 @@ class CounterMetricTest(TestBase):
     self.assertAlmostEquals(m.get(), 5)
 
   def test_decrement_raises(self):
-    m = metrics.CounterMetric('test')
+    m = metrics.CounterMetric('test', 'test', None)
     m.set(1)
     with self.assertRaises(errors.MonitoringDecreasingValueError):
       m.set(0)
@@ -333,7 +401,7 @@ class CounterMetricTest(TestBase):
       m.increment_by(-1)
 
   def test_non_int_raises(self):
-    m = metrics.CounterMetric('test')
+    m = metrics.CounterMetric('test', 'test', None)
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
       m.set(object())
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
@@ -342,43 +410,35 @@ class CounterMetricTest(TestBase):
       m.increment_by(1.5)
 
   def test_multiple_field_values(self):
-    m = metrics.CounterMetric('test')
+    m = metrics.CounterMetric('test', 'test', [metrics.StringField('foo')])
     m.increment({'foo': 'bar'})
     m.increment({'foo': 'baz'})
     m.increment({'foo': 'bar'})
-    self.assertIsNone(None)
+    with self.assertRaises(errors.WrongFieldsError):
+      m.get()
+    self.assertIsNone(m.get({'foo': ''}))
     self.assertEquals(2, m.get({'foo': 'bar'}))
-    self.assertEquals(1, m.get({'foo': 'baz'}))
-
-  def test_override_fields(self):
-    m = metrics.CounterMetric('test', fields={'foo': 'bar'})
-    m.increment()
-    m.increment({'foo': 'baz'})
-    self.assertEquals(1, m.get())
-    self.assertEquals(1, m.get({'foo': 'bar'}))
     self.assertEquals(1, m.get({'foo': 'baz'}))
 
   def test_start_timestamp(self):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
-    m = metrics.CounterMetric('test', fields={'foo': 'bar'})
+    m = metrics.CounterMetric('test', 'test', None)
     m.increment()
     p = metrics_pb2.MetricsData()
     m.serialize_to(p, 1234, (), m.get(), t)
     self.assertEquals(1234000000, p.start_timestamp_us)
 
   def test_is_cumulative(self):
-    m = metrics.CounterMetric('test')
+    m = metrics.CounterMetric('test', 'test', None)
     self.assertTrue(m.is_cumulative())
 
   def test_get_all(self):
-    m = metrics.CounterMetric('test')
-    m.increment()
+    m = metrics.CounterMetric('test', 'test', [metrics.StringField('foo')])
+    m.increment({'foo': ''})
     m.increment({'foo': 'bar'})
-    m.increment({'foo': 'baz', 'moo': 'wibble'})
     self.assertEqual([
-        ((), 1),
-        ((('foo', 'bar'),), 1),
-        ((('foo', 'baz'), ('moo', 'wibble')), 1),
+        (('',), 1),
+        (('bar',), 1),
     ], sorted(m.get_all()))
 
 
@@ -386,30 +446,30 @@ class GaugeMetricTest(TestBase):
 
   def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.GaugeMetric('test')
+    m = metrics.GaugeMetric('test', 'test', None)
     m._populate_value(pb, 1, 1234)
     self.assertEquals(pb.gauge, 1)
 
   def test_generate_proto_new(self):
     proto = self._test_proto_new(
-        metrics.GaugeMetric('test'), lambda m: m.set(5),
+        metrics.GaugeMetric('test', 'test', None), lambda m: m.set(5),
         new_metrics_pb2.INT64, new_metrics_pb2.GAUGE)
     self.assertEqual(5, proto.int64_value)
 
   def test_set(self):
-    m = metrics.GaugeMetric('test')
+    m = metrics.GaugeMetric('test', 'test', None)
     m.set(10)
     self.assertEquals(m.get(), 10)
     m.set(sys.maxint + 1)
     self.assertEquals(m.get(), sys.maxint + 1)
 
   def test_non_int_raises(self):
-    m = metrics.GaugeMetric('test')
+    m = metrics.GaugeMetric('test', 'test', None)
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
       m.set(object())
 
   def test_is_cumulative(self):
-    m = metrics.GaugeMetric('test')
+    m = metrics.GaugeMetric('test', 'test', None)
     self.assertFalse(m.is_cumulative())
 
 
@@ -417,23 +477,24 @@ class CumulativeMetricTest(TestBase):
 
   def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.CumulativeMetric('test')
+    m = metrics.CumulativeMetric('test', 'test', None)
     m._populate_value(pb, 1.618, 1234)
     self.assertAlmostEquals(pb.cumulative_double_value, 1.618)
 
   def test_generate_proto_new(self):
     proto = self._test_proto_new(
-        metrics.CumulativeMetric('c'), lambda m: m.increment_by(5.2),
+        metrics.CumulativeMetric('c', 'test', None),
+        lambda m: m.increment_by(5.2),
         new_metrics_pb2.DOUBLE, new_metrics_pb2.CUMULATIVE)
     self.assertAlmostEqual(5.2, proto.double_value)
 
   def test_set(self):
-    m = metrics.CumulativeMetric('test')
+    m = metrics.CumulativeMetric('test', 'test', None)
     m.set(3.14)
     self.assertAlmostEquals(m.get(), 3.14)
 
   def test_decrement_raises(self):
-    m = metrics.CumulativeMetric('test')
+    m = metrics.CumulativeMetric('test', 'test', None)
     m.set(3.14)
     with self.assertRaises(errors.MonitoringDecreasingValueError):
       m.set(0)
@@ -441,20 +502,20 @@ class CumulativeMetricTest(TestBase):
       m.increment_by(-1)
 
   def test_non_number_raises(self):
-    m = metrics.CumulativeMetric('test')
+    m = metrics.CumulativeMetric('test', 'test', None)
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
       m.set(object())
 
   def test_start_timestamp(self):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
-    m = metrics.CumulativeMetric('test', fields={'foo': 'bar'})
+    m = metrics.CumulativeMetric('test', 'test', None)
     m.set(3.14)
     p = metrics_pb2.MetricsData()
     m.serialize_to(p, 1234, (), m.get(), t)
     self.assertEquals(1234000000, p.start_timestamp_us)
 
   def test_is_cumulative(self):
-    m = metrics.CumulativeMetric('test')
+    m = metrics.CumulativeMetric('test', 'test', None)
     self.assertTrue(m.is_cumulative())
 
 
@@ -462,28 +523,28 @@ class FloatMetricTest(TestBase):
 
   def test_populate_value(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.FloatMetric('test')
+    m = metrics.FloatMetric('test', 'test', None)
     m._populate_value(pb, 1.618, 1234)
     self.assertEquals(pb.noncumulative_double_value, 1.618)
 
   def test_generate_proto_new(self):
     proto = self._test_proto_new(
-        metrics.FloatMetric('test'), lambda m: m.set(1.23),
+        metrics.FloatMetric('test', 'test', None), lambda m: m.set(1.23),
         new_metrics_pb2.DOUBLE, new_metrics_pb2.GAUGE)
     self.assertAlmostEqual(1.23, proto.double_value)
 
   def test_set(self):
-    m = metrics.FloatMetric('test')
+    m = metrics.FloatMetric('test', 'test', None)
     m.set(3.14)
     self.assertEquals(m.get(), 3.14)
 
   def test_non_number_raises(self):
-    m = metrics.FloatMetric('test')
+    m = metrics.FloatMetric('test', 'test', None)
     with self.assertRaises(errors.MonitoringInvalidValueTypeError):
       m.set(object())
 
   def test_is_cumulative(self):
-    m = metrics.FloatMetric('test')
+    m = metrics.FloatMetric('test', 'test', None)
     self.assertFalse(m.is_cumulative())
 
 
@@ -519,7 +580,7 @@ class DistributionMetricTest(TestBase):
 
   def test_populate_canonical(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.CumulativeDistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test', 'test', None)
     m._populate_value(pb,
         distribution.Distribution(distribution.GeometricBucketer()),
         1234)
@@ -540,7 +601,7 @@ class DistributionMetricTest(TestBase):
 
   def test_populate_custom(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.CumulativeDistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test', 'test', None)
     m._populate_value(pb,
         distribution.Distribution(distribution.GeometricBucketer(4)),
         1234)
@@ -561,7 +622,7 @@ class DistributionMetricTest(TestBase):
 
   def test_populate_buckets(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.CumulativeDistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test', 'test', None)
     d = distribution.Distribution(
         distribution.FixedWidthBucketer(10))
     d.add(5)
@@ -590,7 +651,7 @@ class DistributionMetricTest(TestBase):
 
   def test_populate_buckets_last_zero(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.CumulativeDistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test', 'test', None)
     d = distribution.Distribution(
         distribution.FixedWidthBucketer(10, num_finite_buckets=10))
     d.add(5)
@@ -602,7 +663,7 @@ class DistributionMetricTest(TestBase):
 
   def test_populate_buckets_underflow(self):
     pb = metrics_pb2.MetricsData()
-    m = metrics.CumulativeDistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test', 'test', None)
     d = distribution.Distribution(
         distribution.FixedWidthBucketer(10, num_finite_buckets=10))
     d.add(-5)
@@ -638,9 +699,11 @@ class DistributionMetricTest(TestBase):
   def test_generate_fixed_width_distribution(self):
     bucketer = distribution.FixedWidthBucketer(width=1, num_finite_buckets=10)
     dists = [
-      (metrics.NonCumulativeDistributionMetric('test0', bucketer=bucketer),
+      (metrics.NonCumulativeDistributionMetric(
+           'test0', 'test', None, bucketer=bucketer),
        new_metrics_pb2.GAUGE),
-      (metrics.CumulativeDistributionMetric('test1', bucketer=bucketer),
+      (metrics.CumulativeDistributionMetric(
+           'test1', 'test', None, bucketer=bucketer),
        new_metrics_pb2.CUMULATIVE)
     ]
 
@@ -659,9 +722,11 @@ class DistributionMetricTest(TestBase):
     bucketer = distribution.GeometricBucketer(growth_factor=10**2,
                                               num_finite_buckets=10)
     dists = [
-      (metrics.NonCumulativeDistributionMetric('test0', bucketer=bucketer),
+      (metrics.NonCumulativeDistributionMetric(
+           'test0', 'test', None, bucketer=bucketer),
        new_metrics_pb2.GAUGE),
-      (metrics.CumulativeDistributionMetric('test1', bucketer=bucketer),
+      (metrics.CumulativeDistributionMetric(
+           'test1', 'test', None, bucketer=bucketer),
        new_metrics_pb2.CUMULATIVE)
     ]
 
@@ -681,18 +746,18 @@ class DistributionMetricTest(TestBase):
     pb = metrics_pb2.MetricsData()
     d = distribution.Distribution(
         distribution.FixedWidthBucketer(10, num_finite_buckets=10))
-    m = metrics.CumulativeDistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test', 'test', None)
 
     m._populate_value(pb, d, 1234)
     self.assertTrue(pb.distribution.is_cumulative)
 
-    m = metrics.NonCumulativeDistributionMetric('test2')
+    m = metrics.NonCumulativeDistributionMetric('test2', 'test', None)
 
     m._populate_value(pb, d, 1234)
     self.assertFalse(pb.distribution.is_cumulative)
 
   def test_add(self):
-    m = metrics.CumulativeDistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test', 'test', None)
     m.add(1)
     m.add(10)
     m.add(100)
@@ -701,7 +766,7 @@ class DistributionMetricTest(TestBase):
     self.assertEquals(3, m.get().count)
 
   def test_add_custom_bucketer(self):
-    m = metrics.CumulativeDistributionMetric('test',
+    m = metrics.CumulativeDistributionMetric('test', 'test', None,
         bucketer=distribution.FixedWidthBucketer(10))
     m.add(1)
     m.add(10)
@@ -717,11 +782,11 @@ class DistributionMetricTest(TestBase):
     d.add(10)
     d.add(100)
 
-    m = metrics.CumulativeDistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test', 'test', None)
     with self.assertRaises(TypeError):
       m.set(d)
 
-    m = metrics.NonCumulativeDistributionMetric('test2')
+    m = metrics.NonCumulativeDistributionMetric('test2', 'test', None)
     m.set(d)
     self.assertEquals(d, m.get())
 
@@ -732,7 +797,7 @@ class DistributionMetricTest(TestBase):
 
   def test_start_timestamp(self):
     t = targets.DeviceTarget('reg', 'role', 'net', 'host')
-    m = metrics.CumulativeDistributionMetric('test')
+    m = metrics.CumulativeDistributionMetric('test', 'test', None)
     m.add(1)
     m.add(5)
     m.add(25)
@@ -741,7 +806,7 @@ class DistributionMetricTest(TestBase):
     self.assertEquals(1234000000, p.start_timestamp_us)
 
   def test_is_cumulative(self):
-    cd = metrics.CumulativeDistributionMetric('test')
-    ncd = metrics.NonCumulativeDistributionMetric('test2')
+    cd = metrics.CumulativeDistributionMetric('test', 'test', None)
+    ncd = metrics.NonCumulativeDistributionMetric('test2', 'test', None)
     self.assertTrue(cd.is_cumulative())
     self.assertFalse(ncd.is_cumulative())

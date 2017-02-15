@@ -65,35 +65,15 @@ class GlobalsTest(unittest.TestCase):
     interface.flush()
     interface.state.global_monitor.send.assert_not_called()
 
-  def test_flush_corrupt_metric(self):
-    """Test that a corrupt metric does not affect flushing other metrics."""
-    interface.state.global_monitor = stubs.MockMonitor()
-
-    good_metric = metrics.GaugeMetric('good_metric')
-    bad_metric = metrics.GaugeMetric('bad_metric')
-    interface.register(good_metric)
-    interface.register(bad_metric)
-    good_metric.set(1, fields={'valid_field': 1})
-    bad_metric.set(2, fields={'invalid_field': mock.Mock()})
-
-    with self.assertRaises(errors.MonitoringFailedToFlushAllMetricsError) as e:
-      interface.flush()
-    self.assertEqual(1, e.exception.error_count)
-
-    interface.state.global_monitor.send.assert_called_once()
-    proto = interface.state.global_monitor.send.call_args[0][0]
-    self.assertEqual(1, len(proto.data))
-    self.assertEqual('good_metric', proto.data[0].name)
-
   def test_flush_new(self):
     interface.state.metric_name_prefix = '/infra/test/'
     interface.state.global_monitor = stubs.MockMonitor()
     interface.state.target = targets.TaskTarget('a', 'b', 'c', 'd', 1)
     interface.state.use_new_proto = True
 
-    counter = metrics.CounterMetric('counter', description='desc')
+    counter = metrics.CounterMetric('counter', 'desc', None)
     interface.register(counter)
-    counter.increment_by(3, {'test': 123})
+    counter.increment_by(3)
 
     interface.flush()
     interface.state.global_monitor.send.assert_called_once()
@@ -104,36 +84,6 @@ class GlobalsTest(unittest.TestCase):
 
     data_set = proto.metrics_collection[0].metrics_data_set[0]
     self.assertEqual('/infra/test/counter', data_set.metric_name)
-
-  def test_flush_corrupt_metric_new(self):
-    """Test that a corrupt metric does not affect flushing other metrics."""
-    interface.state.global_monitor = stubs.MockMonitor()
-    interface.state.use_new_proto = True
-
-    bad_metric = metrics.GaugeMetric('bad_metric')
-    partially_good_metric = metrics.GaugeMetric('partially_good_metric')
-    interface.register(bad_metric)
-    interface.register(partially_good_metric)
-    bad_metric.set(1, fields={'bad_field_1': mock.Mock()})
-    partially_good_metric.set(2, fields={'good_field': 22})
-    partially_good_metric.set(3, fields={'bad_field_2': mock.Mock()})
-
-    with self.assertRaises(errors.MonitoringFailedToFlushAllMetricsError) as e:
-      interface.flush()
-    self.assertEqual(2, e.exception.error_count)
-
-    interface.state.global_monitor.send.assert_called_once()
-    proto = interface.state.global_monitor.send.call_args[0][0]
-    self.assertEqual(1, len(proto.metrics_collection))
-    self.assertEqual(1, len(proto.metrics_collection[0].metrics_data_set))
-
-    data_set = proto.metrics_collection[0].metrics_data_set[0]
-    self.assertEqual(1, len(data_set.data))
-
-    data = data_set.data[0]
-    self.assertEqual(2, data.int64_value)
-    self.assertEqual(1, len(data.field))
-    self.assertEqual('good_field', data.field[0].name)
 
   def test_flush_empty_new(self):
     interface.state.metric_name_prefix = '/infra/test/'
@@ -200,7 +150,8 @@ class GlobalsTest(unittest.TestCase):
       data_lengths.append(count)
     interface.state.global_monitor.send.side_effect = send
 
-    counter = metrics.CounterMetric('counter', description='desc')
+    counter = metrics.CounterMetric('counter', 'desc',
+        [metrics.IntegerField('field')])
     interface.register(counter)
 
     for i in xrange(interface.METRICS_DATA_LENGTH_LIMIT + 1):
@@ -213,7 +164,7 @@ class GlobalsTest(unittest.TestCase):
   def test_flush_different_target_fields(self):
     interface.state.global_monitor = stubs.MockMonitor()
     interface.state.target = targets.TaskTarget('s', 'j', 'r', 'h')
-    metric = metrics.GaugeMetric('m')
+    metric = metrics.GaugeMetric('m', 'desc', None)
 
     metric.set(123)
     metric.set(456, target_fields={'service_name': 'foo'})
@@ -232,7 +183,7 @@ class GlobalsTest(unittest.TestCase):
     interface.state.global_monitor = stubs.MockMonitor()
     interface.state.target = targets.TaskTarget('s', 'j', 'r', 'h')
     interface.state.use_new_proto = True
-    metric = metrics.GaugeMetric('m')
+    metric = metrics.GaugeMetric('m', 'desc', None)
 
     metric.set(123)
     metric.set(456, target_fields={'service_name': 'foo'})
@@ -261,13 +212,13 @@ class GlobalsTest(unittest.TestCase):
     interface.register(fake_metric)
 
     # Setting this will modify store._values in the middle of iteration.
-    delayed_metric = metrics.CounterMetric('foo')
+    delayed_metric = metrics.CounterMetric('foo', 'desc', None)
     def send(proto):
       delayed_metric.increment_by(1)
     interface.state.global_monitor.send.side_effect = send
 
     for i in xrange(1001):
-      interface.state.store.set('fake', ('field', i), None, 123)
+      interface.state.store.set('fake', (i,), None, 123)
 
     # Shouldn't raise an exception.
     interface.flush()
@@ -311,7 +262,7 @@ class GlobalsTest(unittest.TestCase):
     self.assertFalse(interface.state.flush_thread.is_alive())
 
   def test_reset_for_unittest(self):
-    metric = metrics.CounterMetric('foo')
+    metric = metrics.CounterMetric('foo', 'desc', None)
     metric.increment()
     self.assertEquals(1, metric.get())
 
@@ -474,18 +425,19 @@ class GenerateNewProtoTest(unittest.TestCase):
         interface.state, self.time_fn)
 
   def test_grouping(self):
-    counter0 = metrics.CounterMetric('counter0', description='desc0')
-    counter1 = metrics.CounterMetric('counter1', description='desc1')
-    counter2 = metrics.CounterMetric('counter2', description='desc2')
+    counter0 = metrics.CounterMetric('counter0', 'desc0',
+        [metrics.IntegerField('test')])
+    counter1 = metrics.CounterMetric('counter1', 'desc1', None)
+    counter2 = metrics.CounterMetric('counter2', 'desc2', None)
 
     interface.register(counter0)
     interface.register(counter1)
     interface.register(counter2)
 
-    counter0.increment_by(3, fields={'test': 123})
-    counter0.increment_by(5, fields={'test': 999})
+    counter0.increment_by(3, {'test': 123})
+    counter0.increment_by(5, {'test': 999})
     counter1.increment()
-    counter2.increment_by(4, fields={}, target_fields={'task_num': 1})
+    counter2.increment_by(4, target_fields={'task_num': 1})
 
     protos = list(interface._generate_proto_new())
     self.assertEqual(1, len(protos))
@@ -518,7 +470,11 @@ class GenerateNewProtoTest(unittest.TestCase):
       self.assertEqual('/infra/test/counter%d' % i, data_set.metric_name)
 
   def test_generate_every_type_of_field(self):
-    counter = metrics.CounterMetric('counter')
+    counter = metrics.CounterMetric('counter', 'desc', [
+        metrics.IntegerField('a'),
+        metrics.BooleanField('b'),
+        metrics.StringField('c'),
+    ])
     interface.register(counter)
     counter.increment({'a': 1, 'b': True, 'c': 'test'})
 
