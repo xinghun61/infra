@@ -6,6 +6,7 @@ from google.appengine.ext import ndb
 
 from common.pipeline_wrapper import BasePipeline
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from model import analysis_status
 from model.flake.master_flake_analysis import DataPoint
 from waterfall import swarming_util
 
@@ -85,6 +86,9 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     try_job = ndb.Key(urlsafe=urlsafe_try_job_key).get()
     assert flake_analysis
     assert try_job
+
+    try_job.status = analysis_status.COMPLETED
+    try_job.put()
 
     step_name = flake_analysis.canonical_step_name
     test_name = flake_analysis.test_name

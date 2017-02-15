@@ -14,6 +14,7 @@ from model import analysis_status
 from model import result_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
+from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake import recursive_flake_try_job_pipeline
@@ -139,12 +140,17 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 100
     step_name = 's'
     test_name = 't'
-    git_hash = 'r99'
+    revision = 'r99'
+    try_job_id = '123'
 
     try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, git_hash)
-    try_job.status = analysis_status.COMPLETED
+        master_name, builder_name, step_name, test_name, revision)
+    try_job.try_job_ids.append(try_job_id)
     try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
 
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
@@ -181,14 +187,19 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     git_hash = 'r95'
     commit_position = 95
     url = 'url'
+    try_job_id = '123'
     change_log = ChangeLog(None, None, git_hash,
                            commit_position, None, None, url, None)
     mock_fn.return_value = change_log
 
     try_job = FlakeTryJob.Create(
         master_name, builder_name, step_name, test_name, git_hash)
-    try_job.status = analysis_status.COMPLETED
+    try_job.try_job_ids.append(try_job_id)
     try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
 
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
@@ -234,7 +245,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     git_hash = 'r100'
-
+    try_job_id = '123'
     revision = 'r100'
     commit_position = 100
     url = 'url'
@@ -243,9 +254,13 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mocked_fn.return_value = change_log
 
     try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, git_hash)
-    try_job.status = analysis_status.COMPLETED
+        master_name, builder_name, step_name, test_name, revision)
+    try_job.try_job_ids.append(try_job_id)
     try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
 
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
@@ -283,6 +298,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     revision = 'r97'
+    try_job_id = '123'
     error = {
         'code': 1,
         'message': 'some failure message',
@@ -290,9 +306,13 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     try_job = FlakeTryJob.Create(
         master_name, builder_name, step_name, test_name, revision)
-    try_job.status = analysis_status.ERROR
-    try_job.error = error
+    try_job.try_job_ids.append(try_job_id)
     try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.error = error
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
 
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)

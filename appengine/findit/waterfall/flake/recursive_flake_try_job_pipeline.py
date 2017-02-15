@@ -19,6 +19,7 @@ from model import analysis_status
 from model import result_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
+from model.flake.flake_try_job_data import FlakeTryJobData
 from waterfall import waterfall_config
 from waterfall.flake import confidence
 from waterfall.flake import lookback_algorithm
@@ -132,8 +133,8 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 def _NormalizeDataPoints(data_points):
   normalized_data_points = [
       (lambda data_point: NormalizedDataPoint(
-           data_point.commit_position,
-           data_point.pass_rate))(d) for d in data_points]
+          data_point.commit_position,
+          data_point.pass_rate))(d) for d in data_points]
 
   return sorted(normalized_data_points, key=lambda k: k.run_point_number,
                 reverse=True)
@@ -180,15 +181,15 @@ class NextCommitPositionPipeline(BasePipeline):
     try_job = ndb.Key(urlsafe=urlsafe_try_job_key).get()
     assert flake_analysis
     assert try_job
+    assert try_job.try_job_ids
+
+    try_job_id = try_job.try_job_ids[-1]
+    try_job_data = FlakeTryJobData.Get(try_job_id)
 
     # Don't call another pipeline if the previous try job failed.
-    if try_job.status == analysis_status.ERROR:
-      error = try_job.error or {
-          'error': 'Try job %s failed' % try_job.try_job_id,
-          'message': 'The last try job did not complete as expected'
-      }
+    if try_job_data.error:
       UpdateAnalysisTryJobStatusUponCompletion(
-          flake_analysis, None, analysis_status.ERROR, error)
+          flake_analysis, None, analysis_status.ERROR, try_job_data.error)
       yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
       return
 
