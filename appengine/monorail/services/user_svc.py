@@ -462,6 +462,10 @@ class UserService(object):
         [(hotlist_id, user_id, int(time.time()))],
         commit=commit)
 
+  def DeleteHotlistFromHistory(self, cnxn, hotlist_id, commit=True):
+    self.hotlistvisithistory_tbl.Delete(
+        cnxn, hotlist_id=hotlist_id, commit=commit)
+
   def TrimUserVisitedHotlists(self, cnxn, commit=True):
     user_id_rows = self.hotlistvisithistory_tbl.Select(
         cnxn, cols=['user_id'], group_by='user_id',

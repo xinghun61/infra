@@ -277,4 +277,5 @@ def RemoveHotlist(cnxn, hotlist_id, services):
       services: interfaces to data storage.
   """
   services.hotlist_star.ExpungeStars(cnxn, hotlist_id)
+  services.user.DeleteHotlistFromHistory(cnxn, hotlist_id)
   services.features.DeleteHotlist(cnxn, hotlist_id)
