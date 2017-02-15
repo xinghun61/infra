@@ -97,13 +97,21 @@ def _CreateApiCacheKeys(client_id, client_email, now_sec):
 class RateLimiter(object):
 
   blocked_requests = ts_mon.CounterMetric(
-      'monorail/ratelimiter/blocked_request')
+      'monorail/ratelimiter/blocked_request',
+      'Count of requests that exceeded the rate limit and were blocked.',
+      None)
   limit_exceeded = ts_mon.CounterMetric(
-      'monorail/ratelimiter/rate_exceeded')
+      'monorail/ratelimiter/rate_exceeded',
+      'Count of requests that exceeded the rate limit.',
+      None)
   cost_thresh_exceeded = ts_mon.CounterMetric(
-      'monorail/ratelimiter/cost_thresh_exceeded')
+      'monorail/ratelimiter/cost_thresh_exceeded',
+      'Count of requests that were expensive to process',
+      None)
   checks = ts_mon.CounterMetric(
-      'monorail/ratelimiter/check')
+      'monorail/ratelimiter/check',
+      'Count of checks done, by fail/success type.',
+      [ts_mon.StringField('type')])
 
   def __init__(self, _cache=memcache, fail_open=True, **_kwargs):
     self.fail_open = fail_open
@@ -201,13 +209,21 @@ class RateLimiter(object):
 class ApiRateLimiter(RateLimiter):
 
   blocked_requests = ts_mon.CounterMetric(
-      'monorail/apiratelimiter/blocked_request')
+      'monorail/apiratelimiter/blocked_request',
+      'Count of requests that exceeded the rate limit and were blocked.',
+      None)
   limit_exceeded = ts_mon.CounterMetric(
-      'monorail/apiratelimiter/rate_exceeded')
+      'monorail/apiratelimiter/rate_exceeded',
+      'Count of requests that exceeded the rate limit.',
+      None)
   cost_thresh_exceeded = ts_mon.CounterMetric(
-      'monorail/apiratelimiter/cost_thresh_exceeded')
+      'monorail/apiratelimiter/cost_thresh_exceeded',
+      'Count of requests that were expensive to process',
+      None)
   checks = ts_mon.CounterMetric(
-      'monorail/apiratelimiter/check')
+      'monorail/apiratelimiter/check',
+      'Count of checks done, by fail/success type.',
+      [ts_mon.StringField('type')])
 
   #pylint: disable=arguments-differ
   def CheckStart(self, client_id, client_email, now=None):

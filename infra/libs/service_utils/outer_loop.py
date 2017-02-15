@@ -24,13 +24,15 @@ LoopResults = collections.namedtuple(
 )
 
 count_metric = ts_mon.CounterMetric('proc/outer_loop/count',
-    description='Counter of loop iterations for this process, by success or '
-                'failure')
+    'Counter of loop iterations for this process, by success or failure',
+    [ts_mon.StringField('status')])
 success_metric = ts_mon.BooleanMetric('proc/outer_loop/success',
-    description='Set immediately before the loop exits')
+    'Set immediately before the loop exits',
+    None)
 durations_metric = ts_mon.CumulativeDistributionMetric(
     'proc/outer_loop/durations',
-    description='Times (in seconds) taken to execute the task')
+    'Times (in seconds) taken to execute the task',
+    None)
 
 
 def loop(task, sleep_timeout, duration=None, max_errors=None, time_mod=time):

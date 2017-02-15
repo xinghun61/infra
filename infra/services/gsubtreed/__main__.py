@@ -20,7 +20,8 @@ from infra_libs import ts_mon
 Options = collections.namedtuple('Options', 'repo loop_opts json_output')
 
 commits_counter = ts_mon.CounterMetric('gsubtreed/commit_count',
-    description='Number of commits processed by gsubtreed')
+    'Number of commits processed by gsubtreed',
+    [ts_mon.StringField('path')])
 
 
 def parse_args(args):  # pragma: no cover

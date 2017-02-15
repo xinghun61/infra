@@ -281,7 +281,8 @@ class MonorailApi(remote.Service):
 
   api_requests = ts_mon.CounterMetric(
      'monorail/api_requests',
-     description='Number of requests to Monorail api')
+     'Number of requests to Monorail api',
+     [ts_mon.StringField('client_id'), ts_mon.StringField('client_email')])
 
   ratelimiter = ratelimiter.ApiRateLimiter()
 

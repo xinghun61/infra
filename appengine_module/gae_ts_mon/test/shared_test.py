@@ -21,7 +21,7 @@ class SharedTest(testing.AppengineTestCase):
     super(SharedTest, self).tearDown()
 
   def test_register_global_metrics(self):
-    metric = gae_ts_mon.GaugeMetric('test')
+    metric = gae_ts_mon.GaugeMetric('test', 'foo', None)
     shared.register_global_metrics([metric])
     self.assertEqual(['test'], list(shared.global_metrics))
     shared.register_global_metrics([metric])

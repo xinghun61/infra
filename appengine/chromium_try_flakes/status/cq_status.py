@@ -33,22 +33,27 @@ import time_functions.timestamp
 
 requests_metric = gae_ts_mon.CounterMetric(
     'flakiness_pipeline/cq_status/requests',
-    description='Requests made to the chromium-cq-status API')
+    'Requests made to the chromium-cq-status API',
+    [gae_ts_mon.StringField('status')])
 flakes_metric = gae_ts_mon.CounterMetric(
     'flakiness_pipeline/flake_occurrences_detected',
-    description='Detected flake occurrences')
+    'Detected flake occurrences',
+    None)
 occurrences_per_flake_day = gae_ts_mon.NonCumulativeDistributionMetric(
     'flakiness_pipeline/occurrences_per_flake/day',
-    description='Distribution of flake occurrence counts, calculated over all '
-                'flakes in the last day')
+    'Distribution of flake occurrence counts, calculated over all flakes in '
+    'the last day',
+    None)
 occurrences_per_flake_week = gae_ts_mon.NonCumulativeDistributionMetric(
     'flakiness_pipeline/occurrences_per_flake/week',
-    description='Distribution of flake occurrence counts, calculated over all '
-                'flakes in the last week')
+    'Distribution of flake occurrence counts, calculated over all flakes in '
+    'the last week',
+    None)
 occurrences_per_flake_month = gae_ts_mon.NonCumulativeDistributionMetric(
     'flakiness_pipeline/occurrences_per_flake/month',
-    description='Distribution of flake occurrence counts, calculated over all '
-                'flakes in the last month')
+    'Distribution of flake occurrence counts, calculated over all flakes in '
+    'the last month',
+    None)
 
 
 @ndb.transactional

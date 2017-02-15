@@ -108,8 +108,8 @@ class InitializeTest(testing.AppengineTestCase):
     self.assertEqual(1, http_metrics.server_response_status.get(fields))
 
   def test_reset_cumulative_metrics(self):
-    gauge = gae_ts_mon.GaugeMetric('gauge')
-    counter = gae_ts_mon.CounterMetric('counter')
+    gauge = gae_ts_mon.GaugeMetric('gauge', 'foo', None)
+    counter = gae_ts_mon.CounterMetric('counter', 'foo', None)
     gauge.set(5)
     counter.increment()
     self.assertEqual(5, gauge.get())
@@ -174,7 +174,7 @@ class InitializeTest(testing.AppengineTestCase):
     entity = shared.get_instance_entity()
     entity.task_num = 2
     # Global metrics must be erased after flush.
-    test_global_metric = gae_ts_mon.GaugeMetric('test')
+    test_global_metric = gae_ts_mon.GaugeMetric('test', 'foo', None)
     test_global_metric.set(42)
     shared.register_global_metrics([test_global_metric])
     self.assertEqual(42, test_global_metric.get())

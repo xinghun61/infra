@@ -19,7 +19,8 @@ class ClientMonitor(jsonfeed.JsonFeed):
   """JSON feed to track client side js errors in ts_mon."""
 
   js_errors = ts_mon.CounterMetric('frontend/js_errors',
-      description='Number of uncaught client-side JS errors.')
+      'Number of uncaught client-side JS errors.',
+      None)
 
   def HandleRequest(self, mr):
     """Build up a dictionary of data values to use when rendering the page.

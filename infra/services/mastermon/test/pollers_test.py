@@ -18,11 +18,8 @@ from infra.services.mastermon import pollers
 class FakePoller(pollers.Poller):
   endpoint = '/foo'
 
-  def __init__(self, base_url, fields=None, **kwargs):
-    if fields is None:
-      fields = {}
-
-    super(FakePoller, self).__init__(base_url, fields, **kwargs)
+  def __init__(self, base_url, **kwargs):
+    super(FakePoller, self).__init__(base_url, {'master': 'foo'}, **kwargs)
     self.called_with_data = None
 
   def handle_response(self, data):
@@ -97,7 +94,7 @@ class PollerTest(unittest.TestCase):
     mock_time = mock.create_autospec(time.time, spec_set=True)
     mock_time.side_effect = [123.0, 124.2]
 
-    p = FakePoller('http://foobar', {'master': 'foo'}, time_fn=mock_time)
+    p = FakePoller('http://foobar', time_fn=mock_time)
     self.assertTrue(p.poll())
 
     dist = pollers.Poller.durations.get(
@@ -113,7 +110,7 @@ class VarzPollerTest(unittest.TestCase):
     ts_mon.reset_for_unittest()
 
   def test_response(self):
-    p = pollers.VarzPoller('', {'x': 'y'})
+    p = pollers.VarzPoller('', {'master': 'a'})
 
     p.handle_response({
         'server_uptime': 123,
@@ -143,24 +140,24 @@ class VarzPollerTest(unittest.TestCase):
         },
     })
 
-    self.assertEqual(123, p.uptime.get({'x': 'y'}))
-    self.assertEqual(True, p.accepting_builds.get({'x': 'y'}))
-    self.assertEqual(1, p.connected.get({'builder': 'foo', 'x': 'y'}))
-    self.assertEqual(2, p.current_builds.get({'builder': 'foo', 'x': 'y'}))
-    self.assertEqual(3, p.pending_builds.get({'builder': 'foo', 'x': 'y'}))
-    self.assertEqual(4, p.total.get({'builder': 'foo', 'x': 'y'}))
-    self.assertEqual('offline', p.state.get({'builder': 'foo', 'x': 'y'}))
-    self.assertEqual(5, p.connected.get({'builder': 'bar', 'x': 'y'}))
-    self.assertEqual(6, p.current_builds.get({'builder': 'bar', 'x': 'y'}))
-    self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'x': 'y'}))
-    self.assertEqual(8, p.total.get({'builder': 'bar', 'x': 'y'}))
-    self.assertEqual('idle', p.state.get({'builder': 'bar', 'x': 'y'}))
-    self.assertEqual(9, p.pool_queue.get({'x': 'y'}))
-    self.assertEqual(10, p.pool_waiting.get({'x': 'y'}))
-    self.assertEqual(11, p.pool_working.get({'x': 'y'}))
+    self.assertEqual(123, p.uptime.get({'master': 'a'}))
+    self.assertEqual(True, p.accepting_builds.get({'master': 'a'}))
+    self.assertEqual(1, p.connected.get({'builder': 'foo', 'master': 'a'}))
+    self.assertEqual(2, p.current_builds.get({'builder': 'foo', 'master': 'a'}))
+    self.assertEqual(3, p.pending_builds.get({'builder': 'foo', 'master': 'a'}))
+    self.assertEqual(4, p.total.get({'builder': 'foo', 'master': 'a'}))
+    self.assertEqual('offline', p.state.get({'builder': 'foo', 'master': 'a'}))
+    self.assertEqual(5, p.connected.get({'builder': 'bar', 'master': 'a'}))
+    self.assertEqual(6, p.current_builds.get({'builder': 'bar', 'master': 'a'}))
+    self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'master': 'a'}))
+    self.assertEqual(8, p.total.get({'builder': 'bar', 'master': 'a'}))
+    self.assertEqual('idle', p.state.get({'builder': 'bar', 'master': 'a'}))
+    self.assertEqual(9, p.pool_queue.get({'master': 'a'}))
+    self.assertEqual(10, p.pool_waiting.get({'master': 'a'}))
+    self.assertEqual(11, p.pool_working.get({'master': 'a'}))
 
   def test_response_with_missing_data(self):
-    p = pollers.VarzPoller('', {'x': 'y'})
+    p = pollers.VarzPoller('', {'master': 'a'})
 
     p.handle_response({
         'server_uptime': 123,
@@ -178,21 +175,21 @@ class VarzPollerTest(unittest.TestCase):
         },
     })
 
-    self.assertEqual(123, p.uptime.get({'x': 'y'}))
-    self.assertEqual(True, p.accepting_builds.get({'x': 'y'}))
-    self.assertEqual(0, p.connected.get({'builder': 'foo', 'x': 'y'}))
-    self.assertEqual(0, p.current_builds.get({'builder': 'foo', 'x': 'y'}))
-    self.assertEqual(0, p.pending_builds.get({'builder': 'foo', 'x': 'y'}))
-    self.assertEqual(4, p.total.get({'builder': 'foo', 'x': 'y'}))
-    self.assertEqual('offline', p.state.get({'builder': 'foo', 'x': 'y'}))
-    self.assertEqual(5, p.connected.get({'builder': 'bar', 'x': 'y'}))
-    self.assertEqual(6, p.current_builds.get({'builder': 'bar', 'x': 'y'}))
-    self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'x': 'y'}))
-    self.assertEqual(0, p.total.get({'builder': 'bar', 'x': 'y'}))
-    self.assertEqual('unknown', p.state.get({'builder': 'bar', 'x': 'y'}))
-    self.assertIsNone(p.pool_queue.get({'x': 'y'}))
-    self.assertIsNone(p.pool_waiting.get({'x': 'y'}))
-    self.assertIsNone(p.pool_working.get({'x': 'y'}))
+    self.assertEqual(123, p.uptime.get({'master': 'a'}))
+    self.assertEqual(True, p.accepting_builds.get({'master': 'a'}))
+    self.assertEqual(0, p.connected.get({'builder': 'foo', 'master': 'a'}))
+    self.assertEqual(0, p.current_builds.get({'builder': 'foo', 'master': 'a'}))
+    self.assertEqual(0, p.pending_builds.get({'builder': 'foo', 'master': 'a'}))
+    self.assertEqual(4, p.total.get({'builder': 'foo', 'master': 'a'}))
+    self.assertEqual('offline', p.state.get({'builder': 'foo', 'master': 'a'}))
+    self.assertEqual(5, p.connected.get({'builder': 'bar', 'master': 'a'}))
+    self.assertEqual(6, p.current_builds.get({'builder': 'bar', 'master': 'a'}))
+    self.assertEqual(7, p.pending_builds.get({'builder': 'bar', 'master': 'a'}))
+    self.assertEqual(0, p.total.get({'builder': 'bar', 'master': 'a'}))
+    self.assertEqual('unknown', p.state.get({'builder': 'bar', 'master': 'a'}))
+    self.assertIsNone(p.pool_queue.get({'master': 'a'}))
+    self.assertIsNone(p.pool_waiting.get({'master': 'a'}))
+    self.assertIsNone(p.pool_working.get({'master': 'a'}))
 
 
 class FilePollerTest(unittest.TestCase):
@@ -206,7 +203,7 @@ class FilePollerTest(unittest.TestCase):
   def test_no_file(self):
     with temporary_directory(prefix='poller-test-') as tempdir:
       filename = os.path.join(tempdir, 'no-such-file')
-      p = pollers.FilePoller(filename, {})
+      p = pollers.FilePoller(filename, {'master': 'foo'})
       self.assertTrue(p.poll())
       self.assertFalse(os.path.isfile(pollers.rotated_filename(filename)))
 
@@ -222,8 +219,10 @@ class FilePollerTest(unittest.TestCase):
                'step_result': 'r1', 'project_id': 'chromium',
                'subproject_tag': 'unknown'}
     # Check that we've listed all the required metric fields.
-    self.assertEqual(set(result1), set(pollers.FilePoller.build_field_keys))
-    self.assertEqual(set(result2), set(pollers.FilePoller.build_field_keys))
+    self.assertEqual(set(result1),
+                     set(x.name for x in pollers.FilePoller.fields_from_json))
+    self.assertEqual(set(result2),
+                     set(x.name for x in pollers.FilePoller.fields_from_json))
 
     data = [r.copy() for r in (result1, result2, result3)]
     data[0]['random'] = 'value'  # Extra field, should be ignored.
@@ -234,11 +233,15 @@ class FilePollerTest(unittest.TestCase):
     data[1]['pre_test_time_s'] = 2
     with temporary_directory(prefix='poller-test-') as tempdir:
       filename = self.create_data_file(tempdir, data)
-      p = pollers.FilePoller(filename, {})
+      p = pollers.FilePoller(filename, {'master': 'foo'})
       self.assertTrue(p.poll())
 
-      self.assertEqual(pollers.FilePoller.result_count.get(result1), 1)
-      self.assertEqual(pollers.FilePoller.result_count.get(result2), 1)
+      fields = {'master': 'foo'}
+      fields.update(result1)
+      self.assertEqual(pollers.FilePoller.result_count.get(fields), 1)
+      fields = {'master': 'foo'}
+      fields.update(result2)
+      self.assertEqual(pollers.FilePoller.result_count.get(fields), 1)
 
       self.assertFalse(os.path.isfile(filename))
       # Make sure the rotated file is still there - for debugging.
@@ -250,7 +253,7 @@ class FilePollerTest(unittest.TestCase):
       filename = self.create_data_file(tempdir, [])
       with open(filename, 'a') as f:
         f.write('}')
-      p = pollers.FilePoller(filename, {})
+      p = pollers.FilePoller(filename, {'master': 'foo'})
       self.assertTrue(p.poll())
       self.assertFalse(os.path.isfile(filename))
       # Make sure the rotated file is still there - for debugging.

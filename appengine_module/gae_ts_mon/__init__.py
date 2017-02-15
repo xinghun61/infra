@@ -62,6 +62,10 @@ from infra_libs.ts_mon.common.helpers import ScopedIncrementCounter
 from infra_libs.ts_mon.common.interface import close
 from infra_libs.ts_mon.common.interface import flush
 
+from infra_libs.ts_mon.common.metrics import BooleanField
+from infra_libs.ts_mon.common.metrics import IntegerField
+from infra_libs.ts_mon.common.metrics import StringField
+
 from infra_libs.ts_mon.common.metrics import BooleanMetric
 from infra_libs.ts_mon.common.metrics import CounterMetric
 from infra_libs.ts_mon.common.metrics import CumulativeDistributionMetric

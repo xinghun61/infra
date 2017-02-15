@@ -123,17 +123,20 @@ def get_queue_details(flake_name):
 class ProcessIssue(webapp2.RequestHandler):
   time_since_first_flake = gae_ts_mon.FloatMetric(
       'flakiness_pipeline/time_since_first_flake',
-      description='The delay in seconds from the moment first flake occurrence '
-                  'in this flakiness period happens and until the time an '
-                  'issue is created to track it.')
+      'The delay in seconds from the moment first flake occurrence in this '
+      'flakiness period happens and until the time an issue is created to '
+      'track it.',
+      None)
   time_since_threshold_exceeded = gae_ts_mon.FloatMetric(
       'flakiness_pipeline/time_since_threshold_exceeded',
-      description='The delay in seconds from the moment when the last flake '
-                  'occurrence happens that makes a flake exceed the threshold '
-                  'and until the time an issue is created to track it.')
+      'The delay in seconds from the moment when the last flake occurrence '
+      'happens that makes a flake exceed the threshold and until the time an '
+      'issue is created to track it.',
+      None)
   issue_updates = gae_ts_mon.CounterMetric(
       'flakiness_pipeline/issue_updates',
-      description='Issues updated/created')
+      'Issues updated/created',
+      [gae_ts_mon.StringField('operation')])
 
   @ndb.transactional
   def _get_flake_update_singleton_key(self):
@@ -178,7 +181,7 @@ class ProcessIssue(webapp2.RequestHandler):
 
     cur = flaky_runs[-1]
     for i, prev in enumerate(reversed(flaky_runs[:-1])):
-      if (cur.failure_run_time_finished - prev.failure_run_time_finished > 
+      if (cur.failure_run_time_finished - prev.failure_run_time_finished >
           MAX_GAP_FOR_FLAKINESS_PERIOD):
         return flaky_runs[-i-1:]  # not including prev, but including cur
       cur = prev
@@ -507,7 +510,8 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
 class CreateFlakyRun(webapp2.RequestHandler):
   flaky_runs = gae_ts_mon.CounterMetric(
       'flakiness_pipeline/flake_occurrences_recorded',
-      description='Recorded flake occurrences.')
+      'Recorded flake occurrences.',
+      None)
 
   # We execute below method in an indepedent transaction since otherwise we
   # would exceed the maximum number of entities allowed within a single

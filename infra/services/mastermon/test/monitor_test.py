@@ -27,11 +27,11 @@ class MasterMonitorTest(unittest.TestCase):
 
     mock_poller.poll.return_value = True
     m.poll()
-    self.assertTrue(m.up.get())
+    self.assertTrue(m.up.get({'master': ''}))
 
     mock_poller.poll.return_value = False
     m.poll()
-    self.assertFalse(m.up.get())
+    self.assertFalse(m.up.get({'master': ''}))
 
   def test_poll_with_name(self):
     mock_poller_class = mock.create_autospec(pollers.Poller, spec_set=True)

@@ -14,7 +14,8 @@ from infra.tools.send_monitoring_event import common
 
 
 success_metric = ts_mon.BooleanMetric('send_monitoring_event/success',
-    description='Set to True if the monitoring event was sent successfully')
+    'Set to True if the monitoring event was sent successfully',
+    None)
 
 
 class SendMonitoringEvent(app.BaseApplication):

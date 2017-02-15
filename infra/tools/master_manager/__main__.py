@@ -24,7 +24,8 @@ from infra_libs import ts_mon
 
 run_count = ts_mon.CounterMetric(
     'master_manager/run_count',
-    description='Count the number of state machine runs.')
+    'Count the number of state machine runs.',
+    [ts_mon.StringField('result'), ts_mon.StringField('action')])
 
 
 def parse_args(argv):

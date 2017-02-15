@@ -26,7 +26,9 @@ from infra_libs import ts_mon
 MASTER_CNXN = 'master_cnxn'
 
 CONNECTION_COUNT = ts_mon.CounterMetric(
-    'monorail/sql/connection_count')
+    'monorail/sql/connection_count',
+    'Count of connections made to the SQL database.',
+    [ts_mon.BooleanField('success')])
 
 
 @framework_helpers.retry(2, delay=1, backoff=2)

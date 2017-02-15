@@ -2162,7 +2162,8 @@ def delete(request):
 
 deleted_patchsets = gae_ts_mon.CounterMetric(
     'rietveld/deleted_patchsets',
-    description='Number of patchsets that was deleted.')
+    'Number of patchsets that was deleted.',
+    None)
 
 
 @deco.require_methods('POST')

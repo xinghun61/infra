@@ -46,10 +46,18 @@ THRESHVERDICT_COMMENT_COLS = ['comment_id', 'is_spam', 'reason', 'project_id']
 
 class SpamService(object):
   """The persistence layer for spam reports."""
-  issue_actions = ts_mon.CounterMetric('monorail/spam_svc/issue')
-  comment_actions = ts_mon.CounterMetric('monorail/spam_svc/comment')
+  issue_actions = ts_mon.CounterMetric(
+      'monorail/spam_svc/issue',
+      'Count of things that happen to issues.',
+      [ts_mon.StringField('type')])
+  comment_actions = ts_mon.CounterMetric(
+      'monorail/spam_svc/comment',
+      'Count of things that happen to comments.',
+      [ts_mon.StringField('type')])
   prediction_api_failures = ts_mon.CounterMetric(
-      'mononrail/spam_svc/prediction_api_failure')
+      'mononrail/spam_svc/prediction_api_failure',
+      'Failures calling the prediction API',
+      None)
 
   def __init__(self):
     self.report_tbl = sql.SQLTableManager(SPAMREPORT_TABLE_NAME)

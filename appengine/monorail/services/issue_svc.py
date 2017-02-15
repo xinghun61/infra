@@ -328,7 +328,10 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
 
 class IssueService(object):
   """The persistence layer for Monorail's issues, comments, and attachments."""
-  spam_labels = ts_mon.CounterMetric('monorail/issue_svc/spam_label')
+  spam_labels = ts_mon.CounterMetric(
+      'monorail/issue_svc/spam_label',
+      'Issues created, broken down by spam label.',
+      [ts_mon.StringField('type')])
 
   def __init__(self, project_service, config_service, cache_manager):
     """Initialize this object so that it is ready to use.

@@ -18,7 +18,11 @@ from infra_libs import event_mon
 class EventMonUploader(webapp2.RequestHandler):
   num_test_results = ts_mon.CounterMetric(
       'test_results/num_test_results',
-      description='Number of reported test results')
+      'Number of reported test results',
+      [ts_mon.StringField('result_type'),
+       ts_mon.StringField('master'),
+       ts_mon.StringField('builder'),
+       ts_mon.StringField('test_type')])
 
   def post(self):
     if not self.request.body:

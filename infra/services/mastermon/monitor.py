@@ -42,7 +42,8 @@ def set_deathsig(sig):  # pragma: no cover
 
 class MasterMonitor(object):
   up = ts_mon.BooleanMetric('buildbot/master/up',
-      description='False if the master failed to respond to any of its checks')
+      'False if the master failed to respond to any of its checks',
+      [ts_mon.StringField('master')])
 
   POLLER_CLASSES = [
     pollers.VarzPoller,
@@ -52,7 +53,7 @@ class MasterMonitor(object):
                cloudtail_path=None):
     if name is None:
       logging.info('Creating monitor for %s', url)
-      self._metric_fields = {}
+      self._metric_fields = {'master': ''}
       self._name = url
     else:
       logging.info('Creating monitor for %s on %s', name, url)

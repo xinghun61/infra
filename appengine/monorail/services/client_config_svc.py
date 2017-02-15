@@ -45,7 +45,10 @@ class ClientConfig(db.Model):
 # Note: The cron job must have hit the servlet before this will work.
 class LoadApiClientConfigs(webapp2.RequestHandler):
 
-  config_loads = ts_mon.CounterMetric('monorail/client_config_svc/loads')
+  config_loads = ts_mon.CounterMetric(
+      'monorail/client_config_svc/loads',
+      'Results of fetches from luci-config.',
+      [ts_mon.BooleanField('success'), ts_mon.StringField('type')])
 
   def get(self):
     authorization_token, _ = app_identity.get_access_token(

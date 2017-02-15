@@ -19,47 +19,56 @@ GLOBAL_TARGET_FIELDS = {
     'task_num':  0,  # instance ID
 }
 
+_FIELD_SPEC = [
+    gae_ts_mon.StringField('builder'),
+    gae_ts_mon.StringField('user_agent'),
+    gae_ts_mon.StringField(FIELD_BUCKET),
+]
+
 CREATE_COUNT = gae_ts_mon.CounterMetric(
   'buildbucket/builds/created',
-  description='Build creation',
-)
+  'Build creation',
+  _FIELD_SPEC)
 START_COUNT = gae_ts_mon.CounterMetric(
   'buildbucket/builds/started',
-  description='Build start',
-)
+  'Build start',
+  _FIELD_SPEC)
 COMPLETE_COUNT = gae_ts_mon.CounterMetric(
   'buildbucket/builds/completed',
-  description='Build completion, including success, failure and cancellation',
-)
+  'Build completion, including success, failure and cancellation',
+  _FIELD_SPEC + [
+      gae_ts_mon.StringField('result'),
+      gae_ts_mon.StringField('failure_reason'),
+      gae_ts_mon.StringField('cancelation_reason'),
+  ])
 HEARTBEAT_COUNT = gae_ts_mon.CounterMetric(
   'buildbucket/builds/heartbeats',
-  description='Failures to extend a build lease'
-)
+  'Failures to extend a build lease',
+  _FIELD_SPEC + [gae_ts_mon.StringField('status')])
 LEASE_COUNT = gae_ts_mon.CounterMetric(
   'buildbucket/builds/leases',
-  description='Successful build lease extension',
-)
+  'Successful build lease extension',
+  _FIELD_SPEC)
 LEASE_EXPIRATION_COUNT = gae_ts_mon.CounterMetric(
   'buildbucket/builds/lease_expired',
-  description='Build lease expirations'
-)
+  'Build lease expirations',
+  _FIELD_SPEC)
 CURRENTLY_PENDING = gae_ts_mon.GaugeMetric(
   'buildbucket/builds/pending',
-  description='Number of pending builds',
-)
+  'Number of pending builds',
+  [gae_ts_mon.StringField(FIELD_BUCKET)])
 CURRENTLY_RUNNING = gae_ts_mon.GaugeMetric(
   'buildbucket/builds/running',
-  description='Number of running builds'
-)
+  'Number of running builds',
+  [gae_ts_mon.StringField(FIELD_BUCKET)])
 LEASE_LATENCY = gae_ts_mon.NonCumulativeDistributionMetric(
   'buildbucket/builds/never_leased_duration',
-  description=(
-    'Duration between a build is created and it is leased for the first time'),
-)
+  'Duration between a build is created and it is leased for the first time',
+  [gae_ts_mon.StringField(FIELD_BUCKET)])
 SCHEDULING_LATENCY = gae_ts_mon.NonCumulativeDistributionMetric(
   'buildbucket/builds/scheduling_duration',
-  description='Duration of a build remaining in SCHEDULED state',
-)
+  'Duration of a build remaining in SCHEDULED state',
+  [gae_ts_mon.StringField(FIELD_BUCKET)])
 
 
 def fields_for(build, **extra):

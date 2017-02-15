@@ -21,6 +21,15 @@ MetricData = collections.namedtuple('MetricData',
                                     ('name', 'start_time', 'points'))
 PointData = collections.namedtuple('PointData', ('value', 'fields'))
 
+FIELD_TYPE_MAP = {
+  str: (ts_mon.StringField, str),
+  unicode: (ts_mon.StringField, str),
+  int: (ts_mon.IntegerField, long),
+  long: (ts_mon.IntegerField, long),
+  float: (ts_mon.IntegerField, long),
+  bool: (ts_mon.BooleanField, bool),
+}
+
 
 def get_arguments(argv):
   parser = argparse.ArgumentParser(
@@ -233,10 +242,22 @@ def set_metric(metric_data, metric_type):
   Returns:
     metric (metric_type): the metric instance, filled.
   """
+  # Get the fields from the first point.  Assume all points have the same fields
+  # (this is checked elsewhere).
+  field_spec = []
+  fields = metric_data.points[0].fields
+  if fields is not None:
+    for name, value in metric_data.points[0].fields.iteritems():
+      field_ctor, value_cast = FIELD_TYPE_MAP[type(value)]
+      field_spec.append(field_ctor(value_cast(name)))
+
+  kwargs = {'field_spec': field_spec}
   if metric_type in (ts_mon.CumulativeMetric, ts_mon.CounterMetric):
-    metric = metric_type(metric_data.name, start_time=metric_data.start_time)
-  else:
-    metric = metric_type(metric_data.name)
+    kwargs['start_time'] = metric_data.start_time
+
+  metric = metric_type(metric_data.name,
+                       'Automatically generated send_ts_mon_values metric.',
+                       **kwargs)
 
   for point in metric_data.points:
     metric.set(point.value, point.fields)
