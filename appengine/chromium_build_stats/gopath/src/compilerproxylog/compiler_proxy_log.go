@@ -7,23 +7,9 @@ package compilerproxylog
 import (
 	"fmt"
 	"io"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
-)
-
-var (
-	gomaRevisionRE  = regexp.MustCompile(`.*goma built revision (.*)`)
-	gomaVersionRE   = regexp.MustCompile(`.*goma version:(.*)`)
-	gomaFlagsRE     = regexp.MustCompile(`.*goma flags:(.*)`)
-	gomaLimitsRE    = regexp.MustCompile(`.*(max incoming:.*)`)
-	crashDumpRE     = regexp.MustCompile(`.* Crash Dump (.*)`)
-	dumpStatsRE     = regexp.MustCompile(`.* Dumping stats...(.*)`)
-	dumpHistogramRE = regexp.MustCompile(`.* Dumping histogram...(.*)`)
-	taskRE          = regexp.MustCompile(`Task:(\d+) (.*)`)
-	startRE         = regexp.MustCompile(`Start (.*)`)
-	replyRE         = regexp.MustCompile(`ReplyResponse: (.*)`)
 )
 
 // CompileMode is mode of compilation.
@@ -245,6 +231,28 @@ type CompilerProxyLog struct {
 	tasks map[string]*TaskLog
 }
 
+// parseTaskLine parses line as `Task:(\d+) (.*)`.
+func parseTaskLine(line string) []string {
+	const task = "Task:"
+	taskIdx := strings.Index(line, task)
+	if taskIdx == -1 {
+		return nil
+	}
+	afterTask := line[taskIdx+len(task):]
+	afterTaskId := strings.TrimLeft(afterTask, "0123456789")
+	if afterTaskId == afterTask {
+		return nil
+	}
+
+	if !strings.HasPrefix(afterTaskId, " ") {
+		return nil
+	}
+
+	taskId := afterTask[:len(afterTask)-len(afterTaskId)]
+
+	return []string{line, taskId, afterTaskId[1:]}
+}
+
 // Parse parses compiler_proxy.
 func Parse(fname string, rd io.Reader) (*CompilerProxyLog, error) {
 	cpl := &CompilerProxyLog{
@@ -258,16 +266,19 @@ func Parse(fname string, rd io.Reader) (*CompilerProxyLog, error) {
 	cpl.Created = gp.Created
 	cpl.Machine = gp.Machine
 
-	parseSpecial := func(field *string, re *regexp.Regexp, skipFirstLine bool) func([]string) bool {
+	parseSpecial := func(field *string, searchPrefix string, includePrefix, skipFirstLine bool) func([]string) bool {
 		return func(logtext []string) bool {
 			if *field != "" {
 				return false
 			}
-			m := re.FindStringSubmatch(logtext[0])
-			if m != nil {
+
+			if idx := strings.Index(logtext[0], searchPrefix); idx >= 0 {
 				var lines []string
 				if !skipFirstLine {
-					lines = []string{m[1]}
+					if !includePrefix {
+						idx += len(searchPrefix)
+					}
+					lines = []string{logtext[0][idx:]}
 				}
 				lines = append(lines, logtext[1:]...)
 				*field = strings.Join(lines, "\n")
@@ -277,13 +288,13 @@ func Parse(fname string, rd io.Reader) (*CompilerProxyLog, error) {
 		}
 	}
 	parseSpecials := []func([]string) bool{
-		parseSpecial(&cpl.GomaRevision, gomaRevisionRE, false),
-		parseSpecial(&cpl.GomaVersion, gomaVersionRE, false),
-		parseSpecial(&cpl.GomaFlags, gomaFlagsRE, false),
-		parseSpecial(&cpl.GomaLimits, gomaLimitsRE, false),
-		parseSpecial(&cpl.CrashDump, crashDumpRE, false),
-		parseSpecial(&cpl.Stats, dumpStatsRE, true),
-		parseSpecial(&cpl.Histogram, dumpHistogramRE, true),
+		parseSpecial(&cpl.GomaRevision, "goma built revision ", false, false),
+		parseSpecial(&cpl.GomaVersion, "goma version:", false, false),
+		parseSpecial(&cpl.GomaFlags, "goma flags:", false, false),
+		parseSpecial(&cpl.GomaLimits, "max incoming:", true, false),
+		parseSpecial(&cpl.CrashDump, " Crash Dump ", false, false),
+		parseSpecial(&cpl.Stats, " Dumping stats...", false, true),
+		parseSpecial(&cpl.Histogram, " Dumping histogram...", false, true),
 	}
 Lines:
 	for gp.Next() {
@@ -296,20 +307,22 @@ Lines:
 				continue Lines
 			}
 		}
-		m := taskRE.FindStringSubmatch(log.Lines[0])
+		m := parseTaskLine(log.Lines[0])
 		if m != nil {
 			t := cpl.taskLog(m[1], log.Timestamp, log)
 			taskLog := m[2]
-			m = startRE.FindStringSubmatch(taskLog)
-			if m != nil {
+
+			const start = "Start "
+			if startIdx := strings.Index(taskLog, start); startIdx != -1 {
 				t.StartTime = log.Timestamp
-				t.CompileMode, t.Desc = parseStart(m[1])
+				t.CompileMode, t.Desc = parseStart(taskLog[startIdx+len(start):])
 				continue Lines
 			}
-			m = replyRE.FindStringSubmatch(taskLog)
-			if m != nil {
+
+			const reply = "ReplyResponse: "
+			if replyIdx := strings.Index(taskLog, reply); replyIdx != -1 {
 				t.EndTime = log.Timestamp
-				t.Response = m[1]
+				t.Response = taskLog[replyIdx+len(reply):]
 			}
 		}
 	}
