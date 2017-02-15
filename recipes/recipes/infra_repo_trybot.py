@@ -27,25 +27,26 @@ def RunSteps(api):
   api.bot_update.ensure_checkout(
     patch_root=project, patch_oauth2=internal, use_site_config_creds=False)
 
-  api.git('-c', 'user.email=commit-bot@chromium.org',
-          '-c', 'user.name=The Commit Bot',
-          'commit', '-a', '-m', 'Committed patch',
-          name='commit git patch', cwd=api.path['checkout'])
+  with api.step.context({'cwd': api.path['checkout']}):
+    api.git('-c', 'user.email=commit-bot@chromium.org',
+            '-c', 'user.name=The Commit Bot',
+            'commit', '-a', '-m', 'Committed patch',
+            name='commit git patch')
 
   api.gclient.runhooks()
 
   # Grab a list of changed files.
-  result = api.git(
-      'diff', '--name-only', 'HEAD', 'HEAD~',
-      name='get change list',
-      cwd=api.path['checkout'],
-      stdout=api.raw_io.output())
+  with api.step.context({'cwd': api.path['checkout']}):
+    result = api.git(
+        'diff', '--name-only', 'HEAD', 'HEAD~',
+        name='get change list',
+        stdout=api.raw_io.output())
   files = result.stdout.splitlines()
   result.presentation.logs['change list'] = files
 
   with api.step.defer_results():
-    api.python('python tests', 'test.py', ['test', '--jobs', 1],
-               cwd=api.path['checkout'])
+    with api.step.context({'cwd': api.path['checkout']}):
+      api.python('python tests', 'test.py', ['test', '--jobs', 1])
 
     if not internal:
       # TODO(phajdan.jr): should we make recipe tests run on other platforms?
@@ -67,9 +68,9 @@ def RunSteps(api):
 
     if api.platform.is_linux and ('DEPS' in files or
         any(f.startswith('appengine/chromium_rietveld') for f in files)):
-      api.step('rietveld tests',
-               ['make', '-C', 'appengine/chromium_rietveld', 'test'],
-               cwd=api.path['checkout'])
+      with api.step.context({'cwd': api.path['checkout']}):
+        api.step('rietveld tests',
+                 ['make', '-C', 'appengine/chromium_rietveld', 'test'])
 
 
 def GenTests(api):

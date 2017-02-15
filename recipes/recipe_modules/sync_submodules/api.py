@@ -92,18 +92,17 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
     ]
     for extra_submodule in extra_submodules:
       deps2submodules_cmd.extend(['--extra-submodule', extra_submodule])
-    self.m.step('deps2submodules', deps2submodules_cmd, cwd=overlay_repo_dir)
+    with self.m.step.context({'cwd': overlay_repo_dir}):
+      self.m.step('deps2submodules', deps2submodules_cmd)
 
-    # Check whether deps2submodules changed anything.
-    try:
-      self.m.git('diff-index', '--quiet', '--cached', 'HEAD',
-                 cwd=overlay_repo_dir)
-    except self.m.step.StepFailure as f:
-      # An exit code of 1 means there were differences.
-      if f.retcode == 1:
-        # Commit and push to the destination ref.
-        self.m.git('commit', '-m', COMMIT_MESSAGE, cwd=overlay_repo_dir)
-        self.m.git('push', 'origin', 'HEAD:%s' % dest_ref,
-                   cwd=overlay_repo_dir)
-      else:
-        raise
+      # Check whether deps2submodules changed anything.
+      try:
+        self.m.git('diff-index', '--quiet', '--cached', 'HEAD')
+      except self.m.step.StepFailure as f:
+        # An exit code of 1 means there were differences.
+        if f.retcode == 1:
+          # Commit and push to the destination ref.
+          self.m.git('commit', '-m', COMMIT_MESSAGE)
+          self.m.git('push', 'origin', 'HEAD:%s' % dest_ref)
+        else:
+          raise

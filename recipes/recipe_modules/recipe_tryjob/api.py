@@ -202,7 +202,6 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     kwargs = {
         'suffix': proj,
         'gclient_config': config,
-        'cwd': checkout_path,
     }
     if patch:
       kwargs['rietveld'] = patch.server
@@ -211,7 +210,8 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     else:
       kwargs['patch'] = False
 
-    self.m.bot_update.ensure_checkout(**kwargs)
+    with self.m.step.context({'cwd': checkout_path}):
+      self.m.bot_update.ensure_checkout(**kwargs)
     return checkout_path.join(proj)
 
   def get_fail_build_info(self, downstream_projects, patches):

@@ -15,6 +15,7 @@ DEPS = [
   'recipe_engine/platform',
   'recipe_engine/properties',
   'recipe_engine/python',
+  'recipe_engine/step',
 ]
 
 PROPERTIES = {
@@ -59,11 +60,11 @@ def _run_presubmit(api, patch_root, bot_update_step):
 
 
 def _commit_change(api, patch_root):
-  api.git('-c', 'user.email=commit-bot@chromium.org',
-          '-c', 'user.name=The Commit Bot',
-          'commit', '-a', '-m', 'Committed patch',
-          name='commit git patch',
-          cwd=api.path['start_dir'].join(patch_root))
+  with api.step.context({'cwd': api.path['start_dir'].join(patch_root)}):
+    api.git('-c', 'user.email=commit-bot@chromium.org',
+            '-c', 'user.name=The Commit Bot',
+            'commit', '-a', '-m', 'Committed patch',
+            name='commit git patch')
 
 
 def RunSteps(api, presubmit, GOARCH):

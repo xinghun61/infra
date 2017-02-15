@@ -25,11 +25,11 @@ def RunSteps(api):
   api.gclient.runhooks()
 
   with api.step.defer_results():
-    api.python(
-        'infra python tests',
-        'test.py',
-        ['test', '--jobs', 1],
-        cwd=api.path['checkout'])
+    with api.step.context({'cwd': api.path['checkout']}):
+      api.python(
+          'infra python tests',
+          'test.py',
+          ['test', '--jobs', 1])
 
     api.python(
         'go third parties',

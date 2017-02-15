@@ -166,16 +166,16 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         project_data['repo_url'], dir_path=workdir, submodules=False,
         use_git_cache=True)
 
-    # Introduce ourselves to git - also needed for git cl upload to work.
-    self.m.git(
-        'config', 'user.email', 'recipe-roller@chromium.org', cwd=workdir)
-    self.m.git('config', 'user.name', 'recipe-roller', cwd=workdir)
+    with self.m.step.context({'cwd': workdir}):
+      # Introduce ourselves to git - also needed for git cl upload to work.
+      self.m.git('config', 'user.email', 'recipe-roller@chromium.org')
+      self.m.git('config', 'user.name', 'recipe-roller')
 
-    # Clean up possibly left over roll branch. Ignore errors.
-    self.m.git('branch', '-D', 'roll', ok_ret='any', cwd=workdir)
+      # Clean up possibly left over roll branch. Ignore errors.
+      self.m.git('branch', '-D', 'roll', ok_ret='any')
 
-    # git cl upload cannot work with detached HEAD, it requires a branch.
-    self.m.git('checkout', '-t', '-b', 'roll', 'origin/master', cwd=workdir)
+      # git cl upload cannot work with detached HEAD, it requires a branch.
+      self.m.git('checkout', '-t', '-b', 'roll', 'origin/master')
 
     # Check status of last known CL for this repo. Ensure there's always
     # at most one roll CL in flight.
@@ -215,10 +215,11 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
       # We're about to upload a new CL, so close the old one.
       # Pass --rietveld flag to match upload args below.
-      self.m.git('cl', 'set-close',
-                 '--issue', repo_data['issue'],
-                 '--rietveld',
-                 _AUTH_REFRESH_TOKEN_FLAG, cwd=workdir)
+      with self.m.step.context({'cwd': workdir}):
+        self.m.git('cl', 'set-close',
+                   '--issue', repo_data['issue'],
+                   '--rietveld',
+                   _AUTH_REFRESH_TOKEN_FLAG)
 
     recipes_cfg_path = workdir.join('infra', 'config', 'recipes.cfg')
 
@@ -273,7 +274,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     else:
       roll_step.presentation.status = self.m.step.FAILURE
 
-    self.m.git('commit', '-a', '-m', 'roll recipes.cfg', cwd=workdir)
+    with self.m.step.context({'cwd': workdir}):
+      self.m.git('commit', '-a', '-m', 'roll recipes.cfg')
 
     tbrs = []
     if roll_result['trivial']:
@@ -287,15 +289,15 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     upload_args.extend(['--rietveld'])
     upload_args.extend([_AUTH_REFRESH_TOKEN_FLAG])
     commit_message = get_commit_message(roll_result, tbrs=tbrs)
-    self.m.git_cl.upload(
-        commit_message, upload_args, name='git cl upload', cwd=workdir)
-    issue_step = self.m.git(
-        'cl', 'issue', '--json', self.m.json.output(),
-        name='git cl issue',
-        cwd=workdir,
-        step_test_data=lambda: self.m.json.test_api.output({
-            'issue': 123456789,
-            'issue_url': 'https://codereview.chromium.org/123456789'}))
+    with self.m.step.context({'cwd': workdir}):
+      self.m.git_cl.upload(
+          commit_message, upload_args, name='git cl upload')
+      issue_step = self.m.git(
+          'cl', 'issue', '--json', self.m.json.output(),
+          name='git cl issue',
+          step_test_data=lambda: self.m.json.test_api.output({
+              'issue': 123456789,
+              'issue_url': 'https://codereview.chromium.org/123456789'}))
     issue_result = issue_step.json.output
 
     if not issue_result['issue'] or not issue_result['issue_url']:
@@ -360,16 +362,16 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     if repo_data['trivial']:
       cat_result.presentation.step_text += ' (trivial)'
 
-    status_result = self.m.git(
-        'cl', 'status',
-        '--issue', repo_data['issue'],
-        '--rietveld',
-        '--field', 'status',
-        _AUTH_REFRESH_TOKEN_FLAG,
-        name='git cl status', stdout=self.m.raw_io.output(),
-        cwd=workdir,
-        step_test_data=lambda: self.m.raw_io.test_api.stream_output(
-            'foo')
-    ).stdout.strip()
+    with self.m.step.context({'cwd': workdir}):
+      status_result = self.m.git(
+          'cl', 'status',
+          '--issue', repo_data['issue'],
+          '--rietveld',
+          '--field', 'status',
+          _AUTH_REFRESH_TOKEN_FLAG,
+          name='git cl status', stdout=self.m.raw_io.output(),
+          step_test_data=lambda: self.m.raw_io.test_api.stream_output(
+              'foo')
+      ).stdout.strip()
 
     return repo_data, status_result

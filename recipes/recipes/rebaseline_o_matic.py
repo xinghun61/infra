@@ -19,6 +19,7 @@ DEPS = [
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
+  'recipe_engine/step',
 ]
 
 
@@ -45,11 +46,11 @@ def RunSteps(api):
   api.git('config', 'user.name', 'Rebaseline Bot')
   api.git('config', 'user.email', 'blink-rebaseline-bot@chromium.org')
 
-  api.python('webkit-patch auto-rebaseline',
-             cwd.join('Tools', 'Scripts', 'webkit-patch'),
-             ['auto-rebaseline', '--verbose',
-             '--auth-refresh-token-json', RIETVELD_REFRESH_TOKEN],
-             cwd=cwd)
+  with api.step.context({'cwd': cwd}):
+    api.python('webkit-patch auto-rebaseline',
+               cwd.join('Tools', 'Scripts', 'webkit-patch'),
+               ['auto-rebaseline', '--verbose',
+               '--auth-refresh-token-json', RIETVELD_REFRESH_TOKEN])
 
 
 def GenTests(api):

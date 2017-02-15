@@ -35,11 +35,11 @@ def gsutil_upload(api, source, bucket, dest, args):
 def export_tarball(api, args, source, destination):
   try:
     temp_dir = api.path.mkdtemp('export_tarball')
-    api.python(
-        'export_tarball',
-        api.chromium.resource('export_tarball.py'),
-        args,
-        cwd=temp_dir)
+    with api.step.context({'cwd': temp_dir}):
+      api.python(
+          'export_tarball',
+          api.chromium.resource('export_tarball.py'),
+          args)
     gsutil_upload(
         api,
         api.path.join(temp_dir, source),
@@ -188,7 +188,8 @@ def RunSteps(api):
   api.bot_update.ensure_checkout(with_branch_heads=True)
 
   api.git('clean', '-dffx')
-  api.gclient('sync', ['sync', '-D', '--nohooks'], cwd=api.path['checkout'])
+  with api.step.context({'cwd': api.path['checkout']}):
+    api.gclient('sync', ['sync', '-D', '--nohooks'])
 
   api.step(
       'touch chrome/test/data/webui/i18n_process_css_test.html',

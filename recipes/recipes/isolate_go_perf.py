@@ -52,18 +52,18 @@ def RunSteps(api):
   ).stdout.strip().split()
 
   start = api.time.time()
-  step_result = api.step('isolate perf',
-      [isolate, 'archive', '--verbose',
-       # Fake server is listening on localhost in the same process and keeps
-       # archieved data in RAM, so don't increase test data size to avoid
-       # thrashing.
-       '-isolate-server', 'fake',
-       '-isolate', test_isolate,
-       # TODO(tandrii): maybe read this file and validate resulting hash?
-       '-isolated', test_dir.join('result.isolated')
-      ],
-      cwd=test_dir,
-  )
+  with api.step.context({'cwd': test_dir}):
+    step_result = api.step('isolate perf',
+        [isolate, 'archive', '--verbose',
+         # Fake server is listening on localhost in the same process and keeps
+         # archieved data in RAM, so don't increase test data size to avoid
+         # thrashing.
+         '-isolate-server', 'fake',
+         '-isolate', test_isolate,
+         # TODO(tandrii): maybe read this file and validate resulting hash?
+         '-isolated', test_dir.join('result.isolated')
+        ],
+    )
   taken_seconds = api.time.time() - start
   step_result.presentation.step_text += (
       'Took %6.1f seconds on rev %s committed at %s' %

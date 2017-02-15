@@ -18,6 +18,7 @@ DEPS = [
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
+  'recipe_engine/step',
 ]
 
 
@@ -51,7 +52,8 @@ def RunSteps(api):
       '/creds/refresh_tokens/blink-w3c-test-autoroller',
       name,
     ]
-    api.python('update ' + name, script, args, cwd=blink_dir)
+    with api.step.context({'cwd': blink_dir}):
+      api.python('update ' + name, script, args)
     git_cl_issue_link(api)
 
   with new_branch('update_wpt'):
