@@ -339,7 +339,7 @@ class IssueServiceTest(unittest.TestCase):
 
   def testCreateIssue_SpamPredictionFailed(self):
     settings.classifier_spam_thresh = 0.9
-    self.SetUpAllocateNextSpamID(789, None, None)
+    self.SetUpAllocateNextLocalID(789, None, None)
     self.SetUpInsertSpamIssue()
     self.SetUpInsertComment(7890101, is_description=True)
 
@@ -356,11 +356,11 @@ class IssueServiceTest(unittest.TestCase):
         'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
         index_now=False, timestamp=self.now)
     self.mox.VerifyAll()
-    self.assertEqual(-1, actual_local_id)
+    self.assertEqual(1, actual_local_id)
 
   def testCreateIssue_Spam(self):
     settings.classifier_spam_thresh = 0.9
-    self.SetUpAllocateNextSpamID(789, None, None)
+    self.SetUpAllocateNextLocalID(789, None, None)
     self.SetUpInsertSpamIssue()
     self.SetUpInsertComment(7890101, is_description=True)
 
@@ -377,7 +377,7 @@ class IssueServiceTest(unittest.TestCase):
         'New', 111L, [], ['Type-Defect'], [], [], 111L, 'content',
         index_now=False, timestamp=self.now)
     self.mox.VerifyAll()
-    self.assertEqual(-1, actual_local_id)
+    self.assertEqual(1, actual_local_id)
 
   def testGetAllIssuesInProject_NoIssues(self):
     self.SetUpGetHighestLocalID(789, None, None)
@@ -499,7 +499,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesRelation()
 
   def SetUpInsertSpamIssue(self):
-    row = (789, -1, 1, 111L, 111L,
+    row = (789, 1, 1, 111L, 111L,
            self.now, 0, self.now, self.now, self.now, self.now,
            None, 0, False, 0, 0, True)
     self.services.issue.issue_tbl.InsertRows(
@@ -1048,13 +1048,6 @@ class IssueServiceTest(unittest.TestCase):
     highest_either = max(highest_in_use or 0, highest_former or 0)
     self.services.issue.localidcounter_tbl.IncrementCounterValue(
         self.cnxn, 'used_local_id', project_id=project_id).AndReturn(
-            highest_either + 1)
-
-  def SetUpAllocateNextSpamID(
-      self, project_id, highest_in_use, highest_former):
-    highest_either = max(highest_in_use or 0, highest_former or 0)
-    self.services.issue.localidcounter_tbl.IncrementCounterValue(
-        self.cnxn, 'used_spam_id', project_id=project_id).AndReturn(
             highest_either + 1)
 
   def testAllocateNextLocalID_NewProject(self):

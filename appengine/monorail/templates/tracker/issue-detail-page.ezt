@@ -51,7 +51,16 @@
    [end]
   </td>
   <td width="90%" class="vt issueheader" style="border-right: 2px solid white">
-    [if-any issue.flagged_spam_bool]<div style="border:1px solid red; background:#fdd; padding:1em">You have reported this issue as spam. To undo this, click the flag again.</div>[end]
+    [if-any issue.flagged_spam_bool]
+     <div style="border:1px solid red; background:#fdd; padding:1em">You have reported this issue as spam. To undo this, click the flag again.</div>
+    [else][if-any issue.is_spam_bool]
+      <div style="border:1px solid red; background:#fdd; padding:1em">
+        This issue has been classified as spam.
+        Please <a
+        href="/p/monorail/issues/entry?template=spam+classification&labels=project-[projectname]"
+        >report incorrect spam classification</a>.
+      </div>
+    [end][end]
     <span class="h3" style="padding-left:4px">[issue.summary]</span>
   </td>
   <td class="issueheader">

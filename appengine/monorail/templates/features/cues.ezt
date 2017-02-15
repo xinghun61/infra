@@ -73,16 +73,6 @@
       <a href="http://code.google.com/p/monorail/wiki/FilterRules">Learn more</a>
     [end]
 
-    [# Cue card to teach users that spam-classified issues have negative IDs.]
-    [is cue "negative_id_means_spam"]
-      <b>Note:</b>
-      A negative ID number is given to issues that are auto-classified as spam.<br>
-      The ID number will become positive if a project member flags the issue as not spam.<br>
-      Please <a
-      href="/p/monorail/issues/entry?template=spam+classification&labels=project-[projectname]"
-      >report incorrect spam classification</a>.
-    [end]
-
     [# Teach users that color blocks mean that an issue participant may not be available.]
     [is cue "availibility_msgs"]
       <b>Note:</b>

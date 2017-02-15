@@ -526,13 +526,12 @@ class IssueService(object):
     if label == 'spam' and score > settings.classifier_spam_thresh:
       # Must be negative so as not to use up actual local_ids.
       # This can be fixed later if a human declares it to be ham.
-      issue.local_id = self.AllocateNextSpamLocalID(cnxn, project_id)
       issue.is_spam = True
       logging.info('classified new issue as spam')
     else:
-      issue.local_id = self.AllocateNextLocalID(cnxn, project_id)
       logging.info('classified new issue as ham')
 
+    issue.local_id = self.AllocateNextLocalID(cnxn, project_id)
     issue_id = self.InsertIssue(cnxn, issue)
     comment.issue_id = issue_id
     self.InsertComment(cnxn, comment)
@@ -1872,55 +1871,6 @@ class IssueService(object):
       logging.info('exception incrementing local_id counter: %s', e)
       next_local_id = self.SetUsedLocalID(cnxn, project_id) + 1
     return next_local_id
-
-  def SetUsedSpamID(self, cnxn, project_id):
-    """Set the spam ID counter based on existing issues.
-
-    Args:
-      cnxn: connection to SQL database.
-      project_id: int ID of the project.
-    """
-    lowest_id = self.GetLowestSpamID(cnxn, project_id)
-    lowest_id = abs(lowest_id)
-    self.localidcounter_tbl.Insert(
-        cnxn, replace=True, used_spam_id=lowest_id, project_id=project_id)
-    return lowest_id
-
-  def GetLowestSpamID(self, cnxn, project_id):
-    """Return the lowest used spam ID in the specified project.
-
-    Args:
-      cnxn: connection to SQL database.
-      project_id: int ID of the project.
-
-    Returns:
-      The lowest local spam ID for an active or moved issues.
-    """
-    lowest = self.issue_tbl.SelectValue(
-        cnxn, 'MIN(local_id)', project_id=project_id, is_spam=True)
-    lowest = lowest or 0  # It will be None if the project has no issues.
-    lowest_former = self.issueformerlocations_tbl.SelectValue(
-        cnxn, 'MIN(local_id)', project_id=project_id)
-    lowest_former = lowest_former or 0
-    return min(lowest, lowest_former)
-
-  def AllocateNextSpamLocalID(self, cnxn, project_id):
-    """Return the next available spam issue ID in the specified project.
-
-    Args:
-      cnxn: connection to SQL database.
-      project_id: int ID of the project.
-
-    Returns:
-      The next local ID.
-    """
-    try:
-      next_spam_id = self.localidcounter_tbl.IncrementCounterValue(
-          cnxn, 'used_spam_id', project_id=project_id)
-    except AssertionError as e:
-      logging.info('exception incrementing spam local_id counter: %s', e)
-      next_spam_id = self.SetUsedSpamID(cnxn, project_id) + 1
-    return -next_spam_id
 
   def GetHighestLocalID(self, cnxn, project_id):
     """Return the highest used issue ID in the specified project.
