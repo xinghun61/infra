@@ -9,7 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"regexp"
+	"strings"
 	"time"
 )
 
@@ -22,7 +22,6 @@ var (
 	createdPrefix        = []byte("Log file created at: ")
 	runningMachinePrefix = []byte("Running on machine: ")
 	loglineFormatPrefix  = []byte("Log line format: ")
-	loglineRe            = regexp.MustCompile(`^([IWEF])(\d{4} \d{2}:\d{2}:\d{2}.\d{6}) *(\d+) *(.*)`)
 )
 
 // LogLevel is glog logging level.
@@ -89,23 +88,41 @@ type Logline struct {
 
 // ParseLogline parses one line as Logline.
 func ParseLogline(line []byte) (Logline, error) {
-	m := loglineRe.FindSubmatch(line)
-	if m == nil {
+	// Parse log line that matches with `^([IWEF])(\d{4} \d{2}:\d{2}:\d{2}.\d{6}) *(\d+) *(.*)`.
+
+	if len(line) < len("I")+len(timestampLayout)+1 {
 		return Logline{Lines: []string{string(line)}}, nil
 	}
-	lv, err := logLevel(m[1])
-	if err != nil {
-		return Logline{}, err
+
+	if !strings.Contains("IWEF", string(line[:1])) {
+		return Logline{Lines: []string{string(line)}}, nil
 	}
-	t, err := logTimestamp(m[2])
+
+	lv, err := logLevel(line[:1])
 	if err != nil {
-		return Logline{}, err
+		return Logline{Lines: []string{string(line)}}, nil
 	}
+
+	t, err := logTimestamp(line[1 : 1+len(timestampLayout)])
+	if err != nil {
+		return Logline{Lines: []string{string(line)}}, nil
+	}
+
+	// Parse restline as `(\d+) *(.*)`
+	restline := strings.TrimLeft(string(line[1+len(timestampLayout):]), " ")
+	afterThreadId := strings.TrimLeft(restline, "0123456789")
+	if afterThreadId == restline {
+		// Not match with `(\d+)'.
+		return Logline{Lines: []string{string(line)}}, nil
+	}
+
+	threadId := restline[:len(restline)-len(afterThreadId)]
+
 	return Logline{
 		Level:     lv,
 		Timestamp: t,
-		ThreadID:  string(m[3]),
-		Lines:     []string{string(m[4])},
+		ThreadID:  threadId,
+		Lines:     []string{strings.TrimLeft(afterThreadId, " ")},
 	}, nil
 }
 
