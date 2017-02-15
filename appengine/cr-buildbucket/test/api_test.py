@@ -192,19 +192,15 @@ class ApiTests(object):
 
   def test_put_batch(self):
     self.test_build.tags = ['owner:ivan']
-    build1_future = ndb.Future()
-    build1_future.set_result(self.test_build)
 
     build2 = model.Build(id=2, bucket='v8')
-    build2_future = ndb.Future()
-    build2_future.set_result(build2)
 
-    bad_build_future = ndb.Future()
-    bad_build_future.set_exception(errors.InvalidInputError('Just bad'))
-
-    self.mock(service, 'add_async', mock.Mock(side_effect=[
-      build1_future, build2_future, bad_build_future]
-    ))
+    self.mock(service, 'add_many_async', mock.Mock(return_value=ndb.Future()))
+    service.add_many_async.return_value.set_result([
+      (self.test_build, None),
+      (build2, None),
+      (None, errors.InvalidInputError('Just bad'))
+    ])
     req = {
       'builds': [
         {
@@ -223,16 +219,23 @@ class ApiTests(object):
       ],
     }
     resp = self.call_api('put_batch', req).json_body
-    service.add_async.assert_any_call(service.BuildRequest(
-      bucket=self.test_build.bucket,
-      tags=self.test_build.tags,
-      client_operation_id='0',
-    ))
-    service.add_async.assert_any_call(service.BuildRequest(
-      bucket=build2.bucket,
-      tags=[],
-      client_operation_id='1',
-    ))
+    service.add_many_async.assert_called_once_with([
+      service.BuildRequest(
+        bucket=self.test_build.bucket,
+        tags=self.test_build.tags,
+        client_operation_id='0',
+      ),
+      service.BuildRequest(
+        bucket=build2.bucket,
+        tags=[],
+        client_operation_id='1',
+      ),
+      service.BuildRequest(
+        bucket='bad name',
+        tags=[],
+        client_operation_id='2',
+      ),
+    ])
 
     res0 = resp['results'][0]
     self.assertEqual(res0['client_operation_id'], '0')

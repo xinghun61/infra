@@ -274,32 +274,26 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def put_batch(self, request):
     """Creates builds."""
-    build_futures = [
-      service.add_async(service.BuildRequest(
+    results = service.add_many_async([
+      service.BuildRequest(
         bucket=put_req.bucket,
         tags=put_req.tags,
         parameters=parse_json(put_req.parameters_json, 'parameters_json'),
         lease_expiration_date=parse_datetime(put_req.lease_expiration_ts),
         client_operation_id=put_req.client_operation_id,
         pubsub_callback=pubsub_callback_from_message(put_req.pubsub_callback),
-      ))
+      )
       for put_req in request.builds
-    ]
+    ]).get_result()
 
     res = self.PutBatchResponseMessage()
-
-    def to_msg(req, build_future):
+    for req, (build, ex) in zip(request.builds, results):
       one_res = res.OneResult(client_operation_id=req.client_operation_id)
-      try:
-        build = build_future.get_result()
+      if build:
         one_res.build = build_to_message(build, include_lease_key=True)
-      except errors.Error as ex:
+      else:
         one_res.error = exception_to_error_message(ex)
-      return one_res
-
-    res.results = [
-      to_msg(req, build)
-      for req, build in zip(request.builds, build_futures)]
+      res.results.append(one_res)
     return res
 
   ##################################  RETRY   ##################################

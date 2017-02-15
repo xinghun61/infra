@@ -173,6 +173,32 @@ class Build(ndb.Model):
     self.leasee = None
 
 
+class TagIndexEntry(ndb.Model):
+  """A single entry in a TagIndex, references a build."""
+  created_time = ndb.DateTimeProperty(auto_now_add=True)
+  # ID of the build.
+  build_id = ndb.IntegerProperty(indexed=False)
+  # Bucket of the build.
+  bucket = ndb.StringProperty(indexed=False)
+
+
+class TagIndex(ndb.Model):
+  """A custom index of builds by a tag.
+
+  Entity key:
+    Entity id is a build tag in the same "<key>:<value>" format that builds use.
+    TagIndex has no parent.
+  """
+
+  # entries is a superset of all builds that have the tag equal to the id of
+  # this entity. It may contain references to non-existent builds or builds that
+  # do not actually have this tag; such builds must be ignored.
+  #
+  # It is sorted by build id in descending order.
+  entries = ndb.LocalStructuredProperty(
+      TagIndexEntry, repeated=True, indexed=False)
+
+
 def new_build_id():
   """Returns a valid ndb.Key for a new Build.
 

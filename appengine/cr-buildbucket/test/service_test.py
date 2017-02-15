@@ -26,9 +26,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     super(BuildBucketServiceTest, self).__init__(*args, **kwargs)
     self.test_build = None
 
-  def mock_cannot(self, action):
-    def can_async(_bucket, requested_action, _identity=None):
-      return future(action != requested_action)
+  def mock_cannot(self, action, bucket=None):
+    def can_async(requested_bucket, requested_action, _identity=None):
+      match = (
+        requested_action == action and
+        (bucket is None or requested_bucket == bucket))
+      return future(not match)
 
     self.mock(acl, 'can_async', can_async)
 
@@ -192,7 +195,127 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add_builder_tag_conflict(self):
     tags = ['builder:foo']
     with self.assertRaises(errors.InvalidInputError):
-        self.normalize_tags(tags, {'builder_name': 'bar'})
+      self.normalize_tags(tags, {'builder_name': 'bar'})
+
+  def test_add_long_buildset(self):
+    with self.assertRaises(errors.InvalidInputError):
+      self.add(bucket='b', tags=['buildset:' + ('a' * 2000)])
+
+  def test_buildset_index(self):
+    build = self.add(bucket='b', tags=['buildset:foo', 'buildset:bar'])
+
+    for t in build.tags:
+      index = model.TagIndex.get_by_id(t)
+      self.assertIsNotNone(index)
+      self.assertEqual(len(index.entries), 1)
+      self.assertEqual(index.entries[0].build_id, build.key.id())
+      self.assertEqual(index.entries[0].bucket, 'b')
+
+  def test_buildset_index_with_client_op_id(self):
+    build = self.add(
+        bucket='b', tags=['buildset:foo'], client_operation_id='0')
+
+    index = model.TagIndex.get_by_id('buildset:foo')
+    self.assertIsNotNone(index)
+    self.assertEqual(len(index.entries), 1)
+    self.assertEqual(index.entries[0].build_id, build.key.id())
+    self.assertEqual(index.entries[0].bucket, 'b')
+
+  def test_buildset_index_existing(self):
+    model.TagIndex(
+        id='buildset:foo',
+        entries=[
+          model.TagIndexEntry(build_id=int(2**63-1), bucket='b'),
+          model.TagIndexEntry(build_id=0, bucket='b'),
+        ]).put()
+    build = self.add(bucket='b', tags=['buildset:foo'])
+    index = model.TagIndex.get_by_id('buildset:foo')
+    self.assertIsNotNone(index)
+    self.assertEqual(len(index.entries), 3)
+    self.assertEqual(index.entries[1].build_id, build.key.id())
+    self.assertEqual(index.entries[1].bucket, 'b')
+
+  def test_buildset_index_failed(self):
+    with self.assertRaises(errors.InvalidInputError):
+      self.add(bucket='', tags=['buildset:foo'])
+    index = model.TagIndex.get_by_id('buildset:foo')
+    self.assertIsNone(index)
+
+  def test_add_many(self):
+    self.mock_cannot(acl.Action.ADD_BUILD, bucket='forbidden')
+    results = service.add_many_async([
+      service.BuildRequest(bucket='chromium', tags=['buildset:a']),
+      service.BuildRequest(bucket='chromium', tags=['buildset:a']),
+    ]).get_result()
+    self.assertEqual(len(results), 2)
+    self.assertIsNotNone(results[0][0])
+    self.assertIsNone(results[0][1])
+    self.assertIsNotNone(results[1][0])
+    self.assertIsNone(results[1][1])
+    results.sort(key=lambda (b, _): b.key.id())
+
+    index = model.TagIndex.get_by_id('buildset:a')
+    self.assertIsNotNone(index)
+    self.assertEqual(len(index.entries), 2)
+    self.assertEqual(index.entries[0].build_id, results[1][0].key.id())
+    self.assertEqual(index.entries[0].bucket, results[1][0].bucket)
+    self.assertEqual(index.entries[1].build_id, results[0][0].key.id())
+    self.assertEqual(index.entries[1].bucket, results[0][0].bucket)
+
+  def test_add_many_invalid_input(self):
+    results = service.add_many_async([
+      service.BuildRequest(bucket='chromium', tags=['buildset:a']),
+      service.BuildRequest(bucket='chromium', tags=['buildset:a', 'x']),
+    ]).get_result()
+    self.assertEqual(len(results), 2)
+    self.assertIsNotNone(results[0][0])
+    self.assertIsNone(results[0][1])
+    self.assertIsNone(results[1][0])
+    self.assertIsNotNone(results[1][1])
+
+    self.assertIsInstance(results[1][1], errors.InvalidInputError)
+
+    index = model.TagIndex.get_by_id('buildset:a')
+    self.assertIsNotNone(index)
+    self.assertEqual(len(index.entries), 1)
+    self.assertEqual(index.entries[0].build_id, results[0][0].key.id())
+    self.assertEqual(index.entries[0].bucket, results[0][0].bucket)
+
+  def test_add_many_auth_error(self):
+    self.mock_cannot(acl.Action.ADD_BUILD, bucket='forbidden')
+    with self.assertRaises(auth.AuthorizationError):
+      service.add_many_async([
+        service.BuildRequest(bucket='chromium', tags=['buildset:a']),
+        service.BuildRequest(bucket='forbidden', tags=['buildset:a']),
+      ]).get_result()
+
+    index = model.TagIndex.get_by_id('buildset:a')
+    self.assertIsNone(index)
+
+  def test_add_many_with_client_op_id(self):
+    req1 = service.BuildRequest(
+        bucket='chromium',
+        tags=['buildset:a'],
+        client_operation_id='0',
+    )
+    req2 = service.BuildRequest(
+      bucket='chromium',
+      tags=['buildset:a'],
+    )
+    service.add(req1)
+    service.add_many_async([req1, req2]).get_result()
+
+    # Build for req1 must be added only once.
+    idx = model.TagIndex.get_by_id('buildset:a')
+    self.assertEqual(len(idx.entries), 2)
+    self.assertEqual(idx.entries[0].bucket, 'chromium')
+
+  def test_add_too_many(self):
+    with self.assertRaises(errors.InvalidInputError):
+      service.add_many_async([
+        service.BuildRequest(bucket='chromium', tags=['buildset:a'])
+        for _ in xrange(2000)
+      ]).get_result()
 
   ################################### RETRY ####################################
 
