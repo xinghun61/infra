@@ -26,26 +26,6 @@ import (
 	"infra/appengine/test-results/model"
 )
 
-// BuilderData is the data returned from the GET "/builders"
-// endpoint.
-type BuilderData struct {
-	Masters           []Master `json:"masters"`
-	NoUploadTestTypes []string `json:"no_upload_test_types"`
-}
-
-// Master represents information about a build master.
-type Master struct {
-	Name       string           `json:"name"`
-	Identifier string           `json:"url_name"`
-	Groups     []string         `json:"groups"`
-	Tests      map[string]*Test `json:"tests"`
-}
-
-// Test represents information about Tests in a master.
-type Test struct {
-	Builders []string `json:"builders"`
-}
-
 const buildbotMemcacheKey = "buildbot_data"
 
 var nonTestStepNames = []string{
@@ -119,27 +99,27 @@ func getRecentTests(c context.Context, days int) (map[testTriple]struct{}, error
 }
 
 // getBuilderData loads recently uploaded test types from datastore.
-func getBuilderData(c context.Context) (*BuilderData, error) {
+func getBuilderData(c context.Context) (*model.BuilderData, error) {
 	triples, err := getRecentTests(c, 7)
 	if err != nil {
 		return nil, err
 	}
 
 	// Place triples into builder data.
-	nameToMaster := make(map[string]*Master)
+	nameToMaster := make(map[string]*model.Master)
 	for triple := range triples {
 		m, ok := nameToMaster[triple.Master]
 		if !ok {
-			m = &Master{
+			m = &model.Master{
 				Name:       triple.Master,
 				Identifier: triple.Master,
-				Tests:      make(map[string]*Test),
+				Tests:      make(map[string]*model.Test),
 			}
 			nameToMaster[triple.Master] = m
 		}
 		test, ok := m.Tests[triple.TestType]
 		if !ok {
-			test = &Test{
+			test = &model.Test{
 				Builders: make([]string, 0, 10),
 			}
 			m.Tests[triple.TestType] = test
@@ -159,10 +139,10 @@ func getBuilderData(c context.Context) (*BuilderData, error) {
 	}
 	sort.Strings(names)
 
-	bd := BuilderData{
+	bd := model.BuilderData{
 		NoUploadTestTypes: noUploadTestSteps,
 	}
-	bd.Masters = make([]Master, 0, len(nameToMaster))
+	bd.Masters = make([]model.Master, 0, len(nameToMaster))
 	for _, n := range names {
 		bd.Masters = append(bd.Masters, *nameToMaster[n])
 	}

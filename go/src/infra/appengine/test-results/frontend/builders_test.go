@@ -131,11 +131,11 @@ func TestBuildersHandler(t *testing.T) {
 			defer resp.Body.Close()
 			b, err := ioutil.ReadAll(resp.Body)
 			So(err, ShouldBeNil)
-			expected := []Master{
+			expected := []model.Master{
 				{
 					Name:       "testing",
 					Identifier: "testing",
-					Tests: map[string]*Test{
+					Tests: map[string]*model.Test{
 						"browser_tests": {
 							Builders: []string{
 								"Testing Tests"}}},
@@ -143,14 +143,14 @@ func TestBuildersHandler(t *testing.T) {
 				{
 					Name:       "tryserver.testing",
 					Identifier: "tryserver.testing",
-					Tests: map[string]*Test{
+					Tests: map[string]*model.Test{
 						"browser_tests": {
 							Builders: []string{
 								"testing_android_rel_ng",
 								"testing_chromium_rel_ng"}}},
 				},
 			}
-			actual := BuilderData{}
+			actual := model.BuilderData{}
 			So(json.Unmarshal(b, &actual), ShouldBeNil)
 			So(actual.NoUploadTestTypes, ShouldResemble, noUploadTestSteps)
 			So(actual.Masters, ShouldResemble, expected)

@@ -20,6 +20,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"infra/appengine/test-results/model"
 	"infra/monitoring/messages"
 
 	"github.com/luci/luci-go/common/logging"
@@ -205,7 +206,7 @@ func NewReader(ctx context.Context) (readerType, error) {
 	}
 
 	URL := "https://test-results.appspot.com/builders"
-	tmpCache := &BuilderData{}
+	tmpCache := &model.BuilderData{}
 	code, err := r.hc.getJSON(ctx, URL, tmpCache)
 	if err != nil {
 		return nil, err
