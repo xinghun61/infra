@@ -566,7 +566,8 @@ class MonorailRequest(object):
       else:
         self.hotlist = services.features.GetHotlistByID(
             self.cnxn, self.hotlist_id)
-        if not self.hotlist:
+        if (not self.hotlist) or (self.viewed_user_auth.user_id not in
+                                  self.hotlist.owner_ids):
           webapp2.abort(404, 'invalid hotlist')
 
   def _LookupLoggedInUser(self, services, prof):

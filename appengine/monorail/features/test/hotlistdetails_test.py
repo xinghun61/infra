@@ -5,6 +5,7 @@
 
 """Unit tests for hotlistdetails page."""
 
+import logging
 import mox
 import unittest
 
@@ -100,7 +101,9 @@ class HotlistDetailsTest(unittest.TestCase):
 
   def testProcessFormData_RejectTemplate(self):
     mr = testing_helpers.MakeMonorailRequest(
-        path='/u/111L/hotlists/%s/details' % (self.hotlist.hotlist_id))
+        hotlist=self.hotlist,
+        path='/u/111L/hotlists/%s/details' % self.hotlist.hotlist_id)
+    mr.auth.user_id=111L
     post_data = fake.PostData(
         summary = [''],
         name = [''],
@@ -125,6 +128,7 @@ class HotlistDetailsTest(unittest.TestCase):
         'FirstHotlist', summary='hotlist summary', description='description',
         owner_ids=[111L], editor_ids=[])
     mr = testing_helpers.MakeMonorailRequest(
+        hotlist=self.hotlist,
         path='/u/111L/hotlists/%s/details' % (self.hotlist.hotlist_id))
     mr.auth.user_id = 111L
     post_data = fake.PostData(
@@ -147,6 +151,7 @@ class HotlistDetailsTest(unittest.TestCase):
 
   def testProcessFormData_Bad(self):
     mr = testing_helpers.MakeMonorailRequest(
+        hotlist=self.hotlist,
         path='/u/111L/hotlists/%s/details' % (self.hotlist.hotlist_id))
     post_data = fake.PostData(
         summary = ['hotlist summary'],
