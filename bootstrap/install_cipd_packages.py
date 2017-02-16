@@ -164,6 +164,17 @@ def main(argv):
     level = logging.DEBUG
   logging.getLogger().setLevel(level)
 
+  root = os.path.abspath(opts.cipd_root_dir)
+
+  # 2017/02/15 we used to bootstrap the cipd client into <infra.git>/cipd. This
+  # deletes it, if it's there. This is important because otherwise the stale
+  # client will end up at the front of $PATH and get used instead of the correct
+  # one (i.e. the one that depot_tools / swarming / buildbot put there).
+  try:
+    os.remove(os.path.join(root, 'cipd'+EXE_SFX))
+  except OSError:
+    pass
+
   platform_key, config = get_platform_config()
   if not config:
     logging.info('No bootstrap configuration for platform [%s].', platform_key)
@@ -172,7 +183,7 @@ def main(argv):
   # Install the CIPD list for this configuration.
   cipd_install_list = config.get('cipd_install_list')
   if cipd_install_list:
-    cipd_ensure(os.path.abspath(opts.cipd_root_dir),
+    cipd_ensure(root,
                 os.path.join(CIPD_LIST_DIR, cipd_install_list),
                 opts.cipd_backend_url)
   return 0
