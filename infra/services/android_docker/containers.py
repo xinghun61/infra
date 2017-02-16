@@ -116,10 +116,10 @@ class DockerClient(object):
     """Ensures each connected device has a running container.
 
     Will create and launch a container for any device that needs one. Any device
-    that is granted a new container will need to be rebooted to trigger the udev
-    event that whitelists it under the container's cgroup.
+    that is granted a new container will need to be whitelisted it under the
+    container's cgroup. This list of such devices is returned.
     """
-    needs_reboot = []
+    needs_cgroup_update = []
     for device in android_devices:
       container_name = get_container_name(device)
       container_hostname = get_container_hostname(device)
@@ -132,10 +132,10 @@ class DockerClient(object):
             detach=True,  # Don't block until it exits.
         )
         new_container.start()
-        needs_reboot.append(device)
+        needs_cgroup_update.append(device)
         logging.debug('Launched new container (%s) for device %s.',
                       new_container.name, device)
-    return needs_reboot
+    return needs_cgroup_update
 
 
 class Container(object):

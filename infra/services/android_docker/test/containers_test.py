@@ -251,11 +251,11 @@ class TestDockerClient(unittest.TestCase):
     self.fake_client.containers = FakeContainerList(running_containers)
     mock_from_env.return_value = self.fake_client
 
-    needs_reboot = containers.DockerClient().create_missing_containers(
+    needs_cgroup_update = containers.DockerClient().create_missing_containers(
         running_containers, devices, 'image')
     # Ensure serial3 needs to be rebooted. This indicates that a new container
     # was created for it.
-    self.assertEquals([d.serial for d in needs_reboot], ['serial3'])
+    self.assertEquals([d.serial for d in needs_cgroup_update], ['serial3'])
 
 
 class TestContainer(unittest.TestCase):

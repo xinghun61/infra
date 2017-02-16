@@ -20,30 +20,6 @@ from infra.services.android_docker import usb_device
 _REGISTRY_URL = 'gcr.io'
 
 
-def reboot_devices(devices, path_to_adb):
-  try:
-    subprocess.check_call([path_to_adb, 'start-server'])
-  except subprocess.CalledProcessError:
-    logging.exception('Unable to start adb server.')
-    return
-  try:
-    for device in devices:
-      serial = device.serial
-      if not serial:
-        logging.warning('Unable to fetch serial for device %s', device)
-        continue
-      try:
-        subprocess.check_call([path_to_adb, '-s', serial, 'reboot'])
-        logging.debug('Rebooting device %s.', device)
-      except subprocess.CalledProcessError:
-        logging.exception('Unable to reboot device %s', device.serial)
-  finally:
-    try:
-      subprocess.check_call([path_to_adb, 'kill-server'])
-    except subprocess.CalledProcessError:
-      logging.exception('Unable to kill adb server.')
-
-
 def get_host_uptime():
   """Returns host uptime in minutes."""
   with open('/proc/uptime') as f:
@@ -62,6 +38,11 @@ def reboot_host():
 
 def add_device(docker_client, android_devices, args):
   # pylint: disable=unused-argument
+  user_id = os.geteuid()
+  if user_id != 0:
+    logging.warning(
+        'Current user (id: %d) is non-root. Subsequent cgroup '
+        'modifications may fail.', user_id)
   for device in android_devices:
     container = docker_client.get_container(device)
     if container is not None:
@@ -94,12 +75,6 @@ def launch(docker_client, android_devices, args):
       logging.debug('No running containers. Rebooting host now.')
       reboot_host()
   else:  # Host uptime < max host uptime.
-    # TODO(bpastene): Maybe use py-adb instead? Need to investigate how a
-    # device handles pontential flip-flopping of remote session IDs.
-    if not os.path.exists(args.path_to_adb):
-      logging.error('adb path %s does not exist.', args.path_to_adb)
-      return 1
-
     # Fetch the image from the registry if it's not present locally.
     image_url = (_REGISTRY_URL + '/' + args.registry_project + '/' +
         args.image_name)
@@ -118,16 +93,13 @@ def launch(docker_client, android_devices, args):
         running_containers, args.max_container_uptime)
 
     # Create a container for each device that doesn't already have one.
-    needs_reboot = docker_client.create_missing_containers(
+    needs_cgroup_update = docker_client.create_missing_containers(
         running_containers, android_devices, image_url)
 
-    # Reboot all devices that were just granted a new container to trigger the
-    # needed udev events.
-    # TODO(bpastene): Maybe pause all running containers before-hand? Spawning
-    # up adb on the host might interfere with tests running inside other
-    # containers.
-    if needs_reboot:
-      reboot_devices(needs_reboot, args.path_to_adb)
+    # For each device that was granted a new container, add it to the
+    # container's cgroup.
+    if len(needs_cgroup_update) > 0:
+      add_device(docker_client, needs_cgroup_update, args)
 
 
 def main():
@@ -170,10 +142,6 @@ def main():
               'service-account-container_registry_puller.json',
       help='Path to service account json file used to access the gcloud '
            'container registry.')
-  launch_subparser.add_argument(
-      '--path-to-adb',
-      default=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'adb'),
-      help='Path to adb binary. Used to reboot devices on container startup.')
   args = parser.parse_args()
 
   logger = logging.getLogger()
