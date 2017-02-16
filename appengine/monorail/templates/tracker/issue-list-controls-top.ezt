@@ -106,6 +106,12 @@ runOnLoad(function() {
     if ($("moreactions").value == 'addissues') {
       _showID('addissuesspec');
     }
-    }
+  }
+  $('add-issues').addEventListener('click', function () {
+    AddIssuesToHotlist(onAddIssuesResponse)
+  });
+  $('create-new-hotlist').addEventListener('click', function () {
+    CreateNewHotlistWithIssues()
+  });
 });
 </script>

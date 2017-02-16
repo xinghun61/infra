@@ -17,12 +17,17 @@ class AddToHotlist(jsonfeed.JsonFeed):
 
   def AssertBasePermission(self, mr):
     super(AddToHotlist, self).AssertBasePermission(mr)
-    hotlist_ids_dict = self.services.features.GetHotlists(
-        mr.cnxn, mr.hotlist_ids)
-    for _id, hotlist in hotlist_ids_dict.iteritems():
-      if not permissions.CanEditHotlist(mr.auth.effective_ids, hotlist):
+    if mr.hotlist_ids:
+      hotlist_ids_dict = self.services.features.GetHotlists(
+          mr.cnxn, mr.hotlist_ids)
+      for _id, hotlist in hotlist_ids_dict.iteritems():
+        if not permissions.CanEditHotlist(mr.auth.effective_ids, hotlist):
+          raise permissions.PermissionException(
+              'You are not allowed to edit hotlist %s' % hotlist.name)
+    else:
+      if not permissions.CanCreateHotlist(mr.perms):
         raise permissions.PermissionException(
-            'You are not allowed to edit hotlist %s' % hotlist.name)
+            'User is not allowed to create a hotlist.')
 
   def HandleRequest(self, mr):
     project_names = []
@@ -41,8 +46,18 @@ class AddToHotlist(jsonfeed.JsonFeed):
     added_tuples = [(issue_id, mr.auth.user_id,
                           int(time.time())) for issue_id in
                          selected_iids]
-    self.services.features.AddIssuesToHotlists(
-        mr.cnxn, mr.hotlist_ids, added_tuples)
+    if not mr.hotlist_ids:
+      num_existing_hotlists = len(self.services.features.GetHotlistsByUserID(
+          mr.cnxn, mr.auth.user_id))
+      hotlist_name = 'Hotlist-%d' % (num_existing_hotlists + 1)
+      hotlist = self.services.features.CreateHotlist(
+          mr.cnxn, hotlist_name, 'Hotlist of bulk added issues', '',
+          [mr.auth.user_id], [], issue_ids=selected_iids)
+      hotlist_ids = [hotlist.hotlist_id]
+    else:
+      hotlist_ids = mr.hotlist_ids
+      self.services.features.AddIssuesToHotlists(
+          mr.cnxn, hotlist_ids, added_tuples)
 
     missed = []
     for miss in misses:
@@ -51,7 +66,7 @@ class AddToHotlist(jsonfeed.JsonFeed):
       missed.append(('%s:%d' % (project_name, miss[1])))
 
     added_hotlist_pbs = [self.services.features.GetHotlist(
-        mr.cnxn, hotlist_id) for hotlist_id in mr.hotlist_ids]
+        mr.cnxn, hotlist_id) for hotlist_id in hotlist_ids]
 
     user_issue_hotlists = list(set(self.services.features.GetHotlistsByUserID(
         mr.cnxn, mr.auth.user_id)) &
@@ -61,8 +76,10 @@ class AddToHotlist(jsonfeed.JsonFeed):
         mr.cnxn, hotlist, self.services.user) for
                         hotlist in user_issue_hotlists]
     all_hotlist_names = [hotlist.name for hotlist in user_issue_hotlists]
-    return {'addedHotlistIDs': mr.hotlist_ids,
-            'missed': missed,
+    return {'addedHotlistIDs': hotlist_ids,
+            # hotlist_ids issues were added to or new hotlist's id
+            'missed': missed,  # missed issues
             'addedHotlistNames': [h.name for h in added_hotlist_pbs],
-            'allHotlistNames': all_hotlist_names,
-            'allHotlistUrls': all_hotlist_urls}
+            # hotlist names issues were added to or new hotlist's name
+            'allHotlistNames': all_hotlist_names,  # user's hotlists' names
+            'allHotlistUrls': all_hotlist_urls}  # user's hotlists' urls

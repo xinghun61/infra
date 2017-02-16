@@ -1122,12 +1122,17 @@ function TKR_flagSpam(isSpam) {
   }
 }
 
-/**
- * The user has selected the "Add to hotlist..." menu item. Show a dialog
- * box with the user's hotlists and offer the option to add all selected
- * issues to the selected hotlist.
-*/
 function TKR_addToHotlist() {
+  var selectedIssueRefs = GetSelectedIssues();
+  if (selectedIssueRefs.length > 0) {
+    ShowAddToHotlistDialog();
+  } else {
+    alert('Please select some issues to add to a hotlist')
+  }
+}
+
+
+function GetSelectedIssues() {
   var selectedIssueRefs = [];
   for (var i = 0; i < issueRefs.length; i++) {
     var checkbox = document.getElementById('cb_' + issueRefs[i]['id'])
@@ -1139,25 +1144,10 @@ function TKR_addToHotlist() {
       selectedIssueRefs.push(issueRefs[i]['project_name']+':'+issueRefs[i]['id']);
     }
   }
-  if (selectedIssueRefs.length > 0) {
-    ShowAddToHotlistDialog(selectedIssueRefs);
-  } else {
-    alert('Please select some issues to add to a hotlist')
-  }
+  return selectedIssueRefs;
 }
 
-function ShowAddToHotlistDialog(issueRefs, opt_onResponse){
-  addToHotlistDialog = $('add-to-hotlist');
-  addToHotlistDialog.style.display = 'block';
-  $('cancel-add-hotlist').addEventListener('click', function() {
-    addToHotlistDialog.style.display = 'none';
-  });
-  $('add-issues').addEventListener('click', function () {
-    AddIssuesToHotlist(addToHotlistDialog, issueRefs, opt_onResponse)});
-}
-
-function AddIssuesToHotlist(dialogBox, issueRefs, opt_onResponse) {
-  onResponse = opt_onResponse || onAddIssuesResponse;
+function GetSelectedHotlists() {
   var selectedHotlistIDs = [];
   for (var i = 0; i < usersHotlists.length; i++) {
     var checkbox = document.getElementById('cb_hotlist_' + usersHotlists[i]);
@@ -1165,6 +1155,42 @@ function AddIssuesToHotlist(dialogBox, issueRefs, opt_onResponse) {
       selectedHotlistIDs.push(usersHotlists[i]);
     }
   }
+  return selectedHotlistIDs;
+}
+
+
+function ShowAddToHotlistDialog() {
+  $('add-to-hotlist').style.display = 'block';
+}
+
+function CreateNewHotlistWithIssues(opt_SelectedIssueRefs) {
+  issueRefs = opt_SelectedIssueRefs || GetSelectedIssues();
+  var data = {'issue_refs': issueRefs.join(',')}
+  CS_doPost('/hosting/addToHotlist.do', onCreateHotlistResponse, data);
+}
+
+function onCreateHotlistResponse(event) {
+  var xhr = event.target;
+  if (xhr.readyState != 4) {
+    return;
+  }
+  if (xhr.status != 200) {
+    console.error('200 page error');
+    // TODO(jojwang): fill this in more
+    console.log(xhr.status);
+    return;
+  }
+  var response = CS_parseJSON(xhr);
+  var message = 'Issues successfully added to new hotlist ' + response['addedHotlistNames'][0];
+  noticeText = $('notice');
+  noticeText.innerText = message;
+  $('add-to-hotlist').style.display = 'none';
+  $('alert-table').style.display = 'table';
+}
+
+function AddIssuesToHotlist(onResponse, opt_SelectedIssueRefs) {
+  issueRefs = opt_SelectedIssueRefs || GetSelectedIssues();
+  selectedHotlistIDs = GetSelectedHotlists();
   if (selectedHotlistIDs.length > 0) {
     var data = {
       hotlist_ids: selectedHotlistIDs.join(','),
