@@ -165,6 +165,7 @@ class SwarmingTest(testing.AppengineTestCase):
 
   def test_is_for_swarming(self):
     build = model.Build(
+      id=1,
       bucket='bucket',
       parameters={'builder_name': 'builder'}
     )
@@ -176,11 +177,12 @@ class SwarmingTest(testing.AppengineTestCase):
     self.assertTrue(swarming.is_for_swarming_async(build).get_result())
 
     self.assertFalse(
-        swarming.is_for_swarming_async(model.Build(bucket='other'))
+        swarming.is_for_swarming_async(model.Build(id=1, bucket='other'))
           .get_result())
 
   def test_is_for_swarming_no_template(self):
     build = model.Build(
+        id=1,
         bucket='bucket',
         parameters={'builder_name': 'builder'}
     )
@@ -219,6 +221,7 @@ class SwarmingTest(testing.AppengineTestCase):
     builder_cfg = project_config_pb2.Swarming.Builder(name='fast-builder')
 
     build = model.Build(
+        id=1,
         bucket='bucket',
         parameters={
           'builder_name': 'fast-builder',
@@ -239,6 +242,7 @@ class SwarmingTest(testing.AppengineTestCase):
 
   def test_create_task_async(self):
     build = model.Build(
+      id=1,
       bucket='bucket',
       tags=['builder:builder'],
       parameters={
@@ -294,6 +298,7 @@ class SwarmingTest(testing.AppengineTestCase):
       'expiration_secs': '3600',
       'tags': [
         'buildbucket_bucket:bucket',
+        'buildbucket_build_id:1',
         'buildbucket_hostname:None',
         'buildbucket_template_canary:false',
         'builder:builder',
@@ -358,6 +363,7 @@ class SwarmingTest(testing.AppengineTestCase):
       'pubsub_userdata': json.dumps({
         'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
         'swarming_hostname': 'chromium-swarm.appspot.com',
+        'build_id': 1,
       }, sort_keys=True),
       'numerical_value_for_coverage_in_format_obj': 42,
     }
@@ -383,7 +389,7 @@ class SwarmingTest(testing.AppengineTestCase):
       build.url, 'https://example.com/chromium-swarm.appspot.com/deadbeef')
 
   def test_create_task_async_bad_request(self):
-    build = model.Build(bucket='bucket')
+    build = model.Build(id=1, bucket='bucket')
 
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
@@ -400,6 +406,7 @@ class SwarmingTest(testing.AppengineTestCase):
 
   def test_create_task_async_canary_template(self):
     build = model.Build(
+        id=1,
         bucket='bucket',
         parameters={
           'builder_name': 'builder',
@@ -444,6 +451,7 @@ class SwarmingTest(testing.AppengineTestCase):
       'expiration_secs': '3600',
       'tags': [
         'buildbucket_bucket:bucket',
+        'buildbucket_build_id:1',
         'buildbucket_hostname:None',
         'buildbucket_template_canary:true',
         'builder:builder',
@@ -505,6 +513,7 @@ class SwarmingTest(testing.AppengineTestCase):
       'pubsub_userdata': json.dumps({
         'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
         'swarming_hostname': 'chromium-swarm.appspot.com',
+        'build_id': 1,
       }, sort_keys=True),
       'numerical_value_for_coverage_in_format_obj': 42,
     }
@@ -530,6 +539,7 @@ class SwarmingTest(testing.AppengineTestCase):
 
   def test_create_task_async_no_canary_template_explicit(self):
     build = model.Build(
+        id=1,
         bucket='bucket',
         parameters={
           'builder_name': 'builder',
@@ -572,6 +582,7 @@ class SwarmingTest(testing.AppengineTestCase):
     }
 
     build = model.Build(
+        id=1,
         bucket='bucket',
         parameters={'builder_name': 'builder'},
     )
@@ -582,6 +593,7 @@ class SwarmingTest(testing.AppengineTestCase):
 
   def test_create_task_async_override_cfg(self):
     build = model.Build(
+        id=1,
         bucket='bucket',
         parameters={
           'builder_name': 'builder',
@@ -626,6 +638,7 @@ class SwarmingTest(testing.AppengineTestCase):
 
   def test_create_task_async_override_cfg_malformed(self):
     build = model.Build(
+        id=1,
         bucket='bucket',
         parameters={
           'builder_name': 'builder',
@@ -638,6 +651,7 @@ class SwarmingTest(testing.AppengineTestCase):
       swarming.create_task_async(build).get_result()
 
     build = model.Build(
+        id=1,
         bucket='bucket',
         parameters={
           'builder_name': 'builder',
@@ -652,6 +666,7 @@ class SwarmingTest(testing.AppengineTestCase):
       swarming.create_task_async(build).get_result()
 
     build = model.Build(
+        id=1,
         bucket='bucket',
         parameters={
           'builder_name': 'builder',
@@ -667,6 +682,7 @@ class SwarmingTest(testing.AppengineTestCase):
 
     # Remove a required dimension.
     build = model.Build(
+        id=1,
         bucket='bucket',
         parameters={
           'builder_name': 'builder',
@@ -682,6 +698,7 @@ class SwarmingTest(testing.AppengineTestCase):
 
   def test_create_task_async_on_leased_build(self):
     build = model.Build(
+      id=1,
       bucket='bucket',
       parameters={'builder_name': 'builder'},
       lease_key=12345,
@@ -692,6 +709,7 @@ class SwarmingTest(testing.AppengineTestCase):
   def test_cancel_task(self):
     self.json_response = {}
     build = model.Build(
+      id=1,
       bucket='whatever',
       swarming_hostname='chromium-swarm.appspot.com',
       swarming_task_id='deadbeef',
@@ -791,7 +809,7 @@ class SwarmingTest(testing.AppengineTestCase):
     ]
 
     for case in cases:
-      build = model.Build(bucket='bucket')
+      build = model.Build(id=1, bucket='bucket')
       build.put()
       swarming._update_build(build, case['task_result'])
       self.assertEqual(build.status, case['status'])
@@ -814,13 +832,15 @@ class SubNotifyTest(testing.AppengineTestCase):
           'userdata': json.dumps({
             'created_ts': 1448841600000000,
             'swarming_hostname': 'chromium-swarm.appspot.com',
+            'build_id': 1,
           })
         })
       }),
       (
         'chromium-swarm.appspot.com',
         datetime.datetime(2015, 11, 30),
-        'deadbeef')
+        'deadbeef',
+        1)
     )
 
   def test_unpack_msg_with_err(self):
@@ -875,6 +895,111 @@ class SubNotifyTest(testing.AppengineTestCase):
 
   def test_post(self):
     build = model.Build(
+        id=1,
+        bucket='chromium',
+        parameters={
+          'builder_name': 'release'
+        },
+        status=model.BuildStatus.SCHEDULED,
+        swarming_hostname='chromium-swarm.appspot.com',
+        swarming_task_id='deadbeef',
+    )
+    build.put()
+
+    self.handler.request = mock.Mock(json={
+      'message': {
+        'attributes': {
+          'auth_token': swarming.TaskToken.generate(),
+        },
+        'data': b64json({
+          'task_id': 'deadbeef',
+          'userdata': json.dumps({
+            'build_id': 1,
+            'created_ts': 1448841600000000,
+            'swarming_hostname': 'chromium-swarm.appspot.com',
+          })
+        })
+      }
+    })
+    self.mock(swarming, '_load_task_result_async', mock.Mock())
+    swarming._load_task_result_async.return_value = futuristic({
+      'task_id': 'deadbeef',
+      'state': 'COMPLETED',
+    })
+
+    self.handler.post()
+
+    build = build.key.get()
+    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
+    self.assertEqual(build.result, model.BuildResult.SUCCESS)
+
+  def test_post_with_different_swarming_hostname(self):
+    build = model.Build(
+        id=1,
+        bucket='chromium',
+        parameters={
+          'builder_name': 'release'
+        },
+        status=model.BuildStatus.SCHEDULED,
+        swarming_hostname='chromium-swarm.appspot.com',
+        swarming_task_id='deadbeef',
+    )
+    build.put()
+
+    self.handler.request = mock.Mock(json={
+      'message': {
+        'attributes': {
+          'auth_token': swarming.TaskToken.generate(),
+        },
+        'data': b64json({
+          'task_id': 'deadbeef',
+          'userdata': json.dumps({
+            'build_id': 1,
+            'created_ts': 1448841600000000,
+            'swarming_hostname': 'chromium-swarm.appspot.com.au',
+          })
+        })
+      }
+    })
+
+    with self.assert_bad_message(expect_redelivery=False):
+      self.handler.post()
+
+  def test_post_with_different_task_id(self):
+    build = model.Build(
+        id=1,
+        bucket='chromium',
+        parameters={
+          'builder_name': 'release'
+        },
+        status=model.BuildStatus.SCHEDULED,
+        swarming_hostname='chromium-swarm.appspot.com',
+        swarming_task_id='deadbeef',
+    )
+    build.put()
+
+    self.handler.request = mock.Mock(json={
+      'message': {
+        'attributes': {
+          'auth_token': swarming.TaskToken.generate(),
+        },
+        'data': b64json({
+          'task_id': 'deadbeefffffffffff',
+          'userdata': json.dumps({
+            'build_id': 1,
+            'created_ts': 1448841600000000,
+            'swarming_hostname': 'chromium-swarm.appspot.com',
+          })
+        })
+      }
+    })
+
+    with self.assert_bad_message(expect_redelivery=False):
+      self.handler.post()
+
+  def test_post_without_build_id(self):
+    build = model.Build(
+      id=1,
       bucket='chromium',
       parameters={
         'builder_name': 'release'
@@ -929,6 +1054,7 @@ class SubNotifyTest(testing.AppengineTestCase):
     userdata = {
       'created_ts': 1448841600000000,
       'swarming_hostname': 'chromium-swarm.appspot.com',
+      'build_id': 1,
     }
     msg_data = {
       'task_id': 'deadbeef',
@@ -942,12 +1068,33 @@ class SubNotifyTest(testing.AppengineTestCase):
         'data': b64json(msg_data)
       }
     })
-    self.mock(swarming, '_load_task_result_async', mock.Mock())
-    swarming._load_task_result_async.return_value = futuristic({
-      'task_id': 'deadbeef',
-      'state': 'COMPLETED',
-    })
 
+    with self.assert_bad_message(expect_redelivery=True):
+      self.handler.post()
+
+    userdata['created_ts'] = 1438841600000000
+    msg_data['userdata'] = json.dumps(userdata)
+    self.handler.request.json['message']['data'] = b64json(msg_data)
+    with self.assert_bad_message(expect_redelivery=False):
+      self.handler.post()
+
+  def test_post_without_build_id_without_build(self):
+    userdata = {
+      'created_ts': 1448841600000000,
+      'swarming_hostname': 'chromium-swarm.appspot.com',
+    }
+    msg_data = {
+      'task_id': 'deadbeef',
+      'userdata': json.dumps(userdata)
+    }
+    self.handler.request = mock.Mock(json={
+      'message': {
+        'attributes': {
+          'auth_token': swarming.TaskToken.generate(),
+        },
+        'data': b64json(msg_data)
+      }
+    })
     with self.assert_bad_message(expect_redelivery=True):
       self.handler.post()
 
@@ -970,6 +1117,7 @@ class CronUpdateTest(testing.AppengineTestCase):
   def setUp(self):
     super(CronUpdateTest, self).setUp()
     self.build = model.Build(
+      id=1,
       bucket='bucket',
       parameters={
         'builder_name': 'release',

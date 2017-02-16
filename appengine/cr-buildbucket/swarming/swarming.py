@@ -248,6 +248,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   Raises:
     errors.InvalidInputError if build.parameters are invalid.
   """
+  assert build.key and build.key.id(), build.key
   params = build.parameters or {}
   validate_build_parameters(builder_cfg.name, params)
   swarming_param = params.get(PARAM_SWARMING) or {}
@@ -327,6 +328,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   _extend_unique(swarming_tags, [
     'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
     'buildbucket_bucket:%s' % build.bucket,
+    'buildbucket_build_id:%s' % build.key.id(),
     'buildbucket_template_canary:%s' % str(canary).lower(),
   ])
   if is_recipe:  # pragma: no branch
@@ -358,6 +360,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
     (app_identity.get_application_id(), PUBSUB_TOPIC))
   task['pubsub_auth_token'] = TaskToken.generate()
   task['pubsub_userdata'] = json.dumps({
+    'build_id': build.key.id(),
     'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
     'swarming_hostname': swarming_cfg.hostname,
   }, sort_keys=True)
@@ -583,7 +586,7 @@ class SubNotify(webapp2.RequestHandler):
   bad_message = False
 
   def unpack_msg(self, msg):
-    """Extracts swarming hostname, creation time and task id from |msg|.
+    """Extracts swarming hostname, creation time, task id and build id from msg.
 
     Aborts if |msg| is malformed.
     """
@@ -611,11 +614,13 @@ class SubNotify(webapp2.RequestHandler):
     except ValueError as ex:
       self.stop('created_ts in userdata is invalid: %s', ex)
 
+    build_id = userdata.get('build_id')
+
     task_id = data.get('task_id')
     if not task_id:
       self.stop('task_id not found in message data')
 
-    return hostname, created_time, task_id
+    return hostname, created_time, task_id, build_id
 
   def post(self):
     msg = (self.request.json or {}).get('message', {})
@@ -628,24 +633,43 @@ class SubNotify(webapp2.RequestHandler):
     except tokens.InvalidTokenError as ex:
       self.stop('invalid auth_token: %s', ex.message)
 
-    hostname, created_time, task_id = self.unpack_msg(msg)
-    logging.info('Task id: %s', task_id)
-
+    hostname, created_time, task_id, build_id = self.unpack_msg(msg)
+    task_url = '%s/task?id=%s' % (hostname, task_id)
     # Load build.
-    build_q = model.Build.query(
-      model.Build.swarming_hostname == hostname,
-      model.Build.swarming_task_id == task_id,
-    )
-    builds = build_q.fetch(1)
-    if not builds:
-      if utils.utcnow() < created_time + datetime.timedelta(minutes=20):
+    build = None
+    if build_id is not None:
+      logging.info('Build id: %s', build_id)
+      build = model.Build.get_by_id(build_id)
+      if not build:
+        if utils.utcnow() < created_time + datetime.timedelta(minutes=1):
+          self.stop(
+              'Build %s for task %s not found yet.',
+              build_id, task_url, redeliver=True)
+        else:
+          self.stop('Build %s for task %s not found.', build_id, task_url)
+      elif build.swarming_hostname != hostname:
         self.stop(
-          'Build for task %s/user/task/%s not found yet.',
-          hostname, task_id, redeliver=True)
-      else:
-        self.stop('Build for task %s/%s not found.', hostname, task_id)
-    build = builds[0]
-    logging.info('Build id: %s', build.key.id())
+            'swarming_hostname %s of build %s does not match %s',
+            build.swarming_hostname, build_id, hostname)
+      elif build.swarming_task_id != task_id:
+        self.stop(
+            'swarming_task_id %s of build %s does not match %s',
+            build.swarming_task_id, build_id, task_id)
+    else:
+      # TODO(nodir): delete this code path
+      build_q = model.Build.query(
+        model.Build.swarming_hostname == hostname,
+        model.Build.swarming_task_id == task_id,
+      )
+      builds = build_q.fetch(1)
+      if not builds:
+        if utils.utcnow() < created_time + datetime.timedelta(minutes=20):
+          self.stop(
+            'Build for task %s not found yet.', task_url, redeliver=True)
+        else:
+          self.stop('Build for task %s not found.', task_url)
+      build = builds[0]
+      logging.info('Build id: %s', build.key.id())
     assert build.parameters
 
     # Update build.
