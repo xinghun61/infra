@@ -4,20 +4,12 @@
 # found in the LICENSE file.
 
 import argparse
-import hashlib
-import httplib
-import json
 import logging
 import os
 import platform
-import re
-import socket
-import ssl
 import subprocess
 import sys
-import time
-import urllib
-import urllib2
+import tempfile
 
 
 # The path to the "infra/bootstrap/" directory.
@@ -26,50 +18,31 @@ BOOTSTRAP_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(BOOTSTRAP_DIR)
 # The path where CIPD install lists are stored.
 CIPD_LIST_DIR = os.path.join(BOOTSTRAP_DIR, 'cipd')
-# Path to the CIPD bootstrap documentation repository.
-CIPD_DOC_DIR = os.path.join(CIPD_LIST_DIR, 'doc')
 # Default sysroot install root.
 DEFAULT_INSTALL_ROOT = os.path.join(ROOT, 'cipd')
 # For Windows.
 EXE_SFX = '.exe' if sys.platform == 'win32' else ''
-
-# Path to CA certs bundle file to use by default.
-DEFAULT_CERT_FILE = os.path.join(ROOT, 'data', 'cacert.pem')
+# Default CIPD server url
+DEFAULT_SERVER_URL='https://chrome-infra-packages.appspot.com'
 
 # Map of CIPD configuration based on the current architecture/platform. If a
 # platform is not listed here, the bootstrap will be a no-op.
 #
 # This is keyed on the platform's (system, machine).
-#
-# It is ideal to use a raw `instance_id` as the version to avoid an unnecessary
-# CIPD server round-trip lookup. This can be obtained for a given package via:
-# $ cipd resolve \
-#     infra/tools/cipd/ \
-#     -version=git_revision:508f70d14492573c37760381060bbb5fc7904bfd
 ARCH_CONFIG_MAP = {
   ('Linux', 'x86_64'): {
-    'cipd_package': 'infra/tools/cipd/linux-amd64',
-    'cipd_package_version': '5c124027ab0d44efb0d545bac3d0eb5cbee590b1',
     'cipd_install_list': 'cipd_linux_amd64.txt',
   },
   ('Linux', 'x86'): {
-    'cipd_package': 'infra/tools/cipd/linux-386',
-    'cipd_package_version': '3be5f38f011284779a75113d8d1cf6575920128f',
     'cipd_install_list': None,
   },
   ('Darwin', 'x86_64'): {
-    'cipd_package': 'infra/tools/cipd/mac-amd64',
-    'cipd_package_version': 'af11702389a57ed42d4cb51a8cbc2ac48ef4da02',
     'cipd_install_list': 'cipd_mac_amd64.txt',
   },
   ('Windows', 'x86_64'): {
-    'cipd_package': 'infra/tools/cipd/windows-amd64',
-    'cipd_package_version': '8c786a913fc0a0387262a899dc63c15ed9029e83',
     'cipd_install_list': None,
   },
   ('Windows', 'x86'): {
-    'cipd_package': 'infra/tools/cipd/windows-386',
-    'cipd_package_version': 'e44d78aae1c330d75c7f5ab3989f37a74227b126',
     'cipd_install_list': None,
   },
 }
@@ -96,11 +69,6 @@ def get_platform():
   return system, machine
 
 
-def dump_json(obj):
-  """Pretty-formats object to JSON."""
-  return json.dumps(obj, indent=2, sort_keys=True, separators=(',',':'))
-
-
 def ensure_directory(path):
   # Ensure the parent directory exists.
   if os.path.isdir(path):
@@ -110,26 +78,6 @@ def ensure_directory(path):
                      "directory." % (path,))
   logging.debug('Creating directory: [%s]', path)
   os.makedirs(path)
-
-
-def write_binary_file(path, data):
-  """Writes a binary file to the disk."""
-  ensure_directory(os.path.dirname(path))
-  with open(path, 'wb') as fd:
-    fd.write(data)
-
-
-def write_tag_file(path, obj):
-  with open(path, 'w') as fd:
-    json.dump(obj, fd, sort_keys=True, indent=2)
-
-
-def read_tag_file(path):
-  try:
-    with open(path, 'r') as fd:
-      return json.load(fd)
-  except (IOError, ValueError):
-    return None
 
 
 def execute(*cmd):
@@ -151,196 +99,48 @@ class CipdError(Exception):
   """Raised by install_cipd_client on fatal error."""
 
 
-class CipdBackend(object):
-  """Properties and interaction with CIPD backend service."""
+def cipd_ensure(root, ensure_file, cipd_backend_url=None):
+  """Invoke `cipd ensure` with the provided ensure_file in the given root.
 
-  # The default URL of the CIPD backend service.
-  DEFAULT_URL = 'https://chrome-infra-packages.appspot.com'
-
-  # Regular expression that matches CIPD raw instance IDs.
-  _RE_INSTANCE_ID = re.compile(r'^[0-9a-f]{40}$')
-
-  def __init__(self, url):
-    self.url = url
-
-  def call_api(self, endpoint, **query):
-    """Sends GET request to CIPD backend, parses JSON response."""
-    url = '%s/_ah/api/%s' % (self.url, endpoint)
-    if query:
-      url += '?' + urllib.urlencode(sorted(query.iteritems()), True)
-    status, body = fetch_url(url)
-    if status != 200:
-      raise CipdError('Server replied with HTTP %d' % status)
-    try:
-      body = json.loads(body)
-    except ValueError:
-      raise CipdError('Server returned invalid JSON')
-    status = body.get('status')
-    if status != 'SUCCESS':
-      m = body.get('error_message') or '<no error message>'
-      raise CipdError('Server replied with error %s: %s' % (status, m))
-    return body
-
-  @classmethod
-  def is_instance_id(cls, value):
-    return cls._RE_INSTANCE_ID.match(value) is not None
-
-  def resolve_instance_id(self, package, version):
-    if self.is_instance_id(version):
-      return version
-
-    resp = self.call_api(
-        'repo/v1/instance/resolve',
-        package_name=package,
-        version=version)
-    return resp['instance_id']
-
-  def get_client_info(self, package, instance_id):
-    return self.call_api(
-        'repo/v1/client',
-        package_name=package,
-        instance_id=instance_id)
-
-
-class CipdClient(object):
-  """Properties and interaction with CIPD client."""
-
-  # Filename for the CIPD package/instance_id tag.
-  _TAG_NAME = '.cipd_client_version'
-
-  def __init__(self, cipd_backend, path):
-    self.cipd_backend = cipd_backend
-    self.path = path
-
-  def exists(self):
-    return os.path.isfile(self.path)
-
-  def ensure(self, list_path, root):
-    assert os.path.isfile(list_path)
-    assert os.path.isdir(root)
-    logging.debug('Installing CIPD packages from [%s] to [%s]', list_path, root)
-    self.call(
-        'ensure',
-        '-ensure-file', list_path,
-        '-root', root,
-        '-service-url', self.cipd_backend.url)
-
-  def call(self, *args):
-    if execute(self.path, *args):
-      raise CipdError('Failed to execute CIPD client: %s', ' '.join(args))
-
-  def write_tag(self, package, instance_id):
-    write_tag_file(self._cipd_tag_path, {
-      'package': package,
-      'instance_id': instance_id,
-    })
-
-  def read_tag(self):
-    tag = read_tag_file(self._cipd_tag_path)
-    if tag is None:
-      return None, None
-    return tag.get('package'), tag.get('instance_id')
-
-  @property
-  def _cipd_tag_path(self):
-    return os.path.join(os.path.dirname(self.path), self._TAG_NAME)
-
-  @classmethod
-  def install(cls, cipd_backend, config, root):
-    package = config['cipd_package']
-    instance_id = cipd_backend.resolve_instance_id(
-        package,
-        config.get('cipd_package_version', 'latest'))
-    logging.info('Installing CIPD client [%s] ID [%s]', package, instance_id)
-
-    # Is this the version that's already installed?
-    cipd_client = CipdClient(cipd_backend, os.path.join(root, 'cipd' + EXE_SFX))
-    current = cipd_client.read_tag()
-    if current == (package, instance_id) and os.path.isfile(cipd_client.path):
-      logging.info('CIPD client already installed.')
-      return cipd_client
-
-    # Get the client binary URL.
-    client_info = cipd_backend.get_client_info(package, instance_id)
-    logging.info('CIPD client binary info:\n%s', dump_json(client_info))
-
-    status, raw_client_data = fetch_url(
-        client_info['client_binary']['fetch_url'])
-    if status != 200:
-      logging.error('Failed to fetch CIPD client binary (HTTP status %d)',
-                    status)
-      return None
-
-    digest = hashlib.sha1(raw_client_data).hexdigest()
-    if digest != client_info['client_binary']['sha1']:
-      logging.error('CIPD client hash mismatch (%s != %s)', digest,
-                    client_info['client_binary']['sha1'])
-      return None
-
-    write_binary_file(cipd_client.path, raw_client_data)
-    os.chmod(cipd_client.path, 0755)
-    cipd_client.write_tag(package, instance_id)
-    return cipd_client
-
-
-def fetch_url(url, headers=None):
-  """Sends GET request (with retries).
   Args:
-    url: URL to fetch.
-    headers: dict with request headers.
-  Returns:
-    (200, reply body) on success.
-    (HTTP code, None) on HTTP 401, 403, or 404 reply.
-  Raises:
-    Whatever urllib2 raises.
+    ensure_file (str) - file containing the packages to ensure
+    root (str) - directory to ensure packages in. Will be created if doesn't
+      exist.
   """
-  req = urllib2.Request(url)
-  req.add_header('User-Agent', 'infra-install-cipd-packages')
-  for k, v in (headers or {}).iteritems():
-    req.add_header(str(k), str(v))
-  i = 0
-  while True:
-    i += 1
+  cipd_backend_url = cipd_backend_url or DEFAULT_SERVER_URL
+
+  assert os.path.isfile(ensure_file)
+  ensure_directory(root)
+  logging.debug('Installing CIPD packages from [%s] to [%s]', ensure_file, root)
+  args = [
+    'ensure',
+    '-ensure-file', ensure_file,
+    '-root', root,
+    '-service-url', cipd_backend_url
+  ]
+  if execute('cipd'+EXE_SFX, *args):
+    raise CipdError('Failed to execute CIPD client: %s', ' '.join(args))
+
+
+def cipd_ensure_list(root, ensure_data, cipd_backend_url=None):
+  """Invoke `cipd ensure` with the provided ensure_data in the given root.
+
+  Args:
+    ensure_data (list(tuple)) - a list of (package_pattern, version). The
+      package_patterns may contain the ${platform} and ${arch} directives
+      as defined by the cipd client.
+    root (str) - directory to ensure packages in
+  """
+  with tempfile.NamedTemporaryFile(prefix="cipd_ensure", delete=False) as tf:
+    for item in ensure_data:
+      print >> tf, "%s %s" % item
+  try:
+    cipd_ensure(root, tf.name, cipd_backend_url)
+  finally:
     try:
-      logging.debug('GET %s', url)
-      return 200, urllib2.urlopen(req, timeout=60).read()
-    except Exception as e:
-      if isinstance(e, urllib2.HTTPError):
-        logging.error('Failed to fetch %s, server returned HTTP %d', url,
-                      e.code)
-        if e.code in (401, 403, 404):
-          return e.code, None
-      else:
-        logging.exception('Failed to fetch %s', url)
-      if i == 20:
-        raise
-    logging.info('Retrying in %d sec.', i)
-    time.sleep(i)
-
-
-def setup_urllib2_ssl(cacert):
-  """Configures urllib2 to validate SSL certs.
-  See http://stackoverflow.com/a/14320202/3817699.
-  """
-  cacert = os.path.abspath(cacert)
-  assert os.path.isfile(cacert)
-
-  class ValidHTTPSConnection(httplib.HTTPConnection):
-    default_port = httplib.HTTPS_PORT
-    def __init__(self, *args, **kwargs):
-      httplib.HTTPConnection.__init__(self, *args, **kwargs)
-    def connect(self):
-      sock = socket.create_connection(
-          (self.host, self.port), self.timeout, self.source_address)
-      if self._tunnel_host:
-        self.sock = sock
-        self._tunnel()
-      self.sock = ssl.wrap_socket(
-          sock, ca_certs=cacert, cert_reqs=ssl.CERT_REQUIRED)
-  class ValidHTTPSHandler(urllib2.HTTPSHandler):
-    def https_open(self, req):
-      return self.do_open(ValidHTTPSConnection, req)
-  urllib2.install_opener(urllib2.build_opener(ValidHTTPSHandler))
+      os.remove(tf.name)
+    except OSError:
+      logging.exception("failed to remove tempfile %r", tf.name)
 
 
 def main(argv):
@@ -348,14 +148,10 @@ def main(argv):
   parser.add_argument('-v', '--verbose', action='count', default=0,
       help='Increase logging verbosity. Can be specified multiple times.')
   parser.add_argument('--cipd-backend-url', metavar='URL',
-      default=CipdBackend.DEFAULT_URL,
       help='Specify the CIPD backend URL (default is %(default)s)')
   parser.add_argument('-d', '--cipd-root-dir', metavar='PATH',
       default=DEFAULT_INSTALL_ROOT,
       help='Specify the root CIPD package installation directory.')
-  parser.add_argument('--cacert', metavar='PATH', default=DEFAULT_CERT_FILE,
-      help='Path to cacert.pem file with CA root certificates bundle (default '
-           'is %(default)s)')
 
   opts = parser.parse_args(argv)
 
@@ -368,30 +164,17 @@ def main(argv):
     level = logging.DEBUG
   logging.getLogger().setLevel(level)
 
-  # Configure `urllib2` to validate SSL certificates.
-  logging.debug('CA certs bundle: %s', opts.cacert)
-  setup_urllib2_ssl(opts.cacert)
-
-  # Make sure our root directory exists.
-  root = os.path.abspath(opts.cipd_root_dir)
-  ensure_directory(root)
-
   platform_key, config = get_platform_config()
   if not config:
     logging.info('No bootstrap configuration for platform [%s].', platform_key)
     return 0
 
-  cipd_backend = CipdBackend(opts.cipd_backend_url)
-  cipd = CipdClient.install(cipd_backend, config, root)
-  if not cipd:
-    logging.error('Failed to install CIPD client.')
-    return 1
-  assert cipd.exists()
-
   # Install the CIPD list for this configuration.
   cipd_install_list = config.get('cipd_install_list')
   if cipd_install_list:
-    cipd.ensure(os.path.join(CIPD_LIST_DIR, cipd_install_list), root)
+    cipd_ensure(os.path.abspath(opts.cipd_root_dir),
+                os.path.join(CIPD_LIST_DIR, cipd_install_list),
+                opts.cipd_backend_url)
   return 0
 
 

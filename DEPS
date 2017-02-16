@@ -139,15 +139,6 @@ hooks = [
     "action": [
       "python", "-u", "./infra/bootstrap/get_appengine.py", "--dest=.",
     ],
-    # extract in google_appengine/
-  },
-  {
-    "pattern": ".",
-    "action": [
-      "python", "-u", "./infra/bootstrap/get_appengine.py", "--dest=.",
-      "--go",
-    ],
-    # extract in go_appengine/
   },
 ]
 
