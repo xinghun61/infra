@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -19,16 +20,33 @@ func noopAlertWriter(ctx context.Context, alerts *messages.AlertsSummary, tree s
 	return nil
 }
 
-func TestMainLoop(t *testing.T) {
-	Convey("mainLoop, nulls", t, func() {
-		err := mainLoop(nil, nil, nil, nil, noopAlertWriter)
-		So(err, ShouldBeNil)
-	})
+func urlParse(s string, t *testing.T) *url.URL {
+	p, err := url.Parse(s)
+	if err != nil {
+		t.Errorf("failed to parse %s: %s", s, err)
+	}
+	return p
+}
 
+func TestMainLoop(t *testing.T) {
 	Convey("mainLoop", t, func() {
+		Convey("nulls", func() {
+			err := mainLoop(nil, nil, nil, nil, noopAlertWriter)
+			So(err, ShouldBeNil)
+		})
+
 		a := &analyzer.Analyzer{}
 		trees := map[string]bool{
 			"chromium": true,
+		}
+
+		gkts["chromium"] = []messages.TreeMasterConfig{
+			{
+				BuildDB: "chromium.json",
+				Masters: map[messages.MasterLocation][]string{
+					messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/chromium", t)}: []string{"*"},
+				},
+			},
 		}
 
 		mc := &testclient.MockReader{}
@@ -39,7 +57,9 @@ func TestMainLoop(t *testing.T) {
 
 		So(err, ShouldBeNil)
 	})
+}
 
+func TestRun(t *testing.T) {
 	Convey("run", t, func() {
 		reader := testclient.MockReader{}
 		ctx := client.WithReader(context.Background(), reader)

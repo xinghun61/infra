@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
@@ -373,15 +374,20 @@ func loadConfigsAndRun(ctx context.Context) error {
 		}
 	}
 
-	r := client.NewReader()
+	r, err := client.NewReader(ctx)
+	if err != nil {
+		return err
+	}
 
 	switch {
-	case *snapshot != "":
-		r = client.NewSnapshot(r, *snapshot)
 	case *replay != "":
 		r = client.NewReplay(*replay)
 	case *miloHost != "":
+		ctx = urlfetch.Set(ctx, http.DefaultTransport)
 		r = client.NewMiloReader(ctx, *miloHost)
+	}
+	if *snapshot != "" {
+		r = client.NewSnapshot(r, *snapshot)
 	}
 
 	ctx = client.WithReader(ctx, r)
