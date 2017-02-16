@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 )
 
 // CompileMode is mode of compilation.
@@ -239,7 +240,7 @@ func parseTaskLine(line string) []string {
 		return nil
 	}
 	afterTask := line[taskIdx+len(task):]
-	afterTaskId := strings.TrimLeft(afterTask, "0123456789")
+	afterTaskId := strings.TrimLeftFunc(afterTask, unicode.IsDigit)
 	if afterTaskId == afterTask {
 		return nil
 	}

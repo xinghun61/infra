@@ -11,6 +11,7 @@ import (
 	"io"
 	"strings"
 	"time"
+	"unicode"
 )
 
 const (
@@ -86,6 +87,10 @@ type Logline struct {
 	Lines []string
 }
 
+func isSpace(ch rune) bool {
+	return ch == ' '
+}
+
 // ParseLogline parses one line as Logline.
 func ParseLogline(line []byte) (Logline, error) {
 	// Parse log line that matches with `^([IWEF])(\d{4} \d{2}:\d{2}:\d{2}.\d{6}) *(\d+) *(.*)`.
@@ -109,8 +114,8 @@ func ParseLogline(line []byte) (Logline, error) {
 	}
 
 	// Parse restline as `(\d+) *(.*)`
-	restline := strings.TrimLeft(string(line[1+len(timestampLayout):]), " ")
-	afterThreadId := strings.TrimLeft(restline, "0123456789")
+	restline := strings.TrimLeftFunc(string(line[1+len(timestampLayout):]), isSpace)
+	afterThreadId := strings.TrimLeftFunc(restline, unicode.IsDigit)
 	if afterThreadId == restline {
 		// Not match with `(\d+)'.
 		return Logline{Lines: []string{string(line)}}, nil
@@ -122,7 +127,7 @@ func ParseLogline(line []byte) (Logline, error) {
 		Level:     lv,
 		Timestamp: t,
 		ThreadID:  threadId,
-		Lines:     []string{strings.TrimLeft(afterThreadId, " ")},
+		Lines:     []string{strings.TrimLeftFunc(afterThreadId, isSpace)},
 	}, nil
 }
 
