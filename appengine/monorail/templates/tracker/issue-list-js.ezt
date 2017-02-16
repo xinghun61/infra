@@ -35,8 +35,13 @@ runOnLoad(function() {
       return;
     while (target && target.tagName != "TR") target = target.parentNode;
     event.preventDefault();
-    _goIssue(target.attributes[[]"data-idx"].value,
-             (event.metaKey || event.ctrlKey || event.button == 1));
+    if ('[is_hotlist]') {
+       _go(target.attributes[[]"issue-context-url"].value, (event.metaKey || event.ctrlKey || event.button == 1));
+       }
+    else {
+       _goIssue(target.attributes[[]"data-idx"].value,
+       (event.metaKey || event.ctrlKey || event.button == 1));
+         }
   };
   [if-any table_data]
     _addClickListener($("resultstable"), _handleResultsClick);

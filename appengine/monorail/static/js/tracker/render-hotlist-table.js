@@ -77,7 +77,7 @@ function createWidgets(tableRow, readOnly, userLoggedIn) {
 function createIDCell(td, tableRow, isCrossProject) {
   td.className += ' id';
   var aLink = document.createElement('a');
-  aLink.setAttribute('href', tableRow['issueURL']);
+  aLink.setAttribute('href', tableRow['issueCleanURL']);
   var aLinkContent = (isCrossProject ? (tableRow['projectName'] + ':') : '' ) + tableRow['localID'];
   aLink.textContent = aLinkContent;
   td.appendChild(aLink);
@@ -177,7 +177,7 @@ function renderHotlistRow(tableRow, pageSettings) {
     tr.setAttribute('class', 'ifOpened hoverTarget cursor_off drag_item');
   }
 
-  setAttributes(tr, {'data-idx': tableRow['idx'], 'data-id': tableRow['issueID']});
+  setAttributes(tr, {'data-idx': tableRow['idx'], 'data-id': tableRow['issueID'], 'issue-context-url': tableRow['issueContextURL']});
   widgets = createWidgets(tableRow, pageSettings['readOnly'],
                           pageSettings['userLoggedIn']);
   tr.appendChild(widgets);

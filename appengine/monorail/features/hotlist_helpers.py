@@ -158,7 +158,9 @@ def _MakeTableData(issues, starred_iid_set, lower_columns,
     row.local_id = art.local_id
     row.project_name = art.project_name
     row.issue_ref = '%s:%d' % (art.project_name, art.local_id)
-    row.issue_url = tracker_helpers.FormatRelativeIssueURL(
+    row.issue_clean_url = tracker_helpers.FormatRelativeIssueURL(
+        art.project_name, urls.ISSUE_DETAIL, id=art.local_id)
+    row.issue_ctx_url = tracker_helpers.FormatRelativeIssueURL(
         art.project_name, urls.ISSUE_DETAIL,
         id=art.local_id, sort=sort_spec, hotlist_id=hotlist_id)
 

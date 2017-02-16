@@ -266,7 +266,8 @@ class IssueDetail(issuepeek.IssuePeek):
       mr.ComputeColSpec(flipper.hotlist)
     else:
       mr.ComputeColSpec(config)
-    back_to_list_url = _ComputeBackToListURL(mr, issue, config, self.hotlist_id)
+    back_to_list_url = _ComputeBackToListURL(
+        mr, issue, config, self.hotlist_id, self.services)
     flipper.SearchForIIDs(mr, issue)
     restrict_to_known = config.restrict_to_known
     field_name_set = {fd.field_name.lower() for fd in config.field_defs
@@ -929,12 +930,11 @@ def _Redirect(
   return url
 
 
-def _ComputeBackToListURL(mr, issue, config, hotlist_id):
+def _ComputeBackToListURL(mr, issue, config, hotlist_id, services):
   """Construct a URL to return the user to the place that they came from."""
   if hotlist_id:
-    return framework_helpers.FormatAbsoluteURL(
-        mr, '/u/%s/hotlists/%s' % (mr.auth.user_id, hotlist_id),
-        include_project=False)
+    hotlist = services.features.GetHotlistByID(mr.cnxn, hotlist_id)
+    return hotlist_helpers.GetURLOfHotlist(mr.cnxn, hotlist, services.user)
   back_to_list_url = None
   if not tracker_constants.JUMP_RE.match(mr.query):
     back_to_list_url = tracker_helpers.FormatIssueListURL(

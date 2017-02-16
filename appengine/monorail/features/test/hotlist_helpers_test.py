@@ -117,8 +117,8 @@ class MakeTableDataTest(unittest.TestCase):
     self.assertEqual(row.local_id, 1)
     self.assertEqual(row.project_name, 'ProjectName')
     self.assertEqual(row.issue_ref, 'ProjectName:1')
-    self.assertTrue('hotlist_id=29' in row.issue_url)
-    self.assertTrue('sort=stars' in row.issue_url)
+    self.assertTrue('hotlist_id=29' in row.issue_ctx_url)
+    self.assertTrue('sort=stars' in row.issue_ctx_url)
 
 
 class GetAllProjectsOfIssuesTest(unittest.TestCase):
