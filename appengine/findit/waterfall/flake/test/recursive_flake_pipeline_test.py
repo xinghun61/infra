@@ -182,13 +182,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakePipeline,
                       '',
-                      expected_args=['m', 'b', 99, 's', 't', 1, 100],
-                      expected_kwargs={
-                          'step_metadata': None,
-                          'manually_triggered': False,
-                          'use_nearby_neighbor': False,
-                          'step_size': 1,
-                      })
+                      expected_args=['m', 'b', 99, 's', 't', 1, 100, None,
+                                     False, False, 1, 0],
+                      expected_kwargs={})
     pipeline = NextBuildNumberPipeline(
         master_name, builder_name, master_build_number, build_number,
         step_name, test_name, analysis.version_number)
@@ -759,17 +755,36 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   def testCheckBotsAvailabilityNone(self):
-    self.assertFalse(RecursiveFlakePipeline()._BotsAvailableForTask(None))
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    version_number = 1
+    self.assertFalse(
+        RecursiveFlakePipeline(
+            master_name, builder_name, build_number, step_name, test_name,
+            version_number, build_number)._BotsAvailableForTask(None))
 
   @mock.patch.object(swarming_util, 'GetAvailableBotsCount', return_value=5)
   def testCheckBotsAvailability(self, _):
+
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    version_number = 1
+
     step_metadata = {
       'dimensions': {
           'os': 'OS'
       }
     }
     self.assertTrue(
-        RecursiveFlakePipeline()._BotsAvailableForTask(step_metadata))
+        RecursiveFlakePipeline(
+            master_name, builder_name, build_number, step_name, test_name,
+            version_number, build_number)._BotsAvailableForTask(step_metadata))
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis',
@@ -826,3 +841,53 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     rfp.start(queue_name=queue_name)
     self.execute_queued_tasks()
+
+  @mock.patch.object(RecursiveFlakePipeline, 'was_aborted', return_value=True)
+  def testRecursiveFlakePipelineAborted(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.status = analysis_status.PENDING
+    analysis.Save()
+
+    rfp = RecursiveFlakePipeline(
+        master_name, builder_name, build_number, step_name, test_name,
+        analysis.version_number, master_build_number)
+
+    rfp._LogUnexpectedAbort()
+
+    expected_error = {
+        'error': 'RecursiveFlakePipeline was aborted unexpectedly',
+        'message': 'RecursiveFlakePipeline was aborted unexpectedly'
+    }
+
+    self.assertEqual(analysis_status.ERROR, analysis.status)
+    self.assertEqual(expected_error, analysis.error)
+
+  @mock.patch.object(RecursiveFlakePipeline, 'was_aborted', return_value=True)
+  def testRecursiveFlakePipelineAbortedNotUpdateCompletedAnalysis(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(
+      master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.status = analysis_status.COMPLETED
+    analysis.Save()
+
+    rfp = RecursiveFlakePipeline(
+      master_name, builder_name, build_number, step_name, test_name,
+      analysis.version_number, master_build_number)
+
+    rfp._LogUnexpectedAbort()
+
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)

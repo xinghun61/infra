@@ -210,9 +210,29 @@ def _GetListOfNearbyBuildNumbers(preferred_run_build_number, maximum_threshold):
 
 class RecursiveFlakePipeline(BasePipeline):
 
-  def __init__(self, *args, **kwargs):
-    super(RecursiveFlakePipeline, self).__init__(*args, **kwargs)
-    self.manually_triggered = kwargs.get('manually_triggered', False)
+  def __init__(
+      self, master_name, builder_name, preferred_run_build_number,
+      step_name, test_name, version_number, triggering_build_number,
+      step_metadata=None, manually_triggered=False,
+      use_nearby_neighbor=False, step_size=0, retries=0
+  ):
+    super(RecursiveFlakePipeline, self).__init__(
+      master_name, builder_name, preferred_run_build_number,
+      step_name, test_name, version_number, triggering_build_number,
+      step_metadata, manually_triggered, use_nearby_neighbor, step_size, retries
+    )
+    self.master_name = master_name
+    self.builder_name = builder_name
+    self.preferred_run_build_number = preferred_run_build_number
+    self.triggering_build_number = triggering_build_number
+    self.step_name = step_name
+    self.test_name = test_name
+    self.version_number = version_number
+    self.step_metadata = step_metadata
+    self.manually_triggered = manually_triggered
+    self.use_nearby_neighbor = use_nearby_neighbor
+    self.step_size = step_size
+    self.retries = retries
 
   def _StartOffPSTPeakHours(self, *args, **kwargs):
     """Starts the pipeline off PST peak hours if not triggered manually."""
@@ -235,6 +255,25 @@ class RecursiveFlakePipeline(BasePipeline):
 
     return available_count > 0
 
+  def _LogUnexpectedAbort(self):
+    if not self.was_aborted:
+      return
+
+    flake_analysis = MasterFlakeAnalysis.GetVersion(
+      self.master_name, self.builder_name, self.triggering_build_number,
+      self.step_name, self.test_name, version=self.version_number)
+
+    if flake_analysis and not flake_analysis.completed:
+      flake_analysis.status = analysis_status.ERROR
+      flake_analysis.result_status = None
+      flake_analysis.error = flake_analysis.error or {
+          'error': 'RecursiveFlakePipeline was aborted unexpectedly',
+          'message': 'RecursiveFlakePipeline was aborted unexpectedly'
+      }
+      flake_analysis.put()
+
+  def finalized(self):
+    self._LogUnexpectedAbort()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, preferred_run_build_number,

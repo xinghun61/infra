@@ -82,6 +82,51 @@ def _CreateTryJobEntity(
 class RecursiveFlakeTryJobPipeline(BasePipeline):
   """Starts a series of flake try jobs to identify the exact culprit."""
 
+  def __init__(
+      self, urlsafe_flake_analysis_key, commit_position, revision):
+    super(RecursiveFlakeTryJobPipeline, self).__init__(
+      urlsafe_flake_analysis_key, commit_position, revision)
+    self.urlsafe_flake_analysis_key = urlsafe_flake_analysis_key
+    self.commit_position = commit_position
+    self.revision = revision
+
+  def _LogUnexpectedAbort(self):
+    if not self.was_aborted:
+      return
+
+    flake_analysis = ndb.Key(urlsafe=self.urlsafe_flake_analysis_key).get()
+
+    assert flake_analysis
+
+    flake_analysis.try_job_status = analysis_status.ERROR
+    flake_analysis.error = flake_analysis.error or {
+        'error': 'RecursiveFlakeTryJobPipeline was aborted unexpectedly',
+        'message': 'RecursiveFlakeTryJobPipeline was aborted unexpectedly'
+    }
+    flake_analysis.put()
+
+    try_job = FlakeTryJob.Get(
+        flake_analysis.master_name, flake_analysis.builder_name,
+        flake_analysis.step_name, flake_analysis.test_name, self.revision)
+
+    if try_job and not try_job.completed:
+      try_job.status = analysis_status.ERROR
+      try_job.put()
+
+    if not try_job.try_job_ids:
+      return
+
+    try_job_data = FlakeTryJobData.Get(try_job.try_job_ids[-1])
+    if try_job_data:  # pragma: no branch
+      try_job_data.error = try_job_data.error or {
+          'error': 'RecursiveFlakeTryJobPipeline was aborted unexpectedly',
+          'message': 'RecursiveFlakeTryJobPipeline was aborted unexpectedly'
+      }
+      try_job_data.put()
+
+  def finalized(self):
+    self._LogUnexpectedAbort()
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, urlsafe_flake_analysis_key, commit_position, revision):
     """Runs a try job at a revision to determine its flakiness.

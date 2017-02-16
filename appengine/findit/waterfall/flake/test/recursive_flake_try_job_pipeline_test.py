@@ -421,3 +421,72 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(normalized_data_points[0].pass_rate, 0.8)
     self.assertEqual(normalized_data_points[1].run_point_number, 99)
     self.assertEqual(normalized_data_points[1].pass_rate, 0.8)
+
+  @mock.patch.object(RecursiveFlakeTryJobPipeline, 'was_aborted',
+                     return_value=True)
+  def testRecursiveFlakeTryJobPipelineAborted(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    step_name = 's'
+    test_name = 't'
+    revision = 'rev'
+    commit_position = 1
+    build_id = 'b1'
+
+    analysis = MasterFlakeAnalysis.Create(
+      master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.status = analysis_status.COMPLETED
+    analysis.Save()
+
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, revision)
+    try_job.try_job_ids = [build_id]
+    try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(build_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
+    rftp = RecursiveFlakeTryJobPipeline(
+        analysis.key.urlsafe(), commit_position, revision)
+
+    rftp._LogUnexpectedAbort()
+
+    expected_error = {
+        'error': 'RecursiveFlakeTryJobPipeline was aborted unexpectedly',
+        'message': 'RecursiveFlakeTryJobPipeline was aborted unexpectedly'
+    }
+
+    self.assertEqual(analysis_status.ERROR, analysis.try_job_status)
+    self.assertEqual(expected_error, analysis.error)
+    self.assertEqual(analysis_status.ERROR, try_job.status)
+    self.assertEqual(expected_error, try_job_data.error)
+
+  @mock.patch.object(RecursiveFlakeTryJobPipeline, 'was_aborted',
+                     return_value=True)
+  def testRecursiveFlakeTryJobPipelineAbortedNoUpdateCompletedTryJob(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    step_name = 's'
+    test_name = 't'
+    revision = 'rev'
+    commit_position = 1
+
+    analysis = MasterFlakeAnalysis.Create(
+      master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.status = analysis_status.COMPLETED
+    analysis.Save()
+
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, revision)
+    try_job.status = analysis_status.COMPLETED
+    try_job.put()
+
+    rftp = RecursiveFlakeTryJobPipeline(
+        analysis.key.urlsafe(), commit_position, revision)
+
+    rftp._LogUnexpectedAbort()
+
+    self.assertEqual(analysis_status.COMPLETED, try_job.status)
