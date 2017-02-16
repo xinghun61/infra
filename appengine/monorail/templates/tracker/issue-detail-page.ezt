@@ -57,7 +57,7 @@
       <div style="border:1px solid red; background:#fdd; padding:1em">
         This issue has been classified as spam.
         Please <a
-        href="/p/monorail/issues/entry?template=spam+classification&labels=project-[projectname]"
+        href="/p/monorail/issues/entry?template=spam+classification&labels=proj-[projectname]"
         >report incorrect spam classification</a>.
       </div>
     [end][end]
