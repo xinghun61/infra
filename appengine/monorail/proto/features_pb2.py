@@ -40,6 +40,7 @@ class Hotlist(messages.Message):
     rank = messages.IntegerField(2, required=True)
     adder_id = messages.IntegerField(3)
     date_added = messages.IntegerField(4)
+    note = messages.StringField(5, default='')
 
   items = messages.MessageField(HotlistItem, 10, repeated=True)
 
@@ -60,7 +61,7 @@ def MakeHotlist(name, iid_rank_user_date=None, **kwargs):
 
   return hotlist
 
-def MakeHotlistItem(issue_id, rank=None, adder_id=None, date_added=None):
+def MakeHotlistItem(issue_id, rank=None, adder_id=None, date_added=None, note=None):
   if date_added is None:
     date_added=int(time.time())
   item = Hotlist.HotlistItem(issue_id=issue_id, date_added=date_added)
@@ -68,4 +69,6 @@ def MakeHotlistItem(issue_id, rank=None, adder_id=None, date_added=None):
     item.rank = rank
   if adder_id is not None:
     item.adder_id = adder_id
+  if note is not None:
+    item.note = note
   return item

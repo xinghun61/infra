@@ -714,6 +714,7 @@ CREATE TABLE Hotlist2Issue (
   rank BIGINT NOT NULL,
   adder_id INT UNSIGNED,
   added INT,
+  note TEXT,
 
   PRIMARY KEY (hotlist_id, issue_id),
   INDEX (hotlist_id),

@@ -48,8 +48,8 @@ class HotlistTwoLevelCacheTest(unittest.TestCase):
 
     ts = 20021111111111
     issue_rows = [
-        (123, 567, 10, 111L, ts), (123, 678, 9, 111L, ts),
-        (234, 567, 0, 111L, ts)]
+        (123, 567, 10, 111L, ts, ''), (123, 678, 9, 111L, ts, ''),
+        (234, 567, 0, 111L, ts, '')]
     role_rows = [
         (123, 111L, 'owner'), (123, 444L, 'owner'),
         (123, 222L, 'editor'),
@@ -419,7 +419,7 @@ class FeaturesServiceTest(unittest.TestCase):
 
     # Insert the issues: there are none.
     self.features_service.hotlist2issue_tbl.InsertRows(
-        self.cnxn, ['hotlist_id', 'issue_id', 'rank', 'adder_id', 'added'],
+        self.cnxn, features_svc.HOTLIST2ISSUE_COLS,
         [], commit=False)
 
     # Insert the users: there is one owner and one editor.
@@ -511,10 +511,11 @@ class FeaturesServiceTest(unittest.TestCase):
 
   def SetUpUpdateHotlistItemsRankings(self, hotlist_id, relations_to_change):
     hotlist_rows = [(hotlist_id, 'hotlist', '', '', True, '')]
-    insert_rows = [(345, 11, 112, 333L, 2002), (345, 33, 332, 333L, 2002),
-                   (345, 55, 552, 333L, 2002)]
-    issue_rows = [(345, 11, 1, 333L, 2002), (345, 33, 3, 333L, 2002),
-             (345, 55, 3, 333L, 2002)]
+    insert_rows = [(345, 11, 112, 333L, 2002, ''),
+                   (345, 33, 332, 333L, 2002, ''),
+                   (345, 55, 552, 333L, 2002, '')]
+    issue_rows = [(345, 11, 1, 333L, 2002, ''), (345, 33, 3, 333L, 2002, ''),
+             (345, 55, 3, 333L, 2002, '')]
     self.SetUpGetHotlists(
         hotlist_id, hotlist_rows=hotlist_rows, issue_rows=issue_rows)
     self.features_service.hotlist2issue_tbl.Delete(

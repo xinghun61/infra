@@ -37,14 +37,16 @@ class FeaturesPb2Test(unittest.TestCase):
   def testMakeHotlistItem(self):
     ts = 20011111111111
     item_1 = features_pb2.MakeHotlistItem(
-        1000, rank=1, adder_id=111L, date_added=ts)
+        1000, rank=1, adder_id=111L, date_added=ts, note='short note')
     self.assertEqual(1000, item_1.issue_id)
     self.assertEqual(1, item_1.rank)
     self.assertEqual(111L, item_1.adder_id)
     self.assertEqual(ts, item_1.date_added)
+    self.assertEqual('short note', item_1.note)
 
     item_2 = features_pb2.MakeHotlistItem(1001)
     self.assertEqual(1001, item_2.issue_id)
     self.assertEqual(None, item_2.rank)
     self.assertEqual(None, item_2.adder_id)
+    self.assertEqual('', item_2.note)
     self.assertIsNotNone(item_2.date_added)

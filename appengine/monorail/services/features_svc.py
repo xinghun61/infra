@@ -44,7 +44,8 @@ FILTERRULE_COLS = ['project_id', 'rank', 'predicate', 'consequence']
 HOTLIST_COLS = [
     'id', 'name', 'summary', 'description', 'is_private', 'default_col_spec']
 HOTLIST_ABBR_COLS = ['id', 'name', 'summary', 'is_private']
-HOTLIST2ISSUE_COLS = ['hotlist_id', 'issue_id', 'rank', 'adder_id', 'added']
+HOTLIST2ISSUE_COLS = [
+    'hotlist_id', 'issue_id', 'rank', 'adder_id', 'added', 'note']
 HOTLIST2USER_COLS = ['hotlist_id', 'user_id', 'role_name']
 
 
@@ -79,12 +80,13 @@ class HotlistTwoLevelCache(caches.AbstractTwoLevelCache):
           default_col_spec=default_col_spec)
       hotlist_dict[hotlist_id] = hotlist
 
-    for (hotlist_id, issue_id, rank, adder_id, added) in issue_rows:
+    for (hotlist_id, issue_id, rank, adder_id, added, note) in issue_rows:
       hotlist = hotlist_dict.get(hotlist_id)
       if hotlist:
         hotlist.items.append(
             features_pb2.MakeHotlistItem(issue_id=issue_id, rank=rank,
-                                         adder_id=adder_id , date_added=added))
+                                         adder_id=adder_id , date_added=added,
+                                         note=note))
       else:
         logging.warn('hotlist %d not found', hotlist_id)
 
@@ -641,7 +643,7 @@ class FeaturesService(object):
         issue_ids.append(hotlist_item.issue_id)
         insert_rows.append((
             hotlist_id, hotlist_item.issue_id, hotlist_item.rank,
-            hotlist_item.adder_id, hotlist_item.date_added))
+            hotlist_item.adder_id, hotlist_item.date_added, hotlist_item.note))
     hotlist.items = sorted(hotlist.items, key=lambda item: item.rank)
     issue_ids = relations_to_change.keys()
     self.hotlist2issue_tbl.Delete(
@@ -662,7 +664,7 @@ class FeaturesService(object):
     self.hotlist2issue_tbl.InsertRows(
         cnxn, HOTLIST2ISSUE_COLS,
         [(hotlist_id, issue.issue_id, issue.rank,
-          issue.adder_id, issue.date_added)
+          issue.adder_id, issue.date_added, issue.note)
          for issue in hotlist.items],
         commit=False)
     self.hotlist2user_tbl.InsertRows(
