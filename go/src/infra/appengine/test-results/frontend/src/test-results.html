@@ -10,8 +10,8 @@
 <link rel="import" href="../bower_components/iron-pages/iron-pages.html">
 <link rel="import" href="../bower_components/iron-selector/iron-selector.html">
 <link rel="import" href="../bower_components/polymer/polymer.html">
-<link rel="import" href="test-results-flakiness.html">
-<link rel="import" href="test-results-home.html">
+<link rel="import" href="tr-flakiness.html">
+<link rel="import" href="tr-home.html">
 
 <dom-module id="test-results">
   <template>
@@ -139,10 +139,8 @@
         </app-header>
       </app-header-layout>
       <iron-pages role="main" selected="[[page]]" attr-for-selected="name">
-        <test-results-home name="home"></test-results-home>
-        <test-results-flakiness
-          name="flakiness"
-          route="{{subroute}}"></test-results-flakiness>
+        <tr-home name="home"></tr-home>
+        <tr-flakiness name="flakiness" route="{{subroute}}"></tr-flakiness>
       </iron-pages>
     </app-drawer-layout>
   </template>

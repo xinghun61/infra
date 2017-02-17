@@ -3,7 +3,7 @@
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/vaadin-combo-box/vaadin-combo-box.html">
 
-<dom-module id="test-results-flakiness">
+<dom-module id="tr-flakiness">
   <template>
     <style>
       :host {
@@ -174,7 +174,7 @@
       };
 
       Polymer({
-        is: 'test-results-flakiness',
+        is: 'tr-flakiness',
 
         properties: {
           _groups: {
@@ -229,6 +229,9 @@
         },
 
         _formatError: function(errorObj) {
+          if (!errorObj)
+            return;
+
           if (errorObj.error && typeof errorObj.error == "string")
             return errorObj.error
 
