@@ -278,7 +278,8 @@ class HotlistIssues(servlet.Servlet):
     hotlist_context_dict = {
         hotlist_issue.issue_id: {'adder_id': hotlist_issue.adder_id,
                                  'date_added': timestr.FormatRelativeDate(
-                                     hotlist_issue.date_added)}
+                                     hotlist_issue.date_added),
+                                 'note': hotlist_issue.note}
         for hotlist_issue in mr.hotlist.items}
 
     grid_view_data = grid_view_helpers.GetGridViewData(

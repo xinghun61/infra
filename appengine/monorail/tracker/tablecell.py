@@ -15,6 +15,19 @@ from tracker import tracker_bizobj
 
 # pylint: disable=unused-argument
 
+
+class TableCellNote(table_view_helpers.TableCell):
+  """TableCell subclass specifically for showing a hotlist issue's note."""
+
+  def __init__(self, issue, note=None, **_kw):
+    if note:
+      display_note = [note]
+    else:
+      display_note = []
+    table_view_helpers.TableCell.__init__(
+        self, table_view_helpers.CELL_TYPE_ATTR, display_note)
+
+
 class TableCellDateAdded(table_view_helpers.TableCell):
   """TableCell subclass specifically for showing the date added of an issue."""
 
@@ -310,6 +323,7 @@ CELL_FACTORIES = {
     'rank': TableCellRank,
     'added': TableCellDateAdded,
     'adder': TableCellAdderID,
+    'note': TableCellNote,
     'alllabels': TableCellAllLabels,
     }
 

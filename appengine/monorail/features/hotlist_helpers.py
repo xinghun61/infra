@@ -43,7 +43,8 @@ def GetSortedHotlistIssues(
                                  friendly_ranks[hotlist_issue.rank],
                                  'adder_id': hotlist_issue.adder_id,
                                  'date_added': timestr.FormatAbsoluteDate(
-                                     hotlist_issue.date_added)}
+                                     hotlist_issue.date_added),
+                                 'note': hotlist_issue.note}
         for hotlist_issue in hotlist_issues if
         hotlist_issue.issue_id in allowed_iids}
 
@@ -61,7 +62,9 @@ def GetSortedHotlistIssues(
          'adder': lambda issue: hotlist_issues_context[
              issue.issue_id]['adder_id'],
          'added': lambda issue: hotlist_issues_context[
-             issue.issue_id]['date_added']})
+             issue.issue_id]['date_added'],
+         'note': lambda issue: hotlist_issues_context[
+             issue.issue_id]['note']})
     sortable_postproc = tracker_helpers.SORTABLE_FIELDS_POSTPROCESSORS.copy()
     sortable_postproc.update(
         {'adder': lambda user_view: user_view.email,
@@ -121,7 +124,8 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
 
     column_values = table_view_helpers.ExtractUniqueValues(
         mr.col_spec.lower().split(), sorted_issues, issues_users_by_id,
-        harmonized_config, related_issues)
+        harmonized_config, related_issues,
+        hotlist_context_dict=context_for_all_issues)
     unshown_columns = table_view_helpers.ComputeUnshownColumns(
         sorted_issues, mr.col_spec.split(), harmonized_config,
         features_constants.OTHER_BUILT_IN_COLS)

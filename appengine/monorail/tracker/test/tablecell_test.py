@@ -54,6 +54,22 @@ class TableCellUnitTest(unittest.TestCase):
         'config': 'fake config',
         }
 
+  def testTableCellNote(self):
+    table_cell_kws = self.table_cell_kws.copy()
+    table_cell_kws.update({'note': ''})
+    cell = tablecell.TableCellNote(
+        self.issue1, **table_cell_kws)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.values, [])
+
+  def testTableCellNote_NoNote(self):
+    table_cell_kws = self.table_cell_kws.copy()
+    table_cell_kws.update({'note': 'some note'})
+    cell = tablecell.TableCellNote(
+        self.issue1, **table_cell_kws)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.values[0].item, 'some note')
+
   def testTableCellDateAdded(self):
     table_cell_kws = self.table_cell_kws.copy()
     table_cell_kws.update({'date_added': 1234})

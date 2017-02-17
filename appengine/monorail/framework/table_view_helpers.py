@@ -228,6 +228,14 @@ def ExtractUniqueValues(columns, artifact_list, users_by_id,
         adder = users_by_id[adder_id].display_name
         column_values['adder'][adder] = adder
 
+  if 'note' in column_values:
+    for art in artifact_list:
+      if hotlist_context_dict and hotlist_context_dict[art.issue_id]:
+        issue_dict = hotlist_context_dict[art.issue_id]
+        note = issue_dict['note']
+        if issue_dict['note']:
+          column_values['note'][note] = note
+
   if 'attachments' in column_values:
     for art in artifact_list:
       attachment_count = art.attachment_count
