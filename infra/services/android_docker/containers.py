@@ -9,6 +9,7 @@ import docker
 import logging
 import logging.handlers
 import os
+import requests
 import socket
 import subprocess
 import sys
@@ -51,6 +52,24 @@ class DockerClient(object):
   def __init__(self):
     self._client = docker.from_env()
     self.logged_in = False
+
+  def ping(self, retries=5):
+    """Checks if the engine is responsive.
+
+    Will sleep with in between retries with exponential backoff.
+    Returns True if engine is responding, else False.
+    """
+    sleep_time = 1
+    for i in xrange(retries):
+      try:
+        self._client.ping()
+        return True
+      except (docker.errors.APIError, requests.exceptions.ConnectionError):
+        pass
+      if i < retries - 1:
+        time.sleep(sleep_time)
+        sleep_time *= 2
+    return False
 
   def login(self, registry_url, creds_path):
     if not os.path.exists(creds_path):

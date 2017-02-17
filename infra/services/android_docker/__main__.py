@@ -116,14 +116,14 @@ def main():
   add_subparser = subparsers.add_parser(
       'add_device', help='Give a container access to its device.'
   )
-  add_subparser.set_defaults(func=add_device)
+  add_subparser.set_defaults(func=add_device, name='add_device')
 
   launch_subparser = subparsers.add_parser(
       'launch',
       help='Ensures the specified devices have a running container. Will send '
            'a kill signal to containers that exceed max uptime.'
   )
-  launch_subparser.set_defaults(func=launch)
+  launch_subparser.set_defaults(func=launch, name='launch')
   launch_subparser.add_argument(
       '--max-container-uptime', type=int, default=60 * 4,
       help='Max uptime of a container, in minutes.')
@@ -161,7 +161,12 @@ def main():
   stdout_handler = logging.StreamHandler(sys.stdout)
   logger.addHandler(stdout_handler)
 
+  logging.debug('Running %s on devices: %s', args.name, args.devices or 'all')
+
   docker_client = containers.DockerClient()
+  if not docker_client.ping():
+    logging.error('Docker engine unresponsive. Quitting early.')
+    return 1
   android_devices = usb_device.get_android_devices(args.devices)
 
   args.func(docker_client, android_devices, args)

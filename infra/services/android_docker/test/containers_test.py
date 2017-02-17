@@ -31,9 +31,16 @@ class FakeClient(object):
     self.containers = None
     self.images = FakeImageList()
     self.creds = None
+    self.responsive = True
 
   def login(self, **kwargs):
     self.creds = (kwargs['username'], kwargs['password'])
+
+  def ping(self):
+    if self.responsive:
+      return True
+    else:
+      raise docker.errors.APIError('omg engine not running')
 
 
 class FakeImageList(object):
@@ -144,6 +151,28 @@ class TestDockerClient(unittest.TestCase):
     self.container_names = ['android_serial1', 'android_serial2']
     self.fake_client.containers = FakeContainerList(
         [FakeContainerBackend(name) for name in self.container_names])
+
+  @mock.patch('docker.from_env')
+  @mock.patch('time.sleep')
+  def test_ping_success(self, mock_sleep, mock_from_env):
+    self.fake_client.responsive = True
+    mock_from_env.return_value = self.fake_client
+    mock_sleep.return_value = None
+
+    client = containers.DockerClient()
+    self.assertTrue(client.ping())
+
+  @mock.patch('docker.from_env')
+  @mock.patch('time.sleep')
+  def test_ping_fail(self, mock_sleep, mock_from_env):
+    self.fake_client.responsive = False
+    mock_from_env.return_value = self.fake_client
+    mock_sleep.return_value = None
+
+    client = containers.DockerClient()
+    self.assertFalse(client.ping(retries=5))
+    mock_sleep.assert_has_calls(
+        [mock.call(1), mock.call(2), mock.call(4), mock.call(8)])
 
   @mock.patch('docker.from_env')
   @mock.patch('os.path.exists')
