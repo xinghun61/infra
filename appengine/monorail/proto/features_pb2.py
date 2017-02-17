@@ -47,17 +47,19 @@ class Hotlist(messages.Message):
   # The default columns to show on hotlist issues page
   default_col_spec = messages.StringField(11, default=features_constants.DEFAULT_COL_SPEC)
 
-def MakeHotlist(name, iid_rank_user_date=None, **kwargs):
+def MakeHotlist(name, hotlist_item_fields=None, **kwargs):
   """Returns a hotlist protocol buffer with the given attributes.
+    Args:
+      hotlist_item_fields: tuple of (iid, rank, user, date, note)
   kwargs should only include the following:
     hotlist_id, summary, description, is_private, owner_ids, editor_ids,
     follower_ids, default_col_spec"""
   hotlist = Hotlist(name=name, **kwargs)
 
-  if iid_rank_user_date is not None:
-    for iid, rank, user, date in iid_rank_user_date:
+  if hotlist_item_fields is not None:
+    for iid, rank, user, date, note in hotlist_item_fields:
       hotlist.items.append(Hotlist.HotlistItem(
-          issue_id=iid, rank=rank, adder_id=user, date_added=date))
+          issue_id=iid, rank=rank, adder_id=user, date_added=date, note=note))
 
   return hotlist
 

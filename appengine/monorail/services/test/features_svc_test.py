@@ -509,7 +509,7 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, 456, summary='A better one-line summary')
     self.mox.VerifyAll()
 
-  def SetUpUpdateHotlistItemsRankings(self, hotlist_id, relations_to_change):
+  def SetUpUpdateHotlistItemsFields(self, hotlist_id, issue_ids):
     hotlist_rows = [(hotlist_id, 'hotlist', '', '', True, '')]
     insert_rows = [(345, 11, 112, 333L, 2002, ''),
                    (345, 33, 332, 333L, 2002, ''),
@@ -520,23 +520,28 @@ class FeaturesServiceTest(unittest.TestCase):
         hotlist_id, hotlist_rows=hotlist_rows, issue_rows=issue_rows)
     self.features_service.hotlist2issue_tbl.Delete(
         self.cnxn, hotlist_id=hotlist_id,
-        issue_id=relations_to_change.keys(), commit=False)
+        issue_id=issue_ids, commit=False)
     self.features_service.hotlist2issue_tbl.InsertRows(
         self.cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
         row_values=insert_rows, commit=True)
 
-  def testUpdateHotlistItemsRankings(self):
-    iid_rank_user_date = [
-        (11, 1, 333L, 2002), (33, 3, 333L, 2002), (55, 3, 333L, 2002)]
+  def testUpdateHotlistItemsFields_Ranks(self):
+    hotlist_item_fields = [
+        (11, 1, 333L, 2002, ''), (33, 3, 333L, 2002, ''),
+        (55, 3, 333L, 2002, '')]
     hotlist = fake.Hotlist(hotlist_name='hotlist', hotlist_id=345,
-                           iid_rank_user_date=iid_rank_user_date)
+                           hotlist_item_fields=hotlist_item_fields)
     self.features_service.hotlist_2lc.CacheItem(345, hotlist)
     relations_to_change = {11: 112, 33: 332, 55: 552}
-    self.SetUpUpdateHotlistItemsRankings(345, relations_to_change)
+    issue_ids = [11, 33, 55]
+    self.SetUpUpdateHotlistItemsFields(345, issue_ids)
     self.mox.ReplayAll()
-    self.features_service.UpdateHotlistItemsRankings(
-        self.cnxn, 345, relations_to_change)
+    self.features_service.UpdateHotlistItemsFields(
+        self.cnxn, 345, new_ranks=relations_to_change)
     self.mox.VerifyAll()
+
+  def testUpdateHotlistItemsFields_Notes(self):
+    pass
 
   def testGetHotlists(self):
     hotlist1 = fake.Hotlist(hotlist_name='hotlist1', hotlist_id=123)
@@ -618,20 +623,22 @@ class FeaturesServiceTest(unittest.TestCase):
     self.features_service.hotlist2issue_tbl.Delete(
         cnxn, hotlist_id=hotlist_id, issue_id=[], commit=False)
     rank = 1L
-    added_tuples_with_rank = [(issue_id, rank+10*mult, user_id, ts) for mult, (
-        issue_id, user_id, ts) in enumerate(added_tuples)]
+    added_tuples_with_rank = [(issue_id, rank+10*mult, user_id, ts, note) for
+                              mult, (issue_id, user_id, ts, note) in
+                              enumerate(added_tuples)]
     insert_rows = [(hotlist_id, issue_id,
-                    rank, user_id, date) for
-                   (issue_id, rank, user_id, date) in added_tuples_with_rank]
+                    rank, user_id, date, note) for
+                   (issue_id, rank, user_id, date, note) in
+                   added_tuples_with_rank]
     self.features_service.hotlist2issue_tbl.InsertRows(
         cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
         row_values=insert_rows, commit=False)
 
   def testAddIssuesToHotlists(self):
     added_tuples = [
-            (111L, None, None),
-            (222L, None, None),
-            (333L, None, None)]
+            (111L, None, None, ''),
+            (222L, None, None, ''),
+            (333L, None, None, '')]
     self.SetUpGetHotlists(456)
     self.SetUpUpdateHotlistItems(
         self. cnxn, 456, [555L], added_tuples)
@@ -647,15 +654,15 @@ class FeaturesServiceTest(unittest.TestCase):
     self.SetUpGetHotlists(456)
     self.SetUpUpdateHotlistItems(
         self. cnxn, 456, [555L], [
-            (111L, None, None),
-            (222L, None, None),
-            (333L, None, None)])
+            (111L, None, None, ''),
+            (222L, None, None, ''),
+            (333L, None, None, '')])
     self.mox.ReplayAll()
     self.features_service.UpdateHotlistItems(
         self.cnxn, 456, [555L],
-        [(111L, None, None),
-         (222L, None, None),
-         (333L, None, None)], commit=False)
+        [(111L, None, None, ''),
+         (222L, None, None, ''),
+         (333L, None, None, '')], commit=False)
     self.mox.VerifyAll()
 
   def SetUpDeleteHotlist(self, cnxn, hotlist_id):

@@ -44,7 +44,7 @@ class AddToHotlist(jsonfeed.JsonFeed):
     selected_iids, misses = self.services.issue.ResolveIssueRefs(
         mr.cnxn, ref_projects, default_project_name, refs)
     added_tuples = [(issue_id, mr.auth.user_id,
-                          int(time.time())) for issue_id in
+                          int(time.time()), '') for issue_id in
                          selected_iids]
     if not mr.hotlist_ids:
       num_existing_hotlists = len(self.services.features.GetHotlistsByUserID(

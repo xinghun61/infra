@@ -20,16 +20,16 @@ class FeaturesPb2Test(unittest.TestCase):
   def testMakeHotlist_Everything(self):
     ts = 20011111111111
     hotlist = features_pb2.MakeHotlist(
-        'summer-issues', [(1000, 1, 444L, ts), (1001, 2, 333L, ts),
-                          (1009, None, None, ts)],
+        'summer-issues', [(1000, 1, 444L, ts, ''), (1001, 2, 333L, ts, ''),
+                          (1009, None, None, ts, '')],
         description='desc')
     self.assertEqual('summer-issues', hotlist.name)
     self.assertEqual(
         [features_pb2.MakeHotlistItem(
-            1000, rank=1, adder_id=444L, date_added=ts),
+            1000, rank=1, adder_id=444L, date_added=ts, note=''),
          features_pb2.MakeHotlistItem(
-             1001, rank=2, adder_id=333L, date_added=ts),
-         features_pb2.MakeHotlistItem(1009, date_added=ts),
+             1001, rank=2, adder_id=333L, date_added=ts, note=''),
+         features_pb2.MakeHotlistItem(1009, date_added=ts, note=''),
          ],
         hotlist.items)
     self.assertEqual('desc', hotlist.description)

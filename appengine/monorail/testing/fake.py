@@ -39,17 +39,18 @@ EDITOR_ROLE = 'EDITOR_ROLE'
 FOLLOWER_ROLE = 'FOLLOWER_ROLE'
 
 def Hotlist(
-    hotlist_name, hotlist_id, iid_rank_user_date=None,
+    hotlist_name, hotlist_id, hotlist_item_fields=None,
     is_private=False, owner_ids=None, editor_ids=None, follower_ids=None):
   hotlist_id = hotlist_id or hash(hotlist_name)
   return features_pb2.MakeHotlist(
-      hotlist_name, iid_rank_user_date=iid_rank_user_date,
+      hotlist_name, hotlist_item_fields=hotlist_item_fields,
       hotlist_id=hotlist_id, is_private=is_private, owner_ids=owner_ids or [],
       editor_ids=editor_ids or [], follower_ids=follower_ids or [])
 
-def HotlistItem(issue_id, rank=None, adder_id=None, date_added=None):
+def HotlistItem(issue_id, rank=None, adder_id=None, date_added=None, note=None):
   return features_pb2.MakeHotlistItem(issue_id=issue_id, rank=rank,
-                                      adder_id=adder_id, date_added=date_added)
+                                      adder_id=adder_id, date_added=date_added,
+                                      note=None)
 
 def Project(
     project_name='proj', project_id=None, state=project_pb2.ProjectState.LIVE,
@@ -1561,7 +1562,7 @@ class FeaturesService(object):
 
   def TestAddHotlist(self, name, summary='', owner_ids=None, editor_ids=None,
                      follower_ids=None, description=None, hotlist_id=None,
-                     is_private=False, iid_rank_user_date=None):
+                     is_private=False, hotlist_item_fields=None):
     """Add a hotlist to the fake FeaturesService object.
 
     Args:
@@ -1574,8 +1575,8 @@ class FeaturesService(object):
       description: The description string for this hotlist
       hotlist_id: A unique integer identifier for the created hotlist
       is_private: A boolean indicating whether the hotlist is private/public
-      iid_rank_user_date: a list of tuples ->
-        [(issue_id, rank, adder_id, date_added),...]
+      hotlist_item_fields: a list of tuples ->
+        [(issue_id, rank, adder_id, date_added, note),...]
 
     Returns:
       A populated hotlist PB.
@@ -1592,12 +1593,12 @@ class FeaturesService(object):
     self.TestAddHotlistMembers(follower_ids, hotlist_pb, FOLLOWER_ROLE)
     self.TestAddHotlistMembers(editor_ids, hotlist_pb, EDITOR_ROLE)
 
-    if iid_rank_user_date is not None:
-      for(issue_id, rank, adder_id, date) in iid_rank_user_date:
+    if hotlist_item_fields is not None:
+      for(issue_id, rank, adder_id, date, note) in hotlist_item_fields:
         hotlist_pb.items.append(
             features_pb2.Hotlist.HotlistItem(
                 issue_id=issue_id, rank=rank, adder_id=adder_id,
-                date_added=date))
+                date_added=date, note=note))
         try:
           self.hotlists_id_by_issue[issue_id].append(hotlist_pb.hotlist_id)
         except KeyError:
@@ -1627,13 +1628,13 @@ class FeaturesService(object):
     """Create and store a Hotlist with the given attributes."""
     if hotlist_name in self.test_hotlists:
       raise features_svc.HotlistAlreadyExists()
-    iid_rank_user_date = [
-        (issue_id, rank*100, owner_ids[0] or None, ts) for
+    hotlist_item_fields = [
+        (issue_id, rank*100, owner_ids[0] or None, ts, '') for
         rank, issue_id in enumerate(issue_ids or [])]
     return self.TestAddHotlist(hotlist_name, summary=summary,
                                owner_ids=owner_ids, editor_ids=editor_ids,
                                description=description, is_private=is_private,
-                               iid_rank_user_date=iid_rank_user_date)
+                               hotlist_item_fields=hotlist_item_fields)
 
   def UpdateHotlist(self, cnxn, hotlist_id, name=None, summary=None,
                     description=None, is_private=None, default_col_spec=None):
@@ -1676,8 +1677,9 @@ class FeaturesService(object):
 
     new_hotlist_items = [
         features_pb2.MakeHotlistItem(
-            issue_id, rank+rank_base*10, adder_id, date)
-        for rank, (issue_id, adder_id, date) in enumerate(added_issue_tuples)
+            issue_id, rank+rank_base*10, adder_id, date, note)
+        for rank, (issue_id, adder_id, date, note) in
+        enumerate(added_issue_tuples)
         if issue_id not in current_issues_ids]
     items.extend(new_hotlist_items)
     hotlist.items = items
@@ -1693,15 +1695,21 @@ class FeaturesService(object):
       except KeyError:
         self.hotlists_id_by_issue[item.issue_id] = [hotlist_id]
 
-  def UpdateHotlistItemsRankings(
-      self, cnxn, hotlist_id, relations_to_change, commit=True):
+  def UpdateHotlistItemsFields(
+      self, cnxn, hotlist_id, new_ranks=None, new_notes=None, commit=True):
     hotlist = self.hotlists_by_id.get(hotlist_id)
     if not hotlist:
       raise features_svc.NoSuchHotlistException(
           'Hotlist "%s" not found!' % hotlist_id)
+    if new_ranks is None:
+      new_ranks = {}
+    if new_notes is None:
+      new_notes = {}
     for hotlist_issue in hotlist.iid_rank_pairs:
-      if hotlist_issue.issue_id in relations_to_change:
-        hotlist_issue.rank = relations_to_change[hotlist_issue.issue_id]
+      if hotlist_issue.issue_id in new_ranks:
+        hotlist_issue.rank = new_ranks[hotlist_issue.issue_id]
+      if hotlist_issue.issue_id in new_notes:
+        hotlist_issue.note = new_notes[hotlist_issue.issue_id]
 
   def LookupUserHotlists(self, cnxn, user_ids):
     """Return dict of {user_id: [hotlist_id, hotlist_id...]}."""

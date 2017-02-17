@@ -696,9 +696,9 @@ class FlipperTest(unittest.TestCase):
          issue_id=3L)
     self.services.issue.TestAddIssue(issue3)
     ts = 20091111111111
-    self.iid_rank_adder_date = [(1L, 10, 111L, ts), (2L, 20, 111L, ts),
-                                (3L, 30, 111L, ts)]
-    self.hotlist = fake.Hotlist('name', 123, self.iid_rank_adder_date)
+    self.hotlist_item_fields = [(1L, 10, 111L, ts, ''), (2L, 20, 111L, ts, ''),
+                                (3L, 30, 111L, ts, '')]
+    self.hotlist = fake.Hotlist('name', 123, self.hotlist_item_fields)
     self.hotlist_flipper = issuedetail._HotlistFlipper(
         self.services, profiler.Profiler(), self.hotlist)
 
@@ -734,7 +734,7 @@ class FlipperTest(unittest.TestCase):
 
   def testAssignFlipperValues_NoShow(self):
     one_issue_hotlist = fake.Hotlist(
-        'name1', 122, [self.iid_rank_adder_date[0]])
+        'name1', 122, [self.hotlist_item_fields[0]])
     no_show_hotlist_flipper = issuedetail._HotlistFlipper(
         self.services, profiler.Profiler(), one_issue_hotlist)
     no_show_hotlist_flipper.AssignFlipperValues(self.mr, None, 0, None, 1)

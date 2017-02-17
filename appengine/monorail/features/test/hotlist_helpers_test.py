@@ -47,15 +47,17 @@ class HotlistTableDataTest(unittest.TestCase):
     self.services.issue.TestAddIssue(issue3)
     issues = [issue1, issue2, issue3]
     hotlist_items = [
-        (issue.issue_id, rank, 222L, None) for rank, issue in enumerate(issues)]
+        (issue.issue_id, rank, 222L, None, '') for
+        rank, issue in enumerate(issues)]
 
     self.hotlist_items_list = [
         features_pb2.MakeHotlistItem(
-            issue_id, rank=rank, adder_id=adder_id, date_added=date) for (
-                issue_id, rank, adder_id, date) in hotlist_items]
+            issue_id, rank=rank, adder_id=adder_id,
+            date_added=date, note=note) for (
+                issue_id, rank, adder_id, date, note) in hotlist_items]
     self.test_hotlist = self.services.features.TestAddHotlist(
         'hotlist', hotlist_id=123,
-        iid_rank_user_date=hotlist_items)
+        hotlist_item_fields=hotlist_items)
     sorting.InitializeArtValues(self.services)
     self.mr = None
 

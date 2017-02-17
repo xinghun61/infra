@@ -55,12 +55,12 @@ class HotlistIssuesUnitTest(unittest.TestCase):
         001, 3, 'issue_summary3', 'New', 222L, project_name='project-name')
     self.services.issue.TestAddIssue(self.issue3)
     self.issues = [self.issue1, self.issue2, self.issue3]
-    self.iid_rank_user_date = [
-        (issue.issue_id, rank, 111L, 1205079300) for
+    self.hotlist_item_fields = [
+        (issue.issue_id, rank, 111L, 1205079300, '') for
         rank, issue in enumerate(self.issues)]
     self.test_hotlist = self.services.features.TestAddHotlist(
         'hotlist', hotlist_id=123, owner_ids=[222L], editor_ids=[111L],
-        iid_rank_user_date=self.iid_rank_user_date)
+        hotlist_item_fields=self.hotlist_item_fields)
     self.hotlistissues = self.test_hotlist.items
     self.mr = testing_helpers.MakeMonorailRequest(hotlist=self.test_hotlist,
                                                   path='/u/222/hotlists/123',
@@ -79,7 +79,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
   def testAssertBasePermissions(self):
     private_hotlist = self.services.features.TestAddHotlist(
         'privateHotlist', hotlist_id=321, owner_ids=[222L],
-        iid_rank_user_date=self.iid_rank_user_date, is_private=True)
+        hotlist_item_fields=self.hotlist_item_fields, is_private=True)
     # non-members cannot view private hotlists
     mr = testing_helpers.MakeMonorailRequest(
         hotlist=private_hotlist)

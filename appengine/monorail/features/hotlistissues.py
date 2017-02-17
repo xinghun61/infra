@@ -219,7 +219,7 @@ class HotlistIssues(servlet.Servlet):
             mr.cnxn, mr.hotlist_id, selected_iids, [])
       else:
         added_tuples =  [(issue_id, mr.auth.user_id,
-                          int(time.time())) for issue_id in
+                          int(time.time()), '') for issue_id in
                          selected_iids]
         self.services.features.UpdateHotlistItems(
             mr.cnxn, mr.hotlist_id, [], added_tuples)
