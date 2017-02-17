@@ -125,6 +125,7 @@ crash_frontend_web_pages_handler_mappings = [
      triage_fracas_analysis.TriageFracasAnalysis),
     ('/_ah/push-handlers/crash/fracas', crash_handler.CrashHandler),
     ('/_ah/push-handlers/crash/cracas', crash_handler.CrashHandler),
+    ('/_ah/push-handlers/crash/clusterfuzz', crash_handler.CrashHandler),
 ]
 crash_frontend_web_application = webapp2.WSGIApplication(
     crash_frontend_web_pages_handler_mappings, debug=False)
