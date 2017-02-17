@@ -150,7 +150,7 @@
     ],
     "cwd": "[START_DIR]/depot_tools",
     "env": {
-      "GIT_HTTP_LOW_SPEED_LIMIT ": "1000",
+      "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
       "GIT_HTTP_LOW_SPEED_TIME": "300",
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -221,7 +221,7 @@
     ],
     "cwd": "[START_DIR]/build",
     "env": {
-      "GIT_HTTP_LOW_SPEED_LIMIT ": "1000",
+      "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
       "GIT_HTTP_LOW_SPEED_TIME": "300",
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -286,7 +286,7 @@
     ],
     "cwd": "[START_DIR]/recipe_engine",
     "env": {
-      "GIT_HTTP_LOW_SPEED_LIMIT ": "1000",
+      "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
       "GIT_HTTP_LOW_SPEED_TIME": "300",
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
