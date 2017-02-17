@@ -125,6 +125,6 @@ def GenTests(api):
       api.step_data('Get docker version', stdout=api.raw_io.output(''))
   )
   yield (
-      api.test('failed image deletion') +
+      api.test('failed_image_deletion') +
       api.step_data('Clear all local images.Delete image img1', retcode=1)
   )
