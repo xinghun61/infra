@@ -161,6 +161,11 @@ def parse_binary_bucket_config(cfg_bytes):
   return cfg
 
 
+def is_swarming_config(cfg):
+  """Returns True if this is a Swarming bucket config."""
+  return cfg.HasField('swarming')
+
+
 @ndb.non_transactional
 @ndb.tasklet
 def get_buckets_async():
@@ -182,6 +187,18 @@ def get_bucket_async(name):
       bucket.project_id,
       parse_binary_bucket_config(bucket.config_content_binary
   ))
+
+
+@ndb.non_transactional
+def get_bucket(name):
+  """Returns a (project, project_config_pb2.Bucket) tuple."""
+  bucket = Bucket.get_by_id(name)
+  if bucket is None:
+    return (None, None)
+  return (
+      bucket.project_id,
+      parse_binary_bucket_config(bucket.config_content_binary),
+  )
 
 
 def _normalize_acls(acls):

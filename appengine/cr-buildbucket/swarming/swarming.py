@@ -112,7 +112,7 @@ def get_task_template_async(canary, canary_required=True):
 def _is_for_swarming_async(bucket_name):
   """Returns True if swarming is configured for the bucket."""
   _, cfg = yield config.get_bucket_async(bucket_name)
-  raise ndb.Return(bool(cfg and cfg.HasField('swarming')))
+  raise ndb.Return(bool(cfg and config.is_swarming_config(cfg)))
 
 
 @ndb.tasklet

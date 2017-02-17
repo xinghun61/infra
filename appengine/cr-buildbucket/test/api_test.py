@@ -563,6 +563,19 @@ class ApiTests(object):
         'chromium', model.BuildStatus.SCHEDULED, tags=['tag:0'],
         created_by='nodir@google.com')
 
+  ############################# PAUSE ##########################################
+
+  def test_pause(self):
+    self.mock(service, 'pause', mock.Mock())
+    req = {
+      'bucket': 'foo.bar.baz',
+      'is_paused': True,
+    }
+    res = self.call_api('pause', req).json_body
+    service.pause.assert_called_once_with('foo.bar.baz', True)
+    self.assertEqual(res, {})
+
+
   ##############################  GET_BUCKET  ##################################
 
   @mock.patch('config.get_buildbucket_cfg_url', autospec=True)

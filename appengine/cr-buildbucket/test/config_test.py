@@ -69,6 +69,15 @@ acls {
 }
 ''')
 
+MASTER_SWARMING_CONFIG_TEXT = (
+'''name: "luci.swarming"
+acls {
+  role: WRITER
+  identity: "user:root@google.com"
+}
+swarming {
+}
+''')
 
 def parse_cfg(text):
   cfg = project_config_pb2.BuildbucketCfg()
@@ -87,6 +96,31 @@ def errmsg(text):
 
 
 class ConfigTest(testing.AppengineTestCase):
+  def test_get_bucket(self):
+    config.Bucket(
+      id='master.tryserver.chromium.linux',
+      project_id='chromium',
+      revision='deadbeef',
+      config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
+      config_content_binary=text_to_binary(
+          MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
+    ).put()
+    project, cfg = config.get_bucket('master.tryserver.chromium.linux')
+    self.assertEqual(project, 'chromium')
+    self.assertEqual(
+      cfg,
+      project_config_pb2.Bucket(
+        name='master.tryserver.chromium.linux',
+        acls=[
+          project_config_pb2.Acl(
+            role=project_config_pb2.Acl.READER, group='all'),
+          project_config_pb2.Acl(
+            role=project_config_pb2.Acl.SCHEDULER, group='tryjob-access'),
+        ]),
+    )
+
+    self.assertIsNone(config.get_bucket('non.existing')[0])
+
   def test_get_bucket_async(self):
     config.Bucket(
       id='master.tryserver.chromium.linux',
@@ -530,3 +564,10 @@ class ConfigTest(testing.AppengineTestCase):
       url,
       ('https://chromium.googlesource.com/chromium/src/+/'
        'infra/config/testbed-test.cfg'))
+
+  def test_is_swarming_config(self):
+    cfg = project_config_pb2.Bucket()
+    self.assertFalse(config.is_swarming_config(cfg))
+
+    cfg.swarming.hostname = 'exists.now'
+    self.assertTrue(config.is_swarming_config(cfg))

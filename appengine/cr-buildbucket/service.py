@@ -19,6 +19,7 @@ from components import net
 from components import utils
 
 import acl
+import config
 import errors
 import metrics
 import model
@@ -575,13 +576,27 @@ def peek(buckets, max_builds=None, start_cursor=None):
       next_cursor (str): cursor for the next page.
         None if there are no more builds.
   """
+  buckets = sorted(set(buckets))
   _check_search_acls(buckets)
   max_builds = fix_max_builds(max_builds)
+
+  # Prune any buckets that are paused.
+  bucket_states = _get_bucket_states(buckets)
+  active_buckets = []
+  for b in buckets:
+    if bucket_states[b].is_paused:
+      logging.warning('Ignoring paused bucket: %s.', b)
+      continue
+    active_buckets.append(b)
+
+  # Short-circuit: if there are no remaining buckets to query, then we're done.
+  if not active_buckets:
+    return ([], None)
 
   q = model.Build.query(
     model.Build.status == model.BuildStatus.SCHEDULED,
     model.Build.is_leased == False,
-    model.Build.bucket.IN(buckets),
+    model.Build.bucket.IN(active_buckets),
   )
   q = q.order(-model.Build.key)  # oldest first.
 
@@ -590,7 +605,7 @@ def peek(buckets, max_builds=None, start_cursor=None):
   def local_predicate(b):
     return (b.status == model.BuildStatus.SCHEDULED and
             not b.is_leased and
-            b.bucket in buckets)
+            b.bucket in active_buckets)
 
   return _fetch_page(
     q, max_builds, start_cursor, predicate=local_predicate)
@@ -720,6 +735,25 @@ def start(build_id, lease_key, url=None):
   logging.info('Build %s was started. URL: %s', build.key.id(), url)
   metrics.increment(metrics.START_COUNT, build)
   return build
+
+
+def _get_bucket_states(buckets):
+  """Returns the list of bucket states for all named buckets.
+
+  Args:
+    buckets (list): A list of bucket name strings. The bucket names are assumed
+      to have already been validated.
+
+  Returns (dict):
+    A map of bucket name to BucketState for that bucket.
+  """
+  # Get bucket keys and deduplicate.
+  default_states = [model.BucketState(id=b) for b in buckets]
+  states = ndb.get_multi(state.key for state in default_states)
+  for i, state in enumerate(states):
+    if not state:
+      states[i] = default_states[i]
+  return dict(zip(buckets, states))
 
 
 @ndb.tasklet
@@ -1023,6 +1057,27 @@ def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
   if created_by:
     q = q.filter(model.Build.created_by == created_by)
   q.map(del_if_unchanged, keys_only=True)
+
+
+def pause(bucket, is_paused):
+  if not acl.can_pause_buckets(bucket):
+    raise acl.current_identity_cannot('pause bucket of %s', bucket)
+
+  validate_bucket_name(bucket)
+  _, cfg = config.get_bucket(bucket)
+  if not cfg:
+    raise errors.InvalidInputError('Invalid bucket: %s' % (bucket,))
+  if config.is_swarming_config(cfg):
+    raise errors.InvalidInputError('Cannot pause a Swarming bucket')
+
+  @ndb.transactional
+  def try_set_pause():
+    state = (model.BucketState.get_by_id(id=bucket) or
+             model.BucketState(id=bucket))
+    if state.is_paused != is_paused:
+      state.is_paused = is_paused
+      state.put()
+  try_set_pause()
 
 
 def parse_identity(identity):

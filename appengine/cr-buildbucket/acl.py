@@ -42,6 +42,8 @@ class Action(messages.Enum):
   DELETE_SCHEDULED_BUILDS = 9
   # Know about bucket existence and read its info.
   ACCESS_BUCKET = 10
+  # Pause builds for a given bucket.
+  PAUSE_BUCKET = 11
 
 
 _action_dict = Action.to_dict()
@@ -59,6 +61,7 @@ WRITER_ROLE_ACTIONS = SCHEDULER_ROLE_ACTIONS + [
   Action.LEASE_BUILD,
   Action.RESET_BUILD,
   Action.DELETE_SCHEDULED_BUILDS,
+  Action.PAUSE_BUCKET,
 ]
 ACTIONS_FOR_ROLE = {
   project_config_pb2.Acl.READER: set(READER_ROLE_ACTIONS),
@@ -96,6 +99,7 @@ can_reset_build = can_fn_for_build(Action.RESET_BUILD)
 can_read_acl = can_fn(Action.READ_ACL)
 can_write_acl = can_fn(Action.WRITE_ACL)
 can_delete_scheduled_builds = can_fn(Action.DELETE_SCHEDULED_BUILDS)
+can_pause_buckets = can_fn(Action.PAUSE_BUCKET)
 can_access_bucket = can_fn(Action.ACCESS_BUCKET)
 
 

@@ -626,6 +626,25 @@ class BuildBucketApi(remote.Service):
       tags=request.tag[:], created_by=request.created_by)
     return self.DeleteManyBuildsResponse()
 
+  ###########################  PAUSE ###########################################
+
+  class PauseResponse(messages.Message):
+    pass
+
+  @buildbucket_api_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          bucket=messages.StringField(1, required=True),
+          is_paused=messages.BooleanField(2, required=True),
+      ),
+      PauseResponse,
+      path='buckets/{bucket}/pause', http_method='POST')
+  @auth.public
+  def pause(self, request):
+    """Pauses or unpause a bucket."""
+    service.pause(request.bucket, request.is_paused)
+    return self.PauseResponse()
+
   ##############################  GET_BUCKET  ##################################
 
   @buildbucket_api_method(

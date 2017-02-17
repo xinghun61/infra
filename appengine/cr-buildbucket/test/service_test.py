@@ -14,6 +14,7 @@ import mock
 
 from test import future
 import acl
+import config
 import errors
 import model
 import notifications
@@ -34,6 +35,15 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       return future(not match)
 
     self.mock(acl, 'can_async', can_async)
+
+  def mock_bucket_config(self, is_swarming=False):
+    # Mock whether the config has attributes (protobuf HasField).
+    def mock_has_field(attr):
+      assert attr == 'swarming'
+      return is_swarming
+    config_mock = mock.Mock()
+    config_mock.HasField.side_effect = mock_has_field
+    self.mock(config, 'get_bucket', lambda name: ('project', config_mock))
 
   def setUp(self):
     super(BuildBucketServiceTest, self).setUp()
@@ -58,8 +68,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     swarming.is_for_swarming_async.return_value = ndb.Future()
     swarming.is_for_swarming_async.return_value.set_result(False)
 
-  def put_many_builds(self):
-    for _ in xrange(100):
+  def put_many_builds(self, count=100):
+    for _ in xrange(count):
       b = model.Build(bucket=self.test_build.bucket)
       b.put()
 
@@ -1020,6 +1030,68 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       service.delete_many_builds(
         self.test_build.bucket, model.BuildStatus.COMPLETED)
+
+  ###########################  LONGEST_PENDING_TIME ############################
+
+  def test_pause_bucket(self):
+    self.mock_bucket_config(False)
+
+    self.test_build.bucket = 'foo'
+    self.put_many_builds(5)
+
+    self.test_build.bucket = 'bar'
+    self.put_many_builds(5)
+
+    service.pause('foo', True)
+    builds, _ = service.peek(['foo','bar'])
+    self.assertEqual(len(builds), 5)
+    self.assertFalse(any(b.bucket == 'foo' for b in builds))
+
+  def test_pause_all_requested_buckets(self):
+    self.mock_bucket_config(False)
+
+    self.test_build.bucket = 'foo'
+    self.put_many_builds(5)
+
+    service.pause('foo', True)
+    builds, _ = service.peek(['foo'])
+    self.assertEqual(len(builds), 0)
+
+  def test_pause_then_unpause(self):
+    self.mock_bucket_config(False)
+
+    self.test_build.bucket = 'foo'
+    self.test_build.put()
+
+    service.pause('foo', True)
+    service.pause('foo', True)  # Again, to cover equality case.
+    builds, _ = service.peek(['foo'])
+    self.assertEqual(len(builds), 0)
+
+    service.pause('foo', False)
+    builds, _ = service.peek(['foo'])
+    self.assertEqual(len(builds), 1)
+
+  def test_pause_bucket_invalid_bucket_name(self):
+    self.mock_bucket_config(False)
+    with self.assertRaises(errors.InvalidInputError):
+      service.pause('wharbl|gharbl', True)
+
+  def test_pause_bucket_auth_error(self):
+    self.mock_bucket_config(False)
+    self.mock_cannot(acl.Action.PAUSE_BUCKET)
+    with self.assertRaises(auth.AuthorizationError):
+      service.pause('test', True)
+
+  def test_pause_invalid_bucket(self):
+    with self.assertRaises(errors.InvalidInputError):
+      service.pause('test', True)
+
+  def test_pause_swarming_bucket(self):
+    self.mock_bucket_config(True)
+    with self.assertRaises(errors.InvalidInputError):
+      service.pause('test', True)
+
 
   ###########################  LONGEST_PENDING_TIME ############################
 
