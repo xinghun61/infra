@@ -126,7 +126,7 @@ def GetDepsInCrashStack(crash_stack, crash_deps):
     return {}
 
   stack_deps = {}
-  for frame in crash_stack:
+  for frame in crash_stack.frames:
     if frame.dep_path:
       stack_deps[frame.dep_path] = crash_deps[frame.dep_path]
 
@@ -256,8 +256,8 @@ def GetStackInfosForFilesGroupedByDeps(stacktrace, stack_deps):
   """
   dep_to_file_to_stack_infos = defaultdict(lambda: defaultdict(list))
 
-  for callstack in stacktrace:
-    for frame in callstack:
+  for callstack in stacktrace.stacks:
+    for frame in callstack.frames:
       # We only care about those dependencies in crash stack.
       if frame.dep_path not in stack_deps:
         continue

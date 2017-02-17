@@ -72,8 +72,8 @@ class LogLinearChangelistClassifier(object):
     # Look at all the frames from any stack in the crash report, and
     # organize the ones that come from dependencies we care about.
     dep_to_file_to_stack_infos = defaultdict(lambda: defaultdict(list))
-    for stack in report.stacktrace:
-      for frame in stack:
+    for stack in report.stacktrace.stacks:
+      for frame in stack.frames:
         if frame.dep_path in report.dependencies:
           dep_to_file_to_stack_infos[frame.dep_path][frame.file_path].append(
               StackInfo(frame, stack.priority))

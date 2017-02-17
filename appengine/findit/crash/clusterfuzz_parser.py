@@ -78,9 +78,8 @@ class ClusterfuzzParser(StacktraceParser):
       stack_buffer.metadata[flag.name] = flag.value
     return stack_buffer
 
-  def Parse(self, stacktrace_string, deps, job_type,  # pylint: disable=W0221
-            signature=None, top_n_frames=None,
-            crash_address=None):
+  def Parse(self, stacktrace_string, deps, job_type, # pylint: disable=W0221
+            sanitizer, signature=None, top_n_frames=None, crash_address=None):
     """Parse clusterfuzz stacktrace string into Stacktrace instance."""
     filters = [FilterJavaJreSdkFrames(),
                KeepV8FramesIfV8GeneratedJITCrash(),
@@ -88,9 +87,7 @@ class ClusterfuzzParser(StacktraceParser):
                FilterFramesAfterBlinkGeneratedCode(),
                FilterV8FramesIfV8NotInTopFrames(),
                KeepTopNFrames(top_n_frames or DEFAULT_TOP_N_FRAMES)]
-    sanitizer = SanitizerType.GetSanitizerType(job_type, stacktrace_string)
     stacktrace_buffer = StacktraceBuffer(signature=signature, filters=filters)
-
     stack_detector = GetCallStackDetector(job_type, sanitizer)
     if stack_detector is None:
       logging.error('Cannot find CallStackDetector for crash %s (job type: %s)',

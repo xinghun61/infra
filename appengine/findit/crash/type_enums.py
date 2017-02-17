@@ -23,12 +23,12 @@ class LanguageType(object):
 
 
 class SanitizerType(object):
-  ADDRESS_SANITIZER = 1,
-  THREAD_SANITIZER = 2,
-  MEMORY_SANITIZER = 3,
-  SYZYASAN = 4,
-  UBSAN = 5
-  UNSUPPORTED = 6
+  ADDRESS_SANITIZER = 'ASAN'
+  THREAD_SANITIZER = 'TSAN'
+  MEMORY_SANITIZER = 'MSAN'
+  SYZYASAN = 'SYZYASAN'
+  UBSAN = 'UBSAN'
+  UNSUPPORTED = 'UNSUPPORTED'
 
   stacktrace_marker_to_sanitizer = {
       'AddressSanitizer': ADDRESS_SANITIZER,
@@ -47,17 +47,3 @@ class SanitizerType(object):
        ('asan', ADDRESS_SANITIZER),
        ('msan', MEMORY_SANITIZER),
        ('tsan', THREAD_SANITIZER)])
-
-  @staticmethod
-  def GetSanitizerType(job_type, stacktrace_string):
-    for marker, sanitizer_type in (
-        SanitizerType.job_type_marker_to_sanitizer.iteritems()):
-      if marker.lower() in job_type.lower():
-        return sanitizer_type
-
-    for marker, sanitizer_type in (
-        SanitizerType.stacktrace_marker_to_sanitizer.iteritems()):
-      if marker.lower() in stacktrace_string.lower():
-        return sanitizer_type
-
-    return SanitizerType.UNSUPPORTED

@@ -107,6 +107,11 @@ class ChromeCrashDataTest(StacktraceTestSuite):
     self.assertEqual(crash_data.dependencies,
                      {chromium_dep.path: chromium_dep})
 
+  def testReturnEmptyDependenciesIfEmptyStacktrace(self):
+    """Tests that ``dependencies`` returns {} when stacktrace is None."""
+    crash_data = ChromeCrashData(self.GetDummyChromeCrashData(), None)
+    self.assertEqual(crash_data.dependencies, {})
+
   def testDependenciesReturnsCache(self):
     """Tests that ``dependencies`` returns cached ``_dependencies`` value."""
     crash_data = ChromeCrashData(self.GetDummyChromeCrashData(), None)

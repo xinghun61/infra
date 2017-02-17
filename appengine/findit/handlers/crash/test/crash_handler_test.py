@@ -31,31 +31,52 @@ class CrashHandlerTest(PredatorTestCase):
       ('/_ah/push-handlers/crash/fracas', crash_handler.CrashHandler),
   ], debug=True)
 
-  def testDoNotScheduleNewAnalysisIfNeedsNewAnalysisReturnsFalse(self):
+  def testNeedNewAnalysisIfIsARedo(self):
+    self.assertTrue(crash_handler.NeedNewAnalysis(
+        self.GetDummyClusterfuzzData(redo=True)))
+
+  def testDoNotNeedNewAnalysisIfNeedsNewAnalysisReturnsFalse(self):
     mock_findit = self.GetMockFindit()
     self.mock(mock_findit, 'NeedsNewAnalysis', lambda _: False)
     self.mock(crash_pipeline, 'FinditForClientID', lambda *_: mock_findit)
     # Check policy failed due to empty client config.
-    self.assertFalse(crash_handler.ScheduleNewAnalysis(
+    self.assertFalse(crash_handler.NeedNewAnalysis(
         self.GetDummyChromeCrashData()))
 
-  def testScheduleNewAnalysisIfNeedsNewAnalysisReturnsTrue(self):
+  def testNeedNewAnalysisIfNeedsNewAnalysisReturnsTrue(self):
     mock_findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
     self.mock(mock_findit, 'NeedsNewAnalysis', lambda _: True)
     self.mock(crash_pipeline, 'FinditForClientID', lambda *_: mock_findit)
-    self.assertTrue(crash_handler.ScheduleNewAnalysis(
+    self.assertTrue(crash_handler.NeedNewAnalysis(
         self.GetDummyChromeCrashData(client_id=CrashClient.FRACAS)))
 
-  def testHandlePostScheduleNewAnalysis(self):
-    chrome_version = '50.2500.0.0'
-    signature = 'signature/here'
-    channel = 'canary'
-    platform = 'mac'
-    crash_data = self.GetDummyChromeCrashData(
-        client_id=CrashClient.FRACAS,
-        channel=channel, platform=platform,
-        signature=signature, version=chrome_version,
-        process_type='renderer')
+  def testStartNewAnalysis(self):
+    client_id = 'clusterfuzz'
+    crash_identifiers = {'testcase': 1324345}
+    self.MockPipeline(CrashWrapperPipeline, None,
+                      (client_id, crash_identifiers))
+    self.mock(CrashWrapperPipeline, 'start', lambda *args, **kwargs: None)
+    crash_handler.StartNewAnalysis(client_id, crash_identifiers)
+
+  def testHandlePostDoesNotStartNewAnalysis(self):
+    crash_data = self.GetDummyClusterfuzzData(redo=True)
+    self.assertTrue(crash_handler.NeedNewAnalysis(crash_data))
+
+    request_json_data = {
+        'message': {
+            'data': base64.b64encode(json.dumps(crash_data)),
+            'message_id': 'id',
+        },
+        'subscription': 'subscription',
+    }
+
+    self.mock(crash_handler, 'NeedNewAnalysis', lambda *_: False)
+    self.test_app.post_json('/_ah/push-handlers/crash/fracas',
+                            request_json_data)
+
+  def testHandlePostStartNewAnalysis(self):
+    crash_data = self.GetDummyClusterfuzzData(redo=True)
+    self.assertTrue(crash_handler.NeedNewAnalysis(crash_data))
 
     request_json_data = {
         'message': {
@@ -66,9 +87,8 @@ class CrashHandlerTest(PredatorTestCase):
     }
 
     self.MockPipeline(
-        CrashWrapperPipeline, True,
+        CrashWrapperPipeline, None,
         (crash_data['client_id'], crash_data['crash_identifiers']))
-    self.mock(CrashAnalysis, 'Initialize', lambda *_: None)
 
     self.test_app.post_json('/_ah/push-handlers/crash/fracas',
                             request_json_data)

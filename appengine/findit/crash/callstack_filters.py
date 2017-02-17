@@ -179,7 +179,7 @@ class FilterV8FramesForV8APIBindingCode(CallStackFilter):
 class FilterFramesAfterBlinkGeneratedCode(CallStackFilter):
   """Filters all the frames after blink generated code."""
   def __call__(self, stack_buffer):
-    for index, frame in enumerate(stack_buffer):
+    for index, frame in enumerate(stack_buffer.frames):
       if BLINK_BINDINGS_GENERATED_PATH_REGEX.match(frame.file_path):
         stack_buffer.frames = stack_buffer.frames[:index]
         break
@@ -194,7 +194,7 @@ class FilterV8FramesIfV8NotInTopFrames(CallStackFilter):
 
   def __call__(self, stack_buffer):
     need_filter_v8 = False
-    for index, frame in enumerate(stack_buffer):
+    for index, frame in enumerate(stack_buffer.frames):
       if index >= self.top_n_frames:
         need_filter_v8 = True
         break

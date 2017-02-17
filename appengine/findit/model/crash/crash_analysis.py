@@ -23,7 +23,13 @@ class CrashAnalysis(ndb.Model):
   crashed_version = ndb.StringProperty(indexed=False)
 
   # The parsed ``Stacktrace`` object.
-  stack_trace = ndb.PickleProperty(indexed=False)
+  stacktrace = ndb.PickleProperty(indexed=False)
+
+  # TODO(katesonia): We keep this property because there are many legacy data
+  # which only have ``stack_trace`` string, not the parsed ``stacktrace``.
+  # Remove this property after we convert those legacy data.
+  # The stacktrace string.
+  stack_trace = ndb.StringProperty(indexed=False)
 
   # The signature of the crash.
   signature = ndb.StringProperty(indexed=False)
@@ -176,7 +182,7 @@ class CrashAnalysis(ndb.Model):
     self.crashed_version = crash_data.crashed_version
 
     # Set (other) common properties.
-    self.stack_trace = crash_data.stacktrace
+    self.stacktrace = crash_data.stacktrace
     self.signature = crash_data.signature
     self.platform = crash_data.platform
     self.regression_range = crash_data.regression_range
@@ -190,5 +196,5 @@ class CrashAnalysis(ndb.Model):
   def ToCrashReport(self):
     """Converts this model to ``CrashReport`` to give to Predator library."""
     return CrashReport(self.crashed_version, self.signature, self.platform,
-                       self.stack_trace, self.regression_range,
+                       self.stacktrace, self.regression_range,
                        self.dependencies, self.dependency_rolls)

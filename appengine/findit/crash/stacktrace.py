@@ -229,10 +229,6 @@ class CallStack(namedtuple('CallStack',
 
   __bool__ = __nonzero__
 
-  def __iter__(self):
-    """Iterator over the frames in this stack."""
-    return iter(self.frames)
-
 
 class CallStackBuffer(object):
   """A Mutable type to simplify constructing ``CallStack`` objects.
@@ -261,10 +257,6 @@ class CallStackBuffer(object):
     return bool(self.frames)
 
   __bool__ = __nonzero__
-
-  def __iter__(self):
-    """Iterator over the frames in this stack."""
-    return iter(self.frames)
 
   def ToCallStack(self):
     """Converts ``CallStackBuffer`` object to ``CallStack`` object.
@@ -315,10 +307,6 @@ class Stacktrace(namedtuple('Stacktrace', ['stacks', 'crash_stack'])):
     return bool(self.stacks)
 
   __bool__ = __nonzero__
-
-  def __iter__(self):
-    """Iterator over the stacks in this trace."""
-    return iter(self.stacks)
 
 
 class StacktraceBuffer(object):
@@ -379,7 +367,7 @@ class StacktraceBuffer(object):
     crash_stack_index = None
     if self.signature_parts:
       def _IsSignatureCallstack(callstack):
-        for index, frame in enumerate(callstack):
+        for index, frame in enumerate(callstack.frames):
           for signature_part in self.signature_parts:
             if signature_part in frame.function:
               return True, index

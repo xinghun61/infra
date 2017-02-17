@@ -122,7 +122,7 @@ class PredatorTestCase(TestCase):  # pragma: no cover
       def _ClientID(cls):
         return client_id
 
-      def ProcessResultForPublishing(self, result, key):
+      def ProcessResultForPublishing(self, result, key): # pylint: disable=W0613
         return result
 
       def GetCrashData(self, crash_data):
@@ -153,6 +153,44 @@ class PredatorTestCase(TestCase):  # pragma: no cover
         return CrashAnalysis.Create(crash_identifiers)
 
     return MockFindit()
+
+  def GetDummyClusterfuzzData(
+      self, client_id='mock_client', version='1', signature='signature',
+      platform='win', stack_trace=None, regression_range=None,
+      testcase='213412343', crashed_type='check', crashed_address='0x0023',
+      job_type='android_asan', sanitizer='ASAN', dependencies=None,
+      dependency_rolls=None, redo=False):
+    crash_identifiers = {'testcase': testcase}
+    customized_data = {
+        'crashed_type': crashed_type,
+        'crashed_address': crashed_address,
+        'job_type': job_type,
+        'sanitizer': sanitizer,
+        'regression_range': regression_range,
+        'dependencies': dependencies or [{'dep_path': 'src/',
+                                          'repo_url': 'https://repo',
+                                          'revision': 'rev'}],
+        'dependency_rolls': dependency_rolls or [{'dep_path': 'src/',
+                                                  'repo_url': 'https://repo',
+                                                  'old_revision': 'rev1',
+                                                  'new_revision': 'rev5'}]
+    }
+
+    crash_data = {
+        'chrome_version': version,
+        'signature': signature,
+        'platform': platform,
+        'stack_trace': stack_trace,
+        'regression_range': regression_range,
+        'crash_identifiers': crash_identifiers,
+        'customized_data': customized_data
+    }
+    if redo:
+      crash_data['redo'] = True
+    # This insertion of client_id is used for debugging ScheduleNewAnalysis.
+    if client_id is not None: # pragma: no cover
+      crash_data['client_id'] = client_id
+    return crash_data
 
   def GetDummyChromeCrashData(
       self, client_id='mock_client', version='1', signature='signature',

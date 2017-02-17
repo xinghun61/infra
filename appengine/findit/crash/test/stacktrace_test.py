@@ -21,15 +21,6 @@ class CallStackTest(StacktraceTestSuite):
     frame = StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [])
     self.assertTrue(CallStack(0, [frame], None, None))
 
-  def testCallStackIter(self):
-    frame_list = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
-        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
-
-    stack = CallStack(0, frame_list, None, None)
-    for frame, expected_frame in zip(stack, frame_list):
-        self._VerifyTwoStackFramesEqual(frame, expected_frame)
-
   def testStackFrameToString(self):
     self.assertEqual(
         StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', []).ToString(),
@@ -139,7 +130,7 @@ class CallStackBufferTest(StacktraceTestSuite):
 
   def testCallStackBufferIter(self):
     """Tests ``iter`` for ``CallStackBuffer`` works as expected."""
-    for index, frame in enumerate(self.stack_buffer):
+    for index, frame in enumerate(self.stack_buffer.frames):
       self.assertEqual(index, frame.index)
 
   def testToCallStackForNonEmptyCallStackBuffer(self):
@@ -201,19 +192,6 @@ class StacktraceTest(StacktraceTestSuite):
     stack2 = CallStack(1, frame_list2, None, None)
 
     self.assertTrue(bool(Stacktrace((stack1, stack2), stack1)))
-
-  def testStacktraceIter(self):
-    """Tests ``iter`` for ``Stacktrace`` object."""
-    frame_list1 = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
-    frame_list2 = [
-        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
-
-    stack1 = CallStack(0, frame_list1, None, None)
-    stack2 = CallStack(1, frame_list2, None, None)
-    stacktrace = Stacktrace((stack1, stack2), stack1)
-    for stack in stacktrace:
-      self.assertEqual(len(stack), 1)
 
 
 class StacktraceBufferTest(StacktraceTestSuite):

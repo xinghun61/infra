@@ -262,4 +262,9 @@ class Findit(object):
   # just for FinditForFracas.
   def FindCulprit(self, crash_report): # pragma: no cover
     """Given a ``CrashReport``, returns a ``Culprit``."""
+    if crash_report.stacktrace is None:
+      logging.info('Failed to parse stacktrace. '
+                   'Cannot get culprit for this crash.')
+      return None
+
     return self._Predator().FindCulprit(crash_report)

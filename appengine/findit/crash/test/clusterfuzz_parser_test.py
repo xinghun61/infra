@@ -43,13 +43,14 @@ class ClusterfuzzParserTest(StacktraceTestSuite):
     parser = ClusterfuzzParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
 
-    self.assertIsNone(parser.Parse('', deps, 'asan_job'))
+    self.assertIsNone(parser.Parse('', deps, 'asan_job',
+                                   SanitizerType.ADDRESS_SANITIZER))
 
   def testReturnNoneForDummyJobType(self):
     parser = ClusterfuzzParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
 
-    self.assertIsNone(parser.Parse('Crash stack:', deps, 'dummy_job'))
+    self.assertIsNone(parser.Parse('Crash stack:', deps, 'dummy_job', None))
 
   def testChromeCrashParserParseLineMalformatedCallstack(self):
     parser = ClusterfuzzParser()
@@ -63,7 +64,8 @@ class ClusterfuzzParserTest(StacktraceTestSuite):
         #2 dummy
         """
     )
-    self.assertIsNone(parser.Parse(stacktrace_string, deps, 'asan_job'))
+    self.assertIsNone(parser.Parse(stacktrace_string, deps, 'asan_job',
+                                   SanitizerType.ADDRESS_SANITIZER))
 
   def testClusterfuzzParserParseStacktrace(self):
     parser = ClusterfuzzParser()
@@ -78,7 +80,8 @@ class ClusterfuzzParserTest(StacktraceTestSuite):
         """
     )
 
-    stacktrace = parser.Parse(stacktrace_string, deps, 'asan_job')
+    stacktrace = parser.Parse(stacktrace_string, deps, 'asan_job',
+                              SanitizerType.ADDRESS_SANITIZER)
     stack = CallStack(0, frame_list=[
         StackFrame(0, 'src/', 'a::aa(p* d)', 'a.h', 'src/a.h', [225]),
         StackFrame(1, 'src/', 'b::bb(p* d)', 'b.h', 'src/b.h', [266, 267]),

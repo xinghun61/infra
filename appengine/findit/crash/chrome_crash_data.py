@@ -97,7 +97,7 @@ class ChromeCrashData(CrashData):
 
     # Delay the stacktrace parsing to the first time when stacktrace property
     # gets called.
-    self._stacktrace_str = crash_data['stack_trace']
+    self._stacktrace_str = crash_data['stack_trace'] or ''
     self._top_n_frames = top_n_frames
     self._stacktrace = None
 
@@ -139,7 +139,7 @@ class ChromeCrashData(CrashData):
 
     self._stacktrace = ChromeCrashParser().Parse(
         self._stacktrace_str, self._CrashedVersionDeps(),
-        signature=self.signature, top_n_frame=self._top_n_frames)
+        signature=self.signature, top_n_frames=self._top_n_frames)
     if not self._stacktrace:
       logging.warning('Failed to parse the stacktrace %s',
                       self._stacktrace_str)
@@ -166,9 +166,13 @@ class ChromeCrashData(CrashData):
     if self._dependencies:
       return self._dependencies
 
+    if not self.stacktrace:
+      logging.warning('Cannot get depenencies without stacktrace.')
+      return {}
+
     self._dependencies = {
         frame.dep_path: self._CrashedVersionDeps()[frame.dep_path]
-        for frame in self.stacktrace.crash_stack
+        for frame in self.stacktrace.crash_stack.frames
         if frame.dep_path and frame.dep_path in self._CrashedVersionDeps()
     }
     return self._dependencies
@@ -180,10 +184,10 @@ class ChromeCrashData(CrashData):
       return self._dependency_rolls
 
     # Short-circuit when we know the deprolls must be empty.
-    if not self.regression_range:
+    if not self.regression_range or not self.stacktrace:
       logging.warning('Cannot get deps and dep rolls for report without '
-                      'regression range')
-      return self._dependency_rolls
+                      'regression range or stacktrace.')
+      return {}
 
     # Get ``DependencyRoll` objects for all dependencies in the regression
     # range (for the particular platform that crashed).
