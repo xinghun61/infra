@@ -10,6 +10,12 @@ import (
 	"time"
 )
 
+func BenchmarkParseTaskLine(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		parseTaskLine("I0911 17:44:06.493176  5786 compile_task.cc:923] Task:0 Start ../../third_party/webrtc/system_wrappers/source/condition_variable_posix.cc gomacc_pid=5838")
+	}
+}
+
 func TestParse(t *testing.T) {
 	logcontent := `Log file created at: 2014/09/11 17:43:51
 Running on machine: chromeperf58

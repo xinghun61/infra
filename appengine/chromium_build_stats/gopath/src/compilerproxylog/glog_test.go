@@ -19,6 +19,18 @@ func timeAt(ts string) time.Time {
 	return t
 }
 
+func BenchmarkParseLogLine(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		ParseLogline([]byte("I0911 03:41:26.740641 27529 compiler_proxy.cc:1498] goma built revision bb0fd40be997d444c8e82b54ddd0361148ba1379@1408698434"))
+	}
+}
+
+func BenchmarkLogTimestamp(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		logTimestamp([]byte("0911 03:41:26.740641"))
+	}
+}
+
 func TestGlogParser(t *testing.T) {
 	logcontent := `Log file created at: 2014/09/11 03:41:26
 Running on machine: usho.tok.corp.google.com
