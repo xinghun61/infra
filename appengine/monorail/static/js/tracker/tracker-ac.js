@@ -219,8 +219,7 @@ function TKR_setUpStatusStore(openStatusDefs, closedStatusDefs) {
    docdict[status.name] = status.doc;
   }
 
-  TKR_statusStore = new _AC_SimpleStore(TKR_statusWords);
-  TKR_statusStore.docstrings = docdict;
+  TKR_statusStore = new _AC_SimpleStore(TKR_statusWords, docdict);
 
   TKR_statusStore.commaCompletes = false;
 
@@ -449,13 +448,11 @@ function TKR_setUpSearchStore(
   TKR_addACDateItems(
       searchWords, docDict, 'componentmodified', 'Component field modified');
 
-  TKR_projectQueryStore = new _AC_SimpleStore(searchWords);
-  TKR_projectQueryStore.docstrings = docDict;
+  TKR_projectQueryStore = new _AC_SimpleStore(searchWords, docDict);
 
   searchWords = searchWords.concat(searchWordsNeg);
 
-  TKR_searchStore = new _AC_SimpleStore(searchWords);
-  TKR_searchStore.docstrings = docDict;
+  TKR_searchStore = new _AC_SimpleStore(searchWords, docDict);
 
   // When we insert an autocomplete value, replace an entire search term.
   // Add just a space after it (not a comma) if it is a complete search term,
@@ -521,8 +518,7 @@ function TKR_setUpQuickEditStore(
   TKR_addACItemList(qeWords, docDict, 'status=', closedDefs);
   TKR_addACItem(qeWords, docDict, 'summary=""', 'Set the summary field');
 
-  TKR_quickEditStore = new _AC_SimpleStore(qeWords);
-  TKR_quickEditStore.docstrings = docDict;
+  TKR_quickEditStore = new _AC_SimpleStore(qeWords, docDict);
 
   // When we insert an autocomplete value, replace an entire command part.
   // Add just a space after it (not a comma) if it is a complete part,
@@ -560,8 +556,7 @@ function TKR_setUpCustomPermissionsStore(customPermissions) {
     docdict[customPermissions[i]] = '';
   }
 
-  TKR_customPermissionsStore = new _AC_SimpleStore(permWords);
-  TKR_customPermissionsStore.docstrings = docdict;
+  TKR_customPermissionsStore = new _AC_SimpleStore(permWords, docdict);
 
   TKR_customPermissionsStore.commaCompletes = false;
 
@@ -594,8 +589,7 @@ function TKR_setUpMemberStore(memberDefs, indMemerDefs) {
     }
   }
 
-  TKR_memberListStore = new _AC_SimpleStore(memberWords);
-  TKR_memberListStore.docstrings = docdict;
+  TKR_memberListStore = new _AC_SimpleStore(memberWords, docdict);
 
   TKR_memberListStore.completions = function(prefix, tofilter) {
     var fullList = TKR_fullComplete(prefix, memberDefs);
@@ -610,8 +604,7 @@ function TKR_setUpMemberStore(memberDefs, indMemerDefs) {
 
   TKR_memberListStore.substitute = TKR_acSubstituteWithComma;
 
-  TKR_ownerStore = new _AC_SimpleStore(indMemberWords);
-  TKR_ownerStore.docstrings = docdict;
+  TKR_ownerStore = new _AC_SimpleStore(indMemberWords, docdict);
 
   TKR_ownerStore.commaCompletes = false;
 
@@ -670,8 +663,7 @@ function makeOneUserAutocompleteStore(fieldDef, memberDefs) {
    docdict[member.name] = member.doc;
   }
 
-  var userStore = new _AC_SimpleStore(memberWords);
-  userStore.docstrings = docdict;
+  var userStore = new _AC_SimpleStore(memberWords, docdict);
   userStore.commaCompletes = false;
 
   userStore.substitute =
@@ -708,8 +700,7 @@ function TKR_setUpComponentStore(componentDefs) {
    docdict[component.name] = component.doc;
   }
 
-  TKR_componentListStore = new _AC_SimpleStore(componentWords);
-  TKR_componentListStore.docstrings = docdict;
+  TKR_componentListStore = new _AC_SimpleStore(componentWords, docdict);
   TKR_componentListStore.commaCompletes = false;
 
   TKR_componentListStore.completions = function(prefix, tofilter) {
@@ -753,8 +744,7 @@ function TKR_setUpLabelStore(labelDefs) {
    docdict[label.name] = label.doc;
   }
 
-  TKR_labelStore = new _AC_SimpleStore(TKR_labelWords);
-  TKR_labelStore.docstrings = docdict;
+  TKR_labelStore = new _AC_SimpleStore(TKR_labelWords, docdict);
 
   TKR_labelStore.commaCompletes = false;
   TKR_labelStore.substitute =
@@ -1019,9 +1009,6 @@ function TKR_getMemberProjects(event) {
  *                  multiple values.
  */
 function TKR_setUpProjectStore(projects, multiValue) {
-  TKR_projectStore = new _AC_SimpleStore(projects);
-  TKR_projectStore.commaCompletes = !multiValue;
-
   var projectsDefs = []
   var docdict = {}
   for (var i = 0; i < projects.length; ++i) {
@@ -1029,7 +1016,9 @@ function TKR_setUpProjectStore(projects, multiValue) {
     docdict[projects[i]] = '';
   }
 
-  TKR_projectStore.docstrings = docdict;
+  TKR_projectStore = new _AC_SimpleStore(projects, docdict);
+  TKR_projectStore.commaCompletes = !multiValue;
+
   if (multiValue) {
     TKR_projectStore.substitute = TKR_acSubstituteWithComma;
   } else {
