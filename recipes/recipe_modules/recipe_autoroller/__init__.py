@@ -15,3 +15,7 @@ DEPS = [
   'recipe_engine/tempfile',
   'recipe_engine/time',
 ]
+
+
+# TODO(phajdan.jr): provide coverage (http://crbug.com/693058).
+DISABLE_STRICT_COVERAGE = True
