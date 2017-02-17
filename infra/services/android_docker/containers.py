@@ -113,7 +113,7 @@ class DockerClient(object):
     try:
       return Container(self._client.containers.get(container_name))
     except docker.errors.NotFound:
-      logging.exception('No running container for device %s.', device)
+      logging.error('No running container for device %s.', device)
       return None
 
   def stop_old_containers(self, running_containers, max_uptime):
