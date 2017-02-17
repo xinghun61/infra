@@ -61,6 +61,7 @@ SORTABLE_FIELDS = {
     'blocked': lambda issue: bool(issue.blocked_on_iids),
     'blockedon': lambda issue: issue.blocked_on_iids or sorting.MAX_STRING,
     'blocking': lambda issue: issue.blocking_iids or sorting.MAX_STRING,
+    'mergedinto': lambda issue: issue.merged_into or sorting.MAX_STRING,
     'ownermodified': lambda issue: issue.owner_modified_timestamp,
     'statusmodified': lambda issue: issue.status_modified_timestamp,
     'componentmodified': lambda issue: issue.component_modified_timestamp,
