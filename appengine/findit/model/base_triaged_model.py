@@ -14,7 +14,7 @@ class TriageResult(ndb.Model):
   user_name = ndb.StringProperty(default=None, indexed=False)
 
   # The time this triage result was determined.
-  triaged_time = ndb.DateTimeProperty(indexed=False, auto_now=True)
+  triaged_time = ndb.DateTimeProperty(indexed=False, auto_now_add=True)
 
   # The result of the analysis as correct or not. If the analysis is not yet
   # completed, then the value should be None. Other traige result codes are up
