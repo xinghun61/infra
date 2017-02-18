@@ -32,7 +32,6 @@ def RunSteps(api, mastername, buildername, buildnumber):
     'git_revision' : bot_update_step.presentation.properties['got_revision'],
   }
 
-  api.cipd.install_client()
   api.cipd.create(
       api.path['checkout'].join('infra', 'cipd', 'recipes-py.yaml'),
       refs=['latest'],

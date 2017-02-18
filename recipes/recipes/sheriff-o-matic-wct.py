@@ -20,7 +20,6 @@ def RunSteps(api):
   api.gclient.runhooks()
 
   # Install bower_components bundle.
-  api.cipd.install_client('install cipd')
   bower_package_name = ('infra/testing/sheriff-o-matic/bower_components/%s' %
       api.cipd.platform_suffix())
   packages = {

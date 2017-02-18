@@ -62,8 +62,6 @@ def RunSteps(api, revision):
               api.path['checkout'].join('man', 'html'), DOC_UPLOAD_URL],
              name='upload docs')
 
-  api.cipd.install_client()
-
   # upload git cipd package
 
 
@@ -72,7 +70,7 @@ def RunSteps(api, revision):
   def create(pkg_dir, step_title, platform, refs=()):
     """Pushes given package directory up to CIPD with provided refs."""
     cmd = [
-      api.cipd.get_executable(),
+      api.cipd.executable,
       'create',
       '-in', pkg_dir,
       '-name', 'infra/depot_tools/git_installer/%s' % platform,

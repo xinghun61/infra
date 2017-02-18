@@ -127,7 +127,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     """
     project_data = self.m.luci_config.get_projects()
 
-    self.m.cipd.install_client()
     with self.m.tempfile.temp_dir('recipes') as recipes_dir:
       self.m.cipd.ensure(recipes_dir, {
           'infra/recipes-py': 'latest',

@@ -40,7 +40,6 @@ EXTRA_CONDA_PACKAGES = [
 
 
 def RunSteps(api):
-  api.cipd.install_client()
   cipd_pkg_name = 'infra/conda_python/scientific/' + api.cipd.platform_suffix()
   cipd_pkg_file = api.path['start_dir'].join('conda_python.cipd')
 
