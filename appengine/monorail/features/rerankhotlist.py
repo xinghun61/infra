@@ -73,7 +73,8 @@ class RerankHotlistIssue(jsonfeed.JsonFeed):
           'localID': table_row.local_id,
           'issueID': table_row.issue_id,
           'isStarred': table_row.starred,
-          'issueURL': table_row.issue_url,
+          'issueCleanURL': table_row.issue_clean_url,
+          'issueContextURL': table_row.issue_ctx_url,
       } for table_row in table_data]
 
       for row, json_row in zip(
