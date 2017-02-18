@@ -2,16 +2,6 @@
 // source: infra/tools/kitchen/proto/package.proto
 // DO NOT EDIT!
 
-/*
-Package recipe_engine is a generated protocol buffer package.
-
-It is generated from these files:
-	infra/tools/kitchen/proto/package.proto
-
-It has these top-level messages:
-	DepSpec
-	Package
-*/
 package recipe_engine
 
 import proto "github.com/golang/protobuf/proto"
@@ -22,12 +12,6 @@ import math "math"
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
-
-// This is a compile-time assertion to ensure that this generated file
-// is compatible with the proto package it is being compiled against.
-// A compilation error at this line likely means your copy of the
-// proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type DepSpec struct {
 	ProjectId *string `protobuf:"bytes,1,opt,name=project_id,json=projectId" json:"project_id,omitempty"`
@@ -42,7 +26,7 @@ type DepSpec struct {
 func (m *DepSpec) Reset()                    { *m = DepSpec{} }
 func (m *DepSpec) String() string            { return proto.CompactTextString(m) }
 func (*DepSpec) ProtoMessage()               {}
-func (*DepSpec) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (*DepSpec) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
 
 func (m *DepSpec) GetProjectId() string {
 	if m != nil && m.ProjectId != nil {
@@ -90,7 +74,7 @@ type Package struct {
 func (m *Package) Reset()                    { *m = Package{} }
 func (m *Package) String() string            { return proto.CompactTextString(m) }
 func (*Package) ProtoMessage()               {}
-func (*Package) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+func (*Package) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
 
 func (m *Package) GetApiVersion() int32 {
 	if m != nil && m.ApiVersion != nil {
@@ -125,9 +109,9 @@ func init() {
 	proto.RegisterType((*Package)(nil), "recipe_engine.Package")
 }
 
-func init() { proto.RegisterFile("infra/tools/kitchen/proto/package.proto", fileDescriptor0) }
+func init() { proto.RegisterFile("infra/tools/kitchen/proto/package.proto", fileDescriptor1) }
 
-var fileDescriptor0 = []byte{
+var fileDescriptor1 = []byte{
 	// 256 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0x5c, 0x90, 0x41, 0x4b, 0xc3, 0x30,
 	0x14, 0xc7, 0xe9, 0xda, 0x39, 0xf7, 0xba, 0x81, 0xe4, 0x30, 0x82, 0x20, 0xce, 0x79, 0x70, 0x78,

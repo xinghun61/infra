@@ -10,9 +10,11 @@ import (
 	"io"
 	"net/url"
 	"os"
-	"os/exec"
 	"sync"
 	"time"
+
+	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 
 	"infra/libs/infraenv"
 
@@ -33,9 +35,6 @@ import (
 	"github.com/luci/luci-go/logdog/client/butlerlib/streamproto"
 	"github.com/luci/luci-go/logdog/common/types"
 	"github.com/luci/luci-go/luci_config/common/cfgtypes"
-
-	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
 )
 
 const (
@@ -43,7 +42,12 @@ const (
 	defaultRPCTimeout = 30 * time.Second
 )
 
-type runCmdFunc func(ctx context.Context, env environ.Env) (*exec.Cmd, error)
+// disableGRPCLogging routes gRPC log messages that are emitted through our
+// logger. We only log gRPC prints if our logger is configured to log
+// debug-level or lower, which it isn't by default.
+func disableGRPCLogging(ctx context.Context) {
+	grpcLogging.Install(log.Get(ctx), log.IsLogging(ctx, log.Debug))
+}
 
 type cookLogDogParams struct {
 	host             string
@@ -167,11 +171,14 @@ func (p *cookLogDogParams) getPrefix(env environ.Env) (types.StreamName, error) 
 //	  - Optionally, hook its output streams up through an Annotee processor.
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
-func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env environ.Env) (rc int, err error) {
+func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, tdir string, env environ.Env) (rc int, err error) {
 	// Install a global gRPC logger adapter. This routes gRPC log messages that
 	// are emitted through our logger. We only log gRPC prints if our logger is
 	// configured to log debug-level or lower.
-	grpcLogging.Install(log.Get(ctx), log.IsLogging(ctx, log.Debug))
+	disableGRPCLogging(ctx)
+
+	// We need to dump initial properties so our annotation stream includes them.
+	rr.opArgs.AnnotationFlags.EmitInitialProperties = true
 
 	// If env is empty (production code), use the system enviornment.
 	if env.Len() == 0 {
@@ -203,38 +210,38 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env en
 	procCtx, procCancelFunc := context.WithCancel(ctx)
 	defer procCancelFunc()
 
-	proc, err := fn(procCtx, env)
+	proc, err := rr.command(procCtx, tdir, env)
 	if err != nil {
 		return 0, errors.Annotate(err).Reason("failed to build recipe comamnd").Err()
 	}
 
-	// Set up authentication.
-	authOpts := infraenv.DefaultAuthOptions()
-	authOpts.Scopes = out.Scopes()
-	switch {
-	case c.logdog.serviceAccountJSONPath != "":
-		authOpts.ServiceAccountJSONPath = c.logdog.serviceAccountJSONPath
-		authOpts.Method = auth.ServiceAccountMethod
-
-	case infraenv.OnGCE():
-		authOpts.Method = auth.GCEMetadataMethod
-		break
-
-	default:
-		// No service account specified, so load the LogDog credentials from the
-		// local bot deployment.
-		credPath, err := infraenv.GetLogDogServiceAccountJSON()
-		if err != nil {
-			return 0, errors.Annotate(err).Reason("failed to get LogDog service account JSON path").Err()
-		}
-		authOpts.ServiceAccountJSONPath = credPath
-		authOpts.Method = auth.ServiceAccountMethod
-	}
-	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
-
 	// Register and instantiate our LogDog Output.
 	var o output.Output
 	if c.logdog.filePath == "" {
+		// Set up authentication.
+		authOpts := infraenv.DefaultAuthOptions()
+		authOpts.Scopes = out.Scopes()
+		switch {
+		case c.logdog.serviceAccountJSONPath != "":
+			authOpts.ServiceAccountJSONPath = c.logdog.serviceAccountJSONPath
+			authOpts.Method = auth.ServiceAccountMethod
+
+		case infraenv.OnGCE():
+			authOpts.Method = auth.GCEMetadataMethod
+			break
+
+		default:
+			// No service account specified, so load the LogDog credentials from the
+			// local bot deployment.
+			credPath, err := infraenv.GetLogDogServiceAccountJSON()
+			if err != nil {
+				return 0, errors.Annotate(err).Reason("failed to get LogDog service account JSON path").Err()
+			}
+			authOpts.ServiceAccountJSONPath = credPath
+			authOpts.Method = auth.ServiceAccountMethod
+		}
+		authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
+
 		ocfg := out.Config{
 			Auth:    authenticator,
 			Host:    c.logdog.host,
@@ -359,7 +366,12 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, fn runCmdFunc, env en
 		})
 		defer func() {
 			as := annoteeProcessor.Finish()
-			log.Infof(ctx, "Annotations finished:\n%s", proto.MarshalTextString(as.RootStep().Proto()))
+
+			// Dump the annotations on completion, unless we're already dumping them
+			// to a file (debug), in which case this is redundant.
+			if c.logdog.filePath == "" {
+				log.Infof(ctx, "Annotations finished:\n%s", proto.MarshalTextString(as.RootStep().Proto()))
+			}
 		}()
 
 		// Run STDOUT/STDERR streams through the processor. This will block until
