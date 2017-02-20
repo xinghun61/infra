@@ -99,7 +99,7 @@
         end = this._parseCommitPosition(
             range.positions[range.positions.length - 1]);
       }
-      return 'http://test-results.appspot.com/revision_range?start=' +
+      return 'https://test-results.appspot.com/revision_range?start=' +
           `${start}&end=${end}`;
     },
 
