@@ -231,7 +231,7 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 		"path_config",
 	}
 	for _, p := range rejectProperties {
-		if props[p] != "" {
+		if _, ok := props[p]; ok {
 			return nil, errors.Reason("%(p)s property must not be set").D("p", p).Err()
 		}
 	}
