@@ -202,7 +202,7 @@ func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 		native := filepath.FromSlash(p.path)
 		abs, err := filepath.Abs(native)
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("could not make dir %(dir) absolute").D("dir", native).Err()
+			return nil, errors.Annotate(err).Reason("could not make dir %(dir)s absolute").D("dir", native).Err()
 		}
 		props[p.name] = abs
 	}
@@ -232,7 +232,7 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	}
 	for _, p := range rejectProperties {
 		if props[p] != "" {
-			return nil, errors.Reason("%(p) property must not be set").D("p", p).Err()
+			return nil, errors.Reason("%(p)s property must not be set").D("p", p).Err()
 		}
 	}
 
