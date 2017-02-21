@@ -25,11 +25,9 @@
   </span>
   [end]
 
-  [if-any show_hotlist_feature]
   <span class="inst6">
     <a href="[viewed_user.profile_url]hotlists">Hotlists</a>
   </span>
-  [end]
 
 </div>
 

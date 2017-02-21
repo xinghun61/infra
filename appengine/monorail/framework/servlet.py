@@ -603,12 +603,6 @@ class Servlet(webapp2.RequestHandler):
     logout_url = _SafeCreateLogoutURL(mr)
     logout_url_goto_home = users.create_logout_url('/')
 
-    # for hotlist dogfooding
-    show_hotlist = False
-    if mr.auth.user_view and (
-        mr.auth.user_view.email in settings.hotlist_whitelist):
-      show_hotlist = True
-
     base_data = {
         # EZT does not have constants for True and False, so we pass them in.
         'True': ezt.boolean(True),
@@ -713,8 +707,6 @@ class Servlet(webapp2.RequestHandler):
         'app_version': app_version,
         'viewing_user_page': ezt.boolean(False),
 
-        # for hotlist dogfooding
-        'show_hotlist_feature': ezt.boolean(show_hotlist)
         }
 
     if mr.project:

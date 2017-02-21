@@ -24,7 +24,7 @@
        <option value="flagspam">Flag as spam...</option>
        <option value="unflagspam">Un-flag as spam...</option>
      [end]
-     [if-any show_hotlist_feature]<option value="addtohotlist">Add to hotlist...</option>[end]
+     <option value="addtohotlist">Add to hotlist...</option>
     </select>
     <span id='bulk-action-loading' class='loading' style='visibility:hidden'>Processing</span>
    [end]

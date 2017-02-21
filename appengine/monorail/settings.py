@@ -325,14 +325,3 @@ api_ratelimiting_cost_thresh_ms = 5000
 # API requests that hit ratelimiting_cost_thresh_sec get this
 # extra amount added to their bucket at the end of the request.
 api_ratelimiting_cost_penalty = 1
-
-# Hotlist dogfooders whitelist
-hotlist_whitelist = ['jojwang@google.com', 'jrobbins@chromium.org',
-                     'seanmccullough@chromium.org', 'jparent@chromium.org',
-                     'agable@chromium.org', 'stip@chromium.org',
-                     'laforge@chromium.org', 'ojan@chromium.org',
-                     'scheib@chromium.org', 'benhenry@chromium.org',
-                     'efoo@chromium.org', 'eae@chromium.org',
-                     'nodir@chromium.org', 'sergeyberezin@chromium.org',
-                     'estaab@chromium.org', 'cbentzel@chromium.org',
-                     'animohan@chromium.org']
