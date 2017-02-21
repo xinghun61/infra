@@ -158,13 +158,13 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 
 // remoteRun runs `recipes.py remote` that checks out a repo, runs a recipe and
 // returns exit code.
+// Mutates env.
 func (c *cookRun) remoteRun(ctx context.Context, tdir string, env environ.Env) (recipeExitCode int, err error) {
 	// Setup our working directory.
 	if err := c.rr.prepareWorkDir(); err != nil {
 		return 0, errors.Annotate(err).Reason("failed to prepare workdir").Err()
 	}
 
-	// Build our environment.
 	env.Set("PYTHONPATH", strings.Join(c.PythonPaths, string(os.PathListSeparator)))
 
 	// Bootstrap through LogDog Butler?
@@ -202,9 +202,52 @@ func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 		native := filepath.FromSlash(p.path)
 		abs, err := filepath.Abs(native)
 		if err != nil {
-			return nil, fmt.Errorf("could not make dir %q absolute: %s", native, err)
+			return nil, errors.Annotate(err).Reason("could not make dir %(dir) absolute").D("dir", native).Err()
 		}
 		props[p.name] = abs
+	}
+
+	return props, nil
+}
+
+// prepareProperties parses the properties specified by flags,
+// validates them and add some extra properties to describe current build
+// environment.
+func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, error) {
+	props, err := parseProperties(c.Properties, c.PropertiesFile)
+	if err != nil {
+		return nil, errors.Annotate(err).Reason("could not parse properties").Err()
+	}
+	if props == nil {
+		props = map[string]interface{}{}
+	}
+
+	// Reject reserved properties.
+	rejectProperties := []string{
+		"$recipe_engine/path",
+		"bot_id",
+		// not specifying path_config means that all paths must be passed
+		// explicitly. We do that below.
+		"path_config",
+	}
+	for _, p := range rejectProperties {
+		if props[p] != "" {
+			return nil, errors.Reason("%(p) property must not be set").D("p", p).Err()
+		}
+	}
+
+	// Configure paths that the recipe will use.
+	if pathProps, err := c.pathModuleProperties();err != nil {
+		return nil, err
+	} else {
+		props["$recipe_engine/path"] = pathProps
+	}
+
+	// Provide bot_id for the recipes.
+	if botId, err := c.mode.botId(env); err != nil {
+		return nil, err
+	} else {
+		props["bot_id"] = botId
 	}
 
 	return props, nil
@@ -239,27 +282,9 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 }
 
 func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) error {
-	// Parse properties.
-	props, err := parseProperties(c.Properties, c.PropertiesFile)
+	props, err := c.prepareProperties(env)
 	if err != nil {
-		return errors.Annotate(err).Reason("could not parse properties").Err()
-	}
-
-	// Let infra_path recipe module know that we are using swarmbucket paths.
-	// Relevant code:
-	// https://chromium.googlesource.com/chromium/tools/depot_tools/+/248331450c05c59c8e966c806f00bd2475e36603/recipe_modules/infra_paths/api.py#12
-	// https://chromium.googlesource.com/chromium/tools/depot_tools/+/248331450c05c59c8e966c806f00bd2475e36603/recipe_modules/infra_paths/path_config.py#57
-	if _, ok := props["path_config"]; ok {
-		return errors.New(`"path_config" property must not be set; it is reserved by kitchen`)
-	}
-	if props == nil {
-		props = map[string]interface{}{}
-	}
-	// Configure paths that the recipe will use.
-	if pathProps, err := c.pathModuleProperties(); err != nil {
-		return errors.Annotate(err).Err()
-	} else if len(pathProps) > 0 {
-		props["$recipe_engine/path"] = pathProps
+		return err
 	}
 
 	// If we're not using LogDog, send out annotations.

@@ -72,8 +72,7 @@ func logAnnotatedErr(ctx context.Context, err error) {
 	}
 
 	var buf bytes.Buffer
-	st := errors.RenderStack(err)
-	if _, derr := st.DumpTo(&buf); derr != nil {
+	if _, derr := errors.RenderStack(err).DumpTo(&buf); derr != nil {
 		// This can't really fail, since we're rendering to a Buffer.
 		panic(derr)
 	}

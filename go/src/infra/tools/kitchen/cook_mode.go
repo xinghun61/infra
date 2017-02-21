@@ -38,6 +38,7 @@ func (m *cookModeFlag) Set(v string) error {
 type cookMode interface {
 	fillTemplateParams(env environ.Env, params *tasktemplate.Params) error
 	needsIOKeepAlive() bool
+	botId(env environ.Env) (string, error)
 }
 
 type swarmingCookMode struct{}
@@ -51,3 +52,11 @@ func (m swarmingCookMode) fillTemplateParams(env environ.Env, params *tasktempla
 }
 
 func (m swarmingCookMode) needsIOKeepAlive() bool { return false }
+
+func (m swarmingCookMode) botId(env environ.Env) (string, error) {
+	botId, ok := env.Get("SWARMING_BOT_ID")
+	if !ok {
+		return "", errors.Reason("a valid bot id was expected in $SWARMING_BOT_ID").Err()
+	}
+	return botId, nil
+}
