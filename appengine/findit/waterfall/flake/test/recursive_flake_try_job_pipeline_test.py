@@ -28,6 +28,7 @@ from waterfall.flake.recursive_flake_try_job_pipeline import (
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     UpdateAnalysisTryJobStatusUponCompletion)
 from waterfall.test import wf_testcase
+from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
 
 def _GenerateDataPoint(
@@ -63,7 +64,11 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
     analysis.status = analysis_status.COMPLETED
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
     analysis.Save()
+
+    iterations_to_rerun = analysis.algorithm_parameters.get(
+      'try_job_rerun', {}).get('iterations_to_rerun')
 
     try_job = FlakeTryJob.Create(
         master_name, builder_name, step_name, test_name, revision)
@@ -88,7 +93,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_try_job_pipeline.ScheduleFlakeTryJobPipeline,
         try_job_id,
         expected_args=[master_name, builder_name, step_name, test_name,
-                       revision])
+                       revision, iterations_to_rerun])
     self.MockPipeline(
         recursive_flake_try_job_pipeline.MonitorTryJobPipeline,
         try_job_result,
@@ -164,6 +169,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                 'r100']),
         _GenerateDataPoint(pass_rate=0.9, commit_position=99, try_job_url='u')]
     analysis.suspected_flake_build_number = 12345
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
     analysis.Save()
 
     self.MockPipeline(
@@ -216,6 +222,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         _GenerateDataPoint(pass_rate=0.9, commit_position=95, try_job_url='u4'),
         _GenerateDataPoint(pass_rate=1.0, commit_position=94, try_job_url='u3')]
     analysis.suspected_flake_build_number = 12345
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
     analysis.Save()
 
     self.MockPipeline(
@@ -272,6 +279,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             previous_build_commit_position=98, blame_list=['r99', 'r100']),
         _GenerateDataPoint(pass_rate=-1, commit_position=99, try_job_url='id1')]
     analysis.suspected_flake_build_number = 12345
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
     analysis.Save()
 
     self.MockPipeline(

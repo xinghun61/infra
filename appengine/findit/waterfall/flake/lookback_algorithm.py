@@ -3,6 +3,10 @@
 # found in the LICENSE file.
 
 
+_DEFAULT_MAX_ITERATIONS_TO_RERUN = 500
+_DEFAULT_ITERATION_INCREASE_STEP_SIZE = 100
+
+
 class NormalizedDataPoint():
 
   def __init__(self, run_point_number, pass_rate):
@@ -31,11 +35,15 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
         point not to exceed.
 
   Returns:
-    (next_run_point, suspected_point): The next point to check and suspected
-        point that the flakiness was introduced in. If next_run_point needs to
-        be checked, returns (next_run_point, None). If a suspected point is
-        found, returns (None, suspected_point). If ultimately no findings,
-        returns (None, None).
+    (next_run_point, suspected_point, iterations_to_rerun): The next point to
+        check, suspected point that the flakiness was introduced in and
+        iterations to run following swarming tasks if changed.
+        If next_run_point needs to be checked, returns
+        (next_run_point, None, iterations_to_rerun or None).
+        If a suspected point is found, returns
+        (None, suspected_point, None).
+        If ultimately no findings, returns
+        (None, None, None).
   """
   # A description of this algorithm can be found at:
   # https://docs.google.com/document/d/1wPYFZ5OT998Yn7O8wGDOhgfcQ98mknoX13AesJaS6ig/edit
@@ -61,15 +69,33 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
     if _TestDoesNotExist(pass_rate):
       if flaked_out or flakes_first:
         lower_boundary = data_points[i - stables_in_a_row].run_point_number
-        return lower_boundary + 1, None
+        return lower_boundary + 1, None, None
       else:
         # No flaky region has been identified, no findings.
-        return None, None
+        return None, None, None
+
     elif _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
       stables_in_a_row += 1
       flakes_in_a_row = 0
       dives_in_a_row = 0
       stables_happened = True
+
+      if len(data_points) == 1:
+        # If the swarming rerun for the first build had stable results, either
+        # the test is really stable so we should bail out or
+        # the number of iterations is not high enough so we should increase
+        # the number and rerun.
+        iterations_to_rerun = algorithm_settings.get('iterations_to_rerun')
+        max_iterations_to_rerun = algorithm_settings.get(
+            'max_iterations_to_rerun')
+
+        iterations_to_rerun *= 2
+        if iterations_to_rerun > max_iterations_to_rerun:
+          # Considers this as stabled-out and no flake region, no findings.
+          return None, None, None
+
+        # Rerun the same build with a higher number of iterations.
+        return run_point_number, None, iterations_to_rerun
 
       if stables_in_a_row <= max_stable_in_a_row:
         # No stable region yet, keep searching.
@@ -79,11 +105,6 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
         next_run_point = run_point_number - 1
         continue
 
-      # Stable region found.
-      if not flaked_out and not flakes_first:
-        # Already stabled-out but no flake region yet, no findings.
-        return None, None
-
       # Flake region is also found, ready for sequential search.
       lower_boundary_index = i - stables_in_a_row + 1
       lower_boundary = data_points[lower_boundary_index].run_point_number
@@ -92,10 +113,11 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
 
       if previous_run_point == lower_boundary + 1:
         # Sequential search is done.
-        return None, previous_run_point
+        return None, previous_run_point, None
 
       # Continue sequential search.
-      return lower_boundary + 1, None
+      return lower_boundary + 1, None, None
+
     else:
       # Flaky result.
       flakes_in_a_row += 1
@@ -111,7 +133,7 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
       if run_point_number == lower_bound_run_point_number:  # pragma: no branch
         # The earliest commit_position to look back is already flaky. This is
         # the culprit.
-        return None, run_point_number
+        return None, run_point_number, None
 
       if max_dive_in_a_row:
         # Check for dives. A dive is a sudden drop in pass rate.
@@ -151,14 +173,14 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
 
         if build_after_lower_boundary == lower_boundary + 1:
           # Sequential search is done.
-          return None, build_after_lower_boundary
+          return None, build_after_lower_boundary, None
         # Continue sequential search.
-        return lower_boundary + 1, None
+        return lower_boundary + 1, None, None
       else:
         step_size = flakes_in_a_row
         next_run_point = run_point_number - step_size
 
   if next_run_point < lower_bound_run_point_number:
-    return lower_bound_run_point_number, None
+    return lower_bound_run_point_number, None, None
 
-  return next_run_point, None
+  return next_run_point, None, None

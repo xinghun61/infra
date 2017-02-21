@@ -25,13 +25,14 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
     git_hash = 'a1b2c3d4'
+    iterations = 200
 
     expected_properties = {
         'recipe': 'findit/chromium/flake',
         'target_mastername': master_name,
         'target_testername': builder_name,
         'test_revision': git_hash,
-        'test_repeat_count': 100,
+        'test_repeat_count': 200,
         'tests': {
             step_name: [test_name]
         }
@@ -39,7 +40,7 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     try_job_pipeline = ScheduleFlakeTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(
-        master_name, builder_name, step_name, test_name, git_hash)
+        master_name, builder_name, step_name, test_name, git_hash, iterations)
 
     self.assertEqual(properties, expected_properties)
 

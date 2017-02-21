@@ -362,7 +362,7 @@ class RecursiveFlakePipeline(BasePipeline):
         flake_analysis.put()
 
       # TODO(lijeffrey): Allow custom parameters supplied by user.
-      iterations = waterfall_config.GetCheckFlakeSettings().get(
+      iterations =flake_analysis.algorithm_parameters.get(
           'swarming_rerun', {}).get('iterations_to_rerun', 100)
       actual_run_build_number = _GetBestBuildNumberToRun(
           master_name, builder_name, preferred_run_build_number, step_name,
@@ -371,7 +371,7 @@ class RecursiveFlakePipeline(BasePipeline):
       # Call trigger pipeline (flake style).
       task_id = yield TriggerFlakeSwarmingTaskPipeline(
           master_name, builder_name, actual_run_build_number, step_name,
-          [test_name])
+          [test_name], iterations)
 
       with pipeline.InOrder():
         yield ProcessFlakeSwarmingTaskResultPipeline(
@@ -392,6 +392,24 @@ def _NormalizeDataPoints(data_points):
               d) for d in data_points]
   return sorted(
       normalized_data_points, key=lambda k: k.run_point_number, reverse=True)
+
+
+def _UpdateIterationsToRerun(analysis, iterations_to_rerun):
+  if not iterations_to_rerun or not analysis.algorithm_parameters:
+    return
+
+  analysis.algorithm_parameters['swarming_rerun'][
+      'iterations_to_rerun'] = iterations_to_rerun
+
+  analysis.algorithm_parameters['try_job_rerun'][
+      'iterations_to_rerun'] = iterations_to_rerun
+
+
+def _RemoveFirstBuildDataPoint(analysis):
+  if len(analysis.data_points) != 1 or analysis.data_points[0].try_job_url:
+    return
+
+  analysis.data_points.pop()
 
 
 class NextBuildNumberPipeline(BasePipeline):
@@ -426,22 +444,33 @@ class NextBuildNumberPipeline(BasePipeline):
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())
       return
 
-    flake_settings = waterfall_config.GetCheckFlakeSettings()
-    algorithm_settings = flake_settings.get('swarming_rerun', {})
+    if not analysis.algorithm_parameters:
+      # Uses analysis' own algorithm_parameters.
+      flake_settings = waterfall_config.GetCheckFlakeSettings()
+      analysis.algorithm_parameters = flake_settings
+      analysis.put()
+    algorithm_settings = analysis.algorithm_parameters.get(
+        'swarming_rerun')
 
     data_points = _NormalizeDataPoints(analysis.data_points)
     # Figure out what build_number to trigger a swarming rerun on next, if any.
-    (next_build_number,
-     suspected_build) = lookback_algorithm.GetNextRunPointNumber(
-         data_points, algorithm_settings)
+    next_build_number, suspected_build, iterations_to_rerun = (
+        lookback_algorithm.GetNextRunPointNumber(
+            data_points, algorithm_settings))
+    if iterations_to_rerun:
+      # Need to rerun the first build with more iterations.
+      _UpdateIterationsToRerun(analysis, iterations_to_rerun)
+      _RemoveFirstBuildDataPoint(analysis)
+      analysis.put()
 
     max_build_numbers_to_look_back = algorithm_settings.get(
         'max_build_numbers_to_look_back', _DEFAULT_MAX_BUILD_NUMBERS)
     last_build_number = max(
         0, triggering_build_number - max_build_numbers_to_look_back)
 
-    if (next_build_number < last_build_number or
-        next_build_number >= triggering_build_number):  # Finished.
+    if ((next_build_number < last_build_number or
+        next_build_number >= triggering_build_number) and
+        not iterations_to_rerun):  # Finished.
       build_confidence_score = None
       if suspected_build is not None:
         # Use steppiness as the confidence score.
@@ -453,9 +482,10 @@ class NextBuildNumberPipeline(BasePipeline):
           analysis, suspected_build, analysis_status.COMPLETED,
           None, build_confidence_score=build_confidence_score)
 
-      minimum_confidence_score_to_run_tryjobs = flake_settings.get(
-          'minimum_confidence_score_to_run_tryjobs',
-          _DEFAULT_MINIMUM_CONFIDENCE_SCORE)
+      minimum_confidence_score_to_run_tryjobs = (
+          analysis.algorithm_parameters.get(
+              'minimum_confidence_score_to_run_tryjobs',
+              _DEFAULT_MINIMUM_CONFIDENCE_SCORE))
 
       if build_confidence_score is None:
         logging.info(('Skipping try jobs due to no suspected flake build being '

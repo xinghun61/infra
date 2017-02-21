@@ -20,7 +20,6 @@ from model import result_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
-from waterfall import waterfall_config
 from waterfall.flake import confidence
 from waterfall.flake import lookback_algorithm
 from waterfall.flake.lookback_algorithm import NormalizedDataPoint
@@ -160,9 +159,12 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
       analysis.put()
 
     with pipeline.InOrder():
+      iterations_to_rerun = analysis.algorithm_parameters.get(
+          'try_job_rerun', {}).get('iterations_to_rerun')
       try_job_id = yield ScheduleFlakeTryJobPipeline(
           analysis.master_name, analysis.builder_name,
-          analysis.canonical_step_name, analysis.test_name, revision)
+          analysis.canonical_step_name, analysis.test_name, revision,
+          iterations_to_rerun)
 
       try_job_result = yield MonitorTryJobPipeline(
           try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
@@ -246,14 +248,14 @@ class NextCommitPositionPipeline(BasePipeline):
     # bounds, only the data points involved in try jobs should be considered
     # when determining the next commit position to test.
     try_job_data_points = _GetNormalizedTryJobDataPoints(flake_analysis)
-    algorithm_settings = waterfall_config.GetCheckFlakeSettings().get(
+    algorithm_settings = flake_analysis.algorithm_parameters.get(
         'try_job_rerun', {})
 
     # Figure out what commit position to trigger the next try job on, if any.
-    (next_commit_position,
-     suspected_commit_position) = lookback_algorithm.GetNextRunPointNumber(
-         try_job_data_points, algorithm_settings,
-         lower_boundary_commit_position)
+    next_commit_position, suspected_commit_position, _ = (
+        lookback_algorithm.GetNextRunPointNumber(
+            try_job_data_points, algorithm_settings,
+            lower_boundary_commit_position))
 
     if (next_commit_position is None or
         next_commit_position == suspected_build_data_point.commit_position):

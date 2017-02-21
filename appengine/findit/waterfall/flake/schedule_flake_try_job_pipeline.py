@@ -20,10 +20,8 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def _GetBuildProperties(
       self, master_name, builder_name, canonical_step_name, test_name,
-      git_hash):
-    iterations = waterfall_config.GetCheckFlakeSettings().get(
-        'try_job_rerun', {}).get(
-            'iterations_to_rerun', _DEFAULT_ITERATIONS_TO_RERUN)
+      git_hash, iterations_to_rerun):
+    iterations = iterations_to_rerun or _DEFAULT_ITERATIONS_TO_RERUN
 
     return {
         'recipe': 'findit/chromium/flake',
@@ -48,7 +46,7 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, canonical_step_name, test_name,
-          git_hash):
+          git_hash, iterations_to_rerun=None):
     """Triggers a flake try job.
 
     Args:
@@ -58,12 +56,14 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
           occurred on.
       test_name (str): The name of the flaky test.
       git_hash (str): The git hash of the revision to run the try job against.
+      iterations_to_rerun (int): The number of iterations to rerun.
 
     Returns:
       build_id (str): Id of the triggered try job.
     """
     properties = self._GetBuildProperties(
-        master_name, builder_name, canonical_step_name, test_name, git_hash)
+        master_name, builder_name, canonical_step_name, test_name, git_hash,
+        iterations_to_rerun)
     build_id = self._TriggerTryJob(
         master_name, builder_name, properties, {},
         failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST))

@@ -108,9 +108,9 @@ class MasterFlakeAnalysis(
   def iterations_to_rerun(self):
     if not self.algorithm_parameters:
       return -1
-    return (self.algorithm_parameters.get('iterations_to_rerun') or
-            self.algorithm_parameters.get('swarming_rerun', {}).get(
-                'iterations_to_rerun'))
+    return (self.algorithm_parameters.get('swarming_rerun', {}).get(
+                'iterations_to_rerun') or
+            self.algorithm_parameters.get('iterations_to_rerun'))
 
   @staticmethod
   def _CreateAnalysisId(

@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
+
 from gae_libs.testcase import TestCase
 
 from waterfall.flake import lookback_algorithm
@@ -13,7 +15,7 @@ class LookbackAlgorithmTest(TestCase):
 
   def testGetNextFlakySingleFlakyDataPoint(self):
     data_points = [NormalizedDataPoint(100, 0.8)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'])
     self.assertEqual(99, next_run)
@@ -23,7 +25,7 @@ class LookbackAlgorithmTest(TestCase):
     data_points = [
         NormalizedDataPoint(2, 0.8),
         NormalizedDataPoint(1, 0.8)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
 
@@ -34,7 +36,7 @@ class LookbackAlgorithmTest(TestCase):
     data_points = [
         NormalizedDataPoint(2, 0.8),
         NormalizedDataPoint(1, 1.0)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 1)
 
@@ -45,7 +47,7 @@ class LookbackAlgorithmTest(TestCase):
     data_points = [NormalizedDataPoint(8, 0.8),
                    NormalizedDataPoint(3, 0.8),
                    NormalizedDataPoint(0, 1.0)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
     self.assertEqual(1, next_run)
@@ -55,7 +57,7 @@ class LookbackAlgorithmTest(TestCase):
     data_points = [NormalizedDataPoint(8, 0.8),
                    NormalizedDataPoint(3, 0.8),
                    NormalizedDataPoint(0, 0.8)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
 
@@ -66,7 +68,7 @@ class LookbackAlgorithmTest(TestCase):
     data_points = [
         NormalizedDataPoint(100, 0.8),
         NormalizedDataPoint(80, 1.0)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
@@ -76,7 +78,7 @@ class LookbackAlgorithmTest(TestCase):
     data_points = [
         NormalizedDataPoint(100, 1.0),
         NormalizedDataPoint(80, 0.8)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
@@ -86,7 +88,7 @@ class LookbackAlgorithmTest(TestCase):
     data_points = [
         NormalizedDataPoint(100, 1.0),
         NormalizedDataPoint(80, -1)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
@@ -99,7 +101,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(97, 0.5),
         NormalizedDataPoint(94, 0.6),
         NormalizedDataPoint(90, 0.7)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
@@ -115,7 +117,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(92, 1.0),
         NormalizedDataPoint(91, 1.0),
         NormalizedDataPoint(90, 1.0)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
@@ -132,7 +134,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(92, 1.0),
         NormalizedDataPoint(91, 1.0),
         NormalizedDataPoint(90, 1.0)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
@@ -149,7 +151,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(92, 1.0),
         NormalizedDataPoint(91, 1.0),
         NormalizedDataPoint(90, 1.0)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertEqual(result, 95)
@@ -167,7 +169,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(92, 1.0),
         NormalizedDataPoint(91, 1.0),
         NormalizedDataPoint(90, 1.0)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertEqual(result, 96)
@@ -176,7 +178,7 @@ class LookbackAlgorithmTest(TestCase):
   def testRunPositionIntroducedFlakiness(self):
     data_points = [NormalizedDataPoint(100, 0.8),
                    NormalizedDataPoint(99, -1)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'], 0)
     # This case should be handled by the caller of GetNextRunPointNumber
@@ -189,7 +191,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(80, 1.0),
         NormalizedDataPoint(70, 1.0),
         NormalizedDataPoint(60, -1)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
@@ -197,23 +199,9 @@ class LookbackAlgorithmTest(TestCase):
 
   def testTestDoesNotExist(self):
     data_points = [NormalizedDataPoint(100, -1)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'], 0)
-    self.assertIsNone(result)
-    self.assertIsNone(next_run)
-
-  def testNoFindingsAfterAllStable(self):
-    data_points = [
-        NormalizedDataPoint(100, 1.0),
-        NormalizedDataPoint(99, 1.0),
-        NormalizedDataPoint(97, 1.0),
-        NormalizedDataPoint(95, 1.0),
-        NormalizedDataPoint(94, 1.0),
-        NormalizedDataPoint(93, 1.0)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
     self.assertIsNone(next_run)
 
@@ -223,7 +211,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(80, 0.7),
         NormalizedDataPoint(70, 0.75),
         NormalizedDataPoint(60, -1)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
@@ -233,7 +221,7 @@ class LookbackAlgorithmTest(TestCase):
     data_points = [
         NormalizedDataPoint(100, 0.3),
         NormalizedDataPoint(80, 0.8)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
@@ -244,7 +232,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(100, 0.3),
         NormalizedDataPoint(99, 0.8),
         NormalizedDataPoint(98, 0.3)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
@@ -258,7 +246,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(97, 0.7),
         NormalizedDataPoint(96, 0.8),
         NormalizedDataPoint(95, 0.9)]
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertEqual(100, result)
@@ -274,10 +262,30 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(94, 0.9),
         NormalizedDataPoint(93, 0.8)]
 
-    next_run, result = lookback_algorithm.GetNextRunPointNumber(
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
     self.assertIsNone(result)
     self.assertEqual(98, next_run)
 
- 
+  def testRerunWithHigherIterationsWhenFirstBuildStable(self):
+    data_points = [NormalizedDataPoint(100, 1.0)]
+
+    next_run, result, iterations = lookback_algorithm.GetNextRunPointNumber(
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
+    self.assertIsNone(result)
+    self.assertEqual(100, next_run)
+    self.assertEqual(200, iterations)
+
+  def testBailOutWhenIterationsGreaterThanMax(self):
+    data_points = [NormalizedDataPoint(100, 1.0)]
+
+    algorithms = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
+    algorithms['iterations_to_rerun'] = 800
+    next_run, result, iterations = lookback_algorithm.GetNextRunPointNumber(
+        data_points, algorithms)
+    self.assertIsNone(result)
+    self.assertIsNone(next_run)
+    self.assertIsNone(iterations)

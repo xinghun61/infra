@@ -51,3 +51,9 @@ class FlakeSwarmingTaskTest(unittest.TestCase):
     self.assertEqual(number_of_passes, data.number_of_passes)
     self.assertEqual(analysis_status.COMPLETED, data.status)
     self.assertIsNone(data.error)
+
+  def testReset(self):
+    task = FlakeSwarmingTask.Create('m', 'b', 121, 'browser_tests', 'test1')
+    task.task_id = 'task_id'
+    task.Reset()
+    self.assertIsNone(task.task_id)

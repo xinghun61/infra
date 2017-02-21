@@ -6,6 +6,7 @@ import base64
 
 from google.appengine.ext import ndb
 
+from model import analysis_status
 from model.base_build_model import BaseBuildModel
 from model.base_swarming_task import BaseSwarmingTask
 
@@ -78,3 +79,16 @@ class FlakeSwarmingTask(BaseSwarmingTask, BaseBuildModel):
   successes = ndb.IntegerProperty(default=0, indexed=False)
   # How many times the test was rerun.
   tries = ndb.IntegerProperty(default=0, indexed=False)
+
+  def Reset(self):
+    """Resets the task as if it's a new task."""
+    self.task_id = None
+    self.tests_statuses = None
+    self.status = analysis_status.PENDING
+    self.error = None
+    self.created_time = None
+    self.started_time = None
+    self.completed_time = None
+    self.parameters = {}
+    self.successes = None
+    self.tries = None
