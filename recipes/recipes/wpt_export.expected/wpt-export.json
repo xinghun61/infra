@@ -104,7 +104,7 @@
       "git",
       "config",
       "user.name",
-      "Blink WPT Exporter"
+      "Chromium WPT Sync"
     ],
     "cwd": "[START_DIR]/src",
     "name": "set git config user.name"
@@ -124,7 +124,6 @@
       "python",
       "-u",
       "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-export",
-      "--dry-run",
       "--github-credentials-json",
       "/creds/github/wpt-export.json"
     ],

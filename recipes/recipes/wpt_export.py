@@ -31,7 +31,7 @@ DEPS = [
 def RunSteps(api):
   api.gclient.set_config('chromium')
   api.bot_update.ensure_checkout()
-  api.git('config', 'user.name', 'Blink WPT Exporter',
+  api.git('config', 'user.name', 'Chromium WPT Sync',
           name='set git config user.name')
   api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org',
           name='set git config user.email')
@@ -39,7 +39,6 @@ def RunSteps(api):
   script = api.path['checkout'].join('third_party', 'WebKit', 'Tools',
                                      'Scripts', 'wpt-export')
   args = [
-    '--dry-run', # TODO(jeffcarp): remove before flight
     '--github-credentials-json',
     '/creds/github/wpt-export.json',
   ]
