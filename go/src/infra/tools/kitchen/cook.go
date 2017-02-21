@@ -121,7 +121,7 @@ type cookRun struct {
 }
 
 // normalizeFlags validates and normalizes flags.
-func (c *cookRun) normalizeFlags() error {
+func (c *cookRun) normalizeFlags(env environ.Env) error {
 	if err := c.rr.normalize(); err != nil {
 		return err
 	}
@@ -131,10 +131,8 @@ func (c *cookRun) normalizeFlags() error {
 	}
 
 	// If LogDog is enabled, all required LogDog flags must be supplied.
-	if c.logdog.active() {
-		if err := c.logdog.validate(); err != nil {
-			return err
-		}
+	if err := c.logdog.setupAndValidate(env); err != nil {
+		return err
 	}
 
 	// Normalize c.PythonPaths
@@ -152,14 +150,13 @@ func (c *cookRun) normalizeFlags() error {
 
 // remoteRun runs `recipes.py remote` that checks out a repo, runs a recipe and
 // returns exit code.
-func (c *cookRun) remoteRun(ctx context.Context, tdir string) (recipeExitCode int, err error) {
+func (c *cookRun) remoteRun(ctx context.Context, tdir string, env environ.Env) (recipeExitCode int, err error) {
 	// Setup our working directory.
 	if err := c.rr.prepareWorkDir(); err != nil {
 		return 0, errors.Annotate(err).Reason("failed to prepare workdir").Err()
 	}
 
 	// Build our environment.
-	env := environ.System()
 	env.Set("PYTHONPATH", strings.Join(c.PythonPaths, string(os.PathListSeparator)))
 
 	// Bootstrap through LogDog Butler?
@@ -207,6 +204,7 @@ func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 
 func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.Env) (exitCode int) {
 	ctx := cli.GetContext(a, c, env)
+	sysEnv := environ.System()
 
 	// Process flags.
 	if len(args) != 0 {
@@ -214,7 +212,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 		return 1
 	}
 
-	if err := c.normalizeFlags(); err != nil {
+	if err := c.normalizeFlags(sysEnv); err != nil {
 		err = errors.Annotate(err).Reason("failed to normalize flags").Err()
 
 		logAnnotatedErr(ctx, err)
@@ -222,7 +220,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 		return 1
 	}
 
-	err := c.runErr(ctx, args)
+	err := c.runErr(ctx, args, sysEnv)
 	switch {
 	case errors.Unwrap(err) == context.Canceled:
 		log.Warningf(ctx, "Process was cancelled.")
@@ -232,7 +230,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 	return getReturnCode(err)
 }
 
-func (c *cookRun) runErr(ctx context.Context, args []string) error {
+func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) error {
 	// Parse properties.
 	props, err := parseProperties(c.Properties, c.PropertiesFile)
 	if err != nil {
@@ -259,7 +257,7 @@ func (c *cookRun) runErr(ctx context.Context, args []string) error {
 	// If we're not using LogDog, send out annotations.
 	bootstapSuccess := true
 	emitTimestamps := c.rr.opArgs.AnnotationFlags.EmitTimestamp
-	if c.logdog.emitAnnotations() {
+	if c.logdog.shouldEmitAnnotations() {
 		if emitTimestamps {
 			annotateTime(ctx)
 		}
@@ -298,7 +296,7 @@ func (c *cookRun) runErr(ctx context.Context, args []string) error {
 	// Run the recipe.
 	var recipeExitCode int
 	err = withTempDir(ctx, func(ctx context.Context, tdir string) (err error) {
-		recipeExitCode, err = c.remoteRun(ctx, tdir)
+		recipeExitCode, err = c.remoteRun(ctx, tdir, env)
 		return
 	})
 	if err != nil {

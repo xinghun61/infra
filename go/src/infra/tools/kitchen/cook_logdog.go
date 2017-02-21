@@ -6,11 +6,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io"
-	"net/url"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -32,9 +29,8 @@ import (
 	fileOut "github.com/luci/luci-go/logdog/client/butler/output/file"
 	out "github.com/luci/luci-go/logdog/client/butler/output/logdog"
 	"github.com/luci/luci-go/logdog/client/butlerlib/streamclient"
-	"github.com/luci/luci-go/logdog/client/butlerlib/streamproto"
 	"github.com/luci/luci-go/logdog/common/types"
-	"github.com/luci/luci-go/luci_config/common/cfgtypes"
+	"github.com/luci/luci-go/swarming/tasktemplate"
 )
 
 const (
@@ -50,49 +46,35 @@ func disableGRPCLogging(ctx context.Context) {
 }
 
 type cookLogDogParams struct {
-	host             string
-	project          string
-	prefix           types.StreamName
-	annotee          bool
-	tee              bool
-	stripAnnotations bool
+	annotationURL          string
+	logDogOnly             bool
+	logDogSendIOKeepAlives bool
 
 	filePath               string
 	serviceAccountJSONPath string
+
+	// annotationAddr is the address of the LogDog annotation stream. It is
+	// resolved from the "annotationURL" field during "setupAndValidate".
+	annotationAddr *types.StreamAddr
 }
 
 func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
 	fs.StringVar(
-		&p.host,
-		"logdog-host",
+		&p.annotationURL,
+		"logdog-annotation-url",
 		"",
-		"The name of the LogDog host.")
-	fs.StringVar(
-		&p.project,
-		"logdog-project",
-		"",
-		"The name of the LogDog project to log into. Projects have different ACL sets, "+
-			"so choose this appropriately.")
-	fs.Var(
-		&p.prefix,
-		"logdog-prefix",
-		"The LogDog stream Prefix to use. If empty, one will be constructed from the Swarming "+
-			"task parameters (found in enviornment).")
+		"The URL of the LogDog annotation stream to use (logdog://host/project/prefix/+/name). The LogDog "+
+			"project and prefix will be extracted from this URL. This can include SwarmBucket template parameters.")
 	fs.BoolVar(
-		&p.annotee,
-		"logdog-enable-annotee",
-		true,
-		"Process bootstrap STDOUT/STDERR annotations through Annotee.")
+		&p.logDogOnly,
+		"logdog-only",
+		false,
+		"Send all output and annotations through LogDog. By default, output and annotations are tee'd.")
 	fs.BoolVar(
-		&p.tee,
-		"logdog-tee",
-		true,
-		"Tee bootstrapped STDOUT and STDERR through Kitchen. If false, these will only be sent as LogDog streams")
-	fs.BoolVar(
-		&p.stripAnnotations,
-		"logdog-strip-annotations",
-		true,
-		"Don't include annotation data in the LogDog stream output.")
+		&p.logDogSendIOKeepAlives,
+		"logdog-send-io-keepalives",
+		false,
+		"When in LogDog-only mode (-logdog-only), send I/O keepalives.")
 	fs.StringVar(
 		&p.filePath,
 		"logdog-debug-out-file",
@@ -106,10 +88,10 @@ func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
 }
 
 func (p *cookLogDogParams) active() bool {
-	return p.host != "" || p.project != "" || p.prefix != ""
+	return p.annotationURL != ""
 }
 
-// emitAnnotations returns true if the cook command should emit additional
+// shouldEmitAnnotations returns true if the cook command should emit additional
 // annotations.
 //
 // If we're streaming solely to LogDog, it makes no sense to emit extra
@@ -119,47 +101,36 @@ func (p *cookLogDogParams) active() bool {
 //
 // Note that this could create an incongruity between the LogDog-emitted
 // annotations and the annotations in the STDOUT stream.
-func (p *cookLogDogParams) emitAnnotations() bool {
-	return p.tee || !p.active()
+func (p *cookLogDogParams) shouldEmitAnnotations() bool {
+	return !(p.logDogOnly && p.active())
 }
 
-func (p *cookLogDogParams) validate() error {
-	if p.project == "" {
-		return fmt.Errorf("a LogDog project must be supplied (-logdog-project)")
-	}
-	return nil
-}
-
-func (p *cookLogDogParams) getPrefix(env environ.Env) (types.StreamName, error) {
-	if p.prefix != "" {
-		return p.prefix, nil
+func (p *cookLogDogParams) setupAndValidate(env environ.Env) error {
+	if !p.active() {
+		if p.logDogOnly {
+			return errors.New("LogDog flag (-logdog-only) requires annotation URL (-logdog-annotation-url)")
+		}
+		return nil
 	}
 
-	// Construct our LogDog prefix from the Swarming task parameters. The server
-	// will be exported as a URL. We want the "host" parameter from this URL.
-	server, _ := env.Get("SWARMING_SERVER")
-	serverURL, err := url.Parse(server)
+	// Resolve templating parameters.
+	var params tasktemplate.Params
+	params.SwarmingRunID, _ = env.Get("SWARMING_TASK_ID")
+
+	// Parse/resolve annotation URL (must be populated, since active()).
+	annotationURL, err := params.Resolve(p.annotationURL)
 	if err != nil {
-		return "", errors.Annotate(err).Reason("failed to parse SWARMING_SERVER URL %(value)q").
-			D("value", server).Err()
+		return errors.Annotate(err).Reason("failed to resolve LogDog annotation URL (-logdog-annotation-url)").
+			D("value", p.annotationURL).
+			Err()
+	}
+	if p.annotationAddr, err = types.ParseURL(annotationURL); err != nil {
+		return errors.Annotate(err).Reason("invalid LogDog annotation URL (-logdog-annotation-url)").
+			D("value", annotationURL).
+			Err()
 	}
 
-	host := serverURL.Host
-	if serverURL.Scheme == "" {
-		// SWARMING_SERVER is not a full URL, so use its Path instead of its Host.
-		host = serverURL.Path
-	}
-	if host == "" {
-		return "", errors.Reason("missing or empty SWARMING_SERVER host in %(value)q").
-			D("value", server).Err()
-	}
-
-	taskID, _ := env.Get("SWARMING_TASK_ID")
-	if taskID == "" {
-		return "", errors.Reason("missing or empty SWARMING_TASK_ID").Err()
-	}
-
-	return types.MakeStreamName("", "swarm", host, taskID)
+	return nil
 }
 
 // runWithLogdogButler rus the supplied command through the a LogDog Butler
@@ -172,6 +143,8 @@ func (p *cookLogDogParams) getPrefix(env environ.Env) (types.StreamName, error) 
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
 func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, tdir string, env environ.Env) (rc int, err error) {
+	log.Infof(ctx, "Using LogDog host: %s", c.logdog.annotationAddr.URL().String())
+
 	// Install a global gRPC logger adapter. This routes gRPC log messages that
 	// are emitted through our logger. We only log gRPC prints if our logger is
 	// configured to log debug-level or lower.
@@ -180,23 +153,17 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, 
 	// We need to dump initial properties so our annotation stream includes them.
 	rr.opArgs.AnnotationFlags.EmitInitialProperties = true
 
-	// If env is empty (production code), use the system enviornment.
-	if env.Len() == 0 {
-		env = environ.System()
-	}
+	// Use the annotation stream's prefix component for our Butler run.
+	prefix, annoName := c.logdog.annotationAddr.Path.Split()
+	log.Infof(ctx, "Using LogDog prefix: %s", prefix)
 
-	prefix, err := c.logdog.getPrefix(env)
-	if err != nil {
-		return 0, errors.Annotate(err).Reason("failed to get LogDog prefix").Err()
-	}
-	log.Fields{
-		"prefix": prefix,
-	}.Infof(ctx, "Using LogDog prefix: %q", prefix)
+	// Determine our base path and annotation subpath.
+	basePath, annoSubpath := annoName.Split()
 
 	// Augment our environment with Butler parameters.
 	bsEnv := bootstrap.Environment{
-		Project: cfgtypes.ProjectName(c.logdog.project),
-		Prefix:  c.logdog.prefix,
+		Project: c.logdog.annotationAddr.Project,
+		Prefix:  prefix,
 	}
 	bsEnv.Augment(env)
 
@@ -244,8 +211,8 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, 
 
 		ocfg := out.Config{
 			Auth:    authenticator,
-			Host:    c.logdog.host,
-			Project: cfgtypes.ProjectName(c.logdog.project),
+			Host:    c.logdog.annotationAddr.Host,
+			Project: c.logdog.annotationAddr.Project,
 			Prefix:  prefix,
 			SourceInfo: []string{
 				"Kitchen",
@@ -269,26 +236,16 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, 
 
 	butlerCfg := butler.Config{
 		Output:       o,
-		Project:      cfgtypes.ProjectName(c.logdog.project),
+		Project:      c.logdog.annotationAddr.Project,
 		Prefix:       prefix,
 		BufferLogs:   true,
 		MaxBufferAge: butler.DefaultMaxBufferAge,
 	}
-	if !c.logdog.tee {
-		// If we're not teeing, we need to issue keepalives so Swarming doesn't
+	if c.logdog.logDogOnly && c.logdog.logDogSendIOKeepAlives {
+		// If we're not teeing, we need to issue keepalives so our executor doesn't
 		// kill us due to lack of I/O.
 		butlerCfg.IOKeepAliveInterval = 5 * time.Minute
 		butlerCfg.IOKeepAliveWriter = os.Stderr
-	}
-
-	// If we're teeing and we're not using Annotee, tee our subprocess' STDOUT
-	// and STDERR through Kitchen's STDOUT/STDERR.
-	//
-	// If we're using Annotee, we will configure this in the Annotee setup
-	// directly.
-	if c.logdog.tee && !c.logdog.annotee {
-		butlerCfg.TeeStdout = os.Stdout
-		butlerCfg.TeeStderr = os.Stderr
 	}
 
 	ncCtx := withNonCancel(ctx)
@@ -353,83 +310,55 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, 
 		}
 	}()
 
-	if c.logdog.annotee {
-		annoteeProcessor := annotee.New(ncCtx, annotee.Options{
-			Base:                   "recipes",
-			Client:                 streamclient.NewLocal(b),
-			Execution:              annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir),
-			TeeText:                c.logdog.tee,
-			TeeAnnotations:         c.logdog.tee,
-			MetadataUpdateInterval: 30 * time.Second,
-			Offline:                false,
-			CloseSteps:             true,
-		})
-		defer func() {
-			as := annoteeProcessor.Finish()
+	annoteeProcessor := annotee.New(ncCtx, annotee.Options{
+		Base:                   basePath,
+		AnnotationSubpath:      annoSubpath,
+		Client:                 streamclient.NewLocal(b),
+		Execution:              annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir),
+		TeeText:                !c.logdog.logDogOnly,
+		TeeAnnotations:         !c.logdog.logDogOnly,
+		MetadataUpdateInterval: 30 * time.Second,
+		Offline:                false,
+		CloseSteps:             true,
+	})
+	defer func() {
+		as := annoteeProcessor.Finish()
 
-			// Dump the annotations on completion, unless we're already dumping them
-			// to a file (debug), in which case this is redundant.
-			if c.logdog.filePath == "" {
-				log.Infof(ctx, "Annotations finished:\n%s", proto.MarshalTextString(as.RootStep().Proto()))
-			}
-		}()
+		// Dump the annotations on completion, unless we're already dumping them
+		// to a file (debug), in which case this is redundant.
+		if c.logdog.filePath == "" {
+			log.Infof(ctx, "Annotations finished:\n%s", proto.MarshalTextString(as.RootStep().Proto()))
+		}
+	}()
 
-		// Run STDOUT/STDERR streams through the processor. This will block until
-		// both streams are closed.
-		//
-		// If we're teeing, we will tee the full stream, including annotations.
-		streams := []*annotee.Stream{
-			{
-				Reader:           stdout,
-				Name:             annotee.STDOUT,
-				Annotate:         true,
-				StripAnnotations: c.logdog.stripAnnotations,
-			},
-			{
-				Reader:           stderr,
-				Name:             annotee.STDERR,
-				Annotate:         true,
-				StripAnnotations: c.logdog.stripAnnotations,
-			},
-		}
-		if c.logdog.tee {
-			streams[0].Tee = os.Stdout
-			streams[1].Tee = os.Stderr
-		}
+	// Run STDOUT/STDERR streams through the processor. This will block until
+	// both streams are closed.
+	//
+	// If we're teeing, we will tee the full stream, including annotations.
+	streams := []*annotee.Stream{
+		{
+			Reader:           stdout,
+			Name:             annotee.STDOUT,
+			Annotate:         true,
+			StripAnnotations: !c.logdog.logDogOnly,
+		},
+		{
+			Reader:           stderr,
+			Name:             annotee.STDERR,
+			Annotate:         true,
+			StripAnnotations: !c.logdog.logDogOnly,
+		},
+	}
+	if !c.logdog.logDogOnly {
+		streams[0].Tee = os.Stdout
+		streams[1].Tee = os.Stderr
+	}
 
-		// Run the process' output streams through Annotee. This will block until
-		// they are all consumed.
-		if err = annoteeProcessor.RunStreams(streams); err != nil {
-			err = errors.Annotate(err).Reason("failed to process streams through Annotee").Err()
-			return
-		}
-	} else {
-		// Get our STDOUT / STDERR stream flags. Tailor them to match Annotee.
-		stdoutFlags := annotee.TextStreamFlags(ctx, annotee.STDOUT)
-		stderrFlags := annotee.TextStreamFlags(ctx, annotee.STDERR)
-		if c.logdog.tee {
-			stdoutFlags.Tee = streamproto.TeeStdout
-			stderrFlags.Tee = streamproto.TeeStderr
-		}
-
-		// Wait for our STDOUT / STDERR streams to complete.
-		var wg sync.WaitGroup
-		stdout = &callbackReadCloser{stdout, wg.Done}
-		stderr = &callbackReadCloser{stderr, wg.Done}
-		wg.Add(2)
-
-		// Explicitly add these streams to the Butler.
-		if err = b.AddStream(stdout, stdoutFlags.Properties()); err != nil {
-			err = errors.Annotate(err).Reason("failed to add STDOUT stream to Butler").Err()
-			return
-		}
-		if err = b.AddStream(stderr, stderrFlags.Properties()); err != nil {
-			err = errors.Annotate(err).Reason("failed to add STDERR stream to Butler").Err()
-			return
-		}
-
-		// Wait for the streams to be consumed.
-		wg.Wait()
+	// Run the process' output streams through Annotee. This will block until
+	// they are all consumed.
+	if err = annoteeProcessor.RunStreams(streams); err != nil {
+		err = errors.Annotate(err).Reason("failed to process streams through Annotee").Err()
+		return
 	}
 
 	// Our process and Butler instance will be consumed in our teardown

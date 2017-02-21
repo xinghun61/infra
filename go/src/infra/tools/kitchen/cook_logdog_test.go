@@ -27,45 +27,39 @@ func TestCookLogDogPrefix(t *testing.T) {
 			p cookLogDogParams
 
 			env = environ.New([]string{
-				"SWARMING_SERVER=https://example.appspot.com",
 				"SWARMING_TASK_ID=1234567890abcdef",
 			})
 		)
 
-		Convey(`Will prefer command-line prefix`, func() {
-			p.prefix = "foo/bar"
+		Convey(`Can resolve non-templated LogDog URLs.`, func() {
+			p.annotationURL = "logdog://example.com/testproject/foo/bar/+/annotations"
+			So(p.setupAndValidate(env), ShouldBeNil)
 
-			pfx, err := p.getPrefix(env)
-			So(err, ShouldBeNil)
-			So(pfx, ShouldEqual, types.StreamName("foo/bar"))
+			So(p.annotationAddr, ShouldResemble, &types.StreamAddr{
+				Host:    "example.com",
+				Project: "testproject",
+				Path:    "foo/bar/+/annotations",
+			})
 		})
 
-		Convey(`Can generate a LogDog prefix`, func() {
-			pfx, err := p.getPrefix(env)
-			So(err, ShouldBeNil)
-			So(pfx, ShouldEqual, types.StreamName("swarm/example.appspot.com/1234567890abcdef"))
-		})
+		Convey(`Can resolve templated LogDog URLs`, func() {
+			p.annotationURL = "logdog://example.com/testproject/foo/bar/${swarming_run_id}/+/annotations"
 
-		Convey(`Can generate a LogDog prefix from a host instead of a server URL`, func() {
-			env.Set("SWARMING_SERVER", "example.appspot.com")
+			Convey(`Can generate a LogDog address`, func() {
+				So(p.setupAndValidate(env), ShouldBeNil)
 
-			pfx, err := p.getPrefix(env)
-			So(err, ShouldBeNil)
-			So(pfx, ShouldEqual, types.StreamName("swarm/example.appspot.com/1234567890abcdef"))
-		})
+				So(p.annotationAddr, ShouldResemble, &types.StreamAddr{
+					Host:    "example.com",
+					Project: "testproject",
+					Path:    "foo/bar/1234567890abcdef/+/annotations",
+				})
+			})
 
-		Convey(`If Swarming server is missing from the environment, will fail.`, func() {
-			env.Set("SWARMING_SERVER", "")
+			Convey(`If Swarming task ID is missing from the environment, will fail.`, func() {
+				env.Set("SWARMING_TASK_ID", "")
 
-			_, err := p.getPrefix(env)
-			So(err, ShouldErrLike, "missing or empty SWARMING_SERVER")
-		})
-
-		Convey(`If Swarming task ID is missing from the environment, will fail.`, func() {
-			env.Set("SWARMING_TASK_ID", "")
-
-			_, err := p.getPrefix(env)
-			So(err, ShouldErrLike, "missing or empty SWARMING_TASK_ID")
+				So(p.setupAndValidate(env), ShouldErrLike, `no substitution for "swarming_run_id"`)
+			})
 		})
 	})
 }
