@@ -10,21 +10,27 @@ handlers:
   - url: /robots.txt
     static_files: static/robots.txt
     upload: static/robots.txt
+    secure: always
 
   - url: /images
     static_dir: static/images
+    secure: always
 
   - url: /stylesheets
     static_dir: static/stylesheets
+    secure: always
 
   - url: /dashboards
     static_dir: static/dashboards
+    secure: always
 
   - url: /src
     static_dir: src
+    secure: always
 
   - url: /bower_components
     static_dir: bower_components
+    secure: always
 
   - url: /internal/.*
     script: _go_app
@@ -33,3 +39,4 @@ handlers:
 
   - url: /.*
     script: _go_app
+    secure: always
