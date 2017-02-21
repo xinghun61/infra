@@ -1,11 +1,11 @@
 DEPS = [
   'build/luci_config',
-  'build/gsutil',
 
   'depot_tools/cipd',
   'depot_tools/gclient',
   'depot_tools/git',
   'depot_tools/git_cl',
+  'depot_tools/gsutil',
 
   'recipe_engine/json',
   'recipe_engine/path',

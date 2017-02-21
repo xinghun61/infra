@@ -6,10 +6,10 @@
 
 DEPS = [
   'build/file',
-  'build/gsutil',
   'build/zip',
   'depot_tools/cipd',
   'depot_tools/git',
+  'depot_tools/gsutil',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',

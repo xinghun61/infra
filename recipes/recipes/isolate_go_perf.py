@@ -4,12 +4,12 @@
 
 DEPS = [
   'build/file',
-  'build/gsutil',
   'build/perf_dashboard',
   'depot_tools/bot_update',
   'depot_tools/depot_tools',
   'depot_tools/gclient',
   'depot_tools/git',
+  'depot_tools/gsutil',
   'recipe_engine/path',
   'recipe_engine/platform',
   'recipe_engine/properties',
