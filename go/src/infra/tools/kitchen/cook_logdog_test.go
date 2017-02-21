@@ -31,34 +31,38 @@ func TestCookLogDogPrefix(t *testing.T) {
 			})
 		)
 
-		Convey(`Can resolve non-templated LogDog URLs.`, func() {
-			p.annotationURL = "logdog://example.com/testproject/foo/bar/+/annotations"
-			So(p.setupAndValidate(env), ShouldBeNil)
+		Convey(`When running in Swarming mode`, func() {
+			mode := swarmingCookMode{}
 
-			So(p.annotationAddr, ShouldResemble, &types.StreamAddr{
-				Host:    "example.com",
-				Project: "testproject",
-				Path:    "foo/bar/+/annotations",
-			})
-		})
-
-		Convey(`Can resolve templated LogDog URLs`, func() {
-			p.annotationURL = "logdog://example.com/testproject/foo/bar/${swarming_run_id}/+/annotations"
-
-			Convey(`Can generate a LogDog address`, func() {
-				So(p.setupAndValidate(env), ShouldBeNil)
+			Convey(`Can resolve non-templated LogDog URLs.`, func() {
+				p.annotationURL = "logdog://example.com/testproject/foo/bar/+/annotations"
+				So(p.setupAndValidate(mode, env), ShouldBeNil)
 
 				So(p.annotationAddr, ShouldResemble, &types.StreamAddr{
 					Host:    "example.com",
 					Project: "testproject",
-					Path:    "foo/bar/1234567890abcdef/+/annotations",
+					Path:    "foo/bar/+/annotations",
 				})
 			})
 
-			Convey(`If Swarming task ID is missing from the environment, will fail.`, func() {
-				env.Set("SWARMING_TASK_ID", "")
+			Convey(`Can resolve templated LogDog URLs`, func() {
+				p.annotationURL = "logdog://example.com/testproject/foo/bar/${swarming_run_id}/+/annotations"
 
-				So(p.setupAndValidate(env), ShouldErrLike, `no substitution for "swarming_run_id"`)
+				Convey(`Can generate a LogDog address`, func() {
+					So(p.setupAndValidate(mode, env), ShouldBeNil)
+
+					So(p.annotationAddr, ShouldResemble, &types.StreamAddr{
+						Host:    "example.com",
+						Project: "testproject",
+						Path:    "foo/bar/1234567890abcdef/+/annotations",
+					})
+				})
+
+				Convey(`If Swarming task ID is missing from the environment, will fail.`, func() {
+					env.Set("SWARMING_TASK_ID", "")
+
+					So(p.setupAndValidate(mode, env), ShouldErrLike, `no substitution for "swarming_run_id"`)
+				})
 			})
 		})
 	})

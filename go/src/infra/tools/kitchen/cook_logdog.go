@@ -105,7 +105,7 @@ func (p *cookLogDogParams) shouldEmitAnnotations() bool {
 	return !(p.logDogOnly && p.active())
 }
 
-func (p *cookLogDogParams) setupAndValidate(env environ.Env) error {
+func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) error {
 	if !p.active() {
 		if p.logDogOnly {
 			return errors.New("LogDog flag (-logdog-only) requires annotation URL (-logdog-annotation-url)")
@@ -115,7 +115,9 @@ func (p *cookLogDogParams) setupAndValidate(env environ.Env) error {
 
 	// Resolve templating parameters.
 	var params tasktemplate.Params
-	params.SwarmingRunID, _ = env.Get("SWARMING_TASK_ID")
+	if err := mode.fillTemplateParams(env, &params); err != nil {
+		return errors.Annotate(err).Reason("failed to populate template parameters").Err()
+	}
 
 	// Parse/resolve annotation URL (must be populated, since active()).
 	annotationURL, err := params.Resolve(p.annotationURL)
@@ -241,7 +243,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, 
 		BufferLogs:   true,
 		MaxBufferAge: butler.DefaultMaxBufferAge,
 	}
-	if c.logdog.logDogOnly && c.logdog.logDogSendIOKeepAlives {
+	if c.logdog.logDogOnly && (c.logdog.logDogSendIOKeepAlives || c.mode.needsIOKeepAlive()) {
 		// If we're not teeing, we need to issue keepalives so our executor doesn't
 		// kill us due to lack of I/O.
 		butlerCfg.IOKeepAliveInterval = 5 * time.Minute

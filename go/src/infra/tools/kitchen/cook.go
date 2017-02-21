@@ -45,6 +45,9 @@ var cmdCook = &subcommands.Command{
 		c.rr.opArgs.AnnotationFlags = &recipe_engine.Arguments_AnnotationFlags{}
 
 		fs := &c.Flags
+		fs.Var(&c.mode,
+			"mode",
+			"Build environment mode for Kitchen. Options are ["+cookModeFlagEnum.Choices()+"].")
 		fs.StringVar(
 			&c.rr.recipeEnginePath,
 			"recipe-engine-path",
@@ -116,12 +119,17 @@ type cookRun struct {
 	CacheDir       string
 	TempDir        string
 
+	mode   cookModeFlag
 	rr     recipeRemoteRun
 	logdog cookLogDogParams
 }
 
 // normalizeFlags validates and normalizes flags.
 func (c *cookRun) normalizeFlags(env environ.Env) error {
+	if c.mode.cookMode == nil {
+		return fmt.Errorf("missing mode (-mode)")
+	}
+
 	if err := c.rr.normalize(); err != nil {
 		return err
 	}
@@ -131,7 +139,7 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	}
 
 	// If LogDog is enabled, all required LogDog flags must be supplied.
-	if err := c.logdog.setupAndValidate(env); err != nil {
+	if err := c.logdog.setupAndValidate(c.mode.cookMode, env); err != nil {
 		return err
 	}
 
