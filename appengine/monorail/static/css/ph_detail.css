@@ -32,6 +32,7 @@ pre.prettyprint {
 
 .issuedescription pre a, .issuecomment pre a {
     word-wrap: break-word;
+    word-break: break-all;
 }
 
 .closed_ref { text-decoration: line-through }
