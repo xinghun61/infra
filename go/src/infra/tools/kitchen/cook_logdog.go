@@ -29,6 +29,7 @@ import (
 	fileOut "github.com/luci/luci-go/logdog/client/butler/output/file"
 	out "github.com/luci/luci-go/logdog/client/butler/output/logdog"
 	"github.com/luci/luci-go/logdog/client/butlerlib/streamclient"
+	"github.com/luci/luci-go/logdog/client/butlerlib/streamproto"
 	"github.com/luci/luci-go/logdog/common/types"
 	"github.com/luci/luci-go/swarming/tasktemplate"
 )
@@ -47,6 +48,7 @@ func disableGRPCLogging(ctx context.Context) {
 
 type cookLogDogParams struct {
 	annotationURL          string
+	globalTags             streamproto.TagMap
 	logDogOnly             bool
 	logDogSendIOKeepAlives bool
 
@@ -85,6 +87,11 @@ func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
 		"logdog-service-account-json-path",
 		"",
 		"If specified, use the service account JSON file at this path. Otherwise, autodetect.")
+	fs.Var(
+		&p.globalTags,
+		"logdog-tag",
+		"Specify key[=value] tags to be applied to all log streams. Individual streams may override. Can "+
+			"be specified multiple times.")
 }
 
 func (p *cookLogDogParams) active() bool {
@@ -242,6 +249,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, 
 		Prefix:       prefix,
 		BufferLogs:   true,
 		MaxBufferAge: butler.DefaultMaxBufferAge,
+		GlobalTags:   c.logdog.globalTags,
 	}
 	if c.logdog.logDogOnly && (c.logdog.logDogSendIOKeepAlives || c.mode.needsIOKeepAlive()) {
 		// If we're not teeing, we need to issue keepalives so our executor doesn't
