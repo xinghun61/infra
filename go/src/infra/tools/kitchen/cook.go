@@ -237,18 +237,18 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	}
 
 	// Configure paths that the recipe will use.
-	if pathProps, err := c.pathModuleProperties();err != nil {
+	pathProps, err := c.pathModuleProperties()
+	if err != nil {
 		return nil, err
-	} else {
-		props["$recipe_engine/path"] = pathProps
 	}
+	props["$recipe_engine/path"] = pathProps
 
 	// Provide bot_id for the recipes.
-	if botId, err := c.mode.botId(env); err != nil {
+	botID, err := c.mode.botID(env)
+	if err != nil {
 		return nil, err
-	} else {
-		props["bot_id"] = botId
 	}
+	props["bot_id"] = botID
 
 	return props, nil
 }
@@ -271,14 +271,14 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 		return 1
 	}
 
-	err := c.runErr(ctx, args, sysEnv)
+	rc, err := getReturnCode(c.runErr(ctx, args, sysEnv))
 	switch {
 	case errors.Unwrap(err) == context.Canceled:
 		log.Warningf(ctx, "Process was cancelled.")
 	case err != nil:
 		logAnnotatedErr(ctx, err)
 	}
-	return getReturnCode(err)
+	return rc
 }
 
 func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) error {
@@ -417,12 +417,18 @@ func (err returnCodeError) Error() string { return fmt.Sprintf("return code: %d"
 
 // getReturnCode returns a return code value for a given error. It handles the
 // returnCodeError type specially, returning its integer value verbatim.
-func getReturnCode(err error) int {
+//
+// The error returned by getReturnCode is the same as the input error, unless
+// the input error was a zero return code, in which case it will be nil.
+func getReturnCode(err error) (int, error) {
 	if err == nil {
-		return 0
+		return 0, nil
 	}
 	if rc, ok := errors.Unwrap(err).(returnCodeError); ok {
-		return int(rc)
+		if rc == 0 {
+			return 0, nil
+		}
+		return int(rc), err
 	}
-	return 1
+	return 1, err
 }
