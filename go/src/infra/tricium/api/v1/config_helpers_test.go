@@ -35,24 +35,6 @@ func TestProjectIsKnown(t *testing.T) {
 	})
 }
 
-func TestPlatformIsSupported(t *testing.T) {
-	Convey("Test Environment", t, func() {
-
-		platform := "Ubuntu14.04-x86-64"
-		sc := &ServiceConfig{Platforms: []*Platform{{Name: platform}}}
-
-		Convey("Supported platform is supported", func() {
-			ok := PlatformIsSupported(sc, platform)
-			So(ok, ShouldBeTrue)
-		})
-
-		Convey("Unknown platform is not supported", func() {
-			ok := PlatformIsSupported(sc, "blabla")
-			So(ok, ShouldBeFalse)
-		})
-	})
-}
-
 func TestCanRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		ctx := memory.Use(memlogger.Use(context.Background()))
@@ -139,15 +121,15 @@ func TestLookupAnalyzer(t *testing.T) {
 func TestSupportsPlatform(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
-		platform := "Ubuntu14.04-x86-64"
+		platform := Platform_UBUNTU
 		a := &Analyzer{
 			Name: "PyLint",
 			Impls: []*Impl{
 				{
-					Platforms: []string{"Windows"},
+					ProvidesForPlatform: Platform_WINDOWS,
 				},
 				{
-					Platforms: []string{platform},
+					ProvidesForPlatform: platform,
 				},
 			},
 		}
@@ -158,7 +140,7 @@ func TestSupportsPlatform(t *testing.T) {
 		})
 
 		Convey("Unsupported platform is not supported", func() {
-			ok := SupportsPlatform(a, "Mac")
+			ok := SupportsPlatform(a, Platform_MAC)
 			So(ok, ShouldBeFalse)
 		})
 	})
@@ -190,13 +172,58 @@ func TestSupportsConfig(t *testing.T) {
 	})
 }
 
+func TestLookupImplForPlatform(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		platform := Platform_LINUX
+		a := &Analyzer{Impls: []*Impl{{ProvidesForPlatform: platform}}}
+		Convey("Impl for known platform is returned", func() {
+			i := LookupImplForPlatform(a, platform)
+			So(i, ShouldNotBeNil)
+		})
+		Convey("Impl for unknown platform returns nil", func() {
+			i := LookupImplForPlatform(a, Platform_WINDOWS)
+			So(i, ShouldBeNil)
+		})
+	})
+}
+
+func TestLookupPlatform(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		platform := Platform_UBUNTU
+		sc := &ServiceConfig{Platforms: []*Platform_Details{{Name: platform}}}
+		Convey("Known platform is returned", func() {
+			p := LookupPlatform(sc, platform)
+			So(p, ShouldNotBeNil)
+		})
+		Convey("Unknown platform returns nil", func() {
+			p := LookupPlatform(sc, Platform_WINDOWS)
+			So(p, ShouldBeNil)
+		})
+	})
+}
+
+func TestGetRecipePackages(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		// TODO(emso): test recipe packages
+	})
+}
+
+func TestGetRecipeCmd(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		Convey("Unknown recipe cmd returns an error", func() {
+			_, err := GetRecipeCmd(&ServiceConfig{}, Platform_LINUX)
+			So(err, ShouldNotBeNil)
+		})
+	})
+}
+
 func TestIsValid(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
 		sc := &ServiceConfig{
-			Platforms: []*Platform{
+			Platforms: []*Platform_Details{
 				{
-					Name:       "Linux",
+					Name:       Platform_LINUX,
 					Dimensions: []string{"pool:Default"},
 				},
 			},
@@ -220,37 +247,5 @@ func TestIsValid(t *testing.T) {
 		})
 
 		// TODO(emso): add missing tests for IsImplValid
-	})
-}
-
-func TestFlattenAnalyzer(t *testing.T) {
-	Convey("Test Environment", t, func() {
-		Convey("Flattens implementation fields", func() {
-			p1 := "Linux-32"
-			p2 := "Linux-64"
-			analyzer := &Analyzer{
-				Impls: []*Impl{
-					{
-						Platforms: []string{
-							p1,
-							p2,
-						},
-						Cmd: &Cmd{
-							Exec: "echo",
-							Args: []string{
-								"hello",
-							},
-						},
-						Deadline: 3200,
-					},
-				},
-			}
-			FlattenAnalyzer(analyzer)
-			So(len(analyzer.Impls), ShouldEqual, 2)
-			So(len(analyzer.Impls[0].Platforms), ShouldEqual, 1)
-			So(len(analyzer.Impls[1].Platforms), ShouldEqual, 1)
-			So(analyzer.Impls[0].Platforms[0], ShouldEqual, p1)
-			So(analyzer.Impls[1].Platforms[0], ShouldEqual, p2)
-		})
 	})
 }

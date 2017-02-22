@@ -23,16 +23,6 @@ func ProjectIsKnown(sc *ServiceConfig, project string) bool {
 	return false
 }
 
-// PlatformIsSupported checks if the provided platform is supported.
-func PlatformIsSupported(sc *ServiceConfig, platform string) bool {
-	for _, p := range sc.Platforms {
-		if p.Name == platform {
-			return true
-		}
-	}
-	return false
-}
-
 // CanRequest checks the current user can make service requests for the project.
 func CanRequest(c context.Context, pc *ProjectConfig) (bool, error) {
 	return checkAcls(c, pc, Acl_REQUESTER)
@@ -85,13 +75,31 @@ func lookupAnalyzer(analyzers []*Analyzer, analyzer string) (*Analyzer, error) {
 	return nil, nil
 }
 
-// SupportsPlatform checks if the analyzer has an implementation for the provided platform.
-func SupportsPlatform(a *Analyzer, platform string) bool {
+// LookupImplForPlatform returns the first impl providing data for the provided platform.
+func LookupImplForPlatform(a *Analyzer, platform Platform_Name) *Impl {
 	for _, i := range a.Impls {
-		for _, p := range i.Platforms {
-			if p == platform {
-				return true
-			}
+		if i.ProvidesForPlatform == platform {
+			return i
+		}
+	}
+	return nil
+}
+
+// LookupPlatform returns the first platform matching the provided platform name.
+func LookupPlatform(sc *ServiceConfig, platform Platform_Name) *Platform_Details {
+	for _, p := range sc.Platforms {
+		if p.Name == platform {
+			return p
+		}
+	}
+	return nil
+}
+
+// SupportsPlatform checks if the provided analyzer has an implementation providing data for the provided platform.
+func SupportsPlatform(a *Analyzer, platform Platform_Name) bool {
+	for _, i := range a.Impls {
+		if i.ProvidesForPlatform == platform {
+			return true
 		}
 	}
 	return false
@@ -107,40 +115,84 @@ func SupportsConfig(a *Analyzer, config *Config) bool {
 	return false
 }
 
+// GetRecipePackages returns the base service recipe packages for recipe-based implementations.
+func GetRecipePackages(sc *ServiceConfig, platform Platform_Name) ([]*CipdPackage, error) {
+	if len(sc.RecipePackages) == 0 {
+		return nil, errors.New("service recipe packages missing")
+	}
+	// TODO(emso): adjust packages for platform.
+	return sc.RecipePackages, nil
+}
+
+// GetRecipeCmd returns the base service command for recipe-based implementations.
+func GetRecipeCmd(sc *ServiceConfig, platform Platform_Name) (*Cmd, error) {
+	if sc.GetRecipeCmd() == nil {
+		return nil, errors.New("service recipe command missing")
+	}
+	// TODO(emso): Adjust for platform?
+	return &Cmd{
+		Exec: sc.RecipeCmd.Exec,
+		Args: sc.RecipeCmd.Args,
+	}, nil
+}
+
 // IsAnalyzerValid checks if the analyzer config entry is valid.
 //
-// A valid analyzer config entry has a name and valid impl entries.
+// A valid analyzer config entry has a name, valid deps and valid impl entries.
 // Note that there are more requirements for an analyzer config to be fully
 // valid in a merged config, for instance, data dependencies are required.
 func IsAnalyzerValid(a *Analyzer, sc *ServiceConfig) (bool, error) {
 	if a.GetName() == "" {
 		return false, errors.New("missing name in analyzer config")
 	}
+	pm := make(map[Platform_Name]bool)
 	for _, i := range a.Impls {
-		ok, err := IsImplValid(i, sc)
+		needs, err := LookupDataTypeDetails(sc, a.Needs)
+		if err != nil {
+			return false, errors.New("analyzer has impl that needs unknown data type")
+		}
+		provides, err := LookupDataTypeDetails(sc, a.Provides)
+		if err != nil {
+			return false, errors.New("analyzer has impl that provides unknown data type")
+		}
+		ok, err := IsImplValid(i, sc, needs, provides)
 		if !ok {
 			return false, fmt.Errorf("invalid impl for analyzer %s: %v", a.Name, err)
 		}
-		// TODO(emso): check for duplicate impl for platform and analyzer
+		if i.ProvidesForPlatform == Platform_ANY {
+			continue
+		}
+		if _, ok := pm[i.ProvidesForPlatform]; ok {
+			return false, fmt.Errorf("multiple impl providing data for platform %v", i.ProvidesForPlatform)
+		}
+		pm[i.ProvidesForPlatform] = true
 	}
 	return true, nil
 }
 
 // IsImplValid checks if the impl entry is valid.
 //
-// A valid impl entry lists one or more known platforms and has either a
-// recipe-based implementation, or a cmd-based implementation, but not both.
-func IsImplValid(i *Impl, sc *ServiceConfig) (bool, error) {
-	if len(i.Platforms) == 0 {
-		return false, errors.New("missing platform for impl")
+// A valid impl entry has a valid runtime platform, one with a runtime, specifies platforms
+// for data-dependencies when needed, has a cmd or recipe based implementation, and a deadline.
+func IsImplValid(i *Impl, sc *ServiceConfig, needs *Data_TypeDetails, provides *Data_TypeDetails) (bool, error) {
+	if i.GetRuntimePlatform() == Platform_ANY {
+		return false, errors.New("must provide runtime platform for impl")
 	}
-	for _, p := range i.Platforms {
-		if !PlatformIsSupported(sc, p) {
-			return false, fmt.Errorf("unknown platform %s", p)
-		}
+	runtime := LookupPlatform(sc, i.GetRuntimePlatform())
+	if runtime == nil {
+		return false, fmt.Errorf("impl using unknown runtime platform: %v", i.RuntimePlatform)
 	}
-	if i.GetCmd() != nil && i.GetRecipe() != nil {
-		return false, errors.New("cannot list both cmd and recipe in the same impl")
+	if !runtime.GetHasRuntime() {
+		return false, errors.New("must provide a runtime platform that has a runtime")
+	}
+	if needs.GetIsPlatformSpecific() && i.GetNeedsForPlatform() == Platform_ANY {
+		return false, errors.New("must specify platform for needed platform-specific data type")
+	}
+	if provides.GetIsPlatformSpecific() && i.GetProvidesForPlatform() == Platform_ANY {
+		return false, errors.New("must specify platform for provided platform-specific data type")
+	}
+	if i.GetCmd() == nil && i.GetRecipe() == nil {
+		return false, errors.New("must include either command or recipe in impl")
 	}
 	if i.GetDeadline() == 0 {
 		return false, errors.New("missing deadline")
@@ -148,37 +200,12 @@ func IsImplValid(i *Impl, sc *ServiceConfig) (bool, error) {
 	return true, nil
 }
 
-// FlattenAnalyzer flattens the impl entries in the provided analyzer.
-//
-// Modifies the provided analyzer.
-func FlattenAnalyzer(a *Analyzer) error {
-	var impls []*Impl
-	for _, i := range a.Impls {
-		if len(i.Platforms) == 0 {
-			return fmt.Errorf("missing platform for impl for analyzer %s", a.Name)
+// LookupDataTypeDetails looks up data type details for a given type from the provided service config.
+func LookupDataTypeDetails(sc *ServiceConfig, dt Data_Type) (*Data_TypeDetails, error) {
+	for _, d := range sc.GetDataDetails() {
+		if d.Type == dt {
+			return d, nil
 		}
-		if len(i.Platforms) <= 1 {
-			// Only one platform, let's stop here and continue.
-			continue
-		}
-		for k, p := range i.Platforms {
-			if k == 0 {
-				// First platform OK, continue.
-				continue
-			}
-			// Second or more platform, flatten.
-			impls = append(impls, &Impl{
-				Platforms:    []string{p}, // only this platform
-				CipdPackages: i.CipdPackages,
-				Recipe:       i.Recipe,
-				Cmd:          i.Cmd,
-				Deadline:     i.Deadline,
-			})
-		}
-		// Let this impl get the first platform (the one we skipped above).
-		i.Platforms = []string{i.Platforms[0]}
 	}
-	// Add the new impls we found.
-	a.Impls = append(a.Impls, impls...)
-	return nil
+	return nil, fmt.Errorf("data type undefined: %v", dt)
 }

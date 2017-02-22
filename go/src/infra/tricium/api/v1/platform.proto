@@ -1,0 +1,68 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+package tricium;
+
+// Platforms supported by Tricium.
+message Platform {
+  // Enum names of supported platforms.
+  //
+  // Note that all platforms may be used to specify data
+  // dependencies but only some may be used as runtime platforms.
+  // The number of a platform corresponds to one bit in the platforms field of
+  // Tricium data entries.
+  enum Name {
+    // Use for platform-independent data types.
+    ANY = 0;
+
+    // Generic Linux.
+    LINUX = 1;
+    UBUNTU = 2;
+    // reserved 3,4,5,6,7,8,9,10
+
+    // Generic Android.
+    ANDROID = 11;
+    // reserved 12,13,14,15
+
+    // Generic Mac
+    MAC = 16;
+    OSX = 17;
+    IOS = 18;
+    // reserved 19,20
+
+    // Generic Windows.
+    WINDOWS = 21;
+    // reserved 22,23,24,25
+
+    CHROMEOS = 26;
+    // reserved 27,28,29,30
+
+    FUCHSIA = 31;
+    // reserved 32,33,34,35
+  }
+
+  // Platform details for supported platforms.
+  //
+  // Links platform enum name to Swarming dimensions.
+  message Details {
+    Name name = 1;
+
+    // Swarming dimensions of the form “key:value”, with keys and values mapping
+    // to valid swarming keys/values.
+    repeated string dimensions = 2;
+
+    // Whether this platform can be used as a runtime platform.
+    //
+    // Note that we can analyze for some platforms without actually running
+    // the analyzer workers on those platforms.
+    //
+    // This field is used when validating configurations and only platforms
+    // with this field set to true may be configured as the runtime platform
+    // of an implementation. All platform values may be used to express
+    // data-dependencies between analyzers.
+    bool has_runtime = 3;
+  }
+}

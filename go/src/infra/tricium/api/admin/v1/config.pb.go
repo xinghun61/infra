@@ -39,7 +39,7 @@ import prpc "github.com/luci/luci-go/grpc/prpc"
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import tricium1 "infra/tricium/api/v1"
+import tricium2 "infra/tricium/api/v1"
 
 import (
 	context "golang.org/x/net/context"
@@ -59,11 +59,11 @@ const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type ValidateRequest struct {
 	// The project configuration to validate.
-	ProjectConfig *tricium1.ProjectConfig `protobuf:"bytes,1,opt,name=project_config,json=projectConfig" json:"project_config,omitempty"`
+	ProjectConfig *tricium2.ProjectConfig `protobuf:"bytes,1,opt,name=project_config,json=projectConfig" json:"project_config,omitempty"`
 	// The service config to use.
 	//
 	// This field is optional. If not provided the default service config will be used.
-	ServiceConfig *tricium1.ServiceConfig `protobuf:"bytes,2,opt,name=service_config,json=serviceConfig" json:"service_config,omitempty"`
+	ServiceConfig *tricium2.ServiceConfig `protobuf:"bytes,2,opt,name=service_config,json=serviceConfig" json:"service_config,omitempty"`
 }
 
 func (m *ValidateRequest) Reset()                    { *m = ValidateRequest{} }
@@ -71,14 +71,14 @@ func (m *ValidateRequest) String() string            { return proto.CompactTextS
 func (*ValidateRequest) ProtoMessage()               {}
 func (*ValidateRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
-func (m *ValidateRequest) GetProjectConfig() *tricium1.ProjectConfig {
+func (m *ValidateRequest) GetProjectConfig() *tricium2.ProjectConfig {
 	if m != nil {
 		return m.ProjectConfig
 	}
 	return nil
 }
 
-func (m *ValidateRequest) GetServiceConfig() *tricium1.ServiceConfig {
+func (m *ValidateRequest) GetServiceConfig() *tricium2.ServiceConfig {
 	if m != nil {
 		return m.ServiceConfig
 	}
@@ -91,7 +91,7 @@ type ValidateResponse struct {
 	//
 	// This is the resulting config after flattening and merging of the
 	// provided project and service config.
-	ValidatedConfig *tricium1.ProjectConfig `protobuf:"bytes,1,opt,name=validated_config,json=validatedConfig" json:"validated_config,omitempty"`
+	ValidatedConfig *tricium2.ProjectConfig `protobuf:"bytes,1,opt,name=validated_config,json=validatedConfig" json:"validated_config,omitempty"`
 }
 
 func (m *ValidateResponse) Reset()                    { *m = ValidateResponse{} }
@@ -99,7 +99,7 @@ func (m *ValidateResponse) String() string            { return proto.CompactText
 func (*ValidateResponse) ProtoMessage()               {}
 func (*ValidateResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
 
-func (m *ValidateResponse) GetValidatedConfig() *tricium1.ProjectConfig {
+func (m *ValidateResponse) GetValidatedConfig() *tricium2.ProjectConfig {
 	if m != nil {
 		return m.ValidatedConfig
 	}

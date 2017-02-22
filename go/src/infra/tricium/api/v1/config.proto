@@ -7,6 +7,7 @@ syntax = "proto3";
 package tricium;
 
 import "infra/tricium/api/v1/data.proto";
+import "infra/tricium/api/v1/platform.proto";
 
 // Tricium service configuration.
 //
@@ -14,16 +15,31 @@ import "infra/tricium/api/v1/data.proto";
 // to Tricium.
 message ServiceConfig {
   // Supported platforms.
-  repeated Platform platforms = 1;
+  repeated Platform.Details platforms = 1;
+
+  // Supported data types.
+  repeated Data.TypeDetails data_details = 2;
 
   // List of shared analyzers.
-  repeated Analyzer analyzers = 2;
+  repeated Analyzer analyzers = 3;
 
   // Details for connected projects.
-  repeated ProjectDetails projects = 3;
+  repeated ProjectDetails projects = 4;
 
   // PubSub topic used to collect worker completion notifications from Swarming.
-  string swarming_worker_topic = 4;
+  string swarming_worker_topic = 5;
+
+  // Base recipe command used for workers implemented as recipes.
+  //
+  // Specific recipe details for the worker will be added as flags at the
+  // end of the argument list.
+  Cmd RecipeCmd = 6;
+
+  // Base recipe packages used for workers implemented as recipes.
+  //
+  // These packages will be adjusted for the platform in question, by appending
+  // platform name details to the end of the package name.
+  repeated CipdPackage RecipePackages = 7;
 }
 
 message ProjectDetails {
@@ -36,7 +52,7 @@ message ProjectDetails {
 
   // Project-specific swarming service account.
   string swarming_service_account = 3;
- 
+
   // Details of the repository connected to the project. This should be the
   // repository hosting the files that should be analyzed for this project.
   RepoDetails repo_details = 4;
@@ -107,23 +123,13 @@ message Acl {
   string identity = 3;
 }
 
-// Specification of a platform configuration.
-message Platform {
-  // Name use to refer to this platform configuration.
-  string name = 1;
-
- // Swarming dimensions of the form “key:value”, with keys and values mapping
- // to valid swarming keys/values.
- repeated string dimensions = 2;
-}
-
 // Selection of analyzer implementations to run for a project.
 message Selection {
   // Name of analyzer to run.
   string analyzer = 1;
 
-  // Name of platform configuration to run analyzer on.
-  string platform = 2;
+  // Name of platform to retrieve results from.
+  Platform.Name platform = 2;
 
   // Analyzer configuration to use on this platform.
   repeated Config configs = 3;
@@ -174,25 +180,44 @@ message ConfigDef {
   string default = 2;
 }
 
-// Analyzer implementation for one or more platforms. Implementation can be
-// recipe-based or binary-based.
+// Analyzer implementation.
+//
+// Implementation can be either recipe-based or command-based.
+// If platform-specific data is needed or provided, the specific platform
+// details should be provided in the implementation.
+// Note that the runtime platform of the implementation may be different than
+// the platform(s) used to refine the data-dependency.
 message Impl {
-  // Platforms this implementation applies to.
-  repeated string platforms = 1;
+  // Data-dependency details specific to this implementation.
+  // For instance, if the needed data needs to be tied to a specific platform
+  // then the 'needs_for_platform' field should be set to that platform.
+  // Likewise for any provided data type tied to a specific platform, this
+  // should be indicated with the 'provides_for_platform' field.
+  // Either if these fields can be left out for implementations of analyzers
+  // not needing or providing platform-specific data.
+  Platform.Name needs_for_platform = 1;
+  Platform.Name provides_for_platform = 2;
+
+  // The platform to run this implementation on. This may be different
+  // from the platforms used to refine data-dependencies, as long as the
+  // data consumed/produced follows the specification.
+  Platform.Name runtime_platform = 3;
 
   // Cipd packages needed by this implementation.
-  repeated CipdPackage cipd_packages = 2;
+  repeated CipdPackage cipd_packages = 4;
 
-  // Recipe for recipe-based implementation. Either recipe or cmd, not both.
-  Recipe recipe = 3;
+  oneof impl {
+    // Recipe for recipe-based implementation.
+    Recipe recipe = 5;
 
-  // Command for binary-based implementation. Either recipe or cmd, not both.
-  Cmd cmd = 4;
+    // Command for binary-based implementation.
+    Cmd cmd = 6;
+  }
 
   // Deadline for execution of corresponding worker (in minutes). Note that
   // this deadline includes the launch of a swarming task for the corresponding
   // worker, and collection of results from that worker.
-  int32 deadline = 5;
+  int32 deadline = 7;
 }
 
 // Specification of how to find a recipe.
@@ -206,8 +231,17 @@ message Recipe {
   // Revision to use.
   string revision = 3;
 
-  // A json string containing properties for the recipe.
-  string properties = 4;
+  // Recipe properties which will be provided as a JSON string to the recipe.
+  repeated Property properties = 4;
+}
+
+// Property used to configure a recipe.
+//
+// All properties for a recipe are encoded as a JSON string and passed via
+// the 'kitchen cook' command, ending up as build properties.
+message Property {
+  string key = 1;
+  string value = 2;
 }
 
 // Analyzer configuration used when selecting an analyzer implementation.

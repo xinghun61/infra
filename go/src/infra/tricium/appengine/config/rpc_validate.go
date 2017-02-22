@@ -43,28 +43,7 @@ func validate(c context.Context, req *admin.ValidateRequest, cp common.ConfigPro
 			return nil, fmt.Errorf("failed to get service config: %v", err)
 		}
 	}
-	if err := flatten(sc.Analyzers); err != nil {
-		return nil, fmt.Errorf("failed to flatten service config: %v", err)
-	}
-	if err := flatten(req.ProjectConfig.Analyzers); err != nil {
-		return nil, fmt.Errorf("failed to flatten project config: %v", err)
-	}
 	return merge(sc, req.ProjectConfig)
-}
-
-// flatten flattens the given analyzer slice.
-//
-// Impl fields with multiple platforms are transformed to several impl fields with one platform each.
-//
-// Errors:
-//  - missing platform field for impl
-func flatten(analyzers []*tricium.Analyzer) error {
-	for _, a := range analyzers {
-		if err := tricium.FlattenAnalyzer(a); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // merge merges the project config with the service config.
@@ -146,10 +125,6 @@ func mergeAnalyzers(analyzer string, sc *tricium.ServiceConfig, sa *tricium.Anal
 		res.Impls = sa.Impls
 	}
 	if pa != nil {
-		ok, err := tricium.IsAnalyzerValid(pa, sc)
-		if !ok {
-			return nil, fmt.Errorf("invalid project analyzer config for %s: %v", analyzer, err)
-		}
 		if sa != nil &&
 			(pa.GetNeeds() != tricium.Data_NONE && pa.GetNeeds() != sa.GetNeeds() ||
 				pa.GetProvides() != tricium.Data_NONE && pa.GetProvides() != sa.GetProvides()) {
@@ -161,6 +136,16 @@ func mergeAnalyzers(analyzer string, sc *tricium.ServiceConfig, sa *tricium.Anal
 			}
 			res.Needs = pa.Needs
 			res.Provides = pa.Provides
+		}
+		// Add service deps to project entry for validation check. These deps are used to check validity of impls and when
+		// there are service deps they are inherited by the project entry.
+		if sa != nil {
+			pa.Needs = sa.Needs
+			pa.Provides = sa.Provides
+		}
+		ok, err := tricium.IsAnalyzerValid(pa, sc)
+		if !ok {
+			return nil, fmt.Errorf("invalid project analyzer config for %s: %v", analyzer, err)
 		}
 		if pa.GetPathFilters() != nil {
 			res.PathFilters = pa.PathFilters
@@ -202,15 +187,15 @@ func mergeConfigDefs(scd []*tricium.ConfigDef, pcd []*tricium.ConfigDef) []*tric
 
 // mergeImpls merges the service analyzer implementations with the project analyzer implementations.
 //
-// All provided impl entries are assumed to be valid an flattened.
+// All provided impl entries are assumed to be valid.
 // The project implementations can override the service implementations for the same platform.
 func mergeImpls(sci []*tricium.Impl, pci []*tricium.Impl) []*tricium.Impl {
-	impls := map[string]*tricium.Impl{}
+	impls := map[tricium.Platform_Name]*tricium.Impl{}
 	for _, i := range sci {
-		impls[i.Platforms[0]] = i
+		impls[i.ProvidesForPlatform] = i
 	}
 	for _, i := range pci {
-		impls[i.Platforms[0]] = i
+		impls[i.ProvidesForPlatform] = i
 	}
 	res := []*tricium.Impl{}
 	for _, v := range impls {

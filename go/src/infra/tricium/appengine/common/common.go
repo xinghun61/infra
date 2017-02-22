@@ -197,10 +197,11 @@ func (*LuciConfigWorkflowProvider) ReadConfigForProject(c context.Context, proje
 		ServiceAccount: "emso@chromium.org",
 		Workers: []*admin.Worker{
 			{
-				Name:     "Hello_Ubuntu14.04_x86-64",
-				Needs:    tricium.Data_GIT_FILE_DETAILS,
-				Provides: tricium.Data_FILES,
-				Platform: "Ubuntu14.04_x86-64",
+				Name:                "Hello_Ubuntu14.04_x86-64",
+				Needs:               tricium.Data_GIT_FILE_DETAILS,
+				Provides:            tricium.Data_FILES,
+				ProvidesForPlatform: tricium.Platform_UBUNTU,
+				RuntimePlatform:     tricium.Platform_UBUNTU,
 				Dimensions: []string{
 					"pool:Chrome",
 					"os:Ubuntu-14.04",
@@ -261,14 +262,24 @@ func (*LuciConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 	// TODO(emso): Should return a result comment.
 	return &tricium.ServiceConfig{
 		SwarmingWorkerTopic: "projects/tricium-dev/topics/worker-completion",
-		Platforms: []*tricium.Platform{
+		Platforms: []*tricium.Platform_Details{
 			{
-				Name: "Ubuntu-14.04-x86-64",
+				Name: tricium.Platform_UBUNTU,
 				Dimensions: []string{
 					"pool:default",
 					"os:Ubuntu-14.04",
 					"cpu:x86-64",
 				},
+			},
+		},
+		DataDetails: []*tricium.Data_TypeDetails{
+			{
+				Type:               tricium.Data_GIT_FILE_DETAILS,
+				IsPlatformSpecific: false,
+			},
+			{
+				Type:               tricium.Data_RESULTS,
+				IsPlatformSpecific: true,
 			},
 		},
 		Analyzers: []*tricium.Analyzer{
@@ -280,10 +291,14 @@ func (*LuciConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 				Component: "monorail:Infra>CodeAnalysis",
 				Impls: []*tricium.Impl{
 					{
-						Cmd: &tricium.Cmd{
-							Exec: "echo",
-							Args: []string{
-								"hello",
+						RuntimePlatform:     tricium.Platform_UBUNTU,
+						ProvidesForPlatform: tricium.Platform_UBUNTU,
+						Impl: &tricium.Impl_Cmd{
+							Cmd: &tricium.Cmd{
+								Exec: "echo",
+								Args: []string{
+									"hello",
+								},
 							},
 						},
 					},
@@ -319,7 +334,7 @@ func (*LuciConfigProvider) GetProjectConfig(c context.Context, p string) (*trici
 		Selections: []*tricium.Selection{
 			{
 				Analyzer: "Hello",
-				Platform: "Ubuntu-14.04-x86-64",
+				Platform: tricium.Platform_UBUNTU,
 			},
 		},
 	}, nil

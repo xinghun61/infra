@@ -108,7 +108,7 @@ func extractAnalyzerWorkerStructure(c context.Context, wf *admin.Workflow) map[s
 			ID:       w.Name,
 			Name:     w.Name,
 			State:    track.Pending,
-			Platform: w.Platform,
+			Platform: w.ProvidesForPlatform.String(),
 		}
 		for _, n := range w.Next {
 			aw.Next = append(aw.Next, n)

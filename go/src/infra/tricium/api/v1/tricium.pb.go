@@ -35,7 +35,7 @@ type AnalyzeRequest struct {
 func (m *AnalyzeRequest) Reset()                    { *m = AnalyzeRequest{} }
 func (m *AnalyzeRequest) String() string            { return proto.CompactTextString(m) }
 func (*AnalyzeRequest) ProtoMessage()               {}
-func (*AnalyzeRequest) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (*AnalyzeRequest) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
 
 func (m *AnalyzeRequest) GetProject() string {
 	if m != nil {
@@ -67,7 +67,7 @@ type AnalyzeResponse struct {
 func (m *AnalyzeResponse) Reset()                    { *m = AnalyzeResponse{} }
 func (m *AnalyzeResponse) String() string            { return proto.CompactTextString(m) }
 func (*AnalyzeResponse) ProtoMessage()               {}
-func (*AnalyzeResponse) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{1} }
+func (*AnalyzeResponse) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{1} }
 
 func (m *AnalyzeResponse) GetRunId() string {
 	if m != nil {
@@ -179,9 +179,9 @@ var _Tricium_serviceDesc = grpc.ServiceDesc{
 	Metadata: "infra/tricium/api/v1/tricium.proto",
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/v1/tricium.proto", fileDescriptor2) }
+func init() { proto.RegisterFile("infra/tricium/api/v1/tricium.proto", fileDescriptor3) }
 
-var fileDescriptor2 = []byte{
+var fileDescriptor3 = []byte{
 	// 197 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x09, 0x6e, 0x88, 0x02, 0xff, 0xe2, 0x52, 0xca, 0xcc, 0x4b, 0x2b,
 	0x4a, 0xd4, 0x2f, 0x29, 0xca, 0x4c, 0xce, 0x2c, 0xcd, 0xd5, 0x4f, 0x2c, 0xc8, 0xd4, 0x2f, 0x33,

@@ -10,9 +10,9 @@ package tricium;
 //
 // Any data type provided or needed by a Tricium analyzer.
 message Data {
-
   // Available data types should be listed in this enum and have a
-  // corresponding Data message.
+  // corresponding nested message with a mandatory platforms fields,
+  // see GitFileDetails for field details.
   enum Type {
     NONE = 0;
     GIT_FILE_DETAILS = 1;
@@ -21,14 +21,33 @@ message Data {
     RESULTS = 4;
   }
 
+  // Details for supported types, specifically whether a type is tied to
+  // a platform.
+  //
+  // These type details are used to resolve data dependencies when
+  // generating workflows.
+  message TypeDetails {
+    Type type = 1;
+    bool is_platform_specific = 2;
+  }
+
 
   // Details for retrieval of file content from a Git repository.
   //
   // ISOLATED PATH: tricium/data/git_file_details.json
   message GitFileDetails {
-    string repository = 1;
-    string ref = 2;
-    repeated string path = 3;
+    // The platforms this data is tied to encoded as a bitmap.
+    //
+    // The bit number for each platform should correspond to the enum
+    // position number of the same platform in the Platform.Name enum.
+    //
+    // This includes the ANY platform, encoded as zero, which should
+    // be used for any data that is not platform-specific.
+    int64 platforms = 1;
+
+    string repository = 2;
+    string ref = 3;
+    repeated string path = 4;
   }
 
 
@@ -40,8 +59,10 @@ message Data {
   //
   // ISOLATED PATH: tricium/data/files.json
   message Files {
+    int64 platforms = 1;
+
     // Path to files from the root of the isolated input.
-    repeated string path = 1;
+    repeated string path = 2;
   }
 
 
@@ -51,11 +72,13 @@ message Data {
   //
   // ISOLATED PATH: tricium/data/clang_details.json
   message ClangDetails {
+    int64 platforms = 1;
+
     // Path to the compilation database. Typically, in the build root.
-    string compilation_db = 1;
+    string compilation_db = 2;
 
     // Paths to files needed to compile cpp files to analyze.
-    repeated string comp_dep_path = 2;
+    repeated string comp_dep_path = 3;
   }
 
 
@@ -66,9 +89,11 @@ message Data {
   //
   // ISOLATED PATH: tricium/data/results.json
   message Results {
+    int64 platforms = 1;
+
     // Zero or more results found as comments, either inline comments or change
-    // comments (comments without line positions). 
-    repeated Comment comment = 1;
+    // comments (comments without line positions).
+    repeated Comment comment = 2;
 
     // POSSIBLE EXTENSION: More kinds of results here, for instance, coverage.
   }

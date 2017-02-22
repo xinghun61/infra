@@ -8,6 +8,7 @@ package admin;
 
 import "infra/tricium/api/v1/config.proto";
 import "infra/tricium/api/v1/data.proto";
+import "infra/tricium/api/v1/platform.proto";
 
 // Tricium workflow configuration.
 //
@@ -21,33 +22,37 @@ message Workflow {
 // A Tricium worker includes the details needed to execute an analyzer on a
 // specific platform as swarming task.
 message Worker {
-  // Name of worker is a mangled name from the analyzer name and the platform,
-  // e.g, ‘GitFileIsolator_linux’.
+  // Name of worker is a mangled name from the analyzer name and the platform
+  // for which results are provided for, e.g, ‘GitFileIsolator_LINUX’.
   string name = 1;
 
   // Includes data dependencies for runtime type checking.
+  // Platform-specific details are provided when required by the corresponding
+  // data type.
   tricium.Data.Type needs = 2;
-  tricium.Data.Type provides = 3;
+  tricium.Platform.Name needs_for_platform = 3;
+  tricium.Data.Type provides = 4;
+  tricium.Platform.Name provides_for_platform = 5;
 
   // Workers to run after this one.
-  repeated string next = 4;
+  repeated string next = 6;
 
-  // Name of the platform configuration.
-  string platform = 5;
+  // Name of the runtime platform configuration.
+  tricium.Platform.Name runtime_platform = 7;
 
   // Swarming dimensions for execution of the worker. These should be on the
   // form "key:value", using keys and values known to the swarming service.
-  repeated string dimensions = 6;
+  repeated string dimensions = 8;
 
   // List of cipd packages needed on the swarming task use to execute the
   // worker.
-  repeated tricium.CipdPackage cipd_package = 7;
+  repeated tricium.CipdPackage cipd_packages = 9;
 
   // Command use to execute the worker.
-  tricium.Cmd cmd = 8;
+  tricium.Cmd cmd = 10;
 
   // Deadline for execution of the worker in minutes.  Note that this time
   // should include the overhead of triggering the corresponding swarming task
   // and to collect result from it.
-  int32 deadline = 9;
+  int32 deadline = 11;
 }

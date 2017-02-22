@@ -12,50 +12,31 @@ import (
 	"infra/tricium/api/v1"
 )
 
-func TestFlatten(t *testing.T) {
-	Convey("Test Environment", t, func() {
-		Convey("Flattens implementation fields", func() {
-			p1 := "Linux-32"
-			p2 := "Linux-64"
-			analyzers := []*tricium.Analyzer{
-				{
-					Impls: []*tricium.Impl{
-						{
-							Platforms: []string{
-								p1,
-								p2,
-							},
-							Cmd: &tricium.Cmd{
-								Exec: "echo",
-								Args: []string{
-									"hello",
-								},
-							},
-							Deadline: 3200,
-						},
-					},
-				},
-			}
-			flatten(analyzers)
-			So(len(analyzers[0].Impls), ShouldEqual, 2)
-			So(len(analyzers[0].Impls[0].Platforms), ShouldEqual, 1)
-			So(len(analyzers[0].Impls[1].Platforms), ShouldEqual, 1)
-			So(analyzers[0].Impls[0].Platforms[0], ShouldEqual, p1)
-			So(analyzers[0].Impls[1].Platforms[0], ShouldEqual, p2)
-		})
-	})
+func TestValidate(t *testing.T) {
+	// TODO(emso): test validate
 }
 
 func TestMerge(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
 		analyzer := "PyLint"
-		platform := "Win"
+		platform := tricium.Platform_UBUNTU
 		config := "enable"
 		sd := &tricium.ServiceConfig{
-			Platforms: []*tricium.Platform{
+			Platforms: []*tricium.Platform_Details{
 				{
-					Name: platform,
+					Name:       platform,
+					HasRuntime: true,
+				},
+			},
+			DataDetails: []*tricium.Data_TypeDetails{
+				{
+					Type:               tricium.Data_FILES,
+					IsPlatformSpecific: false,
+				},
+				{
+					Type:               tricium.Data_RESULTS,
+					IsPlatformSpecific: true,
 				},
 			},
 		}
@@ -66,8 +47,14 @@ func TestMerge(t *testing.T) {
 				Provides: tricium.Data_RESULTS,
 				Impls: []*tricium.Impl{
 					{
-						Platforms: []string{platform},
-						Deadline:  120,
+						RuntimePlatform:     platform,
+						ProvidesForPlatform: platform,
+						Impl: &tricium.Impl_Cmd{
+							Cmd: &tricium.Cmd{
+								Exec: "pylint",
+							},
+						},
+						Deadline: 120,
 					},
 				},
 				ConfigDefs: []*tricium.ConfigDef{
@@ -97,7 +84,7 @@ func TestMerge(t *testing.T) {
 				Selections: []*tricium.Selection{
 					{
 						Analyzer: analyzer,
-						Platform: "blabla",
+						Platform: tricium.Platform_WINDOWS,
 					},
 				},
 			})
@@ -148,11 +135,22 @@ func TestMergeAnalyzers(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
 		analyzer := "PyLint"
-		platform := "Win"
+		platform := tricium.Platform_UBUNTU
 		sc := &tricium.ServiceConfig{
-			Platforms: []*tricium.Platform{
+			Platforms: []*tricium.Platform_Details{
 				{
-					Name: platform,
+					Name:       platform,
+					HasRuntime: true,
+				},
+			},
+			DataDetails: []*tricium.Data_TypeDetails{
+				{
+					Type:               tricium.Data_FILES,
+					IsPlatformSpecific: false,
+				},
+				{
+					Type:               tricium.Data_RESULTS,
+					IsPlatformSpecific: true,
 				},
 			},
 		}
@@ -216,9 +214,12 @@ func TestMergeAnalyzers(t *testing.T) {
 				Component:   "compA",
 				Impls: []*tricium.Impl{
 					{
-						Platforms: []string{platform},
-						Cmd: &tricium.Cmd{
-							Exec: "echo",
+						ProvidesForPlatform: platform,
+						RuntimePlatform:     platform,
+						Impl: &tricium.Impl_Cmd{
+							Cmd: &tricium.Cmd{
+								Exec: "echo",
+							},
 						},
 						Deadline: 60,
 					},
@@ -230,9 +231,12 @@ func TestMergeAnalyzers(t *testing.T) {
 				Component:   comp,
 				Impls: []*tricium.Impl{
 					{
-						Platforms: []string{platform},
-						Cmd: &tricium.Cmd{
-							Exec: exec,
+						ProvidesForPlatform: platform,
+						RuntimePlatform:     platform,
+						Impl: &tricium.Impl_Cmd{
+							Cmd: &tricium.Cmd{
+								Exec: exec,
+							},
 						},
 						Deadline: deadline,
 					},
@@ -244,9 +248,13 @@ func TestMergeAnalyzers(t *testing.T) {
 			So(a.Component, ShouldEqual, comp)
 			So(len(a.PathFilters), ShouldEqual, 1)
 			So(len(a.Impls), ShouldEqual, 1)
-			So(len(a.Impls[0].Platforms), ShouldEqual, 1)
-			So(a.Impls[0].Platforms[0], ShouldEqual, platform)
-			So(a.Impls[0].Cmd.Exec, ShouldEqual, exec)
+			So(a.Impls[0].ProvidesForPlatform, ShouldEqual, platform)
+			switch i := a.Impls[0].Impl.(type) {
+			case *tricium.Impl_Cmd:
+				So(i.Cmd.Exec, ShouldEqual, exec)
+			default:
+				t.Error("wrong impl type")
+			}
 			So(a.Impls[0].Deadline, ShouldEqual, deadline)
 		})
 	})
@@ -281,18 +289,18 @@ func TestMergeImpls(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		si := []*tricium.Impl{
 			{
-				Platforms: []string{"Linux"},
+				ProvidesForPlatform: tricium.Platform_UBUNTU,
 			},
 			{
-				Platforms: []string{"Win"},
+				ProvidesForPlatform: tricium.Platform_WINDOWS,
 			},
 		}
 		pi := []*tricium.Impl{
 			{
-				Platforms: []string{"Win"},
+				ProvidesForPlatform: tricium.Platform_WINDOWS,
 			},
 			{
-				Platforms: []string{"Mac"},
+				ProvidesForPlatform: tricium.Platform_MAC,
 			},
 		}
 		Convey("Merges impls with override", func() {
@@ -301,5 +309,3 @@ func TestMergeImpls(t *testing.T) {
 		})
 	})
 }
-
-// TODO(emso): test checks
