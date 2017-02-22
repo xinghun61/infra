@@ -193,6 +193,7 @@
       "status",
       "--issue",
       "123456789",
+      "--gerrit",
       "--field",
       "status",
       "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller"
