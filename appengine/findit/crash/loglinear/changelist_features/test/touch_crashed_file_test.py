@@ -7,7 +7,7 @@ import unittest
 from crash.loglinear.changelist_features.touch_crashed_file import (
     TouchCrashedFileFeature)
 from crash.stacktrace import StackFrame
-from crash.suspect import StackInfo
+from crash.stacktrace import StackInfo
 from crash.suspect import Suspect
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.change_log import FileChangeInfo

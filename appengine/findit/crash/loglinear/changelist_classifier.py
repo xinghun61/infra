@@ -6,8 +6,8 @@ from collections import defaultdict
 import logging
 
 from common.chrome_dependency_fetcher import ChromeDependencyFetcher
-from crash import changelist_classifier
-from crash.changelist_classifier import StackInfo
+from crash.stacktrace import StackInfo
+from crash.suspect import Suspect
 from crash.crash_report import CrashReport
 from crash.loglinear.model import UnnormalizedLogLinearModel
 
@@ -69,27 +69,30 @@ class LogLinearChangelistClassifier(object):
       all their fields filled in. They will be filled in later by
       ``RankSuspects``.
     """
-    # Look at all the frames from any stack in the crash report, and
-    # organize the ones that come from dependencies we care about.
-    dep_to_file_to_stack_infos = defaultdict(lambda: defaultdict(list))
-    for stack in report.stacktrace.stacks:
-      for frame in stack.frames:
-        if frame.dep_path in report.dependencies:
-          dep_to_file_to_stack_infos[frame.dep_path][frame.file_path].append(
-              StackInfo(frame, stack.priority))
+    reverted_revisions = []
+    revision_to_suspects = {}
+    for dep_roll in report.dependency_rolls.itervalues():
+      repository = self._get_repository(dep_roll.repo_url)
+      changelogs = repository.GetChangeLogs(dep_roll.old_revision,
+                                            dep_roll.new_revision)
 
-    dep_to_file_to_changelogs, ignore_cls = (
-        changelist_classifier.GetChangeLogsForFilesGroupedByDeps(
-            report.dependency_rolls, report.dependencies,
-            self._get_repository))
+      for changelog in changelogs or []:
+        # When someone reverts, we need to skip both the CL doing
+        # the reverting as well as the CL that got reverted. If
+        # ``reverted_revision`` is true, then this CL reverts another one,
+        # so we skip it and save the CL it reverts in ``reverted_cls`` to
+        # be filtered out later.
+        if changelog.reverted_revision:
+          reverted_revisions.append(changelog.reverted_revision)
+          continue
 
-    # Get the possible suspects.
-    return changelist_classifier.FindSuspects(
-        dep_to_file_to_changelogs,
-        dep_to_file_to_stack_infos,
-        report.dependencies,
-        self._get_repository,
-        ignore_cls)
+        revision_to_suspects[changelog.revision] = Suspect(changelog,
+                                                           dep_roll.path)
+
+    for reverted_revision in reverted_revisions:
+      del revision_to_suspects[reverted_revision]
+
+    return revision_to_suspects.values()
 
   def RankSuspects(self, report, suspects):
     """Returns a lineup of the suspects in order of likelihood.

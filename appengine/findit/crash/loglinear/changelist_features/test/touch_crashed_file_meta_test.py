@@ -7,16 +7,13 @@ import unittest
 from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from common.dependency import Dependency
 from common.dependency import DependencyRoll
-from crash import changelist_classifier as scorer_changelist_classifier
 from crash.crash_report import CrashReport
 from crash.loglinear.changelist_features.touch_crashed_file_meta import (
     TouchCrashedFileMetaFeature)
 from crash.loglinear.changelist_features.min_distance import ModifiedFrameInfo
 from crash.loglinear.changelist_features.min_distance import MinDistanceFeature
 from crash.loglinear.feature import ChangedFile
-from crash.suspect import AnalysisInfo
 from crash.suspect import Suspect
-from crash.suspect import StackInfo
 from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace

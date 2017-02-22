@@ -6,8 +6,8 @@ import unittest
 
 from crash.loglinear.changelist_features import top_frame_index
 from crash.suspect import Suspect
-from crash.suspect import StackInfo
 from crash.stacktrace import StackFrame
+from crash.stacktrace import StackInfo
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.change_log import FileChangeInfo
 from libs.gitiles.diff import ChangeType

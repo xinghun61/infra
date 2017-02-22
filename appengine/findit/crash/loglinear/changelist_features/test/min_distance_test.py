@@ -12,10 +12,9 @@ from crash.loglinear.changelist_features import min_distance
 from crash.loglinear.feature import ChangedFile
 from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
+from crash.stacktrace import StackInfo
 from crash.stacktrace import Stacktrace
-from crash.suspect import AnalysisInfo
 from crash.suspect import Suspect
-from crash.suspect import StackInfo
 from crash.test.predator_testcase import PredatorTestCase
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
@@ -141,9 +140,7 @@ class MinDistanceTest(PredatorTestCase):
     distance = _MAXIMUM + 1
     touched_file_to_stack_info = {
         FileChangeInfo(ChangeType.MODIFY, 'file', 'file'):
-        AnalysisInfo(
-            min_distance=distance,
-            min_distance_frame=_MOCK_FRAME)
+        StackInfo(_MOCK_FRAME, 0)
     }
     self.mock(min_distance.MinDistanceFeature,
               'DistanceBetweenTouchedFileAndStacktrace',
@@ -195,12 +192,9 @@ class MinDistanceTest(PredatorTestCase):
         dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
     suspect = self._GetMockSuspect()
 
-    distance = _MAXIMUM + 1
     touched_file_to_stack_info = {
         FileChangeInfo(ChangeType.MODIFY, 'file', 'file'):
-        AnalysisInfo(
-            min_distance=distance,
-            min_distance_frame=_MOCK_FRAME)
+        StackInfo(_MOCK_FRAME, 0)
     }
     self.mock(min_distance.MinDistanceFeature,
               'DistanceBetweenTouchedFileAndStacktrace',
@@ -226,9 +220,7 @@ class MinDistanceTest(PredatorTestCase):
     distance = 42
     touched_file_to_stack_info = {
         FileChangeInfo(ChangeType.MODIFY, 'file', 'file'):
-        AnalysisInfo(
-            min_distance=distance,
-            min_distance_frame=_MOCK_FRAME)
+        StackInfo(_MOCK_FRAME, 0)
     }
     frame = StackFrame(0, 'src/', 'func', 'f.cc', 'f.cc', [7], 'https://repo')
     self.mock(min_distance.MinDistanceFeature,

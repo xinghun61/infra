@@ -2,11 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import defaultdict
 import logging
 import math
 
 from crash import crash_util
-from crash.changelist_classifier import GetStackInfosForFilesGroupedByDeps
 from crash.loglinear.changelist_features.min_distance import MinDistanceFeature
 from crash.loglinear.changelist_features.top_frame_index import (
     TopFrameIndexFeature)
@@ -16,13 +16,52 @@ from crash.loglinear.feature import ChangedFile
 from crash.loglinear.feature import MetaFeature
 from crash.loglinear.feature import MetaFeatureValue
 from crash.loglinear.feature import LogLinearlyScaled
-from crash.suspect import StackInfo
+from crash.stacktrace import StackInfo
 import libs.math.logarithms as lmath
 
 # N.B., this must not be infinity, else we'll start getting NaN values
 # from LinearMinDistanceFeature (and SquaredMinDistanceFeature).
 DEFAULT_MAX_LINE_DISTANCE = 50
 DEFAULT_MAX_FRAME_INDEX = 7
+
+
+def GetStackInfosPerFilePerDep(stacktrace, dependencies):
+  """Gets a dict containing all the stack information of files in stacktrace.
+
+  Only gets stack informations for files grouped by deps in dependencies.
+
+  Args:
+    stacktrace (Stacktrace): Parsed stacktrace object.
+    dependencies (dict): Represents all the dependencies show in
+      the crash stack.
+
+  Returns:
+    A dict, maps dep path to a dict mapping file path to a list of stack
+    information of this file. A file may occur in several frames, one
+    stack info consist of a StackFrame and the callstack priority of it.
+
+    For example:
+    {
+        'src/': {
+            'a.cc': [
+                StackInfo(StackFrame(0, 'src/', '', 'func', 'a.cc', [1]), 0),
+                StackInfo(StackFrame(2, 'src/', '', 'func', 'a.cc', [33]), 0),
+            ]
+        }
+    }
+  """
+  dep_to_file_to_stack_infos = defaultdict(lambda: defaultdict(list))
+
+  for callstack in stacktrace.stacks:
+    for frame in callstack.frames:
+      # We only care about those dependencies in crash stack.
+      if frame.dep_path not in dependencies:
+        continue
+
+      dep_to_file_to_stack_infos[frame.dep_path][frame.file_path].append(
+          StackInfo(frame, callstack.priority))
+
+  return dep_to_file_to_stack_infos
 
 
 class TouchCrashedFileMetaFeature(MetaFeature):
@@ -81,10 +120,10 @@ class TouchCrashedFileMetaFeature(MetaFeature):
       the suspect, as a log-domain ``float``.) and ``FeatureValue`` of
       "TouchCrashedFileFeature" (whether this suspect touched file or not)
     """
-    # Preprocessing stacktrace and stack_deps to get crashed file information
+    # Preprocessing stacktrace and dependencies to get crashed file information
     # about the frames and callstack priority of that crashed file in
     # stacktrace.
-    dep_to_file_to_stack_infos = GetStackInfosForFilesGroupedByDeps(
+    dep_to_file_to_stack_infos = GetStackInfosPerFilePerDep(
         report.stacktrace, report.dependencies)
     features_given_report = {name: feature(report)
                              for name, feature in self.iteritems()}
