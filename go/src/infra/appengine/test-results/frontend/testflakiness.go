@@ -57,11 +57,13 @@ const flakesQuery = `
     normalized_step_name,
     total_flaky_failures,
     total_tries,
-    flakiness
+    flakiness,
+    cq_false_rejections
   FROM
     plx.google.chrome_infra.flaky_tests_with_layout_team_dir_info.all
   %s
   ORDER BY
+    cq_false_rejections DESC,
     flakiness DESC
   LIMIT
     1000;`
@@ -112,6 +114,7 @@ type Flakiness struct {
 	NormalizedStepName string  `json:"normalized_step_name"`
 	TotalFlakyFailures uint64  `json:"total_flaky_failures"`
 	TotalTries         uint64  `json:"total_tries"`
+	CQFalseRejections  uint64  `json:"cq_false_rejections"`
 }
 
 // Group represents infromation about flakiness of a group of tests.
@@ -221,13 +224,23 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 			return nil, errors.Annotate(err).Reason("Failed to convert flakiness value to float64").Err()
 		}
 
-		// TODO(sergiyb): Add number of false rejections per test.
+		cqFalseRejectionsStr, ok := row.F[5].V.(string)
+		if !ok {
+			return nil, errors.New("query returned non-string value for cq_false_rejections column")
+		}
+
+		cqFalseRejections, err := strconv.ParseUint(cqFalseRejectionsStr, 10, 64)
+		if err != nil {
+			return nil, errors.Annotate(err).Reason("Failed to convert cq_false_rejections value to uint64").Err()
+		}
+
 		data = append(data, Flakiness{
 			TestName:           name,
 			NormalizedStepName: normalizedStepName,
 			Flakiness:          flakiness,
 			TotalTries:         totalTries,
 			TotalFlakyFailures: totalFlakyFailures,
+			CQFalseRejections:  cqFalseRejections,
 		})
 	}
 

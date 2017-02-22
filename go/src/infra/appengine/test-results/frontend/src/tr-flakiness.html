@@ -144,6 +144,17 @@
             test flakiness. More details can be found in the design doc linked
             in the bottom of the page.
           </paper-tooltip>
+          <div class="test-stats" id="fr-header">
+           CQ False Rejections*
+          </div>
+          <paper-tooltip for="fr-header" animation-delay="0">
+            Number of flaky builds in which corresponding test has failed in the
+            last 7 days. We find flaky builds by searching for pairs of failed
+            and passed CQ builds on the same patchset. The reduce false
+            positives caused by changes in the tree between the builds, we
+            require failed and passed builds to be started within 12 hours from
+            each other and filter out tests that failed with and without patch.
+          </paper-tooltip>
         </div>
         <template is="dom-repeat" items="[[_data]]" as="test">
           <a class="grid-row-link" href="[[_getTestResultsUrl(test)]]">
@@ -151,6 +162,7 @@
               <div class="test-name">[[test.test_name]]</div>
               <div class="test-stats">[[test.total_flaky_failures]] / [[test.total_tries]]</div>
               <div class="test-stats">[[_showPercentage(test.flakiness)]]%</div>
+              <div class="test-stats">[[test.cq_false_rejections]]</div>
             </div>
           </a>
         </template>

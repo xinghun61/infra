@@ -209,14 +209,16 @@ func TestGetFlakinessData(t *testing.T) {
 													{"v": "unittests"},
 													{"v": "287"},
 													{"v": "8318"},
-													{"v": "0.0345"}
+													{"v": "0.0345"},
+													{"v": "35"}
 												]},
 												{"f": [
 													{"v": "test2"},
 													{"v": "unittests"},
 													{"v": "2"},
 													{"v": "4562"},
-													{"v": "0.0004"}
+													{"v": "0.0004"},
+													{"v": "0"}
 												]}
 											]}`,
 				},
@@ -244,6 +246,7 @@ func TestGetFlakinessData(t *testing.T) {
 					TotalFlakyFailures: 287,
 					TotalTries:         8318,
 					Flakiness:          0.0345,
+					CQFalseRejections:  35,
 				},
 				{
 					TestName:           "test2",
@@ -251,6 +254,7 @@ func TestGetFlakinessData(t *testing.T) {
 					TotalFlakyFailures: 2,
 					TotalTries:         4562,
 					Flakiness:          0.0004,
+					CQFalseRejections:  0,
 				},
 			})
 		})
