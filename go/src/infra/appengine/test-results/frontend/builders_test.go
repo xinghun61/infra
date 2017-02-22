@@ -115,18 +115,18 @@ func TestBuildersHandler(t *testing.T) {
 				Master:   "testing",
 				Builder:  "Testing Tests",
 				TestType: "browser_tests",
-			}: struct{}{}}
+			}: {}}
 			So(tests, ShouldResemble, expected)
 		})
 
 		Convey("getBuildersHandler", func() {
 			r := router.New()
-			r.GET("/builders", router.NewMiddlewareChain(withTestingContext),
+			r.GET("/data/builders", router.NewMiddlewareChain(withTestingContext),
 				getBuildersHandler)
 			srv := httptest.NewServer(r)
 			client := &http.Client{}
 
-			resp, err := client.Get(srv.URL + "/builders")
+			resp, err := client.Get(srv.URL + "/data/builders")
 			So(err, ShouldBeNil)
 			defer resp.Body.Close()
 			b, err := ioutil.ReadAll(resp.Body)

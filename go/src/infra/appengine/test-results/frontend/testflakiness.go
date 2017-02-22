@@ -247,18 +247,18 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 	return data, nil
 }
 
-func testFlakinessHandler(ctx *router.Context) {
+func testFlakinessListHandler(ctx *router.Context) {
 	// TODO(sergiyb): Add a layer of caching results using memcache.
 	name := ctx.Request.FormValue("groupName")
 	kind := ctx.Request.FormValue("groupKind")
 
 	if kind == "" {
-		writeError(ctx, nil, "testFlakinessHandler", "missing groupKind parameter")
+		writeError(ctx, nil, "testFlakinessListHandler", "missing groupKind parameter")
 		return
 	}
 
 	if name == "" {
-		writeError(ctx, nil, "testFlakinessHandler", "missing groupName parameter")
+		writeError(ctx, nil, "testFlakinessListHandler", "missing groupName parameter")
 		return
 	}
 
@@ -271,7 +271,7 @@ func testFlakinessHandler(ctx *router.Context) {
 			logging.Fields{logging.ErrorKey: err, "item": memcacheItem}.Warningf(
 				ctx.Context, "Failed to unmarshal cached results as JSON")
 		} else {
-			writeResponse(ctx, "testFlakinessHandler", data)
+			writeResponse(ctx, "testFlakinessListHandler", data)
 			return
 		}
 	}
@@ -279,13 +279,13 @@ func testFlakinessHandler(ctx *router.Context) {
 	aeCtx := appengine.NewContext(ctx.Request)
 	bq, err := createBQService(aeCtx)
 	if err != nil {
-		writeError(ctx, err, "testFlakinessHandler", "failed create BigQuery client")
+		writeError(ctx, err, "testFlakinessListHandler", "failed create BigQuery client")
 		return
 	}
 
 	data, err = getFlakinessData(aeCtx, bq, Group{Name: name, Kind: kind})
 	if err != nil {
-		writeError(ctx, err, "testFlakinessHandler", "failed to get flakiness data")
+		writeError(ctx, err, "testFlakinessListHandler", "failed to get flakiness data")
 		return
 	}
 
@@ -301,7 +301,7 @@ func testFlakinessHandler(ctx *router.Context) {
 			ctx.Context, "Failed to marshal query results as JSON: %#v", data)
 	}
 
-	writeResponse(ctx, "testFlakinessHandler", data)
+	writeResponse(ctx, "testFlakinessListHandler", data)
 }
 
 func createBQService(aeCtx context.Context) (*bigquery.Service, error) {

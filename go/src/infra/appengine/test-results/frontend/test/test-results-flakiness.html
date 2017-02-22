@@ -29,7 +29,7 @@
 
           stub('iron-ajax', {
             generateRequest: function() {
-              if (this.url == '/test_flakiness_groups') {
+              if (this.url == '/test_flakiness/groups') {
                 this._setLastResponse([
                   {name: 'foo/bar/zee', kind: 'dir'},
                   {name: 'DOM', kind: 'team'},
@@ -37,7 +37,7 @@
                   {name: 'unknown-dir', kind: 'unknown-dir'},
                   {name: 'FooBar', kind: 'test-suite'},
                 ]);
-              } else if (this.url == '/test_flakiness') {
+              } else if (this.url == '/test_flakiness/list') {
                 this._setLastResponse([
                   {
                     test_name: 'foo/bar/zee/test.html',

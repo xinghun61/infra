@@ -58,18 +58,20 @@ func init() {
 	r.GET("/testfile/", getMW, getHandler)
 	r.POST("/testfile/upload", authMW.Extend(withParsedUploadForm), uploadHandler)
 
-	r.GET("/builders", baseMW, getBuildersHandler)
-
 	r.POST(
 		deleteKeysPath,
 		baseMW.Extend(gaemiddleware.RequireTaskQueue(deleteKeysQueueName)),
 		deleteKeysHandler,
 	)
 
-	r.GET("/revision_range", baseMW, revisionHandler)
+	r.GET("/data/builders", baseMW, getBuildersHandler)
+	r.GET("/data/revision_range", baseMW, revisionHandler)
+	r.GET("/data/test_flakiness/list", baseMW, testFlakinessListHandler)
+	r.GET("/data/test_flakiness/groups", baseMW, testFlakinessGroupsHandler)
 
-	r.GET("/test_flakiness", baseMW, testFlakinessHandler)
-	r.GET("/test_flakiness_groups", baseMW, testFlakinessGroupsHandler)
+	// TODO(sergiyb): Remove these after updating all other apps using them.
+	r.GET("/builders", baseMW.Extend(reportOldEndpoint), getBuildersHandler)
+	r.GET("/revision_range", baseMW.Extend(reportOldEndpoint), revisionHandler)
 
 	http.DefaultServeMux.Handle("/", r)
 }
@@ -95,6 +97,11 @@ func reportNonHTTPSRequests(c *router.Context, next router.Handler) {
 		logging.Debugf(c.Context, "HTTP request to %s", c.Request.URL)
 	}
 
+	next(c)
+}
+
+func reportOldEndpoint(c *router.Context, next router.Handler) {
+	logging.Debugf(c.Context, "Detected request to a deprecated endpoint %s", c.Request.URL)
 	next(c)
 }
 
