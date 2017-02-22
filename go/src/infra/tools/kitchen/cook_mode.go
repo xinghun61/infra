@@ -17,9 +17,11 @@ type cookModeFlag struct {
 
 var (
 	cookSwarming = cookModeFlag{swarmingCookMode{}}
+	cookBuildBot = cookModeFlag{buildBotCookMode{}}
 
 	cookModeFlagEnum = flagenum.Enum{
 		"swarming": cookSwarming,
+		"buildbot": cookBuildBot,
 	}
 )
 
@@ -57,6 +59,22 @@ func (m swarmingCookMode) botID(env environ.Env) (string, error) {
 	botID, ok := env.Get("SWARMING_BOT_ID")
 	if !ok {
 		return "", errors.Reason("a valid bot id was expected in $SWARMING_BOT_ID").Err()
+	}
+	return botID, nil
+}
+
+type buildBotCookMode struct{}
+
+func (m buildBotCookMode) fillTemplateParams(env environ.Env, params *tasktemplate.Params) error {
+	return nil
+}
+
+func (m buildBotCookMode) needsIOKeepAlive() bool { return true }
+
+func (m buildBotCookMode) botID(env environ.Env) (string, error) {
+	botID, ok := env.Get("BUILDBOT_SLAVENAME")
+	if !ok {
+		return "", errors.Reason("a valid bot id was expected in $BUILDBOT_SLAVENAME").Err()
 	}
 	return botID, nil
 }
