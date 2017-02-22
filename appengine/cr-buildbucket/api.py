@@ -267,6 +267,7 @@ class BuildBucketApi(remote.Service):
       error = messages.MessageField(ErrorMessage, 3)
 
     results = messages.MessageField(OneResult, 1, repeated=True)
+    error = messages.MessageField(ErrorMessage, 2)
 
   @buildbucket_api_method(
     PutBatchRequestMessage, PutBatchResponseMessage,
