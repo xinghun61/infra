@@ -320,7 +320,7 @@ func mainImpl(args []string) int {
 		tsmonConfig.Endpoint = fmt.Sprintf("pubsub://%s/%s", config.pubsub.project, config.pubsub.topic)
 	}
 	if tsmonConfig.Credentials == "" {
-		tsmonConfig.Credentials = tsmon.GCECredentials
+		tsmonConfig.Credentials = auth.GCEServiceAccount
 	}
 	if tsmonConfig.Target.TaskJobName == "" {
 		tsmonConfig.Target.TaskJobName = config.pubsub.subscription
