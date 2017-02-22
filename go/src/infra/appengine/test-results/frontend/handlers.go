@@ -36,7 +36,7 @@ const (
 func init() {
 	r := router.New()
 
-	baseMW := gaemiddleware.BaseProd().Extend(reportNonHTTPSRequests)
+	baseMW := gaemiddleware.BaseProd()
 	getMW := baseMW.Extend(templatesMiddleware())
 	authMW := baseMW.Extend(
 		// Declare what auth methods are supported.
@@ -90,14 +90,6 @@ func templatesMiddleware() router.Middleware {
 			},
 		},
 	})
-}
-
-func reportNonHTTPSRequests(c *router.Context, next router.Handler) {
-	if c.Request.TLS == nil {
-		logging.Debugf(c.Context, "HTTP request to %s", c.Request.URL)
-	}
-
-	next(c)
 }
 
 func reportOldEndpoint(c *router.Context, next router.Handler) {

@@ -2,7 +2,6 @@ package frontend
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
 	"infra/appengine/test-results/model"
 	"net/http"
@@ -16,29 +15,6 @@ import (
 	"github.com/luci/luci-go/server/router"
 	. "github.com/smartystreets/goconvey/convey"
 )
-
-func TestReportNonHTTPSRequestsCallsNext(t *testing.T) {
-	t.Parallel()
-
-	Convey("reportNonHTTPSRequests", t, func() {
-		nextCalled := false
-		ctx := router.Context{
-			Context: memory.Use(context.Background()),
-			Request: &http.Request{},
-		}
-
-		Convey("With HTTP", func() {
-			reportNonHTTPSRequests(&ctx, func(*router.Context) { nextCalled = true })
-			So(nextCalled, ShouldBeTrue)
-		})
-
-		Convey("With HTTPS", func() {
-			ctx.Request.TLS = &tls.ConnectionState{}
-			reportNonHTTPSRequests(&ctx, func(*router.Context) { nextCalled = true })
-			So(nextCalled, ShouldBeTrue)
-		})
-	})
-}
 
 func TestDeleteKeysHandler(t *testing.T) {
 	t.Parallel()
