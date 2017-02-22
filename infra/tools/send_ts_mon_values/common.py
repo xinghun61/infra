@@ -22,12 +22,11 @@ MetricData = collections.namedtuple('MetricData',
 PointData = collections.namedtuple('PointData', ('value', 'fields'))
 
 FIELD_TYPE_MAP = {
-  str: (ts_mon.StringField, str),
-  unicode: (ts_mon.StringField, str),
-  int: (ts_mon.IntegerField, long),
-  long: (ts_mon.IntegerField, long),
-  float: (ts_mon.IntegerField, long),
-  bool: (ts_mon.BooleanField, bool),
+  str: ts_mon.StringField,
+  unicode: ts_mon.StringField,
+  int: ts_mon.IntegerField,
+  long: ts_mon.IntegerField,
+  bool: ts_mon.BooleanField,
 }
 
 
@@ -248,8 +247,8 @@ def set_metric(metric_data, metric_type):
   fields = metric_data.points[0].fields
   if fields is not None:
     for name, value in metric_data.points[0].fields.iteritems():
-      field_ctor, value_cast = FIELD_TYPE_MAP[type(value)]
-      field_spec.append(field_ctor(value_cast(name)))
+      field_ctor = FIELD_TYPE_MAP[type(value)]
+      field_spec.append(field_ctor(name))
 
   kwargs = {'field_spec': field_spec}
   if metric_type in (ts_mon.CumulativeMetric, ts_mon.CounterMetric):
