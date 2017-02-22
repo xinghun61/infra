@@ -162,8 +162,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         'recipe_autoroller', project_data['id'])
 
     self.m.git.checkout(
-        project_data['repo_url'], dir_path=workdir, submodules=False,
-        use_git_cache=True)
+        project_data['repo_url'], dir_path=workdir, submodules=False)
 
     with self.m.step.context({'cwd': workdir}):
       # Introduce ourselves to git - also needed for git cl upload to work.
