@@ -212,11 +212,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       # trivial rolls), but they e.g. fail to land, causing staleness.
 
       # We're about to upload a new CL, so close the old one.
-      # Pass --rietveld flag to match upload args below.
       with self.m.step.context({'cwd': workdir}):
         self.m.git('cl', 'set-close',
                    '--issue', repo_data['issue'],
-                   '--rietveld',
                    _AUTH_REFRESH_TOKEN_FLAG)
 
     recipes_cfg_path = workdir.join('infra', 'config', 'recipes.cfg')
@@ -283,8 +281,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     else:
       upload_args = ['--send-mail', '--cq-dry-run']
     upload_args.extend(['--bypass-hooks', '-f'])
-    # git cl upload doesn't work yet with gerrit and git cache.
-    upload_args.extend(['--rietveld'])
     upload_args.extend([_AUTH_REFRESH_TOKEN_FLAG])
     commit_message = get_commit_message(roll_result, tbrs=tbrs)
     with self.m.step.context({'cwd': workdir}):
@@ -364,7 +360,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       status_result = self.m.git(
           'cl', 'status',
           '--issue', repo_data['issue'],
-          '--rietveld',
           '--field', 'status',
           _AUTH_REFRESH_TOKEN_FLAG,
           name='git cl status', stdout=self.m.raw_io.output(),
