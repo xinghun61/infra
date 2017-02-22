@@ -40,6 +40,7 @@ func (m *cookModeFlag) Set(v string) error {
 type cookMode interface {
 	fillTemplateParams(env environ.Env, params *tasktemplate.Params) error
 	needsIOKeepAlive() bool
+	alwaysForwardAnnotations() bool
 	botID(env environ.Env) (string, error)
 }
 
@@ -53,7 +54,8 @@ func (m swarmingCookMode) fillTemplateParams(env environ.Env, params *tasktempla
 	return nil
 }
 
-func (m swarmingCookMode) needsIOKeepAlive() bool { return false }
+func (m swarmingCookMode) needsIOKeepAlive() bool         { return false }
+func (m swarmingCookMode) alwaysForwardAnnotations() bool { return false }
 
 func (m swarmingCookMode) botID(env environ.Env) (string, error) {
 	botID, ok := env.Get("SWARMING_BOT_ID")
@@ -69,7 +71,8 @@ func (m buildBotCookMode) fillTemplateParams(env environ.Env, params *tasktempla
 	return nil
 }
 
-func (m buildBotCookMode) needsIOKeepAlive() bool { return true }
+func (m buildBotCookMode) needsIOKeepAlive() bool         { return true }
+func (m buildBotCookMode) alwaysForwardAnnotations() bool { return true }
 
 func (m buildBotCookMode) botID(env environ.Env) (string, error) {
 	botID, ok := env.Get("BUILDBOT_SLAVENAME")
