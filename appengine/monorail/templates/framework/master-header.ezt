@@ -65,7 +65,7 @@
     [else]
      <meta name="ROBOTS" content="NOARCHIVE">
     [end]
-    <meta name="viewport" content="width=device-width">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0">
     <link type="text/css" rel="stylesheet" href="/static/css/ph_core.css?version=[app_version]">
     <link type="text/css" rel="stylesheet" href="/static/css/ph_mobile.css?version=[app_version]">
     [if-any category_css]
