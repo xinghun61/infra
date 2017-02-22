@@ -217,7 +217,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         self.m.git('cl', 'set-close',
                    '--issue', repo_data['issue'],
                    '--gerrit',
-                   _AUTH_REFRESH_TOKEN_FLAG)
+                   _AUTH_REFRESH_TOKEN_FLAG,
+                   # TODO(phajdan.jr): make set-close fatal after Gerrit switch.
+                   ok_ret='any')
 
     recipes_cfg_path = workdir.join('infra', 'config', 'recipes.cfg')
 
