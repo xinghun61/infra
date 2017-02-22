@@ -23,10 +23,6 @@ from waterfall.test import wf_testcase
 
 class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
-  def setUp(self):
-    super(MonitorTryJobPipelineTest, self).setUp()
-    self.mock(time, 'sleep', lambda x: None)
-
   def testDictsAreEqual(self):
     self.assertTrue(monitor_try_job_pipeline._DictsAreEqual(None, None))
     self.assertTrue(monitor_try_job_pipeline._DictsAreEqual({}, {}))
@@ -159,8 +155,13 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         (None, buildbucket_client.BuildbucketBuild(build_response))]
 
     pipeline = MonitorTryJobPipeline()
-    compile_result = pipeline.run(
-        try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
+    pipeline.start_test()
+    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
+    pipeline.callback(**pipeline.last_params)
+
+    # Reload from ID to get all internal properties in sync.
+    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    compile_result = pipeline.outputs.default.value
 
     expected_compile_result = {
         'report': {
@@ -264,17 +265,26 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         }
     ]
 
-    mock_module.GetTryJobs.side_effect = [
+    get_tryjobs_responses = [
         [(None, buildbucket_client.BuildbucketBuild(data[0]['build']))],
         [(buildbucket_client.BuildbucketError(data[1]['error']), None)],
         [(None, buildbucket_client.BuildbucketBuild(data[2]['build']))],
         [(buildbucket_client.BuildbucketError(data[3]['error']), None)],
         [(None, buildbucket_client.BuildbucketBuild(data[4]['build']))],
     ]
+    mock_module.GetTryJobs.side_effect = get_tryjobs_responses
 
     pipeline = MonitorTryJobPipeline()
-    test_result = pipeline.run(
-        try_job.key.urlsafe(), failure_type.TEST, try_job_id)
+    pipeline.start_test()
+    pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
+    pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
+    # Since run() calls callback() immediately, we use -1.
+    for _ in range (len(get_tryjobs_responses) - 1):
+      pipeline.callback(**pipeline.last_params)
+
+    # Reload from ID to get all internal properties in sync.
+    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    test_result = pipeline.outputs.default.value
 
     expected_test_result = {
         'report': {
@@ -358,8 +368,13 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         (None, buildbucket_client.BuildbucketBuild(build_response))]
 
     pipeline = MonitorTryJobPipeline()
-    flake_result = pipeline.run(
-        try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
+    pipeline.start_test()
+    pipeline.run(try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
+    pipeline.callback(**pipeline.last_params)
+
+    # Reload from ID to get all internal properties in sync.
+    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    flake_result = pipeline.outputs.default.value
 
     expected_flake_result = {
         'report': {
@@ -591,7 +606,11 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
     pipeline = MonitorTryJobPipeline()
+    pipeline.start_test()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    test_result = pipeline.run(try_job.key.urlsafe(), failure_type.TEST, None)
+    pipeline.run(try_job.key.urlsafe(), failure_type.TEST, None)
 
+    # Reload from ID to get all internal properties in sync.
+    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    test_result = pipeline.outputs.default.value
     self.assertIsNone(test_result)

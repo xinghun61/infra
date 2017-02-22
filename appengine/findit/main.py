@@ -26,6 +26,7 @@ from handlers import triage_analysis
 from handlers import triage_suspected_cl
 from handlers import try_job
 from handlers import try_job_dashboard
+from handlers import try_job_push
 from handlers import try_job_result
 from handlers import verify_analysis
 from handlers import version
@@ -73,6 +74,7 @@ gae_ts_mon.initialize(pipeline_backend_application)
 waterfall_frontend_web_pages_handler_mappings = [
     ('/build-failure', build_failure.BuildFailure),
     ('/list-analyses', list_analyses.ListAnalyses),
+    ('/pubsub/tryjobpush', try_job_push.TryJobPush),
     ('/waterfall/build-failure', build_failure.BuildFailure),
     ('/waterfall/calculate-confidence-scores',
      calculate_confidence_scores.CalculateConfidenceScores),

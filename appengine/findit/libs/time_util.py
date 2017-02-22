@@ -46,6 +46,26 @@ def FormatDatetime(date):
     return date.strftime('%Y-%m-%d %H:%M:%S UTC')
 
 
+def DatetimeFromString(date):
+  """Parses a datetime from a string as serialized for callback."""
+  if date == 'None':
+    return None
+  if not date or isinstance(date, datetime):
+    return date
+  valid_formats = [
+      '%Y-%m-%d %H:%M:%S.%f',
+      '%Y-%m-%dT%H:%M:%S.%f',
+      '%Y-%m-%d %H:%M:%S',
+      '%Y-%m-%dT%H:%M:%S',
+  ]
+  for format_str in valid_formats:
+    try:
+      return datetime.strptime(date, format_str)
+    except ValueError:
+      pass
+  raise ValueError('%s is not in a known datetime format' % date)
+
+
 def FormatDuration(datetime_start, datetime_end):
   """Returns a string representing the given time duration or None."""
   if not datetime_start or not datetime_end:

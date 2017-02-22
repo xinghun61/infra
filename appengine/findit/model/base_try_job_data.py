@@ -34,6 +34,9 @@ class BaseTryJobData(ndb.Model):
   # An ndb key to the try job entity this data is associated with.
   try_job_key = ndb.KeyProperty(indexed=False)
 
+  # A URL to call back the pipeline monitoring the progress of this tryjob.
+  callback_url = ndb.StringProperty(indexed=False)
+
   @ndb.ComputedProperty
   def master_name(self):  # pragma: no cover
     return BaseTryJob.GetMasterName(self.try_job_key)

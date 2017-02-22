@@ -159,6 +159,8 @@ def _ValidateTryJobSettings(settings):
           isinstance(settings.get('server_query_interval_seconds'), int) and
           isinstance(settings.get('job_timeout_hours'), int) and
           isinstance(settings.get('allowed_response_error_times'), int) and
+          isinstance(settings.get('pubsub_token'), basestring) and
+          isinstance(settings.get('pubsub_topic'), basestring) and
           isinstance(settings.get('max_seconds_look_back_for_group'), int))
 
 

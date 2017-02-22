@@ -56,7 +56,9 @@ _MOCK_TRY_JOB_SETTINGS = {
     'server_query_interval_seconds': 60,
     'job_timeout_hours': 5,
     'allowed_response_error_times': 1,
-    'max_seconds_look_back_for_group': 1
+    'max_seconds_look_back_for_group': 1,
+    'pubsub_topic': 'projects/findit/topics/jobs',
+    'pubsub_token': 'DummyT0k3n$trin9z0rz',
 }
 
 _MOCK_SWARMING_SETTINGS = {
@@ -525,25 +527,49 @@ class ConfigTest(testing.AppengineTestCase):
         'server_query_interval_seconds': '1',  # Should be an int.
         'job_timeout_hours': 1,
         'allowed_response_error_times': 1,
-        'max_seconds_look_back_for_group': 1
+        'max_seconds_look_back_for_group': 1,
+        'pubsub_topic': 'projects/findit/topics/jobs',
+        'pubsub_token': 'DummyT0k3n$trin9z0rz',
     }))
     self.assertFalse(config._ValidateTryJobSettings({
         'server_query_interval_seconds': 1,
         'job_timeout_hours': '1',  # Should be an int.
         'allowed_response_error_times': 1,
-        'max_seconds_look_back_for_group': 1
+        'max_seconds_look_back_for_group': 1,
+        'pubsub_topic': 'projects/findit/topics/jobs',
+        'pubsub_token': 'DummyT0k3n$trin9z0rz',
     }))
     self.assertFalse(config._ValidateTryJobSettings({
         'server_query_interval_seconds': 1,
         'job_timeout_hours': 1,
         'allowed_response_error_times': '1',  # Should be an int.
-        'max_seconds_look_back_for_group': 1
+        'max_seconds_look_back_for_group': 1,
+        'pubsub_topic': 'projects/findit/topics/jobs',
+        'pubsub_token': 'DummyT0k3n$trin9z0rz',
     }))
     self.assertFalse(config._ValidateTryJobSettings({
         'server_query_interval_seconds': 1,
         'job_timeout_hours': 1,
         'allowed_response_error_times': 1,
-        'max_seconds_look_back_for_group': 'a'  # Should be an int.
+        'max_seconds_look_back_for_group': 'a',  # Should be an int.
+        'pubsub_topic': 'projects/findit/topics/jobs',
+        'pubsub_token': 'DummyT0k3n$trin9z0rz',
+    }))
+    self.assertFalse(config._ValidateTryJobSettings({
+        'server_query_interval_seconds': 1,
+        'job_timeout_hours': 1,
+        'allowed_response_error_times': 1,
+        'max_seconds_look_back_for_group': 1,
+        'pubsub_topic': 1, # Should be str.
+        'pubsub_token': 'DummyT0k3n$trin9z0rz',
+    }))
+    self.assertFalse(config._ValidateTryJobSettings({
+        'server_query_interval_seconds': 1,
+        'job_timeout_hours': 1,
+        'allowed_response_error_times': 1,
+        'max_seconds_look_back_for_group': 1,
+        'pubsub_topic': 'projects/findit/topics/jobs',
+        'pubsub_token': 1, # Should be str.
     }))
     self.assertTrue(config._ValidateTryJobSettings(_MOCK_TRY_JOB_SETTINGS))
 

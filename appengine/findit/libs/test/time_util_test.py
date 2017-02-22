@@ -69,3 +69,15 @@ class DiffTest(unittest.TestCase):
     tz_negative = time_util.TimeZoneInfo('-0700')
     self.assertEqual(tz_negative.LocalToUTC(naive_time),
                      datetime(2016, 9, 1, 17, 0, 0))
+
+  def testDatetimeFromString(self):
+    self.assertEqual(None, time_util.DatetimeFromString('None'))
+    self.assertEqual(None, time_util.DatetimeFromString(None))
+    iso_time_str = '2016-01-02T01:02:03.123456'
+    iso_time_datetime = time_util.DatetimeFromString(iso_time_str)
+    # Check that our function reverses datetime.isoformat
+    self.assertEqual(iso_time_datetime.isoformat(), iso_time_str)
+    self.assertEqual(iso_time_datetime, time_util.DatetimeFromString(
+        iso_time_datetime))
+    with self.assertRaises(ValueError):
+      time_util.DatetimeFromString('Yesterday, at 5 o\'clock')

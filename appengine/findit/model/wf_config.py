@@ -71,6 +71,8 @@ class FinditConfig(VersionedConfig):
   #     'server_query_interval_seconds': 60,
   #     'job_timeout_hours': 5,
   #     'allowed_response_error_times': 5
+  #     'pubsub_token': 'SomeSecretString',
+  #     'pubsub_topic': 'projects/findit-for-me/topics/jobs',
   # }
   try_job_settings = ndb.JsonProperty(indexed=False, default={})
 

@@ -11,6 +11,8 @@ import logging
 from gae_libs.http import auth_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 
+from common.waterfall.pubsub_callback import MakeTryJobPubsubCallback
+
 
 # TODO: save these settings in datastore and create a role account.
 _ROLE_EMAIL = 'IF_BREAK_CONTACT_stgao@chromium.org'
@@ -67,6 +69,7 @@ class TryJob(collections.namedtuple(
         'bucket': _GetBucketName(self.master_name),
         'parameters_json': json.dumps(parameters_json),
         'tags': tags,
+        'pubsub_callback': MakeTryJobPubsubCallback(),
     }
 
 

@@ -8,6 +8,9 @@ dispatch:
   - url: "*/list-analyses"
     module: waterfall-frontend
 
+  - url: "*/pubsub/*"
+    module: waterfall-frontend
+
   - url: "*/waterfall/*"
     module: waterfall-frontend
 
