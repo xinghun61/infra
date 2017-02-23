@@ -152,7 +152,7 @@ def RunDeltaTest():
   git_hash1 = delta_util.ParseGitHash(args.revisions[0])
   git_hash2 = delta_util.ParseGitHash(args.revisions[1])
   delta_path = GenerateDeltaResultPath(DELTA_RESULTS_DIRECTORY,
-                                       git_hash1, git_hash1,
+                                       git_hash1, git_hash2,
                                        args.since, args.until, args.max)
   delta_csv_path = delta_path + '.csv'
   # Check if delta results already existed.

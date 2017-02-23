@@ -28,7 +28,7 @@ class Delta(object):  # pragma: no cover.
     self._result1 = result1
     self._result2 = result2
     self._delta_dict = None
-    self._delta_str_dict = None
+    self._delta_dict_str = None
 
   @property
   def delta_dict(self):
@@ -37,10 +37,9 @@ class Delta(object):  # pragma: no cover.
     Returns:
     A dict. For example, for Culprit result, the delta dict is like below:
     {
-        'project': 'chromium',
-        'components': ['Blink>API'],
-        'cls': [],
-        'regression_range': ['52.0.1200.1', '52.0.1200.3']
+        'suspected_project': ('chromium', 'chromium-v8'),
+        'suspected_components': (['Blink>API'], ['Internal']),
+        'regression_range': (['52.0.1200.1', '52.0.1200.3'], None)
     }
     """
     if self._delta_dict:
@@ -54,19 +53,6 @@ class Delta(object):  # pragma: no cover.
     for key in keys:
       value1 = result1.get(key)
       value2 = result2.get(key)
-      if value1 != value2:
-        self._delta_dict[key] = (value1, value2)
-
-    return self._delta_dict
-
-  @property
-  def delta_str_dict(self):
-    """Converts delta of each field to a string."""
-    if self._delta_str_dict:
-      return self._delta_str_dict
-
-    self._delta_str_dict = {}
-    for key, (value1, value2) in self.delta_dict.iteritems():
       if key == 'suspected_cls':
         for value in [value1, value2]:
           if not value:
@@ -76,19 +62,31 @@ class Delta(object):  # pragma: no cover.
             cl['confidence'] = round(cl['confidence'], 2)
             cl.pop('reasons', None)
 
-        value1 = json.dumps(value1, indent=4, sort_keys=True)
-        value2 = json.dumps(value2, indent=4, sort_keys=True)
+      if value1 != value2:
+        self._delta_dict[key] = (value1, value2)
 
-      self._delta_str_dict[key] = '%s 1: %s\n%s 2: %s\n' % (key, value1,
-                                                            key, value2)
+    return self._delta_dict
 
-    return self._delta_str_dict
+  @property
+  def delta_dict_str(self):
+    """Converts delta of each field to a string."""
+    if self._delta_dict_str:
+      return self._delta_dict_str
+
+    self._delta_dict_str = {}
+    for key, (value1, value2) in self.delta_dict.iteritems():
+      value1_str = json.dumps(value1, indent=4, sort_keys=True)
+      value2_str = json.dumps(value2, indent=4, sort_keys=True)
+      self._delta_dict_str[key] = '%s 1: %s\n%s 2: %s\n' % (key, value1_str,
+                                                            key, value2_str)
+
+    return self._delta_dict_str
 
   def ToDict(self):
     return self.delta_dict
 
   def __str__(self):
-    return '\n'.join(self.delta_str_dict.values())
+    return '\n'.join(self.delta_dict_str.values())
 
   def __bool__(self):
     return bool(self.delta_dict)

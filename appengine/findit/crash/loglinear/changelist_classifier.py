@@ -90,7 +90,8 @@ class LogLinearChangelistClassifier(object):
                                                            dep_roll.path)
 
     for reverted_revision in reverted_revisions:
-      del revision_to_suspects[reverted_revision]
+      if reverted_revision in revision_to_suspects:
+        del revision_to_suspects[reverted_revision]
 
     return revision_to_suspects.values()
 
@@ -133,5 +134,5 @@ class LogLinearChangelistClassifier(object):
                                for changed_file in features.changed_files]
       scored_suspects.append(suspect)
 
-    scored_suspects.sort(key=lambda suspect: suspect.confidence)
+    scored_suspects.sort(key=lambda suspect: -suspect.confidence)
     return scored_suspects[:self._top_n_suspects]

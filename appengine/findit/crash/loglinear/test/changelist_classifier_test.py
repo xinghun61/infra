@@ -107,7 +107,7 @@ DUMMY_CHANGELOG3 = ChangeLog.FromDict({
     'commit_url': 'https://repo.test/+/3',
     'code_review_url': 'https://codereview.chromium.org/3281',
     'revision': '3',
-    'reverted_revision': None
+    'reverted_revision': '0'
 })
 
 DUMMY_CALLSTACKS = [
@@ -158,7 +158,7 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
     self.assertListEqual([suspect.ToDict() for suspect in suspects],
                          expected_suspects)
 
-  def testGenerateSuspects(self):
+  def testGenerateSuspectsFilterReverted(self):
     """Tests ``GenerateSuspects`` method."""
     dep_roll = DependencyRoll('src/', 'https://repo', 'rev1', 'rev5')
     report = DUMMY_REPORT._replace(dependency_rolls={dep_roll.path: dep_roll})
@@ -166,8 +166,7 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
               lambda *_: [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2, DUMMY_CHANGELOG3])
 
     suspects = self.changelist_classifier.GenerateSuspects(report)
-    self.assertListEqual([Suspect(DUMMY_CHANGELOG3, 'src/').ToDict()],
-                         [suspect.ToDict() for suspect in suspects])
+    self.assertListEqual(suspects, [])
 
   def testRankSuspectsAllLogZeros(self):
     """Tests ``RankSuspects`` method."""
