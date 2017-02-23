@@ -7,6 +7,7 @@ import logging
 import time
 
 from common.pipeline_wrapper import BasePipeline
+from common.waterfall.pubsub_callback import MakeSwarmingPubsubCallback
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model import analysis_status
@@ -35,6 +36,11 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     new_request.name = self._GetSwarmingTaskName(ref_task_id)
     new_request.parent_task_id = ''
     new_request.user = ''
+
+    _pubsub_callback = MakeSwarmingPubsubCallback()
+    new_request.pubsub_topic = _pubsub_callback.get('topic')
+    new_request.pubsub_auth_token = _pubsub_callback.get('auth_token')
+    new_request.pubsub_userdata = _pubsub_callback.get('user_data')
 
     # To force a fresh re-run and ignore cached result of any equivalent run.
     new_request.idempotent = False

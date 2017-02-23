@@ -58,6 +58,7 @@ _MOCK_TRY_JOB_SETTINGS = {
     'allowed_response_error_times': 1,
     'max_seconds_look_back_for_group': 1,
     'pubsub_topic': 'projects/findit/topics/jobs',
+    'pubsub_swarming_topic': 'projects/findit/topics/swarm',
     'pubsub_token': 'DummyT0k3n$trin9z0rz',
 }
 

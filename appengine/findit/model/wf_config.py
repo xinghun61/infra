@@ -73,6 +73,7 @@ class FinditConfig(VersionedConfig):
   #     'allowed_response_error_times': 5
   #     'pubsub_token': 'SomeSecretString',
   #     'pubsub_topic': 'projects/findit-for-me/topics/jobs',
+  #     'pubsub_swarming_topic': 'projects/findit-for-me/topics/swarm',
   # }
   try_job_settings = ndb.JsonProperty(indexed=False, default={})
 

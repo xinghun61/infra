@@ -26,6 +26,11 @@ class SwarmingTaskRequest(object):  # pragma: no cover. Tested indirectly.
     self.inputs_ref = {}
     self.io_timeout_secs = 1200
 
+    # Pub/Sub parameters
+    self.pubsub_topic = None
+    self.pubsub_auth_token = None
+    self.pubsub_userdata = None
+
   def Serialize(self):
     """Serializes and returns a dict representing the Swarming task request."""
     return {
@@ -46,6 +51,9 @@ class SwarmingTaskRequest(object):  # pragma: no cover. Tested indirectly.
         },
         'tags': self.tags,
         'user': self.user,
+        'pubsub_topic': self.pubsub_topic,
+        'pubsub_auth_token': self.pubsub_auth_token,
+        'pubsub_userdata': self.pubsub_userdata,
     }
 
   @staticmethod
@@ -63,6 +71,9 @@ class SwarmingTaskRequest(object):  # pragma: no cover. Tested indirectly.
     task_request.priority = data['priority']
     task_request.tags = data['tags'] or []
     task_request.user = data.get('user')
+    task_request.pubsub_topic = data.get('pubsub_topic')
+    task_request.pubsub_auth_token = data.get('pubsub_auth_token')
+    task_request.pubsub_userdata = data.get('pubsub_userdata')
 
     task_request.command = data['properties'].get('command')
     task_request.dimensions = data['properties']['dimensions']

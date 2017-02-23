@@ -37,5 +37,8 @@ class BaseSwarmingTask(ndb.Model):
   # Time when the task is completed.
   completed_time = ndb.DateTimeProperty(indexed=False)
 
+  # A URL to call back the pipeline monitoring the progress of this task.
+  callback_url = ndb.StringProperty(indexed=False)
+
   # parameters need to be stored and analyzed later.
   parameters = ndb.JsonProperty(default={}, indexed=False, compressed=True)

@@ -153,6 +153,9 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
             'purpose:identify-flake',
         ],
         'user': '',
+        'pubsub_auth_token': 'https://goo.gl/yYhr29',
+        'pubsub_topic': 'projects/findit-for-me/topics/swarm',
+        'pubsub_userdata': '{"Message-Type": "SwarmingTaskStatusChange"}',
     }
 
     pipeline = TriggerSwarmingTaskPipeline()

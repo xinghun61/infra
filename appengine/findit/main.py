@@ -21,6 +21,7 @@ from handlers import list_analyses
 from handlers import monitor_alerts
 from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
+from handlers import swarming_push
 from handlers import swarming_task
 from handlers import triage_analysis
 from handlers import triage_suspected_cl
@@ -74,6 +75,7 @@ gae_ts_mon.initialize(pipeline_backend_application)
 waterfall_frontend_web_pages_handler_mappings = [
     ('/build-failure', build_failure.BuildFailure),
     ('/list-analyses', list_analyses.ListAnalyses),
+    ('/pubsub/swarmingpush', swarming_push.SwarmingPush),
     ('/pubsub/tryjobpush', try_job_push.TryJobPush),
     ('/waterfall/build-failure', build_failure.BuildFailure),
     ('/waterfall/calculate-confidence-scores',

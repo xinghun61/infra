@@ -159,6 +159,9 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         },
         'tags': ['tag'],
         'user': 'user',
+        'pubsub_topic': None,
+        'pubsub_auth_token': None,
+        'pubsub_userdata': None,
     }
     task_id = '1'
     url = ('https://chromium-swarm.appspot.com/'
@@ -217,6 +220,9 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         },
         'tags': ['tag', 'findit:1', 'project:Chromium', 'purpose:post-commit'],
         'user': 'user',
+        'pubsub_topic': None,
+        'pubsub_auth_token': None,
+        'pubsub_userdata': None,
     }
 
     task_id, error = swarming_util.TriggerSwarmingTask(
