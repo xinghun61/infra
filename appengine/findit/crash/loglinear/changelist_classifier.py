@@ -6,7 +6,6 @@ from collections import defaultdict
 import logging
 
 from common.chrome_dependency_fetcher import ChromeDependencyFetcher
-from crash.stacktrace import StackInfo
 from crash.suspect import Suspect
 from crash.crash_report import CrashReport
 from crash.loglinear.model import UnnormalizedLogLinearModel

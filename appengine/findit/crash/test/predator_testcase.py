@@ -95,7 +95,6 @@ DUMMY_CHANGELOG = ChangeLog.FromDict({
 })
 
 
-
 class PredatorTestCase(TestCase):  # pragma: no cover
 
   def setUp(self):

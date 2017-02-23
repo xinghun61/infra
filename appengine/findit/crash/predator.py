@@ -29,9 +29,8 @@ class Predator(object): # pragma: no cover
         self.component_classifier.ClassifyCallStack(
             report.stacktrace.crash_stack))
 
-    return Culprit(
-        project = suspected_project,
-        components = suspected_components,
-        cls = suspected_cls,
-        regression_range = report.regression_range,
-        algorithm = 'core_algorithm')
+    return Culprit(project=suspected_project,
+                   components=suspected_components,
+                   cls=suspected_cls,
+                   regression_range=report.regression_range,
+                   algorithm='core_algorithm')

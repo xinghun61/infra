@@ -26,27 +26,27 @@ class TouchCrashedFileFeature(Feature):
   def __call__(self, report):
     """
     Args:
-      report (CrashReportWithDependencies): the crash report being analyzed.
+      report (CrashReport): the crash report being analyzed.
 
     Returns:
       A ``FeatureValue`` with name, log-domain value, reason and changed_files.
     """
-    def FeatureValueGivenReport(
-        suspect, touched_file_to_stack_infos):  # pylint: disable=W0613
+    def FeatureValueGivenReport(suspect, matches):  # pylint: disable=W0613
       """Compute ``FeatureValue`` for a suspect.
 
       Args:
         suspect (Suspect): The suspected changelog and some meta information
           about it.
-        touched_file_to_stack_infos(dict): Dict mapping ``FileChangeInfo`` to
-          a list of ``StackInfo``s representing all the frames that the suspect
-          touched.
+        matches(dict): Dict mapping crashed group(CrashedFile, CrashedDirectory)
+          to a list of ``Match``s representing all frames and all touched files
+          matched in the same crashed group(same crashed file or crashed
+          directory).
 
       Returns:
         The ``FeatureValue`` of this feature.
       """
 
-      if not touched_file_to_stack_infos:
+      if not matches:
         return FeatureValue(
             self.name, lmath.LOG_ZERO,
             'No file got touched by the suspect.', None)
@@ -54,9 +54,9 @@ class TouchCrashedFileFeature(Feature):
       return FeatureValue(
           name = self.name,
           value = lmath.LOG_ONE,
-          reason = ('Touched files - %s' % ', '.join([
-              touched_file.new_path for touched_file, _ in
-              touched_file_to_stack_infos.iteritems()])),
+          reason = 'Touched files - %s' % ', '.join([
+              touched_file.new_path for match in matches.itervalues()
+              for touched_file in match.touched_files]),
           changed_files = None)
 
     return FeatureValueGivenReport

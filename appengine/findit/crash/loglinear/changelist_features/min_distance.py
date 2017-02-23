@@ -5,7 +5,7 @@
 import logging
 import math
 
-from crash.loglinear.changelist_classifier import StackInfo
+from crash.crash_match import FrameInfo
 from crash.loglinear.feature import ChangedFile
 from crash.loglinear.feature import Feature
 from crash.loglinear.feature import FeatureValue
@@ -14,7 +14,7 @@ from libs.gitiles.diff import ChangeType
 import libs.math.logarithms as lmath
 
 
-class ModifiedFrameInfo(object):
+class Distance(object):
   """Represents the closest frame to a changelog which modified it.
 
   The "closest" means that the distance between crashed lines in the frame and
@@ -25,7 +25,8 @@ class ModifiedFrameInfo(object):
       touched lines, if a changelog doesn't show in blame of the crashed file of
       the crashed version (either it didn't touch the crashed file or it got
       overwritten by other cls), the distance would be infinite.
-    frame (StackFrame): The frame which got modified.
+    frame (StackFrame): The frame which has the minimum distance to touched
+      lines.
   """
 
   def __init__(self, distance, frame):
@@ -105,14 +106,14 @@ class MinDistanceFeature(Feature):
   def name(self):
     return 'MinDistance'
 
-  def DistanceBetweenTouchedFileAndStacktrace(
-      self, revision, touched_file, stack_infos, crash_dependency):
-    """Gets ``ModifiedFrameInfo`` between touched and crashed lines in a file.
+  def DistanceBetweenTouchedFileAndFrameInfos(
+      self, revision, touched_file, frame_infos, crash_dependency):
+    """Gets ``Distance`` between touched and crashed lines in a file.
 
     Args:
       revision (str): The revision of the suspect.
       touched_file (FileChangeInfo): The file touched by the suspect.
-      stack_infos (list of StackInfos): List of information of frames in the
+      frame_infos (list of FrameInfos): List of information of frames in the
         stacktrace which contains ``touched_file``.
       crash_dependency (Dependency): The depedency of crashed revision. N.B. The
         crashed revision is the revision where crash happens, however the
@@ -120,7 +121,7 @@ class MinDistanceFeature(Feature):
         must be before the crashed revision.
 
     Returns:
-      ``ModifiedFrameInfo`` object of touched file and stacktrace.
+      ``Distance`` object of touched file and stacktrace.
     """
     # TODO(katesonia) ``GetBlame`` is called for the same file everytime
     # there is a suspect that touched it, which can be very expensive.
@@ -138,24 +139,24 @@ class MinDistanceFeature(Feature):
       return None
 
     # Distance of this file.
-    modified_frame_info = ModifiedFrameInfo(float('inf'), None)
+    distance = Distance(float('inf'), None)
     for region in blame:
       if region.revision != revision:
         continue
 
       region_start = region.start
       region_end = region_start + region.count - 1
-      for stack_info in stack_infos:
-        frame_start = stack_info.frame.crashed_line_numbers[0]
-        frame_end = stack_info.frame.crashed_line_numbers[-1]
-        distance = DistanceBetweenLineRanges((frame_start, frame_end),
-                                             (region_start, region_end))
-        modified_frame_info.Update(distance, stack_info.frame)
+      for frame_info in frame_infos:
+        frame_start = frame_info.frame.crashed_line_numbers[0]
+        frame_end = frame_info.frame.crashed_line_numbers[-1]
+        line_distance = DistanceBetweenLineRanges((frame_start, frame_end),
+                                                  (region_start, region_end))
+        distance.Update(line_distance, frame_info.frame)
 
-    return modified_frame_info
+    return distance
 
   def __call__(self, report):
-    """Returns the scaled min ``ModifiedFrameInfo.distance`` across all files.
+    """Returns the scaled min ``Distance.distance`` across all files.
 
     Args:
       report (CrashReport): the crash report being analyzed.
@@ -165,34 +166,40 @@ class MinDistanceFeature(Feature):
       for) a stack frame in that suspect and the CL in that suspect, as a
       log-domain ``float``.
     """
-    def FeatureValueGivenReport(suspect, touched_file_to_stack_infos):
+    def FeatureValueGivenReport(suspect, matches):
       """Function mapping suspect related data to MinDistance FeatureValue.
 
       Args:
         suspect (Suspect): The suspected changelog and some meta information
           about it.
-        touched_file_to_stack_infos(dict): Dict mapping ``FileChangeInfo`` to
-          a list of ``StackInfo``s representing all the frames that the suspect
-          touched.
+        matches(dict): Dict mapping crashed group(CrashedFile, CrashedDirectory)
+          to a list of ``Match``s representing all frames and all touched files
+          matched in the same crashed group(same crashed file or crashed
+          directory).
 
       Returns:
         The ``FeatureValue`` of this feature.
       """
-      if not touched_file_to_stack_infos:
+      if not matches:
         FeatureValue(self.name, lmath.LOG_ZERO,
                      'No file got touched by the suspect.', None)
 
-      modified_frame_info = ModifiedFrameInfo(float('inf'), None)
-      touched_file_to_modified_frame_info = {}
-      for touched_file, stack_infos in touched_file_to_stack_infos.iteritems():
+      distance = Distance(float('inf'), None)
+      touched_file_to_distance = {}
+      for match in matches.itervalues():
+        if len(match.touched_files) != 1:
+          logging.warning('There should be only one touched file per crashed '
+                          'file group.')
+          continue
+
+        touched_file = match.touched_files[0]
         # Records the closest frame (the frame has minimum distance between
         # crashed lines and touched lines) for each touched file of the suspect.
-        modified_frame_info_per_file = (
-            self.DistanceBetweenTouchedFileAndStacktrace(
-                suspect.changelog.revision, touched_file, stack_infos,
-                report.dependencies[suspect.dep_path]))
+        distance_per_file = self.DistanceBetweenTouchedFileAndFrameInfos(
+            suspect.changelog.revision, touched_file,
+            match.frame_infos, report.dependencies[suspect.dep_path])
         # Failed to get blame information of a file.
-        if not modified_frame_info_per_file:
+        if not distance_per_file:
           logging.warning('suspect\'s change cannot be blamed due to lack of'
                           'blame information for crashed file %s' %
                           touched_file.new_path)
@@ -200,36 +207,34 @@ class MinDistanceFeature(Feature):
 
         # It is possible that a changelog doesn't show in the blame of a file,
         # in this case, treat the changelog as if it didn't change the file.
-        if modified_frame_info_per_file.IsInfinity():
+        if distance_per_file.IsInfinity():
           continue
 
-        touched_file_to_modified_frame_info[
-            touched_file] = modified_frame_info_per_file
-        modified_frame_info.Update(modified_frame_info_per_file.distance,
-                             modified_frame_info_per_file.frame)
+        touched_file_to_distance[touched_file] = distance_per_file
+        distance.Update(distance_per_file.distance,
+                        distance_per_file.frame)
 
       return FeatureValue(
           name = self.name,
-          value = LogLinearlyScaled(float(modified_frame_info.distance),
+          value = LogLinearlyScaled(float(distance.distance),
                                     float(self._maximum)),
-          reason = ('Minimum distance is %d' % int(modified_frame_info.distance)
-                    if not math.isinf(modified_frame_info.distance) else
+          reason = ('Minimum distance is %d' % int(distance.distance)
+                    if not math.isinf(distance.distance) else
                     'Minimum distance is infinity'),
           changed_files = MinDistanceFeature.ChangedFiles(
-              suspect, touched_file_to_modified_frame_info,
+              suspect, touched_file_to_distance,
               report.crashed_version))
 
     return FeatureValueGivenReport
 
   @staticmethod
-  def ChangedFiles(suspect, touched_file_to_modified_frame_info,
-                   crashed_version):
+  def ChangedFiles(suspect, touched_file_to_distance, crashed_version):
     """Get all the changed files causing this feature to blame this result.
 
     Arg:
       suspect (Suspect): the suspect being blamed.
-      touched_file_to_modified_frame_info (dict): Dict mapping file name to
-        ``ModifiedFrameInfo``s.
+      touched_file_to_distance (dict): Dict mapping file name to
+        ``Distance``s.
       crashed_version (str): Crashed version.
 
     Returns:
@@ -243,21 +248,20 @@ class MinDistanceFeature(Feature):
     """
     frame_index_to_changed_files = {}
 
-    for touched_file, modified_frame_info in (
-        touched_file_to_modified_frame_info.iteritems()):
+    for touched_file, distance in (
+        touched_file_to_distance.iteritems()):
       file_name = touched_file.new_path.split('/')[-1]
-      if modified_frame_info.frame is None: # pragma: no cover
+      if distance.frame is None: # pragma: no cover
         logging.warning('Missing the min_distance_frame for file %s' %
                         file_name)
         continue
 
-      frame_index_to_changed_files[
-          modified_frame_info.frame.index] = ChangedFile(
+      frame_index_to_changed_files[distance.frame.index] = ChangedFile(
               name=file_name,
-              blame_url=modified_frame_info.frame.BlameUrl(crashed_version),
+              blame_url=distance.frame.BlameUrl(crashed_version),
               reasons=['Distance from touched lines and crashed lines is %d, in'
-                       ' frame #%d' % (modified_frame_info.distance,
-                                       modified_frame_info.frame.index)])
+                       ' frame #%d' % (distance.distance,
+                                       distance.frame.index)])
 
     if not frame_index_to_changed_files: # pragma: no cover
       logging.warning('Found no changed files for suspect: %s', str(suspect))

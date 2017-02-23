@@ -7,12 +7,15 @@ import unittest
 from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from common.dependency import Dependency
 from common.dependency import DependencyRoll
+from crash.crash_match import CrashMatch
+from crash.crash_match import FrameInfo
 from crash.crash_report import CrashReport
 from crash.loglinear.changelist_features import min_distance
+from crash.loglinear.changelist_features.touch_crashed_file_meta import (
+    CrashedFile)
 from crash.loglinear.feature import ChangedFile
 from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
-from crash.stacktrace import StackInfo
 from crash.stacktrace import Stacktrace
 from crash.suspect import Suspect
 from crash.test.predator_testcase import PredatorTestCase
@@ -32,12 +35,12 @@ _MOCK_FRAME = StackFrame(0, 'src/', 'func', 'f.cc', 'a/b/src/f.cc', [2],
 _MOCK_FRAME2 = StackFrame(0, 'src/', 'func', 'f.cc', 'a/b/src/ff.cc', [22],
                          repo_url='https://repo_url')
 
-class ModifiedFrameInfoTest(unittest.TestCase):
-  """Tests ``ModifiedFrameInfo`` class."""
+class DistanceTest(unittest.TestCase):
+  """Tests ``Distance`` class."""
 
   def testUpdate(self):
     """Tests that ``Update`` updates distance and frame."""
-    distance_info = min_distance.ModifiedFrameInfo(100, None)
+    distance_info = min_distance.Distance(100, None)
     distance_info.Update(50, None)
     self.assertEqual(distance_info.distance, 50)
     distance_info.Update(80, None)
@@ -45,7 +48,7 @@ class ModifiedFrameInfoTest(unittest.TestCase):
 
   def testIsInfinity(self):
     """Tests that ``IsInfinity`` checks if distance is infinity."""
-    distance_info = min_distance.ModifiedFrameInfo(float('inf'), None)
+    distance_info = min_distance.Distance(float('inf'), None)
     self.assertTrue(distance_info.IsInfinity())
 
 
@@ -93,23 +96,47 @@ class MinDistanceTest(PredatorTestCase):
         min_distance.MinDistanceFeature(None, _MAXIMUM)(
             report)(suspect, {}).value)
 
+  def testOnlyOneTouchedFilePerMatchedCrashedFile(self):
+    """Test that ``CrashMatch`` can only have 1 touched file."""
+    report = self._GetDummyReport(
+        deps={'src/': Dependency('src/', 'https://repo', '6')},
+        dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
+
+    frame = _MOCK_FRAME._replace(file_path='file')
+    crashed = CrashedFile('file')
+    matches = {
+        crashed:
+        CrashMatch(crashed,
+                   [FileChangeInfo(ChangeType.MODIFY, 'file', 'file'),
+                    FileChangeInfo(ChangeType.MODIFY, 'dummy', 'dummy')],
+                   [FrameInfo(frame, 0)])
+    }
+    self.assertEqual(
+        lmath.LOG_ZERO,
+        min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
+            self._GetMockSuspect(), matches).value)
+
   def testMinDistanceFeatureIsLogOne(self):
     """Test that the feature returns log(1) when the min_distance is 0."""
     report = self._GetDummyReport(
         deps={'src/': Dependency('src/', 'https://repo', '6')},
         dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
 
-    touched_file_to_stack_infos = {
-        FileChangeInfo(ChangeType.MODIFY, 'file', 'file'):
-        [StackInfo(_MOCK_FRAME, 0)]
+    frame = _MOCK_FRAME._replace(file_path='file')
+    crashed = CrashedFile('file')
+    matches = {
+        crashed:
+        CrashMatch(crashed,
+                   [FileChangeInfo(ChangeType.MODIFY, 'file', 'file')],
+                   [FrameInfo(frame, 0)])
     }
     self.mock(min_distance.MinDistanceFeature,
-              'DistanceBetweenTouchedFileAndStacktrace',
-              lambda *_: min_distance.ModifiedFrameInfo(0, None))
+              'DistanceBetweenTouchedFileAndFrameInfos',
+              lambda *_: min_distance.Distance(0, None))
     self.assertEqual(
         lmath.LOG_ONE,
         min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
-            self._GetMockSuspect(), touched_file_to_stack_infos).value)
+            self._GetMockSuspect(), matches).value)
 
   def testMinDistanceFeatureMiddling(self):
     """Test that the feature returns middling scores for middling distances."""
@@ -119,17 +146,20 @@ class MinDistanceTest(PredatorTestCase):
 
     frame = StackFrame(0, 'src/', 'func', 'f.cc', 'f.cc', [232], 'https://repo')
     distance = 42.
-    touched_file_to_stack_infos = {
-        FileChangeInfo(ChangeType.MODIFY, 'file', 'file'):
-        [StackInfo(frame, 0)]
+    crashed = CrashedFile('file')
+    matches = {
+        crashed:
+        CrashMatch(crashed,
+                   [FileChangeInfo(ChangeType.MODIFY, 'file', 'file')],
+                   [FrameInfo(frame, 0)])
     }
     self.mock(min_distance.MinDistanceFeature,
-              'DistanceBetweenTouchedFileAndStacktrace',
-              lambda *_: min_distance.ModifiedFrameInfo(distance, frame))
+              'DistanceBetweenTouchedFileAndFrameInfos',
+              lambda *_: min_distance.Distance(distance, frame))
     self.assertEqual(
         lmath.log((_MAXIMUM - distance) / _MAXIMUM),
         min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
-            self._GetMockSuspect(), touched_file_to_stack_infos).value)
+            self._GetMockSuspect(), matches).value)
 
   def testMinDistanceFeatureIsOverMax(self):
     """Test that we return log(0) when the min_distance is too large."""
@@ -138,20 +168,24 @@ class MinDistanceTest(PredatorTestCase):
         dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
 
     distance = _MAXIMUM + 1
-    touched_file_to_stack_info = {
-        FileChangeInfo(ChangeType.MODIFY, 'file', 'file'):
-        StackInfo(_MOCK_FRAME, 0)
+    frame = _MOCK_FRAME._replace(file_path='file')
+    crashed = CrashedFile('file')
+    matches = {
+        crashed:
+        CrashMatch(crashed,
+                   [FileChangeInfo(ChangeType.MODIFY, 'file', 'file')],
+                   [FrameInfo(frame, 0)])
     }
     self.mock(min_distance.MinDistanceFeature,
-              'DistanceBetweenTouchedFileAndStacktrace',
-              lambda *_: min_distance.ModifiedFrameInfo(distance, None))
+              'DistanceBetweenTouchedFileAndFrameInfos',
+              lambda *_: min_distance.Distance(distance, None))
     self.assertEqual(
         lmath.log((_MAXIMUM - distance) / _MAXIMUM),
         min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
-            self._GetMockSuspect(), touched_file_to_stack_info).value)
+            self._GetMockSuspect(), matches).value)
 
-  def testDistanceBetweenTouchedFileAndStacktrace(self):
-    """Tests ``DistanceBetweenTouchedFileAndStacktrace`` method."""
+  def testDistanceBetweenTouchedFileAndFrameInfos(self):
+    """Tests ``DistanceBetweenTouchedFileAndFrameInfos`` method."""
     feature = min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)
     frame1 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [7],
                         repo_url='https://repo_url')
@@ -171,13 +205,13 @@ class MinDistanceTest(PredatorTestCase):
 
     self.mock(GitilesRepository, 'GetBlame', _MockGetBlame)
 
-    distance_info = feature.DistanceBetweenTouchedFileAndStacktrace(
-        'rev', touched_file, [StackInfo(frame1, 0), StackInfo(frame2, 0)],
+    distance_info = feature.DistanceBetweenTouchedFileAndFrameInfos(
+        'rev', touched_file, [FrameInfo(frame1, 0), FrameInfo(frame2, 0)],
          Dependency('src/', 'https://repo', 'rev'))
-    self.assertEqual(distance_info, min_distance.ModifiedFrameInfo(0, frame1))
+    self.assertEqual(distance_info, min_distance.Distance(0, frame1))
 
-    distance_info = feature.DistanceBetweenTouchedFileAndStacktrace(
-        'wrong_rev', touched_file, [StackInfo(frame1, 0), StackInfo(frame2, 0)],
+    distance_info = feature.DistanceBetweenTouchedFileAndFrameInfos(
+        'wrong_rev', touched_file, [FrameInfo(frame1, 0), FrameInfo(frame2, 0)],
          Dependency('src/', 'https://repo', 'wrong_rev'))
     self.assertIsNone(distance_info)
 
@@ -191,25 +225,28 @@ class MinDistanceTest(PredatorTestCase):
         deps={'src/': Dependency('src/', 'https://repo', '6')},
         dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
     suspect = self._GetMockSuspect()
-
-    touched_file_to_stack_info = {
-        FileChangeInfo(ChangeType.MODIFY, 'file', 'file'):
-        StackInfo(_MOCK_FRAME, 0)
+    crashed = CrashedFile(_MOCK_FRAME)
+    matches = {
+        crashed:
+        CrashMatch(crashed,
+                   [FileChangeInfo(ChangeType.MODIFY, 'file', 'file')],
+                   [FrameInfo(_MOCK_FRAME, 0)])
     }
+
     self.mock(min_distance.MinDistanceFeature,
-              'DistanceBetweenTouchedFileAndStacktrace',
+              'DistanceBetweenTouchedFileAndFrameInfos',
               lambda *_: None)
     self.assertEqual(
         lmath.LOG_ZERO,
         min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
-            suspect, touched_file_to_stack_info).value)
+            suspect, matches).value)
     self.mock(min_distance.MinDistanceFeature,
-              'DistanceBetweenTouchedFileAndStacktrace',
-              lambda *_: min_distance.ModifiedFrameInfo(float('inf'), None))
+              'DistanceBetweenTouchedFileAndFrameInfos',
+              lambda *_: min_distance.Distance(float('inf'), None))
     self.assertEqual(
         lmath.LOG_ZERO,
         min_distance.MinDistanceFeature(self._get_repository, 100)(report)(
-            suspect, touched_file_to_stack_info).value)
+            suspect, matches).value)
 
   def testMinDistanceChangedFiles(self):
     """Tests ``ChangedFile`` method."""
@@ -218,17 +255,20 @@ class MinDistanceTest(PredatorTestCase):
         dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
 
     distance = 42
-    touched_file_to_stack_info = {
-        FileChangeInfo(ChangeType.MODIFY, 'file', 'file'):
-        StackInfo(_MOCK_FRAME, 0)
+    crashed = CrashedFile(_MOCK_FRAME)
+    matches = {
+        crashed:
+        CrashMatch(crashed,
+                   [FileChangeInfo(ChangeType.MODIFY, 'file', 'file')],
+                   [FrameInfo(_MOCK_FRAME, 0)])
     }
     frame = StackFrame(0, 'src/', 'func', 'f.cc', 'f.cc', [7], 'https://repo')
     self.mock(min_distance.MinDistanceFeature,
-              'DistanceBetweenTouchedFileAndStacktrace',
-              lambda *_: min_distance.ModifiedFrameInfo(distance, frame))
+              'DistanceBetweenTouchedFileAndFrameInfos',
+              lambda *_: min_distance.Distance(distance, frame))
     self.assertEqual(
         min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
-            self._GetMockSuspect(), touched_file_to_stack_info).changed_files,
+            self._GetMockSuspect(), matches).changed_files,
             [ChangedFile(name='file',
                          blame_url=('%s/+blame/%s/f.cc#%d' %
                                     (frame.repo_url,

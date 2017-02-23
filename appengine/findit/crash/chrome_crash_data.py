@@ -97,7 +97,6 @@ class ChromeCrashData(CrashData):
 
     # Delay the stacktrace parsing to the first time when stacktrace property
     # gets called.
-    self._stacktrace_str = crash_data['stack_trace'] or ''
     self._top_n_frames = top_n_frames
     self._stacktrace = None
 

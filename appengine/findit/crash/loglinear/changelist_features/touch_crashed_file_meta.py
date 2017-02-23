@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from collections import defaultdict
+from collections import namedtuple
 import logging
 import math
 
@@ -16,7 +17,6 @@ from crash.loglinear.feature import ChangedFile
 from crash.loglinear.feature import MetaFeature
 from crash.loglinear.feature import MetaFeatureValue
 from crash.loglinear.feature import LogLinearlyScaled
-from crash.stacktrace import StackInfo
 import libs.math.logarithms as lmath
 
 # N.B., this must not be infinity, else we'll start getting NaN values
@@ -25,43 +25,27 @@ DEFAULT_MAX_LINE_DISTANCE = 50
 DEFAULT_MAX_FRAME_INDEX = 7
 
 
-def GetStackInfosPerFilePerDep(stacktrace, dependencies):
-  """Gets a dict containing all the stack information of files in stacktrace.
+class CrashedFile(namedtuple('CrashedFile', ['value'])):
+  """Represents a crashed file.
 
-  Only gets stack informations for files grouped by deps in dependencies.
-
-  Args:
-    stacktrace (Stacktrace): Parsed stacktrace object.
-    dependencies (dict): Represents all the dependencies show in
-      the crash stack.
-
-  Returns:
-    A dict, maps dep path to a dict mapping file path to a list of stack
-    information of this file. A file may occur in several frames, one
-    stack info consist of a StackFrame and the callstack priority of it.
-
-    For example:
-    {
-        'src/': {
-            'a.cc': [
-                StackInfo(StackFrame(0, 'src/', '', 'func', 'a.cc', [1]), 0),
-                StackInfo(StackFrame(2, 'src/', '', 'func', 'a.cc', [33]), 0),
-            ]
-        }
-    }
+  ``CrashedFile`` is a crashed group which knows whether itself matches a
+  touched file(``FileChangeIno``) or not.
   """
-  dep_to_file_to_stack_infos = defaultdict(lambda: defaultdict(list))
+  __slots__ = ()
 
-  for callstack in stacktrace.stacks:
-    for frame in callstack.frames:
-      # We only care about those dependencies in crash stack.
-      if frame.dep_path not in dependencies:
-        continue
+  def MatchTouchedFile(self, touched_file):
+    """Determines whether a touched_file matches this crashed file or not.
 
-      dep_to_file_to_stack_infos[frame.dep_path][frame.file_path].append(
-          StackInfo(frame, callstack.priority))
+    Args:
+      touched_file (FileChangeInfo): touched file to examine.
 
-  return dep_to_file_to_stack_infos
+    Returns:
+      Boolean indicating whether it is a match or not.
+    """
+    return crash_util.IsSameFilePath(self.value, touched_file.new_path)
+
+  def __str__(self):  # pragma: no cover
+    return '%s(value = %s)' % (self.__class__.__name__, self.value)
 
 
 class TouchCrashedFileMetaFeature(MetaFeature):
@@ -71,6 +55,7 @@ class TouchCrashedFileMetaFeature(MetaFeature):
   of ``MinDistanceFeature``, ``TopFrameIndexFeature`` and
   ``TouchCrashedFileFeature``.
   """
+
   def __init__(self, get_repository,
                max_line_distance=DEFAULT_MAX_LINE_DISTANCE,
                max_frame_index=DEFAULT_MAX_FRAME_INDEX):
@@ -102,6 +87,10 @@ class TouchCrashedFileMetaFeature(MetaFeature):
         touch_crashed_file_feature.name: touch_crashed_file_feature
     })
 
+  def CrashedFileFactory(self, frame):
+    """Factory function to create ``CrashedFile``."""
+    return CrashedFile(frame.file_path if frame else None)
+
   @property
   def name(self):
     return 'TouchCrashedFileMeta'
@@ -123,8 +112,8 @@ class TouchCrashedFileMetaFeature(MetaFeature):
     # Preprocessing stacktrace and dependencies to get crashed file information
     # about the frames and callstack priority of that crashed file in
     # stacktrace.
-    dep_to_file_to_stack_infos = GetStackInfosPerFilePerDep(
-        report.stacktrace, report.dependencies)
+    dep_to_grouped_frame_infos = crash_util.IndexFramesWithCrashedGroup(
+        report.stacktrace, self.CrashedFileFactory, report.dependencies)
     features_given_report = {name: feature(report)
                              for name, feature in self.iteritems()}
 
@@ -141,20 +130,12 @@ class TouchCrashedFileMetaFeature(MetaFeature):
       Returns:
         The ``FeatureValue`` of this feature.
       """
-      # All crashed files in stacktrace to stack-related information mapping.
-      file_to_stack_infos = dep_to_file_to_stack_infos[suspect.dep_path]
-      # Dict mapping files in stacktrace touched by suspect to there
-      # corresponding stacktrace frames information.
-      touched_file_to_stack_infos = {}
-
-      for crashed_file_path, stack_infos in file_to_stack_infos.iteritems():
-        for touched_file_info in suspect.changelog.touched_files:
-          if crash_util.IsSameFilePath(crashed_file_path,
-                                       touched_file_info.new_path):
-            touched_file_to_stack_infos[touched_file_info] = stack_infos
+      grouped_frame_infos = dep_to_grouped_frame_infos.get(suspect.dep_path, {})
+      matches = crash_util.MatchSuspectWithFrameInfos(suspect,
+                                                      grouped_frame_infos)
 
       return MetaFeatureValue(
-          self.name, {name: fx(suspect, touched_file_to_stack_infos)
+          self.name, {name: fx(suspect, matches)
                       for name, fx in features_given_report.iteritems()})
 
     return FeatureValueGivenReport

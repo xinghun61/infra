@@ -44,37 +44,36 @@ class TopFrameIndexFeature(Feature):
     """The minimum ``StackFrame.index`` across all files and stacks.
 
     Args:
-      report (CrashReportWithDependencies): the crash report being analyzed.
+      report (CrashReport): the crash report being analyzed.
 
     Returns:
       A function from ``Suspect`` to the scaled minimum frame index, as a
       log-domain ``float``.
     """
-    def FeatureValueGivenReport(
-        suspect, touched_file_to_stack_infos):  # pylint: disable=W0613
+    def FeatureValueGivenReport(suspect, matches):  # pylint: disable=W0613
       """Computes ``FeatureValue`` for a suspect.
 
       Args:
         suspect (Suspect): The suspected changelog and some meta information
           about it.
-        touched_file_to_stack_infos(dict): Dict mapping ``FileChangeInfo`` to
-          a list of ``StackInfo``s representing all the frames that the suspect
-          touched.
+        matches(dict): Dict mapping crashed group(CrashedFile, CrashedDirectory)
+          to a list of ``Match``s representing all frames and all touched files
+          matched in the same crashed group(same crashed file or crashed
+          directory).
 
       Returns:
         The ``FeatureValue`` of this feature.
       """
-      if not touched_file_to_stack_infos:
+      if not matches:
         return FeatureValue(
             self.name, lmath.LOG_ZERO,
             'No frame got touched by the suspect.', None)
 
-      def TopFrameIndexForTouchedFile(stack_infos):
-        return min([stack_info.frame.index for stack_info in stack_infos])
+      def TopFrameIndexForTouchedFile(frame_infos):
+        return min([frame_info.frame.index for frame_info in frame_infos])
 
-      top_frame_index = min([
-          TopFrameIndexForTouchedFile(stack_infos) for _, stack_infos in
-          touched_file_to_stack_infos.iteritems()])
+      top_frame_index = min([TopFrameIndexForTouchedFile(match.frame_infos)
+                             for match in matches.itervalues()])
 
       return FeatureValue(
           name = self.name,

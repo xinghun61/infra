@@ -27,20 +27,6 @@ FRAME_INDEX_PATTERN = re.compile(r'\s*#(\d+)\s.*')
 _DEFAULT_FORMAT_TYPE = CallStackFormatType.DEFAULT
 
 
-# TODO(wrengr): it's not clear why the ``priority`` is stored at all,
-# given that every use in this file discards it. ``Result.file_to_stack_infos``
-# should just store pointers directly to the frames themselves rather
-# than needing this intermediate object.
-# TODO(http://crbug.com/644476): this class needs a better name.
-class StackInfo(namedtuple('StackInfo', ['frame', 'priority'])):
-  """Pair of a frame and the ``priority`` of the ``CallStack`` it came from."""
-  __slots__ = ()
-
-  def __str__(self): # pragma: no cover
-    return ('%s(frame = %s, priority = %f)'
-        % (self.__class__.__name__, self.frame, self.priority))
-
-
 class StackFrame(namedtuple('StackFrame',
     ['index', 'dep_path', 'function', 'file_path', 'raw_file_path',
      'crashed_line_numbers', 'repo_url'])):

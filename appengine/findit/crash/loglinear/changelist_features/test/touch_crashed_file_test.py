@@ -4,10 +4,13 @@
 
 import unittest
 
+from crash.crash_match import CrashMatch
+from crash.crash_match import FrameInfo
 from crash.loglinear.changelist_features.touch_crashed_file import (
     TouchCrashedFileFeature)
+from crash.loglinear.changelist_features.touch_crashed_file_meta import (
+    CrashedFile)
 from crash.stacktrace import StackFrame
-from crash.stacktrace import StackInfo
 from crash.suspect import Suspect
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.change_log import FileChangeInfo
@@ -67,16 +70,17 @@ class TouchCrashedFileFeatureTest(unittest.TestCase):
     """Test that the feature returns log(1) when there is matched file."""
     report = self._GetDummyReport()
     suspect = self._GetMockSuspect()
-    touched_file_to_stack_infos = {
-        FileChangeInfo(ChangeType.MODIFY, 'a.cc', 'a.cc'):
-        [StackInfo(frame=StackFrame(index=0,
-                                    dep_path=suspect.dep_path,
-                                    function='func',
-                                    file_path='a.cc',
-                                    raw_file_path='a.cc',
-                                    crashed_line_numbers=[7]),
-                   priority = 0)]
-    }
+    frame = StackFrame(index=0,
+                       dep_path=suspect.dep_path,
+                       function='func',
+                       file_path='a.cc',
+                       raw_file_path='a.cc',
+                       crashed_line_numbers=[7])
+
+    crashed = CrashedFile(frame)
+    matches = {crashed:
+               CrashMatch(crashed,
+                          [FileChangeInfo(ChangeType.MODIFY, 'a.cc', 'a.cc')],
+                          [FrameInfo(frame=frame, priority = 0)])}
     self.assertEqual(lmath.LOG_ONE,
-                     TouchCrashedFileFeature()(report)(
-                         suspect, touched_file_to_stack_infos).value)
+                     TouchCrashedFileFeature()(report)(suspect, matches).value)

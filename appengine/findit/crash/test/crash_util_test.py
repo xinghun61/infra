@@ -2,11 +2,60 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import namedtuple
+
+from common.dependency import Dependency
 from crash import crash_util
-from testing_utils import testing
+from crash.crash_match import CrashMatch
+from crash.crash_match import FrameInfo
+from crash.stacktrace import CallStack
+from crash.stacktrace import StackFrame
+from crash.stacktrace import Stacktrace
+from crash.suspect import Suspect
+from crash.test.predator_testcase import PredatorTestCase
+from libs.gitiles.change_log import ChangeLog
+
+_CHANGELOG = ChangeLog.FromDict({
+    'author': {
+        'name': 'r@chromium.org',
+        'email': 'r@chromium.org',
+        'time': 'Thu Mar 31 21:24:43 2016',
+    },
+    'committer': {
+        'name': 'example@chromium.org',
+        'email': 'r@chromium.org',
+        'time': 'Thu Mar 31 21:28:39 2016',
+    },
+    'message': 'dummy',
+    'commit_position': 175900,
+    'touched_files': [
+        {
+            'change_type': 'modify',
+            'new_path': 'src/a.cc',
+            'old_path': 'src/a.cc',
+        },
+    ],
+    'commit_url':
+        'https://repo.test/+/1',
+    'code_review_url': 'https://codereview.chromium.org/3281',
+    'revision': '1',
+    'reverted_revision': None
+})
 
 
-class CrashUtilTest(testing.AppengineTestCase):
+class MockCrashedGroup(namedtuple('MockCrashedGroup', ['value'])):
+
+  __slots__ = ()
+
+  @staticmethod
+  def Factory(frame):
+    return MockCrashedGroup(frame.raw_file_path if frame else None)
+
+  def MatchTouchedFile(self, touched_file):
+    return touched_file.new_path == self.value
+
+
+class CrashUtilTest(PredatorTestCase):
 
   def testIsSameFilePath(self):
     path_1 = 'third_party/a/b/c/file.cc'
@@ -26,3 +75,43 @@ class CrashUtilTest(testing.AppengineTestCase):
     self.assertFalse(crash_util.IsSameFilePath(path_1, path_2))
     self.assertFalse(crash_util.IsSameFilePath(None, path_2))
     self.assertFalse(crash_util.IsSameFilePath(path_1, None))
+
+  def testIndexFramesWithCrashedGroup(self):
+    """Tests ``IndexFramesWithCrashedGroup`` function."""
+    frame1 = StackFrame(0, 'src/', 'func', 'f.cc',
+                        'src/f.cc', [2, 3], 'h://repo')
+    frame2 = StackFrame(1, 'src/', 'func', 'a.cc',
+                        'src/a.cc', [31, 32], 'h://repo')
+    frame3 = StackFrame(1, 'src/dummy', 'func', 'a.cc',
+                        'src/dummy/a.cc', [131, 132], 'h://repo')
+    stack = CallStack(0, frame_list=[frame1, frame2, frame3])
+    stack_trace = Stacktrace([stack], stack)
+    deps = {'src/': Dependency('src/', 'h://repo', 'rev3')}
+
+    indexed_frame_infos = crash_util.IndexFramesWithCrashedGroup(
+        stack_trace, MockCrashedGroup.Factory, deps)
+    expected_frame_infos = {'src/': {MockCrashedGroup('src/f.cc'):
+                                     [FrameInfo(frame1, 0)],
+                                     MockCrashedGroup('src/a.cc'):
+                                     [FrameInfo(frame2, 0)]}}
+    self.assertEqual(indexed_frame_infos, expected_frame_infos)
+
+  def testMatchSuspectWithFrameInfos(self):
+    """Tests ``MatchSuspectWithFrameInfos`` function."""
+    frame1 = StackFrame(0, 'src/', 'func', 'f.cc',
+                        'src/f.cc', [2, 3], 'h://repo')
+    frame2 = StackFrame(1, 'src/', 'func', 'a.cc',
+                        'src/a.cc', [31, 32], 'h://repo')
+    grouped_frame_infos = {
+        MockCrashedGroup('src/f.cc'): [FrameInfo(frame1, 0)],
+        MockCrashedGroup('src/a.cc'): [FrameInfo(frame2, 0)]
+    }
+    suspect = Suspect(_CHANGELOG, 'src/')
+    matches = crash_util.MatchSuspectWithFrameInfos(suspect,
+                                                    grouped_frame_infos)
+    crashed = MockCrashedGroup('src/a.cc')
+    expected_matches = {
+        crashed: CrashMatch(crashed, _CHANGELOG.touched_files,
+                            [FrameInfo(frame2, 0)])
+    }
+    self.assertDictEqual(matches, expected_matches)

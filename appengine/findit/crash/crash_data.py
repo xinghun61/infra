@@ -55,6 +55,7 @@ class CrashData(object):
     self._crashed_version = crash_data['chrome_version']
     self._signature = crash_data['signature']
     self._platform = crash_data['platform']
+    self._stacktrace_str = crash_data['stack_trace'] or ''
 
   @property
   def identifiers(self):

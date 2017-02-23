@@ -100,12 +100,12 @@ def WriteDeltaToCSV(deltas, crash_num, app_id,
         git_hash1, git_hash2, crash_num))
     f.write('crash url, project, components, cls, regression_range\n')
     for crash_id, delta in deltas.iteritems():
-      delta_str_dict = delta.delta_str_dict
+      delta_dict_str = delta.delta_dict_str
       feedback_url = _FRACAS_FEEDBACK_URL_TEMPLATE % (app_id, crash_id)
       f.write('%s, "%s", "%s", "%s", "%s"\n' % (
           feedback_url,
-          _EncodeStr(delta_str_dict.get('suspected_project', '')),
-          _EncodeStr(delta_str_dict.get('suspected_components', '')),
-          _EncodeStr(delta_str_dict.get('suspected_cls', '')),
-          _EncodeStr(delta_str_dict.get('regression_range', ''))
+          _EncodeStr(delta_dict_str.get('suspected_project', '')),
+          _EncodeStr(delta_dict_str.get('suspected_components', '')),
+          _EncodeStr(delta_dict_str.get('suspected_cls', '')),
+          _EncodeStr(delta_dict_str.get('regression_range', ''))
       ))

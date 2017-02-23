@@ -4,6 +4,9 @@
 
 from collections import defaultdict
 
+from crash.crash_match import CrashMatch
+from crash.crash_match import FrameInfo
+
 
 def IsSameFilePath(path_1, path_2):
   """Determines if two paths represent same path.
@@ -53,4 +56,68 @@ def IsSameFilePath(path_1, path_2):
   total_same_parts = sum([min(parts_count_1[part], parts_count_2[part]) for
                           part in parts_count_1 if part in path_parts_2])
 
-  return total_same_parts >= (min(3, min(len(path_parts_1), len(path_parts_2))))
+  return total_same_parts >= min(3, min(len(path_parts_1), len(path_parts_2)))
+
+
+def IndexFramesWithCrashedGroup(stacktrace, crashed_group_factory,
+                                dependencies):
+  """Index frames in stacktrace by dep_path and crashed_groups.
+
+  Args:
+    stacktrace (Stacktrace): The stacktrace to parse.
+    crashed_group_factory (callable): A callable to factory crashed_group.
+      N.B. So as to be used a key in a dict, the ``crashed_group`` should be
+      able to be hashed.
+    dependencies (dict of Dependency): Dict mapping dep path to ``Dependency``s.
+      The ``dependencies`` is used to filter those frames whose dep path are
+      not in ``dependencies``.
+
+  Returns:
+    A dict mapping dep_path to crashed_group to list of ``FrameInfo``s.
+    For example:
+    {
+        'src/': {
+            'a.cc': [
+                FrameInfo(StackFrame(0, 'src/', '', 'func', 'a.cc', [1]), 0),
+                FrameInfo(StackFrame(2, 'src/', '', 'func', 'a.cc', [33]), 0),
+            ]
+        }
+    }
+  """
+  frame_infos = defaultdict(lambda: defaultdict(list))
+
+  for stack in stacktrace.stacks:
+    for frame in stack.frames:
+      if frame.dep_path not in dependencies:
+        continue
+
+      frame_infos[frame.dep_path][crashed_group_factory(frame)].append(
+          FrameInfo(frame, stack.priority))
+
+  return frame_infos
+
+
+def MatchSuspectWithFrameInfos(suspect, grouped_frame_infos):
+  """Matches touched files of suspect with frames in stacktrace.
+
+  Args:
+    suspect (Suspect): The suspect to match with frames.
+    grouped_frame_infos (dict of FrameInfo):  Dict mapping a crashed group (
+      For example, CrashedFile('f.cc'), CrashedDirectory('dir/').
+
+  Returns:
+    A dict mapping crashed group to a ``CrashMatch``.
+  """
+
+  # Dict mapping files in stacktrace touched by suspect to there
+  # corresponding stacktrace frames information.
+  matched_touched_files = defaultdict(list)
+  for crashed in grouped_frame_infos:
+    for touched_file in suspect.changelog.touched_files:
+      if crashed.MatchTouchedFile(touched_file):
+        matched_touched_files[crashed].append(touched_file)
+
+  return {crashed: CrashMatch(crashed_group=crashed,
+                              touched_files=matched_touched_files[crashed],
+                              frame_infos=grouped_frame_infos[crashed])
+          for crashed in matched_touched_files}
