@@ -72,7 +72,7 @@ class CanaryTemplateNotFound(Exception):
 
 @ndb.tasklet
 def get_task_template_async(canary, canary_required=True):
-  """Gets a tuple (template_dict, canary_bool).
+  """Gets a tuple (template_revision, template_dict, canary_bool).
 
   Args:
     canary (bool): specifies a whether canary template should be returned.
@@ -82,15 +82,17 @@ def get_task_template_async(canary, canary_required=True):
       Ignored if canary is False.
 
   Returns:
-    Tuple (template, canary):
-      template (dict): parsed template, or None if not found.
+    Tuple (template_revision, template_dict, canary):
+      template_revision (str): revision of the template, e.g. commit hash.
+      template_dict (dict): parsed template, or None if not found.
         May contain $parameters that must be expanded using format_obj().
       canary (bool): True if the returned template is a canary template.
   """
   text = None
+  revision = None
   if canary:
     logging.warning('using canary swarming task template')
-    _, text = yield component_config.get_self_config_async(
+    revision, text = yield component_config.get_self_config_async(
         'swarming_task_template_canary.json', store_last_good=True)
     canary = bool(text)
     if not text:
@@ -102,9 +104,9 @@ def get_task_template_async(canary, canary_required=True):
           'canary swarming task template is not found. using the default one')
 
   if not text:
-    _, text = yield component_config.get_self_config_async(
+    revision, text = yield component_config.get_self_config_async(
       'swarming_task_template.json', store_last_good=True)
-  raise ndb.Return(json.loads(text) if text else None, canary)
+  raise ndb.Return(revision, json.loads(text) if text else None, canary)
 
 
 @utils.memcache_async('swarming/is_for_swarming', ['bucket_name'], time=10 * 60)
@@ -119,7 +121,7 @@ def _is_for_swarming_async(bucket_name):
 def is_for_swarming_async(build):
   """Returns True if |build|'s bucket are designed for swarming."""
   result = False
-  task_template, _ = yield get_task_template_async(False)
+  _, task_template, _ = yield get_task_template_async(False)
   if task_template:  # pragma: no branch
     result = yield _is_for_swarming_async(build.bucket)
   raise ndb.Return(result)
@@ -265,7 +267,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
 
   # Render task template.
   try:
-    task_template, canary = yield get_task_template_async(
+    task_template_rev, task_template, canary = yield get_task_template_async(
         canary, canary_required)
   except CanaryTemplateNotFound as ex:
     raise errors.InvalidInputError(ex.message)
@@ -330,6 +332,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
     'buildbucket_bucket:%s' % build.bucket,
     'buildbucket_build_id:%s' % build.key.id(),
     'buildbucket_template_canary:%s' % str(canary).lower(),
+    'buildbucket_template_revision:%s' % task_template_rev,
   ])
   if is_recipe:  # pragma: no branch
     _extend_unique(swarming_tags, [

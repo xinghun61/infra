@@ -32,6 +32,7 @@ def futuristic(result):
 
 
 class SwarmingTest(testing.AppengineTestCase):
+  maxDiff=None
   def setUp(self):
     super(SwarmingTest, self).setUp()
     self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 11, 30))
@@ -153,7 +154,7 @@ class SwarmingTest(testing.AppengineTestCase):
       else:
         template = self.task_template_canary
       return futuristic((
-          None,
+          'template_rev',
           json.dumps(template) if template is not None else None
       ))
 
@@ -301,6 +302,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'buildbucket_build_id:1',
         'buildbucket_hostname:None',
         'buildbucket_template_canary:false',
+        'buildbucket_template_revision:template_rev',
         'builder:builder',
         'buildertag:yes',
         'commontag:yes',
@@ -454,6 +456,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'buildbucket_build_id:1',
         'buildbucket_hostname:None',
         'buildbucket_template_canary:true',
+        'buildbucket_template_revision:template_rev',
         'builder:builder',
         'buildertag:yes',
         'commontag:yes',
