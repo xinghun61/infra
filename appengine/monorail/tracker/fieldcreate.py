@@ -121,7 +121,7 @@ class FieldCreate(servlet.Servlet):
     self.services.config.CreateFieldDef(
         mr.cnxn, mr.project_id, parsed.field_name, parsed.field_type_str,
         parsed.applicable_type, parsed.applicable_predicate,
-        parsed.is_required, parsed.is_multivalued,
+        parsed.is_required, parsed.is_niche, parsed.is_multivalued,
         parsed.min_value, parsed.max_value, parsed.regex, parsed.needs_member,
         parsed.needs_perm, parsed.grants_perm, parsed.notify_on,
         parsed.field_docstring, admin_ids)

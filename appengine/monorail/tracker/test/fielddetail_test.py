@@ -36,7 +36,7 @@ class FieldDetailTest(unittest.TestCase):
     self.services.config.StoreConfig('fake cnxn', self.config)
     self.fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
-        '', False, False, None, None, '', False, '', '',
+        '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
     self.config.field_defs.append(self.fd)
     self.mr.field_name = 'CPU'

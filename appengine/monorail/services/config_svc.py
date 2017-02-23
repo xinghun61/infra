@@ -62,7 +62,7 @@ LABELDEF_COLS = [
     'id', 'project_id', 'rank', 'label', 'docstring', 'deprecated']
 FIELDDEF_COLS = [
     'id', 'project_id', 'rank', 'field_name', 'field_type', 'applicable_type',
-    'applicable_predicate', 'is_required', 'is_multivalued',
+    'applicable_predicate', 'is_required', 'is_niche', 'is_multivalued',
     'min_value', 'max_value', 'regex', 'needs_member', 'needs_perm',
     'grants_perm', 'notify_on', 'docstring', 'is_deleted']
 FIELDDEF2ADMIN_COLS = ['field_id', 'admin_id']
@@ -160,9 +160,9 @@ class FieldRowTwoLevelCache(caches.AbstractTwoLevelCache):
     result_dict = collections.defaultdict(list)
     # TODO(agable): Actually process the rest of the items.
     for (field_id, project_id, rank, field_name, _field_type, _applicable_type,
-         _applicable_predicate, _is_required, _is_multivalued, _min_value,
-         _max_value, _regex, _needs_member, _needs_perm, _grants_perm,
-         _notify_on, docstring, _is_deleted) in field_def_rows:
+         _applicable_predicate, _is_required, _is_niche, _is_multivalued,
+         _min_value, _max_value, _regex, _needs_member, _needs_perm,
+         _grants_perm, _notify_on, docstring, _is_deleted) in field_def_rows:
       result_dict[project_id].append(
           (field_id, project_id, rank, field_name, docstring))
 
@@ -235,7 +235,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
   def _UnpackFieldDef(self, fielddef_row):
     """Partially construct a FieldDef object using info from a DB row."""
     (field_id, project_id, _rank, field_name, field_type,
-     applic_type, applic_pred, is_required, is_multivalued,
+     applic_type, applic_pred, is_required, is_niche, is_multivalued,
      min_value, max_value, regex, needs_member, needs_perm,
      grants_perm, notify_on_str, docstring, is_deleted) = fielddef_row
     if notify_on_str == 'any_comment':
@@ -246,7 +246,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     return tracker_bizobj.MakeFieldDef(
         field_id, project_id, field_name,
         tracker_pb2.FieldTypes(field_type.upper()), applic_type, applic_pred,
-        is_required, is_multivalued, min_value, max_value, regex,
+        is_required, is_niche, is_multivalued, min_value, max_value, regex,
         needs_member, needs_perm, grants_perm, notify_on, docstring,
         is_deleted)
 
@@ -1054,7 +1054,7 @@ class ConfigService(object):
 
   def CreateFieldDef(
       self, cnxn, project_id, field_name, field_type_str, applic_type,
-      applic_pred, is_required, is_multivalued,
+      applic_pred, is_required, is_niche, is_multivalued,
       min_value, max_value, regex, needs_member, needs_perm,
       grants_perm, notify_on, docstring, admin_ids):
     """Create a new field definition with the given info.
@@ -1067,6 +1067,8 @@ class ConfigService(object):
       applic_type: string specifying issue type the field is applicable to.
       applic_pred: string condition to test if the field is applicable.
       is_required: True if the field should be required on issues.
+      is_niche: True if the field is not initially offered for editing, so users
+          must click to reveal such special-purpose or experimental fields.
       is_multivalued: True if the field can occur multiple times on one issue.
       min_value: optional validation for int_type fields.
       max_value: optional validation for int_type fields.
@@ -1085,7 +1087,8 @@ class ConfigService(object):
         cnxn, project_id=project_id,
         field_name=field_name, field_type=field_type_str,
         applicable_type=applic_type, applicable_predicate=applic_pred,
-        is_required=is_required, is_multivalued=is_multivalued,
+        is_required=is_required, is_niche=is_niche,
+        is_multivalued=is_multivalued,
         min_value=min_value, max_value=max_value, regex=regex,
         needs_member=needs_member, needs_perm=needs_perm,
         grants_perm=grants_perm, notify_on=NOTIFY_ON_ENUM[notify_on],
@@ -1166,9 +1169,9 @@ class ConfigService(object):
   def UpdateFieldDef(
       self, cnxn, project_id, field_id, field_name=None,
       applicable_type=None, applicable_predicate=None, is_required=None,
-      is_multivalued=None, min_value=None, max_value=None, regex=None,
-      needs_member=None, needs_perm=None, grants_perm=None, notify_on=None,
-      docstring=None, admin_ids=None):
+      is_niche=None, is_multivalued=None, min_value=None, max_value=None,
+      regex=None, needs_member=None, needs_perm=None, grants_perm=None,
+      notify_on=None, docstring=None, admin_ids=None):
     """Update the specified field definition."""
     new_values = {}
     if field_name is not None:
@@ -1179,6 +1182,8 @@ class ConfigService(object):
       new_values['applicable_predicate'] = applicable_predicate
     if is_required is not None:
       new_values['is_required'] = bool(is_required)
+    if is_niche is not None:
+      new_values['is_niche'] = bool(is_niche)
     if is_multivalued is not None:
       new_values['is_multivalued'] = bool(is_multivalued)
     if min_value is not None:

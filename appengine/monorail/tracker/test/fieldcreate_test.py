@@ -116,7 +116,7 @@ class CheckFieldNameJSONTest(unittest.TestCase):
   def testHandleRequest_FieldNameAlreadyUsed(self):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
-        '', False, False, None, None, '', False, '', '',
+        '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
     self.config.field_defs.append(fd)
     mr = testing_helpers.MakeMonorailRequest(
@@ -167,7 +167,7 @@ class FieldCreateMethodsTest(unittest.TestCase):
   def testFieldNameErrorMessage_AlreadyInUse(self):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
-        '', False, False, None, None, '', False, '', '',
+        '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
     self.config.field_defs.append(fd)
     self.assertEqual(
@@ -177,7 +177,7 @@ class FieldCreateMethodsTest(unittest.TestCase):
   def testFieldNameErrorMessage_PrefixOfExisting(self):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'sign-off', tracker_pb2.FieldTypes.INT_TYPE, None,
-        '', False, False, None, None, '', False, '', '',
+        '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
     self.config.field_defs.append(fd)
     self.assertEqual(
@@ -187,7 +187,7 @@ class FieldCreateMethodsTest(unittest.TestCase):
   def testFieldNameErrorMessage_IncludesExisting(self):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'opt', tracker_pb2.FieldTypes.INT_TYPE, None,
-        '', False, False, None, None, '', False, '', '',
+        '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
     self.config.field_defs.append(fd)
     self.assertEqual(

@@ -184,8 +184,8 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.services.config.StoreConfig('fake cnxn', self.config)
     fd = tracker_bizobj.MakeFieldDef(
         field_id, project_id, field_name, field_type_int, '',
-        '', False, False, min_value, max_value, None, needs_member, None, '',
-        tracker_pb2.NotifyTriggers.NEVER, docstring, False)
+        '', False, False, False, min_value, max_value, None, needs_member,
+        None, '', tracker_pb2.NotifyTriggers.NEVER, docstring, False)
     self.config.field_defs.append(fd)
 
   def testUsersGet_NoProject(self):

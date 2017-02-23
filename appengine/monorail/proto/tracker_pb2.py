@@ -262,6 +262,7 @@ class FieldDef(messages.Message):
   applicable_type = messages.StringField(11)
   applicable_predicate = messages.StringField(10)
   is_required = messages.BooleanField(5, default=False)
+  is_niche = messages.BooleanField(19, default=False)
   is_multivalued = messages.BooleanField(6, default=False)
   docstring = messages.StringField(7)
   is_deleted = messages.BooleanField(8, default=False)

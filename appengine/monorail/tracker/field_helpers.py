@@ -26,7 +26,7 @@ ParsedFieldDef = collections.namedtuple(
     'ParsedFieldDef',
     'field_name, field_type_str, min_value, max_value, regex, '
     'needs_member, needs_perm, grants_perm, notify_on, is_required, '
-    'is_multivalued, field_docstring, choices_text, applicable_type, '
+    'is_niche, is_multivalued, field_docstring, choices_text, applicable_type, '
     'applicable_predicate, revised_labels')
 
 
@@ -55,6 +55,7 @@ def ParseFieldDefRequest(post_data, config):
   else:
     notify_on = 0
   is_required = 'is_required' in post_data
+  is_niche = 'is_niche' in post_data
   is_multivalued = 'is_multivalued' in post_data
   field_docstring = post_data.get('docstring', '')
   choices_text = post_data.get('choices', '')
@@ -66,7 +67,7 @@ def ParseFieldDefRequest(post_data, config):
   return ParsedFieldDef(
       field_name, field_type_str, min_value, max_value, regex,
       needs_member, needs_perm, grants_perm, notify_on, is_required,
-      is_multivalued, field_docstring, choices_text, applicable_type,
+      is_niche, is_multivalued, field_docstring, choices_text, applicable_type,
       applicable_predicate, revised_labels)
 
 

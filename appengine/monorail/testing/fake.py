@@ -943,7 +943,7 @@ class ConfigService(object):
 
   def CreateFieldDef(
       self, cnxn, project_id, field_name, field_type_str, applic_type,
-      applic_pred, is_required, is_multivalued,
+      applic_pred, is_required, is_niche, is_multivalued,
       min_value, max_value, regex, needs_member, needs_perm,
       grants_perm, notify_on, docstring, admin_ids):
     config = self.GetProjectConfig(cnxn, project_id)
@@ -952,7 +952,7 @@ class ConfigService(object):
     self.next_field_id += 1
     fd = tracker_bizobj.MakeFieldDef(
         field_id, project_id, field_name, field_type, applic_type, applic_pred,
-        is_required, is_multivalued, min_value, max_value, regex,
+        is_required, is_niche, is_multivalued, min_value, max_value, regex,
         needs_member, needs_perm, grants_perm, notify_on, docstring, False)
     config.field_defs.append(fd)
     self.StoreConfig(cnxn, config)
@@ -966,9 +966,9 @@ class ConfigService(object):
   def UpdateFieldDef(
       self, cnxn, project_id, field_id, field_name=None,
       applicable_type=None, applicable_predicate=None, is_required=None,
-      is_multivalued=None, min_value=None, max_value=None, regex=None,
-      needs_member=None, needs_perm=None, grants_perm=None, notify_on=None,
-      docstring=None, admin_ids=None):
+      is_niche=None, is_multivalued=None, min_value=None, max_value=None,
+      regex=None, needs_member=None, needs_perm=None, grants_perm=None,
+      notify_on=None, docstring=None, admin_ids=None):
     config = self.GetProjectConfig(cnxn, project_id)
     fd = tracker_bizobj.FindFieldDefByID(field_id, config)
     # pylint: disable=multiple-statements
@@ -977,6 +977,7 @@ class ConfigService(object):
     if applicable_predicate is not None:
       fd.applicable_predicate = applicable_predicate
     if is_required is not None: fd.is_required = is_required
+    if is_niche is not None: fd.is_niche = is_niche
     if is_multivalued is not None: fd.is_multivalued = is_multivalued
     if min_value is not None: fd.min_value = min_value
     if max_value is not None: fd.max_value = max_value

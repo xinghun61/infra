@@ -102,6 +102,7 @@ CREATE TABLE FieldDef (
   applicable_type VARCHAR(80),   -- No value means: offered for all issue types
   applicable_predicate TEXT,   -- No value means: TRUE
   is_required BOOLEAN,  -- true means required if applicable
+  is_niche BOOLEAN,  -- true means user must click to reveal widget
   is_multivalued BOOLEAN,
   -- TODO(jrobbins): access controls: restrict, grant
   -- Validation for int_type fields

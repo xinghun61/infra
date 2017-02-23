@@ -483,11 +483,11 @@ class QueryParsingUnitTest(unittest.TestCase):
     """Enums are treated as labels, other fields are kept as fields."""
     fd1 = tracker_bizobj.MakeFieldDef(
         1, self.project_id, 'Size', tracker_pb2.FieldTypes.ENUM_TYPE,
-        'applic', 'applic', False, False, None, None, None, False, None,
+        'applic', 'applic', False, False, False, None, None, None, False, None,
         None, None, 'doc', False)
     fd2 = tracker_bizobj.MakeFieldDef(
         1, self.project_id, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE,
-        'applic', 'applic', False, False, None, None, None, False, None,
+        'applic', 'applic', False, False, False, None, None, None, False, None,
         None, None, 'doc', False)
     self.default_config.field_defs.extend([fd1, fd2])
     ast = query2ast.ParseUserQuery(

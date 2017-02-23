@@ -160,7 +160,7 @@ class ConfigRowTwoLevelCacheTest(unittest.TestCase):
     self.labeldef_rows = [(1, 789, 1, 'Security', 'doc', False),
                           (2, 789, 2, 'UX', 'doc', False)]
     self.fielddef_rows = [(1, 789, None, 'Field', 'INT_TYPE',
-                           'Defect', '', False, False,
+                           'Defect', '', False, False, False,
                            1, 99, None, '', '',
                            None, 'NEVER', 'doc', False)]
     self.fielddef2admin_rows = []
@@ -837,7 +837,7 @@ class ConfigServiceTest(unittest.TestCase):
         self.cnxn, project_id=project_id,
         field_name='PercentDone', field_type='int_type',
         applicable_type='Defect', applicable_predicate='',
-        is_required=False, is_multivalued=False,
+        is_required=False, is_multivalued=False, is_niche=False,
         min_value=1, max_value=100, regex=None,
         needs_member=None, needs_perm=None,
         grants_perm=None, notify_on='never',
@@ -852,7 +852,7 @@ class ConfigServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     field_id = self.config_service.CreateFieldDef(
         self.cnxn, 789, 'PercentDone', 'int_type', 'Defect', '', False, False,
-        1, 100, None, None, None, None, 0, 'doc', [])
+        False, 1, 100, None, None, None, None, 0, 'doc', [])
     self.mox.VerifyAll()
     self.assertEqual(1, field_id)
 
@@ -887,7 +887,7 @@ class ConfigServiceTest(unittest.TestCase):
   def testUpdateFieldDef_Normal(self):
     new_values = dict(
         field_name='newname', applicable_type='defect',
-        applicable_predicate='pri:1', is_required=True,
+        applicable_predicate='pri:1', is_required=True, is_niche=True,
         is_multivalued=True, min_value=32, max_value=212, regex='a.*b',
         needs_member=True, needs_perm='EditIssue', grants_perm='DeleteIssue',
         notify_on='any_comment', docstring='new doc')
