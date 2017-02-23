@@ -1609,3 +1609,25 @@ function HTL_removeIssues() {
 function setCurrentColSpec() {
   $('current_col_spec').value = TKR_getColspecElement().value;
 }
+
+
+function saveNote(textBox, hotlistID) {
+  var data = {'new_note': textBox.value,
+              'hotlist_ids': [hotlistID],
+              'iid': textBox.getAttribute('issueid')}
+  CS_doPost(hotlistID + '/updatenote.do', onUpdateNoteResponse, data);
+}
+
+function onUpdateNoteResponse(event) {
+  var xhr = event.target;
+    if (xhr.readyState != 4) {
+      return;
+    }
+    if (xhr.status != 200) {
+      window.console.error('200 page error')
+      // TODO(jojwang): fill this in more
+      return;
+    }
+  var response = CS_parseJSON(xhr);
+  $('itemnote-'+response['iid']).value = response['new_note'];
+}

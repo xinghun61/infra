@@ -80,6 +80,7 @@ HOTLIST_ISSUES_CSV = '/csv'
 HOTLIST_PEOPLE = '/people'
 HOTLIST_DETAIL = '/details'
 HOTLIST_RERANK_JSON = '/rerank'
+HOTLIST_NEW_NOTES_JSON = '/updatenote'
 
 # URL of JSON feed for the "My hotlists" menu
 USER_HOTLISTS_JSON = '/hosting/hotlists'

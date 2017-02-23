@@ -89,6 +89,7 @@ runOnLoad(function(){
     "isCrossProject": "[is_cross_project]",
     "readOnly": "[read_only]",
     "allowRerank": "[allow_rerank]",
+    "hotlistID": "[hotlist_id]",
     "colSpec": "[col_spec]"
     };
 

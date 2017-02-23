@@ -59,7 +59,7 @@ class TableCellUnitTest(unittest.TestCase):
     table_cell_kws.update({'note': ''})
     cell = tablecell.TableCellNote(
         self.issue1, **table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_NOTE)
     self.assertEqual(cell.values, [])
 
   def testTableCellNote_NoNote(self):
@@ -67,7 +67,7 @@ class TableCellUnitTest(unittest.TestCase):
     table_cell_kws.update({'note': 'some note'})
     cell = tablecell.TableCellNote(
         self.issue1, **table_cell_kws)
-    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_ATTR)
+    self.assertEqual(cell.type, table_view_helpers.CELL_TYPE_NOTE)
     self.assertEqual(cell.values[0].item, 'some note')
 
   def testTableCellDateAdded(self):

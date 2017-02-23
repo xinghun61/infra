@@ -25,7 +25,7 @@ class TableCellNote(table_view_helpers.TableCell):
     else:
       display_note = []
     table_view_helpers.TableCell.__init__(
-        self, table_view_helpers.CELL_TYPE_ATTR, display_note)
+        self, table_view_helpers.CELL_TYPE_NOTE, display_note)
 
 
 class TableCellDateAdded(table_view_helpers.TableCell):

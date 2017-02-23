@@ -28,7 +28,7 @@ function setAttributes(el, attrs) {
  * Helper function for creating a <td> element that contains the widgets of the row.
  * @param {dict} tableRow dictionary {'projectName': 'name', .. } of relevant row info.
  * @param {} readOnly.
- * @param {boolean} ownerEditorPerm does current viewer have owner/editor permissions.
+ * @param {boolean} userLoggedIn is the current user logged in.
  * @return an element containing the widget elements
  */
 function createWidgets(tableRow, readOnly, userLoggedIn) {
@@ -83,6 +83,26 @@ function createIDCell(td, tableRow, isCrossProject) {
   td.appendChild(aLink);
 }
 
+function createEditableNoteCell(td, cell, issueID, hotlistID) {
+  var textBox = document.createElement('textarea');
+  setAttributes(textBox, {'id': 'itemnote-' + issueID,'placeholder': '---',
+                          'class': 'itemnote rowwidgets', 'issueid': issueID,
+                          'style': 'width:' + '200px'})
+  if (cell['values'].length > 0) {
+    textBox.value = cell['values'][0]['item'];
+  }
+  textBox.addEventListener('blur', function(e) {saveNote(e.target, hotlistID)});
+  debouncedKeyHandler = debounce(function(e) {saveNote(e.target, hotlistID)});
+  textBox.addEventListener('keyup', debouncedKeyHandler, false);
+  td.appendChild(textBox);
+}
+
+function enter_detector(e) {
+    if(e.which==13||e.keyCode==13){
+      this.blur();
+    }
+}
+
 
 /**
  * Helper function to set attributes and add Nodes for an Summary cell.
@@ -90,7 +110,9 @@ function createIDCell(td, tableRow, isCrossProject) {
  * @param {dict} cell dictionary {'projectName': 'name', .. } of relevant cell info.
 */
 function createSummaryCell(td, cell) {
-  td.setAttribute('width', '100%');
+  // TODO(jojwang): detect when links are present and make clicking on cell go to
+  // link, not issue details page
+  td.setAttribute('style', 'width:100%');
   fillValues(td, cell['values']);
   fillNonColumnLabels(td, cell['nonColLabels']);
 }
@@ -188,7 +210,14 @@ function renderHotlistRow(tableRow, pageSettings) {
       createIDCell(td, tableRow, (pageSettings['isCrossProject'] == 'True'));
     } else if (cell['type'] == 'summary') {
       createSummaryCell(td, cell);
-    } else{
+    } else if (cell['type'] == 'note') {
+      if (pageSettings['ownerPerm'] || pageSettings['editorPerm']) {
+        createEditableNoteCell(td, cell, tableRow['issueID'], pageSettings['hotlistID']);
+      }
+      else {
+        createSummaryCell(td, cell);
+      }
+    }else{
       createAttrAndUnfiltCell(td, cell);
     }
     tr.appendChild(td);

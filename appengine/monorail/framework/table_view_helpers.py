@@ -478,6 +478,7 @@ CELL_TYPE_ID = 'ID'
 CELL_TYPE_SUMMARY = 'summary'
 CELL_TYPE_ATTR = 'attr'
 CELL_TYPE_UNFILTERABLE = 'unfilterable'
+CELL_TYPE_NOTE = 'note'
 
 
 class TableCell(object):

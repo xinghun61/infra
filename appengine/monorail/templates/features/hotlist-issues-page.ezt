@@ -91,6 +91,15 @@ runOnLoad(function() {
     });
   }
 
+
+    window.addEventListener("beforeunload", function(e) {
+      var selectedElement = document.activeElement;
+      if (selectedElement.className = "itemnote"){
+        saveNote(selectedElement, "[hotlist_id]");
+      }
+      return;
+    });
+
 });
 </script>
 
