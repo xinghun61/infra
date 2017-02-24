@@ -15,10 +15,11 @@
     <table cellspacing="0" cellpadding="0" border="0">
      <tr id="pop_up_[column_values.col_index]"><td>Sort Up</td></tr>
      <tr id="pop_down_[column_values.col_index]"><td>Sort Down</td></tr>
+     [if-any is_hotlist][else]
      [if-any column_values.filter_values]
       <tr id="pop_show_only_[column_values.col_index]"><td>Show only
           <span class="indicator">&#9658;</span></td></tr>
-     [end]
+     [end][end]
      <tr id="pop_hide_[column_values.col_index]"><td>Hide Column</td></tr>
     </table>
    </div>
@@ -27,10 +28,11 @@
     <table cellspacing="0" cellpadding="0" border="0">
      <tr id="pop_up_[column_values.col_index]"><td>Sort Up</td></tr>
      <tr id="pop_down_[column_values.col_index]"><td>Sort Down</td></tr>
+     [if-any is_hotlist][else]
      [if-any column_values.filter_values]
       <tr id="pop_show_only_[column_values.col_index]"><td>Show only
           <span class="indicator">&#9658;</span></td></tr>
-     [end]
+     [end][end]
      <tr id="pop_hide_[column_values.col_index]"><td>Hide Column</td></tr>
      <tr id="pop_groupby_[column_values.col_index]"><td>Group Rows</td></tr>
     </table>
