@@ -166,6 +166,16 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, 
 	prefix, annoName := c.logdog.annotationAddr.Path.Split()
 	log.Infof(ctx, "Using LogDog prefix: %s", prefix)
 
+	// Construct our global tags. We will prefer user-supplied tags to our
+	// generated ones.
+	globalTags := make(map[string]string, len(c.logdog.globalTags))
+	if err := c.mode.addLogDogGlobalTags(globalTags, rr.properties, env); err != nil {
+		return 0, errors.Annotate(err).Reason("failed to add global tags").Err()
+	}
+	for k, v := range c.logdog.globalTags {
+		globalTags[k] = v
+	}
+
 	// Determine our base path and annotation subpath.
 	basePath, annoSubpath := annoName.Split()
 
@@ -249,7 +259,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, 
 		Prefix:       prefix,
 		BufferLogs:   true,
 		MaxBufferAge: butler.DefaultMaxBufferAge,
-		GlobalTags:   c.logdog.globalTags,
+		GlobalTags:   globalTags,
 	}
 	if c.logdog.logDogOnly && (c.logdog.logDogSendIOKeepAlives || c.mode.needsIOKeepAlive()) {
 		// If we're not teeing, we need to issue keepalives so our executor doesn't

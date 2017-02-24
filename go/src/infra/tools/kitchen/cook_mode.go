@@ -5,6 +5,9 @@
 package main
 
 import (
+	"encoding/json"
+	"net/url"
+
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/flag/flagenum"
 	"github.com/luci/luci-go/common/system/environ"
@@ -42,6 +45,7 @@ type cookMode interface {
 	needsIOKeepAlive() bool
 	alwaysForwardAnnotations() bool
 	botID(env environ.Env) (string, error)
+	addLogDogGlobalTags(tags map[string]string, props map[string]interface{}, env environ.Env) error
 }
 
 type swarmingCookMode struct{}
@@ -65,6 +69,26 @@ func (m swarmingCookMode) botID(env environ.Env) (string, error) {
 	return botID, nil
 }
 
+func (m swarmingCookMode) addLogDogGlobalTags(tags map[string]string, props map[string]interface{},
+	env environ.Env) error {
+
+	// SWARMING_SERVER is the full URL: https://example.com
+	// We want just the hostname.
+	if v, ok := env.Get("SWARMING_SERVER"); ok {
+		if u, err := url.Parse(v); err == nil && u.Host != "" {
+			tags["swarming.host"] = u.Host
+		}
+	}
+	if v, ok := env.Get("SWARMING_TASK_ID"); ok {
+		tags["swarming.run_id"] = v
+	}
+	if v, ok := env.Get("SWARMING_BOT_ID"); ok {
+		tags["bot_id"] = v
+	}
+
+	return nil
+}
+
 type buildBotCookMode struct{}
 
 func (m buildBotCookMode) fillTemplateParams(env environ.Env, params *tasktemplate.Params) error {
@@ -80,4 +104,24 @@ func (m buildBotCookMode) botID(env environ.Env) (string, error) {
 		return "", errors.Reason("a valid bot id was expected in $BUILDBOT_SLAVENAME").Err()
 	}
 	return botID, nil
+}
+
+func (m buildBotCookMode) addLogDogGlobalTags(tags map[string]string, props map[string]interface{},
+	env environ.Env) error {
+
+	if v, ok := props["mastername"].(string); ok && v != "" {
+		tags["buildbot.master"] = v
+	}
+	if v, ok := props["buildername"].(string); ok && v != "" {
+		tags["buildbot.builder"] = v
+	}
+	if v, ok := props["buildnumber"].(json.Number); ok && v != "" {
+		tags["buildbot.buildnumber"] = string(v)
+	}
+
+	if v, ok := props["slavename"].(string); ok && v != "" {
+		tags["bot_id"] = v
+	}
+
+	return nil
 }
