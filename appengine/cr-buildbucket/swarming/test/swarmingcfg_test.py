@@ -78,7 +78,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     ])
 
     cfg = Swarming(
-      task_template_canary_percentage=102,
+      task_template_canary_percentage=Swarming.OptionalUint32(value=102),
       builder_defaults=Swarming.Builder(
           swarming_tags=['wrong'],
           dimensions=[''],
@@ -127,7 +127,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     )
     self.cfg_test(cfg, [
       'hostname unspecified',
-      'task_template_canary_percentage must must be in [0, 100]',
+      'task_template_canary_percentage.value must must be in [0, 100]',
       'builder_defaults: tag #1: does not have ":": wrong',
       'builder_defaults: dimension #1: does not have ":"',
       'builder #1: tag #1: does not have ":": wrong2',
@@ -163,7 +163,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     ])
 
     cfg = Swarming(
-      task_template_canary_percentage=102,
+      task_template_canary_percentage=Swarming.OptionalUint32(value=102),
       builder_defaults=Swarming.Builder(
         swarming_tags=['wrong'],
         dimensions=[''],
@@ -206,7 +206,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     )
     self.cfg_test(cfg, [
       'hostname unspecified',
-      'task_template_canary_percentage must must be in [0, 100]',
+      'task_template_canary_percentage.value must must be in [0, 100]',
       'builder_defaults: tag #1: does not have ":": wrong',
       'builder_defaults: dimension #1: does not have ":"',
       'builder #1: tag #1: does not have ":": wrong2',

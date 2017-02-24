@@ -61,6 +61,11 @@ PARAM_SWARMING = 'swarming'
 PARAM_CHANGES = 'changes'
 DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/task?id={task_id}'
 
+# The default percentage of builds that use canary swarming task template.
+# This number is relatively high so we treat canary seriously and that we have
+# a strong signal if the canary is broken.
+# If it is, the template must be reverted to a stable version ASAP.
+DEFAULT_CANARY_TEMPLATE_PERCENTAGE = 10
 
 ################################################################################
 # Creation/cancellation of tasks.
@@ -259,8 +264,10 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   canary = swarming_param.get('canary_template')
   canary_required = bool(canary)
   if canary is None:
-    canary = should_use_canary_template(
-        swarming_cfg.task_template_canary_percentage)
+    canary_percentage = DEFAULT_CANARY_TEMPLATE_PERCENTAGE
+    if swarming_cfg.HasField('task_template_canary_percentage'):
+      canary_percentage = swarming_cfg.task_template_canary_percentage.value
+    canary = should_use_canary_template(canary_percentage)
 
   builder_cfg = _prepare_builder_config(
       swarming_cfg, builder_cfg, swarming_param)

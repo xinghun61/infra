@@ -266,8 +266,8 @@ def validate_cfg(swarming, ctx):
 
   if not swarming.hostname:
     ctx.error('hostname unspecified')
-  if swarming.task_template_canary_percentage > 100:
-    ctx.error('task_template_canary_percentage must must be in [0, 100]')
+  if swarming.task_template_canary_percentage.value > 100:
+    ctx.error('task_template_canary_percentage.value must must be in [0, 100]')
 
   with ctx.prefix('builder_defaults: '):
     if swarming.builder_defaults.name:

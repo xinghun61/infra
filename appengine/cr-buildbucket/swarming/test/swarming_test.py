@@ -560,6 +560,7 @@ class SwarmingTest(testing.AppengineTestCase):
     self.mock(swarming, 'should_use_canary_template', mock.Mock())
     swarming.should_use_canary_template.return_value = True
     self.task_template_canary = None
+    self.bucket_cfg.swarming.task_template_canary_percentage.value = 54
 
     self.json_response = {
       'task_id': 'deadbeef',
@@ -593,6 +594,7 @@ class SwarmingTest(testing.AppengineTestCase):
 
     actual_task_def = net.json_request_async.call_args[1]['payload']
     self.assertIn('buildbucket_template_canary:false', actual_task_def['tags'])
+    swarming.should_use_canary_template.assert_called_with(54)
 
   def test_create_task_async_override_cfg(self):
     build = model.Build(

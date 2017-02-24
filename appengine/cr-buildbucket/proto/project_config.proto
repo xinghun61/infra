@@ -135,9 +135,13 @@ message Swarming {
   // explicitly specified.
   repeated Builder builders = 4;
 
+  message OptionalUint32 {
+    optional uint32 value = 1;
+  }
   // Percentage of builds that should use a canary swarming task template.
   // A value from 0 to 100.
-  optional uint32 task_template_canary_percentage = 5;
+  // If omitted, default percentage is used.
+  optional OptionalUint32 task_template_canary_percentage = 5;
 }
 
 // Defines one bucket in buildbucket.cfg
