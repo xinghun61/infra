@@ -180,7 +180,11 @@ def RunDeltaTest():
 
   # Print delta results to users.
   print '\n========================= Summary ========================='
-  delta_util.PrintDelta(deltas, crash_num, args.app)
+  if args.verbose:
+    delta_util.PrintDelta(deltas, crash_num, args.app)
+
+  print '\nFlushing results to', delta_path
+  print 'Writing delta diff to %s\n' % delta_csv_path
 
 
 if __name__ == '__main__':

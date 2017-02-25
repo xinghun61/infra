@@ -60,7 +60,6 @@ class Delta(object):  # pragma: no cover.
 
           for cl in value:
             cl['confidence'] = round(cl['confidence'], 2)
-            cl.pop('reasons', None)
 
       if value1 != value2:
         self._delta_dict[key] = (value1, value2)
@@ -77,8 +76,14 @@ class Delta(object):  # pragma: no cover.
     for key, (value1, value2) in self.delta_dict.iteritems():
       value1_str = json.dumps(value1, indent=4, sort_keys=True)
       value2_str = json.dumps(value2, indent=4, sort_keys=True)
-      self._delta_dict_str[key] = '%s 1: %s\n%s 2: %s\n' % (key, value1_str,
-                                                            key, value2_str)
+      if key == 'suspected_cls':
+        self._delta_dict_str['suspected_cl_1'] = ('suspected cls 1: %s' %
+                                                  value1_str)
+        self._delta_dict_str['suspected_cl_2'] = ('suspected cls 2: %s' %
+                                                  value2_str)
+      else:
+        self._delta_dict_str[key] = '%s 1: %s\n%s 2: %s\n' % (key, value1_str,
+                                                              key, value2_str)
 
     return self._delta_dict_str
 

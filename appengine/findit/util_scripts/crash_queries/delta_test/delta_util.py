@@ -94,18 +94,18 @@ def WriteDeltaToCSV(deltas, crash_num, app_id,
   def _EncodeStr(string):
     return string.replace('\"', '\'') if string else ''
 
-  print 'Writing delta diff to %s\n' % file_path
   with open(file_path, 'wb') as f:
     f.write('Delta between githash1 %s and githash2 %s on %d crashes\n\n' % (
         git_hash1, git_hash2, crash_num))
-    f.write('crash url, project, components, cls, regression_range\n')
+    f.write('crash url, project, components, cl 1, cl 2, regression_range\n')
     for crash_id, delta in deltas.iteritems():
       delta_dict_str = delta.delta_dict_str
       feedback_url = _FRACAS_FEEDBACK_URL_TEMPLATE % (app_id, crash_id)
-      f.write('%s, "%s", "%s", "%s", "%s"\n' % (
+      f.write('%s, "%s", "%s", "%s", "%s", "%s"\n' % (
           feedback_url,
           _EncodeStr(delta_dict_str.get('suspected_project', '')),
           _EncodeStr(delta_dict_str.get('suspected_components', '')),
-          _EncodeStr(delta_dict_str.get('suspected_cls', '')),
+          _EncodeStr(delta_dict_str.get('suspected_cl_1', '')),
+          _EncodeStr(delta_dict_str.get('suspected_cl_2', '')),
           _EncodeStr(delta_dict_str.get('regression_range', ''))
       ))
