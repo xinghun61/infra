@@ -1631,3 +1631,31 @@ function onUpdateNoteResponse(event) {
   var response = CS_parseJSON(xhr);
   $('itemnote-'+response['iid']).value = response['new_note'];
 }
+
+
+/**
+ * Ask server to do a presubmit check and then display and warnings
+ * as the user edits an issue.
+ */
+function TKR_presubmit() {
+  var formEl = $('create_issue_form') || $('issue_update_form');
+  var data = new FormData(formEl);
+  CS_doPost('presubmit.do', onPresubmitResponse, data);
+}
+
+function onPresubmitResponse(event) {
+  var xhr = event.target;
+  if (xhr.readyState != 4) {
+    return;
+  }
+  if (xhr.status != 200) {
+    console.error('presubmit check had an error');
+    // TODO(jrobbins): fill this in more
+    return;
+  }
+  var response = CS_parseJSON(xhr);
+  $('owner_avail_state').style.display = response.owner_avail_state ? '' : 'none';
+  $('owner_avail_state').className = 'availability_' + response.owner_avail_state;
+  $('owner_availability').textContent = response.owner_availability;
+}
+

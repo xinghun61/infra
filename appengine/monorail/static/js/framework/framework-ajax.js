@@ -19,7 +19,7 @@ var DEBOUNCE_THRESH_MS = 2000;
  * var debouncedKeyHandler = debounce(keyHandler);
  * el.addEventListener('keyup', debouncedKeyHandler);
  */
-function debounce(func) {
+function debounce(func, opt_threshold_ms) {
   var timeout;
   return function() {
     var context = this, args = arguments;
@@ -28,7 +28,7 @@ function debounce(func) {
       func.apply(context, args);
     };
     clearTimeout(timeout);
-    timeout = setTimeout(later, DEBOUNCE_THRESH_MS);
+    timeout = setTimeout(later, opt_threshold_ms || DEBOUNCE_THRESH_MS);
   };
 }
 
@@ -42,8 +42,17 @@ function debounce(func) {
  */
 function CS_postData(args, opt_token) {
   var params = [];
-  for (var key in args) {
-    params.push(key + "=" + encodeURIComponent(String(args[key])));
+  if (args instanceof FormData) {
+    for (var entry of args.entries()) {
+      // We never use XHR to post files.
+      if (!(entry[1] instanceof File)) {
+        params.push(entry[0] + "=" + encodeURIComponent(String(entry[1])));
+      }
+    }
+  } else {
+    for (var key in args) {
+      params.push(key + "=" + encodeURIComponent(String(args[key])));
+    }
   }
   if (opt_token) {
     params.push('token=' + encodeURIComponent(opt_token));

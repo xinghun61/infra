@@ -74,6 +74,7 @@ from tracker import componentcreate
 from tracker import componentdetail
 from tracker import fieldcreate
 from tracker import fielddetail
+from tracker import issueaddtohotlist
 from tracker import issueadmin
 from tracker import issueadvsearch
 from tracker import issueattachment
@@ -82,16 +83,16 @@ from tracker import issuebulkedit
 from tracker import issuedetail
 from tracker import issueentry
 from tracker import issueentryafterlogin
+from tracker import issueexport
+from tracker import issueimport
 from tracker import issuelist
 from tracker import issuelistcsv
 from tracker import issueoptions
 from tracker import issueoriginal
-from tracker import issueexport
-from tracker import issueimport
+from tracker import issuepresubmit
 from tracker import issuereindex
 from tracker import issuererank
 from tracker import issuetips
-from tracker import issueaddtohotlist
 from tracker import spam
 
 from api import api_service
@@ -217,6 +218,7 @@ class ServletRegistry(object):
         urls.ISSUE_FLAGSPAM_JSON: spam.FlagSpamForm,
         urls.ISSUE_SETSTAR_JSON: issuedetail.SetStarForm,
         urls.ISSUE_DELETE_JSON: issuedetail.IssueDeleteForm,
+        urls.ISSUE_PRESUBMIT_JSON: issuepresubmit.IssuePresubmitJSON,
         urls.ISSUE_ENTRY: issueentry.IssueEntry,
         urls.ISSUE_ENTRY_AFTER_LOGIN: issueentryafterlogin.IssueEntryAfterLogin,
         urls.ISSUE_OPTIONS_JSON: issueoptions.IssueOptionsJSON,
