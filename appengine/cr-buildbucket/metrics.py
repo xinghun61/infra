@@ -64,11 +64,15 @@ CURRENTLY_RUNNING = gae_ts_mon.GaugeMetric(
 LEASE_LATENCY = gae_ts_mon.NonCumulativeDistributionMetric(
   'buildbucket/builds/never_leased_duration',
   'Duration between a build is created and it is leased for the first time',
-  [gae_ts_mon.StringField(FIELD_BUCKET)])
+  [gae_ts_mon.StringField(FIELD_BUCKET)],
+  # Bucketer for 1s..24h range
+  bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10**0.05))
 SCHEDULING_LATENCY = gae_ts_mon.NonCumulativeDistributionMetric(
   'buildbucket/builds/scheduling_duration',
   'Duration of a build remaining in SCHEDULED state',
-  [gae_ts_mon.StringField(FIELD_BUCKET)])
+  [gae_ts_mon.StringField(FIELD_BUCKET)],
+  # Bucketer for 1s..48h range
+  bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10**0.053))
 
 
 def fields_for(build, **extra):
