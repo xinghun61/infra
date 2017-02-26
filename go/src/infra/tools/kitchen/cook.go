@@ -264,9 +264,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 	}
 
 	if err := c.normalizeFlags(sysEnv); err != nil {
-		err = errors.Annotate(err).Reason("failed to normalize flags").Err()
-
-		logAnnotatedErr(ctx, err)
+		fmt.Fprintln(os.Stderr, err.Error())
 		c.Flags.Usage()
 		return 1
 	}
