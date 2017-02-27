@@ -17,13 +17,16 @@
       <a href="[hotlist.url]">Hotlist [hotlist.name]</a>
     </td>
     <td width="80%" style="border-right: 2px solid white" class="issueheader">
-      <span class="h3" style="padding-left:4px">Description: </span> [hotlist.description]
+      <span class="h3" style="padding-left:4px">Summary: </span> [hotlist.summary]
     </td>
   </tr>
   <tr>
     <td nowrap="nowrap" class="issuemetaheader">
       Followed by [hotlist.num_followers]
     </td>
+     <td width="80%" style="border-right: 2px solid white" class="issueheader">
+      <span style="padding-left:4px">Description:</span> [hotlist.description]
+     </td>
   </tr>
 
   <tr>
