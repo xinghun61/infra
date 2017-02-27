@@ -115,6 +115,12 @@
        "[logged_in_user.avail_message_short]".
     [end]
 
+    [# Cue card to tell users what it means to star a hotlist]
+    [is cue "explain_hotlist_starring"]
+        <b>Note:</b>
+        Starring a hotlist will not cc you on any updates. It simply adds the hotlist to your Starred hotlists category on this page so that you can conveniently revisit it.
+    [end]
+
    </span>
     [# Link to dismiss the cue card.]
     [if-any logged_in_user]

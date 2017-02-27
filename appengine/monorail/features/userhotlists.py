@@ -61,3 +61,17 @@ class UserHotlists(servlet.Servlet):
         'follower_of_hotlists': follower_of_hotlists,
         'starred_hotlists': starred_hotlists,
         }
+
+  def GatherHelpData(self, mr, page_data):
+    """Return a dict of values to drive on-page user help.
+
+    Args:
+      mr: common information parsed from the HTTP request.
+      page_data: Dictionary of base and page template data.
+
+    Returns:
+      A dict of values to drive on-page user help, to be added to page_data.
+    """
+    help_data = super(UserHotlists, self).GatherHelpData(mr, page_data)
+    help_data['cue'] = 'explain_hotlist_starring'
+    return help_data
