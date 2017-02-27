@@ -19,9 +19,6 @@ if sys.platform != 'linux2':
   raise NotImplementedError('This library only supported on linux systems.')
 
 
-_SUPPORTED_VENDORS = [
-  '18d1',  # Nexus line of devices
-]
 _SUPPORTED_INTERFACES = [
   # (interface class, interface subclass, interface protocol)
   (255, 66, 1),  # ADB's definition.
@@ -29,8 +26,6 @@ _SUPPORTED_INTERFACES = [
 
 
 def is_android_device(device):
-  if device.vendor not in _SUPPORTED_VENDORS:
-    return False
   if not any(i in _SUPPORTED_INTERFACES for i in device.interfaces):
     return False
   if not device.serial:
@@ -123,7 +118,6 @@ class USBDevice(object):
     # libusb exposes product and vendor IDs as decimal but sysfs reports
     # them as hex. Convert to hex for easy string comparison.
     self.product = hex(libusb_device.getProductID())[2:]
-    self.vendor = hex(libusb_device.getVendorID())[2:]
 
     # libusb doesn't expose major and minor numbers, so stat the device file.
     self.major = None

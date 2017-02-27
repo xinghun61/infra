@@ -28,12 +28,11 @@ class FakeLibusbDevice(object):
   behaves correctly.
   """
   def __init__(self, serial=None, port=1, bus=2, dev=3, product=4,
-               vendor=None, settings=None, port_list=None):
+               settings=None, port_list=None):
     self.port = port
     self.bus = bus
     self.dev = dev
     self.product = product
-    self.vendor = vendor
     self.settings = settings
     self.serial = serial
     self.port_list = port_list or [1,2,3]
@@ -49,9 +48,6 @@ class FakeLibusbDevice(object):
 
   def getProductID(self):
     return self.product
-
-  def getVendorID(self):
-    return self.vendor
 
   def getSerialNumber(self):
     if self.serial is None:
@@ -86,12 +82,10 @@ class FakeDeviceSetting(object):
 
 class TestDevice(unittest.TestCase):
   def setUp(self):
-    self.supported_vendor = usb_device._SUPPORTED_VENDORS[0]
     self.supported_interface = usb_device._SUPPORTED_INTERFACES[0]
     self.supported_setting = FakeDeviceSetting(*self.supported_interface)
     self.libusb_device = FakeLibusbDevice(
-        serial='serial1', vendor=int(self.supported_vendor, 16),
-        settings=[self.supported_setting])
+        serial='serial1', settings=[self.supported_setting])
 
   @mock.patch('os.stat')
   @mock.patch('os.major')
@@ -124,21 +118,16 @@ class TestDevice(unittest.TestCase):
 class TestGetDevices(TestDevice):
   def setUp(self):
     super(TestGetDevices, self).setUp()
-    self.wrong_vendor_device = FakeLibusbDevice(vendor=int('deadbeef', 16))
-    self.wrong_interface_device = FakeLibusbDevice(
-        vendor=int(self.supported_vendor, 16), settings=[])
+    self.wrong_interface_device = FakeLibusbDevice(settings=[])
     self.no_serial_device = FakeLibusbDevice(
-        vendor=int(self.supported_vendor, 16),
         settings=[self.supported_setting])
     self.libusb_device_long_port_list = FakeLibusbDevice(
-        serial='seriallllll', vendor=int(self.supported_vendor, 16),
-        settings=[self.supported_setting])
+        serial='seriallllll', settings=[self.supported_setting])
     self.libusb_device_long_port_list.port_list.append(1)
 
     self.all_devices = [
         self.libusb_device,
         self.libusb_device_long_port_list,
-        self.wrong_vendor_device,
         self.wrong_interface_device,
         self.no_serial_device,
     ]
@@ -182,8 +171,7 @@ class TestGetPhysicalPorts(TestDevice):
     self.libusb_devices = []
     for i in xrange(1, 8):
       libusb_device = FakeLibusbDevice(
-          serial='serial%d' % i, vendor=int(self.supported_vendor, 16),
-          settings=[self.supported_setting])
+          serial='serial%d' % i, settings=[self.supported_setting])
       self.libusb_devices.append(libusb_device)
 
     self.libusb_devices[0].port_list = [1, 2, 1]
