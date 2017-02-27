@@ -31,10 +31,19 @@
   <textarea id="description" name="description" rows="20" cols="90" wrap="soft">[initial_description]</textarea>
   <br><br>
 
+  <div>
+    <span>Owner: [logged_in_user.email]</span>
+    <div class="graytext">
+    You will be the owner of this hotlist with permission to edit everything
+    </div>
+  </div>
+  <br>
+
   <label for="editors">Editors</label><br>
   <input type="text" id="editors" name="editors" size="75" autocomplete="off"
   value="[initial_editors]">
   <span class="graytext">Example: user@email.com, example@email.com</span>
+  <div class="graytext">Editors may add, remove, or rank issues</div>
   <div class="fielderror">&nbsp;
     <span id="editorsfeedback">
       [if-any errors.editors][errors.editors][end]
