@@ -84,7 +84,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
   def __init__(
       self, urlsafe_flake_analysis_key, commit_position, revision):
     super(RecursiveFlakeTryJobPipeline, self).__init__(
-      urlsafe_flake_analysis_key, commit_position, revision)
+        urlsafe_flake_analysis_key, commit_position, revision)
     self.urlsafe_flake_analysis_key = urlsafe_flake_analysis_key
     self.commit_position = commit_position
     self.revision = revision
@@ -257,12 +257,7 @@ class NextCommitPositionPipeline(BasePipeline):
             try_job_data_points, algorithm_settings,
             lower_boundary_commit_position))
 
-    if (next_commit_position is None or
-        next_commit_position == suspected_build_data_point.commit_position):
-      # Finished.
-      if next_commit_position == suspected_build_data_point.commit_position:
-        suspected_commit_position = next_commit_position
-
+    if suspected_commit_position is not None:  # Finished.
       confidence_score = confidence.SteppinessForCommitPosition(
           flake_analysis.data_points, suspected_commit_position)
       culprit_revision = suspected_build_data_point.GetRevisionAtCommitPosition(
@@ -271,6 +266,7 @@ class NextCommitPositionPipeline(BasePipeline):
           culprit_revision, suspected_commit_position, confidence_score)
       UpdateAnalysisTryJobStatusUponCompletion(
           flake_analysis, culprit, analysis_status.COMPLETED, None)
+
       yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
       return
 

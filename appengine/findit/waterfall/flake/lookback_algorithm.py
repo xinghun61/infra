@@ -22,6 +22,37 @@ def _TestDoesNotExist(pass_rate):
   return pass_rate < 0
 
 
+def _SequentialSearch(data_points, lower_boundary_index):
+  """Determines the next run number for sequential search, or the culprit.
+
+      Should only be called by GetNextRunPointNumber when sequential search
+      is ready.
+
+  Args:
+    data_points (list): A list of already-computed data points to analyze
+        whether sequential search is done or needs to continue.
+    lower_boundary_index (int): The index in |data_list| to check whether
+        sequential search is already done.
+
+  Returns:
+    next_run_point (int): The next run point in sequential search. Will be None
+        if suspected_culprit is returned.
+    suspected_culprit (int): The suspected culprit, if any. Will be None if
+        next_run_point is needed.
+    iterations_to_rerun (int): None. Used only for return purposes by the
+        calling function.
+  """
+  lower_boundary = data_points[lower_boundary_index].run_point_number
+  run_after_lower_boundary = (
+      data_points[lower_boundary_index - 1].run_point_number)
+
+  if run_after_lower_boundary == lower_boundary + 1:
+    # Sequential search is done, return culprit.
+    return None, run_after_lower_boundary, None
+
+  return lower_boundary + 1, None, None
+
+
 def GetNextRunPointNumber(data_points, algorithm_settings,
                           lower_bound_run_point_number=None):
   """Determines the next numerical point to check flakiness on.
@@ -61,15 +92,16 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
   flakes_first = 0
   flaked_out = False
   next_run_point = None
+  number_of_data_points = len(data_points)
 
-  for i in xrange(len(data_points)):
+  for i in xrange(number_of_data_points):
     pass_rate = data_points[i].pass_rate
     run_point_number = data_points[i].run_point_number
 
     if _TestDoesNotExist(pass_rate):
       if flaked_out or flakes_first:
-        lower_boundary = data_points[i - stables_in_a_row].run_point_number
-        return lower_boundary + 1, None, None
+        # Flaky region found, ready for sequential search.
+        return _SequentialSearch(data_points, i - stables_in_a_row)
       else:
         # No flaky region has been identified, no findings.
         return None, None, None
@@ -80,18 +112,17 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
       dives_in_a_row = 0
       stables_happened = True
 
-      if len(data_points) == 1:
+      if number_of_data_points == 1:
         # If the swarming rerun for the first build had stable results, either
-        # the test is really stable so we should bail out or
-        # the number of iterations is not high enough so we should increase
-        # the number and rerun.
+        # the test is actually stable and we should bail out, or the number of
+        # iterations is not high enough and we should rerun with a higher value.
         iterations_to_rerun = algorithm_settings.get('iterations_to_rerun')
         max_iterations_to_rerun = algorithm_settings.get(
             'max_iterations_to_rerun')
 
         iterations_to_rerun *= 2
         if iterations_to_rerun > max_iterations_to_rerun:
-          # Considers this as stabled-out and no flake region, no findings.
+          # Conside this as stabled-out and no flake region, so no findings.
           return None, None, None
 
         # Rerun the same build with a higher number of iterations.
@@ -106,20 +137,19 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
         continue
 
       # Flake region is also found, ready for sequential search.
-      lower_boundary_index = i - stables_in_a_row + 1
-      lower_boundary = data_points[lower_boundary_index].run_point_number
-      previous_run_point = data_points[
-          lower_boundary_index - 1].run_point_number
+      return _SequentialSearch(data_points, i - stables_in_a_row + 1)
 
-      if previous_run_point == lower_boundary + 1:
-        # Sequential search is done.
-        return None, previous_run_point, None
+    else:  # Flaky result.
+      if i < number_of_data_points - 1:
+        # Check if the test was newly added at this run point number and is
+        # already flaky.
+        next_data_point = data_points[i + 1]
 
-      # Continue sequential search.
-      return lower_boundary + 1, None, None
+        if (run_point_number - next_data_point.run_point_number == 1 and
+            next_data_point.pass_rate == -1):
+          # Flakiness was introduced in this run number.
+          return None, run_point_number, None
 
-    else:
-      # Flaky result.
       flakes_in_a_row += 1
       stables_in_a_row = 0
 
@@ -166,16 +196,7 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
 
         # Dived out.
         # Flake region must have been found, ready for sequential search.
-        lower_boundary_index = i - dives_in_a_row + 1
-        lower_boundary = data_points[lower_boundary_index].run_point_number
-        build_after_lower_boundary = (
-            data_points[lower_boundary_index - 1].run_point_number)
-
-        if build_after_lower_boundary == lower_boundary + 1:
-          # Sequential search is done.
-          return None, build_after_lower_boundary, None
-        # Continue sequential search.
-        return lower_boundary + 1, None, None
+        return _SequentialSearch(data_points, i - dives_in_a_row + 1)
       else:
         step_size = flakes_in_a_row
         next_run_point = run_point_number - step_size

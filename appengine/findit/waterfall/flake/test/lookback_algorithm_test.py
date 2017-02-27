@@ -181,9 +181,21 @@ class LookbackAlgorithmTest(TestCase):
     next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'], 0)
-    # This case should be handled by the caller of GetNextRunPointNumber
-    self.assertIsNone(result)
-    self.assertEqual(100, next_run)
+    self.assertIsNone(next_run)
+    self.assertEqual(100, result)
+
+  def testFlakyFromBeginning(self):
+    data_points = [NormalizedDataPoint(100, 0.8),
+                   NormalizedDataPoint(99, 0.8),
+                   NormalizedDataPoint(97, 0.8),
+                   NormalizedDataPoint(94, 0.8),
+                   NormalizedDataPoint(91, 0.8),
+                   NormalizedDataPoint(90, -1)]
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
+        data_points,
+        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'], 0)
+    self.assertIsNone(next_run)
+    self.assertEqual(91, result)
 
   def testNextBuildWhenTestNotExistingAfterStableInARow(self):
     data_points = [
