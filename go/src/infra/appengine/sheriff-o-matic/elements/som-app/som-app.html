@@ -252,7 +252,7 @@
               </template>
               <template is="dom-repeat" items="[[_computeCategories(_alerts, _isTrooperPage)]]" as="cat">
                 <h3 class="category-title layout horizontal justified">
-                  [[_getCategoryTitle(cat, _isTrooperPage)]]:
+                  [[_getCategoryTitle(cat, _isTrooperPage)]] ([[_getCategoryCount(_alerts, cat, _isTrooperPage)]]):
                   <template is="dom-if" if="[[useCompactView]]">
                     <div class="self-center end section-buttons">
                       <paper-button raised on-tap="collapseAll">

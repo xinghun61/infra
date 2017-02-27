@@ -547,6 +547,21 @@
       }[category];
     },
 
+    _getCategoryCount: function(alerts, category, isTrooperPage) {
+      let count = 0;
+      alerts.forEach(function(alert) {
+        let cat = alert.severity;
+        if (isTrooperPage) {
+          cat = alert.tree;
+        }
+        if (category == cat) {
+          count++;
+        }
+      });
+      return count;
+    },
+
+
     ////////////////////// Annotations ///////////////////////////
 
     collapseAll: function(evt) {

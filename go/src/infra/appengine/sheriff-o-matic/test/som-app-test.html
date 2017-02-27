@@ -118,7 +118,7 @@
       flush(function() {
         assert.equal(
             element.$$('.category-title').textContent.trim(),
-            element._getCategoryTitle(2) + ':');
+            element._getCategoryTitle(2) + ' (1):');
         done();
       });
     });
@@ -136,7 +136,7 @@
 
       flush(function() {
         assert.equal(
-            element.$$('.category-title').textContent.trim(), 'test:');
+            element.$$('.category-title').textContent.trim(), 'test (1):');
         done();
       });
     });
