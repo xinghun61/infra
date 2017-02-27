@@ -288,7 +288,7 @@ runOnLoad(function() {
       event.preventDefault();
     });
   }
-
+  [if-any logged_in_user]
   $("add-issue-to-hotlist").addEventListener("click", function(event) {
     ShowAddToHotlistDialog();
   });
@@ -298,6 +298,7 @@ runOnLoad(function() {
   $('create-new-hotlist').addEventListener('click', function () {
     CreateNewHotlistWithIssues([[]"[issue.project_name]:[issue.local_id]"])
   });
+  [end]
 
 });
 </script>
