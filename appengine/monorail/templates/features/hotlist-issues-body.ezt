@@ -75,8 +75,8 @@ runOnLoad(function(){
       "localID": "[table_data.local_id]",
       "issueID": "[table_data.issue_id]",
       "isStarred": "[table_data.starred]",
-      "issueCleanURL": "[table_data.issue_clean_url]",
-      "issueContextURL": "[table_data.issue_ctx_url]",
+      "issueCleanURL": [format "js"]"[table_data.issue_clean_url]"[end],
+      "issueContextURL": [format "js"]"[table_data.issue_ctx_url]"[end],
       }[if-index table_data last][else],[end]
     [end]
     ];
