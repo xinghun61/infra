@@ -153,7 +153,7 @@ def main(args):  # pragma: no cover
     DEFAULT_LOGGER.info('Creating data directory.')
     os.makedirs(opts.datadir)
 
-  with open(opts.credentials_db) as data_file:    
+  with open(opts.credentials_db) as data_file:
     creds_data = json.load(data_file)
 
   # Use local json file
@@ -169,12 +169,12 @@ def main(args):  # pragma: no cover
       task=outer_loop_iteration,
       sleep_timeout=lambda: 60.0,
       **loop_opts)
- 
-  # In case local json file is used, do not upload
-  if not opts.configfile:
-    if not update_data(_create_http(creds_data)):
-      DEFAULT_LOGGER.error('Failed to update data files.')
-      return 1
+
+# # In case local json file is used, do not upload
+# if not opts.configfile:
+#   if not update_data(_create_http(creds_data)):
+#     DEFAULT_LOGGER.error('Failed to update data files.')
+#     return 1
 
   DEFAULT_LOGGER.info('Outer loop finished with result %r',
                       loop_results.success)
