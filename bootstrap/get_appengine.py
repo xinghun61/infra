@@ -29,11 +29,9 @@ def main():
   cipd_ensure_list(os.path.join(base, 'google_appengine'), [
     ('infra/gae_sdk/python/all', 'latest'),
   ])
-  if not sys.platform.startswith('win'):
-    os_name = 'linux' if 'linux' in sys.platform else 'mac'
-    cipd_ensure_list(os.path.join(base, 'go_appengine'), [
-      ('infra/gae_sdk/go/%s-${arch}' % os_name, 'latest'),
-    ])
+  cipd_ensure_list(os.path.join(base, 'go_appengine'), [
+    ('infra/gae_sdk/go/${os=mac,linux}-${arch}', 'latest'),
+  ])
   return 0
 
 
