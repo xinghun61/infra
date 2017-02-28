@@ -141,6 +141,9 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	}
 
 	// If LogDog is enabled, all required LogDog flags must be supplied.
+	if c.mode.onlyLogDog() {
+		c.logdog.logDogOnly = true
+	}
 	if err := c.logdog.setupAndValidate(c.mode.cookMode, env); err != nil {
 		return err
 	}

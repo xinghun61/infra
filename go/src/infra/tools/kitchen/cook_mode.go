@@ -49,6 +49,7 @@ type cookMode interface {
 
 	shouldEmitLogDogLinks() bool
 	addLogDogGlobalTags(tags map[string]string, props map[string]interface{}, env environ.Env) error
+	onlyLogDog() bool
 }
 
 type swarmingCookMode struct{}
@@ -64,7 +65,6 @@ func (m swarmingCookMode) fillTemplateParams(env environ.Env, params *tasktempla
 func (m swarmingCookMode) needsIOKeepAlive() bool         { return false }
 func (m swarmingCookMode) shouldEmitTimestamps() bool     { return true }
 func (m swarmingCookMode) alwaysForwardAnnotations() bool { return false }
-func (m swarmingCookMode) shouldEmitLogDogLinks() bool    { return false }
 
 func (m swarmingCookMode) botID(env environ.Env) (string, error) {
 	botID, ok := env.Get("SWARMING_BOT_ID")
@@ -73,7 +73,8 @@ func (m swarmingCookMode) botID(env environ.Env) (string, error) {
 	}
 	return botID, nil
 }
-
+func (m swarmingCookMode) shouldEmitLogDogLinks() bool { return false }
+func (m swarmingCookMode) onlyLogDog() bool            { return true }
 func (m swarmingCookMode) addLogDogGlobalTags(tags map[string]string, props map[string]interface{},
 	env environ.Env) error {
 
@@ -103,7 +104,6 @@ func (m buildBotCookMode) fillTemplateParams(env environ.Env, params *tasktempla
 func (m buildBotCookMode) needsIOKeepAlive() bool         { return true }
 func (m buildBotCookMode) shouldEmitTimestamps() bool     { return false }
 func (m buildBotCookMode) alwaysForwardAnnotations() bool { return true }
-func (m buildBotCookMode) shouldEmitLogDogLinks() bool    { return true }
 
 func (m buildBotCookMode) botID(env environ.Env) (string, error) {
 	botID, ok := env.Get("BUILDBOT_SLAVENAME")
@@ -113,6 +113,8 @@ func (m buildBotCookMode) botID(env environ.Env) (string, error) {
 	return botID, nil
 }
 
+func (m buildBotCookMode) onlyLogDog() bool            { return false }
+func (m buildBotCookMode) shouldEmitLogDogLinks() bool { return true }
 func (m buildBotCookMode) addLogDogGlobalTags(tags map[string]string, props map[string]interface{},
 	env environ.Env) error {
 

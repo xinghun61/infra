@@ -71,7 +71,7 @@ func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
 		&p.logDogOnly,
 		"logdog-only",
 		false,
-		"Send all output and annotations through LogDog. By default, output and annotations are tee'd.")
+		"Send all output and annotations through LogDog. Implied by swarming mode.")
 	fs.BoolVar(
 		&p.logDogSendIOKeepAlives,
 		"logdog-send-io-keepalives",
