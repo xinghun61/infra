@@ -47,9 +47,13 @@ class AddToHotlist(jsonfeed.JsonFeed):
                           int(time.time()), '') for issue_id in
                          selected_iids]
     if not mr.hotlist_ids:
-      num_existing_hotlists = len(self.services.features.GetHotlistsByUserID(
-          mr.cnxn, mr.auth.user_id))
-      hotlist_name = 'Hotlist-%d' % (num_existing_hotlists + 1)
+      hotlist_name = 'Hotlist-1'
+      count = 1
+      taken_names = [h.name for h in self.services.features.GetHotlistsByUserID(
+          mr.cnxn, mr.auth.user_id)]
+      while hotlist_name in taken_names:
+        count += 1
+        hotlist_name = 'Hotlist-%d' % count
       hotlist = self.services.features.CreateHotlist(
           mr.cnxn, hotlist_name, 'Hotlist of bulk added issues', '',
           [mr.auth.user_id], [], issue_ids=selected_iids)

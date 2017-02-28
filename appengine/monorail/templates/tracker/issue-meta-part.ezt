@@ -296,7 +296,7 @@ runOnLoad(function() {
     AddIssuesToHotlist(onResponseUpdateUI, [[]"[issue.project_name]:[issue.local_id]"])
   });
   $('create-new-hotlist').addEventListener('click', function () {
-    CreateNewHotlistWithIssues([[]"[issue.project_name]:[issue.local_id]"])
+    CreateNewHotlistWithIssues(onResponseUpdateUI, [[]"[issue.project_name]:[issue.local_id]"])
   });
   [end]
 

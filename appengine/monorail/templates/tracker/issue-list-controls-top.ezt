@@ -108,10 +108,10 @@ runOnLoad(function() {
     }
   }
   $('add-issues').addEventListener('click', function () {
-    AddIssuesToHotlist(onAddIssuesResponse)
+    AddIssuesToHotlist(onAddIssuesResponse);
   });
   $('create-new-hotlist').addEventListener('click', function () {
-    CreateNewHotlistWithIssues()
+    CreateNewHotlistWithIssues(onAddIssuesResponse);
   });
 });
 </script>
