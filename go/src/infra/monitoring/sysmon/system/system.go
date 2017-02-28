@@ -221,9 +221,17 @@ func updateDiskMetrics(c context.Context) errors.MultiError {
 	case err != nil:
 		ret = append(ret, fmt.Errorf("failed to get disk IO counters: %s", err))
 	default:
-		for disk, counters := range io {
-			diskRead.Set(c, int64(counters.ReadBytes), disk)
-			diskWrite.Set(c, int64(counters.WriteBytes), disk)
+		var devices []string
+		for device := range io {
+			devices = append(devices, device)
+		}
+		// Remove, for example, sda if sda1 is in the list.
+		devices = removeDiskDevices(devices)
+
+		for _, device := range devices {
+			counters := io[device]
+			diskRead.Set(c, int64(counters.ReadBytes), device)
+			diskWrite.Set(c, int64(counters.WriteBytes), device)
 		}
 	}
 

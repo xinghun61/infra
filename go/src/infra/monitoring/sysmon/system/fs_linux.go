@@ -7,6 +7,7 @@ package system
 import (
 	"io/ioutil"
 	"strings"
+	"unicode"
 )
 
 const (
@@ -39,4 +40,22 @@ func isBlacklistedFstype(fstype string) bool {
 
 	_, ok := fstypeBlacklist[fstype]
 	return ok
+}
+
+func removeDiskDevices(names []string) []string {
+	disksWithPartitions := map[string]struct{}{}
+	for _, name := range names {
+		if len(name) > 0 && unicode.IsDigit(rune(name[len(name)-1])) {
+			disksWithPartitions[name[:len(name)-1]] = struct{}{}
+		}
+	}
+
+	var ret []string
+	for _, name := range names {
+		_, diskHasPartitions := disksWithPartitions[name]
+		if len(name) > 0 && unicode.IsDigit(rune(name[len(name)-1])) || !diskHasPartitions {
+			ret = append(ret, name)
+		}
+	}
+	return ret
 }

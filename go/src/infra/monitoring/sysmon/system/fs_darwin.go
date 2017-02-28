@@ -7,3 +7,7 @@ package system
 func isBlacklistedFstype(fstype string) bool {
 	return false
 }
+
+func removeDiskDevices(names []string) []string {
+	return names
+}
