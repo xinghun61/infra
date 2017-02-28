@@ -73,6 +73,7 @@ runOnLoad(function(){
       "idx": "[table_data.idx]",
       "projectName": "[table_data.project_name]",
       "localID": "[table_data.local_id]",
+      "projectURL": [format "js"]"[table_data.project_url]"[end],
       "issueID": "[table_data.issue_id]",
       "isStarred": "[table_data.starred]",
       "issueCleanURL": [format "js"]"[table_data.issue_clean_url]"[end],

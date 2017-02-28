@@ -83,6 +83,14 @@ function createIDCell(td, tableRow, isCrossProject) {
   td.appendChild(aLink);
 }
 
+function createProjectCell(td, tableRow) {
+  td.className += ' project';
+  var aLink = document.createElement('a');
+  aLink.setAttribute('href', tableRow['projectURL']);
+  aLink.textContent = tableRow['projectName'];
+  td.appendChild(aLink);
+}
+
 function createEditableNoteCell(td, cell, issueID, hotlistID) {
   var textBox = document.createElement('textarea');
   setAttributes(textBox, {'id': 'itemnote-' + issueID,'placeholder': '---',
@@ -217,7 +225,9 @@ function renderHotlistRow(tableRow, pageSettings) {
       else {
         createSummaryCell(td, cell);
       }
-    }else{
+    } else if (cell['type'] == 'project') {
+      createProjectCell(td, tableRow)
+    } else{
       createAttrAndUnfiltCell(td, cell);
     }
     tr.appendChild(td);

@@ -7,6 +7,7 @@
 
 from features import features_constants
 from framework import framework_views
+from framework import framework_helpers
 from framework import sorting
 from framework import table_view_helpers
 from framework import timestr
@@ -161,6 +162,8 @@ def _MakeTableData(issues, starred_iid_set, lower_columns,
     row.issue_id = art.issue_id
     row.local_id = art.local_id
     row.project_name = art.project_name
+    row.project_url = framework_helpers.FormatURL(
+        None, '/p/%s' % row.project_name)
     row.issue_ref = '%s:%d' % (art.project_name, art.local_id)
     row.issue_clean_url = tracker_helpers.FormatRelativeIssueURL(
         art.project_name, urls.ISSUE_DETAIL, id=art.local_id)

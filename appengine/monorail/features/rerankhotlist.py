@@ -70,6 +70,7 @@ class RerankHotlistIssue(jsonfeed.JsonFeed):
           'issueRef': table_row.issue_ref,
           'idx': table_row.idx,
           'projectName': table_row.project_name,
+          'projectURL': table_row.project_url,
           'localID': table_row.local_id,
           'issueID': table_row.issue_id,
           'isStarred': table_row.starred,

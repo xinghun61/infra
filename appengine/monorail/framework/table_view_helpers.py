@@ -479,6 +479,7 @@ CELL_TYPE_SUMMARY = 'summary'
 CELL_TYPE_ATTR = 'attr'
 CELL_TYPE_UNFILTERABLE = 'unfilterable'
 CELL_TYPE_NOTE = 'note'
+CELL_TYPE_PROJECT = 'project'
 
 
 class TableCell(object):
@@ -572,7 +573,7 @@ class TableCellProject(TableCell):
 
   def __init__(self, art, **_kw):
     TableCell.__init__(
-        self, CELL_TYPE_ATTR, [art.project_name])
+        self, CELL_TYPE_PROJECT, [art.project_name])
 
 
 class TableCellStars(TableCell):
