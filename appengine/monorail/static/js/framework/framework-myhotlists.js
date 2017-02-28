@@ -99,6 +99,7 @@ function CS_updateHotlistsCallback(event) {
       myhotlists.addItem(name, url, 'hotlists', 'Hotlists');
     }
 
+    if (starredHotlists.length) myhotlists.addSeparator();
     starredHotlists.sort();
     for (var i = 0; i < starredHotlists.length; i++) {
       name = starredHotlists[i][0];
@@ -106,13 +107,16 @@ function CS_updateHotlistsCallback(event) {
       myhotlists.addItem(name, url, 'starred_hotlists', 'Starred hotlists');
     }
 
+    if (visitedHotlists.length) myhotlists.addSeparator();
     for (var i = 0; i < visitedHotlists.length; i++) {
       name = visitedHotlists[i][0];
       url = visitedHotlists[i][1];
       myhotlists.addItem(name, url, 'visited_hotlists', 'Recently Visited Hotlists');
     }
-    if (hotlists.length == 0 && starredHotlists.length == 0) {
-      myhotlists.addItem('No hotlists. Create one.', '/u/' + user + '/hotlists', 'controls');
+    if (user) {
+      myhotlists.addSeparator();
+      myhotlists.addItem('All hotlists', '/u/' + user + '/hotlists', 'controls');
+      myhotlists.addItem('Create hotlist', '/hosting/createHotlist', 'controls');
     }
   } else {
     myhotlists.clear();
