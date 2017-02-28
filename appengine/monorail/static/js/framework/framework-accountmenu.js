@@ -23,6 +23,15 @@ var accountMenu;
 
   accountMenu = new Menu(target, function() {});
   accountMenu.addItem('Switch accounts', CS_env.login_url);
+  accountMenu.addSeparator();
+  accountMenu.addItem('Profile', CS_env.profileUrl);
+  accountMenu.addItem('Updates', CS_env.profileUrl + 'updates');
+  accountMenu.addItem('Settings', '/hosting/settings');
+  accountMenu.addItem('Saved queries', CS_env.profileUrl + 'queries');
+  accountMenu.addItem('Hotlists', CS_env.profileUrl + 'hotlists');
+  accountMenu.addSeparator();
+  accountMenu.addItem('Sign out', CS_env.logout_url);
+
   accountMenu.addEvent(window, 'load', function() {
       document.body.appendChild(accountMenu.menu);
   });
