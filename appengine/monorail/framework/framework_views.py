@@ -79,7 +79,10 @@ class UserView(object):
     email = user.email or ''
     self.user_id = user.user_id
     self.email = email
-    self.profile_url = '/u/%s/' % user.user_id
+    if user.obscure_email:
+      self.profile_url = '/u/%s/' % user.user_id
+    else:
+      self.profile_url = '/u/%s/' % email
     self.obscure_email = user.obscure_email
     self.banned = ''
 

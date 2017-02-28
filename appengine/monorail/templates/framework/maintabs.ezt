@@ -34,7 +34,7 @@
     [end]
     [if-any viewed_user]
       <th class="padded">
-        User: [viewed_user.display_name]
+        User: <a href="[viewed_user.profile_url]">[viewed_user.display_name]</a>
         [if-any viewed_user_pb.is_site_admin_bool]<i>(Administrator)</i>[end]
       </th>
     [end]
