@@ -154,7 +154,7 @@ class HotlistIssues(servlet.Servlet):
             settings.enable_quick_edit and mr.auth.user_pb.preview_on_hover),
         # token must be generated using url with userid to accommodate
         # multiple urls for one hotlist
-        'remove_issues_token': xsrf.GenerateToken(
+        'edit_hotlist_token': xsrf.GenerateToken(
             mr.auth.user_id,
             hotlist_helpers.GetURLOfHotlist(
                 mr.cnxn, mr.hotlist, self.services.user,
@@ -169,6 +169,12 @@ class HotlistIssues(servlet.Servlet):
     return table_view_data
 
   def ProcessFormData(self, mr, post_data):
+    if post_data.get('deletestate') == 'true':
+      hotlist_helpers.RemoveHotlist(mr.cnxn, mr.hotlist_id, self.services)
+      return framework_helpers.FormatAbsoluteURL(
+          mr, '/u/%s/hotlists' % mr.auth.email,
+          saved=1, ts=int(time.time()), include_project=False)
+
     hotlist_view_url = hotlist_helpers.GetURLOfHotlist(
         mr.cnxn, mr.hotlist, self.services.user)
     current_col_spec = post_data.get('current_col_spec')

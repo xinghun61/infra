@@ -1055,7 +1055,9 @@ function TKR_handleListActions(actionsMenu) {
       break;
     case 'issuesperpage':
       break;
-
+    case 'deletehotlist':
+      HTL_deleteHotlist($('deletehotlistform'));
+      break;
   }
   actionsMenu.value = 'moreactions';
 }
@@ -1647,4 +1649,11 @@ function onPresubmitResponse(event) {
   $('owner_avail_state').style.display = response.owner_avail_state ? '' : 'none';
   $('owner_avail_state').className = 'availability_' + response.owner_avail_state;
   $('owner_availability').textContent = response.owner_availability;
+}
+
+function HTL_deleteHotlist(form) {
+  if (confirm("Are you sure you want to delete this hotlist? This cannot be undone.")) {
+    $('delete').value = 'true';
+    form.submit();
+  }
 }

@@ -133,13 +133,13 @@ class HotlistIssuesUnitTest(unittest.TestCase):
     self.mr.auth.user_id = 222L
     self.mr.col_spec = 'Stars Projects Rank'
     table_view_data = self.servlet.GetTableViewData(self.mr)
-    self.assertEqual(table_view_data['remove_issues_token'], xsrf.GenerateToken(
+    self.assertEqual(table_view_data['edit_hotlist_token'], xsrf.GenerateToken(
         self.mr.auth.user_id, '/u/222/hotlists/hotlist.do'))
     self.assertEqual(table_view_data['add_issues_selected'], ezt.boolean(False))
 
     self.user2.obscure_email = False
     table_view_data = self.servlet.GetTableViewData(self.mr)
-    self.assertEqual(table_view_data['remove_issues_token'], xsrf.GenerateToken(
+    self.assertEqual(table_view_data['edit_hotlist_token'], xsrf.GenerateToken(
         self.mr.auth.user_id, '/u/222/hotlists/hotlist.do'))
     self.mox.VerifyAll()
 

@@ -62,13 +62,7 @@
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   $('deletehotlist').addEventListener('click', function () {
-    if (!confirm("Are you sure you want to delete this hotlist? This cannot be undone.")){
-      return;
-    } else {
-      $('delete').value = "true";
-      $('edithotlist').submit();
-    }
-
+    HTL_deleteHotlist($('edithotlist'));
   });
 });
 </script>

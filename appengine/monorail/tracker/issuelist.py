@@ -174,7 +174,7 @@ class IssueList(servlet.Servlet):
         # the following are needed by templates for hotlists
         'owner_permissions': ezt.boolean(False),
         'editor_permissions': ezt.boolean(False),
-        'remove_issues_token': '',
+        'edit_hotlist_token': '',
         'add_local_ids': '',
         'placeholder': '',
         'col_spec': ''
