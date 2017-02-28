@@ -1,3 +1,35 @@
+# Release Notes sheriff-o-matic 2017-02-28
+
+- 5 commits, 4 bugs affected since e6b225b (2017-02-08T01:26:19Z)
+- 4 Authors:
+  - davidriley@chromium.org
+  - sergiyb@chromium.org
+  - chanli@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [SoM: Make feedback button appear in dev.](https://chromium-review.googlesource.com/447782) (zhangtiff@google.com)
+- [SoM: add count of alerts in each category](https://chromium-review.googlesource.com/447356) (davidriley@chromium.org)
+- [Update HTTP-references to test-results to use HTTPS](https://chromium-review.googlesource.com/444749) (sergiyb@chromium.org)
+- [[SoM-Findit] Add Findit info on SoM page.](https://chromium-review.googlesource.com/442065) (chanli@chromium.org)
+- [SoM: Move bug queue to bottom except for troopers + CSS/HTML cleanup](https://chromium-review.googlesource.com/439429) (zhangtiff@google.com)
+
+
+## Bugs updated, by author
+- chanli@chromium.org:
+  -  [https://crbug.com/682314](https://crbug.com/682314)
+
+- davidriley@chromium.org:
+  -  [https://crbug.com/693654](https://crbug.com/693654)
+
+- sergiyb@chromium.org:
+  -  [https://crbug.com/664583](https://crbug.com/664583)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/669254](https://crbug.com/669254)
+
+
 # Release Notes sheriff-o-matic 2017-02-07
 
 - 5 commits, 2 bugs affected since 1955610 (2017-02-01T00:21:28Z)
