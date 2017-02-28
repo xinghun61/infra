@@ -426,25 +426,6 @@ class MonitorTryJobPipeline(BasePipeline):
       raise pipeline.Abort(
           'Try job %s timed out after %d hours.' % (
               try_job_id, timeout_hours))
-    else:
-      # TODO(robertocn): Remove this whole clause when all tryjobs running have
-      # pubsub callbacks. It is meant to keep polling jobs that were created
-      # with no pubsub callback, and no pipeline callback associated with the
-      # entities.
-      self.delay_callback(
-          5 * 60,
-          try_job_id=try_job_id,
-          try_job_type=try_job_type,
-          urlsafe_try_job_key=urlsafe_try_job_key,
-          deadline=deadline,
-          start_time=start_time,
-          already_set_started=already_set_started,
-          error_count=error_count,
-          max_error_times=max_error_times,
-          default_pipeline_wait_seconds=default_pipeline_wait_seconds,
-          timeout_hours=timeout_hours,
-          backoff_time=backoff_time,
-      )
 
     # Ensure last_buildbucket_response is always the most recent
     # whenever available during intermediate queries.
