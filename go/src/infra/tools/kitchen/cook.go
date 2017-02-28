@@ -82,11 +82,6 @@ var cmdCook = &subcommands.Command{
 			"",
 			"The file to write the JSON serialized returned value of the recipe to")
 		fs.BoolVar(
-			&c.rr.opArgs.AnnotationFlags.EmitTimestamp,
-			"timestamps",
-			false,
-			"If true, print CURRENT_TIMESTAMP annotations.")
-		fs.BoolVar(
 			&c.rr.allowGitiles,
 			"allow-gitiles",
 			false,
@@ -103,6 +98,13 @@ var cmdCook = &subcommands.Command{
 			"",
 			"Temporary directory. If not empty, slashes will be converted to OS-native separators, "+
 				"it will be made absolute and passed to the recipe.")
+
+		// TODO(dnj): Deprecate "timestamps" when templates don't use this anymore.
+		fs.BoolVar(
+			&c.rr.opArgs.AnnotationFlags.EmitTimestamp,
+			"timestamps",
+			false,
+			"If true, print CURRENT_TIMESTAMP annotations (DEPRECATED, use swarming mode).")
 
 		c.logdog.addFlags(fs)
 
@@ -152,6 +154,9 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 		}
 		c.PythonPaths[i] = p
 	}
+
+	// Populate AnnotationFlags based on CLI configuration.
+	c.rr.opArgs.AnnotationFlags.EmitTimestamp = c.mode.shouldEmitTimestamps() || c.rr.opArgs.AnnotationFlags.EmitTimestamp
 
 	return nil
 }
