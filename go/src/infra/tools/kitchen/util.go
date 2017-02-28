@@ -6,27 +6,10 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 
 	"github.com/luci/luci-go/common/errors"
-	log "github.com/luci/luci-go/common/logging"
-
-	"golang.org/x/net/context"
 )
-
-func withTempDir(ctx context.Context, fn func(context.Context, string) error) error {
-	tdir, err := ioutil.TempDir("", "kitchen")
-	if err != nil {
-		return errors.Annotate(err).Reason("failed to create temporary directory").Err()
-	}
-	defer func() {
-		if rmErr := os.RemoveAll(tdir); rmErr != nil {
-			log.Warningf(ctx, "Failed to clean up temporary directory at [%s]: %s", tdir, rmErr)
-		}
-	}()
-	return fn(ctx, tdir)
-}
 
 func encodeJSONToPath(path string, obj interface{}) (err error) {
 	fd, err := os.Create(path)
@@ -41,6 +24,17 @@ func encodeJSONToPath(path string, obj interface{}) (err error) {
 	}()
 	if err = json.NewEncoder(fd).Encode(obj); err != nil {
 		return errors.Annotate(err).Reason("failed to write encoded object").Err()
+	}
+	return nil
+}
+
+// ensureDir ensures dir at path exists.
+// Returned errors are annotated.
+func ensureDir(path string) error {
+	if err := os.MkdirAll(path, 0755); err != nil && !os.IsExist(err) {
+		return errors.Annotate(err).Reason("could not create temp dir %(dir)q").
+			D("dir", path).
+			Err()
 	}
 	return nil
 }

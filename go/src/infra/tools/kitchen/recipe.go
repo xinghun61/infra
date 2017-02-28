@@ -41,9 +41,13 @@ type recipeRemoteRun struct {
 	opArgs     recipe_engine.Arguments
 }
 
-func (rr *recipeRemoteRun) normalize() error {
+func (rr *recipeRemoteRun) validate() error {
 	if rr.recipeEnginePath == "" {
 		return errors.New("-recipe-engine-path is required")
+	}
+
+	if rr.workDir == "" {
+		return errors.New("-workdir is required")
 	}
 
 	// Validate Repository.
@@ -69,19 +73,17 @@ func (rr *recipeRemoteRun) normalize() error {
 		return errors.New("-recipe is required")
 	}
 
-	// Fix CheckoutDir.
-	if rr.checkoutDir == "" {
-		rr.checkoutDir = repoName
-	}
-
 	return nil
 }
 
 func (rr *recipeRemoteRun) command(ctx context.Context, tdir string, env environ.Env) (*exec.Cmd, error) {
+	if err := ensureDir(tdir); err != nil {
+		return nil, err
+	}
 	// Pass properties in a file.
 	propertiesPath := filepath.Join(tdir, "properties.json")
 	if err := encodeJSONToPath(propertiesPath, rr.properties); err != nil {
-		return nil, errors.Annotate(err).Reason("could not write properties file at %(path)").
+		return nil, errors.Annotate(err).Reason("could not write properties file at %(path)q").
 			D("path", propertiesPath).
 			Err()
 	}
@@ -90,9 +92,17 @@ func (rr *recipeRemoteRun) command(ctx context.Context, tdir string, env environ
 	log.Debugf(ctx, "Using operational args: %s", rr.opArgs.String())
 	opArgsPath := filepath.Join(tdir, "op_args.json")
 	if err := encodeJSONToPath(opArgsPath, &rr.opArgs); err != nil {
-		return nil, errors.Annotate(err).Reason("could not write arguments file at %(path)").
+		return nil, errors.Annotate(err).Reason("could not write arguments file at %(path)q").
 			D("path", opArgsPath).
 			Err()
+	}
+
+	checkoutDir := rr.checkoutDir
+	if checkoutDir == "" {
+		checkoutDir = filepath.Join(tdir, "c")
+	}
+	if err := ensureDir(checkoutDir); err != nil {
+		return nil, err
 	}
 
 	// Build our command (arguments first).
@@ -103,7 +113,7 @@ func (rr *recipeRemoteRun) command(ctx context.Context, tdir string, env environ
 		"remote",
 		"--repository", rr.repositoryURL,
 		"--revision", rr.revision,
-		"--workdir", rr.checkoutDir, // this is not a workdir for recipe run!
+		"--workdir", checkoutDir, // this is not a workdir for recipe run!
 	)
 
 	// remote subcommand does not sniff whether repository is gitiles or generic
@@ -138,7 +148,7 @@ func (rr *recipeRemoteRun) command(ctx context.Context, tdir string, env environ
 func (rr *recipeRemoteRun) prepareWorkDir() error {
 	// Setup our working directory.
 	if rr.workDir == "" {
-		rr.workDir = "kitchen-workdir"
+		return errors.New("workdir is empty")
 	}
 
 	abs, err := filepath.Abs(rr.workDir)

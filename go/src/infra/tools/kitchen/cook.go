@@ -70,7 +70,7 @@ var cmdCook = &subcommands.Command{
 		fs.StringVar(
 			&c.rr.workDir,
 			"workdir",
-			"",
+			"kitchen-workdir",
 			`The working directory for recipe execution. It must not exist or be empty. Defaults to "./kitchen-workdir."`)
 		fs.StringVar(&c.Properties, "properties", "",
 			"A json string containing the properties. Mutually exclusive with -properties-file.")
@@ -96,8 +96,7 @@ var cmdCook = &subcommands.Command{
 			&c.TempDir,
 			"temp-dir",
 			"",
-			"Temporary directory. If not empty, slashes will be converted to OS-native separators, "+
-				"it will be made absolute and passed to the recipe.")
+			"Temporary directory to use. Forward slashes will be converted into OS-native separators.")
 
 		// TODO(dnj): Deprecate "timestamps" when templates don't use this anymore.
 		fs.BoolVar(
@@ -132,7 +131,7 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 		return fmt.Errorf("missing mode (-mode)")
 	}
 
-	if err := c.rr.normalize(); err != nil {
+	if err := c.rr.validate(); err != nil {
 		return err
 	}
 
@@ -161,13 +160,15 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	// Populate AnnotationFlags based on CLI configuration.
 	c.rr.opArgs.AnnotationFlags.EmitTimestamp = c.mode.shouldEmitTimestamps() || c.rr.opArgs.AnnotationFlags.EmitTimestamp
 
+	c.TempDir = filepath.FromSlash(c.TempDir)
+
 	return nil
 }
 
 // remoteRun runs `recipes.py remote` that checks out a repo, runs a recipe and
 // returns exit code.
 // Mutates env.
-func (c *cookRun) remoteRun(ctx context.Context, tdir string, env environ.Env) (recipeExitCode int, err error) {
+func (c *cookRun) remoteRun(ctx context.Context, env environ.Env) (recipeExitCode int, err error) {
 	// Setup our working directory.
 	if err := c.rr.prepareWorkDir(); err != nil {
 		return 0, errors.Annotate(err).Reason("failed to prepare workdir").Err()
@@ -177,10 +178,10 @@ func (c *cookRun) remoteRun(ctx context.Context, tdir string, env environ.Env) (
 
 	// Bootstrap through LogDog Butler?
 	if c.logdog.active() {
-		return c.runWithLogdogButler(ctx, &c.rr, tdir, env)
+		return c.runWithLogdogButler(ctx, &c.rr, env)
 	}
 
-	recipeCmd, err := c.rr.command(ctx, tdir, env)
+	recipeCmd, err := c.rr.command(ctx, filepath.Join(c.TempDir, "rr"), env)
 	if err != nil {
 		return 0, fmt.Errorf("failed to build recipe command: %s", err)
 	}
@@ -198,10 +199,15 @@ func (c *cookRun) remoteRun(ctx context.Context, tdir string, env environ.Env) (
 
 // pathModuleProperties returns properties for the "recipe_engine/path" module.
 func (c *cookRun) pathModuleProperties() (map[string]string, error) {
+	recipeTempDir := filepath.Join(c.TempDir, "rt")
+	if err := ensureDir(recipeTempDir); err != nil {
+		return nil, err
+	}
 	paths := []struct{ name, path string }{
 		{"cache_dir", c.CacheDir},
-		{"temp_dir", c.TempDir},
+		{"temp_dir", recipeTempDir},
 	}
+
 	props := make(map[string]string, len(paths))
 	for _, p := range paths {
 		if p.path == "" {
@@ -288,6 +294,20 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 }
 
 func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) error {
+	// initialize temp dir.
+	if c.TempDir == "" {
+		tdir, err := ioutil.TempDir("", "kitchen")
+		if err != nil {
+			return errors.Annotate(err).Reason("failed to create temporary directory").Err()
+		}
+		c.TempDir = tdir
+		defer func() {
+			if rmErr := os.RemoveAll(tdir); rmErr != nil {
+				log.Warningf(ctx, "Failed to clean up temporary directory at [%s]: %s", tdir, rmErr)
+			}
+		}()
+	}
+
 	props, err := c.prepareProperties(env)
 	if err != nil {
 		return err
@@ -333,11 +353,7 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 	c.rr.properties = props
 
 	// Run the recipe.
-	var recipeExitCode int
-	err = withTempDir(ctx, func(ctx context.Context, tdir string) (err error) {
-		recipeExitCode, err = c.remoteRun(ctx, tdir, env)
-		return
-	})
+	recipeExitCode, err := c.remoteRun(ctx, env)
 	if err != nil {
 		bootstapSuccess = false
 		return errors.Annotate(err).Err()
