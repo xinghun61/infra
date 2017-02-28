@@ -330,7 +330,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, 
 		}
 	}()
 
-	annoteeProcessor := annotee.New(ncCtx, annotee.Options{
+	annoteeOpts := annotee.Options{
 		Base:                   basePath,
 		AnnotationSubpath:      annoSubpath,
 		Client:                 streamclient.NewLocal(b),
@@ -340,7 +340,15 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, 
 		MetadataUpdateInterval: 30 * time.Second,
 		Offline:                false,
 		CloseSteps:             true,
-	})
+	}
+	if c.mode.shouldEmitLogDogLinks() {
+		annoteeOpts.LinkGenerator = &annotee.CoordinatorLinkGenerator{
+			Host:    c.logdog.annotationAddr.Host,
+			Project: c.logdog.annotationAddr.Project,
+			Prefix:  prefix,
+		}
+	}
+	annoteeProcessor := annotee.New(ncCtx, annoteeOpts)
 	defer func() {
 		as := annoteeProcessor.Finish()
 
@@ -369,7 +377,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, 
 			StripAnnotations: !c.logdog.logDogOnly,
 		},
 	}
-	if !c.logdog.logDogOnly {
+	if annoteeOpts.TeeText || annoteeOpts.TeeAnnotations {
 		streams[0].Tee = os.Stdout
 		streams[1].Tee = os.Stderr
 	}
