@@ -378,7 +378,7 @@ def _GetAnnotationsProto(master_name, builder_name, build_number, http_client):
 
   path = _BASE_LOGDOG_REQUEST_PATH % (
       master_name, _ProcessStringForLogDog(builder_name), build_number,
-      'annotations')
+      'recipes/annotations')
 
   data = {
       'project': 'chromium',
