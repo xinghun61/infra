@@ -39,6 +39,7 @@
       },
       _bugModel: Object,
       bugQueueLabel: String,
+      _commentInFlight: Boolean,
       _commentsErrorMessage: String,
       _commentsModel: Object,
       _commentsModelAnnotation: {
@@ -317,11 +318,14 @@
     ////////////////////// Comments ///////////////////////////
 
     _addComment: function() {
+      if (this._commentInFlight) return;
+
       let text = this.$.commentText.value;
       if (!(text && /[^\s]/.test(text))) {
         this._commentsErrorMessage = 'Comment text cannot be blank!';
         return;
       }
+      this._commentInFlight = true;
       this.sendAnnotation(this._commentsModel.key, 'add', {
             comments: [text],
           })
@@ -330,9 +334,11 @@
                 this.$.commentText.value = '';
                 this._commentsErrorMessage = '';
                 this.setLocalStateKey(response.key, {opened: false});
+                this._commentInFlight = false;
               },
               (error) => {
                 this._commentsErrorMessage = error;
+                this._commentInFlight = false;
               });
     },
 
