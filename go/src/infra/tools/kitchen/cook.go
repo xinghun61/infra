@@ -144,7 +144,7 @@ type cookRun struct {
 // normalizeFlags validates and normalizes flags.
 func (c *cookRun) normalizeFlags(env environ.Env) error {
 	if c.mode.cookMode == nil {
-		return fmt.Errorf("missing mode (-mode)")
+		return userError("missing mode (-mode)")
 	}
 
 	// Adjust some flags according to the chosen mode.
@@ -154,11 +154,11 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	c.rr.opArgs.AnnotationFlags.EmitTimestamp = c.mode.shouldEmitTimestamps() || c.rr.opArgs.AnnotationFlags.EmitTimestamp
 
 	if c.rr.workDir == "" {
-		return errors.New("-workdir is required")
+		return userError("-workdir is required")
 	}
 
 	if c.RepositoryURL == "" {
-		return errors.New("-repository is required")
+		return userError("-repository is required")
 	}
 
 	if !validRevisionRe.MatchString(c.Revision) {
@@ -170,11 +170,11 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	}
 
 	if c.rr.recipeName == "" {
-		return errors.New("-recipe is required")
+		return userError("-recipe is required")
 	}
 
 	if c.Properties != "" && c.PropertiesFile != "" {
-		return fmt.Errorf("only one of -properties or -properties-file is allowed")
+		return userError("only one of -properties or -properties-file is allowed")
 	}
 
 	// If LogDog is enabled, all required LogDog flags must be supplied.
@@ -187,7 +187,7 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 		p := filepath.FromSlash(p)
 		p, err := filepath.Abs(p)
 		if err != nil {
-			return fmt.Errorf("invalid python path %q: %s", p, err)
+			return userError("invalid -python-path %q: %s", p, err)
 		}
 		c.PythonPaths[i] = p
 	}
@@ -269,7 +269,7 @@ func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 		native := filepath.FromSlash(p.path)
 		abs, err := filepath.Abs(native)
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("could not make dir %(dir)s absolute").D("dir", native).Err()
+			return nil, userError("invalid -python-path %q: cannot make it absolute: %s", native, err)
 		}
 		props[p.name] = abs
 	}
@@ -299,7 +299,7 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	}
 	for _, p := range rejectProperties {
 		if _, ok := props[p]; ok {
-			return nil, errors.Reason("%(p)s property must not be set").D("p", p).Err()
+			return nil, userError("%s property must not be set", p)
 		}
 	}
 
@@ -340,7 +340,11 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 	case errors.Unwrap(err) == context.Canceled:
 		log.Warningf(ctx, "Process was cancelled.")
 	case err != nil:
-		logAnnotatedErr(ctx, err)
+		if userError, ok := errors.Unwrap(err).(UserError); ok {
+			fmt.Fprintln(os.Stderr, string(userError))
+		} else {
+			logAnnotatedErr(ctx, err)
+		}
 	}
 	return rc
 }
@@ -400,7 +404,7 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 	recipeExitCode, err := c.remoteRun(ctx, env)
 	if err != nil {
 		bootstrapSuccess = false
-		return errors.Annotate(err).Err()
+		return err
 	}
 	return returnCodeError(recipeExitCode)
 }
@@ -417,19 +421,19 @@ func parseProperties(properties, propertiesFile string) (result map[string]inter
 	if properties != "" {
 		err = unmarshalJSONWithNumber([]byte(properties), &result)
 		if err != nil {
-			err = fmt.Errorf("could not parse properties %s\n%s", properties, err)
+			err = userError("could not parse properties %s\n%s", properties, err)
 		}
 		return
 	}
 	if propertiesFile != "" {
 		b, err := ioutil.ReadFile(propertiesFile)
 		if err != nil {
-			err = fmt.Errorf("could not read properties file %s\n%s", propertiesFile, err)
+			err = userError("could not read properties file %s\n%s", propertiesFile, err)
 			return nil, err
 		}
 		err = unmarshalJSONWithNumber(b, &result)
 		if err != nil {
-			err = fmt.Errorf("could not parse JSON from file %s\n%s\n%s",
+			err = userError("could not parse JSON from file %s\n%s\n%s",
 				propertiesFile, b, err)
 		}
 	}

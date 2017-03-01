@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"flag"
 	"os"
+	"fmt"
 	"os/signal"
 
 	"github.com/maruel/subcommands"
@@ -78,4 +79,16 @@ func logAnnotatedErr(ctx context.Context, err error) {
 	}
 
 	log.Errorf(ctx, "Annotated error stack:\n%s", buf.String())
+}
+
+type UserError string
+
+func (e UserError) Error() string { return string(e) }
+
+// userError returns an error that will be printed to stderr without a stack
+// trace.
+func userError(format string, args ...interface{}) error {
+	// We don't use D to keep signature of this function simple
+	// and to keep UserError as a leaf.
+	return errors.Annotate(UserError(fmt.Sprintf(format, args...))).Err()
 }

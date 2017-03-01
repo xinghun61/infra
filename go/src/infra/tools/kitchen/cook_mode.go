@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"net/url"
 
-	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/flag/flagenum"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/swarming/tasktemplate"
@@ -57,7 +56,7 @@ type swarmingCookMode struct{}
 func (m swarmingCookMode) fillTemplateParams(env environ.Env, params *tasktemplate.Params) error {
 	var ok bool
 	if params.SwarmingRunID, ok = env.Get("SWARMING_TASK_ID"); !ok {
-		return errors.New("no Swarming run ID in enviornment")
+		return userError("no Swarming run ID in $SWARMING_TASK_ID environment variable")
 	}
 	return nil
 }
@@ -69,7 +68,7 @@ func (m swarmingCookMode) alwaysForwardAnnotations() bool { return false }
 func (m swarmingCookMode) botID(env environ.Env) (string, error) {
 	botID, ok := env.Get("SWARMING_BOT_ID")
 	if !ok {
-		return "", errors.Reason("a valid bot id was expected in $SWARMING_BOT_ID").Err()
+		return "", userError("a valid bot id was expected in $SWARMING_BOT_ID")
 	}
 	return botID, nil
 }
@@ -108,7 +107,7 @@ func (m buildBotCookMode) alwaysForwardAnnotations() bool { return true }
 func (m buildBotCookMode) botID(env environ.Env) (string, error) {
 	botID, ok := env.Get("BUILDBOT_SLAVENAME")
 	if !ok {
-		return "", errors.Reason("a valid bot id was expected in $BUILDBOT_SLAVENAME").Err()
+		return "", userError("a valid bot id was expected in $BUILDBOT_SLAVENAME")
 	}
 	return botID, nil
 }
