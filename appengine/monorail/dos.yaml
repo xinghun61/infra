@@ -27,3 +27,29 @@ blacklist:
 #   description: an IPv6 subnet
   - subnet: 2001:41d0:1000:250::/64
     description: someone who crawls all attachments sequentially
+  - subnet: 47.153.189.55
+    description: makes thousands of requests for CSS files
+  - subnet: 216.52.21.1
+    description: makes thousands of requests for /_clientmon.do
+  - subnet: 137.74.194.39
+    description: polls a few chromium and project-zero issues
+  - subnet: 77.92.130.85
+    description: polls a few chromium and project-zero issues
+  - subnet: 50.116.26.254
+    description: polls a few chromium and project-zero issues
+  - subnet: 139.162.176.20
+    description: polls a few chromium and project-zero issues
+  - subnet: 46.5.19.18
+    description: polls a few chromium and project-zero issues
+  - subnet: 192.241.223.70
+    description: polls a few chromium and project-zero issues
+  - subnet: 167.114.234.83
+    description: polls a few chromium and project-zero issues
+  - subnet: 188.166.69.251
+    description: polls a few chromium and project-zero issues
+  - subnet: 80.187.108.64
+    description: polls a few chromium and project-zero issues
+  - subnet: 208.65.73.102
+    description: polls project-zero issue list
+  - subnet: 2600:3c01::f03c:91ff:fe08:cf71
+    description: scans all project-zero issues
