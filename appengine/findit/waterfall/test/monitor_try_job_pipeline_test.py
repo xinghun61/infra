@@ -187,6 +187,130 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.regression_range_size, regression_range_size)
 
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
+  def testGetTryJobsForTestMissingTryJobData(self, mock_module):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '3'
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.test_results = [
+        {
+            'report': None,
+            'url': 'url',
+            'try_job_id': try_job_id,
+        }
+    ]
+    try_job.status = analysis_status.RUNNING
+    try_job.put()
+
+
+    data = [
+        {
+            'build': {
+                'id': '3',
+                'url': 'url',
+                'status': 'STARTED'
+            }
+        },
+        {
+            'error': {
+                'reason': 'BUILD_NOT_FOUND',
+                'message': 'message',
+            }
+        },
+        {
+            'build': {
+                'id': '3',
+                'url': 'url',
+                'status': 'STARTED'
+            }
+        },
+        {
+            'error': {
+                'reason': 'BUILD_NOT_FOUND',
+                'message': 'message',
+            }
+        },
+        {
+            'build': {
+                'id': '3',
+                'url': 'url',
+                'status': 'COMPLETED',
+                'result_details_json': json.dumps({
+                    'properties': {
+                        'report': {
+                            'result': {
+                                'rev1': {
+                                    'a_test': {
+                                        'status': 'passed',
+                                        'valid': True
+                                    }
+                                },
+                                'rev2': {
+                                    'a_test': {
+                                        'status': 'failed',
+                                        'valid': True,
+                                        'failures': ['test1', 'test2']
+                                    }
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+        }
+    ]
+
+    get_tryjobs_responses = [
+        [(None, buildbucket_client.BuildbucketBuild(data[0]['build']))],
+        [(buildbucket_client.BuildbucketError(data[1]['error']), None)],
+        [(None, buildbucket_client.BuildbucketBuild(data[2]['build']))],
+        [(buildbucket_client.BuildbucketError(data[3]['error']), None)],
+        [(None, buildbucket_client.BuildbucketBuild(data[4]['build']))],
+    ]
+    mock_module.GetTryJobs.side_effect = get_tryjobs_responses
+
+    pipeline = MonitorTryJobPipeline()
+    pipeline.start_test()
+    pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
+    pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
+    # Since run() calls callback() immediately, we use -1.
+    for _ in range (len(get_tryjobs_responses) - 1):
+      pipeline.callback(**pipeline.last_params)
+
+    # Reload from ID to get all internal properties in sync.
+    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    test_result = pipeline.outputs.default.value
+
+    expected_test_result = {
+        'report': {
+            'result': {
+                'rev1': {
+                    'a_test': {
+                        'status': 'passed',
+                        'valid': True
+                    }
+                },
+                'rev2': {
+                    'a_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['test1', 'test2']
+                    }
+                }
+            }
+        },
+        'url': 'url',
+        'try_job_id': '3',
+    }
+    self.assertEqual(expected_test_result, test_result)
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(expected_test_result, try_job.test_results[-1])
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
+
+  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
   def testGetTryJobsForTestSuccess(self, mock_module):
     master_name = 'm'
     builder_name = 'b'

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import json
+import logging
 import time
 
 from google.appengine.ext import ndb
@@ -262,9 +263,16 @@ class MonitorTryJobPipeline(BasePipeline):
       return
 
     if try_job_type == failure_type.FLAKY_TEST:
-      try_job_data = FlakeTryJobData.Get(try_job_id)
+      try_job_kind = FlakeTryJobData
     else:
-      try_job_data = WfTryJobData.Get(try_job_id)
+      try_job_kind = WfTryJobData
+    try_job_data = try_job_kind.Get(try_job_id)
+
+    if not try_job_data:
+      logging.error('%(kind)s entity does not exist for id %(id)s: creating it',
+                    {'kind': try_job_kind, 'id': try_job_id})
+      try_job_data = try_job_kind.Create(try_job_id)
+      try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
 
     # Check if callback url is already registered with the TryJobData entity to
     # guarantee this run method is idempotent when called again with the same
