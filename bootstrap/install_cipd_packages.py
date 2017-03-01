@@ -20,10 +20,27 @@ ROOT = os.path.dirname(BOOTSTRAP_DIR)
 CIPD_LIST_DIR = os.path.join(BOOTSTRAP_DIR, 'cipd')
 # Default sysroot install root.
 DEFAULT_INSTALL_ROOT = os.path.join(ROOT, 'cipd')
-# For Windows.
-EXE_SFX = '.exe' if sys.platform == 'win32' else ''
 # Default CIPD server url
 DEFAULT_SERVER_URL='https://chrome-infra-packages.appspot.com'
+
+
+# function to find the cipd binary. On POSIX this is simple ('cipd'!), but
+# for windows this is more complex. depot_tools exposes this as a .bat, but
+# buildbot and swarming expose it as an exe. So we have to look for it.
+if sys.platform == 'win32':
+  def cipd_binary():
+    for p in os.environ.get('PATH', '').split(os.pathsep):
+      base = os.path.join(p, 'cipd')
+      for ext in ('.exe', '.bat'):
+        candidate = base+ext
+        if os.path.isfile(candidate):
+          return candidate
+    # if we didn't find it, guess 'cipd.exe'
+    return 'cipd.exe'
+else:
+  def cipd_binary():
+    return 'cipd'
+
 
 # Map of CIPD configuration based on the current architecture/platform. If a
 # platform is not listed here, the bootstrap will be a no-op.
@@ -118,7 +135,7 @@ def cipd_ensure(root, ensure_file, cipd_backend_url=None):
     '-root', root,
     '-service-url', cipd_backend_url
   ]
-  if execute('cipd'+EXE_SFX, *args):
+  if execute(cipd_binary(), *args):
     raise CipdError('Failed to execute CIPD client: %s', ' '.join(args))
 
 
@@ -171,6 +188,7 @@ def main(argv):
   # client will end up at the front of $PATH and get used instead of the correct
   # one (i.e. the one that depot_tools / swarming / buildbot put there).
   try:
+    EXE_SFX = '.exe' if sys.platform == 'win32' else ''
     os.remove(os.path.join(root, 'cipd'+EXE_SFX))
   except OSError:
     pass
