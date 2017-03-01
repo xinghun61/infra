@@ -316,7 +316,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
 
     task_template_params.update({
       'repository': builder_cfg.recipe.repository,
-      'revision': recipe_revision,
+      'revision': recipe_revision or 'HEAD',
       'recipe': builder_cfg.recipe.name,
       'properties_json': json.dumps(build_properties, sort_keys=True),
     })

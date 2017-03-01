@@ -474,7 +474,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'extra_args': [
           'cook',
           '-repository', 'https://example.com/repo',
-          '-revision', '',
+          '-revision', 'HEAD',
           '-recipe', 'recipe',
           '-properties', json.dumps({
             'buildername': 'builder',
