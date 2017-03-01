@@ -6,77 +6,33 @@ package main
 
 import (
 	"io/ioutil"
-	"net/url"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
-	"strings"
 
 	"golang.org/x/net/context"
 
 	"infra/tools/kitchen/proto"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/system/environ"
 )
 
-// recipeRemoteRun is a configurable recipe engine configuration.
-type recipeRemoteRun struct {
-	// recipeEnginePath is a path to a https://github.com/luci/recipes-py
-	// checkout.
-	recipeEnginePath string
-
-	recipe               string
-	timestamps           bool
-	allowGitiles         bool
-	repositoryURL        string
-	revision             string
-	checkoutDir          string
-	workDir              string
-	outputResultJSONFile string
-
-	properties map[string]interface{}
-	opArgs     recipe_engine.Arguments
+// localRecipeRun can run a local recipe.
+type recipeRun struct {
+	recipesPyPath        string                  // path to the recipes.py
+	recipeName           string                  // name of the recipe
+	properties           map[string]interface{}  // input properties
+	opArgs               recipe_engine.Arguments // operational arguments for the recipe engine
+	workDir              string                  // a directory where to run the recipe
+	timestamps           bool                    // whether to print timestamps
+	outputResultJSONFile string                  // path to the result file
 }
 
-func (rr *recipeRemoteRun) validate() error {
-	if rr.recipeEnginePath == "" {
-		return errors.New("-recipe-engine-path is required")
-	}
-
-	if rr.workDir == "" {
-		return errors.New("-workdir is required")
-	}
-
-	// Validate Repository.
-	if rr.repositoryURL == "" {
-		return errors.New("-repository is required")
-	}
-	repoURL, err := url.Parse(rr.repositoryURL)
-	if err != nil {
-		return errors.Annotate(err).Reason("invalid repository %(repo)q").
-			D("repo", repoURL).
-			Err()
-	}
-
-	repoName := path.Base(repoURL.Path)
-	if repoName == "" {
-		return errors.Reason("invalid repository %(repo)q: no path").
-			D("repo", repoURL).
-			Err()
-	}
-
-	// Validate Recipe.
-	if rr.recipe == "" {
-		return errors.New("-recipe is required")
-	}
-
-	return nil
-}
-
-func (rr *recipeRemoteRun) command(ctx context.Context, tdir string, env environ.Env) (*exec.Cmd, error) {
+// command prepares a command that runs a recipe.
+func (rr *recipeRun) command(ctx context.Context, tdir string, env environ.Env) (*exec.Cmd, error) {
 	if err := ensureDir(tdir); err != nil {
 		return nil, err
 	}
@@ -97,35 +53,11 @@ func (rr *recipeRemoteRun) command(ctx context.Context, tdir string, env environ
 			Err()
 	}
 
-	checkoutDir := rr.checkoutDir
-	if checkoutDir == "" {
-		checkoutDir = filepath.Join(tdir, "c")
-	}
-	if err := ensureDir(checkoutDir); err != nil {
-		return nil, err
-	}
-
 	// Build our command (arguments first).
 	recipeCmd := exec.CommandContext(
 		ctx,
 		"python",
-		filepath.Join(rr.recipeEnginePath, "recipes.py"),
-		"remote",
-		"--repository", rr.repositoryURL,
-		"--revision", rr.revision,
-		"--workdir", checkoutDir, // this is not a workdir for recipe run!
-	)
-
-	// remote subcommand does not sniff whether repository is gitiles or generic
-	// git. Instead it accepts an explicit "--use-gitiles" flag.
-	// We are not told whether the repo is gitiles or not, so sniff it here.
-	if rr.allowGitiles && looksLikeGitiles(rr.repositoryURL) {
-		recipeCmd.Args = append(recipeCmd.Args, "--use-gitiles")
-	}
-
-	// Now add the arguments for the recipes.py that will be fetched.
-	recipeCmd.Args = append(recipeCmd.Args,
-		"--",
+		rr.recipesPyPath,
 		"--operational-args-path", opArgsPath,
 		"run",
 		"--properties-file", propertiesPath,
@@ -135,7 +67,7 @@ func (rr *recipeRemoteRun) command(ctx context.Context, tdir string, env environ
 		recipeCmd.Args = append(recipeCmd.Args,
 			"--output-result-json", rr.outputResultJSONFile)
 	}
-	recipeCmd.Args = append(recipeCmd.Args, rr.recipe)
+	recipeCmd.Args = append(recipeCmd.Args, rr.recipeName)
 
 	// Apply our enviornment.
 	if env.Len() > 0 {
@@ -145,40 +77,55 @@ func (rr *recipeRemoteRun) command(ctx context.Context, tdir string, env environ
 	return recipeCmd, nil
 }
 
-func (rr *recipeRemoteRun) prepareWorkDir() error {
-	// Setup our working directory.
-	if rr.workDir == "" {
-		return errors.New("workdir is empty")
-	}
-
-	abs, err := filepath.Abs(rr.workDir)
+func loadRecipesCfg(repoDir string) (*recipe_engine.Package, error) {
+	recipesCfg := filepath.Join(repoDir, "infra", "config", "recipes.cfg")
+	fileContents, err := ioutil.ReadFile(recipesCfg)
 	if err != nil {
-		return errors.Annotate(err).Reason("could not make %(workDir)q absolute").
-			D("workDir", rr.workDir).
+		return nil, errors.Annotate(err).Reason("could not read recipes.cfg at %(path)q").
+			D("path", recipesCfg).
 			Err()
 	}
-	rr.workDir = abs
 
-	switch entries, err := ioutil.ReadDir(rr.workDir); {
+	pkg := &recipe_engine.Package{}
+	if err := proto.UnmarshalText(string(fileContents), pkg); err != nil {
+		return nil, errors.Annotate(err).Reason("could not parse recipes.cfg at %(path)q").
+			D("path", recipesCfg).
+			Err()
+	}
+
+	return pkg, nil
+}
+
+// prepareWorkDir verifies and normalizes a workdir is suitable for a recipe
+// run.
+func prepareRecipeRunWorkDir(workdir string) (string, error) {
+	if workdir == "" {
+		return "", errors.New("workdir is empty")
+	}
+
+	abs, err := filepath.Abs(workdir)
+	if err != nil {
+		return "", errors.Annotate(err).Reason("could not make %(workDir)q absolute").
+			D("workDir", workdir).
+			Err()
+	}
+	workdir = abs
+
+	switch hasFiles, err := dirHasFiles(workdir); {
 	case os.IsNotExist(err):
-		return os.Mkdir(rr.workDir, 0777)
+		return workdir, ensureDir(workdir)
 
 	case err != nil:
-		return errors.Annotate(err).Reason("could not read workdir %(workDir)q").
-			D("workDir", rr.workDir).
+		return "", errors.Annotate(err).Reason("could not read dir %(dir)q").
+			D("dir", workdir).
 			Err()
 
-	case len(entries) > 0:
-		return errors.Annotate(err).Reason("workdir %(workDir)q is not empty").
-			D("workDir", rr.workDir).
+	case hasFiles:
+		return "", errors.Annotate(err).Reason("workdir %(workDir)q is not empty").
+			D("workDir", workdir).
 			Err()
 
 	default:
-		return nil
+		return workdir, nil
 	}
-}
-
-func looksLikeGitiles(rawurl string) bool {
-	u, err := url.Parse(rawurl)
-	return err == nil && strings.HasSuffix(u.Host, ".googlesource.com")
 }

@@ -152,7 +152,7 @@ func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) erro
 //	  - Optionally, hook its output streams up through an Annotee processor.
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
-func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRemoteRun, env environ.Env) (rc int, err error) {
+func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env environ.Env) (rc int, err error) {
 	log.Infof(ctx, "Using LogDog host: %s", c.logdog.annotationAddr.URL().String())
 
 	// Install a global gRPC logger adapter. This routes gRPC log messages that

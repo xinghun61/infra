@@ -9,80 +9,83 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
+	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/logging"
 	"golang.org/x/net/context"
 )
 
-// clone clones a Git repo.
-func clone(c context.Context, repoURL, workdir string) error {
-	return runGit(c, "", "clone", repoURL, workdir)
-}
-
-// cloneOrFetch ensures that workdir is a git directory
-// with origin pointing to repoURL
-// and containing the latest commit of the master branch.
-// If workdir is a non-empty non-git directory
-// or if it is a git directory with a different repository URL
-// cloneOrFetch returns an error.
-func cloneOrFetch(c context.Context, workdir, repoURL string) error {
-	if _, err := os.Stat(workdir); os.IsNotExist(err) {
-		return clone(c, repoURL, workdir)
-	}
-
-	// Is it a Git repo?
-	if err := git(c, workdir, "rev-parse").Run(); err != nil {
-		if _, ok := err.(*exec.ExitError); !ok {
-			return err
-		}
-		// It is not a Git repo.
-		dir, err := os.Open(workdir)
-		if err != nil {
-			return fmt.Errorf("cannot open workdir %q: %s", workdir, err)
-		}
-		files, err := dir.Readdir(1)
-		dir.Close()
-		if err != nil {
-			return fmt.Errorf("cannot read workdir %q: %s", workdir, err)
-		}
-		if len(files) > 0 {
-			return fmt.Errorf("workdir %q is a non-git non-empty directory", workdir)
-		}
-		return clone(c, repoURL, workdir)
-	}
-
-	// Is origin's URL same?
-	originURLBytes, err := git(c, workdir, "config", "remote.origin.url").Output()
-	if err != nil {
-		return err
-	}
-	originURL := strings.TrimSpace(string(originURLBytes))
-	if originURL != repoURL {
-		return fmt.Errorf("workdir %q is a git repository with a different origin url: %q != %q", workdir, originURL, repoURL)
-	}
-
-	return runGit(c, workdir, "fetch", "origin")
-}
+var validRevisionRe = regexp.MustCompile("^([a-z0-9]{40}|HEAD|refs/.+)$")
+var commitHashRe = regexp.MustCompile("^[a-z0-9]{40}$")
 
 // checkoutRepository checks out repository at revision to workdir.
-// If workdir doesn't exist, clones the repo, otherwise tries to fetch.
-func checkoutRepository(c context.Context, workdir, repository, revision string) error {
-	if err := cloneOrFetch(c, workdir, repository); err != nil {
+// If checkoutDir is a non-empty dir and not a Git repository, return an error.
+func checkoutRepository(c context.Context, checkoutDir, repoURL, revision string) error {
+	if !validRevisionRe.MatchString(revision) {
+		return errors.Reason("invalid revision %(rev)q").D("rev", revision).Err()
+	}
+
+	// Ensure checkoutDir either does not exist, empty or a valid Git repo.
+	switch _, err := os.Stat(checkoutDir); {
+	case os.IsNotExist(err):
+		// Checkout dir does not exist.
+		if err := ensureDir(checkoutDir); err != nil {
+			return errors.Annotate(err).Reason("could not create directory %(dir)").
+				D("dir", checkoutDir).
+				Err()
+		}
+
+	case err != nil:
+		return errors.Annotate(err).Reason("could not stat checkout dir %(dir)q").
+			D("dir", checkoutDir).
+			Err()
+
+	default:
+		// checkoutDir exists. Is it a valid Git repo?
+		if err := git(c, checkoutDir, "rev-parse").Run(); err != nil {
+			if _, ok := err.(*exec.ExitError); !ok {
+				return errors.Annotate(err).Reason("git-rev-parse failed in %(dir)q").
+					D("dir", checkoutDir).
+					Err()
+			}
+			// This is not a Git repo. Is it empty?
+			if hasFiles, err := dirHasFiles(checkoutDir); err != nil {
+				return errors.Annotate(err).Reason("could not read dir %(dir)q").
+					D("dir", checkoutDir).
+					Err()
+			} else if hasFiles {
+				return errors.Reason("workdir %(dir)q is a non-git non-empty directory").
+					D("dir", checkoutDir).
+					Err()
+			}
+		}
+	}
+
+	// checkoutDir directory exists.
+
+	// git-init is safe to run on an existing repo.
+	if err := runGit(c, checkoutDir, "init"); err != nil {
 		return err
 	}
 
-	if revision == "" {
-		revision = "FETCH_HEAD"
+	var fetchRef, checkoutRef string
+	if commitHashRe.MatchString(revision) {
+		// Typically we cannot fetch a commit, so we assume that it is in the
+		// history of the remote HEAD.
+		fetchRef = "HEAD"
+		checkoutRef = revision
+	} else {
+		fetchRef = revision
+		checkoutRef = "FETCH_HEAD"
 	}
-	if revision == "FETCH_HEAD" {
-		// FETCH_HEAD may not exist if repo was just cloned.
-		refPath := filepath.Join(workdir, ".git", revision)
-		if _, err := os.Stat(refPath); os.IsNotExist(err) {
-			// Skip checkout.
-			return nil
-		}
+
+	logging.Infof(c, "fetching repository %q, ref %q...", repoURL, fetchRef)
+	if err := runGit(c, checkoutDir, "fetch", repoURL, fetchRef); err != nil {
+		return errors.Annotate(err).Reason("could not fetch").Err()
 	}
-	return runGit(c, workdir, "checkout", revision)
+	return runGit(c, checkoutDir, "checkout", "-q", "-f", checkoutRef)
 }
 
 // git returns an *exec.Cmd for a git command, with Stderr redirected.
@@ -107,5 +110,8 @@ func runGit(c context.Context, workDir string, args ...string) error {
 	}
 	fmt.Printf("$ %s\n", strings.Join(cmd.Args, " "))
 	cmd.Stdout = os.Stdout
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return errors.Annotate(err).Reason("failed to run %(args)q").D("args", cmd.Args).Err()
+	}
+	return nil
 }

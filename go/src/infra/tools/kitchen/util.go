@@ -6,6 +6,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"os"
 
 	"github.com/luci/luci-go/common/errors"
@@ -37,4 +38,23 @@ func ensureDir(path string) error {
 			Err()
 	}
 	return nil
+}
+
+// dirHashFiles returns true if the directory contains files/subdirectories.
+// If it does not exist, return an os.IsNonExist error.
+func dirHasFiles(path string) (bool, error) {
+	dir, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+	defer dir.Close()
+
+	names, err := dir.Readdirnames(1)
+	if err != nil && err != io.EOF {
+		return false, errors.Annotate(err).Reason("could not read dir %(dir)q").
+			D("dir", path).
+			Err()
+	}
+
+	return len(names) > 0, nil
 }

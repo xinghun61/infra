@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/maruel/subcommands"
@@ -21,7 +20,6 @@ import (
 	"infra/tools/kitchen/proto"
 
 	"github.com/luci/luci-go/common/cli"
-	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/flag/stringlistflag"
 	log "github.com/luci/luci-go/common/logging"
@@ -35,7 +33,7 @@ const BootstrapStepName = "recipe bootstrap"
 
 // cmdCook checks out a repository at a revision and runs a recipe.
 var cmdCook = &subcommands.Command{
-	UsageLine: "cook -repository <repository URL> -revision <revision> -recipe <recipe>",
+	UsageLine: "cook -repository <repository URL> -recipe <recipe>",
 	ShortDesc: "bootstraps a swarmbucket job.",
 	LongDesc:  "Bootstraps a swarmbucket job.",
 	CommandRun: func() subcommands.CommandRun {
@@ -49,43 +47,47 @@ var cmdCook = &subcommands.Command{
 			"mode",
 			"Build environment mode for Kitchen. Options are ["+cookModeFlagEnum.Choices()+"].")
 		fs.StringVar(
-			&c.rr.recipeEnginePath,
-			"recipe-engine-path",
+			&c.RepositoryURL,
+			"repository",
 			"",
-			"Path to a https://github.com/luci/recipes-py checkout")
-		fs.StringVar(&c.rr.repositoryURL, "repository", "", "URL of a git repository to fetch")
+			"URL of a git repository with the recipe to run. Must have a recipe configuration at infra/config/recipes.cfg")
 		fs.StringVar(
-			&c.rr.revision,
+			&c.Revision,
 			"revision",
 			"HEAD",
-			"Git commit hash to check out.")
-		fs.StringVar(&c.rr.recipe, "recipe", "<recipe>", "Name of the recipe to run")
-		fs.Var(&c.PythonPaths, "python-path", "Python path to include. Can be specified multiple times.")
+			"Revison of the recipe to run. It can be HEAD, a commit hash or a fully-qualified ref")
 		fs.StringVar(
-			&c.rr.checkoutDir,
-			"checkout-dir",
+			&c.rr.recipeName,
+			"recipe",
 			"",
-			"The directory to check out the repository to. "+
-				"Defaults to ./<repo name>, where <repo name> is the last component of -repository.")
+			"Name of the recipe to run")
+		fs.Var(
+			&c.PythonPaths,
+			"python-path",
+			"Python path to include. Can be specified multiple times.")
+		fs.StringVar(
+			&c.CheckoutDir,
+			"checkout-dir",
+			"kitchen-checkout",
+			"The directory to check out the repository to. It must not exist, be empty or be a valid Git repository.")
 		fs.StringVar(
 			&c.rr.workDir,
 			"workdir",
 			"kitchen-workdir",
 			`The working directory for recipe execution. It must not exist or be empty. Defaults to "./kitchen-workdir."`)
-		fs.StringVar(&c.Properties, "properties", "",
-			"A json string containing the properties. Mutually exclusive with -properties-file.")
-		fs.StringVar(&c.PropertiesFile, "properties-file", "",
-			"A file containing a json string of properties. Mutually exclusive with -properties.")
+		fs.StringVar(
+			&c.Properties,
+			"properties", "",
+			"A JSON string containing the properties. Mutually exclusive with -properties-file.")
+		fs.StringVar(
+			&c.PropertiesFile,
+			"properties-file", "",
+			"A file containing a JSON string of properties. Mutually exclusive with -properties.")
 		fs.StringVar(
 			&c.rr.outputResultJSONFile,
 			"output-result-json",
 			"",
 			"The file to write the JSON serialized returned value of the recipe to")
-		fs.BoolVar(
-			&c.rr.allowGitiles,
-			"allow-gitiles",
-			false,
-			"If true, kitchen will try to use Gitiles API to fetch a recipe.")
 		fs.StringVar(
 			&c.CacheDir,
 			"cache-dir",
@@ -98,12 +100,20 @@ var cmdCook = &subcommands.Command{
 			"",
 			"Temporary directory to use. Forward slashes will be converted into OS-native separators.")
 
-		// TODO(dnj): Deprecate "timestamps" when templates don't use this anymore.
+		// TODO(dnj, nodir): Remove deprecated flags.
 		fs.BoolVar(
 			&c.rr.opArgs.AnnotationFlags.EmitTimestamp,
 			"timestamps",
 			false,
 			"If true, print CURRENT_TIMESTAMP annotations (DEPRECATED, use swarming mode).")
+		fs.String(
+			"recipe-engine-path",
+			"",
+			"(DEPRECATED, IGNORED) Path to a https://github.com/luci/recipes-py checkout")
+		fs.Bool(
+			"allow-gitiles",
+			false,
+			"(DEPRECATED, IGNORED) If true, kitchen will try to use Gitiles API to fetch a recipe.")
 
 		c.logdog.addFlags(fs)
 
@@ -114,6 +124,12 @@ var cmdCook = &subcommands.Command{
 type cookRun struct {
 	subcommands.CommandRunBase
 
+	// For field documentation see the flags that these flags are bound to.
+
+	RepositoryURL string
+	Revision      string
+	CheckoutDir   string
+
 	Properties     string
 	PropertiesFile string
 	PythonPaths    stringlistflag.Flag
@@ -121,7 +137,7 @@ type cookRun struct {
 	TempDir        string
 
 	mode   cookModeFlag
-	rr     recipeRemoteRun
+	rr     recipeRun
 	logdog cookLogDogParams
 }
 
@@ -131,8 +147,30 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 		return fmt.Errorf("missing mode (-mode)")
 	}
 
-	if err := c.rr.validate(); err != nil {
-		return err
+	// Adjust some flags according to the chosen mode.
+	if c.mode.onlyLogDog() {
+		c.logdog.logDogOnly = true
+	}
+	c.rr.opArgs.AnnotationFlags.EmitTimestamp = c.mode.shouldEmitTimestamps() || c.rr.opArgs.AnnotationFlags.EmitTimestamp
+
+	if c.rr.workDir == "" {
+		return errors.New("-workdir is required")
+	}
+
+	if c.RepositoryURL == "" {
+		return errors.New("-repository is required")
+	}
+
+	if !validRevisionRe.MatchString(c.Revision) {
+		return fmt.Errorf("invalid revision %q", c.Revision)
+	}
+
+	if c.CheckoutDir == "" {
+		return fmt.Errorf("empty -checkout-dir")
+	}
+
+	if c.rr.recipeName == "" {
+		return errors.New("-recipe is required")
 	}
 
 	if c.Properties != "" && c.PropertiesFile != "" {
@@ -140,9 +178,6 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	}
 
 	// If LogDog is enabled, all required LogDog flags must be supplied.
-	if c.mode.onlyLogDog() {
-		c.logdog.logDogOnly = true
-	}
 	if err := c.logdog.setupAndValidate(c.mode.cookMode, env); err != nil {
 		return err
 	}
@@ -157,20 +192,36 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 		c.PythonPaths[i] = p
 	}
 
-	// Populate AnnotationFlags based on CLI configuration.
-	c.rr.opArgs.AnnotationFlags.EmitTimestamp = c.mode.shouldEmitTimestamps() || c.rr.opArgs.AnnotationFlags.EmitTimestamp
-
 	c.TempDir = filepath.FromSlash(c.TempDir)
 
 	return nil
 }
 
-// remoteRun runs `recipes.py remote` that checks out a repo, runs a recipe and
-// returns exit code.
+// remoteRun fetches a remote repository, runs a recipe and returns the exit code.
 // Mutates env.
 func (c *cookRun) remoteRun(ctx context.Context, env environ.Env) (recipeExitCode int, err error) {
+	// Fetch the repo.
+	if err := checkoutRepository(ctx, c.CheckoutDir, c.RepositoryURL, c.Revision); err != nil {
+		return 0, errors.Annotate(err).Reason("could not checkout %(repo)q at %(rev)q to %(path)q").
+			D("repo", c.RepositoryURL).
+			D("rev", c.Revision).
+			D("path", c.CheckoutDir).
+			Err()
+	}
+
+	// Read the path to the recipes.py within the fetched repo.
+	cfg, err := loadRecipesCfg(c.CheckoutDir)
+	if err != nil {
+		return 0, errors.Annotate(err).Reason("could not recipes.cfg").Err()
+	}
+	if cfg.RecipesPath == nil || *cfg.RecipesPath == "" {
+		return 0, fmt.Errorf("recipes.cfg in the fetched repository does not specify recipes_path")
+	}
+	c.rr.recipesPyPath = filepath.Join(c.CheckoutDir, filepath.FromSlash(*cfg.RecipesPath), "recipes.py")
+
 	// Setup our working directory.
-	if err := c.rr.prepareWorkDir(); err != nil {
+	c.rr.workDir, err = prepareRecipeRunWorkDir(c.rr.workDir)
+	if err != nil {
 		return 0, errors.Annotate(err).Reason("failed to prepare workdir").Err()
 	}
 
@@ -180,6 +231,8 @@ func (c *cookRun) remoteRun(ctx context.Context, env environ.Env) (recipeExitCod
 	if c.logdog.active() {
 		return c.runWithLogdogButler(ctx, &c.rr, env)
 	}
+
+	// This code is reachable only in buildbot mode.
 
 	recipeCmd, err := c.rr.command(ctx, filepath.Join(c.TempDir, "rr"), env)
 	if err != nil {
@@ -276,10 +329,9 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 		fmt.Fprintf(os.Stderr, "unexpected arguments: %v", args)
 		return 1
 	}
-
 	if err := c.normalizeFlags(sysEnv); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
-		c.Flags.Usage()
+		fmt.Fprintln(os.Stderr, "for usage run: kitchen cook -help")
 		return 1
 	}
 
@@ -314,30 +366,22 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 	}
 
 	// If we're not using LogDog, send out annotations.
-	bootstapSuccess := true
-	emitTimestamps := c.rr.opArgs.AnnotationFlags.EmitTimestamp
+	bootstrapSuccess := true
 	if c.logdog.shouldEmitAnnotations() {
-		if emitTimestamps {
-			annotateTime(ctx)
+		// This code is reachable only in buildbot mode.
+
+		annotate := func(args ...string) {
+			fmt.Printf("@@@%s@@@\n", strings.Join(args, "@"))
 		}
 		annotate("SEED_STEP", BootstrapStepName)
 		annotate("STEP_CURSOR", BootstrapStepName)
-		if emitTimestamps {
-			annotateTime(ctx)
-		}
 		annotate("STEP_STARTED")
 		defer func() {
 			annotate("STEP_CURSOR", BootstrapStepName)
-			if emitTimestamps {
-				annotateTime(ctx)
-			}
-			if bootstapSuccess {
+			if bootstrapSuccess {
 				annotate("STEP_CLOSED")
 			} else {
 				annotate("STEP_EXCEPTION")
-			}
-			if emitTimestamps {
-				annotateTime(ctx)
 			}
 		}()
 
@@ -355,7 +399,7 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 	// Run the recipe.
 	recipeExitCode, err := c.remoteRun(ctx, env)
 	if err != nil {
-		bootstapSuccess = false
+		bootstrapSuccess = false
 		return errors.Annotate(err).Err()
 	}
 	return returnCodeError(recipeExitCode)
@@ -390,15 +434,6 @@ func parseProperties(properties, propertiesFile string) (result map[string]inter
 		}
 	}
 	return
-}
-
-func annotateTime(ctx context.Context) {
-	timestamp := clock.Get(ctx).Now().Unix()
-	annotate("CURRENT_TIMESTAMP", strconv.FormatInt(timestamp, 10))
-}
-
-func annotate(args ...string) {
-	fmt.Printf("@@@%s@@@\n", strings.Join(args, "@"))
 }
 
 // printCommand prints cmd description to stdout and that it will be ran.
