@@ -5,7 +5,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -99,14 +98,13 @@ func git(ctx context.Context, workDir string, args ...string) *exec.Cmd {
 // runGit prints the git command, runs it, redirects Stdout and Stderr and returns an error.
 func runGit(c context.Context, workDir string, args ...string) error {
 	cmd := git(c, workDir, args...)
+	renderedWorkDir := workDir
 	if workDir != "" {
-		absWorkDir, err := filepath.Abs(workDir)
-		if err != nil {
-			return err
+		if absWorkDir, err := filepath.Abs(workDir); err == nil {
+			renderedWorkDir = absWorkDir
 		}
-		fmt.Print(absWorkDir)
 	}
-	fmt.Printf("$ %s\n", strings.Join(cmd.Args, " "))
+	logging.Infof(c, "%s$ %s\n", renderedWorkDir, strings.Join(cmd.Args, " "))
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
 		return errors.Annotate(err).Reason("failed to run %(args)q").D("args", cmd.Args).Err()

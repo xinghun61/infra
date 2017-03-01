@@ -37,6 +37,11 @@ func (m *cookModeFlag) Set(v string) error {
 	return cookModeFlagEnum.FlagSet(m, v)
 }
 
+const (
+	// PropertyBotId must be added by cookMode.addProperties.
+	PropertyBotId = "bot_id"
+)
+
 // cookMode integrates environment-specific behaviors into Kitchen's "cook"
 // command.
 type cookMode interface {
@@ -44,7 +49,9 @@ type cookMode interface {
 	needsIOKeepAlive() bool
 	shouldEmitTimestamps() bool
 	alwaysForwardAnnotations() bool
-	botID(env environ.Env) (string, error)
+
+	// addProperties adds builtin properties. Must add PropertyBotId.
+	addProperties(props map[string]interface{}, env environ.Env) error
 
 	shouldEmitLogDogLinks() bool
 	addLogDogGlobalTags(tags map[string]string, props map[string]interface{}, env environ.Env) error
@@ -53,11 +60,27 @@ type cookMode interface {
 
 type swarmingCookMode struct{}
 
-func (m swarmingCookMode) fillTemplateParams(env environ.Env, params *tasktemplate.Params) error {
+func (m swarmingCookMode) readSwarmingEnv(env environ.Env) (botId, runId string, err error) {
 	var ok bool
-	if params.SwarmingRunID, ok = env.Get("SWARMING_TASK_ID"); !ok {
-		return userError("no Swarming run ID in $SWARMING_TASK_ID environment variable")
+	botId, ok = env.Get("SWARMING_BOT_ID")
+	if !ok {
+		err = userError("no Swarming bot ID in $SWARMING_BOT_ID")
+		return
 	}
+
+	if runId, ok = env.Get("SWARMING_TASK_ID"); !ok {
+		err = userError("no Swarming run ID in $SWARMING_TASK_ID")
+		return
+	}
+	return
+}
+
+func (m swarmingCookMode) fillTemplateParams(env environ.Env, params *tasktemplate.Params) error {
+	_, runId, err := m.readSwarmingEnv(env)
+	if err != nil {
+		return err
+	}
+	params.SwarmingRunID = runId
 	return nil
 }
 
@@ -65,12 +88,14 @@ func (m swarmingCookMode) needsIOKeepAlive() bool         { return false }
 func (m swarmingCookMode) shouldEmitTimestamps() bool     { return true }
 func (m swarmingCookMode) alwaysForwardAnnotations() bool { return false }
 
-func (m swarmingCookMode) botID(env environ.Env) (string, error) {
-	botID, ok := env.Get("SWARMING_BOT_ID")
-	if !ok {
-		return "", userError("a valid bot id was expected in $SWARMING_BOT_ID")
+func (m swarmingCookMode) addProperties(props map[string]interface{}, env environ.Env) error {
+	botId, runId, err := m.readSwarmingEnv(env)
+	if err != nil {
+		return err
 	}
-	return botID, nil
+	props[PropertyBotId] = botId
+	props["swarming_run_id"] = runId
+	return nil
 }
 func (m swarmingCookMode) shouldEmitLogDogLinks() bool { return false }
 func (m swarmingCookMode) onlyLogDog() bool            { return true }
@@ -104,12 +129,13 @@ func (m buildBotCookMode) needsIOKeepAlive() bool         { return true }
 func (m buildBotCookMode) shouldEmitTimestamps() bool     { return false }
 func (m buildBotCookMode) alwaysForwardAnnotations() bool { return true }
 
-func (m buildBotCookMode) botID(env environ.Env) (string, error) {
+func (m buildBotCookMode) addProperties(props map[string]interface{}, env environ.Env) error {
 	botID, ok := env.Get("BUILDBOT_SLAVENAME")
 	if !ok {
-		return "", userError("a valid bot id was expected in $BUILDBOT_SLAVENAME")
+		return userError("no slave name in $BUILDBOT_SLAVENAME")
 	}
-	return botID, nil
+	props[PropertyBotId] = botID
+	return nil
 }
 
 func (m buildBotCookMode) onlyLogDog() bool            { return false }

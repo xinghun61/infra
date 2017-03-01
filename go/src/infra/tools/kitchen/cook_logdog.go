@@ -67,7 +67,7 @@ func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
 		"logdog-annotation-url",
 		"",
 		"The URL of the LogDog annotation stream to use (logdog://host/project/prefix/+/name). The LogDog "+
-			"project and prefix will be extracted from this URL. This can include SwarmBucket template parameters.")
+			"project and prefix will be extracted from this URL. This can include Swarmbucket template parameters.")
 	fs.BoolVar(
 		&p.logDogOnly,
 		"logdog-only",
@@ -96,7 +96,7 @@ func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
 }
 
 func (p *cookLogDogParams) active() bool {
-	return p.annotationURL != ""
+	return p.annotationURL != "" || p.filePath != ""
 }
 
 // shouldEmitAnnotations returns true if the cook command should emit additional
@@ -116,7 +116,7 @@ func (p *cookLogDogParams) shouldEmitAnnotations() bool {
 func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) error {
 	if !p.active() {
 		if p.logDogOnly {
-			return userError("LogDog flag (-logdog-only) requires annotation URL (-logdog-annotation-url)")
+			return userError("LogDog flag (-logdog-only) requires -logdog-annotation-url or -logdog-debug-out-file")
 		}
 		return nil
 	}
@@ -127,15 +127,17 @@ func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) erro
 		return errors.Annotate(err).Reason("failed to populate template parameters").Err()
 	}
 
-	// Parse/resolve annotation URL (must be populated, since active()).
-	annotationURL, err := params.Resolve(p.annotationURL)
-	if err != nil {
-		return errors.Annotate(err).Reason("failed to resolve LogDog annotation URL (-logdog-annotation-url)").
-			D("value", p.annotationURL).
-			Err()
-	}
-	if p.annotationAddr, err = types.ParseURL(annotationURL); err != nil {
-		return userError("invalid LogDog annotation URL (-logdog-annotation-url) %q: %s", annotationURL, err)
+	if p.annotationURL != "" {
+		// Parse/resolve annotation URL.
+		annotationURL, err := params.Resolve(p.annotationURL)
+		if err != nil {
+			return errors.Annotate(err).Reason("failed to resolve LogDog annotation URL (-logdog-annotation-url)").
+				D("value", p.annotationURL).
+				Err()
+		}
+		if p.annotationAddr, err = types.ParseURL(annotationURL); err != nil {
+			return userError("invalid LogDog annotation URL (-logdog-annotation-url) %q: %s", annotationURL, err)
+		}
 	}
 
 	return nil
@@ -151,7 +153,9 @@ func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) erro
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
 func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env environ.Env) (rc int, err error) {
-	log.Infof(ctx, "Using LogDog host: %s", c.logdog.annotationAddr.URL().String())
+	if c.logdog.annotationAddr != nil {
+		log.Infof(ctx, "Using LogDog host: %s", c.logdog.annotationAddr.URL().String())
+	}
 
 	// Install a global gRPC logger adapter. This routes gRPC log messages that
 	// are emitted through our logger. We only log gRPC prints if our logger is
@@ -302,7 +306,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	defer stderr.Close()
 
 	// Start our bootstrapped subprocess.
-	printCommand(proc)
+	printCommand(ctx, proc)
 
 	if err = proc.Start(); err != nil {
 		err = errors.Annotate(err).Reason("failed to start command").Err()

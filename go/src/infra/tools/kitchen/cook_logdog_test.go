@@ -27,6 +27,7 @@ func TestCookLogDogPrefix(t *testing.T) {
 			p cookLogDogParams
 
 			env = environ.New([]string{
+				"SWARMING_BOT_ID=1234567890abcdef",
 				"SWARMING_TASK_ID=1234567890abcdef",
 			})
 		)

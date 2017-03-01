@@ -238,7 +238,7 @@ func (c *cookRun) remoteRun(ctx context.Context, env environ.Env) (recipeExitCod
 	if err != nil {
 		return 0, fmt.Errorf("failed to build recipe command: %s", err)
 	}
-	printCommand(recipeCmd)
+	printCommand(ctx, recipeCmd)
 
 	recipeCmd.Stdout = os.Stdout
 	recipeCmd.Stderr = os.Stderr
@@ -310,12 +310,14 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	}
 	props["$recipe_engine/path"] = pathProps
 
-	// Provide bot_id for the recipes.
-	botID, err := c.mode.botID(env)
-	if err != nil {
-		return nil, err
+	if err := c.mode.addProperties(props, env); err != nil {
+		return nil, errors.Annotate(err).Reason("chosen mode could not add properties").Err()
 	}
-	props["bot_id"] = botID
+	if _, ok := props[PropertyBotId]; !ok {
+		return nil, errors.Reason("chosen mode didn't add %(p)s property").
+			D("p", PropertyBotId).
+			Err()
+	}
 
 	return props, nil
 }
@@ -367,6 +369,11 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 	props, err := c.prepareProperties(env)
 	if err != nil {
 		return err
+	}
+	if propsJSON, err := json.MarshalIndent(props, "", "  "); err != nil {
+		return errors.Annotate(err).Reason("could not marshal properties to JSON").Err()
+	} else {
+		log.Infof(ctx, "using properties:\n%s", propsJSON)
 	}
 
 	// If we're not using LogDog, send out annotations.
@@ -443,9 +450,9 @@ func parseProperties(properties, propertiesFile string) (result map[string]inter
 // printCommand prints cmd description to stdout and that it will be ran.
 // panics if cannot read current directory or cannot make a command's current
 // directory absolute.
-func printCommand(cmd *exec.Cmd) {
-	fmt.Printf("running %q\n", cmd.Args)
-	fmt.Printf("command path: %s\n", cmd.Path)
+func printCommand(ctx context.Context, cmd *exec.Cmd) {
+	log.Infof(ctx, "running %q", cmd.Args)
+	log.Infof(ctx, "command path: %s", cmd.Path)
 
 	cd := cmd.Dir
 	if cd == "" {
@@ -461,14 +468,11 @@ func printCommand(cmd *exec.Cmd) {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "could not make path %q absolute: %s\n", cd, err)
 		} else {
-			fmt.Printf("current directory: %s\n", abs)
+			log.Infof(ctx, "current directory: %s", abs)
 		}
 	}
 
-	fmt.Println("env:")
-	for _, e := range cmd.Env {
-		fmt.Printf("\t%s\n", e)
-	}
+	log.Infof(ctx, "env:\n%s", strings.Join(cmd.Env, "\n"))
 }
 
 // returnCodeError is a special error type that contains a process return code.

@@ -69,7 +69,7 @@ func (rr *recipeRun) command(ctx context.Context, tdir string, env environ.Env) 
 	}
 	recipeCmd.Args = append(recipeCmd.Args, rr.recipeName)
 
-	// Apply our enviornment.
+	// Apply our environment.
 	if env.Len() > 0 {
 		recipeCmd.Env = env.Sorted()
 	}
