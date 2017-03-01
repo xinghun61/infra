@@ -127,6 +127,8 @@ var (
 	osArch = metric.NewString("proc/os/arch",
 		"OS architecture on this machine",
 		nil)
+
+	lastCPUTimes cpu.TimesStat
 )
 
 func init() {
@@ -144,6 +146,12 @@ func init() {
 	netErrDown.SetFixedResetTime(bootTime)
 	netDropUp.SetFixedResetTime(bootTime)
 	netDropDown.SetFixedResetTime(bootTime)
+
+	cpuTimes, err := cpu.Times(false)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to get initial CPU times: %s", err))
+	}
+	lastCPUTimes = cpuTimes[0]
 }
 
 // Register adds tsmon callbacks to set system metrics.
@@ -183,9 +191,23 @@ func updateCPUMetrics(c context.Context) error {
 	if err != nil {
 		return err
 	}
-	cpuTime.Set(c, cpuTimes[0].User/cpuTimes[0].Total()*100, "user")
-	cpuTime.Set(c, cpuTimes[0].System/cpuTimes[0].Total()*100, "system")
-	cpuTime.Set(c, cpuTimes[0].Idle/cpuTimes[0].Total()*100, "idle")
+	user := cpuTimes[0].User - lastCPUTimes.User
+	system := cpuTimes[0].System - lastCPUTimes.System
+	idle := cpuTimes[0].Idle - lastCPUTimes.Idle
+	total := cpuTimes[0].Total() - lastCPUTimes.Total()
+	lastCPUTimes = cpuTimes[0]
+
+	// Total might be 0 when running unit tests on Windows - this gets called
+	// immediately after the module's init().
+	if total != 0 {
+		user = user / total * 100
+		system = system / total * 100
+		idle = idle / total * 100
+	}
+
+	cpuTime.Set(c, user, "user")
+	cpuTime.Set(c, system, "system")
+	cpuTime.Set(c, idle, "idle")
 	return nil
 }
 
