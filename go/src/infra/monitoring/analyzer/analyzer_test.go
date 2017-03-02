@@ -791,7 +791,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 					Step("other_step").Results(2).BuilderFaker.
 					Build(1).Times(2, 3).IncludeChanges("http://test", "refs/heads/master@{#291570}").
 					Step("fake_step").Results(2).BuilderFaker.
-					Build(2).Times(4, 5).IncludeChanges("http://test", "refs/heads/master@{#291570}").
+					Build(2).Times(4, 5).IncludeChanges("http://test", "refs/heads/master@{#291571}").
 					Step("fake_step").Results(2).BuilderFaker,
 				buildsAtFault: []int{2},
 				stepsAtFault:  []string{"fake_step"},
@@ -824,6 +824,64 @@ func TestBuilderStepAlerts(t *testing.T) {
 									},
 									Positions: []string{
 										"refs/heads/master@{#291569}",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				name:         "green history, failure recently",
+				master:       "fake.master",
+				builder:      "fake.builder",
+				recentBuilds: []int64{0, 1, 2, 3, 4, 5},
+				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
+					Step("fake_step").Results(0).BuilderFaker.
+					Build(1).Times(2, 3).IncludeChanges("http://test", "refs/heads/master@{#291570}").
+					Step("fake_step").Results(0).BuilderFaker.
+					Build(2).Times(4, 5).IncludeChanges("http://test", "refs/heads/master@{#291571}").
+					Step("fake_step").Results(0).BuilderFaker.
+					Build(3).Times(6, 7).IncludeChanges("http://test", "refs/heads/master@{#291572}").
+					Step("fake_step").Results(0).BuilderFaker.
+					Build(4).Times(8, 9).IncludeChanges("http://test", "refs/heads/master@{#291573}").
+					Step("fake_step").Results(2).BuilderFaker.
+					Build(5).Times(10, 11).IncludeChanges("http://test", "refs/heads/master@{#291574}").
+					Step("fake_step").Results(2).BuilderFaker,
+				buildsAtFault: []int{5},
+				stepsAtFault:  []string{"fake_step"},
+				wantAlerts: []messages.Alert{
+					{
+						Key:       "fake.master.fake.builder.fake_step.",
+						Title:     "fakeTitle",
+						Type:      messages.AlertBuildFailure,
+						Body:      "",
+						Severity:  messages.ReliableFailure,
+						StartTime: messages.EpochTime(8),
+						Time:      messages.EpochTime(10),
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name:          "fake.builder",
+									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									FirstFailure:  4,
+									LatestFailure: 5,
+									StartTime:     messages.EpochTime(8),
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo: "test",
+									URL:  "http://test",
+									Revisions: []string{
+										"291573",
+									},
+									Positions: []string{
+										"refs/heads/master@{#291573}",
 									},
 								},
 							},

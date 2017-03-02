@@ -620,6 +620,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 	if workers > maxConcurrentBuilds {
 		workers = maxConcurrentBuilds
 	}
+
 	err = parallel.WorkPool(workers, func(workC chan<- func() error) {
 		for i, buildNum := range recentBuildIDs {
 			buildNum := buildNum
@@ -672,19 +673,20 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 
 	firstSuccessfulBuild := int64(-1)
 	for _, num := range goodBuilds {
-		if firstSuccessfulBuild == -1 || num < firstSuccessfulBuild {
+		if firstSuccessfulBuild == -1 || num > firstSuccessfulBuild {
 			firstSuccessfulBuild = num
 		}
 	}
 
 	for i, alrs := range alertsPerBuild {
 		buildNum := recentBuildIDs[i]
-		if buildNum >= firstSuccessfulBuild && firstSuccessfulBuild != -1 {
+		if buildNum <= firstSuccessfulBuild && firstSuccessfulBuild != -1 {
 			continue
 		}
 
 		// Group alerts by key so they can be merged across builds/regression ranges.
 		for _, alr := range alrs {
+			// Needed because we append the reference below
 			alr := alr
 			if importantKeys.Has(alr.Key) {
 				stepAlertsByKey[alr.Key] = append(stepAlertsByKey[alr.Key], &alr)
@@ -832,7 +834,6 @@ func (a *Analyzer) stepFailures(ctx context.Context, master *messages.MasterLoca
 			continue
 		}
 		// We have a failure of some kind, so queue it up to check later.
-
 		// Done so below reference doesn't point to the last element in this loop
 		s := s
 		ret = append(ret, &messages.BuildStep{
