@@ -6,19 +6,34 @@
 
   var css = `
     .__crdxFeedbackButton {
-      position: fixed;
-      bottom: 32px;
-      right: 24px;
-      width: 32px;
-      height: 32px;
-      z-index: 8675309; /* Jenny */
-      transition: opacity .2s;
-      opacity: .4;
       background-image: url('https://storage.googleapis.com/crdx-feedback.appspot.com/icon.png');
       background-size: cover;
+      bottom: 32px;
+      height: 32px;
+      opacity: .4;
+      position: fixed;
+      right: 24px;
+      text-decoration: none;
+      transition: opacity .2s;
+      width: 32px;
+      z-index: 8675309; /* Jenny */
     }
-    .__crdxFeedbackButton:hover {
+    .__crdxFeedbackButton:hover,
+    .__crdxFeedbackButton:hover::after {
       opacity: .75;
+    }
+    .__crdxFeedbackButton::after {
+      color: #707070;
+      content: "Feedback";
+      font-size: 12px;
+      left: 50%;
+      opacity: 0;
+      position: absolute;
+      text-decoration: none;
+      top: 28px;
+      transform: translateX(-50%);
+      transition: opacity .4s;
+      -webkit-transform: translateX(-50%);
     }
   `;
 
