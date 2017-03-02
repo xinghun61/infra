@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='project_config.proto',
   package='buildbucket',
   syntax='proto2',
-  serialized_pb=_b('\n\x14project_config.proto\x12\x0b\x62uildbucket\"z\n\x03\x41\x63l\x12#\n\x04role\x18\x01 \x01(\x0e\x32\x15.buildbucket.Acl.Role\x12\r\n\x05group\x18\x02 \x01(\t\x12\x10\n\x08identity\x18\x03 \x01(\t\"-\n\x04Role\x12\n\n\x06READER\x10\x00\x12\r\n\tSCHEDULER\x10\x01\x12\n\n\x06WRITER\x10\x02\"6\n\x06\x41\x63lSet\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\"\x81\x06\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x12\n\nurl_format\x18\x02 \x01(\t\x12\x37\n\x10\x62uilder_defaults\x18\x03 \x01(\x0b\x32\x1d.buildbucket.Swarming.Builder\x12/\n\x08\x62uilders\x18\x04 \x03(\x0b\x32\x1d.buildbucket.Swarming.Builder\x12M\n\x1ftask_template_canary_percentage\x18\x05 \x01(\x0b\x32$.buildbucket.Swarming.OptionalUint32\x1aT\n\x06Recipe\x12\x12\n\nrepository\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x12\n\nproperties\x18\x03 \x03(\t\x12\x14\n\x0cproperties_j\x18\x04 \x03(\t\x1a\x9e\x03\n\x07\x42uilder\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x10\n\x08\x63\x61tegory\x18\x06 \x01(\t\x12\x15\n\rswarming_tags\x18\x02 \x03(\t\x12\x12\n\ndimensions\x18\x03 \x03(\t\x12@\n\rcipd_packages\x18\x08 \x03(\x0b\x32).buildbucket.Swarming.Builder.CipdPackage\x12,\n\x06recipe\x18\x04 \x01(\x0b\x32\x1c.buildbucket.Swarming.Recipe\x12\x10\n\x08priority\x18\x05 \x01(\r\x12\x1e\n\x16\x65xecution_timeout_secs\x18\x07 \x01(\r\x12\x38\n\x06\x63\x61\x63hes\x18\t \x03(\x0b\x32(.buildbucket.Swarming.Builder.CacheEntry\x1a\x42\n\x0b\x43ipdPackage\x12\x14\n\x0cpackage_name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\t\x1a(\n\nCacheEntry\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x1a\x1f\n\x0eOptionalUint32\x12\r\n\x05value\x18\x01 \x01(\r\"q\n\x06\x42ucket\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\x12\x10\n\x08\x61\x63l_sets\x18\x04 \x03(\t\x12\'\n\x08swarming\x18\x03 \x01(\x0b\x32\x15.buildbucket.Swarming\"]\n\x0e\x42uildbucketCfg\x12$\n\x07\x62uckets\x18\x01 \x03(\x0b\x32\x13.buildbucket.Bucket\x12%\n\x08\x61\x63l_sets\x18\x02 \x03(\x0b\x32\x13.buildbucket.AclSet')
+  serialized_pb=_b('\n\x14project_config.proto\x12\x0b\x62uildbucket\"z\n\x03\x41\x63l\x12#\n\x04role\x18\x01 \x01(\x0e\x32\x15.buildbucket.Acl.Role\x12\r\n\x05group\x18\x02 \x01(\t\x12\x10\n\x08identity\x18\x03 \x01(\t\"-\n\x04Role\x12\n\n\x06READER\x10\x00\x12\r\n\tSCHEDULER\x10\x01\x12\n\n\x06WRITER\x10\x02\"6\n\x06\x41\x63lSet\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\"\x93\x06\n\x08Swarming\x12\x10\n\x08hostname\x18\x01 \x01(\t\x12\x12\n\nurl_format\x18\x02 \x01(\t\x12\x37\n\x10\x62uilder_defaults\x18\x03 \x01(\x0b\x32\x1d.buildbucket.Swarming.Builder\x12/\n\x08\x62uilders\x18\x04 \x03(\x0b\x32\x1d.buildbucket.Swarming.Builder\x12M\n\x1ftask_template_canary_percentage\x18\x05 \x01(\x0b\x32$.buildbucket.Swarming.OptionalUint32\x1a\x66\n\x06Recipe\x12\x12\n\nrepository\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x10\n\x08revision\x18\x05 \x01(\t\x12\x12\n\nproperties\x18\x03 \x03(\t\x12\x14\n\x0cproperties_j\x18\x04 \x03(\t\x1a\x9e\x03\n\x07\x42uilder\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x10\n\x08\x63\x61tegory\x18\x06 \x01(\t\x12\x15\n\rswarming_tags\x18\x02 \x03(\t\x12\x12\n\ndimensions\x18\x03 \x03(\t\x12@\n\rcipd_packages\x18\x08 \x03(\x0b\x32).buildbucket.Swarming.Builder.CipdPackage\x12,\n\x06recipe\x18\x04 \x01(\x0b\x32\x1c.buildbucket.Swarming.Recipe\x12\x10\n\x08priority\x18\x05 \x01(\r\x12\x1e\n\x16\x65xecution_timeout_secs\x18\x07 \x01(\r\x12\x38\n\x06\x63\x61\x63hes\x18\t \x03(\x0b\x32(.buildbucket.Swarming.Builder.CacheEntry\x1a\x42\n\x0b\x43ipdPackage\x12\x14\n\x0cpackage_name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x12\x0f\n\x07version\x18\x03 \x01(\t\x1a(\n\nCacheEntry\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0c\n\x04path\x18\x02 \x01(\t\x1a\x1f\n\x0eOptionalUint32\x12\r\n\x05value\x18\x01 \x01(\r\"q\n\x06\x42ucket\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1e\n\x04\x61\x63ls\x18\x02 \x03(\x0b\x32\x10.buildbucket.Acl\x12\x10\n\x08\x61\x63l_sets\x18\x04 \x03(\t\x12\'\n\x08swarming\x18\x03 \x01(\x0b\x32\x15.buildbucket.Swarming\"]\n\x0e\x42uildbucketCfg\x12$\n\x07\x62uckets\x18\x01 \x03(\x0b\x32\x13.buildbucket.Bucket\x12%\n\x08\x61\x63l_sets\x18\x02 \x03(\x0b\x32\x13.buildbucket.AclSet')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -158,14 +158,21 @@ _SWARMING_RECIPE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='properties', full_name='buildbucket.Swarming.Recipe.properties', index=2,
+      name='revision', full_name='buildbucket.Swarming.Recipe.revision', index=2,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='properties', full_name='buildbucket.Swarming.Recipe.properties', index=3,
       number=3, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='properties_j', full_name='buildbucket.Swarming.Recipe.properties_j', index=3,
+      name='properties_j', full_name='buildbucket.Swarming.Recipe.properties_j', index=4,
       number=4, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -184,7 +191,7 @@ _SWARMING_RECIPE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=453,
-  serialized_end=537,
+  serialized_end=555,
 )
 
 _SWARMING_BUILDER_CIPDPACKAGE = _descriptor.Descriptor(
@@ -227,8 +234,8 @@ _SWARMING_BUILDER_CIPDPACKAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=846,
-  serialized_end=912,
+  serialized_start=864,
+  serialized_end=930,
 )
 
 _SWARMING_BUILDER_CACHEENTRY = _descriptor.Descriptor(
@@ -264,8 +271,8 @@ _SWARMING_BUILDER_CACHEENTRY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=914,
-  serialized_end=954,
+  serialized_start=932,
+  serialized_end=972,
 )
 
 _SWARMING_BUILDER = _descriptor.Descriptor(
@@ -350,8 +357,8 @@ _SWARMING_BUILDER = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=540,
-  serialized_end=954,
+  serialized_start=558,
+  serialized_end=972,
 )
 
 _SWARMING_OPTIONALUINT32 = _descriptor.Descriptor(
@@ -380,8 +387,8 @@ _SWARMING_OPTIONALUINT32 = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=956,
-  serialized_end=987,
+  serialized_start=974,
+  serialized_end=1005,
 )
 
 _SWARMING = _descriptor.Descriptor(
@@ -439,7 +446,7 @@ _SWARMING = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=218,
-  serialized_end=987,
+  serialized_end=1005,
 )
 
 
@@ -490,8 +497,8 @@ _BUCKET = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=989,
-  serialized_end=1102,
+  serialized_start=1007,
+  serialized_end=1120,
 )
 
 
@@ -528,8 +535,8 @@ _BUILDBUCKETCFG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1104,
-  serialized_end=1197,
+  serialized_start=1122,
+  serialized_end=1215,
 )
 
 _ACL.fields_by_name['role'].enum_type = _ACL_ROLE

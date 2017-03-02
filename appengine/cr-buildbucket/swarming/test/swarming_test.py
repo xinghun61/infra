@@ -207,8 +207,6 @@ class SwarmingTest(testing.AppengineTestCase):
       {'swarming': []},
       {'swarming': {'junk': 1}},
       {'swarming': {'recipe': []}},
-      {'swarming': {'recipe': {'junk': 1}}},
-      {'swarming': {'recipe': {'revision': 1}}},
       {'swarming': {'canary_template': 'yes'}},
     ]
     for p in bad:
@@ -249,7 +247,6 @@ class SwarmingTest(testing.AppengineTestCase):
       parameters={
         'builder_name': 'builder',
         'swarming': {
-          'recipe': {'revision': 'badcoffee'},
           'canary_template': False,
         },
         'properties': {
@@ -280,7 +277,7 @@ class SwarmingTest(testing.AppengineTestCase):
           'priority:108',
           'recipe_name:recipe',
           'recipe_repository:https://example.com/repo',
-          'recipe_revision:badcoffee',
+          'recipe_revision:HEAD',
         ]
       }
     }
@@ -308,7 +305,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'commontag:yes',
         'recipe_name:recipe',
         'recipe_repository:https://example.com/repo',
-        'recipe_revision:badcoffee',
+        'recipe_revision:HEAD',
       ],
       'properties': {
         'execution_timeout_secs': '3600',
@@ -320,7 +317,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'extra_args': [
           'cook',
           '-repository', 'https://example.com/repo',
-          '-revision', 'badcoffee',
+          '-revision', 'HEAD',
           '-recipe', 'recipe',
           '-properties', json.dumps({
             'a': 'b',
@@ -384,7 +381,7 @@ class SwarmingTest(testing.AppengineTestCase):
       'swarming_tag:priority:108',
       'swarming_tag:recipe_name:recipe',
       'swarming_tag:recipe_repository:https://example.com/repo',
-      'swarming_tag:recipe_revision:badcoffee',
+      'swarming_tag:recipe_revision:HEAD',
       'swarming_task_id:deadbeef',
     })
     self.assertEqual(
@@ -462,7 +459,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'commontag:yes',
         'recipe_name:recipe',
         'recipe_repository:https://example.com/repo',
-        'recipe_revision:',
+        'recipe_revision:HEAD',
       ],
       'properties': {
         'execution_timeout_secs': '3600',
@@ -580,7 +577,7 @@ class SwarmingTest(testing.AppengineTestCase):
           'priority:108',
           'recipe_name:recipe',
           'recipe_repository:https://example.com/repo',
-          'recipe_revision:badcoffee',
+          'recipe_revision:HEAD',
         ]
       }
     }
@@ -606,6 +603,7 @@ class SwarmingTest(testing.AppengineTestCase):
             'override_builder_cfg': {
               # Override cores dimension.
               'dimensions': ['cores:16'],
+              'recipe': {'revision': 'badcoffee'},
             },
           }
         },

@@ -44,6 +44,8 @@ message Swarming {
     optional string repository = 1;
     // Name of the recipe to run.
     optional string name = 2;
+    // Revision of recipe to fetch. Defaults to the latest.
+    optional string revision = 5;
     // colon-separated build properties to set.
     // A property can be overriden by "properties" build parameter.
     //

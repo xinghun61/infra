@@ -156,17 +156,6 @@ def validate_build_parameters(builder_name, params):
   if swarming is not None:
     assert_object('swarming', swarming)
     swarming = copy.deepcopy(swarming)
-    if 'recipe' in swarming:
-      logging.error(
-          'someone is still using deprecated swarming.recipe parameter')
-      recipe = swarming.pop('recipe')
-      assert_object('swarming.recipe', recipe)
-      if 'revision' in recipe:
-        revision = recipe.pop('revision')
-        if not isinstance(revision, basestring):
-          bad('swarming.recipe.revision parameter must be a string')
-      if recipe:
-        bad('unrecognized keys in swarming.recipe: %r', recipe)
     canary_template = swarming.pop('canary_template', None)
     if canary_template not in (True, False, None):
       bad('swarming.canary_template parameter must true, false or null')
@@ -288,7 +277,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   is_recipe = builder_cfg.HasField('recipe')
   if is_recipe:  # pragma: no branch
     build_properties = swarmingcfg_module.read_properties(builder_cfg.recipe)
-    recipe_revision = swarming_param.get('recipe', {}).get('revision') or ''
+    recipe_revision = builder_cfg.recipe.revision or 'HEAD'
 
     build_properties['buildername'] = builder_cfg.name
 
@@ -316,7 +305,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
 
     task_template_params.update({
       'repository': builder_cfg.recipe.repository,
-      'revision': recipe_revision or 'HEAD',
+      'revision': recipe_revision,
       'recipe': builder_cfg.recipe.name,
       'properties_json': json.dumps(build_properties, sort_keys=True),
     })
