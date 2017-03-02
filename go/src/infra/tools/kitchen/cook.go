@@ -231,12 +231,13 @@ func (c *cookRun) ensureAndRun(ctx context.Context, env environ.Env) (recipeExit
 		if err != nil {
 			return 0, errors.Annotate(err).Reason("could not recipes.cfg").Err()
 		}
-		if cfg.RecipesPath == nil || *cfg.RecipesPath == "" {
-			return 0, errors.New("recipes.cfg in the fetched repository does not specify recipes_path")
+		recipesPath := ""
+		if cfg.RecipesPath != nil {
+			recipesPath = *cfg.RecipesPath
 		}
 		c.rr.cmdPrefix = []string{
 			"python",
-			filepath.Join(c.CheckoutDir, filepath.FromSlash(*cfg.RecipesPath), "recipes.py"),
+			filepath.Join(c.CheckoutDir, filepath.FromSlash(recipesPath), "recipes.py"),
 		}
 	}
 
