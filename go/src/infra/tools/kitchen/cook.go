@@ -236,7 +236,7 @@ func (c *cookRun) ensureAndRun(ctx context.Context, env environ.Env) (recipeExit
 		}
 		c.rr.cmdPrefix = []string{
 			"python",
-			filepath.Join(filepath.FromSlash(*cfg.RecipesPath), "recipes.py"),
+			filepath.Join(c.CheckoutDir, filepath.FromSlash(*cfg.RecipesPath), "recipes.py"),
 		}
 	}
 
