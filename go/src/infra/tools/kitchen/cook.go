@@ -50,12 +50,12 @@ var cmdCook = &subcommands.Command{
 			&c.RepositoryURL,
 			"repository",
 			"",
-			"URL of a git repository with the recipe to run. Must have a recipe configuration at infra/config/recipes.cfg")
+			"URL of a git repository with the recipe to run. Must have a recipe configuration at infra/config/recipes.cfg. If unspecified will look for bundled recipes at -checkout-dir.")
 		fs.StringVar(
 			&c.Revision,
 			"revision",
-			"HEAD",
-			"Revison of the recipe to run. It can be HEAD, a commit hash or a fully-qualified ref")
+			"",
+			"Revison of the recipe to run (if -repository is specified). It can be HEAD, a commit hash or a fully-qualified ref. (defaults to HEAD)")
 		fs.StringVar(
 			&c.rr.recipeName,
 			"recipe",
@@ -69,7 +69,7 @@ var cmdCook = &subcommands.Command{
 			&c.CheckoutDir,
 			"checkout-dir",
 			"kitchen-checkout",
-			"The directory to check out the repository to. It must not exist, be empty or be a valid Git repository.")
+			"The directory to check out the repository to or to look for bundled recipes. It must either: not exist, be empty, be a valid Git repository, or be a recipe bundle.")
 		fs.StringVar(
 			&c.rr.workDir,
 			"workdir",
@@ -157,11 +157,13 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 		return userError("-workdir is required")
 	}
 
-	if c.RepositoryURL == "" {
-		return userError("-repository is required")
+	if c.RepositoryURL != "" && c.Revision == "" {
+		c.Revision = "HEAD"
+	} else if c.RepositoryURL == "" && c.Revision != "" {
+		return userError("if -repository is unspecified -revision must also be unspecified.")
 	}
 
-	if !validRevisionRe.MatchString(c.Revision) {
+	if c.RepositoryURL != "" && !validRevisionRe.MatchString(c.Revision) {
 		return fmt.Errorf("invalid revision %q", c.Revision)
 	}
 
@@ -197,27 +199,46 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	return nil
 }
 
-// remoteRun fetches a remote repository, runs a recipe and returns the exit code.
-// Mutates env.
-func (c *cookRun) remoteRun(ctx context.Context, env environ.Env) (recipeExitCode int, err error) {
-	// Fetch the repo.
-	if err := checkoutRepository(ctx, c.CheckoutDir, c.RepositoryURL, c.Revision); err != nil {
-		return 0, errors.Annotate(err).Reason("could not checkout %(repo)q at %(rev)q to %(path)q").
-			D("repo", c.RepositoryURL).
-			D("rev", c.Revision).
-			D("path", c.CheckoutDir).
-			Err()
-	}
+// ensureAndRun ensures that we have recipes (according to -repository,
+// -revision and -checkout-dir), and then runs them.
+func (c *cookRun) ensureAndRun(ctx context.Context, env environ.Env) (recipeExitCode int, err error) {
+	if c.RepositoryURL == "" {
+		switch st, err := os.Stat(c.CheckoutDir); {
+		case os.IsNotExist(err):
+			return 0, userError("-repository not specified and -checkout-dir doesn't exist")
+		case err != nil:
+			return 0, errors.Annotate(err).Reason("could not stat -checkout-dir").Err()
+		case !st.IsDir():
+			return 0, userError("-checkout-dir is not a directory")
+		}
 
-	// Read the path to the recipes.py within the fetched repo.
-	cfg, err := loadRecipesCfg(c.CheckoutDir)
-	if err != nil {
-		return 0, errors.Annotate(err).Reason("could not recipes.cfg").Err()
+		recipesPath, err := exec.LookPath(filepath.Join(c.CheckoutDir, "recipes"))
+		if err != nil {
+			return 0, errors.Annotate(err).Reason("could not find bundled recipes").Err()
+		}
+		c.rr.cmdPrefix = []string{recipesPath}
+	} else {
+		// Fetch the repo.
+		if err := checkoutRepository(ctx, c.CheckoutDir, c.RepositoryURL, c.Revision); err != nil {
+			return 0, errors.Annotate(err).Reason("could not checkout %(repo)q at %(rev)q to %(path)q").
+				D("repo", c.RepositoryURL).
+				D("rev", c.Revision).
+				D("path", c.CheckoutDir).
+				Err()
+		}
+		// Read the path to the recipes.py within the fetched repo.
+		cfg, err := loadRecipesCfg(c.CheckoutDir)
+		if err != nil {
+			return 0, errors.Annotate(err).Reason("could not recipes.cfg").Err()
+		}
+		if cfg.RecipesPath == nil || *cfg.RecipesPath == "" {
+			return 0, errors.New("recipes.cfg in the fetched repository does not specify recipes_path")
+		}
+		c.rr.cmdPrefix = []string{
+			"python",
+			filepath.Join(filepath.FromSlash(*cfg.RecipesPath), "recipes.py"),
+		}
 	}
-	if cfg.RecipesPath == nil || *cfg.RecipesPath == "" {
-		return 0, fmt.Errorf("recipes.cfg in the fetched repository does not specify recipes_path")
-	}
-	c.rr.recipesPyPath = filepath.Join(c.CheckoutDir, filepath.FromSlash(*cfg.RecipesPath), "recipes.py")
 
 	// Setup our working directory.
 	c.rr.workDir, err = prepareRecipeRunWorkDir(c.rr.workDir)
@@ -408,7 +429,7 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 	c.rr.properties = props
 
 	// Run the recipe.
-	recipeExitCode, err := c.remoteRun(ctx, env)
+	recipeExitCode, err := c.ensureAndRun(ctx, env)
 	if err != nil {
 		bootstrapSuccess = false
 		return err

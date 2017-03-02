@@ -22,17 +22,22 @@ import (
 
 // localRecipeRun can run a local recipe.
 type recipeRun struct {
-	recipesPyPath        string                  // path to the recipes.py
+	// put these args at the beginning of the Cmd. Must include the python
+	// interpreter if necessary.
+	cmdPrefix []string
+
 	recipeName           string                  // name of the recipe
 	properties           map[string]interface{}  // input properties
 	opArgs               recipe_engine.Arguments // operational arguments for the recipe engine
 	workDir              string                  // a directory where to run the recipe
-	timestamps           bool                    // whether to print timestamps
 	outputResultJSONFile string                  // path to the result file
 }
 
 // command prepares a command that runs a recipe.
 func (rr *recipeRun) command(ctx context.Context, tdir string, env environ.Env) (*exec.Cmd, error) {
+	if len(rr.cmdPrefix) == 0 {
+		return nil, errors.New("empty command prefix")
+	}
 	if err := ensureDir(tdir); err != nil {
 		return nil, err
 	}
@@ -54,15 +59,14 @@ func (rr *recipeRun) command(ctx context.Context, tdir string, env environ.Env) 
 	}
 
 	// Build our command (arguments first).
-	recipeCmd := exec.CommandContext(
-		ctx,
-		"python",
-		rr.recipesPyPath,
+	args := append(rr.cmdPrefix,
 		"--operational-args-path", opArgsPath,
 		"run",
 		"--properties-file", propertiesPath,
 		"--workdir", rr.workDir,
 	)
+
+	recipeCmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	if rr.outputResultJSONFile != "" {
 		recipeCmd.Args = append(recipeCmd.Args,
 			"--output-result-json", rr.outputResultJSONFile)
