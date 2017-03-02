@@ -347,7 +347,8 @@ function activateDragDrop(tableData, pageSettings, hotlistID){
       target_id: targetID,
       moved_ids: srcID,
       split_above: position == 'above',
-      colspec: pageSettings['colSpec']
+      colspec: pageSettings['colSpec'],
+      can: pageSettings['can']
     }
     CS_doPost(hotlistID + '/rerank.do', onHotlistResponse, data);
   }

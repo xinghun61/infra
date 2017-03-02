@@ -179,8 +179,8 @@ class HotlistIssues(servlet.Servlet):
         mr.cnxn, mr.hotlist, self.services.user)
     current_col_spec = post_data.get('current_col_spec')
     default_url = framework_helpers.FormatAbsoluteURL(
-          mr, hotlist_view_url,
-          include_project=False, colspec=current_col_spec)
+        mr, hotlist_view_url,
+        include_project=False, colspec=current_col_spec)
     sorting.InvalidateArtValuesKeys(
         mr.cnxn,
         [hotlist_item.issue_id for hotlist_item

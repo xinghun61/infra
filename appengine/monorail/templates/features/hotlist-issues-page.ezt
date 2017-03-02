@@ -103,6 +103,13 @@ runOnLoad(function() {
       return;
     });
 
+    $("hide-closed").addEventListener("click", function(e) {
+      HTL_toggleIssuesShown(e.target);
+    });
+    $("show-all").addEventListener("click", function(e) {
+      HTL_toggleIssuesShown(e.target);
+    });
+
 });
 </script>
 

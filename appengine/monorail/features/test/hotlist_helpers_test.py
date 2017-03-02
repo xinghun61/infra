@@ -171,7 +171,11 @@ class HelpersUnitTest(unittest.TestCase):
     self.issue3 = fake.MakeTestIssue(
         001, 3, 'issue_summary3', 'New', 222L, project_name='ProjectName')
     self.services.issue.TestAddIssue(self.issue3)
-    self.issues = [self.issue1, self.issue3]
+    self.issue4 = fake.MakeTestIssue(
+        001, 4, 'issue_summary4', 'Fixed', 222L, closed_timestamp=232423,
+        project_name='ProjectName')
+    self.services.issue.TestAddIssue(self.issue4)
+    self.issues = [self.issue1, self.issue3, self.issue4]
     self.mr = testing_helpers.MakeMonorailRequest()
 
   def testFilterIssues(self):
@@ -179,6 +183,14 @@ class HelpersUnitTest(unittest.TestCase):
         self.mr, self.issues, self.services)
     self.assertEqual(len(test_allowed_issues), 1)
     self.assertEqual(test_allowed_issues[0].local_id, 3)
+
+  def testFilterIssues_ShowClosed(self):
+    self.mr.can = 1
+    test_allowed_issues = hotlist_helpers.FilterIssues(
+        self.mr, self.issues, self.services)
+    self.assertEqual(len(test_allowed_issues), 2)
+    self.assertEqual(test_allowed_issues[0].local_id, 3)
+    self.assertEqual(test_allowed_issues[1].local_id, 4)
 
   def testMembersWithoutGivenIDs(self):
     h = features_pb2.Hotlist()

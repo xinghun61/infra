@@ -1657,3 +1657,8 @@ function HTL_deleteHotlist(form) {
     form.submit();
   }
 }
+
+function HTL_toggleIssuesShown(toggleIssuesButton) {
+  $('can').value = toggleIssuesButton.value;
+  $('toggleissuesform').submit();
+}

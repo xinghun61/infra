@@ -186,16 +186,17 @@ def FilterIssues(mr, issues, services):
           mr.auth.user_pb, mr.auth.effective_ids, p)
       for pid, p in issue_projects.items()}
   for issue in issues:
-    issue_project = issue_projects[issue.project_id]
-    config = configs_by_project_id[issue.project_id]
-    perms = perms_by_project_id[issue.project_id]
-    granted_perms = tracker_bizobj.GetGrantedPerms(
-        issue, mr.auth.effective_ids, config)
-    permit_view = permissions.CanViewIssue(
-        mr.auth.effective_ids, perms,
-        issue_project, issue, granted_perms=granted_perms)
-    if permit_view:
-      allowed_issues.append(issue)
+    if (mr.can == 1) or not issue.closed_timestamp:
+      issue_project = issue_projects[issue.project_id]
+      config = configs_by_project_id[issue.project_id]
+      perms = perms_by_project_id[issue.project_id]
+      granted_perms = tracker_bizobj.GetGrantedPerms(
+          issue, mr.auth.effective_ids, config)
+      permit_view = permissions.CanViewIssue(
+          mr.auth.effective_ids, perms,
+          issue_project, issue, granted_perms=granted_perms)
+      if permit_view:
+        allowed_issues.append(issue)
 
   return allowed_issues
 

@@ -28,4 +28,17 @@
       </div>
     </td>
   </tr>
+  <tr><th align="left">Issues:</th>
+    <td width="100%">
+    <form>
+      <input type="radio" id="hide-closed" name="toggleissues" value="2" [is can "2"]checked[end]>Open<br>
+      <input type="radio" id="show-all" name="toggleissues" value="1" [is can "1"]checked[end]>All<br>
+    </form>
+    </form>
+    </td>
+  </tr>
 </table>
+
+<form id="toggleissuesform" method="GET" action="/u/[viewed_user_id]/hotlists/[hotlist.name]">
+  <input type="hidden" id="can" name="can">
+</form>
