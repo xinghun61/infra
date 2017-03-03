@@ -143,10 +143,12 @@ class DockerClient(object):
       container_name = get_container_name(device)
       container_hostname = get_container_hostname(device)
       if not any(container_name == c.name for c in running_containers):
+        volumes = _DOCKER_VOLUMES.copy()
+        volumes['/b/%s' % container_name] = '/b/'
         new_container = self._client.containers.create(
             image=image_name,
             hostname=container_hostname,
-            volumes=_DOCKER_VOLUMES,
+            volumes=volumes,
             name=container_name,
             detach=True,  # Don't block until it exits.
         )
