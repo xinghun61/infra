@@ -157,8 +157,8 @@
 	  </tr>
 	  <tr>
 	    <td><input type="radio" name="comp" value="Javascript" id="dev_opt_11" onclick="selectComp(this.value)" /></td>
-	    <td><label for="dev_opt_11">Javascript</label></td>
-	    <td><label for="">Problems with the Javascript interpreter</label></td>
+	    <td><label for="dev_opt_11">JavaScript</label></td>
+	    <td><label for="">Problems with the JavaScript interpreter</label></td>
 	  </tr>
 	  <tr>
 	    <td><input type="radio" name="comp" value="Developer Tools" id="dev_opt_12" onclick="selectComp(this.value)" /></td>
