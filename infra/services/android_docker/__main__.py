@@ -155,7 +155,8 @@ def main():
   # files even if they're owned by root.
   os.umask(0o000)
   file_handler = logging.handlers.RotatingFileHandler(
-      '/tmp/android_containers.log', maxBytes=10 * 1024 * 1024, backupCount=5)
+      '/var/log/chrome-infra/android_containers.log',
+      maxBytes=10 * 1024 * 1024, backupCount=5)
   file_handler.setFormatter(log_fmt)
   logger.addHandler(file_handler)
   stdout_handler = logging.StreamHandler(sys.stdout)
