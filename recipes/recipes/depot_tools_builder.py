@@ -70,7 +70,7 @@ def RunSteps(api, revision):
   def create(pkg_dir, step_title, platform, refs=()):
     """Pushes given package directory up to CIPD with provided refs."""
     cmd = [
-      api.cipd.executable,
+      'cipd',
       'create',
       '-in', pkg_dir,
       '-name', 'infra/depot_tools/git_installer/%s' % platform,
