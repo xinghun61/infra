@@ -67,7 +67,8 @@ func getAnalyzeHandler(ctx *router.Context) {
 
 	if client.GetReader(c) == nil {
 		miloReader := client.NewMiloReader(c, "")
-		c = client.WithReader(c, miloReader)
+		memcachingReader := client.NewMemcacheReader(miloReader)
+		c = client.WithReader(c, memcachingReader)
 	}
 
 	alerts := []messages.Alert{}

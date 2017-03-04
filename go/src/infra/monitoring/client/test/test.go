@@ -33,7 +33,7 @@ type MockReader struct {
 
 // Build implements the Reader interface.
 func (m MockReader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
-	if m.BuildValue != nil {
+	if m.BuildValue != nil || m.BuildFetchError != nil {
 		return m.BuildValue, m.BuildFetchError
 	}
 
