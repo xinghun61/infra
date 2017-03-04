@@ -41,6 +41,9 @@ var cmdCook = &subcommands.Command{
 
 		// Initialize our AnnotationFlags operational argument.
 		c.rr.opArgs.AnnotationFlags = &recipe_engine.Arguments_AnnotationFlags{}
+		c.rr.opArgs.EngineFlags = &recipe_engine.Arguments_EngineFlags{
+			UseResultProto: true,
+		}
 
 		fs := &c.Flags
 		fs.Var(&c.mode,
@@ -392,11 +395,11 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 	if err != nil {
 		return err
 	}
-	if propsJSON, err := json.MarshalIndent(props, "", "  "); err != nil {
+	propsJSON, err := json.MarshalIndent(props, "", "  ")
+	if err != nil {
 		return errors.Annotate(err).Reason("could not marshal properties to JSON").Err()
-	} else {
-		log.Infof(ctx, "using properties:\n%s", propsJSON)
 	}
+	log.Infof(ctx, "using properties:\n%s", propsJSON)
 
 	// If we're not using LogDog, send out annotations.
 	bootstrapSuccess := true
