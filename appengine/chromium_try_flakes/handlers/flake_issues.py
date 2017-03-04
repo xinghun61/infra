@@ -572,12 +572,6 @@ class CreateFlakyRun(webapp2.RequestHandler):
 
     return passed, failed, skipped
 
-  # see examples:
-  # compile https://build.chromium.org/p/tryserver.chromium.mac/json/builders/
-  #         mac_chromium_compile_dbg/builds/11167?as_text=1
-  # gtest https://build.chromium.org/p/tryserver.chromium.win/json/builders/
-  #       win_chromium_x64_rel_swarming/builds/4357?as_text=1
-  # TODO(jam): get specific problem with compile so we can use that as name
   @classmethod
   def get_flakes(cls, mastername, buildername, buildnumber, step):
     """Returns a list of flakes in a given step.
@@ -651,14 +645,10 @@ class CreateFlakyRun(webapp2.RequestHandler):
     failure_time = failure_run.time_finished
     patchset_builder_runs = failure_run.key.parent().get()
 
-    # TODO(sergiyb): The parsing logic below is very fragile and will break with
-    # any changes to step names and step text. We should move away from parsing
-    # buildbot to tools like flakiness dashboard (test-results.appspot.com),
-    # which uses a standartized JSON format.
     master = BuildRun.removeMasterPrefix(patchset_builder_runs.master)
-    url = ('https://build.chromium.org/p/' + master +
-           '/json/builders/' + patchset_builder_runs.builder +'/builds/' +
-           str(failure_run.buildnumber))
+    url = ('https://chrome-build-extract.appspot.com/p/' + master +
+           '/builders/' + patchset_builder_runs.builder +'/builds/' +
+           str(failure_run.buildnumber) + '?json=1')
     urlfetch.set_default_fetch_deadline(60)
     logging.info('get_flaky_run_reason ' + url)
     response = urlfetch.fetch(url)
