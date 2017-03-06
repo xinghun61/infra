@@ -3,7 +3,6 @@
 trap "exit 10" SIGUSR1
 
 SWARM_DIR=/b/swarming
-SWARM_URL="https://chromium-swarm.appspot.com/bot_code"
 SWARM_ZIP=swarming_bot.zip
 
 DEPOT_TOOLS_DIR=/b/depot_tools
@@ -29,6 +28,7 @@ mkdir -p $DEPOT_TOOLS_DIR
 mkdir -p $SWARM_DIR
 /bin/chown chrome-bot:chrome-bot $SWARM_DIR
 cd $SWARM_DIR
+rm -rf swarming_bot*.zip
 /bin/su -c "/usr/bin/curl -sSLOJ $SWARM_URL" chrome-bot
 
 echo "Starting $SWARM_ZIP"

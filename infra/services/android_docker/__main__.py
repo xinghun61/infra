@@ -94,7 +94,7 @@ def launch(docker_client, android_devices, args):
 
     # Create a container for each device that doesn't already have one.
     needs_cgroup_update = docker_client.create_missing_containers(
-        running_containers, android_devices, image_url)
+        running_containers, android_devices, image_url, args.swarming_server)
 
     # For each device that was granted a new container, add it to the
     # container's cgroup.
@@ -133,6 +133,9 @@ def main():
   launch_subparser.add_argument(
       '--image-name', default='android_docker:latest',
       help='Name of docker image to launch from.')
+  launch_subparser.add_argument(
+      '--swarming-server', default='https://chromium-swarm.appspot.com',
+      help='URL of the swarming server to connect to.')
   launch_subparser.add_argument(
       '--registry-project', default='chromium-container-registry',
       help='Name of gcloud project id for the container registry.')

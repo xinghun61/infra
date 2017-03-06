@@ -281,7 +281,7 @@ class TestDockerClient(unittest.TestCase):
     mock_from_env.return_value = self.fake_client
 
     needs_cgroup_update = containers.DockerClient().create_missing_containers(
-        running_containers, devices, 'image')
+        running_containers, devices, 'image', 'swarm-url.com')
     # Ensure serial3 needs to be rebooted. This indicates that a new container
     # was created for it.
     self.assertEquals([d.serial for d in needs_cgroup_update], ['serial3'])

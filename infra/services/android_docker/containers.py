@@ -33,6 +33,8 @@ _DOCKER_VOLUMES = {
 }
 _DOCKER_CGROUP = '/sys/fs/cgroup/devices/docker'
 
+_SWARMING_URL_ENV_VAR = 'SWARM_URL'
+
 
 def get_container_name(device):
   """Maps a device to its container name."""
@@ -131,11 +133,11 @@ class DockerClient(object):
       container.remove()
 
   def create_missing_containers(self, running_containers, android_devices,
-                                image_name):
+                                image_name, swarming_url):
     """Ensures each connected device has a running container.
 
     Will create and launch a container for any device that needs one. Any device
-    that is granted a new container will need to be whitelisted it under the
+    that is granted a new container will need to be whitelisted under the
     container's cgroup. This list of such devices is returned.
     """
     needs_cgroup_update = []
@@ -149,6 +151,7 @@ class DockerClient(object):
             image=image_name,
             hostname=container_hostname,
             volumes=volumes,
+            environment={_SWARMING_URL_ENV_VAR: swarming_url + '/bot_code'},
             name=container_name,
             detach=True,  # Don't block until it exits.
         )
