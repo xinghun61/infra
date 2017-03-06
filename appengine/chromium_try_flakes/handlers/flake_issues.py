@@ -652,10 +652,10 @@ class CreateFlakyRun(webapp2.RequestHandler):
     urlfetch.set_default_fetch_deadline(60)
     logging.info('get_flaky_run_reason ' + url)
     response = urlfetch.fetch(url)
-    if response.status_code == 404:
-      logging.warning(
-          'The build request %s has returned 404, which likely means it has '
-          'expired and can not be retrieved anymore.', url)
+    if response.status_code >= 400 and response.status_code <= 599:
+      logging.error('The request to %s has returned %d: %s', url,
+                    response.status_code, response.content)
+      self.response.set_status(500, 'Failed to fetch build.')
       return
     json_result = json.loads(response.content)
     steps = json_result['steps']

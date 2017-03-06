@@ -1070,7 +1070,7 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     self.assertEqual(flaky_run.flakes[0].name, 'test-step')
     self.assertEqual(flaky_run.flakes[0].failure, 'test-step')
 
-  def test_ignores_404_failures_but_fails_on_500(self):
+  def test_returns_500_for_all_fetch_failures(self):
     now = datetime.datetime.utcnow()
     br_f, br_s = self._create_build_runs(now - datetime.timedelta(hours=1), now)
     urlfetch_mock = mock.Mock(side_effect = [
@@ -1080,15 +1080,13 @@ class CreateFlakyRunTestCase(testing.AppengineTestCase):
     ])
 
     with mock.patch('google.appengine.api.urlfetch.fetch', urlfetch_mock):
-      # No exception should be thrown here.
       self.test_app.post('/issues/create_flaky_run',
                          {'failure_run_key': br_f.urlsafe(),
-                          'success_run_key': br_s.urlsafe()})
+                          'success_run_key': br_s.urlsafe()}, status=500)
 
-      with self.assertRaises(Exception):
-        self.test_app.post('/issues/create_flaky_run',
-                           {'failure_run_key': br_f.urlsafe(),
-                            'success_run_key': br_s.urlsafe()})
+      self.test_app.post('/issues/create_flaky_run',
+                         {'failure_run_key': br_f.urlsafe(),
+                          'success_run_key': br_s.urlsafe()}, status=500)
 
   def test_flattens_tests_correctly(self):
     passed, failed, skipped = CreateFlakyRun._flatten_tests(
