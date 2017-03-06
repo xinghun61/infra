@@ -49,13 +49,19 @@ func init() {
 
 	gaemiddleware.InstallHandlers(r, baseMW)
 
+	// Endpoints used by end users.
 	r.GET("/", getMW, polymerHandler)
 	r.GET("/home", getMW, polymerHandler)
 	r.GET("/flakiness", getMW, polymerHandler)
 	r.GET("/flakiness/*path", getMW, polymerHandler)
 
+	// TODO(sergiyb): This endpoint may return JSON if supplied parameters select
+	// exactly one test file, but normally returns HTML. Consider separating JSON
+	// output into a /data/ endpoint, but make sure that all clients are updated.
 	r.GET("/testfile", getMW, getHandler)
-	r.GET("/testfile/", getMW, getHandler)
+	r.GET("/revision_range", baseMW, revisionHandler)
+
+	// POST endpoints.
 	r.POST("/testfile/upload", authMW.Extend(withParsedUploadForm), uploadHandler)
 
 	r.POST(
@@ -64,14 +70,15 @@ func init() {
 		deleteKeysHandler,
 	)
 
+	// Endpoints that return JSON and not expected to be used by humans.
 	r.GET("/data/builders", baseMW, getBuildersHandler)
-	r.GET("/data/revision_range", baseMW, revisionHandler)
 	r.GET("/data/test_flakiness/list", baseMW, testFlakinessListHandler)
 	r.GET("/data/test_flakiness/groups", baseMW, testFlakinessGroupsHandler)
 
 	// TODO(sergiyb): Remove these after updating all other apps using them.
+	// This should be removed after the following CL lands:
+	//   https://chromium-review.googlesource.com/c/450278/
 	r.GET("/builders", baseMW.Extend(reportOldEndpoint), getBuildersHandler)
-	r.GET("/revision_range", baseMW.Extend(reportOldEndpoint), revisionHandler)
 
 	http.DefaultServeMux.Handle("/", r)
 }
