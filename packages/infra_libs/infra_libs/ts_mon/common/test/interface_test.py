@@ -503,3 +503,46 @@ class GenerateNewProtoTest(unittest.TestCase):
     self.assertEqual('c', data_set.data[0].field[2].name)
     self.assertEqual('test', data_set.data[0].field[2].string_value)
 
+
+class GlobalCallbacksTest(unittest.TestCase):
+  def setUp(self):
+    interface.reset_for_unittest()
+    interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.target = stubs.MockTarget()
+
+  def test_register_global_metrics(self):
+    metric = metrics.GaugeMetric('test', 'foo', None)
+    interface.register_global_metrics([metric])
+    self.assertEqual(['test'], list(interface.state.global_metrics))
+    interface.register_global_metrics([metric])
+    self.assertEqual(['test'], list(interface.state.global_metrics))
+    interface.register_global_metrics([])
+    self.assertEqual(['test'], list(interface.state.global_metrics))
+
+  def test_register_global_metrics_callback(self):
+    interface.register_global_metrics_callback('test', 'callback')
+    self.assertEqual(['test'], list(interface.state.global_metrics_callbacks))
+    interface.register_global_metrics_callback('nonexistent', None)
+    self.assertEqual(['test'], list(interface.state.global_metrics_callbacks))
+    interface.register_global_metrics_callback('test', None)
+    self.assertEqual([], list(interface.state.global_metrics_callbacks))
+
+  def test_callbacks_called_on_flush(self):
+    cb = mock.Mock()
+    interface.register_global_metrics_callback('test', cb)
+    interface.flush()
+    cb.assert_called_once_with()
+
+  def test_flush_continues_after_exception(self):
+    cb = mock.Mock(side_effect=[Exception, None])
+    interface.register_global_metrics_callback('cb1', cb)
+    interface.register_global_metrics_callback('cb2', cb)
+    interface.flush()
+    self.assertEqual(2, cb.call_count)
+
+  def test_callbacks_not_called_if_disabled(self):
+    interface.state.invoke_global_callbacks_on_flush = False
+    cb = mock.Mock()
+    interface.register_global_metrics_callback('test', cb)
+    interface.flush()
+    self.assertFalse(cb.called)
