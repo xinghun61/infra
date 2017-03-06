@@ -8,7 +8,6 @@
 # pylint: disable=unused-argument
 
 import ast
-import base64
 import datetime
 import json
 import logging
@@ -128,35 +127,7 @@ class GitWrapper(object):
 ##################################################
 # Input Functions
 ##################################################
-
-
-MILO_JSON_ENDPOINT = (
-    'https://luci-milo.appspot.com/prpc/milo.Buildbot/GetBuildbotBuildsJSON')
-
-def FetchBuilderJsonFromMilo(master, builder, limit=100): # pragma: no cover
-  LOGGER.debug('Fetching buildbot json for %s/%s from milo', master, builder)
-  body = {
-      'master': master,
-      'builder': builder,
-      'limit': limit
-  }
-  headers = {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json',
-  }
-
-  res = requests.post(
-      MILO_JSON_ENDPOINT, headers=headers, data=json.dumps(body), timeout=60)
-  # Strip off jsonp header.
-  data = json.loads(res.text[4:])
-  return [
-      json.loads(base64.b64decode(build['data'])) for build in data['builds']]
-
-def GetMasterNameFromURL(master_url):
-  s = master_url.rstrip('/').split('/')
-  return s[-1]
-
-def FetchBuilderJson(fetch_q):
+def FetchBuilderJson(fetch_q):  # pragma: no cover
   """Pull build json from buildbot masters.
 
   Args:
@@ -171,15 +142,15 @@ def FetchBuilderJson(fetch_q):
       master_url, builder, output_builds = fetch_q.get(False)
     except Queue.Empty:
       return
-
+    url = '%s/json/builders/%s/builds/_all' % (master_url, builder)
+    LOGGER.debug('Fetching buildbot json from %s', url)
     try:
-      builder_history = FetchBuilderJsonFromMilo(GetMasterNameFromURL(
-          master_url), builder)
+      # TODO(hinoka): Remove this huge timeout and move to milo.
+      r = requests.get(url, params={'filter': 'false'}, timeout=60*3)
+      builder_history = r.json()
       output_builds[builder] = builder_history
     except requests.exceptions.RequestException as e:
-      LOGGER.error(
-          'RequestException while fetching %s/%s:\n%s',
-          master_url, builder, repr(e))
+      LOGGER.error('RequestException while fetching %s:\n%s', url, repr(e))
       output_builds[builder] = None
 
 
