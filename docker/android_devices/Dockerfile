@@ -36,5 +36,8 @@ RUN /usr/bin/find /usr/share/doc -depth -empty -exec rm -rf {} \;
 
 RUN /bin/mkdir /opt/swarming_bootstrap
 ADD start_swarm_bot.sh /opt/swarming_bootstrap/start_swarm_bot.sh
+ADD shutdown.sh /sbin/shutdown
+RUN /bin/chmod 0755 /sbin/shutdown
+RUN echo "%chrome-bot ALL = NOPASSWD: /sbin/shutdown" > /etc/sudoers.d/chrome-bot
 
 CMD ["/bin/bash", "/opt/swarming_bootstrap/start_swarm_bot.sh"]
