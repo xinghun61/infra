@@ -105,7 +105,7 @@ func TestWriteErrorAndResponse(t *testing.T) {
 	Convey("writeError and writeResponse", t, func() {
 		rec := httptest.NewRecorder()
 		ctx := &router.Context{
-			Context: memory.Use(context.Background()),
+			Context: memory.UseWithAppID(context.Background(), "test-results-hrd"),
 			Writer:  rec,
 		}
 
@@ -180,7 +180,7 @@ func TestGetFlakinessGroups(t *testing.T) {
 		bq, err := bigquery.New(&http.Client{})
 		So(err, ShouldBeNil)
 		bq.BasePath = server.URL + "/"
-		ctx := memory.Use(context.Background())
+		ctx := memory.UseWithAppID(context.Background(), "test-results-hrd")
 
 		groups, err := getFlakinessGroups(ctx, bq)
 		So(err, ShouldBeNil)
@@ -229,7 +229,7 @@ func TestGetFlakinessData(t *testing.T) {
 		bq, err := bigquery.New(&http.Client{})
 		So(err, ShouldBeNil)
 		bq.BasePath = server.URL + "/"
-		ctx := memory.Use(context.Background())
+		ctx := memory.UseWithAppID(context.Background(), "test-results-hrd")
 
 		Convey("for tests in a dir", func() {
 			handler.ExpectedRequests[0].Query =

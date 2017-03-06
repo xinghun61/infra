@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/luci/gae/service/info"
 	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
@@ -67,8 +68,6 @@ const flakesQuery = `
     flakiness DESC
   LIMIT
     1000;`
-
-const bqProjectID = "test-results-hrd"
 
 // Set 50 second timeout for the BigQuery queries, which leaves 10 seconds for
 // overhead before HTTP timeout. The query will actually continue to run after
@@ -276,7 +275,7 @@ func testFlakinessListHandler(ctx *router.Context) {
 		}
 	}
 
-	aeCtx := appengine.NewContext(ctx.Request)
+	aeCtx := appengine.WithContext(ctx.Context, ctx.Request)
 	bq, err := createBQService(aeCtx)
 	if err != nil {
 		writeError(ctx, err, "testFlakinessListHandler", "failed create BigQuery client")
@@ -322,6 +321,7 @@ func createBQService(aeCtx context.Context) (*bigquery.Service, error) {
 func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, params []*bigquery.QueryParameter) ([]*bigquery.TableRow, error) {
 	logging.Infof(ctx, "Executing query `%s` with params %#v", query, params)
 
+	bqProjectID := info.AppID(ctx)
 	useLegacySQL := false
 	request := bq.Jobs.Query(bqProjectID, &bigquery.QueryRequest{
 		TimeoutMs:       bqQueryTimeout,
