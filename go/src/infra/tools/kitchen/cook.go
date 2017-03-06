@@ -17,14 +17,15 @@ import (
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
 
-	"infra/tools/kitchen/proto"
-
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/flag/stringlistflag"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/system/exitcode"
+
+	"infra/tools/kitchen/migration"
+	"infra/tools/kitchen/proto"
 )
 
 // BootstrapStepName is the name of kitchen's step where it makes preparations
@@ -305,6 +306,7 @@ func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 // prepareProperties parses the properties specified by flags,
 // validates them and add some extra properties to describe current build
 // environment.
+// May mutate some properties.
 func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, error) {
 	props, err := parseProperties(c.Properties, c.PropertiesFile)
 	if err != nil {
@@ -342,6 +344,11 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 		return nil, errors.Reason("chosen mode didn't add %(p)s property").
 			D("p", PropertyBotId).
 			Err()
+	}
+
+	err = migration.TransformProperties(props)
+	if err != nil {
+		return nil, err
 	}
 
 	return props, nil
