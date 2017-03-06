@@ -25,6 +25,8 @@ PROJECTS = [
   'depot_tools',
   'build',
   'infra',
+  'skia',
+  'skiabuildbot',
 ]
 
 
