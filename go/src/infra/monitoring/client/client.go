@@ -171,8 +171,7 @@ type writer struct {
 	alertsBase string
 }
 
-// BuilderData is the data returned from the GET "/builders"
-// endpoint.
+// BuilderData is the data returned from the GET "/data/builders" endpoint.
 // TODO(martinis): Change this to be imported from test results once these
 // structs have been refactored out of the frontend package. Can't import them
 // now because frontend init() sets up http handlers.
@@ -205,7 +204,7 @@ func NewReader(ctx context.Context) (readerType, error) {
 		trCache: map[string]map[string][]string{},
 	}
 
-	URL := "https://test-results.appspot.com/builders"
+	URL := "https://test-results.appspot.com/data/builders"
 	tmpCache := &model.BuilderData{}
 	code, err := r.hc.getJSON(ctx, URL, tmpCache)
 	if err != nil {
