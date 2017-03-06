@@ -138,6 +138,8 @@ def ParseArgs(argv):
                       help='Force updating the lkgr to the found (or manually '
                            'specified) value. Skips checking for validity '
                            'against the current LKGR.')
+  parser.add_argument('--service-account',
+                      help='Service account to use when doing RPCs to milo.')
 
   args = parser.parse_args(argv)
   return args, config_arg_names
@@ -186,7 +188,8 @@ def main(argv):
     if args.build_data:
       builds = lkgr_lib.ReadBuildData(args.build_data)
     else:
-      builds, failures = lkgr_lib.FetchBuildData(lkgr_builders, args.max_threads)
+      builds, failures = lkgr_lib.FetchBuildData(
+          lkgr_builders, args.max_threads, args.service_account)
       if failures > 0:
         return 1
 

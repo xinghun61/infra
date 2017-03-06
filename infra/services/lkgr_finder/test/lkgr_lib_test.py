@@ -29,10 +29,11 @@ class FetchBuilderJsonTest(unittest.TestCase):
     },
   }
 
-  @mock.patch('requests.get', autospec=True)
-  def testAllBuildersSucceeded(self, mocked_get):
-    response = mocked_get.return_value
-    response.json.side_effect = [{'build1': 'success'}, {'build2': 'failure'}]
+  @mock.patch(
+      'infra.services.lkgr_finder.lkgr_lib.FetchBuilderJsonFromMilo',
+      autospec=True)
+  def testAllBuildersSucceeded(self, mocked_fetch):
+    mocked_fetch.side_effect = iter([{'build1': 'success'}, {'build2': 'failure'}])
     build_data,failures = lkgr_lib.FetchBuildData(self.test_masters,
                                                   max_threads=1)
     self.assertEquals(failures, 0)
@@ -40,22 +41,24 @@ class FetchBuilderJsonTest(unittest.TestCase):
     self.assertEquals(build_data['master1']['builder1']['build1'], 'success')
     self.assertEquals(build_data['master1']['builder2']['build2'], 'failure')
 
-  @mock.patch('requests.get', autospec=True)
-  def testAllBuildersFailed(self, mocked_get):
-    response = mocked_get.return_value
-    response.json.side_effect = [requests.exceptions.RequestException,
-                                 requests.exceptions.RequestException]
+  @mock.patch(
+      'infra.services.lkgr_finder.lkgr_lib.FetchBuilderJsonFromMilo',
+      autospec=True)
+  def testAllBuildersFailed(self, mocked_fetch):
+    mocked_fetch.side_effect = iter([requests.exceptions.RequestException,
+                                     requests.exceptions.RequestException])
     build_data,failures = lkgr_lib.FetchBuildData(self.test_masters,
                                                   max_threads=1)
     self.assertEquals(failures, 2)
     self.assertEquals(build_data['master1']['builder1'], None)
     self.assertEquals(build_data['master1']['builder2'], None)
 
-  @mock.patch('requests.get', autospec=True)
-  def testSomeBuildersFailed(self, mocked_get):
-    response = mocked_get.return_value
-    response.json.side_effect = [{'build1': 'success'},
-                                 requests.exceptions.RequestException]
+  @mock.patch(
+      'infra.services.lkgr_finder.lkgr_lib.FetchBuilderJsonFromMilo',
+      autospec=True)
+  def testSomeBuildersFailed(self, mocked_fetch):
+    mocked_fetch.side_effect = iter([{'build1': 'success'},
+                                     requests.exceptions.RequestException])
     build_data,failures = lkgr_lib.FetchBuildData(self.test_masters,
                                                   max_threads=1)
     self.assertEquals(failures, 1)

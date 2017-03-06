@@ -8,6 +8,7 @@
 # pylint: disable=unused-argument
 
 import ast
+import base64
 import datetime
 import json
 import logging
@@ -23,6 +24,7 @@ import xml.etree.ElementTree as xml
 
 import requests
 
+import infra_libs
 from infra.libs import git
 
 
@@ -127,7 +129,43 @@ class GitWrapper(object):
 ##################################################
 # Input Functions
 ##################################################
-def FetchBuilderJson(fetch_q):  # pragma: no cover
+
+
+MILO_JSON_ENDPOINT = (
+    'https://luci-milo.appspot.com/prpc/milo.Buildbot/GetBuildbotBuildsJSON')
+
+
+OAUTH_SCOPES = ['https://www.googleapis.com/auth/userinfo.email']
+
+def FetchBuilderJsonFromMilo(master, builder, limit=100,
+                             service_account_file=None): # pragma: no cover
+  LOGGER.debug('Fetching buildbot json for %s/%s from milo', master, builder)
+  body = {
+      'master': master,
+      'builder': builder,
+      'limit': limit
+  }
+  headers = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json',
+  }
+  if service_account_file:
+      credentials = infra_libs.get_signed_jwt_assertion_credentials(
+                service_account_file, scopes=OAUTH_SCOPES)
+      credentials.apply(headers)
+
+  res = requests.post(
+      MILO_JSON_ENDPOINT, headers=headers, data=json.dumps(body), timeout=60)
+  # Strip off jsonp header.
+  data = json.loads(res.text[4:])
+  return [
+      json.loads(base64.b64decode(build['data'])) for build in data['builds']]
+
+def GetMasterNameFromURL(master_url):
+  s = master_url.rstrip('/').split('/')
+  return s[-1]
+
+def FetchBuilderJson(fetch_q):
   """Pull build json from buildbot masters.
 
   Args:
@@ -139,22 +177,22 @@ def FetchBuilderJson(fetch_q):  # pragma: no cover
   """
   while True:
     try:
-      master_url, builder, output_builds = fetch_q.get(False)
+      master_url, builder, service_account, output_builds = fetch_q.get(False)
     except Queue.Empty:
       return
-    url = '%s/json/builders/%s/builds/_all' % (master_url, builder)
-    LOGGER.debug('Fetching buildbot json from %s', url)
+
     try:
-      # TODO(hinoka): Remove this huge timeout and move to milo.
-      r = requests.get(url, params={'filter': 'false'}, timeout=60*3)
-      builder_history = r.json()
+      builder_history = FetchBuilderJsonFromMilo(GetMasterNameFromURL(
+          master_url), builder, service_account_file=service_account)
       output_builds[builder] = builder_history
     except requests.exceptions.RequestException as e:
-      LOGGER.error('RequestException while fetching %s:\n%s', url, repr(e))
+      LOGGER.error(
+          'RequestException while fetching %s/%s:\n%s',
+          master_url, builder, repr(e))
       output_builds[builder] = None
 
 
-def FetchBuildData(masters, max_threads=0):  # pragma: no cover
+def FetchBuildData(masters, max_threads=0, service_account=None):  # pragma: no cover
   """Fetch all build data about the builders in the input masters.
 
   Args:
@@ -174,7 +212,7 @@ def FetchBuildData(masters, max_threads=0):  # pragma: no cover
     master_url = master_data['base_url']
     builders = master_data['builders']
     for builder in builders:
-      fetch_q.put((master_url, builder, build_data[master]))
+      fetch_q.put((master_url, builder, service_account, build_data[master]))
   fetch_threads = set()
   if not max_threads:
     max_threads = fetch_q.qsize()
