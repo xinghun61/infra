@@ -36,12 +36,10 @@
     }
 
     function generateCommonCellsForAllCategories(step_name, category, index, tests, first_failure, last_pass, rowspan) {
-      var stepLogUrl = '';
-      var stepUrl = findit.buildUrl + '/steps/' + step_name;
+      var stepUrl = 'https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/' + step_name + '/logs/stdio';
+      var stepLogUrl = stepUrl;
       if (findit.showDebugInfo) {
         stepLogUrl = '/waterfall/failure-log?url=' + stepUrl;
-      } else {
-        stepLogUrl = stepUrl;
       }
       var rowString = '<td rowspan="' + rowspan + '"><a href="' + stepLogUrl + '">' + step_name + '</a></td>';
 

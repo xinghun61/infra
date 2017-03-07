@@ -29,9 +29,9 @@
       <div class="warning">Last Pass: Unknown!</div>
     {% endif %}
     {%if show_debug_info %}
-      <a href="/waterfall/failure-log?url=https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}/steps/compile">compile stdio</a>
+      <a href="/waterfall/failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/compile/logs/stdio">compile stdio</a>
     {% else %}
-      <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}/steps/compile">compile stdio</a>
+      <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/compile/logs/stdio">compile stdio</a>
     {% endif %}
 {% endblock failure_info %}
 
