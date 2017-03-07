@@ -30,6 +30,15 @@ _DOCKER_VOLUMES = {
     },
     # Needed for access to device watchdog.
     '/opt/infra-android': {'bind': '/opt/infra-android', 'mode': 'ro'},
+    # Needed for authenticating with monitoring endpoints.
+    '/creds/service_accounts': {
+        'bind': '/creds/service_accounts',
+        'mode': 'ro'
+    },
+    '/etc/chrome-infra/ts-mon.json': {
+        'bind': '/etc/chrome-infra/ts-mon.json',
+        'mode': 'ro'
+    },
 }
 _DOCKER_CGROUP = '/sys/fs/cgroup/devices/docker'
 
