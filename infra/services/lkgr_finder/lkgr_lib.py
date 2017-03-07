@@ -152,7 +152,8 @@ def FetchBuilderJsonFromMilo(master, builder, limit=100,
   if service_account_file:
       credentials = infra_libs.get_signed_jwt_assertion_credentials(
                 service_account_file, scope=OAUTH_SCOPES)
-      credentials.apply(headers)
+      token = credentials._generate_assertion()
+      headers['Authorization'] = 'Bearer ' + token
 
   res = requests.post(
       MILO_JSON_ENDPOINT, headers=headers, data=json.dumps(body), timeout=60)
