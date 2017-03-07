@@ -22,6 +22,7 @@ if sys.platform != 'linux2':
 _SUPPORTED_INTERFACES = [
   # (interface class, interface subclass, interface protocol)
   (255, 66, 1),  # ADB's definition.
+  (255, 66, 3),  # Fastboot's definition.
 ]
 
 
