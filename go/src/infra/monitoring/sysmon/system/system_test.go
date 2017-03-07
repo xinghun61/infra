@@ -29,20 +29,23 @@ func TestMetrics(t *testing.T) {
 	Convey("CPU", t, func() {
 		So(updateCPUMetrics(c), ShouldBeNil)
 
+		// Small fudge factor because sometimes this isn't exact.
+		const oneHundredAndABit = 100.001
+
 		v, err := cpuTime.Get(c, "user")
 		So(err, ShouldBeNil)
 		So(v, ShouldBeGreaterThanOrEqualTo, 0)
-		So(v, ShouldBeLessThanOrEqualTo, 100)
+		So(v, ShouldBeLessThanOrEqualTo, oneHundredAndABit)
 
 		v, err = cpuTime.Get(c, "system")
 		So(err, ShouldBeNil)
 		So(v, ShouldBeGreaterThanOrEqualTo, 0)
-		So(v, ShouldBeLessThanOrEqualTo, 100)
+		So(v, ShouldBeLessThanOrEqualTo, oneHundredAndABit)
 
 		v, err = cpuTime.Get(c, "idle")
 		So(err, ShouldBeNil)
 		So(v, ShouldBeGreaterThanOrEqualTo, 0)
-		So(v, ShouldBeLessThanOrEqualTo, 100)
+		So(v, ShouldBeLessThanOrEqualTo, oneHundredAndABit)
 	})
 
 	Convey("Disk", t, func() {
