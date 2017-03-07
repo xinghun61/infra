@@ -265,3 +265,6 @@ import:
   version: master
   subpackages:
   - query
+- package: github.com/Microsoft/go-winio
+  repo: https://chromium.googlesource.com/external/github.com/Microsoft/go-winio.git
+  version: master

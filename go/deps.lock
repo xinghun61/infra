@@ -1,8 +1,8 @@
-hash: 108d579bc49e56704e1d3b1a881134723c4fc8dc84c3161f4fe4efc63853ac07
-updated: 2017-03-07T10:54:57.074725122-08:00
+hash: 85680222bd33fb6a13643540b4f9e5d9022c9fde21e19f6e453aa9ea002543b9
+updated: 2017-03-07T11:13:04.633136426-08:00
 imports:
 - name: cloud.google.com/go
-  version: 8c9328eb006d932cac25aca5b39046fcfac1f889
+  version: 8ccb9da4cbbbf29196ee6562bb04f792b0fd26a9
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -119,6 +119,9 @@ imports:
 - name: github.com/maruel/ut
   version: a9c9f15ccfa6f8b90182a53df32f4745586fbae3
   repo: https://chromium.googlesource.com/external/github.com/maruel/ut.git
+- name: github.com/Microsoft/go-winio
+  version: fff283ad5116362ca252298cfc9b95828956d85d
+  repo: https://chromium.googlesource.com/external/github.com/Microsoft/go-winio.git
 - name: github.com/mitchellh/go-homedir
   version: b8bc1bf767474819792c23f32d8286a45736f1c6
   repo: https://chromium.googlesource.com/external/github.com/mitchellh/go-homedir.git
