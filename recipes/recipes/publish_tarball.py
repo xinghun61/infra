@@ -11,7 +11,6 @@ import contextlib
 DEPS = [
   'build/chromium',
   'build/file',
-  'build/omahaproxy',
   'build/trigger',
   'depot_tools/bot_update',
   'depot_tools/depot_tools',
@@ -24,6 +23,7 @@ DEPS = [
   'recipe_engine/python',
   'recipe_engine/raw_io',
   'recipe_engine/step',
+  'omahaproxy',
 ]
 
 
