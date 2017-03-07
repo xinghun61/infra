@@ -311,18 +311,15 @@ func contains(arr []string, s string) bool {
 func (r *reader) TestResults(ctx context.Context, master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
 	masterValues := r.trCache[master.Name()]
 	if len(masterValues) == 0 {
-		logging.Debugf(ctx, "no test results for master %s", master.Name())
 		return nil, nil
 	}
 
 	testValues := masterValues[stepName]
 	if len(testValues) == 0 {
-		logging.Debugf(ctx, "no test results for master %s test %s", master.Name(), stepName)
 		return nil, nil
 	}
 
 	if !contains(testValues, builderName) {
-		logging.Debugf(ctx, "no test results for master %s test %s builder %s", master.Name(), stepName, builderName)
 		return nil, nil
 	}
 
@@ -530,7 +527,6 @@ func (hc *trackingHTTPClient) attemptReq(ctx context.Context, r *http.Request, v
 		err = fmt.Errorf("unexpected Content-Type, expected \"%s\", got \"%s\": %s", expected, ct, r.URL)
 		return false, status, 0, err
 	}
-	logging.Infof(ctx, "Fetched(%d) json: %s", status, r.URL)
 
 	return true, status, resp.ContentLength, err
 }
@@ -549,7 +545,9 @@ func (hc *trackingHTTPClient) postJSON(ctx context.Context, url string, data []b
 	err = hc.trackRequestStats(func() (length int64, err error) {
 		attempts := 0
 		for {
-			logging.Infof(ctx, "Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
+			if attempts > 0 {
+				logging.Infof(ctx, "Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
+			}
 			done, tStatus, length, err := hc.attemptReq(ctx, req, v)
 			status = tStatus
 			if done {
@@ -582,7 +580,9 @@ func (hc *trackingHTTPClient) getJSON(ctx context.Context, url string, v interfa
 	err = hc.trackRequestStats(func() (length int64, err error) {
 		attempts := 0
 		for {
-			logging.Infof(ctx, "Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
+			if attempts > 0 {
+				logging.Infof(ctx, "Fetching json (%d in flight, attempt %d of %d): %s", hc.currReqs, attempts, maxRetries, url)
+			}
 			done, tStatus, length, err := hc.attemptJSONGet(ctx, url, v)
 			status = tStatus
 			if done {
@@ -636,7 +636,9 @@ func (hc *trackingHTTPClient) getText(ctx context.Context, url string) (ret stri
 		ret = string(b)
 		length = resp.ContentLength
 
-		logging.Infof(ctx, "Fetched(%d) text: %s", resp.StatusCode, url)
+		if resp.StatusCode != 200 {
+			logging.Infof(ctx, "Fetched(%d) text: %s", resp.StatusCode, url)
+		}
 		return length, err
 	})
 	return ret, status, nil
