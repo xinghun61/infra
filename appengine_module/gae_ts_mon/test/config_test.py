@@ -42,7 +42,6 @@ class InitializeTest(testing.AppengineTestCase):
 
   def tearDown(self):
     config.reset_for_unittest()
-    self.assertEqual([], list(shared.global_metrics_callbacks))
     mock.patch.stopall()
     super(InitializeTest, self).tearDown()
 
@@ -176,7 +175,7 @@ class InitializeTest(testing.AppengineTestCase):
     # Global metrics must be erased after flush.
     test_global_metric = gae_ts_mon.GaugeMetric('test', 'foo', None)
     test_global_metric.set(42)
-    shared.register_global_metrics([test_global_metric])
+    interface.register_global_metrics([test_global_metric])
     self.assertEqual(42, test_global_metric.get())
     self.assertTrue(config.flush_metrics_if_needed(time_now))
     self.assertEqual(None, test_global_metric.get())
@@ -424,7 +423,6 @@ class InstrumentEndpointTest(testing.EndpointsTestCase):
 
   def tearDown(self):
     config.reset_for_unittest()
-    self.assertEqual([], list(shared.global_metrics_callbacks))
     mock.patch.stopall()
     super(InstrumentEndpointTest, self).tearDown()
 

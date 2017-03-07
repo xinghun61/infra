@@ -86,7 +86,7 @@ class HandlersTest(testing.AppengineTestCase):
     def callback(): # pragma: no cover
       pass
     callback_mock = mock.Mock(callback, set_auto=True)
-    shared.register_global_metrics_callback('cb', callback_mock)
+    interface.register_global_metrics_callback('cb', callback_mock)
 
     request = webapp2.Request.blank('/internal/cron/ts_mon/send')
     request.headers['X-Appengine-Cron'] = 'true'
