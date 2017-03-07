@@ -7,9 +7,9 @@
 
 
 import datetime
+import httplib2
 import mock
 import os
-import requests
 import sys
 import tempfile
 import unittest
@@ -45,10 +45,10 @@ class FetchBuilderJsonTest(unittest.TestCase):
       'infra.services.lkgr_finder.lkgr_lib.FetchBuilderJsonFromMilo',
       autospec=True)
   def testAllBuildersFailed(self, mocked_fetch):
-    mocked_fetch.side_effect = iter([requests.exceptions.RequestException,
-                                     requests.exceptions.RequestException])
-    build_data,failures = lkgr_lib.FetchBuildData(self.test_masters,
-                                                  max_threads=1)
+    mocked_fetch.side_effect = iter([httplib2.HttpLib2Error,
+                                     httplib2.HttpLib2Error])
+    build_data, failures = lkgr_lib.FetchBuildData(self.test_masters,
+                                                   max_threads=1)
     self.assertEquals(failures, 2)
     self.assertEquals(build_data['master1']['builder1'], None)
     self.assertEquals(build_data['master1']['builder2'], None)
@@ -58,7 +58,7 @@ class FetchBuilderJsonTest(unittest.TestCase):
       autospec=True)
   def testSomeBuildersFailed(self, mocked_fetch):
     mocked_fetch.side_effect = iter([{'build1': 'success'},
-                                     requests.exceptions.RequestException])
+                                     httplib2.HttpLib2Error])
     build_data,failures = lkgr_lib.FetchBuildData(self.test_masters,
                                                   max_threads=1)
     self.assertEquals(failures, 1)

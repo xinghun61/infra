@@ -7,13 +7,14 @@
 # pylint: disable=line-too-long
 # pylint: disable=unused-argument
 
+import Queue
 import ast
 import base64
 import datetime
+import httplib2
 import json
 import logging
 import os
-import Queue
 import re
 import smtplib
 import socket
@@ -21,8 +22,6 @@ import subprocess
 import sys
 import threading
 import xml.etree.ElementTree as xml
-
-import requests
 
 import infra_libs
 from infra.libs import git
@@ -149,16 +148,18 @@ def FetchBuilderJsonFromMilo(master, builder, limit=100,
     'Accept': 'application/json',
     'Content-Type': 'application/json',
   }
+  http = httplib2.Http(timeout=300)
   if service_account_file:
-      credentials = infra_libs.get_signed_jwt_assertion_credentials(
+      creds = infra_libs.get_signed_jwt_assertion_credentials(
                 service_account_file, scope=OAUTH_SCOPES)
-      token = credentials._generate_assertion()
-      headers['Authorization'] = 'Bearer ' + token
+      creds.authorize(http)
 
-  res = requests.post(
-      MILO_JSON_ENDPOINT, headers=headers, data=json.dumps(body), timeout=60)
+  resp, content = http.request(
+      MILO_JSON_ENDPOINT, method='POST', body=json.dumps(body))
+  if resp != 200:
+    raise httplib2.HttpLib2Error('Invalid response status: %s' % resp.status)
   # Strip off jsonp header.
-  data = json.loads(res.text[4:])
+  data = json.loads(content[4:])
   return [
       json.loads(base64.b64decode(build['data'])) for build in data['builds']]
 
@@ -186,7 +187,7 @@ def FetchBuilderJson(fetch_q):
       builder_history = FetchBuilderJsonFromMilo(GetMasterNameFromURL(
           master_url), builder, service_account_file=service_account)
       output_builds[builder] = builder_history
-    except requests.exceptions.RequestException as e:
+    except httplib2.HttpLib2Error as e:
       LOGGER.error(
           'RequestException while fetching %s/%s:\n%s',
           master_url, builder, repr(e))
