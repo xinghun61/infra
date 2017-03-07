@@ -37,12 +37,12 @@ class SwarmingPush(BaseHandler):
       # Expected payload format:
       # json.dumps({
       #   'task_id': '123412342130498',  #Swarming task id
-      #   'user_data': json.dumps({
+      #   'userdata': json.dumps({
       #       'Message-Type': 'SwarmingTaskStatusChange'}),
       #       # Plus any data from MakePubsubCallback
       #   })
       message = json.loads(payload)
-      user_data = json.loads(message['user_data'])
+      user_data = json.loads(message['userdata'])
       task_id = message['task_id']
 
       if user_data['Message-Type'] == 'SwarmingTaskStatusChange':
@@ -76,7 +76,7 @@ class SwarmingPush(BaseHandler):
                       '  }\n'
                       '  "data": <serialization of {\n'
                       '    "task_id": <Swarming task id>,\n'
-                      '    "user_data": <serialization of {\n'
+                      '    "userdata": <serialization of {\n'
                       '      "Message-Type": "SwarmingTaskStatusChange"\n'
                       '    }>\n'
                       '  }>\n'
