@@ -7,12 +7,18 @@ package ansidiff
 import (
 	"bytes"
 	"fmt"
-	"github.com/mgutz/ansi"
+	"os"
+	"sync"
+
+	"github.com/luci/luci-go/common/system/terminal"
 	dmp "github.com/sergi/go-diff/diffmatchpatch"
 )
 
 // Diff returns a diff string indiciating edits with ANSI color encodings
 // (red for deletions, green for additions).
+//
+// Disables coloring if stdout of the current process is not connected to
+// a terminal.
 func Diff(a, b interface{}) string {
 	d := dmp.New()
 	diffs := d.DiffMain(fmt.Sprintf("%+v", a), fmt.Sprintf("%+v", b), true)
@@ -21,12 +27,39 @@ func Diff(a, b interface{}) string {
 	for _, d := range diffs {
 		switch d.Type {
 		case dmp.DiffDelete:
-			buff.WriteString(ansi.Color(d.Text, "red"))
+			buff.WriteString(red(d.Text))
 		case dmp.DiffInsert:
-			buff.WriteString(ansi.Color(d.Text, "green"))
+			buff.WriteString(green(d.Text))
 		case dmp.DiffEqual:
 			buff.WriteString(d.Text)
 		}
 	}
 	return buff.String()
+}
+
+var isTerm struct {
+	sync.Once
+	yep bool
+}
+
+func isTerminal() bool {
+	isTerm.Do(func() {
+		isTerm.yep = terminal.IsTerminal(int(os.Stdout.Fd()))
+	})
+	return isTerm.yep
+}
+
+func colored(text, esc string) string {
+	if isTerminal() {
+		return esc + text + "\033[00m"
+	}
+	return text
+}
+
+func red(text string) string {
+	return colored(text, "\033[91m")
+}
+
+func green(text string) string {
+	return colored(text, "\033[92m")
 }

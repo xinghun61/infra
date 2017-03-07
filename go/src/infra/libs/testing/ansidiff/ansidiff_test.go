@@ -7,8 +7,6 @@ package ansidiff
 import (
 	"fmt"
 	"testing"
-
-	"github.com/mgutz/ansi"
 )
 
 type T1 struct {
@@ -24,8 +22,8 @@ func TestDiff(t *testing.T) {
 			T1{"foo", "bar"},
 			T1{"bar", "baz"},
 			fmt.Sprintf("{a:%v%v b:ba%v%v}",
-				ansi.Color("foo", "red"), ansi.Color("bar", "green"),
-				ansi.Color("r", "red"), ansi.Color("z", "green")),
+				red("foo"), green("bar"),
+				red("r"), green("z")),
 		},
 	}
 

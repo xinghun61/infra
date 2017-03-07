@@ -47,9 +47,6 @@ import:
 - package: github.com/maruel/ut
   version: master
   repo: https://chromium.googlesource.com/external/github.com/maruel/ut.git
-- package: github.com/mgutz/ansi
-  version: master
-  repo: https://chromium.googlesource.com/external/github.com/mgutz/ansi.git
 - package: github.com/op/go-logging
   version: master
   repo: https://chromium.googlesource.com/external/github.com/op/go-logging.git
