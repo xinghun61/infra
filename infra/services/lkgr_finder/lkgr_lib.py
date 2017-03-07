@@ -155,9 +155,10 @@ def FetchBuilderJsonFromMilo(master, builder, limit=100,
       creds.authorize(http)
 
   resp, content = http.request(
-      MILO_JSON_ENDPOINT, method='POST', body=json.dumps(body))
+      MILO_JSON_ENDPOINT, method='POST', headers=headers, body=json.dumps(body))
   if resp != 200:
-    raise httplib2.HttpLib2Error('Invalid response status: %s' % resp.status)
+    raise httplib2.HttpLib2Error('Invalid response status: %s\n%s' % (
+        resp.status, content))
   # Strip off jsonp header.
   data = json.loads(content[4:])
   return [
