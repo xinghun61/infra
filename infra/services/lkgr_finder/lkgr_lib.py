@@ -161,8 +161,9 @@ def FetchBuilderJsonFromMilo(master, builder, limit=100,
         resp.status, content))
   # Strip off jsonp header.
   data = json.loads(content[4:])
-  return [
+  builds = [
       json.loads(base64.b64decode(build['data'])) for build in data['builds']]
+  return {build['number']: build for build in builds}
 
 def GetMasterNameFromURL(master_url):
   s = master_url.rstrip('/').split('/')
