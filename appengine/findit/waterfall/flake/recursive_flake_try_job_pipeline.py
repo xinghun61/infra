@@ -112,7 +112,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
       try_job.status = analysis_status.ERROR
       try_job.put()
 
-    if not try_job.try_job_ids:
+    if not try_job or not try_job.try_job_ids:
       return
 
     try_job_data = FlakeTryJobData.Get(try_job.try_job_ids[-1])

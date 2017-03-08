@@ -327,7 +327,7 @@ class MonitorTryJobPipeline(BasePipeline):
     task.add(self.queue_name)
 
   def callback(
-      self, try_job_id, try_job_type, urlsafe_try_job_key, deadline, start_time,
+      self, urlsafe_try_job_key, try_job_type, try_job_id, deadline, start_time,
       already_set_started, error_count, max_error_times,
       default_pipeline_wait_seconds, timeout_hours, backoff_time,
       pipeline_id=None):
