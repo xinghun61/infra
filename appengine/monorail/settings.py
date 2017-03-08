@@ -267,7 +267,7 @@ if dev_mode:
 else:
   classifier_project_id = app_identity.get_application_id()
 
-classifier_model_id = '20170203'
+classifier_model_id = '20170302'
 
 # Number of distinct users who have to flag an issue before it
 # is autmatically removed as spam.

@@ -73,7 +73,8 @@ def Analyze(args):
 def Train(args):
   result = service.trainedmodels().insert(
       project=args.project,
-      body={'id':args.model, 'storageDataLocation': args.training_data}
+      body={'id':args.model, 'storageDataLocation': args.training_data,
+      'utility':[{'ham': 1000, 'spam': 1}]}
   ).execute()
   return result
 
@@ -137,9 +138,14 @@ def Test(args):
     confusion = {'ham': {'ham': 0, 'spam': 0}, 'spam': {'ham': 0, 'spam': 0}}
     for row in spamreader:
       i = i + 1
+      label = row[0]
+
       if random.random() > args.sample_rate:
         continue
-      label = row[0]
+
+      if label == 'spam' and random.random() > 0.001:
+        continue
+
       features = row[1:]
       result = _Classify(args.project, args.model, features)
       c = confusion[label][result['outputLabel']]
@@ -272,16 +278,8 @@ def Prep(args):
           label = row[0]
           summary = unicode(row[1], 'utf-8')
           description = unicode(row[2], 'utf-8')
-          email = ''
-          if len(row) > 3:
-            email = row[3]
-          features = spam_helpers.GenerateFeatures(summary, description, email,
-              args.hash_features, (
-                  '@chromium.org',
-                  '.gserviceaccount.com',
-                  '@google.com',
-                  '@webrtc.org',
-              ))
+          features = spam_helpers.GenerateFeatures(summary, description,
+              args.hash_features)
           row = [label]
           row.extend(features)
           row = ','.join(row) + '\n'

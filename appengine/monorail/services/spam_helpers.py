@@ -25,15 +25,6 @@ def _ExtractUrls(text):
   return ret
 
 
-SKETCHY_EMAIL_RE = re.compile('[a-za-z]+[0-9]+\@.+')
-
-
-def _EmailIsSketchy(email, whitelisted_suffixes):
-  if email.endswith(whitelisted_suffixes):
-    return False
-  return SKETCHY_EMAIL_RE.match(email) is not None
-
-
 DELIMITERS = ['\s', '\,', '\.', '\?', '!', '\:', '\(', '\)']
 
 
@@ -60,16 +51,13 @@ def _HashFeatures(content, num_features):
   return features
 
 
-def GenerateFeatures(summary, description, author_email, num_hashes,
-      whitelisted_email_suffixes):
+def GenerateFeatures(summary, description, num_hashes):
   """ Generates a vector of features for a given issue or comment.
 
   Args:
     summary: The summary text of the Issue.
     description: The description of the Issue or the content of the Comment.
-    author_email: The email address of the Issue or Comment author.
     num_hashes: The number of feature hashes to generate.
-    whitelisted_email_suffixes: The set of email address suffixes to ignore.
   """
   # If we've been passed real unicode strings, convert them to just bytestrings.
   if isinstance(summary, unicode):
@@ -87,15 +75,11 @@ def GenerateFeatures(summary, description, author_email, num_hashes,
   # the raw text.
   feature_hashes = _HashFeatures([summary, description], num_hashes)
 
-  # author email is in the 4th column.
-  sketchy_email_feature = _EmailIsSketchy(author_email,
-      whitelisted_email_suffixes)
   urls = _ExtractUrls(description)
   num_urls_feature = len(urls) if urls else 0
   num_duplicate_urls_feature = len(urls) - len(list(set(urls)))
 
   ret = [
-    '%s' % sketchy_email_feature,
     '%s' % num_urls_feature,
     '%s' % num_duplicate_urls_feature,
     '%s' % uncompressed_summary_len,

@@ -330,8 +330,7 @@ class SpamService(object):
       return result
 
     features = spam_helpers.GenerateFeatures(issue.summary,
-        firstComment.content, reporter.email, settings.spam_feature_hashes,
-        settings.spam_whitelisted_suffixes)
+        firstComment.content, settings.spam_feature_hashes)
 
     remaining_retries = 3
     while remaining_retries > 0:
@@ -378,8 +377,7 @@ class SpamService(object):
       return result
 
     features = spam_helpers.GenerateFeatures('', comment_content,
-        commenter.email, settings.spam_feature_hashes,
-        settings.spam_whitelisted_suffixes)
+        settings.spam_feature_hashes)
 
     remaining_retries = 3
     while remaining_retries > 0:
@@ -533,8 +531,7 @@ class SpamService(object):
 
 
   def GetTrainingIssues(self, cnxn, issue_service, since, offset=0, limit=100):
-    """Returns list of recent issues with spam verdicts,
-    ranked in ascending order of confidence (so uncertain items are first).
+    """Returns list of recent issues with human-labeled spam/ham verdicts.
     """
 
     # get all of the manual verdicts in the past day.
@@ -571,8 +568,7 @@ class SpamService(object):
 
   def GetTrainingComments(self, cnxn, issue_service, since, offset=0,
       limit=100):
-    """Returns list of recent comments with spam verdicts,
-    ranked in ascending order of confidence (so uncertain items are first).
+    """Returns list of recent comments with human-labeled spam/ham verdicts.
     """
 
     # get all of the manual verdicts in the past day.
