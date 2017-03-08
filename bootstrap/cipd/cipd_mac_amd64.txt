@@ -12,3 +12,6 @@ infra/tools/protoc/mac-amd64    protobuf_version:v3.0.0
 infra/nodejs/nodejs/mac-amd64   node_version:4.5.0
 
 infra/tools/authutil/mac-amd64  git_revision:92db82258d3a6ea6f35f80588038372297b03eaf
+
+# LogDog tool.
+infra/tools/luci/logdog/logdog/mac-amd64  git_revision:01e09c6fb5e45dd38c38cf43a5c5e46f826a3fd1

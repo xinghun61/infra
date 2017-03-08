@@ -57,7 +57,7 @@ ARCH_CONFIG_MAP = {
     'cipd_install_list': 'cipd_mac_amd64.txt',
   },
   ('Windows', 'x86_64'): {
-    'cipd_install_list': None,
+    'cipd_install_list': 'cipd_windows_amd64.txt',
   },
   ('Windows', 'x86'): {
     'cipd_install_list': None,

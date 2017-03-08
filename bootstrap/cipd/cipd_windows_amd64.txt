@@ -1,0 +1,9 @@
+# Copyright 2015 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# Instructions for building packages can be found in the "doc/" subdirectory
+# under that package name.
+
+# LogDog tool.
+infra/tools/luci/logdog/logdog/windows-amd64  git_revision:01e09c6fb5e45dd38c38cf43a5c5e46f826a3fd1
