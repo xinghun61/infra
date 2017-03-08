@@ -29,7 +29,8 @@ import (
 	"github.com/luci/luci-go/logdog/client/butler/output"
 	fileOut "github.com/luci/luci-go/logdog/client/butler/output/file"
 	out "github.com/luci/luci-go/logdog/client/butler/output/logdog"
-	"github.com/luci/luci-go/logdog/client/butlerlib/streamclient"
+	"github.com/luci/luci-go/logdog/client/butler/streamserver"
+	"github.com/luci/luci-go/logdog/client/butler/streamserver/localclient"
 	"github.com/luci/luci-go/logdog/client/butlerlib/streamproto"
 	"github.com/luci/luci-go/logdog/common/types"
 	"github.com/luci/luci-go/swarming/tasktemplate"
@@ -182,10 +183,29 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	// Determine our base path and annotation subpath.
 	basePath, annoSubpath := annoName.Split()
 
+	// Create our stream server instance.
+	streamServer, err := c.getLogDogStreamServer(withNonCancel(ctx))
+	if err != nil {
+		return 0, errors.Annotate(err).Reason("failed to generate stream server").Err()
+	}
+
+	if err := streamServer.Listen(); err != nil {
+		return 0, errors.Annotate(err).Reason("failed to listen on stream server").Err()
+	}
+	defer func() {
+		if streamServer != nil {
+			streamServer.Close()
+		}
+	}()
+
+	log.Debugf(ctx, "Generated stream server at: %s", streamServer.Address())
+
 	// Augment our environment with Butler parameters.
 	bsEnv := bootstrap.Environment{
-		Project: c.logdog.annotationAddr.Project,
-		Prefix:  prefix,
+		Project:         c.logdog.annotationAddr.Project,
+		Prefix:          prefix,
+		StreamServerURI: streamServer.Address(),
+		CoordinatorHost: c.logdog.annotationAddr.Host,
 	}
 	bsEnv.Augment(env)
 
@@ -274,8 +294,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	ncCtx := withNonCancel(ctx)
 	b, err := butler.New(ncCtx, butlerCfg)
 	if err != nil {
-		err = errors.Annotate(err).Reason("failed to create Butler instance").Err()
-		return
+		return 0, errors.Annotate(err).Reason("failed to create Butler instance").Err()
 	}
 	defer func() {
 		b.Activate()
@@ -289,6 +308,9 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 			}
 		}
 	}()
+
+	b.AddStreamServer(streamServer)
+	streamServer = nil
 
 	// Build pipes for our STDOUT and STDERR streams.
 	stdout, err := proc.StdoutPipe()
@@ -336,7 +358,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	annoteeOpts := annotee.Options{
 		Base:                   basePath,
 		AnnotationSubpath:      annoSubpath,
-		Client:                 streamclient.NewLocal(b),
+		Client:                 localclient.New(b),
 		Execution:              annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir),
 		TeeText:                !c.logdog.logDogOnly,
 		TeeAnnotations:         !c.logdog.logDogOnly || c.mode.alwaysForwardAnnotations(),
@@ -395,6 +417,15 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	// Our process and Butler instance will be consumed in our teardown
 	// defer() statements.
 	return
+}
+
+// getLogDogStreamServer returns a LogDog stream server instance configured for
+// the current operating system.
+//
+// Because Windows doesn't have UNIX domain sockets, and Linux doesn't have
+// named pipes, this becomes platform-specific.
+func (c *cookRun) getLogDogStreamServer(ctx context.Context) (streamserver.StreamServer, error) {
+	return getLogDogStreamServerForPlatform(ctx, c.TempDir)
 }
 
 // nonCancelContext is a context.Context which deliberately ignores cancellation
