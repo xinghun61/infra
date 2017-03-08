@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from model.flake import Flake
+from test_results.util import normalize_test_type
 
 import webapp2
 
@@ -11,8 +12,18 @@ class Search(webapp2.RequestHandler):
     search = self.request.get('q')
 
     flake = Flake.query().filter(Flake.name == search).get()
-    if not flake:
-      self.response.write('No flake entry found for ' + search)
+    if flake:
+      self.redirect('/all_flake_occurrences?key=%s' % flake.key.urlsafe())
       return
 
-    self.redirect('/all_flake_occurrences?key=%s' % flake.key.urlsafe())
+    # Users might search using full step name. Try normalizing it before
+    # searching. Note that this won't find flakes in a step where
+    # chromium-try-flakes was able to determine which test has failed. Instead,
+    # users should search using the test name.
+    normalized_step_name = normalize_test_type(search)
+    flake = Flake.query().filter(Flake.name == normalized_step_name).get()
+    if flake:
+      self.redirect('/all_flake_occurrences?key=%s' % flake.key.urlsafe())
+      return
+
+    self.response.write('No flake entry found for ' + search)

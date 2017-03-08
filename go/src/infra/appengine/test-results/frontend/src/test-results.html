@@ -125,7 +125,9 @@
               class="drawer-list"
               role="navigation">
             <a name="home" href="/home">Home</a>
-            <a name="flakiness" href="/flakiness">Flakiness</a>
+            <div class="drawer-splitter">Flakiness`</div>
+            <a name="flakiness-teams" href="/flakiness-teams">Teams</a>
+            <a name="flakiness-tests" href="/flakiness-tests">Tests</a>
           </iron-selector>
         </div>
       </app-drawer>
@@ -140,7 +142,10 @@
       </app-header-layout>
       <iron-pages role="main" selected="[[page]]" attr-for-selected="name">
         <tr-home name="home"></tr-home>
-        <tr-flakiness name="flakiness" route="{{subroute}}"></tr-flakiness>
+        <tr-flakiness-tests
+            name="flakiness-tests"
+            route="{{subroute}}">
+        </tr-flakiness-tests>
       </iron-pages>
     </app-drawer-layout>
   </template>

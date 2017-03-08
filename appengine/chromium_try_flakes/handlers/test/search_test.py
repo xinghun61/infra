@@ -21,3 +21,11 @@ class TestSearch(testing.AppengineTestCase):
     self.assertIn('location', response.headers)
     self.assertTrue(response.headers['location'].endswith(
       '/all_flake_occurrences?key=%s' % key.urlsafe()))
+
+  def test_normalizes_step_name(self):
+    key = Flake(name='my_unittests (with patch)').put()
+    response = self.test_app.get(
+        '/search?q=my_unittests+(with+patch)+on+NVIDIA+GPU', status=302)
+    self.assertIn('location', response.headers)
+    self.assertTrue(response.headers['location'].endswith(
+      '/all_flake_occurrences?key=%s' % key.urlsafe()))
