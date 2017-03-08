@@ -103,6 +103,9 @@ func (opts *commonOptions) processFlags(ctx context.Context) (context.Context, s
 	if opts.projectID == "" {
 		if authOpts.ServiceAccountJSONPath != "" {
 			opts.projectID = projectIDFromServiceAccountJSON(authOpts.ServiceAccountJSONPath)
+			if opts.projectID != "" {
+				logging.Debugf(ctx, "Guessed project ID from the service account JSON: %s", opts.projectID)
+			}
 		}
 		if opts.projectID == "" {
 			return ctx, state{}, fmt.Errorf("-project-id is required")
@@ -165,8 +168,14 @@ func defaultServiceAccountJSONPath() string {
 	return path
 }
 
-// projectIDFromServiceAccountJSON extracts Cloud Project ID from the email
-// part of the service account JSON. Returns empty string if can't do it.
+// projectIDFromServiceAccountJSON extracts Cloud Project ID from the service
+// account JSON.
+//
+// It tries to use 'project_id' key, if present, and falls back to email
+// parsing otherwise (for old JSON files that don't have project_id field, but
+// use "<projectid>-stuff@developer.gserviceaccount.com" email format).
+//
+// Returns empty string if can't do it.
 func projectIDFromServiceAccountJSON(path string) string {
 	f, err := os.Open(path)
 	if err != nil {
@@ -174,10 +183,14 @@ func projectIDFromServiceAccountJSON(path string) string {
 	}
 	defer f.Close()
 	var sa struct {
+		ProjectID   string `json:"project_id"`
 		ClientEmail string `json:"client_email"`
 	}
 	if err := json.NewDecoder(f).Decode(&sa); err != nil {
 		return ""
+	}
+	if sa.ProjectID != "" {
+		return sa.ProjectID
 	}
 	// Expected form: <projectid>-stuff@developer.gserviceaccount.com.
 	chunks := strings.Split(sa.ClientEmail, "@")
