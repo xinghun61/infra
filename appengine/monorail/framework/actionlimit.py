@@ -109,8 +109,11 @@ def NeedCaptcha(user, action_type, now=None, skip_lifetime_check=False):
 
   # Fourth, users with no previous actions or at the start of a new period must
   # solve one captcha as a barrier to spam accounts.
+  # Temporarily reversed until high frequency CAPTCHA requirements are robust.
+  # TODO(jrobbins): change this back to return True after CAPTCHAs requirement
+  # is determined dynamically, and works on all browsers.
   if not actionlimit_pb or now - actionlimit_pb.reset_timestamp > period:
-    return True
+    return False
 
   # Finally, check the soft limit in this time period.
   action_limit = False

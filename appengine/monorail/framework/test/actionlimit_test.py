@@ -14,16 +14,17 @@ from proto import user_pb2
 
 class ActionLimitTest(unittest.TestCase):
 
-  def testNeedCaptchaNoUser(self):
+  def testNeedCaptcha_NoUser(self):
     action = actionlimit.ISSUE_COMMENT
     self.assertFalse(actionlimit.NeedCaptcha(None, action))
 
-  def testNeedCaptchaAuthUserNoPreviousActions(self):
+  def testNeedCaptcha_AuthUserNoPreviousActions(self):
     action = actionlimit.ISSUE_COMMENT
     user = user_pb2.User()
-    self.assertTrue(actionlimit.NeedCaptcha(user, action))
+    # TODO(jrobbins): change back to True after CAPTCHA are more robust.
+    self.assertFalse(actionlimit.NeedCaptcha(user, action))
 
-  def testNeedCaptchaAuthUserLifetimeExcessiveActivityException(self):
+  def testNeedCaptcha_AuthUserLifetimeExcessiveActivityException(self):
     action = actionlimit.ISSUE_COMMENT
     user = user_pb2.User()
     life_max = actionlimit.ACTION_LIMITS[action][3]
@@ -35,7 +36,7 @@ class ActionLimitTest(unittest.TestCase):
         actionlimit.ExcessiveActivityException,
         actionlimit.NeedCaptcha, user, action)
 
-  def testNeedCaptchaAuthUserLifetimeIgnoresTimeout(self):
+  def testNeedCaptcha_AuthUserLifetimeIgnoresTimeout(self):
     action = actionlimit.ISSUE_COMMENT
     user = user_pb2.User()
     (period, _soft_limit, _hard_limit,
@@ -52,7 +53,7 @@ class ActionLimitTest(unittest.TestCase):
 
   # TODO(jrobbins): write a soft limit captcha test.
 
-  def testNeedCaptchaAuthUserHardLimitExcessiveActivityException(self):
+  def testNeedCaptcha_AuthUserHardLimitExcessiveActivityException(self):
     action = actionlimit.ISSUE_COMMENT
     user = user_pb2.User()
     (_period, _soft_limit, hard_limit,
@@ -65,7 +66,7 @@ class ActionLimitTest(unittest.TestCase):
         actionlimit.ExcessiveActivityException,
         actionlimit.NeedCaptcha, user, action)
 
-  def testNeedCaptchaAuthUserHardLimitRespectsTimeout(self):
+  def testNeedCaptcha_AuthUserHardLimitRespectsTimeout(self):
     action = actionlimit.ISSUE_COMMENT
     user = user_pb2.User()
     (period, _soft_limit, hard_limit,
@@ -80,9 +81,9 @@ class ActionLimitTest(unittest.TestCase):
         actionlimit.ExcessiveActivityException,
         actionlimit.NeedCaptcha, user, action)
     # if we didn't pass later, we'd get an exception
-    self.assertTrue(actionlimit.NeedCaptcha(user, action, now=later))
+    self.assertFalse(actionlimit.NeedCaptcha(user, action, now=later))
 
-  def testNeedCaptchaNoLifetimeLimit(self):
+  def testNeedCaptcha_NoLifetimeLimit(self):
     action = actionlimit.ISSUE_COMMENT
     user = user_pb2.User()
     life_max = actionlimit.ACTION_LIMITS[action][3]
@@ -91,14 +92,14 @@ class ActionLimitTest(unittest.TestCase):
     self.assertRaises(
         actionlimit.ExcessiveActivityException,
         actionlimit.NeedCaptcha, user, action, skip_lifetime_check=False)
-    self.assertTrue(
+    self.assertFalse(
         actionlimit.NeedCaptcha(user, action, skip_lifetime_check=True))
     actionlimit.GetLimitPB(user, action).recent_count = 1
     actionlimit.GetLimitPB(user, action).reset_timestamp = int(time.time()) + 5
     self.assertFalse(
         actionlimit.NeedCaptcha(user, action, skip_lifetime_check=True))
 
-  def testCountActionResetRecentActions(self):
+  def testCountAction_ResetRecentActions(self):
     action = actionlimit.ISSUE_COMMENT
     user = user_pb2.User()
     limit = actionlimit.GetLimitPB(user, action)
@@ -115,7 +116,7 @@ class ActionLimitTest(unittest.TestCase):
     self.assertEqual(0, limit.recent_count)
     self.assertEqual(0, limit.reset_timestamp)
 
-  def testCountActionIncrementsRecentCount(self):
+  def testCountAction_IncrementsRecentCount(self):
     action = actionlimit.ISSUE_COMMENT
     user = user_pb2.User()
     (_period, soft_limit, _hard_limit,
@@ -127,7 +128,7 @@ class ActionLimitTest(unittest.TestCase):
       self.assertEqual(i, limit.recent_count)
       self.assertEqual(i, limit.lifetime_count)
 
-  def testCountActionPeriodExpiration(self):
+  def testCountAction_PeriodExpiration(self):
     action = actionlimit.ISSUE_COMMENT
     user = user_pb2.User()
     (period, soft_limit, _hard_limit,
@@ -149,7 +150,7 @@ class ActionLimitTest(unittest.TestCase):
     self.assertEqual(1, limit.recent_count)
     self.assertEqual(soft_limit + 1, limit.lifetime_count)
 
-  def testCustomizeLifetimeLimit(self):
+  def testCustomizeLimit(self):
     user = user_pb2.User()
 
     self.assertIsNone(user.get_assigned_value('issue_comment_limit'))
