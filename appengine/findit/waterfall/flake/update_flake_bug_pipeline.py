@@ -19,6 +19,7 @@ def _GetIssue(bug_id, issue_tracker):
   issue = issue_tracker.getIssue(bug_id)
   checked_issues = {}
   while issue and issue.merged_into:
+    logging.info('%s was merged into %s' % (issue.id, issue.merged_into))
     checked_issues[issue.id] = issue
     issue = issue_tracker.getIssue(issue.merged_into)
     if issue.id in checked_issues:
@@ -27,31 +28,35 @@ def _GetIssue(bug_id, issue_tracker):
 
 
 _COMMENT_FOOTER= """
-Automatically posted by the findit-for-me app (https://goo.gl/YTKnaU).
-This feature is in alpha version. Feedback is welcomed using component
-Tools>Test>FindIt>Flakiness !"""
+Automatically posted by the findit-for-me app (https://goo.gl/wcL6eP).
+Flake Analyzer is in alpha version.
+Feedback is welcome using component Tools>Test>FindIt>Flakiness !""".lstrip()
 
-_ERROR_COMMENT_TEMPLATE = """
-Findit ran into error, but still generated a partial flakiness trend in the
-config "%s / %s" for this flake.
-  https://findit-for-me.appspot.com/waterfall/flake?key=%s""" + _COMMENT_FOOTER
+_LINK = 'https://findit-for-me.appspot.com/waterfall/flake?key=%s'
 
-_CULPRIT_COMMENT_TEMPLATE = """
-Findit has identified the culprit r%s with confidence %.1f%% based on the
-flakiness trend in the config "%s / %s".
-  https://findit-for-me.appspot.com/waterfall/flake?key=%s""" + _COMMENT_FOOTER
+_ERROR_COMMENT_TEMPLATE = ("""
+Oops, due to an error, only a partial flakiness trend was generated for
+the config "%s / %s":""".lstrip().replace('\n', ' ')
+                           + '\n\n' + _LINK
+                           + '\n\n' + _COMMENT_FOOTER)
 
+_CULPRIT_COMMENT_TEMPLATE = ("""
+Findit identified the culprit r%s with confidence %.1f%% in the config "%s / %s"
+based on the flakiness trend:""".lstrip()
+                           + '\n\n' + _LINK
+                           + '\n\n' + _COMMENT_FOOTER)
 
-_BUILD_HIGH_CONFIDENCE_COMMENT_TEMPLATE = """
-Findit has identified that the flake started at build %s with confidence %.1f%%
-based on the flakiness trend in the config "%s / %s".
-  https://findit-for-me.appspot.com/waterfall/flake?key=%s""" + _COMMENT_FOOTER
+_BUILD_HIGH_CONFIDENCE_COMMENT_TEMPLATE = ("""
+Findit found the flake started in build %s of the config "%s / %s"
+with confidence %.1f%% based on the flakiness trend:""".lstrip()
+                           + '\n\n' + _LINK
+                           + '\n\n' + _COMMENT_FOOTER)
 
-
-_LOW_FLAKINESS_COMMENT_TEMPLATE = """
-Findit has generated a flakiness trend in the config "%s / %s" for this flake.
-It seems a longstanding flake, with low flakiness, or not reproducible.
-  https://findit-for-me.appspot.com/waterfall/flake?key=%s""" + _COMMENT_FOOTER
+_LOW_FLAKINESS_COMMENT_TEMPLATE = ("""
+This flake is a longstanding one, with low flakiness, or not reproducible
+based on the flakiness trend in the config "%s / %s":""".lstrip()
+                           + '\n\n' + _LINK
+                           + '\n\n' + _COMMENT_FOOTER)
 
 
 def _GenerateComment(analysis):
@@ -74,9 +79,9 @@ def _GenerateComment(analysis):
         analysis.confidence_in_suspected_build > 0.6):
     return _BUILD_HIGH_CONFIDENCE_COMMENT_TEMPLATE % (
         analysis.suspected_flake_build_number,
-        analysis.confidence_in_suspected_build * 100,
         analysis.original_master_name,
         analysis.original_builder_name,
+        analysis.confidence_in_suspected_build * 100,
         analysis.key.urlsafe(),
     )
   else:
@@ -103,7 +108,9 @@ class UpdateFlakeBugPipeline(BasePipeline):
     if (not analysis.completed or not analysis.bug_id or
         not analysis.algorithm_parameters.get('update_monorail_bug') or
         len(analysis.data_points) < 2):
-      logging.info('Bug not updated')
+      logging.info('Bug not updated: completed=%s, bug=%s, %d data points'
+                   % (analysis.completed, analysis.bug_id,
+                      len(analysis.data_points)))
       return False
 
     project_name = 'chromium'

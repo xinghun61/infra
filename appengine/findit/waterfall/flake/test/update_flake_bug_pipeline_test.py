@@ -59,7 +59,7 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.status = analysis_status.ERROR
     comment = update_flake_bug_pipeline._GenerateComment(analysis)
-    self.assertTrue('Findit ran into error' in comment, comment)
+    self.assertTrue('due to an error' in comment, comment)
 
   def testGenerateCommentWithCulprit(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
@@ -74,7 +74,7 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.suspected_flake_build_number = 120
     analysis.confidence_in_suspected_build = 0.6641
     comment = update_flake_bug_pipeline._GenerateComment(analysis)
-    self.assertTrue('started at build 120 with confidence 66.4%' in comment,
+    self.assertTrue('started in build 120' in comment,
                     comment)
 
   def testGenerateCommentWithSuspectedBuildLowConfidence(self):
@@ -89,7 +89,7 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.status = analysis_status.COMPLETED
     comment = update_flake_bug_pipeline._GenerateComment(analysis)
-    self.assertTrue('longstanding flake' in comment, comment)
+    self.assertTrue('longstanding one' in comment, comment)
 
   @mock.patch('waterfall.flake.update_flake_bug_pipeline.IssueTrackerAPI')
   def testNotUpdateBug(self, issue_tracker):
