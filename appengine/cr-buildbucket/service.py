@@ -809,6 +809,8 @@ def heartbeat_batch(heartbeats):
   Returns:
     List of (build_id, build, exception) tuples.
   """
+  build_ids = [h['build_id'] for h in heartbeats]
+  logging.info('Batch heartbeat: %s', build_ids)
   futures = [(h, heartbeat_async(**h)) for h in heartbeats]
 
   def get_result(hb, future):
