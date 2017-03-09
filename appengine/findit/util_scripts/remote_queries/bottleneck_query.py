@@ -40,7 +40,7 @@ from waterfall import swarming_util
 
 
 NOW = time_util.GetUTCNow()
-START_DATE, END_DATE = NOW - datetime.timedelta(days=30), NOW
+START_DATE, END_DATE = datetime.datetime(2017, 1, 1), NOW
 THREAD_COUNT = 64
 
 # If more than 1199 entities are requested at once, the ndb query.fetch_page()
@@ -182,10 +182,13 @@ def _GetTimesFromBuildbot(buildbot_url):
   result = {}
   for step in response_data['steps']:
     if 'name' in step and 'times' in step:
-      result[step['name'] + '.start'] = (
-          _UnknownToDatetime(step['times'][0]))
-      result[step['name'] + '.end'] = (
-          _UnknownToDatetime(step['times'][1]))
+      # Times from buildbot seem to be in PST, naively converting to UTC
+      start = _UnknownToDatetime(step['times'][0])
+      end = _UnknownToDatetime(step['times'][1])
+      if start:
+        result[step['name'] + '.start'] = start + datetime.timedelta(hours=8)
+      if end:
+        result[step['name'] + '.end'] = end + datetime.timedelta(hours=8)
   return result
 
 
@@ -203,6 +206,10 @@ def _GetTimesFromSwarming(url):
 # TODO: Instead of guessing, make the right conversions when retrieving data,
 # including timezone adjustment (i.e. make everything UTC)
 def _UnknownToDatetime(unknown):
+  if isinstance(unknown, datetime.datetime):
+    return unknown
+  if isinstance(unknown, int) and unknown < 1000000000:  # Timestamp in 2001
+    return unknown
   if isinstance(unknown, basestring):
     for fmt in ('%Y-%m-%dT%H:%M:%S.%f', '%Y-%m-%dT%H:%M:%S'):
       try:
@@ -231,6 +238,7 @@ def _PrependKeys(prefix, d):
 
 
 def _Denest(d):
+  """Converts {'a': {'b': 'c'}} into {'a.b': 'c'}."""
   if isinstance(d, dict):
     removals = []
     insertions = {}
@@ -242,15 +250,6 @@ def _Denest(d):
       del(d[k])
     d.update(insertions)
   return d
-
-
-# This is hacky, we should make everything UTC as the times are read from the
-# source.
-def _IsUtcLabel(l):
-  parts = l.split('.')
-  return len(parts) == 1 or l.startswith('waterfall.') or (
-      len(parts) == 2 and l.endswith('_ts'))
-
 
 def main():
   # TODO: add options to limit the date range to fetch
@@ -288,9 +287,6 @@ def main():
     key, record = r.get()
     time_records[key] = _Denest(record)
     print len(time_records)
-    for k, v in time_records[key].iteritems():
-      if _IsUtcLabel(k) and isinstance(v, datetime.datetime):
-        time_records[key][k] = v - datetime.timedelta(hours=8)
     if saved_count + THREAD_COUNT < len(time_records):
       _SaveAnalyses(all_analyses, time_records)
       saved_count = len(time_records)

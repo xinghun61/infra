@@ -22,8 +22,9 @@ import sys
 import time
 
 from collections import defaultdict
-import optparse
+import matplotlib.pyplot as plt
 import numpy
+import optparse
 
 _APPENGINE_SDK_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
                                   os.path.pardir, os.path.pardir,
@@ -76,6 +77,13 @@ class _Coalesce(object):
         test_name = dot_sep[1].split()[0]
         if test_name.endswith('tests'):
           result = result.replace(test_name, '<tests>')
+
+    # coalesce all but ends
+    if options.coalesce_middle:
+      dot_sep = result.split('.')
+      if len(dot_sep) > 2:
+        result = '.'.join([dot_sep[0], '*', dot_sep[-2], dot_sep[-1]])
+
     all_labels.add(result)
     return result
 
@@ -99,11 +107,27 @@ def _LoadFilterAndSortRecords(options):
         v['wfa.build_failure_type'] not in allowed_failure_types):
       continue
 
+    # Exclude android records
+    if options.exclude_android:
+      if 'ndroid' in k.pairs()[0][1]:
+        continue
+    # Filter masters
+    if options.allowed_masters:
+      m = k.pairs()[0][1].split('/')[0]
+      if m not in options.allowed_masters.split(','):
+        continue
+
     # Filter by date
     if options.before_date:
       cutoff = datetime.datetime(
           *time.strptime(options.before_date, '%Y-%m-%d')[:6])
-      if v['request_time'] > cutoff:
+      if v['wfa.request_time'] > cutoff:
+
+        continue
+    if options.after_date:
+      cutoff = datetime.datetime(
+          *time.strptime(options.after_date, '%Y-%m-%d')[:6])
+      if v['wfa.request_time'] < cutoff:
         continue
     sorted_record = []
     for label, t in v.iteritems():
@@ -130,44 +154,112 @@ def _LoadFilterAndSortRecords(options):
   return sorted_records, loaded_records
 
 
+def _SummarizeRecordPaired(loaded_records, coalesce, record, k, transitions,
+                           adjacent, examples, totals):
+  # Considers transitions as the difference between events A.start and A.end as
+  # well as events that are immediately one after the other (adjacent). This
+  # applies to every pair of events in the record.
+  for i in range(len(record) -1):
+    label_pair = None
+    if record[i][1].endswith('.start'):
+      # Search for the matching .end label
+      label_pair = record[i][1], record[i][1].replace('.start', '.end')
+      transition = tuple(map(coalesce, label_pair))
+      if label_pair[1] in loaded_records[k].keys():
+        start = loaded_records[k][label_pair[0]]
+        end = loaded_records[k][label_pair[1]] or datetime.datetime(
+            2010, 1, 1)
+        interval = (end - start).total_seconds()
+        if interval > 0:
+          # NB: Silently ignoring negative intervals.
+          if transition not in transitions or interval > max(
+              transitions[transition]):
+            examples[transition] = k, record
+          totals[transition] += interval
+          transitions[transition].append(interval)
+    neighbor_labels = (record[i][1], record[i + 1][1])
+    transition = tuple(map(coalesce, neighbor_labels))
+    # if x.start and x.end are adjacent)
+    if label_pair == neighbor_labels:
+      adjacent[transition] += 1
+      continue
+    start = record[i][0]
+    end = record[i + 1][0]
+    if (isinstance(start, datetime.datetime) and
+        isinstance(end, datetime.datetime)):
+      interval = (end - start).total_seconds()
+      adjacent[transition] += 1
+      transitions[transition].append(interval)
+      # Record the example that takes the longest.
+      if transition not in examples.keys() or interval > max(
+          transitions[transition]):
+        examples[transition] = k, record
+      totals[transition] += interval
+
+
+def _SummarizeRecordCustom(from_regex, to_regex):
+  # Considers transitions as the difference between events matching from_regex
+  # to to_regex, only once per record.
+  def inner(loaded_records, coalesce, record, k, transitions,
+            adjacent, examples, totals):
+    start_index = 0
+    for i in range(len(record)):
+      if from_regex.match(record[i][1]):
+        start_index = i
+      elif to_regex.match(record[i][1]) and start_index:
+        label_pair = record[start_index][1], record[i][1]
+        transition = tuple(map(coalesce, label_pair))
+        start = loaded_records[k][label_pair[0]]
+        end = loaded_records[k][label_pair[1]] or datetime.datetime(
+            2010, 1, 1)
+        interval = (end - start).total_seconds()
+        if interval > 0:
+          # NB: Silently ignoring negative intervals.
+          if transition not in transitions or interval > max(
+              transitions[transition]):
+            examples[transition] = k, record
+          totals[transition] += interval
+          transitions[transition].append(interval)
+          if i == start_index + 1:
+            adjacent[transition] += 1
+          break
+  return inner
+
+
 def _AggregateTransitions(options, sorted_records, loaded_records):
+  summarize_func = _SummarizeRecordPaired
+  if options.swarming_latency:
+    options.coalesce_middle = True
+    options.paired_only = False
+    options.min_transition_count = 1
+    options.show_composites = True
+    summarize_func = _SummarizeRecordCustom(
+      from_regex=re.compile(r'pl\.Trigger.*SwarmingTaskPipeline\.start'),
+      to_regex=re.compile(r'swarm.*started_ts')
+    )
+  elif options.tryjob_latency:
+    options.coalesce_middle = True
+    options.paired_only = False
+    options.min_transition_count = 1
+    options.show_composites = True
+    summarize_func = _SummarizeRecordCustom(
+      from_regex=re.compile(r'pl\.Schedule.*TryJobPipeline\.start'),
+      to_regex=re.compile(r'try\..*\.steps\.start')
+    )
   coalesce = _Coalesce(options)
   transitions = defaultdict(list)
   adjacent = defaultdict(int)
   examples = {}
   totals = defaultdict(float)
   for record, k in sorted_records:
-    for i in range(len(record) -1):
-      label_pair = None
-      if record[i][1].endswith('.start'):
-        # Search for the matching .end label
-        label_pair = record[i][1], record[i][1].replace('.start', '.end')
-        transition = tuple(map(coalesce, label_pair))
-        if label_pair[1] in loaded_records[k].keys():
-          start = loaded_records[k][label_pair[0]]
-          end = loaded_records[k][label_pair[1]]
-          interval = (end - start).total_seconds()
-          if interval > 0:
-            # NB: Silently ignoring negative intervals.
-            transitions[transition].append(interval)
-            totals[transition] += interval
-            examples[transition] = k, record
-      neighbor_labels = (record[i][1], record[i + 1][1])
-      transition = tuple(map(coalesce, neighbor_labels))
-      # if x.start and x.end are adjacent)
-      if label_pair == neighbor_labels:
-        adjacent[transition] += 1
-        continue
-      start = record[i][0]
-      end = record[i + 1][0]
-      if (isinstance(start, datetime.datetime) and
-          isinstance(end, datetime.datetime)):
-        interval = (end - start).total_seconds()
-        adjacent[transition] += 1
-        transitions[transition].append(interval)
-        examples[transition] = k, record
-        totals[transition] += interval
+    summarize_func(loaded_records, coalesce, record, k, transitions, adjacent,
+                   examples, totals)
+  return _StatsForTransitions(options, transitions, totals, adjacent, examples,
+                              sorted_records)
 
+
+def _StatsForTransitions(options, transitions, totals, adjacent, examples,
+                         sorted_records):
   result = []
   for transition, t in transitions.iteritems():
     current = {
@@ -179,6 +271,11 @@ def _AggregateTransitions(options, sorted_records, loaded_records):
         'total_time': totals[transition],
         'adjacent_count': adjacent[transition],
     }
+    if options.raw_values_only:
+      current = {
+          'values': t,
+          'transition': transition,
+      }
     if options.example:
       current['example'] = examples[transition]
     result.append(current)
@@ -211,8 +308,6 @@ def _MaybePrintRow(r, options):
   This display function decides whether to print a row to stdout and returns
   a bool indicating whether it displayed it."""
 
-  if not options.show_composites and not r['adjacent_count']:
-    return False
   if options.label_filter and options.label_filter not in ''.join(
       r['transition']):
     return False
@@ -223,11 +318,21 @@ def _MaybePrintRow(r, options):
     if options.paired_only:
       return False
     r['transition_text'] = '%s -> %s' % (_from, _to)
-  r['adjacent_percentage'] = r['adjacent_count'] * 100 / r['count']
-  print ('%(transition_text)s:\n'
-         '\tn: %(count)d, median: %(median)0.2fs, 90p: %(90p)0.2fs, Max: '
-         '%(max)0.2fs, Total: %(total_time)02fs, '
-         'Adj.: %(adjacent_percentage)d%%' % r)
+  if options.raw_values_only:
+    print r['transition_text'], r['values']
+    plt.hist(r['values'])
+    plt.title(r['transition_text'])
+    plt.show()
+  else:
+    if not options.show_composites and not r['adjacent_count']:
+      return False
+    r['adjacent_percentage'] = r['adjacent_count'] * 100 / r['count']
+    r['mean'] = r['total_time'] / r['count']
+    print ('%(transition_text)s:\n'
+           '\tn: %(count)d, median: %(median)0.2fs, mean: %(mean)0.2fs, '
+           '90p: %(90p)0.2fs, Max: '
+           '%(max)0.2fs, Total: %(total_time)0.2fs, '
+           'Adj.: %(adjacent_percentage)d%%' % r)
 
   # Show example analysis time series.
   if options.example:
@@ -262,7 +367,7 @@ and the summarized data is output as text, json or csv.
                              help='Comma-separated list of failure types from '
                              'findit/common/waterfall/failure_type.py (default:'
                              '"8,16" i.e. Reliable compile and test failures)')
-  pre_aggregation.add_option('-a', '--after_label', help='Only aggregate events'
+  pre_aggregation.add_option('--after_label', help='Only aggregate events'
                              ' that happen after this label. E.g. request_time.'
                              ' Used to exclude events occurring before findit'
                              ' is informed of the failure, for example.')
@@ -273,6 +378,24 @@ and the summarized data is output as text, json or csv.
                              ' is retrieved using a separate script with its '
                              'own set of filters, this acts in addition to'
                              ' those.')
+  pre_aggregation.add_option('-a', '--after_date', help='A date in format '
+                             'YYYY-mm-dd used to filter jobs that are too '
+                             'old. NB the data is retrieved using a separate '
+                             'script with its own set of filters, this acts in '
+                             'addition to those.')
+  pre_aggregation.add_option('--exclude_android', action='store_true', help=
+                             'exclude records for android platforms')
+  pre_aggregation.add_option('--allowed_masters', default='', help='Comma'
+                             '-separated list of masters to include. Include '
+                             'all if not specified.')
+  pre_aggregation.add_option('--swarming_latency', action='store_true',
+                             help='Canned query to measure the time it takes '
+                             'for a swarming task to start from the moment it '
+                             ' is requested.')
+  pre_aggregation.add_option('--tryjob_latency', action='store_true',
+                             help='Canned query to measure the time it takes '
+                             'for a try job to start from the moment it '
+                             ' is requested.')
   parser.add_option_group(pre_aggregation)
 
   # Coalescing options
@@ -289,6 +412,13 @@ and the summarized data is output as text, json or csv.
   coalesce_opts.add_option('--no_coalesce_hashes', action='store_false',
                            dest='coalesce_hashes', default=True, help='Use '
                            'this flag to separate steps by revision.')
+  coalesce_opts.add_option('--coalesce_middle', action='store_true',
+                           default=False, help='Take into account only the '
+                           'first and last parts of the label. e.g. '
+                           'try.compile.bot_update and '
+                           'try.test <hash>.bot_update both become '
+                           'try.*.bot_update')
+
   parser.add_option_group(coalesce_opts)
 
 
@@ -296,6 +426,10 @@ and the summarized data is output as text, json or csv.
   post_aggregation = optparse.OptionGroup(
       parser, 'Text mode filters', 'Apply the following after the records have'
       ' been aggregated.')
+  post_aggregation.add_option('--plot', action='store_true',
+                              dest='raw_values_only', default=False,
+                              help='Display the values of the intervals instead'
+                              ' of computed statistics.')
   post_aggregation.add_option(
       '-o', '--sort', type='str', default='-median', help='Sort the results '
       'by one of the following fields (prepend with - to reverse order): '
@@ -355,7 +489,7 @@ and the summarized data is output as text, json or csv.
   options, _ = parser.parse_args()
 
   # Options validation
-  if options.output_format != ['csv', 'json'] and options.example:
+  if options.output_format in ['csv', 'json'] and options.example:
     options.example = False
 
   return options
@@ -368,18 +502,22 @@ def main():
   aggregated_transitions = _AggregateTransitions(options,
       *_LoadFilterAndSortRecords(options))
 
-  # Filter out short transitions (< 0.1 seconds) and uncommon transitions.
-  aggregated_transitions = [
-      x for x in aggregated_transitions
-      if x['count'] >= options.min_transition_count and x['median'] > 0.1]
+  if options.raw_values_only:
+    aggregated_transitions = [x for x in aggregated_transitions
+                              if any(x['values'])]
+  else:
+    # Filter out short transitions (< 0.1 seconds) and uncommon transitions.
+    aggregated_transitions = [
+        x for x in aggregated_transitions
+        if x['count'] >= options.min_transition_count and x['median'] > 0.1]
 
-  # Sort transition aggregates
-  key = options.sort
-  reverse = False
-  if key.startswith('-'):
-    key = key[1:]
-    reverse = True
-  aggregated_transitions.sort(key=lambda x: x[key], reverse=reverse)
+    # Sort transition aggregates
+    key = options.sort
+    reverse = False
+    if key.startswith('-'):
+      key = key[1:]
+      reverse = True
+    aggregated_transitions.sort(key=lambda x: x[key], reverse=reverse)
 
   if options.output_format == 'text':
     # assemble <options.top> rows of results
