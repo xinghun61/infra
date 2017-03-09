@@ -18,8 +18,15 @@ import (
 	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/tsmon/field"
+	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
+)
+
+var (
+	bugQueueLength = metric.NewInt("bug_queue_length", "Number of bugs in queue.",
+		nil, field.String("label"))
 )
 
 // A bit of a hack to let us mock getBugsFromMonorail.
@@ -53,7 +60,6 @@ var getBugsFromMonorail = func(c context.Context, q string,
 	}
 
 	logging.Debugf(c, "Fetch to monorail took %v. Got %d bugs.", clock.Now(c).Sub(before), res.TotalResults)
-
 	return res, nil
 }
 
@@ -92,6 +98,8 @@ func getUncachedBugsHandler(ctx *router.Context) {
 		label, user.Email(), email)
 
 	bugs, err := getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
+
+	bugQueueLength.Set(c, int64(bugs.TotalResults), label)
 
 	out, err := json.Marshal(bugs)
 	if err != nil {
