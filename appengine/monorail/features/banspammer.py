@@ -42,14 +42,15 @@ class BanSpammer(servlet.Servlet):
     viewed_user_id = mr.viewed_user_auth.user_pb.user_id
     reporter_id = mr.auth.user_id
 
-    # First ban the user as a spammer.
+    # First ban or un-ban the user as a spammer.
     framework_helpers.UserSettings.ProcessBanForm(
         mr.cnxn, self.services.user, post_data, mr.viewed_user_auth.user_id,
         mr.viewed_user_auth.user_pb)
 
     # Now enqueue a task to mark all of their content as spam.
     taskqueue.add(url=urls.BAN_SPAMMER_TASK + '.do',
-        params={'spammer_id': viewed_user_id, 'reporter_id': reporter_id})
+        params={'spammer_id': viewed_user_id, 'reporter_id': reporter_id,
+            'is_spammer': 'banned' in post_data})
 
     return framework_helpers.FormatAbsoluteURL(
         mr, mr.viewed_user_auth.user_view.profile_url, include_project=False,
@@ -66,17 +67,17 @@ class BanSpammerTask(jsonfeed.InternalTask):
   def HandleRequest(self, mr):
     spammer_id = mr.GetPositiveIntParam('spammer_id')
     reporter_id = mr.GetPositiveIntParam('reporter_id')
+    is_spammer = mr.GetBoolParam('is_spammer')
 
-    print "\n\n\n\nspammer_id: %d, reporter_id: %d" % (spammer_id, reporter_id)
     # Get all of the issues reported by the spammer.
     issue_ids = self.services.issue.GetIssueIDsReportedByUser(mr.cnxn,
         spammer_id)
 
     issues = self.services.issue.GetIssues(mr.cnxn, issue_ids)
 
-    # Mark them as spam in bulk.
+    # Mark them as spam/ham in bulk.
     self.services.spam.RecordManualIssueVerdicts(mr.cnxn, self.services.issue,
-        issues, reporter_id, True)
+        issues, reporter_id, is_spammer)
 
     # Get all of the comments
     comments = self.services.issue.GetCommentsByUser(mr.cnxn, spammer_id)
@@ -88,14 +89,14 @@ class BanSpammerTask(jsonfeed.InternalTask):
       for c in all_comments:
         if c.id == comment.id:
           sequence_num = c.sequence
-      if comment.is_spam or sequence_num == 0:
-        # IssueComment 0 should already be counted as spam in the previous
-        # step where we marked the whole issue as spam.
+      if sequence_num == 0:
+        # IssueComment 0 should already be counted as spam/ham in the previous
+        # step where we marked the whole issue as spam/ham.
         continue
 
       self.services.spam.RecordManualCommentVerdict(mr.cnxn,
             self.services.issue, self.services.user, comment.id,
-            sequence_num, reporter_id, True)
+            sequence_num, reporter_id, is_spammer)
 
     self.response.body = json.dumps({
       'comments': len(comments),

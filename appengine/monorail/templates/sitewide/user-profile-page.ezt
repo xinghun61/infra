@@ -260,7 +260,16 @@
 
  </form>
 
-  [if-any viewed_user_has_no_roles]
+  [if-any viewed_user_is_spammer]
+   <form action="banSpammer.do" method="POST">
+    <input type="hidden" name="token" value="[ban_spammer_token]">
+    <input type="hidden" size="50" name="banned_reason" id="banned_reason" value="">
+    <input type="submit" name="undoBanSpammerButton" id="undo_ban_spammer_btn" value="Un-ban this user as a spammer">
+   </form>
+  [end]
+
+
+  [if-any viewed_user_may_be_spammer]
    <form action="banSpammer.do" method="POST">
     <input type="hidden" name="token" value="[ban_spammer_token]">
     <input type="hidden" name="banned" value="True">

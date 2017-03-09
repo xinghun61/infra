@@ -78,16 +78,16 @@ class UserProfile(servlet.Servlet):
       last_bounce_str = None
 
     can_ban = permissions.CanBan(mr, self.services)
-    viewed_user_has_no_roles = True
+    viewed_user_is_spammer = viewed_user.banned.lower() == 'spam'
+    viewed_user_may_be_spammer = not viewed_user_is_spammer
     all_projects = self.services.project.GetAllProjects(mr.cnxn)
     for project_id in all_projects:
       project = all_projects[project_id]
       viewed_user_perms = permissions.GetPermissions(viewed_user,
           mr.viewed_user_auth.effective_ids, project)
-      print "\n\nUser perms: %s" % viewed_user_perms
       if (viewed_user_perms != permissions.EMPTY_PERMISSIONSET and
           viewed_user_perms != permissions.USER_PERMISSIONSET):
-        viewed_user_has_no_roles = False
+        viewed_user_may_be_spammer = False
 
     ban_token = None
     ban_spammer_token = None
@@ -97,11 +97,11 @@ class UserProfile(servlet.Servlet):
       form_token_path = mr.request.path + 'banSpammer.do'
       ban_spammer_token = xsrf.GenerateToken(mr.auth.user_id, form_token_path)
 
-
     page_data = {
         'user_tab_mode': 'st2',
         'viewed_user_display_name': viewed_user_display_name,
-        'viewed_user_has_no_roles': ezt.boolean(viewed_user_has_no_roles),
+        'viewed_user_may_be_spammer': ezt.boolean(viewed_user_may_be_spammer),
+        'viewed_user_is_spammer': ezt.boolean(viewed_user_is_spammer),
         'viewed_user_is_banned': ezt.boolean(viewed_user.banned),
         'viewed_user_ignore_action_limits': (
             ezt.boolean(viewed_user.ignore_action_limits)),
