@@ -3,10 +3,6 @@
 # found in the LICENSE file.
 
 
-_DEFAULT_MAX_ITERATIONS_TO_RERUN = 500
-_DEFAULT_ITERATION_INCREASE_STEP_SIZE = 100
-
-
 class NormalizedDataPoint():
 
   def __init__(self, run_point_number, pass_rate):
@@ -42,6 +38,7 @@ def _SequentialSearch(data_points, lower_boundary_index):
     iterations_to_rerun (int): None. Used only for return purposes by the
         calling function.
   """
+
   lower_boundary = data_points[lower_boundary_index].run_point_number
   run_after_lower_boundary = (
       data_points[lower_boundary_index - 1].run_point_number)
@@ -80,17 +77,11 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
   # https://docs.google.com/document/d/1wPYFZ5OT998Yn7O8wGDOhgfcQ98mknoX13AesJaS6ig/edit
   lower_flake_threshold = algorithm_settings.get('lower_flake_threshold')
   upper_flake_threshold = algorithm_settings.get('upper_flake_threshold')
-  max_stable_in_a_row = algorithm_settings.get('max_stable_in_a_row')
-  max_flake_in_a_row = algorithm_settings.get('max_flake_in_a_row')
   max_dive_in_a_row = algorithm_settings.get('max_dive_in_a_row', 0)
   dive_rate_threshold = algorithm_settings.get('dive_rate_threshold')
 
-  stables_in_a_row = 0
   flakes_in_a_row = 0
   dives_in_a_row = 0
-  stables_happened = False
-  flakes_first = 0
-  flaked_out = False
   next_run_point = None
   number_of_data_points = len(data_points)
 
@@ -99,66 +90,35 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
     run_point_number = data_points[i].run_point_number
 
     if _TestDoesNotExist(pass_rate):
-      if flaked_out or flakes_first:
-        # Flaky region found, ready for sequential search.
-        return _SequentialSearch(data_points, i - stables_in_a_row)
+      if flakes_in_a_row:
+        return _SequentialSearch(data_points, i)
       else:
         # No flaky region has been identified, no findings.
         return None, None, None
 
     elif _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
-      stables_in_a_row += 1
-      flakes_in_a_row = 0
-      dives_in_a_row = 0
-      stables_happened = True
 
-      if number_of_data_points == 1:
-        # If the swarming rerun for the first build had stable results, either
-        # the test is actually stable and we should bail out, or the number of
-        # iterations is not high enough and we should rerun with a higher value.
-        iterations_to_rerun = algorithm_settings.get('iterations_to_rerun')
-        max_iterations_to_rerun = algorithm_settings.get(
-            'max_iterations_to_rerun')
+      # If the swarming rerun for the first build had stable results, either
+      # the test is really stable so we should bail out or
+      # the number of iterations is not high enough so we should increase
+      # the number and rerun.
+      iterations_to_rerun = algorithm_settings.get('iterations_to_rerun')
+      max_iterations_to_rerun = algorithm_settings.get(
+          'max_iterations_to_rerun', 100)
 
-        iterations_to_rerun *= 2
-        if iterations_to_rerun > max_iterations_to_rerun:
-          # Conside this as stabled-out and no flake region, so no findings.
+      iterations_to_rerun *= 2
+      if iterations_to_rerun > max_iterations_to_rerun:
+        # Cannot increase iterations_to_rerun, need to make a decision.
+        if flakes_in_a_row:  # Ready for sequential search.
+          return _SequentialSearch(data_points, i)
+        else:  # First build is stable, bail out.
           return None, None, None
 
-        # Rerun the same build with a higher number of iterations.
-        return run_point_number, None, iterations_to_rerun
-
-      if stables_in_a_row <= max_stable_in_a_row:
-        # No stable region yet, keep searching.
-        # TODO(http://crbug.com/670888): Pin point a stable point rather than
-        # looking for stable region further narrow down the sequential search
-        # range further.
-        next_run_point = run_point_number - 1
-        continue
-
-      # Flake region is also found, ready for sequential search.
-      return _SequentialSearch(data_points, i - stables_in_a_row + 1)
+      # Rerun the same build with a higher number of iterations.
+      return run_point_number, None, iterations_to_rerun
 
     else:  # Flaky result.
-      if i < number_of_data_points - 1:
-        # Check if the test was newly added at this run point number and is
-        # already flaky.
-        next_data_point = data_points[i + 1]
-
-        if (run_point_number - next_data_point.run_point_number == 1 and
-            next_data_point.pass_rate == -1):
-          # Flakiness was introduced in this run number.
-          return None, run_point_number, None
-
       flakes_in_a_row += 1
-      stables_in_a_row = 0
-
-      if flakes_in_a_row > max_flake_in_a_row:  # Identified a flaky region.
-        flaked_out = True
-
-      if not stables_happened:
-        # No stables yet.
-        flakes_first += 1
 
       if run_point_number == lower_bound_run_point_number:  # pragma: no branch
         # The earliest commit_position to look back is already flaky. This is

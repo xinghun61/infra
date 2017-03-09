@@ -64,36 +64,6 @@ class LookbackAlgorithmTest(TestCase):
     self.assertIsNone(next_run)
     self.assertEqual(0, result)
 
-  def testGetNextRunSetStableAfterFlaky(self):
-    data_points = [
-        NormalizedDataPoint(100, 0.8),
-        NormalizedDataPoint(80, 1.0)]
-    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertIsNone(result)
-    self.assertEqual(next_run, 79)
-
-  def testGetNextRunFlakeAfterStable(self):
-    data_points = [
-        NormalizedDataPoint(100, 1.0),
-        NormalizedDataPoint(80, 0.8)]
-    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertIsNone(result)
-    self.assertEqual(next_run, 79)
-
-  def testGetNextRunNoTestAfterStable(self):
-    data_points = [
-        NormalizedDataPoint(100, 1.0),
-        NormalizedDataPoint(80, -1)]
-    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertIsNone(result)
-    self.assertEqual(next_run, None)
-
   def testGetNextRunFlakedOut(self):
     data_points = [
         NormalizedDataPoint(100, 0.6),
@@ -112,33 +82,15 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(100, 0.6),
         NormalizedDataPoint(99, 0.8),
         NormalizedDataPoint(97, 0.7),
-        NormalizedDataPoint(94, 1.0),
-        NormalizedDataPoint(93, 1.0),
-        NormalizedDataPoint(92, 1.0),
-        NormalizedDataPoint(91, 1.0),
-        NormalizedDataPoint(90, 1.0)]
-    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
-        data_points,
+        NormalizedDataPoint(94, 1.0)]
+
+    algorithm_settings = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
+    algorithm_settings['max_iterations_to_rerun'] = 100
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
+        data_points, algorithm_settings)
     self.assertIsNone(result)
     self.assertEqual(next_run, 95)
-
-  def testSequentialNextRunFirstTime(self):
-    data_points = [
-        NormalizedDataPoint(100, 0.6),
-        NormalizedDataPoint(99, 0.8),
-        NormalizedDataPoint(97, 0.7),
-        NormalizedDataPoint(95, 1.0),
-        NormalizedDataPoint(94, 1.0),
-        NormalizedDataPoint(93, 1.0),
-        NormalizedDataPoint(92, 1.0),
-        NormalizedDataPoint(91, 1.0),
-        NormalizedDataPoint(90, 1.0)]
-    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertIsNone(result)
-    self.assertEqual(next_run, 96)
 
   def testSequentialNextRunFoundFlaky(self):
     data_points = [
@@ -146,14 +98,14 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(99, 0.8),
         NormalizedDataPoint(97, 0.7),
         NormalizedDataPoint(95, 0.8),
-        NormalizedDataPoint(94, 1.0),
-        NormalizedDataPoint(93, 1.0),
-        NormalizedDataPoint(92, 1.0),
-        NormalizedDataPoint(91, 1.0),
-        NormalizedDataPoint(90, 1.0)]
-    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
-        data_points,
+        NormalizedDataPoint(94, 1.0)]
+
+    algorithm_settings = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
+    algorithm_settings['max_iterations_to_rerun'] = 100
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
+        data_points, algorithm_settings)
+
     self.assertEqual(result, 95)
     self.assertIsNone(next_run)
 
@@ -163,15 +115,14 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(99, 0.8),
         NormalizedDataPoint(97, 0.7),
         NormalizedDataPoint(96, 0.8),
-        NormalizedDataPoint(95, 1.0),
-        NormalizedDataPoint(94, 1.0),
-        NormalizedDataPoint(93, 1.0),
-        NormalizedDataPoint(92, 1.0),
-        NormalizedDataPoint(91, 1.0),
-        NormalizedDataPoint(90, 1.0)]
-    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
-        data_points,
+        NormalizedDataPoint(95, 1.0)]
+
+    algorithm_settings = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
+    algorithm_settings['max_iterations_to_rerun'] = 100
+    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
+        data_points, algorithm_settings)
+
     self.assertEqual(result, 96)
     self.assertIsNone(next_run)
 
@@ -196,18 +147,6 @@ class LookbackAlgorithmTest(TestCase):
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'], 0)
     self.assertIsNone(next_run)
     self.assertEqual(91, result)
-
-  def testNextBuildWhenTestNotExistingAfterStableInARow(self):
-    data_points = [
-        NormalizedDataPoint(100, 0.8),
-        NormalizedDataPoint(80, 1.0),
-        NormalizedDataPoint(70, 1.0),
-        NormalizedDataPoint(60, -1)]
-    next_run, result, _ = lookback_algorithm.GetNextRunPointNumber(
-        data_points,
-        DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
-    self.assertIsNone(result)
-    self.assertEqual(81, next_run)
 
   def testTestDoesNotExist(self):
     data_points = [NormalizedDataPoint(100, -1)]
@@ -283,12 +222,15 @@ class LookbackAlgorithmTest(TestCase):
   def testRerunWithHigherIterationsWhenFirstBuildStable(self):
     data_points = [NormalizedDataPoint(100, 1.0)]
 
-    next_run, result, iterations = lookback_algorithm.GetNextRunPointNumber(
-        data_points,
+    algorithms = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
+    algorithms['iterations_to_rerun'] = 100
+    algorithms['max_iterations_to_rerun'] = 800
+    next_run, result, iterations = lookback_algorithm.GetNextRunPointNumber(
+        data_points, algorithms)
     self.assertIsNone(result)
-    self.assertEqual(100, next_run)
     self.assertEqual(200, iterations)
+    self.assertEqual(100, next_run)
 
   def testBailOutWhenIterationsGreaterThanMax(self):
     data_points = [NormalizedDataPoint(100, 1.0)]

@@ -405,8 +405,8 @@ def _UpdateIterationsToRerun(analysis, iterations_to_rerun):
       'iterations_to_rerun'] = iterations_to_rerun
 
 
-def _RemoveFirstBuildDataPoint(analysis):
-  if len(analysis.data_points) != 1 or analysis.data_points[0].try_job_url:
+def _RemoveRerunBuildDataPoint(analysis):
+  if len(analysis.data_points) < 1 or analysis.data_points[-1].try_job_url:
     return
 
   analysis.data_points.pop()
@@ -460,7 +460,7 @@ class NextBuildNumberPipeline(BasePipeline):
     if iterations_to_rerun:
       # Need to rerun the first build with more iterations.
       _UpdateIterationsToRerun(analysis, iterations_to_rerun)
-      _RemoveFirstBuildDataPoint(analysis)
+      _RemoveRerunBuildDataPoint(analysis)
       analysis.put()
 
     max_build_numbers_to_look_back = algorithm_settings.get(
