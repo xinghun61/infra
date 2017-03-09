@@ -11,9 +11,11 @@ from common.waterfall.pubsub_callback import MakeSwarmingPubsubCallback
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model import analysis_status
-from waterfall import monitoring
 from waterfall import swarming_util
 from waterfall import waterfall_config
+
+
+NO_TASK = 'no_task'
 
 
 class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
@@ -220,10 +222,8 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
         master_name, builder_name, build_number, http_client,
         {'stepname': step_name})
     if len(swarming_task_items) < 1:
-      monitoring.swarming_tasks.increment(
-          {'operation': 'refer', 'category': 'copy-settings-and-parameters'})
-      raise Exception('No Swarming task was run at %s, %s, %s' % (
-          master_name, builder_name, build_number))
+      return NO_TASK
+
     ref_task_id = swarming_task_items[0]['task_id']
 
     # 1. Retrieve Swarming task parameters from a given Swarming task id.

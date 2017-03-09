@@ -12,6 +12,7 @@ from common.pipeline_wrapper import BasePipeline
 from model import analysis_status
 from waterfall import swarming_util
 from waterfall import waterfall_config
+from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
 
 
 class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
@@ -72,6 +73,20 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
   def _MonitorSwarmingTask(self, task_id, *call_args):
     """Monitors the swarming task and waits for it to complete."""
     assert task_id
+
+    step_name_no_platform = None
+    task = self._GetSwarmingTask(*call_args)
+
+    if task_id.lower() == NO_TASK:  # pragma: no branch
+      # This situation happens in flake analysis: if the step with flaky test
+      # didn't exist in checked build, we should skip the build.
+      task.task_id = None
+      task.status = analysis_status.SKIPPED
+      task.put()
+      self._UpdateMasterFlakeAnalysis(
+          *call_args, pass_rate=-1, flake_swarming_task=task)
+      return step_name_no_platform
+
     timeout_hours = waterfall_config.GetSwarmingSettings().get(
         'task_timeout_hours')
     deadline = time.time() + timeout_hours * 60 * 60
@@ -79,8 +94,6 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         'server_query_interval_seconds')
     task_started = False
     task_completed = False
-    step_name_no_platform = None
-    task = self._GetSwarmingTask(*call_args)
 
     while not task_completed:
       data, error = swarming_util.GetSwarmingTaskResultById(

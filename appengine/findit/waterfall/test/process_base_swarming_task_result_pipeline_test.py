@@ -19,6 +19,7 @@ from waterfall.process_flake_swarming_task_result_pipeline import (
 from waterfall.process_swarming_task_result_pipeline import (
     ProcessSwarmingTaskResultPipeline)
 from waterfall.test import wf_testcase
+from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
 
 
 _ISOLATED_SERVER = 'https://isolateserver.appspot.com'
@@ -394,3 +395,33 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                      task.started_time)
     self.assertEqual(datetime.datetime(2016, 2, 10, 18, 33, 9),
                      task.completed_time)
+
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testMonitorSwarmingTaskStepNotExist(self, mocked_fn):
+    task_id = NO_TASK
+
+    build_info = BuildInfo(
+        self.master_name, self.build_number, self.build_number)
+    build_info.commit_position = 12345
+    build_info.chromium_revision = 'a1b2c3d4'
+    mocked_fn.return_value = build_info
+
+    task = FlakeSwarmingTask.Create(
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        self.test_name)
+    task.put()
+
+    analysis = MasterFlakeAnalysis.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name, self.test_name)
+    analysis.Save()
+
+    pipeline = ProcessFlakeSwarmingTaskResultPipeline()
+    step_name_no_platform = pipeline._MonitorSwarmingTask(
+        task_id, self.master_name, self.builder_name, self.build_number,
+        self.step_name, self.build_number, self.test_name, 1)
+
+    self.assertIsNone(task.task_id)
+    self.assertEqual(analysis_status.SKIPPED, task.status)
+    self.assertEqual(-1, analysis.data_points[-1].pass_rate)
+    self.assertIsNone(step_name_no_platform)
