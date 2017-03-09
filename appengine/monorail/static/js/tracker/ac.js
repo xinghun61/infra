@@ -790,13 +790,7 @@ function ac_checkCompletions() {
     var oldSelected =
       (ac_selected >= 0) ? ac_completions[ac_selected].value : null;
     ac_completions = ac_store.completions(completable, tofilter);
-    ac_selected = -1;
-    for (var i = 0; i < ac_completions.length; ++i) {
-      if (oldSelected == ac_completions[i].value) {
-        ac_selected = i;
-        break;
-      }
-    }
+    ac_selected = oldSelected ? 0 : -1;
     ac_lastCompletable = completable;
     return;
   }
