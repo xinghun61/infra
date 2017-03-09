@@ -64,12 +64,12 @@ def get_frontend_routes():  # pragma: no cover
 def get_backend_routes():
   return [
     webapp2.Route(
-      r'/internal/cron/buildbucket/reset_expired_builds',
-      CronResetExpiredBuilds),
+        r'/internal/cron/buildbucket/reset_expired_builds',
+        CronResetExpiredBuilds),
     webapp2.Route(
-      r'/internal/cron/buildbucket/update_buckets',
-      CronUpdateBuckets),
+        r'/internal/cron/buildbucket/update_buckets',
+        CronUpdateBuckets),
     webapp2.Route(
-      r'/internal/task/buildbucket/notify/<build_id:\d+>',
-      notifications.TaskPublishNotification),
+        r'/internal/task/buildbucket/notify/<build_id:\d+>',
+        notifications.TaskPublishNotification),
   ]

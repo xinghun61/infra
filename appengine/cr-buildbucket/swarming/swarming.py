@@ -53,7 +53,6 @@ import model
 import notifications
 import protoutil
 
-
 PUBSUB_TOPIC = 'swarming'
 BUILDER_PARAMETER = 'builder_name'
 PARAM_PROPERTIES = 'properties'
@@ -66,6 +65,7 @@ DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/task?id={task_id}'
 # a strong signal if the canary is broken.
 # If it is, the template must be reverted to a stable version ASAP.
 DEFAULT_CANARY_TEMPLATE_PERCENTAGE = 10
+
 
 ################################################################################
 # Creation/cancellation of tasks.
@@ -110,7 +110,7 @@ def get_task_template_async(canary, canary_required=True):
 
   if not text:
     revision, text = yield component_config.get_self_config_async(
-      'swarming_task_template.json', store_last_good=True)
+        'swarming_task_template.json', store_last_good=True)
   raise ndb.Return(revision, json.loads(text) if text else None, canary)
 
 
@@ -140,7 +140,6 @@ def validate_build_parameters(builder_name, params):
     raise errors.InvalidInputError(fmt % args)
 
   params.pop(BUILDER_PARAMETER)  # already validated
-
 
   def assert_object(name, value):
     if not isinstance(value, dict):
@@ -210,6 +209,7 @@ def should_use_canary_template(percentage):  # pragma: no cover
   This function is non-determinstic.
   """
   return random.randint(0, 99) < percentage
+
 
 def _prepare_builder_config(swarming_cfg, builder_cfg, swarming_param):
   """Returns final version of builder config to use for |build|.
@@ -285,7 +285,8 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
     if changes:  # pragma: no branch
       # Buildbucket-Buildbot integration passes repo_url of the first change in
       # build parameter "changes" as "repository" attribute of SourceStamp.
-      # https://chromium.googlesource.com/chromium/tools/build/+/2c6023d/scripts/master/buildbucket/changestore.py#140
+      # https://chromium.googlesource.com/chromium/tools/build/+/2c6023d
+      # /scripts/master/buildbucket/changestore.py#140
       # Buildbot passes repository of the build source stamp as "repository"
       # build property. Recipes, in partiular bot_update recipe module, rely on
       # "repository" property and it is an almost sane property to support in
@@ -342,17 +343,17 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
 
   task_properties = task.setdefault('properties', {})
   task_properties['dimensions'] = _to_swarming_dimensions(
-    swarmingcfg_module.merge_dimensions(
-      builder_cfg.dimensions,
-      task_properties.get('dimensions', []),
-    ))
+      swarmingcfg_module.merge_dimensions(
+          builder_cfg.dimensions,
+          task_properties.get('dimensions', []),
+      ))
 
   _add_cipd_packages(builder_cfg, task_properties)
   _add_named_caches(builder_cfg, task_properties)
 
   if builder_cfg.execution_timeout_secs > 0:
     task_properties['execution_timeout_secs'] = (
-        builder_cfg.execution_timeout_secs)
+      builder_cfg.execution_timeout_secs)
 
   task['pubsub_topic'] = (
     'projects/%s/topics/%s' %
@@ -422,7 +423,7 @@ def create_task_async(build):
   """
   if build.lease_key:
     raise errors.InvalidInputError(
-      'Swarming buckets do not support creation of leased builds')
+        'Swarming buckets do not support creation of leased builds')
   if not build.parameters:
     raise errors.InvalidInputError(
         'A build for bucket %r must have parameters' % build.bucket)
@@ -443,16 +444,16 @@ def create_task_async(build):
   task = yield create_task_def_async(
       project_id, bucket_cfg.swarming, builder_cfg, build)
   res = yield _call_api_async(
-    bucket_cfg.swarming.hostname, 'tasks/new', method='POST', payload=task,
-    # Higher timeout than normal because if the task creation request
-    # fails, but the task is actually created, later we will receive a
-    # notification that the task is completed, but we won't have a build
-    # for that task, which results in errors in the log.
-    deadline=30,
-    # This code path is executed by put and put_batch request handlers.
-    # Clients should retry these requests on transient errors, so
-    # do not retry requests to swarming.
-    max_attempts=1)
+      bucket_cfg.swarming.hostname, 'tasks/new', method='POST', payload=task,
+      # Higher timeout than normal because if the task creation request
+      # fails, but the task is actually created, later we will receive a
+      # notification that the task is completed, but we won't have a build
+      # for that task, which results in errors in the log.
+      deadline=30,
+      # This code path is executed by put and put_batch request handlers.
+      # Clients should retry these requests on transient errors, so
+      # do not retry requests to swarming.
+      max_attempts=1)
   task_id = res['task_id']
   logging.info('Created a swarming task %s: %r', task_id, res)
 
@@ -487,19 +488,19 @@ def create_task_async(build):
   build.status = model.BuildStatus.STARTED
   url_format = bucket_cfg.swarming.url_format or DEFAULT_URL_FORMAT
   build.url = url_format.format(
-    swarming_hostname=bucket_cfg.swarming.hostname,
-    task_id=task_id,
-    bucket=build.bucket,
-    builder=builder_cfg.name)
+      swarming_hostname=bucket_cfg.swarming.hostname,
+      task_id=task_id,
+      bucket=build.bucket,
+      builder=builder_cfg.name)
 
 
 def cancel_task_async(build):
   assert build.swarming_hostname
   assert build.swarming_task_id
   return _call_api_async(
-    build.swarming_hostname,
-    'task/%s/cancel' % build.swarming_task_id,
-    method='POST')
+      build.swarming_hostname,
+      'task/%s/cancel' % build.swarming_task_id,
+      method='POST')
 
 
 ################################################################################
@@ -509,7 +510,7 @@ def cancel_task_async(build):
 def _load_task_result_async(
     hostname, task_id, identity=None):  # pragma: no cover
   return _call_api_async(
-    hostname, 'task/%s/result' % task_id, identity=identity)
+      hostname, 'task/%s/result' % task_id, identity=identity)
 
 
 def _update_build(build, result):
@@ -657,14 +658,14 @@ class SubNotify(webapp2.RequestHandler):
     else:
       # TODO(nodir): delete this code path
       build_q = model.Build.query(
-        model.Build.swarming_hostname == hostname,
-        model.Build.swarming_task_id == task_id,
+          model.Build.swarming_hostname == hostname,
+          model.Build.swarming_task_id == task_id,
       )
       builds = build_q.fetch(1)
       if not builds:
         if utils.utcnow() < created_time + datetime.timedelta(minutes=20):
           self.stop(
-            'Build for task %s not found yet.', task_url, redeliver=True)
+              'Build for task %s not found yet.', task_url, redeliver=True)
         else:
           self.stop('Build for task %s not found.', task_url)
       build = builds[0]
@@ -673,7 +674,7 @@ class SubNotify(webapp2.RequestHandler):
 
     # Update build.
     result = _load_task_result_async(
-      hostname, task_id, identity=build.created_by).get_result()
+        hostname, task_id, identity=build.created_by).get_result()
 
     @ndb.transactional
     def txn(build_key):
@@ -721,8 +722,8 @@ class CronUpdateBuilds(webapp2.RequestHandler):
   @ndb.tasklet
   def update_build_async(self, build):
     result = yield _load_task_result_async(
-      build.swarming_hostname, build.swarming_task_id,
-      identity=build.created_by)
+        build.swarming_hostname, build.swarming_task_id,
+        identity=build.created_by)
 
     @ndb.transactional_tasklet
     def txn(build_key):
@@ -763,19 +764,19 @@ class CronUpdateBuilds(webapp2.RequestHandler):
   @decorators.require_cronjob
   def get(self):  # pragma: no cover
     q = model.Build.query(
-      model.Build.status == model.BuildStatus.STARTED,
-      model.Build.swarming_task_id != None)
+        model.Build.status == model.BuildStatus.STARTED,
+        model.Build.swarming_task_id != None)
     q.map_async(self.update_build_async).get_result()
 
 
 def get_routes():  # pragma: no cover
   return [
     webapp2.Route(
-      r'/internal/cron/swarming/update_builds',
-      CronUpdateBuilds),
+        r'/internal/cron/swarming/update_builds',
+        CronUpdateBuilds),
     webapp2.Route(
-      r'/swarming/notify',
-      SubNotify),
+        r'/swarming/notify',
+        SubNotify),
   ]
 
 
@@ -789,18 +790,18 @@ def _call_api_async(
     max_attempts=None):
   identity = identity or auth.get_current_identity()
   delegation_token = yield auth.delegate_async(
-    audience=[_self_identity()],
-    impersonate=identity,
+      audience=[_self_identity()],
+      impersonate=identity,
   )
   url = 'https://%s/_ah/api/swarming/v1/%s' % (hostname, path)
   res = yield net.json_request_async(
-    url,
-    method=method,
-    payload=payload,
-    scopes=net.EMAIL_SCOPE,
-    deadline=deadline,
-    max_attempts=max_attempts,
-    delegation_token=delegation_token,
+      url,
+      method=method,
+      payload=payload,
+      scopes=net.EMAIL_SCOPE,
+      deadline=deadline,
+      max_attempts=max_attempts,
+      delegation_token=delegation_token,
   )
   raise ndb.Return(res)
 

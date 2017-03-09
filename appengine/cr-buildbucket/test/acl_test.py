@@ -27,31 +27,31 @@ class AclTest(testing.AppengineTestCase):
 
     self.mock(config, 'get_buckets_async', mock.Mock())
     bucket_a = Bucket(
-      name='a',
-      acls=[
-        Acl(role=Acl.WRITER, group='a-writers'),
-        Acl(role=Acl.READER, group='a-readers'),
-      ])
+        name='a',
+        acls=[
+          Acl(role=Acl.WRITER, group='a-writers'),
+          Acl(role=Acl.READER, group='a-readers'),
+        ])
     bucket_b = Bucket(
-      name='b',
-      acls=[
-        Acl(role=Acl.WRITER, group='b-writers'),
-        Acl(role=Acl.READER, group='b-readers'),
-      ])
+        name='b',
+        acls=[
+          Acl(role=Acl.WRITER, group='b-writers'),
+          Acl(role=Acl.READER, group='b-readers'),
+        ])
     bucket_c = Bucket(
-      name='c',
-      acls=[
-        Acl(role=Acl.READER, group='c-readers'),
-        Acl(role=Acl.READER, identity='user:a@example.com'),
-        Acl(role=Acl.WRITER, group='c-writers'),
-      ])
+        name='c',
+        acls=[
+          Acl(role=Acl.READER, group='c-readers'),
+          Acl(role=Acl.READER, identity='user:a@example.com'),
+          Acl(role=Acl.WRITER, group='c-writers'),
+        ])
     all_buckets = [bucket_a, bucket_b, bucket_c]
     config.get_buckets_async.return_value = future(all_buckets)
     bucket_map = {b.name: b for b in all_buckets}
 
     self.mock(
-      config, 'get_bucket_async',
-      lambda name: future(('chromium', bucket_map.get(name))))
+        config, 'get_bucket_async',
+        lambda name: future(('chromium', bucket_map.get(name))))
 
   def mock_is_group_member(self, groups):
     # pylint: disable=unused-argument
@@ -86,37 +86,37 @@ class AclTest(testing.AppengineTestCase):
 
     config.get_buckets_async.return_value = future([
       Bucket(
-        name='available_bucket1',
-        acls=[
-          Acl(role=Acl.READER, group='xxx'),
-          Acl(role=Acl.WRITER, group='yyy')
-        ],
+          name='available_bucket1',
+          acls=[
+            Acl(role=Acl.READER, group='xxx'),
+            Acl(role=Acl.WRITER, group='yyy')
+          ],
       ),
       Bucket(
-        name='available_bucket2',
-        acls=[
-          Acl(role=Acl.READER, group='xxx'),
-          Acl(role=Acl.WRITER, group='zzz')
-        ],
+          name='available_bucket2',
+          acls=[
+            Acl(role=Acl.READER, group='xxx'),
+            Acl(role=Acl.WRITER, group='zzz')
+          ],
       ),
       Bucket(
-        name='available_bucket3',
-        acls=[
-          Acl(role=Acl.READER, identity='user:a@example.com'),
-        ],
+          name='available_bucket3',
+          acls=[
+            Acl(role=Acl.READER, identity='user:a@example.com'),
+          ],
       ),
       Bucket(
-        name='not_available_bucket',
-        acls=[
-          Acl(role=Acl.WRITER, group='zzz')],
+          name='not_available_bucket',
+          acls=[
+            Acl(role=Acl.WRITER, group='zzz')],
       ),
     ])
 
     availble_buckets = acl.get_available_buckets()
     availble_buckets = acl.get_available_buckets()  # memcache coverage.
     self.assertEqual(
-      availble_buckets,
-      {'available_bucket1', 'available_bucket2', 'available_bucket3'})
+        availble_buckets,
+        {'available_bucket1', 'available_bucket2', 'available_bucket3'})
 
     self.mock(auth, 'is_admin', lambda *_: True)
     self.assertIsNone(acl.get_available_buckets())

@@ -8,7 +8,7 @@ APP_DIR = os.path.dirname(os.path.abspath(__file__))
 import google
 
 google.__path__.insert(
-  0, os.path.join(APP_DIR, 'components', 'third_party', 'protobuf', 'google'))
+    0, os.path.join(APP_DIR, 'components', 'third_party', 'protobuf', 'google'))
 
 from components import config
 from components import ereporter2
@@ -26,7 +26,7 @@ import swarming
 def create_html_app():  # pragma: no cover
   """Returns WSGI app that serves HTML pages."""
   app = webapp2.WSGIApplication(
-    handlers.get_frontend_routes(), debug=utils.is_local_dev_server())
+      handlers.get_frontend_routes(), debug=utils.is_local_dev_server())
   gae_ts_mon.initialize(app, cron_module='backend')
   return app
 

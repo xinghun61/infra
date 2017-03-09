@@ -2,5 +2,5 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from .swarming import *  # pylint: disable=wildcard-import
 from .swarmbucket_api import SwarmbucketApi
+from .swarming import *  # pylint: disable=wildcard-import

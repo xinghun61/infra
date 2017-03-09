@@ -45,14 +45,14 @@ def validate_lease_expiration_date(expiration_date):
     return
   if not isinstance(expiration_date, datetime.datetime):
     raise errors.InvalidInputError(
-      'Lease expiration date must be datetime.datetime')
+        'Lease expiration date must be datetime.datetime')
   duration = expiration_date - utils.utcnow()
   if duration <= datetime.timedelta(0):
     raise errors.InvalidInputError(
-      'Lease expiration date cannot be in the past')
+        'Lease expiration date cannot be in the past')
   if duration > MAX_LEASE_DURATION:
     raise errors.InvalidInputError(
-      'Lease duration cannot exceed %s' % MAX_LEASE_DURATION)
+        'Lease duration cannot exceed %s' % MAX_LEASE_DURATION)
 
 
 def validate_url(url):
@@ -65,7 +65,7 @@ def validate_url(url):
     raise errors.InvalidInputError('url must be absolute')
   if parsed.scheme.lower() not in ('http', 'https'):
     raise errors.InvalidInputError(
-      'Unexpected url scheme: "%s"' % parsed.scheme)
+        'Unexpected url scheme: "%s"' % parsed.scheme)
 
 
 def fix_max_builds(max_builds):
@@ -152,9 +152,9 @@ class BuildRequest(_BuildRequestBase):
     if normalized_tags == self.tags:
       return self
     return BuildRequest(
-      self.bucket, normalized_tags, self.parameters,
-      self.lease_expiration_date, self.client_operation_id,
-      self.pubsub_callback, self.retry_of)
+        self.bucket, normalized_tags, self.parameters,
+        self.lease_expiration_date, self.client_operation_id,
+        self.pubsub_callback, self.retry_of)
 
   @staticmethod
   def _add_builder_tag(tags, parameters):
@@ -182,8 +182,8 @@ class BuildRequest(_BuildRequestBase):
 
     if builder != values[0]:
       raise errors.InvalidInputError(
-        'Invalid builder tag "%s": conflicts with builder_name parameter "%s"'
-        % (values[0], builder))
+          'Invalid builder tag "%s": conflicts with builder_name parameter "%s"'
+          % (values[0], builder))
 
     return tags
 
@@ -310,7 +310,7 @@ def add_many_async(build_request_list):
     for i, r in pending_reqs():
       for t in _indexed_tags(r.tags):
         index_entries[t].append(model.TagIndexEntry(
-          build_id=new_build_ids[i], bucket=r.bucket))
+            build_id=new_build_ids[i], bucket=r.bucket))
     if index_entries:
       yield [
         _add_to_tag_index_async(tag, entries)
@@ -330,7 +330,7 @@ def add_many_async(build_request_list):
   # Validate and return results.
   assert all(results), results
   assert all(build or ex for build, ex in results), results
-  assert all(not(build and ex) for build, ex in results), results
+  assert all(not (build and ex) for build, ex in results), results
   raise ndb.Return(results)
 
 
@@ -338,15 +338,15 @@ def add_many_async(build_request_list):
 def _put_build_async(build_id, req):
   identity = auth.get_current_identity()
   build = model.Build(
-    id=build_id,
-    bucket=req.bucket,
-    tags=req.tags,
-    parameters=req.parameters,
-    status=model.BuildStatus.SCHEDULED,
-    created_by=identity,
-    never_leased=req.lease_expiration_date is None,
-    pubsub_callback=req.pubsub_callback,
-    retry_of=req.retry_of,
+      id=build_id,
+      bucket=req.bucket,
+      tags=req.tags,
+      parameters=req.parameters,
+      status=model.BuildStatus.SCHEDULED,
+      created_by=identity,
+      never_leased=req.lease_expiration_date is None,
+      pubsub_callback=req.pubsub_callback,
+      retry_of=req.retry_of,
   )
   if req.lease_expiration_date is not None:
     build.lease_expiration_date = req.lease_expiration_date
@@ -385,9 +385,9 @@ def _with_swarming_api_error_converter():
     yield
   except net.AuthError as ex:
     raise auth.AuthorizationError(
-      'Auth error while calling swarming on behalf of %s: %s' % (
-        auth.get_current_identity().to_bytes(), ex
-      ))
+        'Auth error while calling swarming on behalf of %s: %s' % (
+          auth.get_current_identity().to_bytes(), ex
+        ))
   except net.Error as ex:
     if ex.status_code == 400:
       # Note that 401, 403 and 404 responses are converted to different
@@ -411,13 +411,13 @@ def retry(
   if not build:
     raise errors.BuildNotFoundError('Build %s not found' % build_id)
   return add(BuildRequest(
-    build.bucket,
-    tags=build.tags,
-    parameters=build.parameters,
-    lease_expiration_date=lease_expiration_date,
-    client_operation_id=client_operation_id,
-    pubsub_callback=pubsub_callback,
-    retry_of=build_id,
+      build.bucket,
+      tags=build.tags,
+      parameters=build.parameters,
+      lease_expiration_date=lease_expiration_date,
+      client_operation_id=client_operation_id,
+      pubsub_callback=pubsub_callback,
+      retry_of=build_id,
   ))
 
 
@@ -556,7 +556,7 @@ def search(
     local_predicate = local_status_and_bucket_check
 
   return _fetch_page(
-    q, max_builds, start_cursor, predicate=local_predicate)
+      q, max_builds, start_cursor, predicate=local_predicate)
 
 
 def peek(buckets, max_builds=None, start_cursor=None):
@@ -594,9 +594,9 @@ def peek(buckets, max_builds=None, start_cursor=None):
     return ([], None)
 
   q = model.Build.query(
-    model.Build.status == model.BuildStatus.SCHEDULED,
-    model.Build.is_leased == False,
-    model.Build.bucket.IN(active_buckets),
+      model.Build.status == model.BuildStatus.SCHEDULED,
+      model.Build.is_leased == False,
+      model.Build.bucket.IN(active_buckets),
   )
   q = q.order(-model.Build.key)  # oldest first.
 
@@ -608,7 +608,7 @@ def peek(buckets, max_builds=None, start_cursor=None):
             b.bucket in active_buckets)
 
   return _fetch_page(
-    q, max_builds, start_cursor, predicate=local_predicate)
+      q, max_builds, start_cursor, predicate=local_predicate)
 
 
 def _get_leasable_build(build_id):
@@ -658,7 +658,7 @@ def lease(build_id, lease_expiration_date=None):
   leased, build = try_lease()
   if leased:
     logging.info(
-      'Build %s was leased by %s', build.key.id(), build.leasee.to_bytes())
+        'Build %s was leased by %s', build.key.id(), build.leasee.to_bytes())
     metrics.increment(metrics.LEASE_COUNT, build)
   return leased, build
 
@@ -666,8 +666,8 @@ def lease(build_id, lease_expiration_date=None):
 def _check_lease(build, lease_key):
   if lease_key != build.lease_key:
     raise errors.LeaseExpiredError(
-      'lease_key for build %s is incorrect. Your lease might be expired.' %
-      build.key.id())
+        'lease_key for build %s is incorrect. Your lease might be expired.' %
+        build.key.id())
 
 
 @ndb.transactional
@@ -691,8 +691,8 @@ def reset(build_id):
   build.put()
   notifications.enqueue_callback_task_if_needed(build)
   logging.info(
-    'Build %s was reset by %s',
-    build.key.id(), auth.get_current_identity().to_bytes())
+      'Build %s was reset by %s',
+      build.key.id(), auth.get_current_identity().to_bytes())
   return build
 
 
@@ -768,6 +768,7 @@ def heartbeat_async(build_id, lease_key, lease_expiration_date):
   Returns:
     The updated Build as Future.
   """
+
   @ndb.transactional_tasklet
   def txn():
     validate_lease_key(lease_key)
@@ -844,7 +845,7 @@ def _complete(
           build.url == url):
         return build
       raise errors.BuildIsCompletedError(
-        'Build %s has already completed' % build_id)
+          'Build %s has already completed' % build_id)
     _check_lease(build, lease_key)
 
     build.status = model.BuildStatus.COMPLETED
@@ -865,8 +866,8 @@ def _complete(
 
   build = txn()
   logging.info(
-    'Build %s was completed. Status: %s. Result: %s',
-    build.key.id(), build.status, build.result)
+      'Build %s was completed. Status: %s. Result: %s',
+      build.key.id(), build.status, build.result)
   metrics.increment_complete_count(build)
   return build
 
@@ -884,8 +885,8 @@ def succeed(build_id, lease_key, result_details=None, url=None, new_tags=None):
     The succeeded Build.
   """
   return _complete(
-    build_id, lease_key, model.BuildResult.SUCCESS, result_details, url=url,
-    new_tags=new_tags)
+      build_id, lease_key, model.BuildResult.SUCCESS, result_details, url=url,
+      new_tags=new_tags)
 
 
 def fail(
@@ -906,8 +907,8 @@ def fail(
   """
   failure_reason = failure_reason or model.FailureReason.BUILD_FAILURE
   return _complete(
-    build_id, lease_key, model.BuildResult.FAILURE, result_details,
-    failure_reason, url=url, new_tags=new_tags)
+      build_id, lease_key, model.BuildResult.FAILURE, result_details,
+      failure_reason, url=url, new_tags=new_tags)
 
 
 def cancel(build_id):
@@ -919,6 +920,7 @@ def cancel(build_id):
   Returns:
     Canceled Build.
   """
+
   @ndb.transactional
   def txn():
     build = model.Build.get_by_id(build_id)
@@ -943,8 +945,8 @@ def cancel(build_id):
 
   build = txn()
   logging.info(
-    'Build %s was cancelled by %s', build.key.id(),
-    auth.get_current_identity().to_bytes())
+      'Build %s was cancelled by %s', build.key.id(),
+      auth.get_current_identity().to_bytes())
   metrics.increment_complete_count(build)
   return build
 
@@ -996,18 +998,18 @@ def reset_expired_builds():
   futures = []
 
   q = model.Build.query(
-    model.Build.is_leased == True,
-    model.Build.lease_expiration_date <= datetime.datetime.utcnow(),
+      model.Build.is_leased == True,
+      model.Build.lease_expiration_date <= datetime.datetime.utcnow(),
   )
   for key in q.iter(keys_only=True):
     futures.append(_reset_expired_build_async(key.id()))
 
   too_long_ago = utils.utcnow() - model.BUILD_TIMEOUT
   q = model.Build.query(
-    model.Build.create_time < too_long_ago,
-    # Cannot use >1 inequality fitlers per query.
-    model.Build.status.IN(
-      [model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED]),
+      model.Build.create_time < too_long_ago,
+      # Cannot use >1 inequality fitlers per query.
+      model.Build.status.IN(
+          [model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED]),
   )
   for key in q.iter(keys_only=True):
     futures.append(_timeout_async(key.id()))
@@ -1018,25 +1020,25 @@ def reset_expired_builds():
 def delete_many_builds(bucket, status, tags=None, created_by=None):
   if status not in (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED):
     raise errors.InvalidInputError(
-      'status can be STARTED or SCHEDULED, not %s' % status)
+        'status can be STARTED or SCHEDULED, not %s' % status)
   if not acl.can_delete_scheduled_builds(bucket):
     raise acl.current_identity_cannot('delete scheduled builds of %s', bucket)
   # Validate created_by prior scheduled a push task.
   created_by = parse_identity(created_by)
   deferred.defer(
-    _task_delete_many_builds,
-    bucket,
-    status,
-    tags=tags,
-    created_by=created_by,
-    # Schedule it on the backend module of the same version.
-    # This assumes that both frontend and backend are uploaded together.
-    _target='%s.backend' % modules.get_current_version_name(),
-    # Retry immediatelly.
-    _retry_options=taskqueue.TaskRetryOptions(
-      min_backoff_seconds=0,
-      max_backoff_seconds=1,
-    ),
+      _task_delete_many_builds,
+      bucket,
+      status,
+      tags=tags,
+      created_by=created_by,
+      # Schedule it on the backend module of the same version.
+      # This assumes that both frontend and backend are uploaded together.
+      _target='%s.backend' % modules.get_current_version_name(),
+      # Retry immediatelly.
+      _retry_options=taskqueue.TaskRetryOptions(
+          min_backoff_seconds=0,
+          max_backoff_seconds=1,
+      ),
   )
 
 
@@ -1052,8 +1054,8 @@ def _task_delete_many_builds(bucket, status, tags=None, created_by=None):
   tags = tags or []
   created_by = parse_identity(created_by)
   q = model.Build.query(
-    model.Build.bucket == bucket,
-    model.Build.status == status)
+      model.Build.bucket == bucket,
+      model.Build.status == status)
   for t in tags:
     q = q.filter(model.Build.tags == t)
   if created_by:
@@ -1079,6 +1081,7 @@ def pause(bucket, is_paused):
     if state.is_paused != is_paused:
       state.is_paused = is_paused
       state.put()
+
   try_set_pause()
 
 
@@ -1136,7 +1139,7 @@ def _add_to_tag_index_async(tag, new_entries):
     new_size = len(idx.entries) + len(new_entries)
     if new_size > 1000:
       raise errors.InvalidInputError(
-        'Tag index: too many builds with tag "%s": %d' % (tag, new_size))
+          'Tag index: too many builds with tag "%s": %d' % (tag, new_size))
 
     # idx.entries is sorted by descending.
     # Build ids are monotonically decreasing, so most probably new entries will

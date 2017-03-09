@@ -170,7 +170,7 @@ def get_available_buckets():
   if available_buckets is not None:
     return available_buckets
   logging.info(
-    'Computing a list of available buckets for %s' % identity)
+      'Computing a list of available buckets for %s' % identity)
   group_buckets_map = collections.defaultdict(set)
   available_buckets = set()
   all_buckets = config.get_buckets_async().get_result()
