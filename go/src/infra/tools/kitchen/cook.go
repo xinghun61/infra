@@ -231,13 +231,9 @@ func (c *cookRun) ensureAndRun(ctx context.Context, env environ.Env) (recipeExit
 				Err()
 		}
 		// Read the path to the recipes.py within the fetched repo.
-		cfg, err := loadRecipesCfg(c.CheckoutDir)
+		recipesPath, err := getRecipesPath(c.CheckoutDir)
 		if err != nil {
 			return 0, errors.Annotate(err).Reason("could not recipes.cfg").Err()
-		}
-		recipesPath := ""
-		if cfg.RecipesPath != nil {
-			recipesPath = *cfg.RecipesPath
 		}
 		c.rr.cmdPrefix = []string{
 			"python",

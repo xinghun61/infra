@@ -5,10 +5,12 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -81,23 +83,40 @@ func (rr *recipeRun) command(ctx context.Context, tdir string, env environ.Env) 
 	return recipeCmd, nil
 }
 
-func loadRecipesCfg(repoDir string) (*recipe_engine.Package, error) {
+func getRecipesPath(repoDir string) (string, error) {
 	recipesCfg := filepath.Join(repoDir, "infra", "config", "recipes.cfg")
 	fileContents, err := ioutil.ReadFile(recipesCfg)
 	if err != nil {
-		return nil, errors.Annotate(err).Reason("could not read recipes.cfg at %(path)q").
+		return "", errors.Annotate(err).Reason("could not read recipes.cfg at %(path)q").
 			D("path", recipesCfg).
 			Err()
 	}
+	fileContentsStr := string(fileContents)
 
-	pkg := &recipe_engine.Package{}
-	if err := proto.UnmarshalText(string(fileContents), pkg); err != nil {
-		return nil, errors.Annotate(err).Reason("could not parse recipes.cfg at %(path)q").
-			D("path", recipesCfg).
-			Err()
+	recipesPath := ""
+	if strings.HasPrefix(strings.TrimLeft(fileContentsStr, " "), "{") {
+		var cfg struct {
+			RecipesPath string `json:"recipes_path"`
+		}
+		if err := json.Unmarshal(fileContents, &cfg); err != nil {
+			return "", errors.Annotate(err).Reason("could not parse recipes.cfg (JSON) at %(path)q").
+				D("path", recipesCfg).
+				Err()
+		}
+		recipesPath = cfg.RecipesPath
+	} else {
+		// TODO(iannucci): remove this and protos/package.proto as soon as all
+		// recipe repos are using JSON.
+		pkg := &recipe_engine.Package{}
+		if err := proto.UnmarshalText(fileContentsStr, pkg); err != nil {
+			return "", errors.Annotate(err).Reason("could not parse recipes.cfg at %(path)q").
+				D("path", recipesCfg).
+				Err()
+		}
+		recipesPath = pkg.GetRecipesPath()
 	}
 
-	return pkg, nil
+	return recipesPath, nil
 }
 
 // prepareWorkDir verifies and normalizes a workdir is suitable for a recipe
