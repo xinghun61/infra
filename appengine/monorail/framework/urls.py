@@ -36,6 +36,7 @@ CUES_JSON = '/hosting/cues'
 USER_PROFILE = '/'
 USER_CLEAR_BOUNCING = '/clearBouncing'
 BAN_USER = '/ban'
+BAN_SPAMMER = '/banSpammer'
 
 # URLs for User Updates pages
 USER_UPDATES_PROJECTS = '/updates/projects'
@@ -60,6 +61,7 @@ NOTIFY_BLOCKING_CHANGE_TASK = '/_task/notifyBlockingChange'
 NOTIFY_BULK_CHANGE_TASK = '/_task/notifyBulkEdit'
 OUTBOUND_EMAIL_TASK = '/_task/outboundEmail'
 SPAM_DATA_EXPORT_TASK = '/_task/spamDataExport'
+BAN_SPAMMER_TASK = '/_task/banSpammer'
 
 # URLs of cron job request handlers.  Called from GAE via cron.yaml.
 REINDEX_QUEUE_CRON = '/_cron/reindexQueue'

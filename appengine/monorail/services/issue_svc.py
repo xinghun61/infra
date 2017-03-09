@@ -734,6 +734,18 @@ class IssueService(object):
                  if pid != issue.project_id or local_id != issue.local_id]
     return locations
 
+  def GetCommentsByUser(self, cnxn, user_id):
+    """Get all comments created by a user"""
+    comments = self.GetComments(cnxn, commenter_id=user_id,
+        is_description=False, limit=10000)
+    return comments
+
+  def GetIssueIDsReportedByUser(self, cnxn, user_id):
+    """Get all issue IDs created by a user"""
+    rows = self.issue_tbl.Select(cnxn, cols=['id'], reporter_id=user_id,
+        limit=10000)
+    return [row[0] for row in rows]
+
   def InsertIssue(self, cnxn, issue):
     """Store the given issue in SQL.
 

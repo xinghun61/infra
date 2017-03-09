@@ -12,6 +12,7 @@ import webapp2
 import settings
 
 from features import autolink
+from features import banspammer
 from features import hotlistcreate
 from features import hotlistdetails
 from features import hotlistissues
@@ -326,11 +327,13 @@ class ServletRegistry(object):
         urls.GROUP_DELETE: grouplist.GroupList,
         urls.HOTLIST_CREATE: hotlistcreate.HotlistCreate,
         urls.ADD_ISSUES_TO_HOTLIST: issueaddtohotlist.AddToHotlist,
+        urls.BAN_SPAMMER_TASK: banspammer.BanSpammerTask,
         })
 
     self._SetupUserServlets({
         urls.USER_PROFILE: userprofile.UserProfile,
         urls.BAN_USER: userprofile.BanUser,
+        urls.BAN_SPAMMER: banspammer.BanSpammer,
         urls.USER_CLEAR_BOUNCING: userclearbouncing.UserClearBouncing,
         urls.USER_UPDATES_PROJECTS: userupdates.UserUpdatesProjects,
         urls.USER_UPDATES_DEVELOPERS: userupdates.UserUpdatesDevelopers,

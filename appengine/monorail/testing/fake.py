@@ -490,6 +490,11 @@ class UserService(object):
     """Updates the user pb."""
     self.test_users[user_id] = user
 
+  def UpdateUserBan(self, _cnxn, user_id, user, is_banned=None,
+        banned_reason=None):
+    """Updates the user pb."""
+    self.test_users[user_id] = user
+
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,
       email_compact_subject=None, email_view_widget=None,
@@ -729,6 +734,14 @@ class ProjectService(object):
       if project:
         result[project_id] = project
     return result
+
+  def GetAllProjects(self, _cnxn, use_cache=True):
+    result = {}
+    for project_id in self.projects_by_id:
+      project = self.projects_by_id.get(project_id)
+      result[project_id] = project
+    return result
+
 
   def GetProject(self, cnxn, project_id, use_cache=True):
     """Load the specified project from the database."""
@@ -1106,6 +1119,7 @@ class IssueService(object):
     comment.issue_id = issue.issue_id
     comment.content = issue.summary
     comment.timestamp = issue.opened_timestamp
+    comment.is_description = True
     if issue.reporter_id:
       comment.user_id = issue.reporter_id
     comment.sequence = 0
@@ -1203,6 +1217,24 @@ class IssueService(object):
       return self.issues_by_iid[issue_id]
     else:
       raise issue_svc.NoSuchIssueException()
+
+  def GetCommentsByUser(self, cnxn, user_id):
+    """Get all comments created by a user"""
+    comments = []
+    for cid in self.comments_by_cid:
+      comment = self.comments_by_cid[cid]
+      if comment.user_id == user_id and not comment.is_description:
+        comments.append(comment)
+    return comments
+
+  def GetIssueIDsReportedByUser(self, cnxn, user_id):
+    """Get all issues created by a user"""
+    ids = []
+    for iid in self.issues_by_iid:
+      issue = self.issues_by_iid[iid]
+      if issue.reporter_id == user_id:
+        ids.append(iid)
+    return ids
 
   def LookupIssueID(self, _cnxn, project_id, local_id):
     try:

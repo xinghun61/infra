@@ -259,6 +259,16 @@
   </div>
 
  </form>
+
+  [if-any viewed_user_has_no_roles]
+   <form action="banSpammer.do" method="POST">
+    <input type="hidden" name="token" value="[ban_spammer_token]">
+    <input type="hidden" name="banned" value="True">
+    <input type="hidden" size="50" name="banned_reason" id="banned_reason" value="Spam">
+    <input type="submit" name="banSpammerButton" id="ban_spammer_btn" value="Ban this user as a spammer">
+   </form>
+  [end]
+
 [end]
 
 [if-any perms._EditOtherUsers]
@@ -326,6 +336,16 @@ runOnLoad(function() {
       $("banned").checked = $("banned_reason").value != "";
     });
   }
+
+  if ($("ban_spammer_btn")) {
+    $("ban_spammer_btn").addEventListener("click", function(evt) {
+       var ok = window.confirm("This will remove all issues and comments " +
+          "created by this user. Continue?");
+       if (!ok) {
+         evt.preventDefault();
+       }
+     });
+   }
 });
 </script>
 
