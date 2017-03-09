@@ -219,7 +219,12 @@ class UpdateTracker(object):
   RUNIT_PY = ('build', 'scripts', 'tools', 'runit.py')
   SLAVE_ALLOC_UPDATE = ('build', 'scripts', 'tools', 'slave_alloc_update.py')
 
-  RE_ISSUE_CREATED = re.compile(r'^Issue created. URL: (.+)$')
+  RE_ISSUE_CREATED = (
+      # Rietveld.
+      re.compile(r'^Issue created. URL: (.+)$'),
+      # Gerrit.
+      re.compile(r'remote:\s+(https://.+\.googlesource\.com/[^\s]+).*$'),
+  )
 
   def __init__(self, c, cq=False, bug=None, reviewers=None, dry_run=True):
     self._c = c
@@ -318,7 +323,6 @@ class UpdateTracker(object):
         'git', 'cl', 'upload',
         '--bypass-hooks', # The CQ will take care of them!
         '--message-file', commit_msg_file,
-        '--tbr-owners',
         '-f',
         ]
     if self._cq:
@@ -334,14 +338,16 @@ class UpdateTracker(object):
     output = execute.check_call(args, cwd=repo_path, dry_run=self._dry_run)
     issue = None
     for line in output.splitlines():
-      match = self.RE_ISSUE_CREATED.match(line)
-      if match:
-        issue = match.group(1)
-        LOGGER.debug('Extracted issue from output: %s', issue)
-        self._issues.add(issue)
-        break
+      for rx in self.RE_ISSUE_CREATED:
+        match = rx.match(line)
+        if match:
+          issue = match.group(1)
+          LOGGER.debug('Extracted issue from output: %s', issue)
+          self._issues.add(issue)
+          break
     else:
-      LOGGER.warning("Unable to extract issue from patch submission.")
+      LOGGER.warning("Unable to extract issue from patch submission from:\n%s",
+                     output)
 
   def _generate_commit_message(self, updates):
     lines = [
