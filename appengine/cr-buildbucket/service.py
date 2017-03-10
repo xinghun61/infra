@@ -512,12 +512,12 @@ def search(
   max_builds = fix_max_builds(max_builds)
   created_by = parse_identity(created_by)
 
+  if not buckets and retry_of is not None:
+    retry_of_build = model.Build.get_by_id(retry_of)
+    if retry_of_build:
+      buckets = [retry_of_build.bucket]
   if buckets:
     _check_search_acls(buckets)
-  elif retry_of:
-    retry_of_build = model.Build.get_by_id(retry_of)
-    if retry_of_build:  # pragma: no cover
-      buckets = [retry_of_build.bucket]
   else:
     buckets = acl.get_available_buckets()
     if buckets is not None and len(buckets) == 0:

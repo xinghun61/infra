@@ -451,6 +451,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     builds, _ = service.search()
     self.assertEqual(builds, [])
 
+  def test_search_with_auth_error(self):
+    self.mock_cannot(acl.Action.SEARCH_BUILDS)
+    self.test_build.put()
+
+    with self.assertRaises(auth.AuthorizationError):
+      service.search(buckets=[self.test_build.bucket])
+
   def test_search_many_tags(self):
     self.test_build.tags = ['important:true', 'author:ivan']
     self.test_build.put()
@@ -524,7 +531,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       created_by='x@chromium.org', buckets=[self.test_build.bucket])
     self.assertEqual(builds, [build2])
 
-  def test_search_by_retry_of(self):
+  @mock.patch('acl.get_available_buckets', autospec=True)
+  def test_search_by_retry_of(self, get_available_buckets):
+    get_available_buckets.return_value = [self.test_build.bucket]
     self.test_build.put()
     build2 = model.Build(
       bucket=self.test_build.bucket,
@@ -534,6 +543,20 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     builds, _ = service.search(retry_of=42)
     self.assertEqual(builds, [build2])
+
+  def test_search_by_retry_of_with_auth_error(self):
+    self.mock_cannot(acl.Action.SEARCH_BUILDS, bucket=self.test_build.bucket)
+    self.test_build.put()
+    build2 = model.Build(
+        bucket=self.test_build.bucket,
+        retry_of=self.test_build.key.id(),
+    )
+    build2.put()
+
+    with self.assertRaises(auth.AuthorizationError):
+      # The build we are looking for was a retry of a build that is in a bucket
+      # that we don't have access to.
+      service.search(retry_of=self.test_build.key.id())
 
   def test_search_by_created_by_with_bad_string(self):
     with self.assertRaises(errors.InvalidInputError):
