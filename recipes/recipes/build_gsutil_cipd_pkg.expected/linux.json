@@ -1,0 +1,122 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "rmtree",
+      "[START_DIR]/gsutil_staging_dir"
+    ],
+    "name": "rmtree cleaning staging dir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "ls",
+      "gs://pub/gsutil_*.zip"
+    ],
+    "name": "gsutil list",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@ 4.1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cp",
+      "gs://pub/gsutil_4.1.zip",
+      "[START_DIR]/gsutil_4.1.zip"
+    ],
+    "name": "gsutil Download gsutil_4.1.zip"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[build::zip]/resources/unzip.py"
+    ],
+    "name": "Unzip gsutil_4.1.zip",
+    "stdin": "{\"output\": \"[START_DIR]/gsutil_staging_dir\", \"quiet\": true, \"zip_file\": \"[START_DIR]/gsutil_4.1.zip\"}"
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/gsutil_staging_dir/gsutil",
+      "-name",
+      "infra/tools/gsutil",
+      "-out",
+      "[START_DIR]/gsutil",
+      "-json-output",
+      "/path/to/tmp/json"
+    ],
+    "name": "build gsutil",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/tools/gsutil\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-register",
+      "[START_DIR]/gsutil",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "-ref",
+      "latest",
+      "-tag",
+      "gsutil_version:4.1"
+    ],
+    "name": "register infra/tools/gsutil",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/tools/gsutil\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os\nimport sys\nos.remove(sys.argv[1])\n",
+      "[START_DIR]/gsutil"
+    ],
+    "name": "remove gsutil directory",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import os@@@",
+      "@@@STEP_LOG_LINE@python.inline@import sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@os.remove(sys.argv[1])@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
