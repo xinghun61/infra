@@ -65,7 +65,7 @@ Bugdroid-Send-Email: False
 
 
 TRIVIAL_ROLL_TBR_EMAILS = (
-    'martiniss@chromium.org',
+    'iannucci@chromium.org',
 )
 
 

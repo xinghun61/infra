@@ -313,7 +313,7 @@
       "--gerrit",
       "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller",
       "--message-file",
-      "Roll recipe dependencies (trivial).\n\nThis is an automated CL created by the recipe roller. This CL rolls recipe\nchanges from upstream projects (e.g. depot_tools) into downstream projects\n(e.g. tools/build).\n\n\nMore info is at https://goo.gl/zkKdpD. Use https://goo.gl/noib3a to file a bug\n(or complain)\n\nrecipe_engine:\n  https://crrev.com/123abc some commit message (foo@chromium.org)\n\nTBR=martiniss@chromium.org\n\nRecipe-Tryjob-Bypass-Reason: Autoroller\nBugdroid-Send-Email: False\n"
+      "Roll recipe dependencies (trivial).\n\nThis is an automated CL created by the recipe roller. This CL rolls recipe\nchanges from upstream projects (e.g. depot_tools) into downstream projects\n(e.g. tools/build).\n\n\nMore info is at https://goo.gl/zkKdpD. Use https://goo.gl/noib3a to file a bug\n(or complain)\n\nrecipe_engine:\n  https://crrev.com/123abc some commit message (foo@chromium.org)\n\nTBR=iannucci@chromium.org\n\nRecipe-Tryjob-Bypass-Reason: Autoroller\nBugdroid-Send-Email: False\n"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
     "name": "build.git cl upload",
