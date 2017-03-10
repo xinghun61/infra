@@ -92,7 +92,7 @@ class MinDistanceTest(PredatorTestCase):
     report = self._GetDummyReport()
     suspect = Suspect(self.GetDummyChangeLog(), 'src/')
     self.assertEqual(
-        lmath.LOG_ZERO,
+        0.0,
         min_distance.MinDistanceFeature(None, _MAXIMUM)(
             report)(suspect, {}).value)
 
@@ -112,7 +112,7 @@ class MinDistanceTest(PredatorTestCase):
                    [FrameInfo(frame, 0)])
     }
     self.assertEqual(
-        lmath.LOG_ZERO,
+        0.0,
         min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
             self._GetMockSuspect(), matches).value)
 
@@ -132,9 +132,9 @@ class MinDistanceTest(PredatorTestCase):
     }
     self.mock(min_distance.MinDistanceFeature,
               'DistanceBetweenTouchedFileAndFrameInfos',
-              lambda *_: min_distance.Distance(0, None))
+              lambda *_: min_distance.Distance(0, frame))
     self.assertEqual(
-        lmath.LOG_ONE,
+        1.0,
         min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
             self._GetMockSuspect(), matches).value)
 
@@ -157,7 +157,7 @@ class MinDistanceTest(PredatorTestCase):
               'DistanceBetweenTouchedFileAndFrameInfos',
               lambda *_: min_distance.Distance(distance, frame))
     self.assertEqual(
-        lmath.log((_MAXIMUM - distance) / _MAXIMUM),
+        (_MAXIMUM - distance) / _MAXIMUM,
         min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
             self._GetMockSuspect(), matches).value)
 
@@ -180,7 +180,7 @@ class MinDistanceTest(PredatorTestCase):
               'DistanceBetweenTouchedFileAndFrameInfos',
               lambda *_: min_distance.Distance(distance, None))
     self.assertEqual(
-        lmath.log((_MAXIMUM - distance) / _MAXIMUM),
+        0.0,
         min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
             self._GetMockSuspect(), matches).value)
 
@@ -237,14 +237,14 @@ class MinDistanceTest(PredatorTestCase):
               'DistanceBetweenTouchedFileAndFrameInfos',
               lambda *_: None)
     self.assertEqual(
-        lmath.LOG_ZERO,
+        0.0,
         min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)(report)(
             suspect, matches).value)
     self.mock(min_distance.MinDistanceFeature,
               'DistanceBetweenTouchedFileAndFrameInfos',
               lambda *_: min_distance.Distance(float('inf'), None))
     self.assertEqual(
-        lmath.LOG_ZERO,
+        0.0,
         min_distance.MinDistanceFeature(self._get_repository, 100)(report)(
             suspect, matches).value)
 
@@ -274,6 +274,6 @@ class MinDistanceTest(PredatorTestCase):
                                     (frame.repo_url,
                                      report.crashed_version,
                                      frame.crashed_line_numbers[0])),
-                         reasons=['Distance from touched lines and crashed '
+                         reasons=['Distance between touched lines and crashed '
                                   'lines is %d, in frame #%d' % (
                                       distance, frame.index)])])

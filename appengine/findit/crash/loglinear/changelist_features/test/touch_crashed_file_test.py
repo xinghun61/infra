@@ -62,9 +62,8 @@ class TouchCrashedFileFeatureTest(unittest.TestCase):
     """Test that the feature returns log(0) when there is no matched file."""
     report = self._GetDummyReport()
     suspect = self._GetMockSuspect()
-    self.assertEqual(
-        lmath.LOG_ZERO,
-        TouchCrashedFileFeature()(report)(suspect, {}).value)
+    self.assertEqual(0.0,
+                     TouchCrashedFileFeature()(report)(suspect, {}).value)
 
   def testIsLogOneWhenThereIsMatchedFiles(self):
     """Test that the feature returns log(1) when there is matched file."""
@@ -82,5 +81,5 @@ class TouchCrashedFileFeatureTest(unittest.TestCase):
                CrashMatch(crashed,
                           [FileChangeInfo(ChangeType.MODIFY, 'a.cc', 'a.cc')],
                           [FrameInfo(frame=frame, priority = 0)])}
-    self.assertEqual(lmath.LOG_ONE,
+    self.assertEqual(1.0,
                      TouchCrashedFileFeature()(report)(suspect, matches).value)

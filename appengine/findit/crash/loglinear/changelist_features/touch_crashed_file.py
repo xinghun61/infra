@@ -5,11 +5,8 @@
 import logging
 import math
 
-from crash.loglinear.feature import ChangedFile
 from crash.loglinear.feature import Feature
 from crash.loglinear.feature import FeatureValue
-from crash.loglinear.feature import LogLinearlyScaled
-import libs.math.logarithms as lmath
 
 
 class TouchCrashedFileFeature(Feature):
@@ -47,16 +44,18 @@ class TouchCrashedFileFeature(Feature):
       """
 
       if not matches:
-        return FeatureValue(
-            self.name, lmath.LOG_ZERO,
-            'No file got touched by the suspect.', None)
+        return FeatureValue(name=self.name,
+                            value=0.0,
+                            reason=None,
+                            changed_files=None)
 
       return FeatureValue(
-          name = self.name,
-          value = lmath.LOG_ONE,
-          reason = 'Touched files - %s' % ', '.join([
-              touched_file.new_path for match in matches.itervalues()
+          name=self.name,
+          value=1.0,
+          reason='Touched files - %s' % ', '.join([
+              touched_file.new_path
+              for match in matches.itervalues()
               for touched_file in match.touched_files]),
-          changed_files = None)
+          changed_files=None)
 
     return FeatureValueGivenReport

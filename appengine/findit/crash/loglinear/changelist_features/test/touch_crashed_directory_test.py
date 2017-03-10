@@ -73,7 +73,7 @@ class TouchCrashedDirectoryFeatureTest(PredatorTestCase):
                          ('2', '6'), deps, dep_rolls)
     suspect = Suspect(_DUMMY_CHANGELOG, 'src/')
     feature_value = self._feature(report)(suspect)
-    self.assertEqual(lmath.LOG_ONE, feature_value.value)
+    self.assertEqual(1.0, feature_value.value)
 
   def testMinDistanceFeatureIsLogZeroWhenNoMatchedDirectory(self):
     """Test that the feature returns log(1) when the min_distance is 0."""
@@ -87,4 +87,4 @@ class TouchCrashedDirectoryFeatureTest(PredatorTestCase):
                          ('2', '6'), deps, dep_rolls)
     suspect = Suspect(_DUMMY_CHANGELOG, 'src/')
     feature_value = self._feature(report)(suspect)
-    self.assertEqual(lmath.LOG_ZERO, feature_value.value)
+    self.assertEqual(0.0, feature_value.value)

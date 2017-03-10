@@ -6,8 +6,9 @@ import logging
 
 from crash.loglinear.feature import Feature
 from crash.loglinear.feature import FeatureValue
-from crash.loglinear.feature import LogLinearlyScaled
-import libs.math.logarithms as lmath
+from crash.loglinear.feature import LinearlyScaled
+
+_MINIMUM_FEATURE_VALUE = 0
 
 
 class TopFrameIndexFeature(Feature):
@@ -65,9 +66,10 @@ class TopFrameIndexFeature(Feature):
         The ``FeatureValue`` of this feature.
       """
       if not matches:
-        return FeatureValue(
-            self.name, lmath.LOG_ZERO,
-            'No frame got touched by the suspect.', None)
+        return FeatureValue(name=self.name,
+                            value=0,
+                            reason=None,
+                            changed_files=None)
 
       def TopFrameIndexForTouchedFile(frame_infos):
         return min([frame_info.frame.index for frame_info in frame_infos])
@@ -75,11 +77,16 @@ class TopFrameIndexFeature(Feature):
       top_frame_index = min([TopFrameIndexForTouchedFile(match.frame_infos)
                              for match in matches.itervalues()])
 
-      return FeatureValue(
-          name = self.name,
-          value = LogLinearlyScaled(float(top_frame_index),
-                                    float(self.max_frame_index)),
-          reason = ('Top frame is #%d' % top_frame_index),
-          changed_files = None)
+      value = LinearlyScaled(float(top_frame_index),
+                             float(self.max_frame_index))
+      if value <= _MINIMUM_FEATURE_VALUE:
+        reason = None
+      else:
+        reason = 'Top frame is #%d' % top_frame_index
+
+      return FeatureValue(name=self.name,
+                          value=value,
+                          reason=reason,
+                          changed_files=None)
 
     return FeatureValueGivenReport

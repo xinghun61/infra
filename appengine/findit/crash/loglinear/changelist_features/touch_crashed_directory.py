@@ -81,7 +81,7 @@ class TouchCrashedDirectoryFeature(Feature):
 
       if not matches:
         return FeatureValue(name=self.name,
-                            value=lmath.LOG_ZERO,
+                            value=0.0,
                             reason=None,
                             changed_files=None)
 
@@ -106,7 +106,7 @@ class TouchCrashedDirectoryFeature(Feature):
 
       return FeatureValue(
           name=self.name,
-          value=lmath.LOG_ONE,
+          value=1.0,
           reason='\n'.join([_ReasonForCrashMatch(match)
                             for match in matches.itervalues()]),
           changed_files=None)

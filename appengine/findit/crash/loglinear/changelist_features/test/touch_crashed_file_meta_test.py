@@ -24,7 +24,6 @@ from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.change_log import FileChangeInfo
 from libs.gitiles.diff import ChangeType
 from libs.gitiles.gitiles_repository import GitilesRepository
-import libs.math.logarithms as lmath
 
 
 _DUMMY_CHANGELOG = ChangeLog.FromDict({
@@ -85,7 +84,7 @@ class TouchCrashedFileMetaFeatureTest(PredatorTestCase):
     feature_values = self._feature(report)(self._GetMockSuspect()).values()
 
     for feature_value in feature_values:
-        self.assertEqual(lmath.LOG_ZERO, feature_value.value)
+        self.assertEqual(0.0, feature_value.value)
 
   def testMinDistanceFeatureIsLogOne(self):
     """Test that the feature returns log(1) when the min_distance is 0."""
@@ -100,4 +99,4 @@ class TouchCrashedFileMetaFeatureTest(PredatorTestCase):
 
     feature_values = self._feature(report)(self._GetMockSuspect())
 
-    self.assertEqual(lmath.LOG_ONE, feature_values['MinDistance'].value)
+    self.assertEqual(1.0, feature_values['MinDistance'].value)

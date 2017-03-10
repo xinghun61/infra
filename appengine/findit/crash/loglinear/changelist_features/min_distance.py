@@ -9,9 +9,9 @@ from crash.crash_match import FrameInfo
 from crash.loglinear.feature import ChangedFile
 from crash.loglinear.feature import Feature
 from crash.loglinear.feature import FeatureValue
-from crash.loglinear.feature import LogLinearlyScaled
-from libs.gitiles.diff import ChangeType
-import libs.math.logarithms as lmath
+from crash.loglinear.feature import LinearlyScaled
+
+_MINIMUM_FEATURE_VALUE = 0
 
 
 class Distance(object):
@@ -181,8 +181,10 @@ class MinDistanceFeature(Feature):
         The ``FeatureValue`` of this feature.
       """
       if not matches:
-        FeatureValue(self.name, lmath.LOG_ZERO,
-                     'No file got touched by the suspect.', None)
+        FeatureValue(name=self.name,
+                     value=0.0,
+                     reason=None,
+                     changed_files=None)
 
       distance = Distance(float('inf'), None)
       touched_file_to_distance = {}
@@ -214,16 +216,21 @@ class MinDistanceFeature(Feature):
         distance.Update(distance_per_file.distance,
                         distance_per_file.frame)
 
-      return FeatureValue(
-          name = self.name,
-          value = LogLinearlyScaled(float(distance.distance),
-                                    float(self._maximum)),
-          reason = ('Minimum distance is %d' % int(distance.distance)
-                    if not math.isinf(distance.distance) else
-                    'Minimum distance is infinity'),
-          changed_files = MinDistanceFeature.ChangedFiles(
+      value = LinearlyScaled(float(distance.distance), float(self._maximum))
+      if value <= _MINIMUM_FEATURE_VALUE:
+        reason = None
+        changed_files = None
+      else:
+        reason = ('Distance between changed lines and crashed lines in %s is %d' 
+                  % (distance.frame.file_path, int(distance.distance)))
+        changed_files = MinDistanceFeature.ChangedFiles(
               suspect, touched_file_to_distance,
-              report.crashed_version))
+              report.crashed_version)
+
+      return FeatureValue(name=self.name,
+                          value=value,
+                          reason=reason,
+                          changed_files=changed_files)
 
     return FeatureValueGivenReport
 
@@ -259,9 +266,9 @@ class MinDistanceFeature(Feature):
       frame_index_to_changed_files[distance.frame.index] = ChangedFile(
               name=file_name,
               blame_url=distance.frame.BlameUrl(crashed_version),
-              reasons=['Distance from touched lines and crashed lines is %d, in'
-                       ' frame #%d' % (distance.distance,
-                                       distance.frame.index)])
+              reasons=['Distance between touched lines and crashed lines is %d,'
+                       ' in frame #%d' % (distance.distance,
+                                          distance.frame.index)])
 
     if not frame_index_to_changed_files: # pragma: no cover
       logging.warning('Found no changed files for suspect: %s', str(suspect))

@@ -25,7 +25,7 @@ from crash.type_enums import CallStackFormatType
 from crash.type_enums import LanguageType
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.gitiles_repository import GitilesRepository
-import libs.math.logarithms as lmath
+from libs.math import logarithms as lmath
 
 DUMMY_CHANGELOG1 = ChangeLog.FromDict({
     'author': {
@@ -188,7 +188,7 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
 
     suspect = Suspect(DUMMY_CHANGELOG1, 'src/')
     self.mock(self.changelist_classifier._model, 'Score',
-              lambda _: lambda _: lmath.LOG_ONE)
+              lambda _: lambda _: 1.0)
     suspects = self.changelist_classifier.RankSuspects(DUMMY_REPORT,
                                                        [suspect])
     self.assertEqual(suspects[0].ToDict(), suspect.ToDict())
