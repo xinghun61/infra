@@ -4,12 +4,34 @@
 
 import logging
 
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
+
+
+_CHROMIUM_REPO_URL = 'https://chromium.googlesource.com/chromium/src.git'
+
+
+def _GetCommitsBetweenRevisions(start_revision, end_revision):
+  """Gets the revisions between start_revision and end_revision.
+
+  Args:
+    start_revision (str): The revision for which to get changes after. This
+        revision is not included in the returned list.
+    end_revision (str): The last revision in the range to return.
+
+  Returns:
+    A list of revisions sorted in order by oldest to newest.
+  """
+  repo = CachedGitilesRepository(HttpClientAppengine(), _CHROMIUM_REPO_URL)
+  commits = repo.GetCommitsBetweenRevisions(start_revision, end_revision)
+  commits.reverse()
+  return commits
 
 
 class ProcessFlakeSwarmingTaskResultPipeline(
@@ -19,7 +41,6 @@ class ProcessFlakeSwarmingTaskResultPipeline(
   This pipeline waits for result for a swarming task and processes the result to
   generate a dict for statuses for each test run.
   """
-
 
   def _UpdateMasterFlakeAnalysis(
       self, master_name, builder_name, build_number, step_name,
@@ -42,17 +63,20 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     data_point.task_id = flake_swarming_task.task_id
 
     # Include git information about each build that was run.
+    build_info = build_util.GetBuildInfo(
+        master_name, builder_name, build_number)
+    data_point.commit_position = build_info.commit_position
+    data_point.git_hash = build_info.chromium_revision
+
     if build_number > 0:
       previous_build = build_util.GetBuildInfo(
           master_name, builder_name, build_number - 1)
       data_point.previous_build_commit_position = previous_build.commit_position
       data_point.previous_build_git_hash = previous_build.chromium_revision
-
-    build_info = build_util.GetBuildInfo(
-        master_name, builder_name, build_number)
-    data_point.commit_position = build_info.commit_position
-    data_point.git_hash = build_info.chromium_revision
-    data_point.blame_list = build_info.blame_list
+      data_point.blame_list = _GetCommitsBetweenRevisions(
+          previous_build.chromium_revision, build_info.chromium_revision)
+    else:
+      data_point.blame_list = build_info.blame_list
 
     master_flake_analysis.data_points.append(data_point)
 
@@ -62,7 +86,6 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     # requested) and update results['cache_hit'] accordingly.
     master_flake_analysis.swarming_rerun_results.append(results)
     master_flake_analysis.put()
-
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def _CheckTestsRunStatuses(self, output_json, master_name,
@@ -107,8 +130,8 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     flake_swarming_task.put()
 
     self._UpdateMasterFlakeAnalysis(
-      master_name, builder_name, build_number, step_name, master_build_number,
-      test_name, version_number, pass_rate, flake_swarming_task)
+        master_name, builder_name, build_number, step_name, master_build_number,
+        test_name, version_number, pass_rate, flake_swarming_task)
 
     return tests_statuses
 

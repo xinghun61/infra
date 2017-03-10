@@ -5,10 +5,12 @@
 import datetime
 import mock
 
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from model import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util
+from waterfall import process_flake_swarming_task_result_pipeline
 from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
 from waterfall.process_flake_swarming_task_result_pipeline import (
@@ -160,3 +162,11 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                      task.started_time)
     self.assertEqual(datetime.datetime(2016, 2, 10, 18, 33, 9),
                      task.completed_time)
+
+  @mock.patch.object(CachedGitilesRepository, 'GetCommitsBetweenRevisions',
+                     return_value=['r4', 'r3', 'r2', 'r1'])
+  def testGetCommitsBetweenRevisions(self, _):
+    self.assertEqual(
+        process_flake_swarming_task_result_pipeline._GetCommitsBetweenRevisions(
+            'r0', 'r4'),
+        ['r1', 'r2', 'r3', 'r4'])
