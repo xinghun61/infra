@@ -113,7 +113,7 @@ class FakeContainerList(object):
   def create(self, **kwargs):
     return FakeContainerBackend(kwargs['name'])
 
-  def list(self, filters=None):  # pylint: disable=unused-argument
+  def list(self, **kwargs):  # pylint: disable=unused-argument
     return self._list
 
   def get(self, name):

@@ -114,9 +114,10 @@ class DockerClient(object):
       return False
 
   def get_running_containers(self):
+    # With all=False, the following query includes only paused and running
+    # containers in the result.
     return [
-        Container(c) for c in self._client.containers.list(
-            filters={'status':'running'})
+        Container(c) for c in self._client.containers.list(all=False)
     ]
 
   def get_container(self, device):
