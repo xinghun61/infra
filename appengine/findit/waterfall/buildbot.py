@@ -488,6 +488,22 @@ def _ProcessAnnotationsToGetStream(step_name, step, log_type='stdout'):
   return None
 
 
+def _CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
+  return ('https://build.chromium.org/p/%s/builders/%s/builds/%s/'
+          'steps/%s/logs/stdio/text') % (
+              master_name, builder_name, build_number, step_name)
+
+
+def _GetStepStdioFromBuildBot(
+    master_name, builder_name, build_number, step_name, http_client):
+  """Returns the raw string of stdio of the specified step."""
+  status_code, data = http_client.Get(
+      _CreateStdioLogUrl(
+          master_name, urllib.quote(builder_name), build_number,
+          urllib.quote(step_name)))
+  return data if status_code == 200 else None
+
+
 def GetStepLog(master_name, builder_name, build_number,
                full_step_name, http_client, log_type='stdout'):
   """Returns sepcific log of the specified step."""
@@ -496,19 +512,27 @@ def GetStepLog(master_name, builder_name, build_number,
   step = _GetAnnotationsProto(
       master_name, builder_name, build_number, http_client)
   if not step:
-    return None
+    if log_type.lower() == 'stdout':
+      return _GetStepStdioFromBuildBot(
+          master_name, builder_name, build_number, full_step_name, http_client)
+    else:
+      return None
 
-  # 2. Find the log stream info for this step's stdout log.
+  # 2. Find the log stream info for the log.
   logdog_stream = _ProcessAnnotationsToGetStream(full_step_name, step, log_type)
 
-  # 3. Get the stdout log.
+  # 3. Get the log.
   if not logdog_stream:
-    return None
+    if log_type.lower() == 'stdout':
+      return _GetStepStdioFromBuildBot(
+          master_name, builder_name, build_number, full_step_name, http_client)
+    else:
+      return None
 
   data = _GetLogFromLogDog(
       master_name, builder_name, build_number, logdog_stream, http_client)
 
-  if log_type == 'step_metadata':
+  if log_type.lower() == 'step_metadata':  # pragma: no branch
     return json.loads(data) if data else None
 
   return data
