@@ -22,10 +22,13 @@ class AclTest(testing.AppengineTestCase):
   def setUp(self):
     super(AclTest, self).setUp()
     self.current_identity = auth.Identity.from_bytes('user:a@example.com')
-    self.mock(auth, 'get_current_identity', lambda: self.current_identity)
-    self.mock(auth, 'is_admin', lambda: False)
+    self.patch(
+        'components.auth.get_current_identity',
+        autospec=True,
+        return_value=self.current_identity)
 
-    self.mock(config, 'get_buckets_async', mock.Mock())
+    self.patch('components.auth.is_admin', autospec=True, return_value=False)
+
     bucket_a = Bucket(
         name='a',
         acls=[
@@ -46,22 +49,21 @@ class AclTest(testing.AppengineTestCase):
           Acl(role=Acl.WRITER, group='c-writers'),
         ])
     all_buckets = [bucket_a, bucket_b, bucket_c]
-    config.get_buckets_async.return_value = future(all_buckets)
+    self.patch(
+        'config.get_buckets_async', autospec=True,
+        return_value=future(all_buckets))
+
     bucket_map = {b.name: b for b in all_buckets}
+    self.patch(
+        'config.get_bucket_async',
+        autospec=True,
+        side_effect=lambda name: future(('chromium', bucket_map.get(name))))
 
-    self.mock(
-        config, 'get_bucket_async',
-        lambda name: future(('chromium', bucket_map.get(name))))
-
-  def mock_is_group_member(self, groups):
-    # pylint: disable=unused-argument
-    def is_group_member(group, identity=None):
-      return group in groups
-
-    self.mock(auth, 'is_group_member', is_group_member)
-
-  def test_has_any_of_roles(self):
-    self.mock_is_group_member(['a-readers'])
+  @mock.patch('components.auth.is_admin', autospec=True)
+  @mock.patch('components.auth.is_group_member', autospec=True)
+  def test_has_any_of_roles(self, is_group_member, is_admin):
+    is_group_member.side_effect = lambda g, i=None: g == 'a-readers'
+    is_admin.return_value = False
 
     has_any_of_roles = (
       lambda *args: acl.has_any_of_roles_async(*args).get_result())
@@ -75,14 +77,18 @@ class AclTest(testing.AppengineTestCase):
     self.assertFalse(has_any_of_roles('c', [Acl.WRITER]))
     self.assertFalse(has_any_of_roles('non.existing', [Acl.READER]))
 
-    self.mock_is_group_member([])
+    is_group_member.side_effect = None
+    is_group_member.return_value = False
     self.assertFalse(has_any_of_roles('a', Acl.Role.values()))
 
-    self.mock(auth, 'is_admin', lambda *_: True)
+    is_admin.return_value = True
     self.assertTrue(has_any_of_roles('a', [Acl.WRITER]))
 
-  def test_get_available_buckets(self):
-    self.mock_is_group_member(['xxx', 'yyy'])
+  @mock.patch('components.auth.is_admin', autospec=True)
+  @mock.patch('components.auth.is_group_member', autospec=True)
+  def test_get_available_buckets(self, is_group_member, is_admin):
+    is_group_member.side_effect = lambda g, i=None: g in ('xxx', 'yyy')
+    is_admin.return_value = False
 
     config.get_buckets_async.return_value = future([
       Bucket(
@@ -118,7 +124,7 @@ class AclTest(testing.AppengineTestCase):
         availble_buckets,
         {'available_bucket1', 'available_bucket2', 'available_bucket3'})
 
-    self.mock(auth, 'is_admin', lambda *_: True)
+    is_admin.return_value = True
     self.assertIsNone(acl.get_available_buckets())
 
   def mock_has_any_of_roles(self, current_identity_roles):
@@ -127,7 +133,7 @@ class AclTest(testing.AppengineTestCase):
     def has_any_of_roles_async(_bucket, roles):
       return future(current_identity_roles.intersection(roles))
 
-    self.mock(acl, 'has_any_of_roles_async', has_any_of_roles_async)
+    self.patch('acl.has_any_of_roles_async', side_effect=has_any_of_roles_async)
 
   def test_can(self):
     self.mock_has_any_of_roles([Acl.READER])

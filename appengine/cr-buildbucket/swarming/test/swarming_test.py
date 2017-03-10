@@ -32,10 +32,12 @@ def futuristic(result):
 
 
 class SwarmingTest(testing.AppengineTestCase):
-  maxDiff=None
+
   def setUp(self):
     super(SwarmingTest, self).setUp()
-    self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 11, 30))
+    self.patch(
+        'components.utils.utcnow', autospec=True,
+        return_value=datetime.datetime(2015, 11, 30))
 
     self.json_response = None
     def json_request_async(*_, **__):
@@ -43,8 +45,9 @@ class SwarmingTest(testing.AppengineTestCase):
         return futuristic(self.json_response)
       self.fail('unexpected outbound request')  # pragma: no cover
 
-    self.mock(
-        net, 'json_request_async', mock.Mock(side_effect=json_request_async))
+    self.patch(
+        'components.net.json_request_async', autospec=True,
+        side_effect=json_request_async)
 
     self.bucket_cfg = project_config_pb2.Bucket(
       name='bucket',
@@ -102,7 +105,8 @@ class SwarmingTest(testing.AppengineTestCase):
         return futuristic(('chromium', self.bucket_cfg))
       else:
         return futuristic(('chromium', project_config_pb2.Bucket(name=name)))
-    self.mock(config, 'get_bucket_async', get_bucket_async)
+    self.patch(
+        'config.get_bucket_async', autospec=True, side_effect=get_bucket_async)
 
     self.task_template = {
       'name': 'buildbucket-$bucket-$builder',
@@ -158,11 +162,12 @@ class SwarmingTest(testing.AppengineTestCase):
           json.dumps(template) if template is not None else None
       ))
 
-    self.mock(config_component, 'get_self_config_async', mock.Mock())
-    config_component.get_self_config_async.side_effect = get_self_config_async
+    self.patch(
+        'components.config.get_self_config_async',
+        side_effect=get_self_config_async)
 
-    self.mock(auth, 'delegate_async', mock.Mock())
-    auth.delegate_async.return_value = futuristic('blah')
+    self.patch(
+        'components.auth.delegate_async', return_value=futuristic('blah'))
 
   def test_is_for_swarming(self):
     build = model.Build(
@@ -553,9 +558,10 @@ class SwarmingTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
-  def test_create_task_async_no_canary_template_implicit(self):
-    self.mock(swarming, 'should_use_canary_template', mock.Mock())
-    swarming.should_use_canary_template.return_value = True
+  @mock.patch('swarming.swarming.should_use_canary_template', autospec=True)
+  def test_create_task_async_no_canary_template_implicit(
+      self, should_use_canary_template):
+    should_use_canary_template.return_value = True
     self.task_template_canary = None
     self.bucket_cfg.swarming.task_template_canary_percentage.value = 54
 
@@ -591,7 +597,7 @@ class SwarmingTest(testing.AppengineTestCase):
 
     actual_task_def = net.json_request_async.call_args[1]['payload']
     self.assertIn('buildbucket_template_canary:false', actual_task_def['tags'])
-    swarming.should_use_canary_template.assert_called_with(54)
+    should_use_canary_template.assert_called_with(54)
 
   def test_create_task_async_override_cfg(self):
     build = model.Build(
@@ -824,7 +830,8 @@ class SwarmingTest(testing.AppengineTestCase):
 class SubNotifyTest(testing.AppengineTestCase):
   def setUp(self):
     super(SubNotifyTest, self).setUp()
-    self.mock(utils, 'utcnow', lambda: datetime.datetime(2015, 11, 30))
+    self.patch(
+        'components.utils.utcnow', return_value=datetime.datetime(2015, 11, 30))
     self.handler = swarming.SubNotify(response=webapp2.Response())
 
   def test_unpack_msg(self):
@@ -896,7 +903,8 @@ class SubNotifyTest(testing.AppengineTestCase):
       with self.assert_bad_message():
         self.handler.unpack_msg({'data': b64json(data)})
 
-  def test_post(self):
+  @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
+  def test_post(self, load_task_result_async):
     build = model.Build(
         id=1,
         bucket='chromium',
@@ -924,8 +932,7 @@ class SubNotifyTest(testing.AppengineTestCase):
         })
       }
     })
-    self.mock(swarming, '_load_task_result_async', mock.Mock())
-    swarming._load_task_result_async.return_value = futuristic({
+    load_task_result_async.return_value = futuristic({
       'task_id': 'deadbeef',
       'state': 'COMPLETED',
     })
@@ -1000,7 +1007,8 @@ class SubNotifyTest(testing.AppengineTestCase):
     with self.assert_bad_message(expect_redelivery=False):
       self.handler.post()
 
-  def test_post_without_build_id(self):
+  @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
+  def test_post_without_build_id(self, load_task_result_async):
     build = model.Build(
       id=1,
       bucket='chromium',
@@ -1027,8 +1035,7 @@ class SubNotifyTest(testing.AppengineTestCase):
         })
       }
     })
-    self.mock(swarming, '_load_task_result_async', mock.Mock())
-    swarming._load_task_result_async.return_value = futuristic({
+    load_task_result_async.return_value = futuristic({
       'task_id': 'deadbeef',
       'state': 'COMPLETED',
     })
@@ -1134,9 +1141,9 @@ class CronUpdateTest(testing.AppengineTestCase):
     )
     self.build.put()
 
-  def test_update_build_async(self):
-    self.mock(swarming, '_load_task_result_async', mock.Mock())
-    swarming._load_task_result_async.return_value = futuristic({
+  @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
+  def test_update_build_async(self, load_task_result_async):
+    load_task_result_async.return_value = futuristic({
       'state': 'COMPLETED',
     })
 
@@ -1148,9 +1155,9 @@ class CronUpdateTest(testing.AppengineTestCase):
     self.assertIsNone(build.lease_key)
     self.assertIsNotNone(build.complete_time)
 
-  def test_update_build_async_no_task(self):
-    self.mock(swarming, '_load_task_result_async', mock.Mock())
-    swarming._load_task_result_async.return_value = futuristic(None)
+  @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
+  def test_update_build_async_no_task(self, load_task_result_async):
+    load_task_result_async.return_value = futuristic(None)
 
     build = self.build
     swarming.CronUpdateBuilds().update_build_async(build).get_result()

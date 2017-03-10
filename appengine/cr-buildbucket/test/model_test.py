@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import mock
 
 from components import utils
 from testing_utils import testing
@@ -23,9 +24,10 @@ class BuildTest(testing.AppengineTestCase):
     with self.assertRaises(AssertionError):
       build.put()
 
-  def test_new_build_id_generates_monotonicaly_decreasing_ids(self):
+  @mock.patch('components.utils.utcnow', autospec=True)
+  def test_new_build_id_generates_monotonicaly_decreasing_ids(self, utcnow):
     now = datetime.datetime(2015, 2, 24)
-    self.mock(utils, 'utcnow', lambda: now)
+    utcnow.side_effect = lambda: now
     last_id = None
     for i in xrange(1000):
       now += datetime.timedelta(seconds=i)

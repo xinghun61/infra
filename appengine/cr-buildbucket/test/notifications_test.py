@@ -22,8 +22,8 @@ BUILDBUCKET_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class NotificationsTest(testing.AppengineTestCase):
   taskqueue_stub_root_path = BUILDBUCKET_ROOT
 
-  def test_enqueue_callback_task_if_needed(self):
-    self.mock(deferred, 'defer', mock.Mock())
+  @mock.patch('google.appengine.ext.deferred.defer', autospec=True)
+  def test_enqueue_callback_task_if_needed(self, _defer):
     build = model.Build(
       id=1,
       bucket='chromium',

@@ -183,7 +183,8 @@ class ConfigTest(testing.AppengineTestCase):
     ]
     self.assertEqual(actual, expected)
 
-  def test_cron_update_buckets(self):
+  @mock.patch('components.config.get_project_configs', autospec=True)
+  def test_cron_update_buckets(self, get_project_configs):
     chromium_buildbucket_cfg = parse_cfg("""
       acl_sets {
         name: "public"
@@ -239,8 +240,7 @@ class ConfigTest(testing.AppengineTestCase):
       }
       """)
 
-    self.mock(config_component, 'get_project_configs', mock.Mock())
-    config_component.get_project_configs.return_value = {
+    get_project_configs.return_value = {
       'chromium': ('deadbeef', chromium_buildbucket_cfg),
       'v8': (None, v8_buildbucket_cfg),
       'test': ('babe', test_buildbucket_cfg),
@@ -284,35 +284,8 @@ class ConfigTest(testing.AppengineTestCase):
     ]
     self.assertEqual(actual, expected)
 
-  def test_cron_update_buckets_with_existing(self):
-    config.Bucket(
-      id='master.tryserver.chromium.linux',
-      project_id='chromium',
-      revision='deadbeef',
-      config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
-      config_content_binary=text_to_binary(
-        MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
-    ).put()
-
-    # Will not be updated.
-    config.Bucket(
-      id='master.tryserver.v8',
-      project_id='v8',
-      revision='deadbeef',
-      config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
-      config_content_binary=text_to_binary(MASTER_TRYSERVER_V8_CONFIG_TEXT),
-    ).put()
-
-    # Will be deleted.
-    config.Bucket(
-      id='master.tryserver.chromium.win',
-      project_id='chromium',
-      revision='deadbeef',
-      config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
-      config_content_binary=text_to_binary(
-        MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT),
-    ).put()
-
+  @mock.patch('components.config.get_project_configs', autospec=True)
+  def test_cron_update_buckets_with_existing(self, get_project_configs):
     chromium_buildbucket_cfg = parse_cfg("""
       buckets {
         name: "master.tryserver.chromium.linux"
@@ -356,12 +329,38 @@ class ConfigTest(testing.AppengineTestCase):
         }
       }
       """)
-
-    self.mock(config_component, 'get_project_configs', mock.Mock())
-    config_component.get_project_configs.return_value = {
+    get_project_configs.return_value = {
       'chromium': ('new!', chromium_buildbucket_cfg),
       'v8': ('deadbeef', v8_buildbucket_cfg),
     }
+
+    config.Bucket(
+      id='master.tryserver.chromium.linux',
+      project_id='chromium',
+      revision='deadbeef',
+      config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
+      config_content_binary=text_to_binary(
+        MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
+    ).put()
+
+    # Will not be updated.
+    config.Bucket(
+      id='master.tryserver.v8',
+      project_id='v8',
+      revision='deadbeef',
+      config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
+      config_content_binary=text_to_binary(MASTER_TRYSERVER_V8_CONFIG_TEXT),
+    ).put()
+
+    # Will be deleted.
+    config.Bucket(
+      id='master.tryserver.chromium.win',
+      project_id='chromium',
+      revision='deadbeef',
+      config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
+      config_content_binary=text_to_binary(
+        MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT),
+    ).put()
 
     config.cron_update_buckets()
 
@@ -394,7 +393,13 @@ class ConfigTest(testing.AppengineTestCase):
     ]
     self.assertEqual(actual, expected)
 
-  def test_cron_update_buckets_change_reservation(self):
+  @mock.patch('components.config.get_project_configs', autospec=True)
+  def test_cron_update_buckets_change_reservation(self, get_project_configs):
+    buildbucket_cfg = parse_cfg("""buckets{ name: "bucket" }""")
+    get_project_configs.return_value = {
+      'bar': ('deadbeef', buildbucket_cfg),
+    }
+
     config.Bucket(
       id='bucket',
       project_id='foo',
@@ -403,11 +408,6 @@ class ConfigTest(testing.AppengineTestCase):
       config_content_binary=text_to_binary('name: "bucket"'),
     ).put()
 
-    buildbucket_cfg = parse_cfg("""buckets{ name: "bucket" }""")
-    self.mock(config_component, 'get_project_configs', mock.Mock())
-    config_component.get_project_configs.return_value = {
-      'bar': ('deadbeef', buildbucket_cfg),
-    }
 
     config.cron_update_buckets()
 

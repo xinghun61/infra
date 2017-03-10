@@ -4,6 +4,7 @@
 
 from contextlib import contextmanager
 import collections
+import mock
 import time
 
 # appengine sdk is supposed to be on the path.
@@ -20,7 +21,42 @@ import webtest
 from testing_support import auto_stub
 
 
-class AppengineTestCase(auto_stub.TestCase):  # pragma: no cover
+class MockPatchMixin(object):  # pragma: no cover
+  """Adds patch method that can uses mock.patch and stops it in tearDown."""
+
+  _saved_patchers = None
+
+  def add_patcher(self, patcher):
+    """Remembers |patcher| to stop it in tearDown."""
+    self._saved_patchers = self._saved_patchers or []
+    self._saved_patchers.append(patcher)
+
+  def patch(self, *mock_patch_args, **mock_patch_kwargs):
+    """Calls mock.patch, starts the returned patcher and stops it in tearDown.
+
+    Returns:
+      The mock returned by patch.start().
+
+    Example of usage:
+      class MyTest(unittest.TestCase, MockPatchMixin):
+        def setUp(self):
+          foo = self.patch('module.foo')
+          foo.return_value = 'bar'
+    """
+    patcher = mock.patch(*mock_patch_args, **mock_patch_kwargs)
+    mocked = patcher.start()
+    self.add_patcher(patcher)
+    return mocked
+
+  def tearDown(self):
+    """Stop patchers."""
+    if self._saved_patchers:
+      for p in self._saved_patchers:
+        p.stop()
+      self._saved_patchers = None
+
+
+class AppengineTestCase(auto_stub.TestCase, MockPatchMixin):  # pragma: no cover
   """Base class for Appengine test cases.
 
   Must set app_module to use self.test_app.
@@ -67,7 +103,8 @@ class AppengineTestCase(auto_stub.TestCase):  # pragma: no cover
     try:
       self.testbed.deactivate()
     finally:
-      super(AppengineTestCase, self).tearDown()
+      MockPatchMixin.tearDown(self)
+      auto_stub.TestCase.tearDown(self)
 
   @property
   def test_app(self):

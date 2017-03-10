@@ -34,7 +34,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         (bucket is None or requested_bucket == bucket))
       return future(not match)
 
-    self.mock(acl, 'can_async', can_async)
+    # acl.can_async is patched in setUp()
+    acl.can_async.side_effect = can_async
 
   def mock_bucket_config(self, is_swarming=False):
     # Mock whether the config has attributes (protobuf HasField).
@@ -43,7 +44,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       return is_swarming
     config_mock = mock.Mock()
     config_mock.HasField.side_effect = mock_has_field
-    self.mock(config, 'get_bucket', lambda name: ('project', config_mock))
+    self.patch(
+        'config.get_bucket',
+        autospec=True,
+        side_effect = lambda name: ('project', config_mock))
 
   def setUp(self):
     super(BuildBucketServiceTest, self).setUp()
@@ -59,14 +63,16 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
 
     self.current_identity = auth.Identity('service', 'unittest')
-    self.mock(auth, 'get_current_identity', lambda: self.current_identity)
-    self.mock(acl, 'can_async', lambda *_: future(True))
+    self.patch(
+        'components.auth.get_current_identity',
+        side_effect=lambda: self.current_identity)
+    self.patch('acl.can_async', return_value=future(True))
     self.now = datetime.datetime(2015, 1, 1)
-    self.mock(utils, 'utcnow', lambda: self.now)
-    self.mock(swarming, 'is_for_swarming_async', mock.Mock())
-    self.mock(swarming, 'create_task_async', mock.Mock())
+    self.patch('components.utils.utcnow', side_effect=lambda: self.now)
+    self.patch('swarming.is_for_swarming_async')
     swarming.is_for_swarming_async.return_value = ndb.Future()
     swarming.is_for_swarming_async.return_value.set_result(False)
+    self.patch('swarming.create_task_async')
 
   def put_many_builds(self, count=100):
     for _ in xrange(count):
@@ -412,10 +418,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_without_buckets(self):
-    get_available_buckets = mock.Mock()
-    self.mock(acl, 'get_available_buckets', get_available_buckets)
-
+  @mock.patch('acl.get_available_buckets', autospec=True)
+  def test_search_without_buckets(self, get_available_buckets):
     self.test_build.put()
     build2 = model.Build(bucket='other bucket')
     build2.put()
@@ -450,7 +454,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.assertEqual(builds, [self.test_build])
 
-  def test_search_by_buildset(self):
+  @mock.patch('acl.get_available_buckets', autospec=True)
+  def test_search_by_buildset(self, get_available_buckets):
     self.test_build.tags = ['buildset:x']
     self.test_build.put()
 
@@ -460,8 +465,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     build2.put()
 
-    get_available_buckets = mock.Mock(return_value=[self.test_build.bucket])
-    self.mock(acl, 'get_available_buckets', get_available_buckets)
+    get_available_buckets.return_value = [self.test_build.bucket]
     builds, _ = service.search(tags=['buildset:x'])
     self.assertEqual(builds, [self.test_build])
 
@@ -774,15 +778,16 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   @contextlib.contextmanager
   def callback_test(self):
-    self.mock(notifications, 'enqueue_callback_task_if_needed', mock.Mock())
     self.test_build.pubsub_callback = model.PubSubCallback(
       topic='projects/example/topic/buildbucket',
       user_data='hello',
       auth_token='secret',
     )
     self.test_build.put()
-    yield
-    self.assertTrue(notifications.enqueue_callback_task_if_needed.called)
+    with mock.patch(
+        'notifications.enqueue_callback_task_if_needed', autospec=True) as enq:
+      yield
+      self.assertTrue(enq.called)
 
   def test_start_creates_notification_task(self):
     self.lease()

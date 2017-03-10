@@ -2,6 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from components import utils
+utils.fix_protobuf_package()
+
 from google.appengine.ext import ndb
 from testing_utils import testing
 

@@ -37,9 +37,9 @@ class MetricsTest(testing.AppengineTestCase):
       {metrics.FIELD_BUCKET: 'chromium'},
       target_fields=metrics.GLOBAL_TARGET_FIELDS))
 
-  def test_set_build_lease_latency(self):
-    now = datetime.datetime(2015, 1, 4)
-    self.mock(utils, 'utcnow', lambda: now)
+  @mock.patch('components.utils.utcnow', autospec=True)
+  def test_set_build_lease_latency(self, utcnow):
+    utcnow.return_value = datetime.datetime(2015, 1, 4)
 
     ndb.put_multi([
       model.Build(
@@ -78,17 +78,18 @@ class MetricsTest(testing.AppengineTestCase):
     self.assertEquals(dist.sum, 4.0 * 24 * 3600)  # 4 days
 
   @mock.patch('config.get_buckets_async', autospec=True)
-  def test_update_global_metrics(self, *_):
-    config.get_buckets_async.return_value = future([
+  @mock.patch('metrics.set_build_status_metric', autospec=True)
+  def test_update_global_metrics(
+      self, set_build_status_metric, get_buckets_async):
+    get_buckets_async.return_value = future([
       project_config_pb2.Bucket(name='x')
     ])
-    self.mock(metrics, 'set_build_status_metric', mock.Mock())
 
     metrics.update_global_metrics()
 
-    metrics.set_build_status_metric.assert_any_call(
+    set_build_status_metric.assert_any_call(
       metrics.CURRENTLY_PENDING, 'x', model.BuildStatus.SCHEDULED)
-    metrics.set_build_status_metric.assert_any_call(
+    set_build_status_metric.assert_any_call(
       metrics.CURRENTLY_RUNNING, 'x', model.BuildStatus.STARTED)
 
   def test_fields_for(self):
