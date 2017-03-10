@@ -404,6 +404,19 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.BuildIsCompletedError):
       service.cancel(self.test_build.key.id())
 
+  @mock.patch('google.appengine.ext.deferred.defer', autospec=True)
+  def test_cancel_swarmbucket_build(self, defer):
+    self.test_build.swarming_hostname = 'chromium-swarm.appspot.com'
+    self.test_build.swarming_task_id = 'deadbeef'
+    self.test_build.put()
+    service.cancel(self.test_build.key.id())
+    defer.assert_called_with(
+        swarming.cancel_task,
+        None,
+        'chromium-swarm.appspot.com',
+        'deadbeef',
+        _transactional=True)
+
   #################################### SEARCH ##################################
 
   def test_search(self):

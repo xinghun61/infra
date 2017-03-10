@@ -364,7 +364,8 @@ def _put_build_async(build_id, req):
     # Best effort.
     if for_swarming:
       with _with_swarming_api_error_converter():
-        yield swarming.cancel_task_async(build)
+        yield swarming.cancel_task_async(
+            build.swarming_hostname, build.swarming_task_id)
     raise
   if req.client_operation_id:
     # Cache it as soon as possible after the build entity is created.
@@ -941,6 +942,13 @@ def cancel(build_id):
     build.clear_lease()
     build.put()
     notifications.enqueue_callback_task_if_needed(build)
+    if build.swarming_hostname and build.swarming_task_id is not None:
+      deferred.defer(
+          swarming.cancel_task,
+          None,
+          build.swarming_hostname,
+          build.swarming_task_id,
+          _transactional=True)
     return build
 
   build = txn()

@@ -444,6 +444,7 @@ def create_task_async(build):
   task = yield create_task_def_async(
       project_id, bucket_cfg.swarming, builder_cfg, build)
   res = yield _call_api_async(
+      auth.get_current_identity(),
       bucket_cfg.swarming.hostname, 'tasks/new', method='POST', payload=task,
       # Higher timeout than normal because if the task creation request
       # fails, but the task is actually created, later we will receive a
@@ -494,13 +495,15 @@ def create_task_async(build):
       builder=builder_cfg.name)
 
 
-def cancel_task_async(build):
-  assert build.swarming_hostname
-  assert build.swarming_task_id
+def cancel_task_async(hostname, task_id):
+  """Cancels a swarming task."""
   return _call_api_async(
-      build.swarming_hostname,
-      'task/%s/cancel' % build.swarming_task_id,
-      method='POST')
+      None, hostname, 'task/%s/cancel' % task_id, method='POST')
+
+
+def cancel_task(hostname, task_id):
+  """Sync version of cancel_task_async."""
+  return cancel_task_async(hostname, task_id).get_result()
 
 
 ################################################################################
@@ -508,9 +511,9 @@ def cancel_task_async(build):
 
 
 def _load_task_result_async(
-    hostname, task_id, identity=None):  # pragma: no cover
+    impersonated_identity, hostname, task_id):  # pragma: no cover
   return _call_api_async(
-      hostname, 'task/%s/result' % task_id, identity=identity)
+      impersonated_identity, hostname, 'task/%s/result' % task_id)
 
 
 def _update_build(build, result):
@@ -674,7 +677,7 @@ class SubNotify(webapp2.RequestHandler):
 
     # Update build.
     result = _load_task_result_async(
-        hostname, task_id, identity=build.created_by).get_result()
+        None, hostname, task_id).get_result()
 
     @ndb.transactional
     def txn(build_key):
@@ -722,8 +725,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
   @ndb.tasklet
   def update_build_async(self, build):
     result = yield _load_task_result_async(
-        build.swarming_hostname, build.swarming_task_id,
-        identity=build.created_by)
+        None, build.swarming_hostname, build.swarming_task_id)
 
     @ndb.transactional_tasklet
     def txn(build_key):
@@ -786,13 +788,18 @@ def get_routes():  # pragma: no cover
 
 @ndb.tasklet
 def _call_api_async(
-    hostname, path, method='GET', payload=None, identity=None, deadline=None,
-    max_attempts=None):
-  identity = identity or auth.get_current_identity()
-  delegation_token = yield auth.delegate_async(
-      audience=[_self_identity()],
-      impersonate=identity,
-  )
+    impersonated_identity, hostname, path, method='GET', payload=None,
+    deadline=None, max_attempts=None):
+  """Calls Swarming API.
+
+  If impersonated_identity is None, does not impersonate.
+  """
+  delegation_token = None
+  if impersonated_identity:
+    delegation_token = yield auth.delegate_async(
+        audience=[_self_identity()],
+        impersonate=impersonated_identity,
+    )
   url = 'https://%s/_ah/api/swarming/v1/%s' % (hostname, path)
   res = yield net.json_request_async(
       url,

@@ -717,19 +717,13 @@ class SwarmingTest(testing.AppengineTestCase):
 
   def test_cancel_task(self):
     self.json_response = {}
-    build = model.Build(
-      id=1,
-      bucket='whatever',
-      swarming_hostname='chromium-swarm.appspot.com',
-      swarming_task_id='deadbeef',
-    )
-    swarming.cancel_task_async(build).get_result()
+    swarming.cancel_task('chromium-swarm.appspot.com', 'deadbeef')
     net.json_request_async.assert_called_with(
       ('https://chromium-swarm.appspot.com/'
        '_ah/api/swarming/v1/task/deadbeef/cancel'),
       method='POST',
       scopes=net.EMAIL_SCOPE,
-      delegation_token='blah',
+      delegation_token=None,
       payload=None,
       deadline=None,
       max_attempts=None,
