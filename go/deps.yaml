@@ -47,6 +47,11 @@ import:
 - package: github.com/maruel/ut
   version: master
   repo: https://chromium.googlesource.com/external/github.com/maruel/ut.git
+- package: github.com/danjacques/gofslock
+  version: master
+  repo: https://chromium.googlesource.com/external/github.com/danjacques/gofslock.git
+  subpackages:
+  - fslock
 - package: github.com/op/go-logging
   version: master
   repo: https://chromium.googlesource.com/external/github.com/op/go-logging.git
