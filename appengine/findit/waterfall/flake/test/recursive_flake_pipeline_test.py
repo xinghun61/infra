@@ -833,8 +833,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
             master_name, builder_name, build_number, step_name, test_name,
             version_number, build_number)._BotsAvailableForTask(None))
 
-  @mock.patch.object(swarming_util, 'GetAvailableBotsCount', return_value=5)
-  def testCheckBotsAvailability(self, _):
+  @mock.patch.object(swarming_util, 'GetSwarmingBotCounts')
+  def testCheckBotsAvailability(self, mock_fn):
 
     master_name = 'm'
     builder_name = 'b'
@@ -848,6 +848,15 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
           'os': 'OS'
       }
     }
+
+    mock_fn.return_value = {
+        'count': 20,
+        'dead': 1,
+        'quarantined': 0,
+        'busy': 5,
+        'available': 14
+    }
+
     self.assertTrue(
         RecursiveFlakePipeline(
             master_name, builder_name, build_number, step_name, test_name,

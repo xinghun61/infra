@@ -89,6 +89,11 @@ class FinditConfig(VersionedConfig):
   #     'iterations_to_rerun': 10,
   #     'get_swarming_task_id_timeout_seconds': 300,
   #     'get_swarming_task_id_wait_seconds': 10
+  #     'server_retry_timeout_hours': 1,
+  #     'maximum_server_contact_retry_interval_seconds': 1,
+  #     'should_retry_server': False,
+  #     'minimum_number_of_available_bots': 5,
+  #     'minimum_percentage_of_available_bots': 0.1
   # }
   swarming_settings = ndb.JsonProperty(indexed=False, default={})
 

@@ -181,7 +181,10 @@ def _ValidateSwarmingSettings(settings):
           isinstance(settings.get('server_retry_timeout_hours'), int) and
           isinstance(settings.get(
               'maximum_server_contact_retry_interval_seconds'), int) and
-          isinstance(settings.get('should_retry_server'), bool))
+          isinstance(settings.get('should_retry_server'), bool) and
+          isinstance(settings.get('minimum_number_of_available_bots'), int) and
+          isinstance(settings.get('minimum_percentage_of_available_bots'),
+                     float))
 
 
 def _ValidateDownloadBuildDataSettings(settings):

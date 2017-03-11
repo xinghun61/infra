@@ -571,18 +571,18 @@ def GetIsolatedOutputForTask(task_id, http_client):
     return None
   return output_json
 
-def GetAvailableBotsCount(dimensions, http_client):
-  """Gets number of available swarming bots for certain dimensions.
+def GetSwarmingBotCounts(dimensions, http_client):
+  """Gets number of swarming bots for certain dimensions.
 
   Args:
     dimensions (dict): A dict of dimensions.
     http_client (HttpClient): The httpclient object with which to make the
       server calls.
   Returns:
-    available (int): Number of available swarming bots.
+    bot_counts (dict): Dict of numbers of available swarming bots.
   """
   if not dimensions:
-    return 0
+    return {}
 
   swarming_server_host = waterfall_config.GetSwarmingSettings().get(
       'server_host')
@@ -596,12 +596,15 @@ def GetAvailableBotsCount(dimensions, http_client):
 
   content, error = _SendRequestToServer(url, http_client)
   if error or not content:
-    return 0
+    return {}
 
   content_data = json.loads(content)
-  count = int(content_data.get('count', 0))
-  busy = int(content_data.get('busy', 0))
-  dead = int(content_data.get('dead', 0))
-  quarantined = int(content_data.get('quarantined', 0))
 
-  return count - dead - quarantined - busy
+  bot_counts = {
+      k: int(content_data.get(k, 0)) for k in
+      ('busy', 'count', 'dead', 'quarantined')
+  }
+  bot_counts['available'] = (bot_counts['count'] - bot_counts['busy'] -
+                             bot_counts['dead'] - bot_counts['quarantined'])
+
+  return bot_counts

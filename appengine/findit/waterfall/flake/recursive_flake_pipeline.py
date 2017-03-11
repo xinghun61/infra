@@ -41,6 +41,9 @@ _BASE_COUNT_DOWN_SECONDS = 2 * 60
 # Tries to start the RecursiveFlakePipeline on peak hours at most 5 times.
 _MAX_RETRY_TIMES = 5
 
+_MINIMUM_NUMBER_BOT = 5
+_MINIMUM_PERCENT_BOT = 0.1
+
 
 def _UpdateAnalysisStatusUponCompletion(
     analysis, suspected_build, status, error, build_confidence_score=None,
@@ -249,11 +252,22 @@ class RecursiveFlakePipeline(BasePipeline):
     if not step_metadata:
       return False
 
+    minimum_number_of_available_bots = (
+        waterfall_config.GetSwarmingSettings().get(
+            'minimum_number_of_available_bots', _MINIMUM_NUMBER_BOT))
+    minimum_percentage_of_available_bots = (
+        waterfall_config.GetSwarmingSettings().get(
+            'minimum_percentage_of_available_bots', _MINIMUM_PERCENT_BOT))
     dimensions = step_metadata.get('dimensions')
-    available_count = swarming_util.GetAvailableBotsCount(
+    bot_counts = swarming_util.GetSwarmingBotCounts(
         dimensions, HttpClientAppengine())
 
-    return available_count > 0
+    total_count = bot_counts.get('count') or -1
+    available_count = bot_counts.get('available', 0)
+    available_rate = float(available_count) / total_count
+
+    return (available_count > minimum_number_of_available_bots and
+            available_rate > minimum_percentage_of_available_bots)
 
   def _LogUnexpectedAbort(self):
     if not self.was_aborted:

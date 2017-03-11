@@ -216,6 +216,8 @@ class MastersTest(wf_testcase.WaterfallTestCase):
             'server_retry_timeout_hours': 2,
             'maximum_server_contact_retry_interval_seconds': 5 * 60,
             'should_retry_server': False,
+            'minimum_number_of_available_bots': 5,
+            'minimum_percentage_of_available_bots': 0.1,
         },
         waterfall_config.GetSwarmingSettings())
 
