@@ -43,16 +43,18 @@ _CHANGELOG = ChangeLog.FromDict({
 })
 
 
+def Factory(frame):
+  return MockCrashedGroup(frame.raw_file_path) if frame.raw_file_path else None
+
+
+def Match(crashed, touched_file):
+  return touched_file.new_path == crashed.value
+
+
 class MockCrashedGroup(namedtuple('MockCrashedGroup', ['value'])):
 
   __slots__ = ()
 
-  @staticmethod
-  def Factory(frame):
-    return MockCrashedGroup(frame.raw_file_path if frame else None)
-
-  def MatchTouchedFile(self, touched_file):
-    return touched_file.new_path == self.value
 
 
 class CrashUtilTest(PredatorTestCase):
@@ -89,12 +91,23 @@ class CrashUtilTest(PredatorTestCase):
     deps = {'src/': Dependency('src/', 'h://repo', 'rev3')}
 
     indexed_frame_infos = crash_util.IndexFramesWithCrashedGroup(
-        stack_trace, MockCrashedGroup.Factory, deps)
+        stack_trace, Factory, deps)
     expected_frame_infos = {'src/': {MockCrashedGroup('src/f.cc'):
                                      [FrameInfo(frame1, 0)],
                                      MockCrashedGroup('src/a.cc'):
                                      [FrameInfo(frame2, 0)]}}
     self.assertEqual(indexed_frame_infos, expected_frame_infos)
+
+  def testDoNotIndexFramesWithNoneCrashedGroup(self):
+    """Tests ``IndexFramesWithCrashedGroup`` function."""
+    frame = StackFrame(0, 'src/', 'func', '', '', [2], 'h://repo')
+    stack = CallStack(0, frame_list=[frame])
+    stack_trace = Stacktrace([stack], stack)
+    deps = {'src/': Dependency('src/', 'h://repo', 'rev3')}
+
+    indexed_frame_infos = crash_util.IndexFramesWithCrashedGroup(
+        stack_trace, Factory, deps)
+    self.assertEqual(indexed_frame_infos, {})
 
   def testMatchSuspectWithFrameInfos(self):
     """Tests ``MatchSuspectWithFrameInfos`` function."""
@@ -108,7 +121,8 @@ class CrashUtilTest(PredatorTestCase):
     }
     suspect = Suspect(_CHANGELOG, 'src/')
     matches = crash_util.MatchSuspectWithFrameInfos(suspect,
-                                                    grouped_frame_infos)
+                                                    grouped_frame_infos,
+                                                    Match)
     crashed = MockCrashedGroup('src/a.cc')
     expected_matches = {
         crashed: CrashMatch(crashed, _CHANGELOG.touched_files,

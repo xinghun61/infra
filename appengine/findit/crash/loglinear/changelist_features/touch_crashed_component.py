@@ -14,40 +14,47 @@ from crash.loglinear.feature import Feature
 from crash.loglinear.feature import FeatureValue
 
 
-class CrashedDirectory(CrashedGroup):
-  """Represents a crashed directory, which has crashed files in stacktrace."""
+class CrashedComponent(CrashedGroup):
+  """Represents a crashed component, for example, 'Blink>DOM'."""
   pass
 
 
-class TouchCrashedDirectoryFeature(Feature):
-  """Returns either log one or log zero.
+class TouchCrashedComponentFeature(Feature):
+  """Returns either one or zero.
 
-  When a suspect touched crashed file, we return the log-domain
-  value 0 (aka normal-domain value of 1). When the there is no file match,
-  we return log-domain value -inf (aka normal-domain value of 0).
+  When a suspect touched crashed component, we return value 0. When the there is
+  no directory match, we return 0.
   """
+  def __init__(self, component_classifier):
+    self._component_classifier = component_classifier
+
   @property
   def name(self):
-    return 'TouchCrashedDirectory'
+    return 'TouchCrashedComponent'
 
   def CrashedGroupFactory(self, frame):
-    """Factory function to create ``CrashedDirectory``."""
-    # Since files in root directory are files like OWNERS, DEPS. Skip it.
-    return CrashedDirectory(
-        os.path.dirname(frame.file_path)) if frame.file_path else None
+    """Factory function to create ``CrashedComponent``."""
+    component = self._component_classifier.ClassifyStackFrame(frame)
+    return CrashedComponent(component) if component else None
 
-  def Match(self, crashed_directory, touched_file):
-    """Determines whether a touched_file matches this crashed directory or not.
+  def GetMatchFunction(self, dep_path):
+    """Returns a function to match a crashed component with a touched file."""
 
-    Args:
-      touched_file (FileChangeInfo): touched file to examine.
+    def Match(crashed_component, touched_file):
+      """Determines if a touched_file matches this crashed component.
 
-    Returns:
-      Boolean indicating whether it is a match or not.
-    """
-    touched_dir = (os.path.dirname(touched_file.new_path)
-                   if touched_file.new_path else None)
-    return crash_util.IsSameFilePath(crashed_directory.value, touched_dir)
+      Args:
+        crashed_component (CrashedComponent): The crashed component.
+        touched_file (FileChangeInfo): touched file to examine.
+
+      Returns:
+        Boolean indicating whether it is a match or not.
+      """
+      touched_component = self._component_classifier.ClassifyTouchedFile(
+          dep_path, touched_file)
+      return crashed_component.value == touched_component
+
+    return Match
 
   def __call__(self, report):
     """
@@ -71,9 +78,8 @@ class TouchCrashedDirectoryFeature(Feature):
         The ``FeatureValue`` of this feature.
       """
       grouped_frame_infos = dep_to_grouped_frame_infos.get(suspect.dep_path, {})
-      matches = crash_util.MatchSuspectWithFrameInfos(suspect,
-                                                      grouped_frame_infos,
-                                                      self.Match)
+      matches = crash_util.MatchSuspectWithFrameInfos(
+          suspect, grouped_frame_infos, self.GetMatchFunction(suspect.dep_path))
 
       if not matches:
         return FeatureValue(name=self.name,

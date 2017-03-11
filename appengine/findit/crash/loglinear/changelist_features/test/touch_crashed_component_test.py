@@ -1,18 +1,16 @@
-# Copyright 2016 The Chromium Authors. All rights reserved.
+# Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 import unittest
 
-from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from common.dependency import Dependency
 from common.dependency import DependencyRoll
+from crash.component_classifier import Component
+from crash.component_classifier import ComponentClassifier
 from crash.crash_report import CrashReport
-from crash.loglinear.changelist_features.touch_crashed_directory import (
-    TouchCrashedDirectoryFeature)
-from crash.loglinear.changelist_features.min_distance import Distance
-from crash.loglinear.changelist_features.min_distance import MinDistanceFeature
-from crash.loglinear.feature import ChangedFile
+from crash.loglinear.changelist_features.touch_crashed_component import (
+    TouchCrashedComponentFeature)
 from crash.suspect import Suspect
 from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
@@ -24,7 +22,7 @@ from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.change_log import FileChangeInfo
 from libs.gitiles.diff import ChangeType
 from libs.gitiles.gitiles_repository import GitilesRepository
-import libs.math.logarithms as lmath
+from model.crash.crash_config import CrashConfig
 
 
 _DUMMY_CHANGELOG = ChangeLog.FromDict({
@@ -43,7 +41,7 @@ _DUMMY_CHANGELOG = ChangeLog.FromDict({
     'touched_files': [
         {
             'change_type': 'add',
-            'new_path': 'a.cc',
+            'new_path': 'comp1/a.cc',
             'old_path': None,
         },
     ],
@@ -54,17 +52,25 @@ _DUMMY_CHANGELOG = ChangeLog.FromDict({
 })
 
 
-class TouchCrashedDirectoryFeatureTest(PredatorTestCase):
-  """Tests ``TouchCrashedDirectoryFeature``."""
+class TouchCrashedComponentFeatureTest(PredatorTestCase):
+  """Tests ``TouchCrashedComponentFeature``."""
 
   def setUp(self):
-    super(TouchCrashedDirectoryFeatureTest, self).setUp()
-    self._feature = TouchCrashedDirectoryFeature()
+    super(TouchCrashedComponentFeatureTest, self).setUp()
+    config = CrashConfig.Get().component_classifier
+    components = [Component(component_name, path_regex, function_regex)
+                  for path_regex, function_regex, component_name
+                  in config['path_function_component']]
+    # Only construct the classifier once, rather than making a new one every
+    # time we call a method on it.
+    self.classifier = ComponentClassifier(components, config['top_n'])
+    self.feature = TouchCrashedComponentFeature(self.classifier)
 
-  def testFeatureValueIsOneWhenThereIsMatchedDirectory(self):
-    """Test that feature value is 1 when there no matched directory."""
-    frame1 = StackFrame(0, 'src/', 'func', 'f.cc',
-                        'src/f.cc', [2, 3], 'h://repo')
+  def testFeatureValueIsOneWhenThereIsMatchedComponent(self):
+    """Test that feature value is 1 when there no matched component."""
+    # One dummy component in config is ['src/comp1.*', '', 'Comp1>Dummy'].
+    frame1 = StackFrame(0, 'src/', 'func', 'comp1/f.cc',
+                        'src/comp1/f.cc', [2, 3], 'h://repo')
     stack = CallStack(0, frame_list=[frame1])
     stack_trace = Stacktrace([stack], stack)
     deps = {'src/': Dependency('src/', 'h://repo', '8')}
@@ -72,11 +78,11 @@ class TouchCrashedDirectoryFeatureTest(PredatorTestCase):
     report = CrashReport('8', 'sig', 'linux', stack_trace,
                          ('2', '6'), deps, dep_rolls)
     suspect = Suspect(_DUMMY_CHANGELOG, 'src/')
-    feature_value = self._feature(report)(suspect)
+    feature_value = self.feature(report)(suspect)
     self.assertEqual(1.0, feature_value.value)
 
-  def testFeatureValueIsZeroWhenNoMatchedDirectory(self):
-    """Test that the feature returns 0 when there no matched directory."""
+  def testFeatureValueIsZeroWhenNoMatchedComponent(self):
+    """Test that the feature returns 0 when there no matched component."""
     frame = StackFrame(0, 'src/', 'func', 'dir/f.cc',
                         'src/dir/f.cc', [2, 3], 'h://repo')
     stack = CallStack(0, frame_list=[frame])
@@ -86,5 +92,5 @@ class TouchCrashedDirectoryFeatureTest(PredatorTestCase):
     report = CrashReport('8', 'sig', 'linux', stack_trace,
                          ('2', '6'), deps, dep_rolls)
     suspect = Suspect(_DUMMY_CHANGELOG, 'src/')
-    feature_value = self._feature(report)(suspect)
+    feature_value = self.feature(report)(suspect)
     self.assertEqual(0.0, feature_value.value)

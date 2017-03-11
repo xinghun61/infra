@@ -55,7 +55,10 @@ class MetaDict(MetaObject):
     Args:
       value (dict): Dict of meta objects.
     """
-    self._value = copy.deepcopy(value)
+    try:
+      self._value = copy.deepcopy(value)
+    except TypeError:  # pragma: no cover
+      self._value = copy.copy(value)
 
   @property
   def is_element(self):

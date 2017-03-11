@@ -4,6 +4,7 @@
 
 from collections import namedtuple
 from collections import defaultdict
+import functools
 import logging
 import re
 
@@ -30,6 +31,14 @@ class ComponentClassifier(object):
     self.components = components or []
     self.top_n_frames = top_n_frames
 
+  def ClassifyStackFrame(self, frame):
+    """Determine which component is responsible for this frame."""
+    for component in self.components:
+      if component.MatchesStackFrame(frame):
+        return component.component_name
+
+    return None
+
   # TODO(http://crbug.com/657177): return the Component objects
   # themselves, rather than strings naming them.
   def ClassifyCallStack(self, stack, top_n_components=2):
@@ -43,17 +52,18 @@ class ComponentClassifier(object):
     Returns:
       List of top n components.
     """
-    def GetComponentFromStackFrame(frame):
-      """Determine which component is responsible for this frame."""
-      for component in self.components:
-        if component.MatchesStackFrame(frame):
-          return component.component_name
-
-      return None
-
-    components = map(GetComponentFromStackFrame,
+    components = map(self.ClassifyStackFrame,
                      stack.frames[:self.top_n_frames])
     return RankByOccurrence(components, top_n_components)
+
+  def ClassifyTouchedFile(self, dep_path, touched_file):
+    """Determine which component is responsible for a touched file."""
+    for component in self.components:
+      if component.MatchesTouchedFile(dep_path,
+                                      touched_file.changed_path):
+        return component.component_name
+
+    return None
 
   # TODO(http://crbug.com/657177): return the Component objects
   # themselves, rather than strings naming them.
@@ -89,16 +99,9 @@ class ComponentClassifier(object):
     if not suspect or not suspect.changelog:
       return None
 
-    def GetComponentFromTouchedFile(touched_file):
-      """Determine which component is responsible for a touched file."""
-      for component in self.components:
-        if component.MatchesTouchedFile(suspect.dep_path,
-                                        touched_file.changed_path):
-          return component.component_name
-
-      return None
-
-    components = map(GetComponentFromTouchedFile,
+    classify_touched_file_func = functools.partial(self.ClassifyTouchedFile,
+                                                    suspect.dep_path)
+    components = map(classify_touched_file_func,
                      suspect.changelog.touched_files)
     return RankByOccurrence(components, top_n_components,
                             rank_function=lambda x: -len(x))

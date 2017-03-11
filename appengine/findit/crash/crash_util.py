@@ -91,13 +91,15 @@ def IndexFramesWithCrashedGroup(stacktrace, crashed_group_factory,
       if frame.dep_path not in dependencies:
         continue
 
-      frame_infos[frame.dep_path][crashed_group_factory(frame)].append(
-          FrameInfo(frame, stack.priority))
+      crashed_group = crashed_group_factory(frame)
+      if crashed_group:
+        frame_infos[frame.dep_path][crashed_group].append(
+            FrameInfo(frame, stack.priority))
 
   return frame_infos
 
 
-def MatchSuspectWithFrameInfos(suspect, grouped_frame_infos):
+def MatchSuspectWithFrameInfos(suspect, grouped_frame_infos, match_func):
   """Matches touched files of suspect with frames in stacktrace.
 
   Args:
@@ -114,7 +116,7 @@ def MatchSuspectWithFrameInfos(suspect, grouped_frame_infos):
   matched_touched_files = defaultdict(list)
   for crashed in grouped_frame_infos:
     for touched_file in suspect.changelog.touched_files:
-      if crashed.MatchTouchedFile(touched_file):
+      if match_func(crashed, touched_file):
         matched_touched_files[crashed].append(touched_file)
 
   return {crashed: CrashMatch(crashed_group=crashed,

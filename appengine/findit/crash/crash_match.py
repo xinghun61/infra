@@ -2,7 +2,27 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
+
+from collections import defaultdict
 from collections import namedtuple
+
+
+class CrashedGroup(namedtuple('CrashedGroup', ['value'])):
+  """Represents a crashed group.
+
+  Properties:
+    value (str): The content of crashed group, for example, 'crashed_file_name',
+      'crashed_directory'.
+    name (str): The class name of the crashed group. It is mainly used by
+      sub classes to return the their class names, for example,
+      'CrashedComponent', 'CrashedDirectory'.
+  """
+  __slots__ = ()
+
+  @classmethod
+  def name(cls):  # pragma: no cover
+    return cls.__name__
 
 
 # TODO(wrengr): it's not clear why the ``priority`` is stored at all,
@@ -32,8 +52,17 @@ class CrashMatch(namedtuple('CrashMatch',
   __slots__ = ()
 
   def __str__(self):  # pragma: no cover
-    return '%s(crashed_group = %s, touched_files = %s, frame_infos = %s)' % (
-        self.__class__.__name__,
-        self.crashed_group.value,
-        ', '.join([str(touched_file) for touched_file in self.touched_files]),
-        ', '.join([str(frame_info) for frame_info in self.frame_infos]))
+    frame_file_path_to_index = defaultdict(list)
+    for frame_info in self.frame_infos:
+      frame_file_path_to_index[
+          frame_info.frame.file_path].append(frame_info.frame.index)
+
+    frame_file_path_to_index = {
+        file_path: ', '.join(['frame#%d' % indice for indice in index])
+        for file_path, index in frame_file_path_to_index.iteritems()
+    }
+    return 'Changed files %s, with the same %s(%s) as %s' % (
+        ', '.join([os.path.basename(f.new_path) for f in self.touched_files]),
+        self.crashed_group.name, self.crashed_group.value,
+        ', '.join(['%s (in %s)' % (os.path.basename(path), index)
+                   for path, index in frame_file_path_to_index.iteritems()]))

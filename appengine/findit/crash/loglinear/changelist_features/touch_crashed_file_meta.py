@@ -8,6 +8,7 @@ import logging
 import math
 
 from crash import crash_util
+from crash.crash_match import CrashedGroup
 from crash.loglinear.changelist_features.min_distance import MinDistanceFeature
 from crash.loglinear.changelist_features.top_frame_index import (
     TopFrameIndexFeature)
@@ -25,31 +26,13 @@ DEFAULT_MAX_LINE_DISTANCE = 50
 DEFAULT_MAX_FRAME_INDEX = 7
 
 
-class CrashedFile(namedtuple('CrashedFile', ['value'])):
-  """Represents a crashed file.
-
-  ``CrashedFile`` is a crashed group which knows whether itself matches a
-  touched file(``FileChangeIno``) or not.
-  """
-  __slots__ = ()
-
-  def MatchTouchedFile(self, touched_file):
-    """Determines whether a touched_file matches this crashed file or not.
-
-    Args:
-      touched_file (FileChangeInfo): touched file to examine.
-
-    Returns:
-      Boolean indicating whether it is a match or not.
-    """
-    return crash_util.IsSameFilePath(self.value, touched_file.new_path)
-
-  def __str__(self):  # pragma: no cover
-    return '%s(value = %s)' % (self.__class__.__name__, self.value)
+class CrashedFile(CrashedGroup):
+  """Represents a crashed file in stacktrace."""
+  pass
 
 
 class TouchCrashedFileMetaFeature(MetaFeature):
-  """MetaFeature that wrapps three ``Feature``s.
+  """MetaFeature that wraps three ``Feature``s.
 
   This feature returns ``MetaFeatureValue``, which wraps the ``FeatureValue``s
   of ``MinDistanceFeature``, ``TopFrameIndexFeature`` and
@@ -87,9 +70,20 @@ class TouchCrashedFileMetaFeature(MetaFeature):
         touch_crashed_file_feature.name: touch_crashed_file_feature
     })
 
-  def CrashedFileFactory(self, frame):
+  def CrashedGroupFactory(self, frame):
     """Factory function to create ``CrashedFile``."""
-    return CrashedFile(frame.file_path if frame else None)
+    return CrashedFile(frame.file_path) if frame.file_path else None
+
+  def Match(self, crashed_file, touched_file):
+    """Determines whether a touched_file matches this crashed file or not.
+
+    Args:
+      touched_file (FileChangeInfo): touched file to examine.
+
+    Returns:
+      Boolean indicating whether it is a match or not.
+    """
+    return crash_util.IsSameFilePath(crashed_file.value, touched_file.new_path)
 
   @property
   def name(self):
@@ -113,7 +107,7 @@ class TouchCrashedFileMetaFeature(MetaFeature):
     # about the frames and callstack priority of that crashed file in
     # stacktrace.
     dep_to_grouped_frame_infos = crash_util.IndexFramesWithCrashedGroup(
-        report.stacktrace, self.CrashedFileFactory, report.dependencies)
+        report.stacktrace, self.CrashedGroupFactory, report.dependencies)
     features_given_report = {name: feature(report)
                              for name, feature in self.iteritems()}
 
@@ -132,7 +126,8 @@ class TouchCrashedFileMetaFeature(MetaFeature):
       """
       grouped_frame_infos = dep_to_grouped_frame_infos.get(suspect.dep_path, {})
       matches = crash_util.MatchSuspectWithFrameInfos(suspect,
-                                                      grouped_frame_infos)
+                                                      grouped_frame_infos,
+                                                      self.Match)
 
       return MetaFeatureValue(
           self.name, {name: fx(suspect, matches)
