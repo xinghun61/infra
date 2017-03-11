@@ -332,6 +332,16 @@ class MonitorTryJobPipeline(BasePipeline):
       default_pipeline_wait_seconds, timeout_hours, backoff_time,
       pipeline_id=None):
     """Updates the TryJobData entities with status from buildbucket."""
+    # Coercing non-strings and None-ables in case they come as strings.
+    try_job_type = int(try_job_type)
+    deadline = float(deadline)
+    start_time = None if start_time == 'None' else start_time
+    already_set_started = already_set_started == 'True'
+    error_count = int(error_count)
+    max_error_times = int(max_error_times)
+    default_pipeline_wait_seconds = int(default_pipeline_wait_seconds)
+    timeout_hours = int(timeout_hours)
+    backoff_time = int(backoff_time)
     self.last_params = {
         'try_job_id': try_job_id,
         'try_job_type': try_job_type,
