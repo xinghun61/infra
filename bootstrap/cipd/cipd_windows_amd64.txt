@@ -5,5 +5,8 @@
 # Instructions for building packages can be found in the "doc/" subdirectory
 # under that package name.
 
+# Proto3 Protocol Buffers generator (protoc).
+infra/tools/protoc/windows  protobuf_version:v3.2.0
+
 # LogDog tool.
 infra/tools/luci/logdog/logdog/windows-amd64  git_revision:01e09c6fb5e45dd38c38cf43a5c5e46f826a3fd1
