@@ -25,8 +25,8 @@ except ImportError:
 TAGS_URL = 'https://api.github.com/repos/google/protobuf/releases/tags/'
 
 
-def CIPD_TEMPLATE((cipd_os, cipd_arch)):
-  return 'infra/tools/protoc/%s-%s' % (cipd_os, cipd_arch)
+def CIPD_TEMPLATE(cipd_platform):
+  return 'infra/tools/protoc/%s' % (cipd_platform,)
 
 
 def confirm(prompt, decline, exit_code=0):
@@ -35,16 +35,13 @@ def confirm(prompt, decline, exit_code=0):
     sys.exit(exit_code)
 
 
-# list of (cipd_os, cipd_arch)
+# list of (cipd_platform, github_version)
 SUPPORTED_PLATFORMS = [
-  ('linux', 'amd64'),
-  ('mac', 'amd64'),
+  ('linux-amd64', 'linux-x86_64'),
+  ('mac-amd64', 'osx-x86_64'),
+  # no 64-bit version, but 32-bit works on amd64 just fine.
+  ('windows', 'win32'),
 ]
-
-
-CIPD_CLIENT = 'cipd'
-if sys.platform == 'win32':
-  CIPD_CLIENT += '.bat'
 
 
 FNULL = open(os.devnull, 'w')
@@ -52,36 +49,22 @@ FNULL = open(os.devnull, 'w')
 
 def find_missing_platforms(vers):
   ret = []
-  for platform in SUPPORTED_PLATFORMS:
+  for platform, gh_vers in SUPPORTED_PLATFORMS:
     pkg = CIPD_TEMPLATE(platform)
     tag = 'protobuf_version:v'+vers
-    p = subprocess.Popen([CIPD_CLIENT, 'resolve', pkg, '-version', tag],
+    p = subprocess.Popen(['cipd', 'resolve', pkg, '-version', tag],
                          stdout=FNULL, stderr=FNULL)
     if p.wait() != 0:
       status = 'Missing'
-      ret.append(platform)
+      ret.append((platform, gh_vers))
     else:
       status = 'Already uploaded'
     logging.info('  %s@%s -- %s.', pkg, tag, status)
   return ret
 
 
-def github_platform((cipd_os, cipd_arch)):
-  # NOTE: windows seems to be represented by 'win32' without any arch... skip
-  # that for now since we don't do infra.git development on windows.
-  gh_os = {
-    'linux': 'linux',
-    'mac': 'osx',
-  }[cipd_os]
-  gh_arch = {
-    '386': 'x86_32',
-    'amd64': 'x86_64',
-  }[cipd_arch]
-  return gh_os, gh_arch
-
-
 @contextlib.contextmanager
-def do_download(gh_asset):
+def do_download(gh_asset, for_windows):
   with tempfile.NamedTemporaryFile() as zip_file:
     url = gh_asset['browser_download_url']
     LOGGER.info('fetching %r', url)
@@ -98,7 +81,7 @@ def do_download(gh_asset):
       zf = zipfile.ZipFile(zip_file)
       for zi in zf.filelist:
         zf.extract(zi, tdir)
-        if (zi.external_attr >> 16) & 0111:
+        if not for_windows and (zi.external_attr >> 16) & 0111:
           path = os.path.join(tdir, zi.filename)
           os.chmod(path, os.stat(path).st_mode | 0111)
       zf.extractall(tdir)
@@ -111,12 +94,10 @@ def do_download(gh_asset):
       shutil.rmtree(tdir, onerror=_log_err)
 
 
-def repackage(gh_release, version, platform, dry_run, inspect):
-  gh_platform = github_platform(platform)
-
-  name = 'protoc-%(vers)s-%(gh_os)s-%(gh_arch)s.zip' % {
-    'vers': version, 'gh_os': gh_platform[0], 'gh_arch': gh_platform[1],
-  }
+def repackage(gh_release, version, platform, gh_vers, dry_run, inspect):
+  name = 'protoc-%s-%s.zip' % (version, gh_vers)
+  for_windows = platform == 'windows'
+  exe_sfx = '.exe' if for_windows else ''
 
   asset = None
   for a in gh_release['assets']:
@@ -127,15 +108,15 @@ def repackage(gh_release, version, platform, dry_run, inspect):
     LOGGER.error('unable to find asset for %r', name)
     sys.exit(1)
 
-  with do_download(asset) as pkg_dir:
+  with do_download(asset, for_windows) as pkg_dir:
     LOGGER.info('rearranging ')
     bin_dir = os.path.join(pkg_dir, 'bin')
-    shutil.move(os.path.join(bin_dir, 'protoc'), pkg_dir)
+    shutil.move(os.path.join(bin_dir, 'protoc'+exe_sfx), pkg_dir)
     os.remove(os.path.join(pkg_dir, 'readme.txt'))
     os.rmdir(bin_dir)
 
     args = [
-      CIPD_CLIENT, 'create',
+      'cipd', 'create',
       '-in', pkg_dir,
       '-name', CIPD_TEMPLATE(platform),
       '-tag', 'protobuf_version:v'+version,
@@ -189,11 +170,14 @@ def main():
   print gh_release['body']
   print
   print 'VERSION: %s' % gh_release['name']
+  for platform, _ in missing:
+    print '  %s' % (platform,)
 
   confirm('Proceed?', 'update aborted')
 
-  for platform in missing:
-    repackage(gh_release, opts.version, platform, opts.dry_run, opts.confirm)
+  for platform, gh_vers in missing:
+    repackage(gh_release, opts.version, platform, gh_vers,
+              opts.dry_run, opts.confirm)
   return 0
 
 
