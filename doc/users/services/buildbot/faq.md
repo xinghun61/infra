@@ -8,11 +8,18 @@
 
 1. Determine the host machine for your buildbot master.
    Refer to [go/chrome-infra-mastermap] for examples.
-   Do not put an internal master together with public ones, otherwise public
-   slaves with possibly untrusted code will have network access to your slaves.
+   * Do not put an internal master together with public ones. Otherwise public slaves with possibly untrusted code will have network access to your slaves.
    Typical safe choices for new chrome infra clients: `master3` (public) or
    `master7` (internal).
-1. Choose a master name, e.g. `master.client.x`.
+   * If there is mention of a master${num}**a** machine, prefer that instead of master${num}.  Same for master#**b**, etc.
+1. Choose a master name, e.g. `master.client.x`.  The only valid names after the master.__ section are:
+   * `chromium`
+   * `chromiumos`
+   * `chromeos`
+   * `client`
+   * `tryserver`
+   * `internal`
+   * `official`
 1. File a [slave-request ticket] early.  Include master's vlan (m3, m7 or so),
    and slave types (GCE or VMs).
 1. Create a new master directory in
@@ -31,7 +38,7 @@
    If you are creating an internal master, you'll need to run
    `build_internal/scripts/tools/mastermap_internal.py` instead.
    Put the chosen ports into `builders.pyl` and regenerate the configuration.
-1. Add your new master to the list of masters in [masters_test.py]:
+1. Add your new master to the list of masters in [build/tests/masters_test.py]:
    `'<master-name>': '<master-class-name>',`,
    so the master is included in presubmit checks.
 1. If you were provided with slaves, update builders.pyl.
