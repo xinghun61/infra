@@ -73,11 +73,14 @@ class BanSpammerTask(jsonfeed.InternalTask):
     issue_ids = self.services.issue.GetIssueIDsReportedByUser(mr.cnxn,
         spammer_id)
 
-    issues = self.services.issue.GetIssues(mr.cnxn, issue_ids)
+    issues = []
 
-    # Mark them as spam/ham in bulk.
-    self.services.spam.RecordManualIssueVerdicts(mr.cnxn, self.services.issue,
-        issues, reporter_id, is_spammer)
+    if len(issue_ids) > 0:
+      issues = self.services.issue.GetIssues(mr.cnxn, issue_ids)
+
+      # Mark them as spam/ham in bulk.
+      self.services.spam.RecordManualIssueVerdicts(mr.cnxn, self.services.issue,
+          issues, reporter_id, is_spammer)
 
     # Get all of the comments
     comments = self.services.issue.GetCommentsByUser(mr.cnxn, spammer_id)
