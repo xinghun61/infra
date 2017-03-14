@@ -49,14 +49,17 @@ def collect_evidence(master_directory, connection_timeout=30,
   evidence['buildbot_is_running'] = master.buildbot_is_running(master_directory)
 
   if evidence['buildbot_is_running']:
-    accepting_builds, current_running_builds = master.get_buildstate(
+    accepting_builds, current_running_builds = master.get_varz(
         master_directory, timeout=connection_timeout)
     evidence['accepting_builds'] = accepting_builds
 
     if builder_filters:
-      current_running_builds = set(b for b in current_running_builds
-                                   if any(f.match(b[0])
-                                      for f in builder_filters))
+      current_running_builds = {
+          b: c for b, c in current_running_builds.iteritems()
+          if any(f.match(b) for f in builder_filters)}
+
+    # Add up the total number of running builds.
+    current_running_builds = sum(current_running_builds.itervalues())
     evidence['current_running_builds'] = current_running_builds
   return evidence
 
@@ -150,13 +153,13 @@ def construct_pattern_matcher(boot_timeout_sec=None, drain_timeout_sec=None,
     if not data['buildbot_is_running']:
       return 'offline'
     if (data['accepting_builds'] is None or
-        data['current_running_builds'] is None):
+        data.get('current_running_builds') is None):
       if data['last_boot'] > (data['now'] - boot_timeout_sec):
         return 'starting'
       return 'crashed'
     if data['accepting_builds']:
       return 'running'
-    if len(data['current_running_builds']) <= drain_build_thresh:
+    if data.get('current_running_builds', 0) <= drain_build_thresh:
       return 'drained'
     if data['last_no_new_builds'] > (data['now'] - drain_timeout_sec):
       return 'draining'

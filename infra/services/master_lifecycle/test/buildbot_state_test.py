@@ -19,7 +19,7 @@ class TestBuildbotState(auto_stub.TestCase):
     self.last_no_new_builds = 1100
     self.buildbot_is_running = True
     self.accepting_builds = True
-    self.current_running_builds = set(('test', d) for d in xrange(10))
+    self.current_running_builds = {'test': 10, 'other': 5}
     self.desired_buildbot_state = 'running'
     self.desired_transition_time = 900
     self.builder_filters = None
@@ -32,14 +32,14 @@ class TestBuildbotState(auto_stub.TestCase):
       return self.last_no_new_builds
     def buildbot_is_running_handler(*_args):
       return self.buildbot_is_running
-    def buildstate_handler(*_args, **_kwargs):
+    def varz_handler(*_args, **_kwargs):
       return self.accepting_builds, self.current_running_builds
 
     self.mock(timestamp, 'utcnow_ts', utcnow_handler)
     self.mock(master, 'get_last_boot', last_boot_handler)
     self.mock(master, 'get_last_no_new_builds', last_no_new_builds_handler)
     self.mock(master, 'buildbot_is_running', buildbot_is_running_handler)
-    self.mock( master, 'get_buildstate', buildstate_handler)
+    self.mock( master, 'get_varz', varz_handler)
 
   def _get_evidence(self):
     evidence = buildbot_state.collect_evidence(
@@ -86,17 +86,17 @@ class TestBuildbotState(auto_stub.TestCase):
 
   def testBuildbotIsDrainedNoBuilds(self):
     self.accepting_builds = False
-    self.current_running_builds = set()
+    self.current_running_builds = {}
     self.utcnow = self.last_no_new_builds + 4 * 60
     state = self._get_state()['buildbot']
     self.assertEqual(state, 'drained')
 
   def testBuildbotIsDrainingWithBuilderFilters(self):
     self.accepting_builds = False
-    self.current_running_builds = set([
-      ('irrelevant builder', 1),
-      ('my special builder', 1337),
-      ])
+    self.current_running_builds = {
+        'irrelevant builder': 1,
+        'my special builder': 1337,
+        }
     self.builder_filters = [
         re.compile('.*special.*'),
         ]
@@ -106,9 +106,9 @@ class TestBuildbotState(auto_stub.TestCase):
 
   def testBuildbotIsDrainedWithBuilderFiltersNoBuilds(self):
     self.accepting_builds = False
-    self.current_running_builds = set([
-      ('irrelevant builder', 1),
-      ])
+    self.current_running_builds = {
+        'irrelevant builder': 1,
+        }
     self.builder_filters = [
         re.compile('.*special.*'),
         ]

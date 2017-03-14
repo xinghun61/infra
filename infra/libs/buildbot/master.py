@@ -160,22 +160,19 @@ def _make_master_json_call(directory, endpoint, timeout):
   return None
 
 
-def get_buildstate(directory, timeout=30):
+def get_varz(directory, timeout=30):
   """Determine if the master accepts builds and how many builds are running.
 
   *** This only works for masters running on localhost.***
   """
-  json_data = _make_master_json_call(directory, 'buildstate', timeout)
+  json_data = _make_master_json_call(directory, 'varz', timeout)
   if json_data is not None:
     accepting_builds = json_data.get('accepting_builds', False)
-    builders = json_data.get('builders', [])
-    running_builds = set()
-    for b in builders:
-      buildername = b.get('builderName')
-      if not buildername:
-        continue
-      for buildnumber in b.get('currentBuilds'):
-        running_builds.add((buildername, buildnumber))
+    running_builds = {}
+    for buildername, state in json_data.get('builders', {}).iteritems():
+      current_builds = state.get('current_builds', 0)
+      if current_builds:
+        running_builds[buildername] = current_builds
     return accepting_builds, running_builds
   return None, None
 
