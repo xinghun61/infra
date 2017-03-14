@@ -69,24 +69,28 @@ class MetaWeight(MetaDict):
   """Dict-like class mapping features in ``Metafeature`` to their weights."""
 
   def IsZero(self, epsilon):
-    """A MetaWeight is zero only when all the sub weights are zeros."""
+    if not self._value:
+      return True
+
     return all(weight.IsZero(epsilon) for weight in self.itervalues())
 
   def DropZeroWeights(self, epsilon=0.):
     """Drops all zero weights."""
+    # Make all sub meta weights drop their zero weights.
+    for weight in self.itervalues():
+      if not weight.is_element:
+        weight.DropZeroWeights(epsilon=epsilon)
+
     self._value = {name: weight for name, weight in self.iteritems()
-                  if not weight.IsZero(epsilon)}
+                   if not weight.IsZero(epsilon)}
 
   def __len__(self):
     return len(self._value)
 
   def __mul__(self, meta_feature):
     """``MetaWeight`` can multiply with ``MetaFeatureValue``."""
-    assert len(self) == len(meta_feature), Exception(
-        'MetaWeight can only multiply with ``MetaFeatureValue`` with the '
-        'same length')
-
-    # MetaWeight is a dense representation of a sparse array.
+    # MetaWeight is a dense representation of a sparse array. So MetaWeight and
+    # MetaFeature don't necessarily have the same length.
     return math.fsum(meta_feature[name] * weight
                      for name, weight in self.iteritems())
 

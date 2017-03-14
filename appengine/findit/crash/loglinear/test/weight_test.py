@@ -60,12 +60,12 @@ class MetaWeightTest(unittest.TestCase):
                      MetaFeatureValue('f', {'f1': 2., 'f2': 1.}), 2.)
     self.assertEqual(MetaFeatureValue('f', {'f1': 0.8, 'f2': 0.4}) *
                      MetaWeight({'f1': Weight(2.), 'f2': Weight(1.)}), 2.)
-    with self.assertRaisesRegexp(Exception,
-                                 ('MetaWeight can only multiply with '
-                                  '``MetaFeatureValue`` '
-                                  'with the same length')):
-      dummy_result = MetaWeight({'f1': 0.8, 'f2': 0.4}) * MetaFeatureValue(
-          'f', {'f1': 2.})
+
+    self.assertEqual(
+        MetaWeight({'f1': Weight(0.8), 'f3': Weight(0.0)}) *
+        MetaFeatureValue('f', {'f1': Weight(2.), 'f2': Weight(9),
+                               'f3': Weight(10)}),
+        1.6)
 
   def testIter(self):
     """Tests overloading operator ``__iter__``."""
