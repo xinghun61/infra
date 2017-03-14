@@ -52,7 +52,7 @@ EXE_SFX = '.exe' if sys.platform == 'win32' else ''
 GIT_EXE = 'git.bat' if sys.platform == 'win32' else 'git'
 
 # Pinned version of Go toolset to download. See http://golang.org/dl/.
-TOOLSET_VERSION = 'go1.7.5'
+TOOLSET_VERSION = 'go1.8'
 
 # Platform and toolset dependent portion of a download URL.
 # See NATIVE_DOWNLOAD_URL_PREFIX.

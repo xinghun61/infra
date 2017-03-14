@@ -58,10 +58,11 @@ func TestInitFlags(t *testing.T) {
 		flags := flag.NewFlagSet("flags", flag.ContinueOnError)
 
 		Convey("nil flag functions work fine", func() {
-			sameflags := flag.NewFlagSet("flags", flag.ContinueOnError)
 			cmd := reg.new("cmd", "short", "long", nil, nil)
 			cmd.InitFlags(flags)
-			So(flags, ShouldResemble, sameflags)
+			flagCount := 0
+			flags.VisitAll(func(f *flag.Flag) { flagCount++ })
+			So(flagCount, ShouldEqual, 0)
 		})
 
 		Convey("if new flags are defined", func() {
