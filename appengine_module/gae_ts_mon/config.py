@@ -183,11 +183,14 @@ def initialize(app=None, is_enabled_fn=None, cron_module='default',
     logging.info('Using debug monitor')
     interface.state.global_monitor = monitors.DebugMonitor()
   else:
-    logging.info('Using pubsub monitor %s/%s', shared.PUBSUB_PROJECT,
-                 shared.PUBSUB_TOPIC)
-    interface.state.global_monitor = monitors.PubSubMonitor(
-        monitors.AppengineCredentials(), shared.PUBSUB_PROJECT,
-        shared.PUBSUB_TOPIC)
+    logging.info('Using https monitor %s with %s', shared.PRODXMON_ENDPOINT,
+                 shared.PRODXMON_SERVICE_ACCOUNT_EMAIL)
+    interface.state.global_monitor = monitors.HttpsMonitor(
+        shared.PRODXMON_ENDPOINT,
+        monitors.DelegateServiceAccountCredentials(
+            shared.PRODXMON_SERVICE_ACCOUNT_EMAIL,
+            monitors.AppengineCredentials()))
+    interface.state.use_new_proto = True
 
   interface.register_global_metrics([shared.appengine_default_version])
   interface.register_global_metrics_callback(

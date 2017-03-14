@@ -11,8 +11,10 @@ from google.appengine.ext import ndb
 from infra_libs.ts_mon.common import metrics
 
 REGION = 'appengine'
-PUBSUB_PROJECT = 'chrome-infra-mon-pubsub'
-PUBSUB_TOPIC = 'monacq'
+PRODXMON_ENDPOINT = 'https://prodxmon-pa.googleapis.com/v1:insert'
+PRODXMON_SERVICE_ACCOUNT_EMAIL = (
+    'app-engine-metric-publishers@'
+    'prodx-mon-chrome-infra.google.com.iam.gserviceaccount.com')
 INSTANCE_NAMESPACE = 'ts_mon_instance_namespace'
 # Duration of inactivity to consider an instance dead.
 INSTANCE_EXPIRE_SEC = 30 * 60

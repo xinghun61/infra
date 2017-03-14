@@ -37,7 +37,7 @@ class InitializeTest(testing.AppengineTestCase):
     mock.patch('infra_libs.ts_mon.common.interface.state',
         new=self.mock_state).start()
 
-    mock.patch('infra_libs.ts_mon.common.monitors.PubSubMonitor',
+    mock.patch('infra_libs.ts_mon.common.monitors.HttpsMonitor',
                autospec=True).start()
 
   def tearDown(self):
@@ -58,12 +58,12 @@ class InitializeTest(testing.AppengineTestCase):
 
     config.initialize(is_local_unittest=False)
 
-    self.assertEquals(1, monitors.PubSubMonitor.call_count)
+    self.assertEquals(1, monitors.HttpsMonitor.call_count)
 
   def test_sets_monitor_dev(self):
     config.initialize(is_local_unittest=False)
 
-    self.assertFalse(monitors.PubSubMonitor.called)
+    self.assertFalse(monitors.HttpsMonitor.called)
     self.assertIsInstance(self.mock_state.global_monitor, monitors.DebugMonitor)
 
   def test_instruments_app(self):
@@ -418,7 +418,7 @@ class InstrumentEndpointTest(testing.EndpointsTestCase):
     mock.patch('infra_libs.ts_mon.common.interface.state',
         new=self.mock_state).start()
 
-    mock.patch('infra_libs.ts_mon.common.monitors.PubSubMonitor',
+    mock.patch('infra_libs.ts_mon.common.monitors.HttpsMonitor',
                autospec=True).start()
 
   def tearDown(self):
