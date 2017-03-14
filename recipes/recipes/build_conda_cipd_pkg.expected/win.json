@@ -107,7 +107,7 @@
   },
   {
     "cmd": [
-      "cipd",
+      "cipd.bat",
       "pkg-build",
       "-in",
       "[START_DIR]\\conda_staging_dir",
@@ -133,7 +133,7 @@
   },
   {
     "cmd": [
-      "cipd",
+      "cipd.bat",
       "pkg-register",
       "[START_DIR]\\conda_python.cipd",
       "-json-output",
