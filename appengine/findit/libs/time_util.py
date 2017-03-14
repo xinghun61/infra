@@ -9,6 +9,11 @@ from datetime import timedelta
 import pytz
 
 
+def GetPSTNow():  # pragma: no cover
+  """Returns datetime.now but in pst timezone. This is to mock for testing."""
+  return datetime.now(pytz.timezone('US/Pacific'))
+
+
 def GetUTCNow():  # pragma: no cover.
   """Returns the datetime.utcnow. This is to mock for testing."""
   return datetime.utcnow()
