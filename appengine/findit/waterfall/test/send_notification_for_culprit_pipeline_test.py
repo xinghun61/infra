@@ -20,9 +20,9 @@ _MOCKED_BUILD_END_TIME = datetime.datetime(2016, 06, 28, 12, 40, 00)
 
 class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
-  def _MockRietveld(self, rietveld_requests):
-    def Mocked_Rietveld_PostMessage(_, url, message):
-      rietveld_requests.append((url, message))
+  def _MockRietveld(self, requests):
+    def Mocked_Rietveld_PostMessage(_, change_id, message):
+      requests.append((change_id, message))
       return True
     self.mock(Rietveld, 'PostMessage', Mocked_Rietveld_PostMessage)
 
@@ -110,10 +110,24 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(pipeline.run('m', 'b52', 52, 'chromium', 'r5', False))
     self.assertEqual(0, len(rietveld_requests))
 
+  def testShouldNotSendNotificationIfUnknownReviewServer(self):
+    rietveld_requests = []
+    self._MockRietveld(rietveld_requests)
+    self._MockGitRepository('https://unknown.codeReview.server/123')
+    self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
+    self._MockBuildEndTime()
+    culprit = WfCulprit.Create('chromium', 'r5', 123)
+    culprit.builds.append(['m', 'b51', 51])
+    culprit.put()
+
+    pipeline = SendNotificationForCulpritPipeline()
+    self.assertFalse(pipeline.run('m', 'b52', 52, 'chromium', 'r5', False))
+    self.assertEqual(0, len(rietveld_requests))
+
   def testSendNotificationSuccess(self):
     rietveld_requests = []
     self._MockRietveld(rietveld_requests)
-    self._MockGitRepository('url')
+    self._MockGitRepository('https://codereview.chromium.org/123')
     self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
     self._MockBuildEndTime()
     culprit = WfCulprit.Create('chromium', 'r6', 123)
@@ -127,7 +141,7 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   def testDontSendNotificationIfShouldNot(self):
     rietveld_requests = []
     self._MockRietveld(rietveld_requests)
-    self._MockGitRepository('url')
+    self._MockGitRepository('https://codeReview.chromium.org/123')
     self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
     self._MockBuildEndTime()
     culprit = WfCulprit.Create('chromium', 'r7', 123)

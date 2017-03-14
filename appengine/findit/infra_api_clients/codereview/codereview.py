@@ -3,16 +3,23 @@
 # found in the LICENSE file.
 
 
-# TODO(http://crbug.com/660462): this needs to actually do something.
-# pylint: disable=E0711, W0613, R0201
-class CodeReview(object):  # pragma: no cover
-  """An interface to interact with code review."""
+class CodeReview(object):  # pragma: no cover.
+  """Abstract class to interact with code review."""
 
-  def PostMessage(self, codereview_url, message):
-    """Posts the given message to the CL codereview of the specified url.
+  def __init__(self, server_hostname):
+    """
+    Args:
+      server_hostname (str): The hostname of the codereview server, eg:
+          codereview.chromium.org or chromium-review.googlesource.com.
+    """
+    self._server_hostname = server_hostname
+
+  def PostMessage(self, change_id, message):
+    """Posts the given message to the CL codereview of the given change id.
 
     Args:
-      codereview_url(str): The url to a CL codereview.
+      change_id (str or int): The change id of the CL on Gerrit or the issue
+          number of the CL on Rietveld.
       message(str): The message to be posted to the codereview.
     """
-    raise NotImplemented()
+    raise NotImplementedError()

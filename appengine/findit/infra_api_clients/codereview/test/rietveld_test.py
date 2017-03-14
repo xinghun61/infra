@@ -40,33 +40,27 @@ class RietveldTest(testing.AppengineTestCase):
   def setUp(self):
     super(RietveldTest, self).setUp()
     self.http_client = DummyHttpClient()
-    self.rietveld = Rietveld()
+    self.server_hostname = 'server.host.name'
+    self.rietveld = Rietveld(self.server_hostname)
     self.rietveld.HTTP_CLIENT = self.http_client
 
   def testGetXsrfTokenSuccess(self):
-    rietveld_url = 'https://test'
-    self.http_client.SetResponse('%s/xsrf_token' % rietveld_url, (200, 'abc'))
-    self.assertEqual('abc', self.rietveld._GetXsrfToken(rietveld_url))
+    self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
+                                 (200, 'abc'))
+    self.assertEqual('abc', self.rietveld._GetXsrfToken())
     self.assertEqual(1, len(self.http_client.requests))
     _, _, headers = self.http_client.requests[0]
     self.assertTrue('X-Requesting-XSRF-Token' in headers)
 
   def testGetXsrfTokenFailure(self):
-    rietveld_url = 'https://test'
-    self.http_client.SetResponse('%s/xsrf_token' % rietveld_url, (302, 'login'))
-    self.assertIsNone(self.rietveld._GetXsrfToken(rietveld_url))
+    self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
+                                 (302, 'login'))
+    self.assertIsNone(self.rietveld._GetXsrfToken())
 
-  def testGetRietveldUrlAndIssueNumber(self):
-    cases = {
-        'http://abc/123': '123',
-        'https://abc/456/': '456',
-        'http://abc/789/diff': '789',
-    }
-    for issue_url, expected_issue_number in cases.iteritems():
-      rietveld_url, issue_number = self.rietveld._GetRietveldUrlAndIssueNumber(
-          issue_url)
-      self.assertEqual('https://abc', rietveld_url)
-      self.assertEqual(expected_issue_number, issue_number)
+  def testEncodeMultipartFormDataOfEmptyFormFields(self):
+    content_type, body = self.rietveld._EncodeMultipartFormData({})
+    self.assertIsNone(content_type)
+    self.assertIsNone(body)
 
   def testEncodeMultipartFormData(self):
     content_type, body = self.rietveld._EncodeMultipartFormData({'a':'b'})
@@ -83,28 +77,31 @@ class RietveldTest(testing.AppengineTestCase):
     self.assertEqual(expected_body, body)
 
   def testPostMessageSuccess(self):
-    rietveld_url = 'https://test'
-    issue_url = '%s/123' % rietveld_url
-    message_publish_url = '%s/publish' % issue_url
-    self.http_client.SetResponse('%s/xsrf_token' % rietveld_url, (200, 'abc'))
+    change_id = 123
+    message_publish_url = 'https://%s/%s/publish' % (
+        self.server_hostname, change_id)
+    self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
+                                 (200, 'abc'))
     self.http_client.SetResponse(message_publish_url, (200, 'OK'))
-    self.assertTrue(self.rietveld.PostMessage(issue_url, 'message'))
+    self.assertTrue(self.rietveld.PostMessage(change_id, 'message'))
     self.assertEqual(2, len(self.http_client.requests))
 
   def testPostMessageFailOnXsrfToken(self):
-    rietveld_url = 'https://test'
-    issue_url = '%s/123' % rietveld_url
-    message_publish_url = '%s/publish' % issue_url
-    self.http_client.SetResponse('%s/xsrf_token' % rietveld_url, (302, 'login'))
+    change_id = 123
+    message_publish_url = 'https://%s/%s/publish' % (
+        self.server_hostname, change_id)
+    self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
+                                 (302, 'login'))
     self.http_client.SetResponse(message_publish_url, (200, 'OK'))
-    self.assertFalse(self.rietveld.PostMessage(issue_url, 'message'))
+    self.assertFalse(self.rietveld.PostMessage(change_id, 'message'))
     self.assertEqual(1, len(self.http_client.requests))
 
   def testPostMessageFailOnPublish(self):
-    rietveld_url = 'https://test'
-    issue_url = '%s/123' % rietveld_url
-    message_publish_url = '%s/publish' % issue_url
-    self.http_client.SetResponse('%s/xsrf_token' % rietveld_url, (302, 'login'))
-    self.http_client.SetResponse(message_publish_url, (429, 'Error'))
-    self.assertFalse(self.rietveld.PostMessage(issue_url, 'message'))
-    self.assertEqual(1, len(self.http_client.requests))
+    change_id = 123
+    message_publish_url = 'https://%s/%s/publish' % (
+        self.server_hostname, change_id)
+    self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
+                                 (200, 'abc'))
+    self.http_client.SetResponse(message_publish_url, (404, 'Error'))
+    self.assertFalse(self.rietveld.PostMessage(change_id, 'message'))
+    self.assertEqual(2, len(self.http_client.requests))

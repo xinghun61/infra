@@ -11,7 +11,7 @@ from google.appengine.ext import ndb
 from common.pipeline_wrapper import BasePipeline
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
-from infra_api_clients.codereview.rietveld import Rietveld
+from infra_api_clients.codereview import codereview_util
 from libs import time_util
 from model import analysis_status as status
 from model.wf_analysis import WfAnalysis
@@ -69,17 +69,18 @@ def _UpdateNotificationStatus(repo_name, revision, new_status):
 
 def _SendNotificationForCulprit(
     repo_name, revision, commit_position, code_review_url):
+  codereview = codereview_util.GetCodeReviewForReview(code_review_url)
+  change_id = codereview_util.GetChangeIdForReview(code_review_url)
   sent = False
-  if code_review_url:
+  if codereview and change_id:
     # Occasionally, a commit was not uploaded for code-review.
     culprit = WfCulprit.Get(repo_name, revision)
-    rietveld = Rietveld()
     message = textwrap.dedent("""
     FYI: Findit identified this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
     https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
         commit_position or revision, culprit.key.urlsafe())
-    sent = rietveld.PostMessage(code_review_url, message)
+    sent = codereview.PostMessage(change_id, message)
   else:
     logging.error('No code-review url for %s/%s', repo_name, revision)
 

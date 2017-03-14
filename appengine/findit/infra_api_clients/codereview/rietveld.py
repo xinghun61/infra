@@ -27,37 +27,27 @@ class Rietveld(codereview.CodeReview):
   """The implementation of CodeReview interface for Rietveld."""
   HTTP_CLIENT = HttpClientAppengine(follow_redirects=False)
 
-  def _GetXsrfToken(self, rietveld_url):
+  def __init__(self, server_hostname):
+    super(Rietveld, self).__init__(server_hostname)
+
+  def _GetXsrfToken(self):
     """Returns the xsrf token for follow-up requests."""
     headers = {
         'X-Requesting-XSRF-Token': '1',
         'Accept': 'text/plain',
     }
-    url = '%s/xsrf_token' % rietveld_url
+    url = 'https://%s/xsrf_token' % self._server_hostname
     status_code, xsrf_token = self.HTTP_CLIENT.Post(
         url, data=None, headers=headers)
     if status_code != 200:
-      logging.error('Failed to get xsrf token from %s', rietveld_url)
+      logging.error('Failed to get xsrf token from %s', url)
       xsrf_token = None
     return xsrf_token
 
-  def _GetRietveldUrlAndIssueNumber(self, issue_url):
-    """Parses the given Rietveld issue url.
-
-    Args:
-      issue_url(str): The url to an issue on Rietveld.
-    Returns:
-      (rietveld_url, issue_number)
-      rietveld_url(str): The root url of the Rietveld app.
-      issue_number(str): The issue number.
-    """
-    u = urlparse.urlparse(issue_url)
-    rietveld_url = 'https://%s' % u.netloc  # Enforces https.
-    issue_number = _RIETVELD_ISSUE_NUMBER_RE.match(u.path).group(1)
-    return rietveld_url, issue_number
-
   def _EncodeMultipartFormData(self, fields):
     """Encodes form fields for multipart/form-data"""
+    if not fields:
+      return None, None
     BOUNDARY = '-F-I-N-D-I-T-M-E-S-S-A-G-E-'
     CRLF = '\r\n'
     lines = []
@@ -72,25 +62,42 @@ class Rietveld(codereview.CodeReview):
     content_type = 'multipart/form-data; boundary=%s' % BOUNDARY
     return content_type, body
 
-  def PostMessage(self, issue_url, message):
-    rietveld_url, issue_number = self._GetRietveldUrlAndIssueNumber(issue_url)
-    url = '%s/%s/publish' % (rietveld_url, issue_number)
-    xsrf_token = self._GetXsrfToken(rietveld_url)
+  def _SendPostRequest(self, url_path, form_fields):
+    """Sends a post request with xsrf if needed and returns the response.
+
+    A xsrf token will be automatically added.
+
+    Args:
+      url_path (str): The url path to send the post reqeust to, eg:
+          '/1234/publish'.
+      form_fields (dict): A dict of the form fields for the post request.
+
+    Returns:
+      (status_code, content)
+      status_code (int): The http status code of the response.
+      content (str): The content of the response.
+    """
+    url = 'https://%s%s' % (self._server_hostname, url_path)
+    form_fields = form_fields or {}
+    xsrf_token = self._GetXsrfToken()
     if not xsrf_token:
-      return False
+      return 403, 'failed to get a xsrf token'
+    form_fields['xsrf_token'] = xsrf_token
+    headers = {
+        'Accept': 'text/plain',
+    }
+    content_type, body = self._EncodeMultipartFormData(form_fields)
+    headers['Content-Type'] = content_type
+    return self.HTTP_CLIENT.Post(url, data=body, headers=headers)
+
+  def PostMessage(self, change_id, message):
+    url_path = '/%s/publish' % change_id
     form_fields = {
-        'xsrf_token': xsrf_token,
         'message': message,
         'message_only': 'True',
         'add_as_reviewer': 'False',
         'send_mail': 'True',
         'no_redirect': 'True',
     }
-    content_type, body = self._EncodeMultipartFormData(form_fields)
-    headers = {
-        'Content-Type': content_type,
-        'Accept': 'text/plain',
-    }
-    status_code, content = self.HTTP_CLIENT.Post(
-        url, data=body, headers=headers)
+    status_code, content = self._SendPostRequest(url_path, form_fields)
     return status_code == 200 and content == 'OK'
