@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 import textwrap
 
 from testing_utils import testing
@@ -105,3 +106,19 @@ class RietveldTest(testing.AppengineTestCase):
     self.http_client.SetResponse(message_publish_url, (404, 'Error'))
     self.assertFalse(self.rietveld.PostMessage(change_id, 'message'))
     self.assertEqual(2, len(self.http_client.requests))
+
+  @mock.patch.object(Rietveld, '_SendPostRequest')
+  def testCreateRevertSuccess(self, mocked_SendPostRequest):
+    mocked_SendPostRequest.side_effect = [(200, '1234')]
+    change_id = self.rietveld.CreateRevert('reason', 1222, 20001)
+    self.assertEqual('1234', change_id)
+    mocked_SendPostRequest.assert_called_once_with(
+        '/api/1222/20001/revert', {'revert_reason': 'reason', 'revert_cq': 0})
+
+  @mock.patch.object(Rietveld, '_SendPostRequest')
+  def testCreateRevertFail(self, mocked_SendPostRequest):
+    mocked_SendPostRequest.side_effect = [(404, 'error')]
+    change_id = self.rietveld.CreateRevert('reason', 1222, 20001)
+    self.assertIsNone(change_id)
+    mocked_SendPostRequest.assert_called_once_with(
+        '/api/1222/20001/revert', {'revert_reason': 'reason', 'revert_cq': 0})

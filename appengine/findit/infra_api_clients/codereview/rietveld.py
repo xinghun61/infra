@@ -102,9 +102,20 @@ class Rietveld(codereview.CodeReview):
     status_code, content = self._SendPostRequest(url_path, form_fields)
     return status_code == 200 and content == 'OK'
 
-  def CreateRevert(self, change_id, patchset_id=None):
-    # TODO (stgao): implement the api on Rietveld.
-    raise NotImplementedError()
+  # Signature differs. Make patchset id required here - pylint: disable=W0222
+  def CreateRevert(self, reason, change_id, patchset_id):
+    url_path = '/api/%s/%s/revert' % (change_id, patchset_id)
+    form_fields = {
+        'revert_reason': reason,
+        'revert_cq': 0,  # Explicitly set it to 0 to avoid automatic CQ.
+    }
+    status_code, revert_change_id = self._SendPostRequest(url_path, form_fields)
+    if status_code == 200:
+      return revert_change_id
+    else:
+      logging.error('Failed to create a revert for %s/%s on Rietveld',
+                    change_id, patchset_id)
+      return None
 
   def AddReviewers(self, change_id, reviewers, message=None):
       raise NotImplementedError()  # pragma: no cover

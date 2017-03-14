@@ -24,10 +24,11 @@ class CodeReview(object):  # pragma: no cover.
     """
     raise NotImplementedError()
 
-  def CreateRevert(self, change_id, patchset_id=None):
+  def CreateRevert(self, reason, change_id, patchset_id=None):
     """Creates a revert CL for the given issue and patchset.
 
     Args:
+      reason (str): A message as the reason for the revert.
       change_id (str or int): The change id on Gerrit or the issue id on
           Rietveld to create the revert for.
       patchset_id (int): The patchset id on Rietveld to create the revert for.
