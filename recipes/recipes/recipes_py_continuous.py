@@ -27,7 +27,9 @@ def RunSteps(api, mastername, buildername, buildnumber):
   bot_update_step = api.bot_update.ensure_checkout()
 
   tags = {
-    'buildbot_build' : '%s/%s/%s' % (mastername, buildername, buildnumber),
+    'buildbot_build' : (
+      '%s/%s/%s' % (mastername, buildername, buildnumber)
+    ).encode('utf-8'),
     'git_repository' : api.gclient.c.solutions[0].url,
     'git_revision' : bot_update_step.presentation.properties['got_revision'],
   }
