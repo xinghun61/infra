@@ -33,6 +33,7 @@
       "GIT_HTTP_LOW_SPEED_TIME": "300",
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
+    "infra_step": true,
     "name": "bot_update",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
@@ -76,6 +77,7 @@
       "Committed patch"
     ],
     "cwd": "[START_DIR]/infra/go/src/github.com/luci/gae",
+    "infra_step": true,
     "name": "commit git patch"
   },
   {

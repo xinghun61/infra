@@ -7,6 +7,7 @@
       "rmtree",
       "[START_DIR]\\conda_staging_dir"
     ],
+    "infra_step": true,
     "name": "rmtree cleaning staging dir"
   },
   {
@@ -44,6 +45,7 @@
       "rmtree",
       "[TMP_BASE]\\conda_tmp_1"
     ],
+    "infra_step": true,
     "name": "rmtree remove miniconda installer"
   },
   {
@@ -182,6 +184,7 @@
       "rmtree",
       "[START_DIR]\\conda_staging_dir"
     ],
+    "infra_step": true,
     "name": "rmtree removing conda"
   },
   {

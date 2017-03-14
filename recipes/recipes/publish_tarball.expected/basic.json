@@ -10,6 +10,7 @@
       "ls",
       "gs://chromium-browser-official/"
     ],
+    "infra_step": true,
     "name": "gsutil ls",
     "stdout": "/path/to/tmp/"
   },
@@ -38,6 +39,7 @@
       "GIT_HTTP_LOW_SPEED_TIME": "300",
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
+    "infra_step": true,
     "name": "bot_update",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
@@ -121,6 +123,7 @@
       "-dffx"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "git clean"
   },
   {
@@ -136,6 +139,7 @@
     "env": {
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
+    "infra_step": true,
     "name": "gclient sync"
   },
   {
@@ -189,6 +193,7 @@
       "[TMP_BASE]/export_tarball_tmp_1/chromium-38.0.2125.122.tar.xz",
       "gs://chromium-browser-official/chromium-38.0.2125.122.tar.xz"
     ],
+    "infra_step": true,
     "name": "gsutil upload chromium-38.0.2125.122.tar.xz",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122.tar.xz@@@"
@@ -218,6 +223,7 @@
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
       "gs://chromium-browser-official/chromium-38.0.2125.122.tar.xz.hashes"
     ],
+    "infra_step": true,
     "name": "gsutil upload chromium-38.0.2125.122.tar.xz.hashes",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122.tar.xz.hashes@@@"
@@ -231,6 +237,7 @@
       "rmtree",
       "[TMP_BASE]/export_tarball_tmp_1"
     ],
+    "infra_step": true,
     "name": "rmtree temp dir"
   },
   {
@@ -262,6 +269,7 @@
       "[TMP_BASE]/export_tarball_tmp_2/chromium-38.0.2125.122.tar.xz",
       "gs://chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz"
     ],
+    "infra_step": true,
     "name": "gsutil upload chromium-38.0.2125.122-testdata.tar.xz",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz@@@"
@@ -291,6 +299,7 @@
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
       "gs://chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz.hashes"
     ],
+    "infra_step": true,
     "name": "gsutil upload chromium-38.0.2125.122-testdata.tar.xz.hashes",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-testdata.tar.xz.hashes@@@"
@@ -304,6 +313,7 @@
       "rmtree",
       "[TMP_BASE]/export_tarball_tmp_2"
     ],
+    "infra_step": true,
     "name": "rmtree temp dir (2)"
   },
   {
@@ -798,6 +808,7 @@
       "[TMP_BASE]/export_tarball_tmp_4/chromium-38.0.2125.122.tar.xz",
       "gs://chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz"
     ],
+    "infra_step": true,
     "name": "gsutil upload chromium-38.0.2125.122-lite.tar.xz",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz@@@"
@@ -827,6 +838,7 @@
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
       "gs://chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz.hashes"
     ],
+    "infra_step": true,
     "name": "gsutil upload chromium-38.0.2125.122-lite.tar.xz.hashes",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-lite.tar.xz.hashes@@@"
@@ -840,6 +852,7 @@
       "rmtree",
       "[TMP_BASE]/export_tarball_tmp_4"
     ],
+    "infra_step": true,
     "name": "rmtree temp dir (3)"
   },
   {
@@ -850,6 +863,7 @@
       "rmtree",
       "[TMP_BASE]/tmp_tmp_3"
     ],
+    "infra_step": true,
     "name": "rmtree temp dir (4)"
   },
   {
@@ -904,6 +918,7 @@
       "[TMP_BASE]/export_tarball_tmp_6/chromium-38.0.2125.122.tar.xz",
       "gs://chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz"
     ],
+    "infra_step": true,
     "name": "gsutil upload chromium-38.0.2125.122-nacl.tar.xz",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz@@@"
@@ -933,6 +948,7 @@
       "md5  164ebd6889588da166a52ca0d57b9004  bash",
       "gs://chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz.hashes"
     ],
+    "infra_step": true,
     "name": "gsutil upload chromium-38.0.2125.122-nacl.tar.xz.hashes",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-browser-official/chromium-38.0.2125.122-nacl.tar.xz.hashes@@@"
@@ -946,6 +962,7 @@
       "rmtree",
       "[TMP_BASE]/export_tarball_tmp_6"
     ],
+    "infra_step": true,
     "name": "rmtree temp dir (5)"
   },
   {
@@ -956,6 +973,7 @@
       "rmtree",
       "[TMP_BASE]/tmp_tmp_5"
     ],
+    "infra_step": true,
     "name": "rmtree temp dir (6)"
   },
   {

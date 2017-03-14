@@ -23,6 +23,7 @@
       "GIT_HTTP_LOW_SPEED_TIME": "300",
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
+    "infra_step": true,
     "name": "bot_update",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
@@ -133,6 +134,7 @@
       "gs://chrome-dumpfiles/ykffaza5vm",
       "[START_DIR]/infra/go/perf_data/test.isolate"
     ],
+    "infra_step": true,
     "name": "gsutil download test.isolate"
   },
   {
@@ -161,6 +163,7 @@
       "-s"
     ],
     "cwd": "[START_DIR]/infra",
+    "infra_step": true,
     "name": "get commit info",
     "stdout": "/path/to/tmp/"
   },

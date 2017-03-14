@@ -23,6 +23,7 @@
       "GIT_HTTP_LOW_SPEED_TIME": "300",
       "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
     },
+    "infra_step": true,
     "name": "bot_update",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
@@ -107,6 +108,7 @@
       "Blink W3C Test Autoroller"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "set git config user.name"
   },
   {
@@ -117,6 +119,7 @@
       "blink-w3c-test-autoroller@chromium.org"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "set git config user.email"
   },
   {
@@ -126,6 +129,7 @@
       "origin/master"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "git checkout"
   },
   {
@@ -136,6 +140,7 @@
       "update_wpt"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "git branch"
   },
   {
@@ -148,6 +153,7 @@
     "env": {
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
     },
+    "infra_step": true,
     "name": "git new-branch update_wpt"
   },
   {
@@ -172,6 +178,7 @@
       "/path/to/tmp/json"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "git cl issue",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -188,6 +195,7 @@
       "origin/master"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "git checkout (2)"
   },
   {
@@ -198,6 +206,7 @@
       "update_wpt"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "git branch (2)"
   },
   {
@@ -207,6 +216,7 @@
       "origin/master"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "git checkout (3)"
   },
   {
@@ -217,6 +227,7 @@
       "update_css"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "git branch (3)"
   },
   {
@@ -229,6 +240,7 @@
     "env": {
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
     },
+    "infra_step": true,
     "name": "git new-branch update_css"
   },
   {
@@ -253,6 +265,7 @@
       "/path/to/tmp/json"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "git cl issue (2)",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -269,6 +282,7 @@
       "origin/master"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "git checkout (4)"
   },
   {
@@ -279,6 +293,7 @@
       "update_css"
     ],
     "cwd": "[START_DIR]/src",
+    "infra_step": true,
     "name": "git branch (4)"
   },
   {

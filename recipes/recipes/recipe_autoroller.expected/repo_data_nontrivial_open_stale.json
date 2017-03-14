@@ -67,6 +67,7 @@
     "env": {
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
     },
+    "infra_step": true,
     "name": "build.git fetch",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -80,6 +81,7 @@
       "FETCH_HEAD"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
+    "infra_step": true,
     "name": "build.git checkout",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -92,6 +94,7 @@
       "HEAD"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
+    "infra_step": true,
     "name": "build.read revision",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -108,6 +111,7 @@
       "-x"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
+    "infra_step": true,
     "name": "build.git clean",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -121,6 +125,7 @@
       "recipe-roller@chromium.org"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
+    "infra_step": true,
     "name": "build.git config",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -134,6 +139,7 @@
       "recipe-roller"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
+    "infra_step": true,
     "name": "build.git config (2)",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -147,6 +153,7 @@
       "roll"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
+    "infra_step": true,
     "name": "build.git branch",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -162,6 +169,7 @@
       "origin/master"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
+    "infra_step": true,
     "name": "build.git checkout (2)",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -178,6 +186,7 @@
       "cat",
       "gs://recipe-roller-cl-uploads/repo_metadata/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ="
     ],
+    "infra_step": true,
     "name": "build.gsutil repo_state",
     "stderr": "/path/to/tmp/",
     "stdout": "/path/to/tmp/",
@@ -199,6 +208,7 @@
       "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller"
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
+    "infra_step": true,
     "name": "build.git cl status",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -226,6 +236,7 @@
       "RECIPE_MODULE[recipe_engine::shutil]/resources/rmtree.py",
       "[TMP_BASE]/recipes_tmp_1"
     ],
+    "infra_step": true,
     "name": "rmtree [TMP_BASE]/recipes_tmp_1"
   },
   {

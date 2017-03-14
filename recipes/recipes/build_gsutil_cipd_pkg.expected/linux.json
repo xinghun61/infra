@@ -7,6 +7,7 @@
       "rmtree",
       "[START_DIR]/gsutil_staging_dir"
     ],
+    "infra_step": true,
     "name": "rmtree cleaning staging dir"
   },
   {
@@ -20,6 +21,7 @@
       "ls",
       "gs://pub/gsutil_*.zip"
     ],
+    "infra_step": true,
     "name": "gsutil list",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -38,6 +40,7 @@
       "gs://pub/gsutil_4.1.zip",
       "[START_DIR]/gsutil_4.1.zip"
     ],
+    "infra_step": true,
     "name": "gsutil Download gsutil_4.1.zip"
   },
   {

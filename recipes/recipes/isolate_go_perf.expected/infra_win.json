@@ -23,6 +23,7 @@
       "GIT_HTTP_LOW_SPEED_TIME": "300",
       "PATH": "%(PATH)s;RECIPE_PACKAGE_REPO[depot_tools]"
     },
+    "infra_step": true,
     "name": "bot_update",
     "~followup_annotations": [
       "@@@STEP_TEXT@Some step text@@@",
@@ -133,6 +134,7 @@
       "gs://chrome-dumpfiles/ykffaza5vm",
       "[START_DIR]\\infra\\go\\perf_data\\test.isolate"
     ],
+    "infra_step": true,
     "name": "gsutil download test.isolate"
   },
   {
@@ -164,6 +166,7 @@
       "gs://chrome-dumpfiles/yirqavzhxm",
       "[START_DIR]\\infra\\go\\perf_data\\blink_heap_unittests"
     ],
+    "infra_step": true,
     "name": "gsutil download huge test file"
   },
   {
@@ -174,6 +177,7 @@
       "--verbose"
     ],
     "cwd": "RECIPE_PACKAGE_REPO[depot_tools]",
+    "infra_step": true,
     "name": "ensure git tooling on windows",
     "timeout": 300
   },
@@ -186,6 +190,7 @@
       "-s"
     ],
     "cwd": "[START_DIR]\\infra",
+    "infra_step": true,
     "name": "get commit info",
     "stdout": "/path/to/tmp/"
   },

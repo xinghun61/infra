@@ -11,6 +11,7 @@
       "rmtree",
       "[START_DIR]/depot_tools"
     ],
+    "infra_step": true,
     "name": "clean workspace.rmtree rm depot_tools",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -57,6 +58,7 @@
       "[START_DIR]/depot_tools"
     ],
     "cwd": "[START_DIR]/depot_tools",
+    "infra_step": true,
     "name": "clone + checkout.git clone",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -71,6 +73,7 @@
       "false"
     ],
     "cwd": "[START_DIR]/depot_tools",
+    "infra_step": true,
     "name": "clone + checkout.set autocrlf",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -84,6 +87,7 @@
       "false"
     ],
     "cwd": "[START_DIR]/depot_tools",
+    "infra_step": true,
     "name": "clone + checkout.set filemode",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -97,6 +101,7 @@
       "false"
     ],
     "cwd": "[START_DIR]/depot_tools",
+    "infra_step": true,
     "name": "clone + checkout.set symlinks",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -109,6 +114,7 @@
       "origin/master"
     ],
     "cwd": "[START_DIR]/depot_tools",
+    "infra_step": true,
     "name": "clone + checkout.git checkout",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -122,6 +128,7 @@
       "deadbeef"
     ],
     "cwd": "[START_DIR]/depot_tools",
+    "infra_step": true,
     "name": "clone + checkout.git reset",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -135,6 +142,7 @@
       "--all"
     ],
     "cwd": "[START_DIR]/depot_tools",
+    "infra_step": true,
     "name": "clone + checkout.git reflog",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -148,6 +156,7 @@
       "--prune=all"
     ],
     "cwd": "[START_DIR]/depot_tools",
+    "infra_step": true,
     "name": "clone + checkout.git gc",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -176,6 +185,7 @@
       "[START_DIR]/depot_tools.zip",
       "gs://chrome-infra/depot_tools.zip"
     ],
+    "infra_step": true,
     "name": "gsutil upload",
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.googleapis.com/chrome-infra/depot_tools.zip@@@"
@@ -198,6 +208,7 @@
       "[START_DIR]/depot_tools/man/html",
       "gs://chrome-infra-docs/flat/depot_tools/docs/"
     ],
+    "infra_step": true,
     "name": "gsutil upload docs"
   },
   {
@@ -238,6 +249,7 @@
       "gs://chrome-infra/PortableGit-1.2.3-64-bit.7z.exe",
       "[TMP_BASE]/git_installer_tmp_1/git-installer.exe"
     ],
+    "infra_step": true,
     "name": "gsutil fetch 64-bit git installer (v1.2.3)"
   },
   {
@@ -269,6 +281,7 @@
       "gs://chrome-infra/PortableGit-1.2.3-32-bit.7z.exe",
       "[TMP_BASE]/git_installer_tmp_1/git-installer.exe"
     ],
+    "infra_step": true,
     "name": "gsutil fetch 32-bit git installer (v1.2.3)"
   },
   {
@@ -295,6 +308,7 @@
       "RECIPE_MODULE[recipe_engine::shutil]/resources/rmtree.py",
       "[TMP_BASE]/git_installer_tmp_1"
     ],
+    "infra_step": true,
     "name": "rmtree [TMP_BASE]/git_installer_tmp_1"
   },
   {
@@ -309,6 +323,7 @@
       "gs://chrome-infra/PortableGit-2.2.3-64-bit.7z.exe",
       "[TMP_BASE]/git_installer_tmp_2/git-installer.exe"
     ],
+    "infra_step": true,
     "name": "gsutil fetch 64-bit git installer (v2.2.3)"
   },
   {
@@ -340,6 +355,7 @@
       "gs://chrome-infra/PortableGit-2.2.3-32-bit.7z.exe",
       "[TMP_BASE]/git_installer_tmp_2/git-installer.exe"
     ],
+    "infra_step": true,
     "name": "gsutil fetch 32-bit git installer (v2.2.3)"
   },
   {
@@ -366,6 +382,7 @@
       "RECIPE_MODULE[recipe_engine::shutil]/resources/rmtree.py",
       "[TMP_BASE]/git_installer_tmp_2"
     ],
+    "infra_step": true,
     "name": "rmtree [TMP_BASE]/git_installer_tmp_2"
   },
   {

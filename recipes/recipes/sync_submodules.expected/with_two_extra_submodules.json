@@ -31,6 +31,7 @@
       "https://chromium.googlesource.com/chromium/src"
     ],
     "cwd": "[HACK]/foo_builder",
+    "infra_step": true,
     "name": "git cache"
   },
   {
@@ -43,6 +44,7 @@
       "https://chromium.googlesource.com/chromium/src"
     ],
     "cwd": "[HACK]/foo_builder",
+    "infra_step": true,
     "name": "git cache (2)",
     "stdout": "/path/to/tmp/"
   },
@@ -70,6 +72,7 @@
     "env": {
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
     },
+    "infra_step": true,
     "name": "git fetch"
   },
   {
@@ -80,6 +83,7 @@
       "FETCH_HEAD"
     ],
     "cwd": "[HACK]/foo_builder",
+    "infra_step": true,
     "name": "git checkout"
   },
   {
@@ -89,6 +93,7 @@
       "HEAD"
     ],
     "cwd": "[HACK]/foo_builder",
+    "infra_step": true,
     "name": "read revision",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -104,6 +109,7 @@
       "-x"
     ],
     "cwd": "[HACK]/foo_builder",
+    "infra_step": true,
     "name": "git clean"
   },
   {
@@ -130,6 +136,7 @@
     "env": {
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
     },
+    "infra_step": true,
     "name": "git fetch (2)"
   },
   {
@@ -140,6 +147,7 @@
       "FETCH_HEAD"
     ],
     "cwd": "[START_DIR]/overlay",
+    "infra_step": true,
     "name": "git checkout (2)"
   },
   {
@@ -149,6 +157,7 @@
       "HEAD"
     ],
     "cwd": "[START_DIR]/overlay",
+    "infra_step": true,
     "name": "read revision (2)",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
@@ -164,6 +173,7 @@
       "-x"
     ],
     "cwd": "[START_DIR]/overlay",
+    "infra_step": true,
     "name": "git clean (2)"
   },
   {
@@ -190,6 +200,7 @@
       "HEAD"
     ],
     "cwd": "[START_DIR]/overlay",
+    "infra_step": true,
     "name": "git diff-index"
   },
   {
