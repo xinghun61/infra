@@ -156,9 +156,6 @@ def revert_patchset(request):
 
   # Make sure the original issue is closed.
   assert original_issue.closed, 'The original issue must be closed.'
-  # Make sure the requesting user has access to view the original issue.
-  assert original_issue.user_can_view(request.user), (
-      'You do not have permission to view or revert this issue.')
 
   # Validate that all original patches are supported by /revert_patchset.
   try:
@@ -356,8 +353,11 @@ def revert_patchset(request):
     issue.commit = True
   issue.put()
 
-  return HttpResponseRedirect(reverse('codereview.views.show',
-                                      args=[issue.key.id()]))
+  if request.POST.get('no_redirect'):
+    return HttpTextResponse(str(issue.key.id()), status=200)
+  else:
+    return HttpResponseRedirect(reverse('codereview.views.show',
+                                        args=[issue.key.id()]))
 
 
 def _db_commit_all_pending_commits(pending_commits):

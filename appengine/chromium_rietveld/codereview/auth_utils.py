@@ -112,7 +112,7 @@ def _get_client_id(tries=3):
         raise
 
 
-def _is_allowed_client_id():
+def _is_current_user_whitelisted_client_id():
   """Returns True if the client id is allowed to reach this application."""
   try:
     current_client_id = _get_client_id()
@@ -135,8 +135,8 @@ def _is_allowed_client_id():
   return True
 
 
-def _is_allowed_email():
-  """Returns True if the AppEngine service account is allowed."""
+def is_curent_user_whitelisted_oauth_email():
+  """Returns True if the email of the oauth client is allowed."""
   try:
     oauth_user = oauth.get_current_user(EMAIL_SCOPE)
   except oauth.Error as e:
@@ -166,7 +166,8 @@ def get_current_rietveld_oauth_user():
         the token is valid, otherwise None.
   """
   # TODO(dhermes): Address local environ here as well.
-  if not _is_allowed_client_id() and not _is_allowed_email():
+  if (not _is_current_user_whitelisted_client_id() and
+      not is_curent_user_whitelisted_oauth_email()):
     return
 
   try:

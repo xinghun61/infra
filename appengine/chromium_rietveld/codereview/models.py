@@ -165,6 +165,7 @@ class Issue(ndb.Model):
     return user and (user.email() == self.owner.email() or
                      self.is_collaborator(user) or
                      auth_utils.is_current_user_admin() or
+                     auth_utils.is_curent_user_whitelisted_oauth_email() or
                      is_privileged_user(user))
 
   @property
