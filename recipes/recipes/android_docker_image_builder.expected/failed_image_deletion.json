@@ -138,7 +138,7 @@
       "-u",
       "_json_key",
       "-p",
-      "None",
+      "",
       "https://gcr.io"
     ],
     "name": "Login to registry"

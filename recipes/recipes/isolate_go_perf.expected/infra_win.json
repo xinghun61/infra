@@ -226,8 +226,9 @@
     "name": "perf dashboard post",
     "~followup_annotations": [
       "@@@STEP_TEXT@Failed to post to Perf Dashboard. Error response: None@@@",
-      "@@@STEP_LOG_LINE@json.output (invalid)@null@@@",
       "@@@STEP_LOG_END@json.output (invalid)@@@",
+      "@@@STEP_LOG_LINE@json.output (exception)@No JSON object could be decoded@@@",
+      "@@@STEP_LOG_END@json.output (exception)@@@",
       "@@@STEP_LINK@Results Dashboard@https://chromeperf.appspot.com/report?rev=1476374537&masters=chromium.infra&tests=infra%2Fluci%2Fisolate%2Fisolate-client-upload&bots=infra-perf-win@@@",
       "@@@STEP_WARNINGS@@@"
     ]
