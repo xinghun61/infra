@@ -105,3 +105,6 @@ class Rietveld(codereview.CodeReview):
   def CreateRevert(self, change_id, patchset_id=None):
     # TODO (stgao): implement the api on Rietveld.
     raise NotImplementedError()
+
+  def AddReviewers(self, change_id, reviewers, message=None):
+      raise NotImplementedError()  # pragma: no cover

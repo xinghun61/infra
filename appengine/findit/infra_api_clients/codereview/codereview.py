@@ -37,3 +37,17 @@ class CodeReview(object):  # pragma: no cover.
       The change id (or issue id) of the revert CL, or None upon failures.
     """
     raise NotImplementedError()
+
+  def AddReviewers(self, change_id, reviewers, message=None):
+    """Adds a list of users to the CL of the specified url as reviewers.
+
+    Args:
+      change_id (str or int): The change id on Gerrit or the issue id on
+          Rietveld to add reviewers to.
+      reviewers (list of str): The emails of the users to be added as reviewers.
+      message(str): (optional) The message to be posted to the codereview.
+
+    Returns:
+      A boolean indicating success.
+    """
+    raise NotImplementedError()
