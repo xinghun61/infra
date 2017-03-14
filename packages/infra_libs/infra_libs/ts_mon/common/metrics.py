@@ -410,7 +410,7 @@ class NumericMetric(Metric):  # pylint: disable=abstract-method
 class CounterMetric(NumericMetric):
   """A metric whose value type is a monotonically increasing integer."""
 
-  def __init__(self, name, description, field_spec=None, start_time=None,
+  def __init__(self, name, description, field_spec, start_time=None,
                units=None):
     super(CounterMetric, self).__init__(
         name, description, field_spec, units=units)
@@ -464,7 +464,7 @@ class GaugeMetric(NumericMetric):
 class CumulativeMetric(NumericMetric):
   """A metric whose value type is a monotonically increasing float."""
 
-  def __init__(self, name, description, field_spec=None, start_time=None,
+  def __init__(self, name, description, field_spec, start_time=None,
                units=None):
     super(CumulativeMetric, self).__init__(
         name, description, field_spec, units=units)
@@ -524,7 +524,7 @@ class _DistributionMetricBase(Metric):
       10: metrics_pb2.PrecomputedDistribution.CANONICAL_POWERS_OF_10,
   }
 
-  def __init__(self, name, description, field_spec=None, is_cumulative=True,
+  def __init__(self, name, description, field_spec, is_cumulative=True,
                bucketer=None, start_time=None, units=None):
     super(_DistributionMetricBase, self).__init__(
         name, description, field_spec, units=units)
@@ -646,8 +646,7 @@ class _DistributionMetricBase(Metric):
 class CumulativeDistributionMetric(_DistributionMetricBase):
   """A DistributionMetric with is_cumulative set to True."""
 
-  def __init__(self, name, description, field_spec=None, bucketer=None,
-               units=None):
+  def __init__(self, name, description, field_spec, bucketer=None, units=None):
     super(CumulativeDistributionMetric, self).__init__(
         name, description, field_spec,
         is_cumulative=True,
@@ -658,8 +657,7 @@ class CumulativeDistributionMetric(_DistributionMetricBase):
 class NonCumulativeDistributionMetric(_DistributionMetricBase):
   """A DistributionMetric with is_cumulative set to False."""
 
-  def __init__(self, name, description, field_spec=None, bucketer=None,
-               units=None):
+  def __init__(self, name, description, field_spec, bucketer=None, units=None):
     super(NonCumulativeDistributionMetric, self).__init__(
         name, description, field_spec,
         is_cumulative=False,
