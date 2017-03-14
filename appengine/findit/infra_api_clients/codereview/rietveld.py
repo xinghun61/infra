@@ -101,3 +101,7 @@ class Rietveld(codereview.CodeReview):
     }
     status_code, content = self._SendPostRequest(url_path, form_fields)
     return status_code == 200 and content == 'OK'
+
+  def CreateRevert(self, change_id, patchset_id=None):
+    # TODO (stgao): implement the api on Rietveld.
+    raise NotImplementedError()
