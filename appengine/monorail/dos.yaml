@@ -53,3 +53,5 @@ blacklist:
     description: polls project-zero issue list
   - subnet: 2600:3c01::f03c:91ff:fe08:cf71
     description: scans all project-zero issues
+  - subnet: 175.141.191.44
+    description: attempted SQL injection
