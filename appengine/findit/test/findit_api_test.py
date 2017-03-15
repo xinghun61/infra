@@ -16,6 +16,7 @@ from common.waterfall import failure_type
 import findit_api
 from model import analysis_approach_type
 from model import analysis_status
+from model.base_suspected_cl import RevertCL
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask
@@ -865,6 +866,9 @@ class FinditApiTest(testing.EndpointsTestCase):
             'top_score': 5
         }
     }
+    revert_cl = RevertCL()
+    revert_cl.revert_cl_url = 'revert_cl_url'
+    suspected_cl_410.revert_cl = revert_cl
     suspected_cl_410.put()
 
     def confidence_side_effect(_, build_info, first_build_info):
@@ -960,7 +964,8 @@ class FinditApiTest(testing.EndpointsTestCase):
                     'revision': 'r4_10',
                     'commit_position': 410,
                     'analysis_approach': 'TRY_JOB',
-                    'confidence': 100
+                    'confidence': 100,
+                    'revert_cl_url': 'revert_cl_url'
                 }
             ],
             'analysis_approach': 'TRY_JOB',

@@ -75,6 +75,7 @@ class _SuspectedCL(messages.Message):
   commit_position = messages.IntegerField(3, variant=messages.Variant.INT32)
   confidence = messages.IntegerField(4, variant=messages.Variant.INT32)
   analysis_approach = messages.EnumField(_AnalysisApproach, 5)
+  revert_cl_url = messages.StringField(6)
 
 
 class _TryJobStatus(messages.Enum):
@@ -165,11 +166,20 @@ def _AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin):
 class FindItApi(remote.Service):
   """FindIt API v1."""
 
-  def _GetConfidenceAndApproachForCL(
+  def _GetAdditionalInformationForCL(
       self, repo_name, revision, confidences, build, reference_build_key):
+    """Gets additional information for a cl.
+
+    Currently additional information contains:
+        confidence of the result;
+        approaches that found this cl: HEURISTIC, TRY_JOB or both;
+        revert_cl_url if the cl has been reverted by Findit.
+    """
+    additional_info = {}
+
     cl = WfSuspectedCL.Get(repo_name, revision)
     if not cl:
-      return None, None
+      return additional_info
 
     master_name = buildbot.GetMasterNameFromUrl(build.master_url)
     builder_name = build.builder_name
@@ -180,8 +190,15 @@ class FindItApi(remote.Service):
     build_info = cl.GetBuildInfo(master_name, builder_name, current_build)
     first_build_info = None if not reference_build_key else cl.GetBuildInfo(
         *build_util.GetBuildInfoFromId(reference_build_key))
-    return suspected_cl_util.GetSuspectedCLConfidenceScoreAndApproach(
-        confidences, build_info, first_build_info)
+    additional_info['confidence'], additional_info['cl_approach'] = (
+        suspected_cl_util.GetSuspectedCLConfidenceScoreAndApproach(
+            confidences, build_info, first_build_info))
+
+    # Gets the revert_cl_url for the CL if there is one.
+    if cl.revert_cl_url:
+      additional_info['revert_cl_url'] = cl.revert_cl_url
+
+    return additional_info
 
   def _GenerateBuildFailureAnalysisResult(
       self, build, step_name, suspected_cls_in_result=None, first_failure=None,
@@ -195,20 +212,22 @@ class FindItApi(remote.Service):
       repo_name = suspected_cl['repo_name']
       revision = suspected_cl['revision']
       commit_position = suspected_cl['commit_position']
-      confidence, cl_approach = self._GetConfidenceAndApproachForCL(
+      additional_info = self._GetAdditionalInformationForCL(
           repo_name, revision, confidences, build, reference_build_key)
-      if cl_approach:
+      if additional_info.get('cl_approach'):
         cl_approach = (
           _AnalysisApproach.HEURISTIC if
-          cl_approach == analysis_approach_type.HEURISTIC else
-          _AnalysisApproach.TRY_JOB)
+          additional_info['cl_approach'] == analysis_approach_type.HEURISTIC
+          else _AnalysisApproach.TRY_JOB)
       else:
         cl_approach = analysis_approach
 
       suspected_cls.append(_SuspectedCL(
           repo_name=repo_name, revision=revision,
-          commit_position=commit_position, confidence=confidence,
-          analysis_approach=cl_approach))
+          commit_position=commit_position,
+          confidence=additional_info.get('confidence'),
+          analysis_approach=cl_approach,
+          revert_cl_url=additional_info.get('revert_cl_url')))
 
     return _BuildFailureAnalysisResult(
         master_url=build.master_url,
