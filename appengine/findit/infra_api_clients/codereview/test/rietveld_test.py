@@ -183,3 +183,41 @@ class RietveldTest(testing.AppengineTestCase):
      'cc': [u'chromium-reviews@chromium.org'],
      'reviewers': [u'someone@chromium.org'],
      'closed': True})
+
+  @mock.patch('infra_api_clients.codereview.rietveld.Rietveld._SendPostRequest')
+  def testAddReviewersNewReviewer(self, mock_send):
+    mock_send.return_value = (200, 'OK')
+    rietveld_url = 'https://server.host.name'
+    change_id = '2713613003'
+    with open(os.path.join(os.path.dirname(__file__),
+                           'reverttestissuedetails.json')) as f:
+      response = 200, f.read()
+    self.http_client.SetResponse('%s/api/%s?messages=true' %
+                                 (rietveld_url, change_id), response)
+    self.rietveld.AddReviewers(change_id, ['dummy@dummy.com'])
+    mock_send.assert_called_once()
+    url, data = mock_send.call_args[0]
+    self.assertEqual('/%s/publish' % change_id, url)
+    self.assertEqual({
+        'message_only': 'False',
+        'no_redirect': 'True',
+        'add_as_reviewer': 'False',
+        'reviewers': u'someone@chromium.org,dummy@dummy.com',
+        'cc': u'chromium-reviews@chromium.org',
+        'commit': 'False',
+        'message': '',
+        'send_mail': 'True'
+    }, data)
+
+  @mock.patch('infra_api_clients.codereview.rietveld.Rietveld._SendPostRequest')
+  def testAddReviewersExistingReviewer(self, mock_send):
+    rietveld_url = 'https://server.host.name'
+    change_id = '2713613003'
+    with open(os.path.join(os.path.dirname(__file__),
+                           'reverttestissuedetails.json')) as f:
+      response = 200, f.read()
+    self.http_client.SetResponse('%s/api/%s?messages=true' %
+                                 (rietveld_url, change_id), response)
+    # Should be a no-op because reviewer was already assigned in issue.
+    self.rietveld.AddReviewers(change_id, ['someone@chromium.org'])
+    mock_send.assert_not_called()

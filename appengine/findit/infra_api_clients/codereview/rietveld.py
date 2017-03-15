@@ -120,9 +120,6 @@ class Rietveld(codereview.CodeReview):
                     change_id, patchset_id, content)
       return None
 
-  def AddReviewers(self, change_id, reviewers, message=None):
-      raise NotImplementedError()  # pragma: no cover
-
   def _ParseClInfo(self, data, cl):
     patchset_reverted_to_issue_regex = re.compile(
         r'A revert of this CL \(patchset #\d+ id:\d+\) has been '
@@ -178,3 +175,29 @@ class Rietveld(codereview.CodeReview):
     if status_code == 200:  # pragma: no branch
       return self._ParseClInfo(json.loads(content), cl_info.ClInfo(issue_url))
     return None  # pragma: no cover
+
+  def AddReviewers(self, change_id, reviewers, message=None):
+    assert reviewers
+    cl = self.GetClDetails(change_id)
+    current_cc_list = cl.cc
+    current_reviewers = set(cl.reviewers)
+    new_reviewers = current_reviewers | set(reviewers)
+    if current_reviewers == new_reviewers:
+      return True
+
+    url_path = '/%s/publish' % change_id
+    form_fields = {
+        'message_only': 'False',
+        # this flag is used when the recipient of the message is to be added
+        # as reviewer.
+        'add_as_reviewer': 'False',
+        'send_mail': 'True',
+        'no_redirect': 'True',
+        'commit': 'False',
+        'reviewers': ','.join(list(new_reviewers)),
+        'cc': ','.join(current_cc_list),
+        'message': message or '',
+    }
+
+    status_code, content = self._SendPostRequest(url_path, form_fields)
+    return status_code == 200 and content == 'OK'
