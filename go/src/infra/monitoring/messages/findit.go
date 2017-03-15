@@ -29,4 +29,5 @@ type SuspectCL struct {
 	CommitPosition   int64  `json:"commit_position,omitempty"`
 	Confidence       int    `json:"confidence"`
 	AnalysisApproach string `json:"analysis_approach"`
+	RevertingCLURL   string `json:"reverting_cl_url"`
 }

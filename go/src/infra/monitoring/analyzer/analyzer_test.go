@@ -483,6 +483,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 								Revision:         "291569",
 								Confidence:       90,
 								AnalysisApproach: "HEURISTIC",
+								RevertingCLURL:   "https://codereview/12345",
 							},
 						},
 						HasFindings: true,
@@ -530,6 +531,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 									Revision:         "291569",
 									Confidence:       90,
 									AnalysisApproach: "HEURISTIC",
+									RevertingCLURL:   "https://codereview/12345",
 								},
 							},
 							FinditStatus: "FINISHED",
@@ -1828,7 +1830,7 @@ func TestWouldCloseTree(t *testing.T) {
 			"test_tree": {
 				messages.TreeMasterConfig{
 					Masters: map[messages.MasterLocation][]string{
-						messages.MasterLocation{URL: *urlParse(
+						{URL: *urlParse(
 							"https://build.chromium.org/p/fake.master", t)}: {"fake.builder", "other.builder"},
 					},
 				},
@@ -1930,7 +1932,7 @@ func TestExcludeFailure(t *testing.T) {
 				"test_tree": {
 					messages.TreeMasterConfig{
 						Masters: map[messages.MasterLocation][]string{
-							messages.MasterLocation{URL: *urlParse(
+							{URL: *urlParse(
 								"https://build.chromium.org/p/fake.master", t)}: {"other.builder"},
 						},
 					},
@@ -1955,7 +1957,7 @@ func TestExcludeFailure(t *testing.T) {
 				"test_tree7": {
 					messages.TreeMasterConfig{
 						Masters: map[messages.MasterLocation][]string{
-							messages.MasterLocation{URL: *urlParse(
+							{URL: *urlParse(
 								"https://build.chromium.org/p/fake.master", t)}: {"fake.builder"},
 						},
 					},
@@ -1980,7 +1982,7 @@ func TestExcludeFailure(t *testing.T) {
 				"test_tree8": {
 					messages.TreeMasterConfig{
 						Masters: map[messages.MasterLocation][]string{
-							messages.MasterLocation{URL: *urlParse(
+							{URL: *urlParse(
 								"https://build.chromium.org/p/fake.master", t)}: {"*"},
 						},
 					},
