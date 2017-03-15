@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import json
 import mock
 import os
@@ -126,17 +127,21 @@ class RietveldTest(testing.AppengineTestCase):
     mocked_SendPostRequest.assert_called_once_with(
         '/api/1222/20001/revert', {'revert_reason': 'reason', 'revert_cq': 0})
 
-  @mock.patch('pytz.utc.localize', lambda x: x)
+  @mock.patch(
+      'libs.time_util.UTCDatetimeFromNaiveString',
+      lambda x: datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f'))
   def testGetClDetails(self):
     rietveld_url = 'https://server.host.name'
     change_id = '123456001'
     revert_change_id = '2713613003'
-    response = 200, open(os.path.join(os.path.dirname(__file__),
-                        'testissuedetails.json')).read()
+    with open(os.path.join(os.path.dirname(__file__),
+              'testissuedetails.json')) as f:
+      response = 200, f.read()
     self.http_client.SetResponse('%s/api/%s?messages=true' %
                                  (rietveld_url, change_id), response)
-    response = 200, open(os.path.join(os.path.dirname(__file__),
-                        'reverttestissuedetails.json')).read()
+    with open(os.path.join(os.path.dirname(__file__),
+              'reverttestissuedetails.json')) as f:
+      response = 200, f.read()
     self.http_client.SetResponse('%s/api/%s?messages=true' %
                                  (rietveld_url, revert_change_id), response)
     cl_info = self.rietveld.GetClDetails(change_id)
