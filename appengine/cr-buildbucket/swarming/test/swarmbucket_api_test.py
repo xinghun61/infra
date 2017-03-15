@@ -17,7 +17,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     auth_testing.reset_local_state()
     auth.bootstrap_group('all', [auth.Anonymous])
 
-    chromium_cfg = """
+    chromium_cfg = '''
       name: "master.tryserver.chromium"
       acls {
         role: READER
@@ -33,7 +33,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
           category: "Chromium"
         }
       }
-    """
+    '''
     config.Bucket(
       id='master.tryserver.chromium',
       project_id='chromium',
@@ -42,13 +42,13 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
       config_content_binary=config_test.text_to_binary(chromium_cfg),
     ).put()
 
-    v8_cfg = """
+    v8_cfg = '''
       name: "master.tryserver.v8"
       acls {
         role: READER
         group: "all"
       }
-    """
+    '''
     config.Bucket(
       id='master.tryserver.v8',
       project_id='v8',

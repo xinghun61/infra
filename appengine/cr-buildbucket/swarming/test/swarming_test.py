@@ -54,7 +54,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'components.net.json_request_async', autospec=True,
         side_effect=json_request_async)
 
-    bucket_cfg_text = """
+    bucket_cfg_text = '''
       name: "bucket"
       swarming {
         hostname: "chromium-swarm.appspot.com"
@@ -90,7 +90,7 @@ class SwarmingTest(testing.AppengineTestCase):
           priority: 108
         }
       }
-    """
+    '''
     self.bucket_cfg = project_config_pb2.Bucket()
     protobuf.text_format.Merge(bucket_cfg_text, self.bucket_cfg)
 

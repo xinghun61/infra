@@ -28,7 +28,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
 
   def test_valid(self):
     self.cfg_test(
-        """
+        '''
           hostname: "chromium-swarm.appspot.com"
           builder_defaults {
             swarming_tags: "master:master.a"
@@ -52,7 +52,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
               properties_j: "x:true"
             }
           }
-        """,
+        ''',
         [])
 
   def test_empty(self):
@@ -60,10 +60,10 @@ class SwarmingCfgTest(testing.AppengineTestCase):
 
   def test_bad(self):
     self.cfg_test(
-        """
+        '''
           hostname: "chromium-swarm.appspot.com"
           builders {}
-        """,
+        ''',
         [
           'builder #1: name unspecified',
           'builder #1: has no "pool" dimension',
@@ -72,16 +72,16 @@ class SwarmingCfgTest(testing.AppengineTestCase):
         ])
 
     self.cfg_test(
-        """
+        '''
           hostname: "chromium-swarm.appspot.com"
           builder_defaults {name: "x"}
-        """,
+        ''',
         [
           'builder_defaults: do not specify default name',
         ])
 
     self.cfg_test(
-        """
+        '''
           task_template_canary_percentage { value: 102 }
           builder_defaults {
             swarming_tags: "wrong"
@@ -114,7 +114,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
             }
             priority: 300
           }
-        """,
+        ''',
         [
           'hostname unspecified',
           'task_template_canary_percentage.value must must be in [0, 100]',
@@ -147,7 +147,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
         ])
 
     self.cfg_test(
-        """
+        '''
           task_template_canary_percentage {value: 102}
           builder_defaults {
             swarming_tags: "wrong"
@@ -175,7 +175,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
             }
             priority: 300
           }
-        """,
+        ''',
         [
           'hostname unspecified',
           'task_template_canary_percentage.value must must be in [0, 100]',
@@ -203,7 +203,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
 
   def test_default_recipe(self):
     self.cfg_test(
-        """
+        '''
           hostname: "chromium-swarm.appspot.com"
           builder_defaults {
             dimensions: "pool:default"
@@ -222,11 +222,11 @@ class SwarmingCfgTest(testing.AppengineTestCase):
               properties_j: "x:null"
             }
           }
-        """, [])
+        ''', [])
 
   def test_default_recipe_bad(self):
     self.cfg_test(
-        """
+        '''
           hostname: "chromium-swarm.appspot.com"
           builder_defaults {
             dimensions: "pool:default"
@@ -236,7 +236,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
             }
           }
           builders { name: "debug" }
-        """,
+        ''',
         [
           'builder_defaults: recipe: properties #1: does not have colon',
         ])

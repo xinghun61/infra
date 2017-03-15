@@ -602,13 +602,13 @@ class ApiTests(object):
   def test_get_bucket(self, get_buildbucket_cfg_url):
     get_buildbucket_cfg_url.return_value = 'https://example.com/buildbucket.cfg'
 
-    bucket_cfg = """
+    bucket_cfg = '''
       name: "master.tryserver.chromium.linux"
       acls {
         role: READER
         identity: "anonymous:anonymous"
       }
-    """
+    '''
 
     config.Bucket(
         id='master.tryserver.chromium.linux',
