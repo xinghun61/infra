@@ -112,12 +112,12 @@ class Rietveld(codereview.CodeReview):
         'revert_reason': reason,
         'revert_cq': 0,  # Explicitly set it to 0 to avoid automatic CQ.
     }
-    status_code, revert_change_id = self._SendPostRequest(url_path, form_fields)
+    status_code, content = self._SendPostRequest(url_path, form_fields)
     if status_code == 200:
-      return revert_change_id
+      return content
     else:
-      logging.error('Failed to create a revert for %s/%s on Rietveld',
-                    change_id, patchset_id)
+      logging.error('Failed to create a revert for %s/%s on Rietveld: %s',
+                    change_id, patchset_id, content)
       return None
 
   def AddReviewers(self, change_id, reviewers, message=None):
