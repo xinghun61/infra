@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from common.base_handler import BaseHandler, Permission
+from waterfall import build_util
 
 
 def _FormatDatetime(dt):
@@ -25,7 +26,8 @@ class Culprit(BaseHandler):
     if not culprit:  # pragma: no cover
       return self.CreateError('Culprit not found', 404)
 
-    def ConvertBuildInfoToADict(build_info):
+    def ConvertBuildInfoToADict(build_id):
+      build_info = build_util.GetBuildInfoFromId(build_id)
       return {
           'master_name': build_info[0],
           'builder_name': build_info[1],

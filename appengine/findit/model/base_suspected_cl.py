@@ -7,6 +7,22 @@ from google.appengine.ext import ndb
 from libs import time_util
 
 
+class RevertCL(ndb.Model):
+  """Represents a reverting CL's metadata."""
+
+  # The url of the revert CL created by Findit.
+  revert_cl_url = ndb.StringProperty(indexed=False)
+
+  # Time when the revert CL is created.
+  created_time = ndb.DateTimeProperty(indexed=False)
+
+  # Time when the revert CL is committed.
+  committed_time = ndb.DateTimeProperty(indexed=False)
+
+  # Status of this revert: REVERTED, DUPLICATE or FALSE_POSITIVE.
+  status = ndb.IntegerProperty(indexed=False)
+
+
 class BaseSuspectedCL(ndb.Model):
   """Represents base information about a suspected cl."""
 
@@ -21,10 +37,22 @@ class BaseSuspectedCL(ndb.Model):
   commit_position = ndb.IntegerProperty(indexed=False)
 
   # Time when the CL was identified as a suspect for the first time.
-  identified_time = ndb.DateTimeProperty(indexed=False)
+  identified_time = ndb.DateTimeProperty(indexed=True)
 
   # Time when the CL was updated.
   updated_time = ndb.DateTimeProperty(indexed=True)
+
+  # The revert CL of this suspected CL.
+  # Set only if Findit creates the reverting CL.
+  revert_cl = ndb.LocalStructuredProperty(RevertCL, compressed=True)
+
+  # A flag to indicate if revet is supposed to be done for this suspected CL.
+  # It will be updated to True when Findit tries to revert it.
+  can_be_reverted = ndb.BooleanProperty(indexed=True, default=False)
+
+  @property
+  def revert_cl_url(self):
+    return self.revert_cl.revert_cl_url if self.revert_cl else None
 
   @property
   def project_name(self):

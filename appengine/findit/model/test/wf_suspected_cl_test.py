@@ -4,6 +4,7 @@
 
 import unittest
 
+from model import analysis_status as status
 from model.wf_suspected_cl import WfSuspectedCL
 
 
@@ -20,3 +21,17 @@ class WfSuspectedCLTest(unittest.TestCase):
         'm/b/123': build
     }
     self.assertEqual(build, suspected_cl.GetBuildInfo('m', 'b', 123))
+
+  def testCrNotificationProcessed(self):
+    culprit = WfSuspectedCL.Create('chromium', 'r1', 123)
+    for s in (status.COMPLETED, status.RUNNING):
+      culprit.cr_notification_status = s
+      self.assertTrue(culprit.cr_notification_processed)
+    for s in (status.ERROR, None):
+      culprit.cr_notification_status = s
+      self.assertFalse(culprit.cr_notification_processed)
+
+  def testCrNotified(self):
+    culprit = WfSuspectedCL.Create('chromium', 'r1', 123)
+    culprit.cr_notification_status = status.COMPLETED
+    self.assertTrue(culprit.cr_notified)

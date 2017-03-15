@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
 import logging
 import textwrap
 
@@ -14,8 +13,7 @@ from gae_libs.http.http_client_appengine import HttpClientAppengine
 from infra_api_clients.codereview import codereview_util
 from libs import time_util
 from model import analysis_status as status
-from model.wf_analysis import WfAnalysis
-from model.wf_culprit import WfCulprit
+from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_util
 from waterfall import waterfall_config
 
@@ -30,16 +28,12 @@ def _AdditionalCriteriaAllPassed(additional_criteria):
 
 @ndb.transactional
 def _ShouldSendNotification(
-    master_name, builder_name, build_number, repo_name, revision,
-    commit_position, build_num_threshold, additional_criteria,
+    repo_name, revision, build_num_threshold, additional_criteria,
     send_notification_right_now):
   """Returns True if a notification for the culprit should be sent."""
-  culprit = (WfCulprit.Get(repo_name, revision) or
-             WfCulprit.Create(repo_name, revision, commit_position))
-  if [master_name, builder_name, build_number] in culprit.builds:
-    return False
+  culprit = WfSuspectedCL.Get(repo_name, revision)
+  assert culprit
 
-  culprit.builds.append([master_name, builder_name, build_number])
   # Send notification only when:
   # 1. It was not processed yet.
   # 2. The culprit is for multiple failures in different builds to avoid false
@@ -60,7 +54,7 @@ def _ShouldSendNotification(
 
 @ndb.transactional
 def _UpdateNotificationStatus(repo_name, revision, new_status):
-  culprit = WfCulprit.Get(repo_name, revision)
+  culprit = WfSuspectedCL.Get(repo_name, revision)
   culprit.cr_notification_status = new_status
   if culprit.cr_notified:
     culprit.cr_notification_time = time_util.GetUTCNow()
@@ -74,7 +68,7 @@ def _SendNotificationForCulprit(
   sent = False
   if codereview and change_id:
     # Occasionally, a commit was not uploaded for code-review.
-    culprit = WfCulprit.Get(repo_name, revision)
+    culprit = WfSuspectedCL.Get(repo_name, revision)
     message = textwrap.dedent("""
     FYI: Findit identified this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
@@ -135,9 +129,8 @@ class SendNotificationForCulpritPipeline(BasePipeline):
     }
 
     if not _ShouldSendNotification(
-      master_name, builder_name, build_number, repo_name,
-      revision, commit_position, build_num_threshold, additional_criteria,
-      send_notification_right_now):
+        repo_name, revision, build_num_threshold, additional_criteria,
+        send_notification_right_now):
       return False
     return _SendNotificationForCulprit(
         repo_name, revision, commit_position, code_review_url)
