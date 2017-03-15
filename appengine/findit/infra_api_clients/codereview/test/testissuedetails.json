@@ -1,0 +1,406 @@
+{
+    "cc": [
+        "chromium-reviews@chromium.org"
+    ],
+    "reviewers": [
+        "someone@chromium.org"
+    ],
+    "owner_email": "author@chromium.org",
+    "private": false,
+    "target_ref": "refs/pending/heads/master",
+    "owner": "owner",
+    "required_reviewers": [],
+    "subject": "Dummy subject",
+    "all_required_reviewers_approved": true,
+    "base_url": "",
+    "is_editor": true,
+    "closed": true,
+    "landed_days_ago": 17,
+    "issue": 123456001,
+    "offer_cq": true,
+    "description": "Dummy: dummy change dummy explanation. dummy details..\n\nBUG=999999\n\nReview-Url: https://test/123456001\nCr-Original-Commit-Position: refs/heads/master@{#012355}\nCommitted: https://chromium.googlesource.com/chromium/src/+/c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb\nReview-Url: https://test/123456001\nCr-Commit-Position: refs/heads/master@{#012667}\nCommitted: https://chromium.googlesource.com/chromium/src/+/deadbeefdeadbeefc001c001c001ce120ce120aa",
+    "cq_dry_run_last_triggered_by": "",
+    "patchsets": [
+        1,
+        20001,
+        100001,
+        120001
+    ],
+    "cq_dry_run": false,
+    "revert_will_skip_checks": false,
+    "created": "2017-02-18 00:43:36.188640",
+    "messages": [
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "chromium-reviews@chromium.org"
+            ],
+            "text": "author@chromium.org changed reviewers:\n+ reviewer4@chromium.org",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-18 01:22:22.559900",
+            "approval": false,
+            "patchset": 20001,
+            "auto_generated": true
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-18 01:22:23.284630",
+            "approval": false,
+            "patchset": 20001,
+            "auto_generated": false
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "author@chromium.org",
+                "chromium-reviews@chromium.org"
+            ],
+            "text": "Description was changed from\n\n==========\nDummy: dummy change dummy explanation. dummy details..\n\nBUG=999999\n==========\n\nto\n\n==========\nDummy: dummy change dummy explanation. dummy details..\n\nBUG=999999\n==========",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-21 19:27:55.250410",
+            "approval": false,
+            "patchset": 20001,
+            "auto_generated": true
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "author@chromium.org changed reviewers:\n+ reviewer2@chromium.org, reviewer3@chromium.org",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-21 19:27:55.348880",
+            "approval": false,
+            "patchset": 20001,
+            "auto_generated": true
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "The CQ bit was checked by author@chromium.org to run a CQ dry run",
+            "issue_was_closed": false,
+            "disapproval": false, 
+            "date": "2017-02-21 19:30:50.769900",
+            "approval": false,
+            "patchset": 20001,
+            "auto_generated": true
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "author@chromium.org changed reviewers:\n+ reviewer@chromium.org",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-21 19:31:47.473710",
+            "approval": false,
+            "patchset": 20001,
+            "auto_generated": true
+        },
+        {
+            "sender": "commit-bot@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "Dry run: CQ is trying da patch. Follow status at\n  https://chromium-cq-status.appspot.com/v2/patch-status/test/123456001/20001",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-21 19:31:48.080350",
+            "approval": false,
+            "patchset": 20001,
+            "auto_generated": true
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "The CQ bit was unchecked by author@chromium.org",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-21 19:38:14.061590",
+            "approval": false,
+            "patchset": 20001,
+            "auto_generated": true
+        },
+        {
+            "sender": "commit-bot@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "The CQ bit was unchecked by commit-bot@chromium.org",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-21 19:38:27.713310",
+            "approval": false,
+            "patchset": 20001,
+            "auto_generated": true
+        },
+        {
+            "sender": "commit-bot@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "Dry run: Try jobs failed on following builders:\n  ios-device on master.tryserver.chromium.mac (JOB_FAILED, http://build.chromium.org/p/tryserver.chromium.mac/builders/ios-device/builds/157270)",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-21 19:38:28.558880",
+            "approval": false,
+            "patchset": 20001,
+            "auto_generated": true
+        },
+        {
+            "sender": "reviewer4@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "lgtm",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-21 20:05:09.669960",
+            "approval": true,
+            "patchset": 20001,
+            "auto_generated": false
+        },
+        {
+            "sender": "reviewer2@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "lgtm",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-21 20:13:58.892110",
+            "approval": true,
+            "patchset": 20001,
+            "auto_generated": false
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "all done.",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-21 21:09:02.303250",
+            "approval": false,
+            "patchset": 20001,
+            "auto_generated": false
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "The CQ bit was checked by author@chromium.org",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-23 00:52:00.831190",
+            "approval": false,
+            "patchset": 100001,
+            "auto_generated": true
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "reviewer4@chromium.org",
+                "reviewer2@chromium.org",
+                "reviewer@chromium.org"
+            ],
+            "text": "The patchset sent to the CQ was uploaded after l-g-t-m from reviewer4@chromium.org, reviewer2@chromium.org, reviewer@chromium.org\nLink to the patchset: https://test/123456001/#ps100001 (title: \"Introduce progress monitor\")",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-23 00:52:01.245110",
+            "approval": false,
+            "patchset": 100001,
+            "auto_generated": true
+        },
+        {
+            "sender": "commit-bot@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "CQ is trying da patch. Follow status at\n  https://chromium-cq-status.appspot.com/v2/patch-status/test/123456001/100001",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-23 00:52:44.946170",
+            "approval": false,
+            "patchset": 100001,
+            "auto_generated": false
+        },
+        {
+            "sender": "commit-bot@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "CQ is committing da patch.\n\nBot data: {\"patchset_id\": 100001, \"attempt_start_ts\": 1487811120831190, \"parent_rev\": \"65217792e655c9fa998f00b56b952192452b357c\", \"commit_rev\": \"c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb\"}",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-23 02:40:30.095650",
+            "approval": false,
+            "patchset": 100001,
+            "auto_generated": true
+        },
+        {
+            "sender": "commit-bot@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "Description was changed from\n\n==========\nDummy: dummy change dummy explanation. dummy details..\n\nBUG=999999\n==========\n\nto\n\n==========\nDummy: dummy change dummy explanation. dummy details..\n\nBUG=999999\n\nReview-Url: https://test/123456001\nCr-Commit-Position: refs/heads/master@{#012355}\nCommitted: https://chromium.googlesource.com/chromium/src/+/c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb\n==========",
+            "issue_was_closed": true,
+            "disapproval": false,
+            "date": "2017-02-23 02:41:15.303340",
+            "approval": false,
+            "patchset": 100001,
+            "auto_generated": true
+        },
+        {
+            "sender": "commit-bot@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "Committed patchset #6 (id:100001) as https://chromium.googlesource.com/chromium/src/+/c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb",
+            "issue_was_closed": true,
+            "disapproval": false,
+            "date": "2017-02-23 02:41:16.845690",
+            "approval": false,
+            "patchset": 100001,
+            "auto_generated": false
+        },
+        {
+            "sender": "findit-for-me@appspot.gserviceaccount.com",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "FYI: Findit identified this CL at revision 012355 as the culprit for\nfailures in the build cycles as shown on:\nhttps://findit-for-me.appspot.com/waterfall/culprit?key=ag9zfmZpbmRpdC1mb3ItbWVyQAsSCVdmQ3VscHJpdCIxY2hyb21pdW0vYzBmZjRjMGQ0MGE4YjlhYjhlZDgwOWE0NDZhYTI5ODQ1MGMyMzQ2Mgw",
+            "issue_was_closed": true,
+            "disapproval": false,
+            "date": "2017-02-23 03:06:20.884360",
+            "approval": false,
+            "patchset": 100001,
+            "auto_generated": false
+        },
+        {
+            "sender": "reviewer@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "A revert of this CL (patchset #6 id:100001) has been created in https://test/2713613003/ by reviewer@chromium.org.\n\nThe reason for reverting is: This broke build according to #39.",
+            "issue_was_closed": true,
+            "disapproval": false,
+            "date": "2017-02-23 03:09:25.587410",
+            "approval": false,
+            "patchset": 100001,
+            "auto_generated": false
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "Description was changed from\n\n==========\nDummy: dummy change dummy explanation. dummy details..\n\nBUG=999999\n\nReview-Url: https://test/123456001\nCr-Commit-Position: refs/heads/master@{#012355}\nCommitted: https://chromium.googlesource.com/chromium/src/+/c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb\n==========\n\nto\n\n==========\nDummy: dummy change dummy explanation. dummy details..\n\nBUG=999999\n\nReview-Url: https://test/123456001\nCr-Commit-Position: refs/heads/master@{#012355}\nCommitted: https://chromium.googlesource.com/chromium/src/+/c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb\n==========",
+            "issue_was_closed": true,
+            "disapproval": false,
+            "date": "2017-02-23 21:18:32.231230",
+            "approval": false,
+            "patchset": 100001,
+            "auto_generated": true
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "The CQ bit was checked by author@chromium.org",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-23 21:24:47.930420",
+            "approval": false,
+            "patchset": 120001,
+            "auto_generated": true
+        },
+        {
+            "sender": "author@chromium.org",
+            "recipients": [
+                "reviewer4@chromium.org",
+                "reviewer2@chromium.org",
+                "reviewer@chromium.org"
+            ],
+            "text": "The patchset sent to the CQ was uploaded after l-g-t-m from reviewer4@chromium.org, reviewer2@chromium.org, reviewer@chromium.org\nLink to the patchset: https://test/123456001/#ps120001 (title: \"same with unused assert removed - assert is trivial\")",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-23 21:24:48.254830",
+            "approval": false,
+            "patchset": 120001,
+            "auto_generated": true
+        },
+        {
+            "sender": "commit-bot@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "CQ is trying da patch. Follow status at\n  https://chromium-cq-status.appspot.com/v2/patch-status/test/123456001/120001",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-23 21:25:27.299030",
+            "approval": false,
+            "patchset": 120001,
+            "auto_generated": false
+        },
+        {
+            "sender": "commit-bot@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "CQ is committing da patch.\n\nBot data: {\"patchset_id\": 120001, \"attempt_start_ts\": 1487885087930420, \"parent_rev\": \"67ce2eef955ec99e685af794efe0d60a51d0d1de\", \"commit_rev\": \"deadbeefdeadbeefc001c001c001ce120ce120aa\"}",
+            "issue_was_closed": false,
+            "disapproval": false,
+            "date": "2017-02-23 23:17:15.197000",
+            "approval": false,
+            "patchset": 120001,
+            "auto_generated": true
+        },
+        {
+            "sender": "commit-bot@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "Description was changed from\n\n==========\nDummy: dummy change dummy explanation. dummy details..\n\nBUG=999999\n\nReview-Url: https://test/123456001\nCr-Commit-Position: refs/heads/master@{#012355}\nCommitted: https://chromium.googlesource.com/chromium/src/+/c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb\n==========\n\nto\n\n==========\nDummy: dummy change dummy explanation. dummy details..\n\nBUG=999999\n\nReview-Url: https://test/123456001\nCr-Original-Commit-Position: refs/heads/master@{#012355}\nCommitted: https://chromium.googlesource.com/chromium/src/+/c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb\nReview-Url: https://test/123456001\nCr-Commit-Position: refs/heads/master@{#012667}\nCommitted: https://chromium.googlesource.com/chromium/src/+/deadbeefdeadbeefc001c001c001ce120ce120aa\n==========",
+            "issue_was_closed": true,
+            "disapproval": false,
+            "date": "2017-02-23 23:17:53.223910",
+            "approval": false,
+            "patchset": 120001,
+            "auto_generated": true
+        },
+        {
+            "sender": "commit-bot@chromium.org",
+            "recipients": [
+                "author@chromium.org"
+            ],
+            "text": "Committed patchset #7 (id:120001) as https://chromium.googlesource.com/chromium/src/+/deadbeefdeadbeefc001c001c001ce120ce120aa",
+            "issue_was_closed": true,
+            "disapproval": false,
+            "date": "2017-02-23 23:17:54.803300",
+            "approval": false,
+            "patchset": 120001,
+            "auto_generated": false
+        }
+    ],
+    "modified": "2017-02-23 23:17:54.752020",
+    "project": "chromium",
+    "commit": false
+}

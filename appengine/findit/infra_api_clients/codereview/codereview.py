@@ -52,3 +52,17 @@ class CodeReview(object):  # pragma: no cover.
       A boolean indicating success.
     """
     raise NotImplementedError()
+
+  def GetClDetails(self, change_id):
+    """Retrieves information about commits and reverts for a given CL.
+
+    Args:
+      change_id (str or int): The change id of the CL on Gerrit or the issue
+          number of the CL on Rietveld.
+
+    Returns:
+      An object that has a `commits` and a `reverts` properties which are lists
+      of objects that map a patchset to a revision, and a patchset to a revert
+      CL.
+    """
+    raise NotImplementedError()

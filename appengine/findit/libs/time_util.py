@@ -71,6 +71,12 @@ def DatetimeFromString(date):
   raise ValueError('%s is not in a known datetime format' % date)
 
 
+def UTCDatetimeFromNaiveString(date):  # pragma: no cover
+  """Same as above, but the resulting datetime is tz aware(utc)."""
+  dt = DatetimeFromString(date)
+  return pytz.utc.localize(dt)
+
+
 def FormatDuration(datetime_start, datetime_end):
   """Returns a string representing the given time duration or None."""
   if not datetime_start or not datetime_end:

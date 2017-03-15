@@ -2,7 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import mock
+import os
 import textwrap
 
 from testing_utils import testing
@@ -25,8 +27,9 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     """Override to avoid sleep."""
     return 0
 
-  def _Get(self, *_):  # pragma: no cover
-    pass
+  def _Get(self, url, _, headers):
+    self.requests.append((url, None, headers))
+    return self.responses.get(url, (404, 'Not Found'))
 
   def _Post(self, url, data, _, headers):
     self.requests.append((url, data, headers))
@@ -122,3 +125,56 @@ class RietveldTest(testing.AppengineTestCase):
     self.assertIsNone(change_id)
     mocked_SendPostRequest.assert_called_once_with(
         '/api/1222/20001/revert', {'revert_reason': 'reason', 'revert_cq': 0})
+
+  @mock.patch('pytz.utc.localize', lambda x: x)
+  def testGetClDetails(self):
+    rietveld_url = 'https://server.host.name'
+    change_id = '123456001'
+    revert_change_id = '2713613003'
+    response = 200, open(os.path.join(os.path.dirname(__file__),
+                        'testissuedetails.json')).read()
+    self.http_client.SetResponse('%s/api/%s?messages=true' %
+                                 (rietveld_url, change_id), response)
+    response = 200, open(os.path.join(os.path.dirname(__file__),
+                        'reverttestissuedetails.json')).read()
+    self.http_client.SetResponse('%s/api/%s?messages=true' %
+                                 (rietveld_url, revert_change_id), response)
+    cl_info = self.rietveld.GetClDetails(change_id)
+    self.assertEqual(cl_info.serialize(),
+    {'url': 'https://server.host.name/123456001/',
+     'commits': [
+         {
+             'patchset_id': '100001',
+             'timestamp': '2017-02-23 02:41:16 UTC',
+             'revision': 'c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb'
+         },
+         {
+             'patchset_id': '120001',
+             'timestamp': '2017-02-23 23:17:54 UTC',
+             'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa'
+         }
+     ],
+     'reverts': [
+         {
+             'patchset_id': '100001',
+             'reverting_cl': {
+                 'cc': [u'chromium-reviews@chromium.org'],
+                 'reviewers': [u'someone@chromium.org'],
+                 'url': 'https://server.host.name/2713613003/',
+                 'commits': [
+                     {
+                         'patchset_id': '20001',
+                         'timestamp': '2017-02-23 23:17:54 UTC',
+                         'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa'
+                     }
+                 ],
+                 'reverts': [],
+                 'closed': True
+             },
+             'reverting_user_email': 'reviewer@chromium.org',
+             'timestamp': '2017-02-23 03:09:25 UTC'
+         }
+     ],
+     'cc': [u'chromium-reviews@chromium.org'],
+     'reviewers': [u'someone@chromium.org'],
+     'closed': True})

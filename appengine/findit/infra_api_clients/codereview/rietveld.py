@@ -12,11 +12,14 @@
 # the thing passed for HTTP_CLIENT to be ``callable``, rather than giving
 # a name to the method we use on that object.
 
+import json
 import logging
 import re
 import urlparse
 
+from libs import time_util
 from infra_api_clients.codereview import codereview
+from infra_api_clients.codereview import cl_info
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 
@@ -119,3 +122,59 @@ class Rietveld(codereview.CodeReview):
 
   def AddReviewers(self, change_id, reviewers, message=None):
       raise NotImplementedError()  # pragma: no cover
+
+  def _ParseClInfo(self, data, cl):
+    patchset_reverted_to_issue_regex = re.compile(
+        r'A revert of this CL \(patchset #\d+ id:\d+\) has been '
+        r'created in (?P<issueurl>.*) by .*'
+        r'.\n\nThe reason for reverting is: .*')
+    patchset_to_revision_regex = re.compile(
+        r'Committed patchset #\d+ \(id:\d+\) as '
+        r'https://.*/(?P<revision>[a-f\d]{40})')
+    def patchset_to_revision_func(cl, message):
+      matches = patchset_to_revision_regex.match(message['text'])
+      if not matches:
+        return
+      patchset_id = str(message.get('patchset'))
+      revision = matches.group('revision')
+      timestamp = time_util.UTCDatetimeFromNaiveString(message['date'])
+      commit = cl_info.Commit(patchset_id, revision, timestamp)
+      cl.commits.append(commit)
+
+    def patchset_reverted_to_issue_func(cl, message):
+      matches = patchset_reverted_to_issue_regex.match(message['text'])
+      if not matches:
+        return
+      patchset_id = str(message['patchset'])
+      issue_url = matches.group('issueurl')
+      url_parts = issue_url.split('/')
+      # Support both https://host/1234 and https://host/1234/
+      change_id =  url_parts[-1] or url_parts[-2]
+      reverter = message['sender']
+      timestamp = time_util.UTCDatetimeFromNaiveString(message['date'])
+      revert_cl = self.GetClDetails(change_id)
+      revert = cl_info.Revert(patchset_id, revert_cl, reverter, timestamp)
+      cl.reverts.append(revert)
+
+    details_funcs = [patchset_to_revision_func, patchset_reverted_to_issue_func]
+
+    # Sort by timestamp
+    messages = sorted(
+        data['messages'],
+        key=lambda x: time_util.UTCDatetimeFromNaiveString(x.get('date')))
+    for message in messages:
+      for f in details_funcs:
+        f(cl, message)
+    cl.closed = data['closed']
+    cl.cc = data['cc']
+    cl.reviewers = data['reviewers']
+    return cl
+
+  def GetClDetails(self, change_id):
+    params = {'messages': 'true'}
+    url = 'https://%s/api/%s' % (self._server_hostname, change_id)
+    issue_url = 'https://%s/%s/' % (self._server_hostname, change_id)
+    status_code, content = self.HTTP_CLIENT.Get(url, params=params)
+    if status_code == 200:  # pragma: no branch
+      return self._ParseClInfo(json.loads(content), cl_info.ClInfo(issue_url))
+    return None  # pragma: no cover
