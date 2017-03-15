@@ -197,20 +197,26 @@ func (*LuciConfigWorkflowProvider) ReadConfigForProject(c context.Context, proje
 		ServiceAccount: "emso@chromium.org",
 		Workers: []*admin.Worker{
 			{
-				Name:                "Hello_Ubuntu14.04_x86-64",
+				Name:                "Hello_Ubuntu",
 				Needs:               tricium.Data_GIT_FILE_DETAILS,
 				Provides:            tricium.Data_FILES,
 				ProvidesForPlatform: tricium.Platform_UBUNTU,
 				RuntimePlatform:     tricium.Platform_UBUNTU,
 				Dimensions: []string{
-					"pool:Chrome",
+					"pool:default",
 					"os:Ubuntu-14.04",
-					"cpu:x84-64",
+					"cpu:x86",
 				},
 				Cmd: &tricium.Cmd{
-					Exec: "echo",
+					Exec: "python",
 					Args: []string{
-						"'hello'",
+						"-c",
+						"import os; import json; import sys; " +
+							"p = sys.argv[1] + \"/tricium/data/\"; " +
+							"b = 0 if os.path.exists(p) else os.makedirs(p); f = open(p + \"results.json\", \"w\"); " +
+							"c={}; c[\"category\"]=\"Hello\"; c[\"message\"]=\"Hello\"; d={}; d[\"platforms\"]=0; d[\"comment\"]=c; " +
+							"json.dump(d, f); f.close()",
+						"${ISOLATED_OUTDIR}",
 					},
 				},
 				Deadline: 30,
@@ -268,7 +274,7 @@ func (*LuciConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 				Dimensions: []string{
 					"pool:default",
 					"os:Ubuntu-14.04",
-					"cpu:x86-64",
+					"cpu:x86",
 				},
 			},
 		},

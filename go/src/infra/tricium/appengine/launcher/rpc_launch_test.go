@@ -61,7 +61,7 @@ func TestLaunchRequest(t *testing.T) {
 					"README.md",
 					"README2.md",
 				},
-			}, &mockConfigProvider{})
+			}, &mockConfigProvider{}, &common.MockIsolator{})
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track request", func() {
@@ -87,7 +87,7 @@ func TestLaunchRequest(t *testing.T) {
 					"README.md",
 					"README2.md",
 				},
-			}, &mockConfigProvider{})
+			}, &mockConfigProvider{}, &common.MockIsolator{})
 			So(err, ShouldBeNil)
 
 			Convey("Succeeding launch request for the same run enqueues no track request", func() {

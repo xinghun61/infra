@@ -95,6 +95,8 @@ type WorkerInvocation struct {
 	State RunState
 	// Name of the platform configuration used for the swarming task of this worker.
 	Platform string
+	// Isolate server URL.
+	IsolateServerURL string `gae:",noindex"`
 	// Hash to the isolated input provided to the corresponding swarming task.
 	IsolatedInput string `gae:",noindex"`
 	// Hash to the isolated output collected from the corresponding swarming task.
@@ -107,4 +109,15 @@ type WorkerInvocation struct {
 	SwarmingURL string `gae:",noindex"`
 	// Swarming task ID.
 	TaskID string `gae:",noindex"`
+}
+
+// WorkerResult tracks the results from a worker.
+//
+// Stored with 'WorkerInvocation' as parent.
+type WorkerResult struct {
+	// LUCI datastore fields.
+	ID     string  `gae:"$id"`
+	Parent *ds.Key `gae:"$parent"`
+	// Tricium result encoded as JSON.
+	Result string `gae:",noindex"`
 }

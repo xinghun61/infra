@@ -26,10 +26,13 @@ func (*trackerServer) WorkerLaunched(c context.Context, req *admin.WorkerLaunche
 	if req.Worker == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing worker")
 	}
-	if req.IsolatedInputHash == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing input hash")
+	if req.IsolateServerUrl == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolate server URL")
 	}
-	if req.SwarmingUrl == "" {
+	if req.IsolatedInputHash == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
+	}
+	if req.SwarmingServerUrl == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing swarming URL")
 	}
 	if req.TaskId == "" {
@@ -42,7 +45,7 @@ func (*trackerServer) WorkerLaunched(c context.Context, req *admin.WorkerLaunche
 }
 
 func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
-	logging.Infof(c, "[tracker] Worker launched (run ID: %s, worker: %s)", req.RunId, req.Worker)
+	logging.Infof(c, "[tracker] Worker launched (run ID: %d, worker: %s, taskID: %s, IsolatedInput: %s)", req.RunId, req.Worker, req.TaskId, req.IsolatedInputHash)
 	_, analyzerKey, workerKey := createKeys(c, req.RunId, req.Worker)
 	logging.Infof(c, "[tracker] Looking up worker, key: %s", workerKey)
 	return ds.RunInTransaction(c, func(c context.Context) (err error) {
@@ -63,6 +66,10 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 				return
 			}
 			w.State = track.Launched
+			w.IsolateServerURL = req.IsolateServerUrl
+			w.IsolatedInput = req.IsolatedInputHash
+			w.TaskID = req.TaskId
+			w.SwarmingURL = req.SwarmingServerUrl
 			if err := ds.Put(c, w); err != nil {
 				done <- fmt.Errorf("failed to mark worker as launched: %v", err)
 				return

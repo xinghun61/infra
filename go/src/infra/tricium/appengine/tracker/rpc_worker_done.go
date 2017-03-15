@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"infra/tricium/api/admin/v1"
+	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -27,26 +28,40 @@ func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest
 	if req.Worker == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing worker")
 	}
+	if req.IsolateServerUrl == "" {
+		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolate server URL")
+	}
 	if req.IsolatedOutputHash == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing output hash")
 	}
 	// TODO(emso): check exit code
-	if err := workerDone(c, req); err != nil {
+	if err := workerDone(c, req, &common.IsolateServer{IsolateServerURL: req.IsolateServerUrl}); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to track worker completion: %v", err)
 	}
 	return &admin.WorkerDoneResponse{}, nil
 }
 
-func workerDone(c context.Context, req *admin.WorkerDoneRequest) error {
-	logging.Infof(c, "[tracker] Worker done (run ID: %s, worker: %s)", req.RunId, req.Worker)
+func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.Isolator) error {
+	logging.Infof(c, "[tracker] Worker done (run ID: %d, worker: %s)", req.RunId, req.Worker)
 	runKey, analyzerKey, workerKey := createKeys(c, req.RunId, req.Worker)
-	// Prepare to update worker state.
+	// Prepare to update worker state and isolated output.
 	worker := &track.WorkerInvocation{
 		ID:     workerKey.StringID(),
 		Parent: workerKey.Parent(),
 	}
 	// TODO(emso): add DoneFailure if results
-	// TODO(emso): add result details from isolated output.
+	results, err := isolator.FetchIsolatedResults(c, req.IsolatedOutputHash)
+	if err != nil {
+		return fmt.Errorf("failed to fetch isolated worker resul: %v", err)
+	}
+	workerResultKey := ds.NewKey(c, "WorkerResult", req.Worker, 0, workerKey)
+	// TODO(emso): Revisit storing of results.
+	// The current scheme assumes results of less than 1Mb per analyzer and is not very good for feedback tracking.
+	workerResult := &track.WorkerResult{
+		ID:     workerResultKey.StringID(),
+		Parent: workerResultKey.Parent(),
+		Result: results,
+	}
 	workerState := track.DoneSuccess
 	if req.ExitCode != 0 {
 		workerState = track.DoneException
@@ -110,8 +125,8 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest) error {
 		}
 	}
 	return ds.RunInTransaction(c, func(c context.Context) (err error) {
-		// Run the below three operations in parallel, make room for two errors.
-		errors := 2
+		// Run the below four operations in parallel, make room for three errors.
+		errors := 3
 		done := make(chan error, errors)
 		defer func() {
 			for i := 0; i < errors; i++ {
@@ -122,17 +137,26 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest) error {
 			}
 		}()
 		go func() {
-			// Update worker state.
+			// Add worker results.
+			if err := ds.Put(c, workerResult); err != nil {
+				done <- fmt.Errorf("failed to add worker results: %v", err)
+			}
+			done <- nil
+		}()
+		go func() {
+			// Update worker state and isolated output.
 			if err := ds.Get(c, worker); err != nil {
 				done <- fmt.Errorf("failed to retrieve worker: %v", err)
 				return
 			}
 			if worker.State != workerState {
 				worker.State = workerState
-				if err := ds.Put(c, worker); err != nil {
-					done <- fmt.Errorf("failed to mark worker as done-*: %v", err)
-					return
-				}
+			}
+			worker.IsolateServerURL = req.IsolateServerUrl
+			worker.IsolatedOutput = req.IsolatedOutputHash
+			if err := ds.Put(c, worker); err != nil {
+				done <- fmt.Errorf("failed to mark worker as done-*: %v", err)
+				return
 			}
 			done <- nil
 		}()
@@ -151,7 +175,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest) error {
 			}
 			done <- nil
 		}()
-		// Update run state.
+		// Update run state. Stay in the main thread for this fourth operation.
 		if err := ds.Get(c, run); err != nil {
 			return fmt.Errorf("failed to retrieve run: %v", err)
 		}

@@ -57,7 +57,7 @@ func TestTriggerRequest(t *testing.T) {
 			err := trigger(ctx, &admin.TriggerRequest{
 				RunId:  runID,
 				Worker: "Hello",
-			}, &mockConfigProvider{})
+			}, &mockConfigProvider{}, &common.MockSwarmingAPI{}, &common.MockIsolator{})
 			So(err, ShouldBeNil)
 			Convey("Enqueues track request", func() {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.TrackerQueue]), ShouldEqual, 1)

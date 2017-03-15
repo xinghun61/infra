@@ -4,7 +4,11 @@
 
 package admin
 
-import "infra/tricium/api/v1"
+import (
+	"fmt"
+
+	"infra/tricium/api/v1"
+)
 
 // GetNext returns the names of successing workers of the given worker.
 func (wf *Workflow) GetNext(cw string) []string {
@@ -28,4 +32,16 @@ func (wf *Workflow) RootWorkers() []string {
 		}
 	}
 	return rw
+}
+
+// GetWorker returns the worker matching the given name.
+//
+// An unknown worker results in an error.
+func (wf *Workflow) GetWorker(name string) (*Worker, error) {
+	for _, w := range wf.Workers {
+		if w.Name == name {
+			return w, nil
+		}
+	}
+	return nil, fmt.Errorf("unknown worker: %s", name)
 }

@@ -51,6 +51,7 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	}
 	runID, err := analyze(c, req, &common.LuciConfigProvider{})
 	if err != nil {
+		logging.WithError(err).Errorf(c, "analyze failed: %v", err)
 		return nil, grpc.Errorf(codes.Internal, "failed to execute analyze request")
 	}
 	logging.Infof(c, "[frontend] Run ID: %s", runID)
@@ -76,7 +77,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp common.ConfigPro
 	}
 	if !ok {
 		// TODO(emso): make this bubble up as a permission denied error
-		return "", fmt.Errorf("no request access for project %s, context: %v", req.Project, c)
+		return "", fmt.Errorf("no request access for project %q", req.Project)
 	}
 	// TODO(emso): Verify that there is no current run for this request (map hashed requests to run IDs).
 	// TODO(emso): Read Git repo info from the configuration projects/ endpoint.

@@ -22,7 +22,7 @@ import (
 
 // Collect processes one collect request to the Tricium driver.
 func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*admin.CollectResponse, error) {
-	logging.Infof(c, "[driver]: Received collect request (run ID: %d, worker: %s)", req.RunId, req.Worker)
+	logging.Infof(c, "[driver]: Received collect request (run ID: %d, worker: %s, task ID: %s)", req.RunId, req.Worker, req.TaskId)
 	if req.RunId == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
 	}
@@ -32,24 +32,33 @@ func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*adm
 	if req.IsolatedInputHash == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
 	}
-	if err := collect(c, req, &common.DatastoreWorkflowConfigProvider{}); err != nil {
+	if err := collect(c, req, &common.DatastoreWorkflowConfigProvider{},
+		&common.SwarmingServer{
+			SwarmingServerURL: req.SwarmingServerUrl,
+			IsolateServerURL:  req.IsolateServerUrl,
+		},
+		&common.IsolateServer{IsolateServerURL: req.IsolateServerUrl}); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to trigger worker: %v", err)
 	}
 	return &admin.CollectResponse{}, nil
 }
 
-func collect(c context.Context, req *admin.CollectRequest, wp common.WorkflowProvider) error {
+func collect(c context.Context, req *admin.CollectRequest, wp common.WorkflowProvider, sw common.SwarmingAPI, isolator common.Isolator) error {
 	wf, err := wp.ReadConfigForRun(c, req.RunId)
 	if err != nil {
 		return fmt.Errorf("failed to read workflow config: %v", err)
 	}
-	// TODO(emso): Collect results from swarming task, getting actual isolated output and exit code.
-	isolatedOutput := "abcdefg"
-	exitCode := int32(0)
+
+	isolatedOutput, exitCode, err := sw.Collect(c, req.TaskId)
+	if err != nil {
+		return fmt.Errorf("failed to collect swarming task result: %v", err)
+	}
+
 	// Mark worker as done.
 	b, err := proto.Marshal(&admin.WorkerDoneRequest{
 		RunId:              req.RunId,
 		Worker:             req.Worker,
+		IsolateServerUrl:   req.IsolateServerUrl,
 		IsolatedOutputHash: isolatedOutput,
 		ExitCode:           exitCode,
 	})
@@ -61,13 +70,21 @@ func collect(c context.Context, req *admin.CollectRequest, wp common.WorkflowPro
 	if err := tq.Add(c, common.TrackerQueue, t); err != nil {
 		return fmt.Errorf("failed to enqueue track request: %v", err)
 	}
-	// TODO(emso): Massage actual isolated output to isolated input for successors.
-	isolatedInput := "abcdefg"
+
+	// Create layered isolated input, include the input in the collect request and
+	// massage the isolated output into new isolated input.
+	isolatedInput, err := isolator.LayerIsolates(c, req.IsolatedInputHash, isolatedOutput)
+	if err != nil {
+		return fmt.Errorf("failed layer isolates: %v", err)
+	}
+
 	// Enqueue trigger requests for successors.
 	for _, worker := range wf.GetNext(req.Worker) {
 		b, err := proto.Marshal(&admin.TriggerRequest{
 			RunId:             req.RunId,
+			IsolateServerUrl:  req.IsolateServerUrl,
 			IsolatedInputHash: isolatedInput,
+			SwarmingServerUrl: req.SwarmingServerUrl,
 			Worker:            worker,
 		})
 		if err != nil {

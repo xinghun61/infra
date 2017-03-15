@@ -11,6 +11,8 @@ import (
 	"github.com/luci/luci-go/grpc/discovery"
 	"github.com/luci/luci-go/server/router"
 
+	"google.golang.org/appengine"
+
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"
 )
@@ -21,7 +23,13 @@ func init() {
 
 	r.POST("/driver/internal/trigger", base, triggerHandler)
 	r.POST("/driver/internal/collect", base, collectHandler)
-	r.POST("/_ah/push-handlers/notify", base, notifyHandler)
+
+	// Devserver can't accept PubSub pushes, use manual PubSub pulls instead in development.
+	if appengine.IsDevAppServer() {
+		r.GET("/driver/internal/pull", base, pubsubPullHandler)
+	} else {
+		r.POST("/_ah/push-handlers/notify", base, pubsubPushHandler)
+	}
 
 	// Configure pRPC server.
 	s := common.NewRPCServer()

@@ -12,6 +12,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"infra/tricium/api/admin/v1"
+	"infra/tricium/appengine/common"
 	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
 )
@@ -48,7 +49,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 			RunId:    runID,
 			Worker:   fileIsolator,
 			ExitCode: 0,
-		})
+		}, &common.MockIsolator{})
 		So(err, ShouldBeNil)
 
 		Convey("Marks worker as done", func() {

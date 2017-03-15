@@ -44,13 +44,14 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 	if len(req.Paths) == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
-	if err := launch(c, req, &common.LuciConfigWorkflowProvider{}); err != nil {
+	if err := launch(c, req, &common.LuciConfigWorkflowProvider{},
+		&common.IsolateServer{IsolateServerURL: common.IsolateDevServerURL}); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to launch workflow: %v", err)
 	}
 	return &admin.LaunchResponse{}, nil
 }
 
-func launch(c context.Context, req *admin.LaunchRequest, wp common.WorkflowProvider) error {
+func launch(c context.Context, req *admin.LaunchRequest, wp common.WorkflowProvider, isolator common.Isolator) error {
 	// Guard checking if there is already a stored workflow for the run ID in the request, if so stop here.
 	w := &common.Workflow{ID: req.RunId}
 	if err := ds.Get(c, w); err != ds.ErrNoSuchEntity {
@@ -78,18 +79,22 @@ func launch(c context.Context, req *admin.LaunchRequest, wp common.WorkflowProvi
 	}
 	wfTask := tq.NewPOSTTask("/tracker/internal/workflow-launched", nil)
 	wfTask.Payload = b
+	// TODO(emso): select dev/prod swarming/isolate serve based on devserver and dev/prod tricium instance.
 	// Isolate initial intput.
-	inputHash, err := isolateGitFileDetails(req.Project, req.GitRepo, req.GitRef, req.Paths)
+	inputHash, err := isolator.IsolateGitFileDetails(c, req.Project, req.GitRepo, req.GitRef, req.Paths)
 	if err != nil {
 		return fmt.Errorf("failed to isolate git file details: %v", err)
 	}
+	logging.Infof(c, "[launcher] Isolated git file details, hash: %q", inputHash)
 	// Prepare trigger requests for root workers.
 	wTasks := []*tq.Task{}
 	for _, worker := range wf.RootWorkers() {
 		b, err := proto.Marshal(&admin.TriggerRequest{
 			RunId:             req.RunId,
+			IsolateServerUrl:  common.IsolateDevServerURL,
 			IsolatedInputHash: inputHash,
 			Worker:            worker,
+			SwarmingServerUrl: common.SwarmingDevServerURL,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to encode driver request: %v", err)
@@ -123,10 +128,4 @@ func launch(c context.Context, req *admin.LaunchRequest, wp common.WorkflowProvi
 		}
 		return nil
 	}, nil)
-}
-
-func isolateGitFileDetails(project, gitRepo, gitRef string, paths []string) (string, error) {
-	// TODO(emso): Create initial Tricium data, git file details.
-	// TODO(emso): Isolate created Tricium data.
-	return "abcedfg", nil
 }
