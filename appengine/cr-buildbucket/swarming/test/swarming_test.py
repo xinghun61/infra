@@ -8,6 +8,11 @@ import datetime
 import json
 import logging
 
+from components import utils
+utils.fix_protobuf_package()
+
+from google import protobuf
+
 from components import auth
 from components import config as config_component
 from components import net
@@ -49,57 +54,56 @@ class SwarmingTest(testing.AppengineTestCase):
         'components.net.json_request_async', autospec=True,
         side_effect=json_request_async)
 
-    self.bucket_cfg = project_config_pb2.Bucket(
-      name='bucket',
-      swarming=project_config_pb2.Swarming(
-        hostname='chromium-swarm.appspot.com',
-        url_format='https://example.com/{swarming_hostname}/{task_id}',
-        builder_defaults=project_config_pb2.Swarming.Builder(
-          swarming_tags=['commontag:yes'],
-          dimensions=['cores:8', 'pool:default', 'cpu:x86-64'],
-          recipe=project_config_pb2.Swarming.Recipe(
-            repository='https://example.com/repo',
-            name='recipe',
-          ),
-          caches=[
-            project_config_pb2.Swarming.Builder.CacheEntry(
-                name='git_chromium',
-                path='git_cache',
-            ),
-            project_config_pb2.Swarming.Builder.CacheEntry(
-                name='build_chromium',
-                path='out',
-            ),
-          ],
-          cipd_packages=[
-            project_config_pb2.Swarming.Builder.CipdPackage(
-              package_name='infra/test/foo/${platform}',
-              path='third_party',
-              version='deadbeef',
-            ),
-          ],
-        ),
-        builders=[
-          project_config_pb2.Swarming.Builder(
-              name='builder',
-              swarming_tags=['buildertag:yes'],
-              dimensions=['os:Linux', 'pool:Chrome', 'cpu:'],
-              recipe=project_config_pb2.Swarming.Recipe(
-                  properties=['predefined-property:x'],
-                  properties_j=['predefined-property-bool:true'],
-              ),
-              cipd_packages=[
-                project_config_pb2.Swarming.Builder.CipdPackage(
-                  package_name='infra/test/baz',
-                  path='.',
-                  version='lkgr',
-                )
-              ],
-              priority=108,
-          ),
-        ],
-      ),
-    )
+    bucket_cfg_text = """
+      name: "bucket"
+      swarming {
+        hostname: "chromium-swarm.appspot.com"
+        url_format: "https://example.com/{swarming_hostname}/{task_id}"
+        builder_defaults {
+          swarming_tags: "commontag:yes"
+          dimensions: "cores:8"
+          dimensions: "pool:default"
+          dimensions: "cpu:x86-6"
+          recipe {
+            repository: "https://example.com/repo"
+            name: "recipe"
+          }
+          caches {
+            name: "git_chromium"
+            path: "git_cache"
+          }
+          caches {
+            name: "build_chromium"
+            path: "out"
+          }
+          cipd_packages {
+            package_name: "infra/test/foo/${platform}"
+            path: "third_party"
+            version: "deadbeef"
+          }
+        }
+        builders {
+          name: "builder"
+          swarming_tags: "buildertag:yes"
+          dimensions: "os:Linux"
+          dimensions: "pool:Chrome"
+          dimensions: "cpu:"
+          recipe {
+            properties: "predefined-property:x"
+            properties_j: "predefined-property-bool:true"
+          }
+          cipd_packages {
+            package_name: "infra/test/baz"
+            path: "."
+            version: "lkgr"
+          }
+          priority: 108
+        }
+      }
+    """
+    self.bucket_cfg = project_config_pb2.Bucket()
+    protobuf.text_format.Merge(bucket_cfg_text, self.bucket_cfg)
+
     def get_bucket_async(name):
       if name == 'bucket':
         return futuristic(('chromium', self.bucket_cfg))
