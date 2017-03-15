@@ -5,6 +5,8 @@
 
 """Page for showing a user's hotlists."""
 
+from third_party import ezt
+
 from features import features_bizobj
 from features import hotlist_views
 from framework import framework_views
@@ -60,6 +62,7 @@ class UserHotlists(servlet.Servlet):
         'editor_of_hotlists': editor_of_hotlists,
         'follower_of_hotlists': follower_of_hotlists,
         'starred_hotlists': starred_hotlists,
+        'viewing_user_page': ezt.boolean(True),
         }
 
   def GatherHelpData(self, mr, page_data):

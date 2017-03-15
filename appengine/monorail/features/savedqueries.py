@@ -8,6 +8,8 @@
 import logging
 import time
 
+from third_party import ezt
+
 from features import savedqueries_helpers
 from framework import framework_helpers
 from framework import permissions
@@ -43,6 +45,7 @@ class SavedQueries(servlet.Servlet):
                   savedqueries_helpers.MAX_QUERIES + 1)),
         'max_queries': savedqueries_helpers.MAX_QUERIES,
         'user_tab_mode': 'st4',
+        'viewing_user_page': ezt.boolean(True),
         }
     return page_data
 

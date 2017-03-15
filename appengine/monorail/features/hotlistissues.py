@@ -108,7 +108,9 @@ class HotlistIssues(servlet.Servlet):
                           mr, '%d/csv' % mr.hotlist_id, num=100),
                       'is_hotlist': ezt.boolean(True),
                       'col_spec': mr.col_spec.lower(),
-                      'user_hotlists': user_hotlists})
+                      'user_hotlists': user_hotlists,
+                      'viewing_user_page': ezt.boolean(True),
+                      })
     return page_data
   # TODO(jojwang): implement peek issue on hover, implement starring issues
 

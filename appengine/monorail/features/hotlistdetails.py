@@ -52,6 +52,7 @@ class HotlistDetails(servlet.Servlet):
         'initial_default_col_spec': mr.hotlist.default_col_spec,
         'initial_is_private': ezt.boolean(mr.hotlist.is_private),
         'cant_administer_hotlist': ezt.boolean(cant_administer_hotlist),
+        'viewing_user_page': ezt.boolean(True),
         }
 
   def ProcessFormData(self, mr, post_data):

@@ -85,6 +85,7 @@ class HotlistPeopleList(servlet.Servlet):
         'initial_new_owner_username': '',
         'placeholder': 'new-owner-username',
         'open_dialog': ezt.boolean(False),
+        'viewing_user_page': ezt.boolean(True),
         }
 
   def ProcessFormData(self, mr, post_data):
