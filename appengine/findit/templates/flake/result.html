@@ -330,30 +330,32 @@
   <br>
   <div>
     <b>Analysis Result:</b><br>
-    Analysis Status:  {{ analysis_status }}<br>
-    {% if try_job_status %}
-      Try Job Status:  {{ try_job_status }}<br>
-    {% endif %}
-    {% if error %}
-    Error info: {{ error }}<br>
+    Regression range analysis:  {{ analysis_status }}<br>
+    {% if suspected_flake.commit_position and suspected_flake.git_hash %}
+      <li>Regression Range: <a href="https://crrev.com/{{ suspected_flake.previous_build_git_hash }}..{{ suspected_flake.git_hash }}?pretty=fuller" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.previous_build_commit_position }}:{{ suspected_flake.commit_position }}</a>
+        {% if suspected_flake.confidence %}
+          (Confidence: {{ '%0.1f%%' % (suspected_flake.confidence * 100) }})
+        {% endif %}
+      </li>
     {% endif %}
     {% if suspected_flake.build_number %}
-      Flakiness <b>started</b> in Build: <a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.build_number }}</a>
-      {% if suspected_flake.confidence %}
-        (Confidence: {{ '%0.1f%%' % (suspected_flake.confidence * 100) }})
-      {% endif %}
-      <br>
+      <li>Flakiness started in Build: <a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a>
+      </li>
     {% endif %}
-    {% if suspected_flake.commit_position and suspected_flake.git_hash %}
-      Regression Range: <a href="https://crrev.com/{{ suspected_flake.previous_build_git_hash }}..{{ suspected_flake.git_hash }}" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.previous_build_commit_position }}:{{ suspected_flake.commit_position }}</a>
+    {% if try_job_status %}
       <br>
+      Culprit analysis:  {{ try_job_status }}<br>
     {% endif %}
     {% if (culprit.commit_position or culprit.revision) and culprit.url %}
-        Culprit: <a href="{{ culprit.url }}" target="_blank" style="color:red;font-weight:bold">{{ culprit.commit_position or culprit.revision }}</a>
-      {% if culprit.confidence %}
-        (Confidence: {{ '%0.1f%%' % (culprit.confidence * 100) }})
-      {% endif %}
-        <br>
+      <li>Culprit: <a href="{{ culprit.url }}" target="_blank" style="color:red;font-weight:bold">{{ culprit.commit_position or culprit.revision }}</a>
+        {% if culprit.confidence %}
+          (Confidence: {{ '%0.1f%%' % (culprit.confidence * 100) }})
+        {% endif %}
+      </li>
+    {% endif %}
+    {% if error %}
+      <br>
+      <span style="color:red;font-weight:bold">Error</span>: {{ error }}<br>
     {% endif %}
 
   </div>
