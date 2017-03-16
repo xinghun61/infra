@@ -3,7 +3,6 @@
 
   Polymer({
     is: 'som-extension-cros-failure',
-    behaviors: [LinkifyBehavior],
 
     properties: {
       extension: {type: Object, value: null},
