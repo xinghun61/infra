@@ -64,7 +64,8 @@ class HotlistView(template_helpers.PBProxy):
     self.role_name = ''
     if viewed_user_id in hotlist_pb.owner_ids:
       self.role_name = 'owner'
-    elif viewed_user_id in hotlist_pb.editor_ids:
+    elif any(effective_id in hotlist_pb.editor_ids for
+             effective_id in user_auth.effective_ids):
       self.role_name = 'editor'
 
     if users_by_id:
