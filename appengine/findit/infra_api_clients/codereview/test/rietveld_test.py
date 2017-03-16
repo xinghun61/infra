@@ -117,7 +117,8 @@ class RietveldTest(testing.AppengineTestCase):
     change_id = self.rietveld.CreateRevert('reason', 1222, 20001)
     self.assertEqual('1234', change_id)
     mocked_SendPostRequest.assert_called_once_with(
-        '/api/1222/20001/revert', {'revert_reason': 'reason', 'revert_cq': 0})
+        '/api/1222/20001/revert',
+        {'revert_reason': 'reason', 'revert_cq': 0, 'no_redirect': 'True'})
 
   @mock.patch.object(Rietveld, '_SendPostRequest')
   def testCreateRevertFail(self, mocked_SendPostRequest):
@@ -125,7 +126,8 @@ class RietveldTest(testing.AppengineTestCase):
     change_id = self.rietveld.CreateRevert('reason', 1222, 20001)
     self.assertIsNone(change_id)
     mocked_SendPostRequest.assert_called_once_with(
-        '/api/1222/20001/revert', {'revert_reason': 'reason', 'revert_cq': 0})
+        '/api/1222/20001/revert',
+        {'revert_reason': 'reason', 'revert_cq': 0, 'no_redirect': 'True'})
 
   @mock.patch(
       'libs.time_util.UTCDatetimeFromNaiveString',

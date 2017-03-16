@@ -110,6 +110,7 @@ class Rietveld(codereview.CodeReview):
     url_path = '/api/%s/%s/revert' % (change_id, patchset_id)
     form_fields = {
         'revert_reason': reason,
+        'no_redirect': 'True',
         'revert_cq': 0,  # Explicitly set it to 0 to avoid automatic CQ.
     }
     status_code, content = self._SendPostRequest(url_path, form_fields)
