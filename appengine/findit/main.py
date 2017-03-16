@@ -10,6 +10,7 @@ import gae_ts_mon
 from common.pipeline_wrapper import pipeline_handlers
 from common.pipeline_wrapper import pipeline_status_ui
 from findit_api import FindItApi
+from handlers import auto_revert_metrics
 from handlers import build_failure
 from handlers import calculate_confidence_scores
 from handlers import check_duplicate_failures
@@ -78,6 +79,8 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/list-analyses', list_analyses.ListAnalyses),
     ('/pubsub/swarmingpush', swarming_push.SwarmingPush),
     ('/pubsub/tryjobpush', try_job_push.TryJobPush),
+    ('/waterfall/auto-revert-metrics',
+     auto_revert_metrics.AutoRevertMetrics),
     ('/waterfall/build-failure', build_failure.BuildFailure),
     ('/waterfall/calculate-confidence-scores',
      calculate_confidence_scores.CalculateConfidenceScores),

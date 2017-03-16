@@ -23,6 +23,8 @@ class DiffTest(unittest.TestCase):
 
   def testFormatTimedelta(self):
     self.assertIsNone(time_util.FormatTimedelta(None))
+    self.assertEqual(time_util.FormatTimedelta(timedelta(0, 0)),
+                     '00:00:00')
     self.assertEqual(time_util.FormatTimedelta(timedelta(0, 1)),
                      '00:00:01')
     self.assertEqual(time_util.FormatTimedelta(timedelta(0, 60)),
@@ -81,3 +83,9 @@ class DiffTest(unittest.TestCase):
         iso_time_datetime))
     with self.assertRaises(ValueError):
       time_util.DatetimeFromString('Yesterday, at 5 o\'clock')
+
+  def testSecondsToHMS(self):
+    self.assertIsNone(time_util.SecondsToHMS(None))
+    self.assertEqual('00:00:00', time_util.SecondsToHMS(0))
+    self.assertEqual('00:00:01', time_util.SecondsToHMS(1))
+    self.assertEqual('00:01:01', time_util.SecondsToHMS(61))

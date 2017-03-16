@@ -36,7 +36,7 @@ def RemoveMicrosecondsFromDelta(delta):
 
 def FormatTimedelta(delta):
   """Returns a string representing the given time delta."""
-  if not delta:
+  if delta is None:
     return None
   hours, remainder = divmod(delta.total_seconds(), 3600)
   minutes, seconds = divmod(remainder, 60)
@@ -102,6 +102,13 @@ def MicrosecondsToDatetime(microseconds):
   """Returns a datetime given the number of microseconds, or None."""
   if microseconds:
     return datetime.utcfromtimestamp(float(microseconds) / 1000000)
+  return None
+
+
+def SecondsToHMS(seconds):
+  """Converts seconds to HH:MM:SS as a string."""
+  if seconds is not None:
+    return FormatTimedelta(timedelta(seconds=seconds))
   return None
 
 

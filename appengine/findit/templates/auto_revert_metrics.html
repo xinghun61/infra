@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<head>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Auto-revert metrics</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+</head>
+<body>
+  <b>Date range: </b>{{ start_date }} to {{ end_date }}<br><br>
+  <b>Auto-revert metrics:</b><br>
+  <table>
+    <th>Metric</th>
+    <th>Result</th>
+    <tr>
+      <td title="Total number of culprits Findit found that needed reverting">
+        # of culprits
+      </td>
+      <td>{{ revert_cls_detected }}</td>
+    </tr>
+    <tr>
+      <td title="Total number of revert CLs Findit created">
+        # of reverts created by Findit
+      </td>
+      <td>{{ revert_cls_created }}</td>
+    </tr>
+    <tr>
+      <td title="Revert CLs Findit created that were committed">
+        # of reverts created by Findit committed
+      </td>
+      <td>{{ revert_cls_committed }}</td>
+    </tr>
+    <tr>
+      <td title="Findit created a revert CL for the suspected CL, but ultimately no revert CL by anyone was ever committed">
+        # of false positives
+      </td>
+      <td>{{ false_positives }}</td>
+    </tr>
+    <tr>
+      <td title="Findit created the revert CL before any sheriff">
+        # Findit was faster
+      </td>
+      <td>{{ findit_faster }}</td>
+    </tr>
+    <tr>
+      <td title="Findit determined a revert CL is needed, but by the time it did so a sheriff had already created and committed one for the same suspected CL">
+        # Sheriffs were faster
+      </td>
+      <td>{{ sheriffs_faster }}</td>
+    </tr>
+    <tr>
+      <td title="If the sheriffs were faster or slower than Findit">
+        Findit vs Sheriffs speed
+      </td>
+      <td>
+        <table>
+          <tr>
+            <td title="The average time (HH:MM:SS) Findit's revert CLs were faster than those of sheriffs. Only revert CLs by sheriffs that were committed are counted">
+              Findit Faster (HH:MM:SS)
+            </td>
+            <td> {{ faster_than_sheriff_metrics.average }}</td>
+          </tr>
+          <tr>
+            <td>90%</td>
+            <td>{{ faster_than_sheriff_metrics.ninetieth_percentile }}</td>
+          </tr>
+          <tr>
+            <td>70% </td>
+            <td>{{ faster_than_sheriff_metrics.seventieth_percentile }}</td>
+          </tr>
+          <tr>
+            <td>50%</td>
+            <td>{{ faster_than_sheriff_metrics.fiftieth_percentile }}</td>
+          </tr>
+        </table>
+        <table>
+          <tr>
+            <td title="The average latency (HH:MM:SS) Findit's revert CLs were behind those of sheriffs. Only revert CLs by sheriffs that were committed are counted">
+              Sheriffs Faster (HH:MM:SS)
+            </td>
+            <td> {{ slower_than_sheriff_metrics.average }}</td>
+          </tr>
+          <tr>
+            <td>90%</td>
+            <td>{{ slower_than_sheriff_metrics.ninetieth_percentile }}</td>
+          </tr>
+          <tr>
+            <td>70% </td>
+            <td>{{ slower_than_sheriff_metrics.seventieth_percentile }}</td>
+          </tr>
+          <tr>
+            <td>50%</td>
+            <td>{{ slower_than_sheriff_metrics.fiftieth_percentile }}</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  <table>
+</body>
