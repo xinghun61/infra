@@ -8,13 +8,13 @@ import textwrap
 from google.appengine.ext import ndb
 
 from common.pipeline_wrapper import BasePipeline
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from infra_api_clients.codereview import codereview_util
 from libs import time_util
 from model import analysis_status as status
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_util
+from waterfall import create_revert_cl_pipeline
+from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
 
@@ -62,18 +62,23 @@ def _UpdateNotificationStatus(repo_name, revision, new_status):
 
 
 def _SendNotificationForCulprit(
-    repo_name, revision, commit_position, code_review_url):
+    repo_name, revision, commit_position, code_review_url, revert_status):
   codereview = codereview_util.GetCodeReviewForReview(code_review_url)
   change_id = codereview_util.GetChangeIdForReview(code_review_url)
   sent = False
   if codereview and change_id:
     # Occasionally, a commit was not uploaded for code-review.
     culprit = WfSuspectedCL.Get(repo_name, revision)
+
+    action = 'identified'
+    if revert_status == create_revert_cl_pipeline.CREATED_BY_SHERIFF:
+      action = 'confirmed'
+
     message = textwrap.dedent("""
-    FYI: Findit identified this CL at revision %s as the culprit for
+    Findit %s this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
     https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
-        commit_position or revision, culprit.key.urlsafe())
+        action, commit_position or revision, culprit.key.urlsafe())
     sent = codereview.PostMessage(change_id, message)
   else:
     logging.error('No code-review url for %s/%s', repo_name, revision)
@@ -81,17 +86,6 @@ def _SendNotificationForCulprit(
   _UpdateNotificationStatus(repo_name, revision,
                             status.COMPLETED if sent else status.ERROR)
   return sent
-
-
-def _GetCulpritInfo(repo_name, revision):
-  """Returns commit position/time and code-review url of the given revision."""
-  # TODO(stgao): get repo url at runtime based on the given repo name.
-  # unused arg - pylint: disable=W0612,W0613
-  repo = CachedGitilesRepository(
-      HttpClientAppengine(),
-      'https://chromium.googlesource.com/chromium/src.git')
-  change_log = repo.GetChangeLog(revision)
-  return change_log.commit_position, change_log.code_review_url
 
 
 def _WithinNotificationTimeLimit(build_end_time, latency_limit_minutes):
@@ -105,7 +99,15 @@ class SendNotificationForCulpritPipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(
       self, master_name, builder_name, build_number, repo_name, revision,
-      send_notification_right_now):
+      send_notification_right_now, revert_status=None):
+
+    if revert_status == create_revert_cl_pipeline.CREATED_BY_FINDIT:
+      # Already notified when revert, bail out.
+      return False
+
+    if revert_status == create_revert_cl_pipeline.CREATED_BY_SHERIFF:
+      send_notification_right_now = True
+
     action_settings = waterfall_config.GetActionSettings()
     # Set some impossible default values to prevent notification by default.
     build_num_threshold = action_settings.get(
@@ -113,7 +115,7 @@ class SendNotificationForCulpritPipeline(BasePipeline):
     latency_limit_minutes = action_settings.get(
         'cr_notification_latency_limit_minutes', 1)
 
-    commit_position, code_review_url = _GetCulpritInfo(
+    commit_position, code_review_url = suspected_cl_util.GetCulpritInfo(
         repo_name, revision)
     build_end_time = build_util.GetBuildEndTime(
         master_name, builder_name, build_number)
@@ -133,4 +135,4 @@ class SendNotificationForCulpritPipeline(BasePipeline):
         send_notification_right_now):
       return False
     return _SendNotificationForCulprit(
-        repo_name, revision, commit_position, code_review_url)
+        repo_name, revision, commit_position, code_review_url, revert_status)

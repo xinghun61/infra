@@ -9,6 +9,7 @@ from libs.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_status as status
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_util
+from waterfall import create_revert_cl_pipeline
 from waterfall import send_notification_for_culprit_pipeline
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
@@ -163,3 +164,24 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = SendNotificationForCulpritPipeline()
     self.assertFalse(pipeline.run('m', 'b71', 71, 'chromium', 'r7', False))
     self.assertEqual(0, len(rietveld_requests))
+
+  def testDontSendNotificationIfFinditRvertedCulprit(self):
+    pipeline = SendNotificationForCulpritPipeline()
+    self.assertFalse(pipeline.run('m', 'b71', 71, 'chromium', 'r7', False,
+                                  create_revert_cl_pipeline.CREATED_BY_FINDIT))
+
+  def testSendConfirmMessage(self):
+    rietveld_requests = []
+    self._MockRietveld(rietveld_requests)
+    self._MockGitRepository('https://codereview.chromium.org/123')
+    self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
+    self._MockBuildEndTime()
+    culprit = WfSuspectedCL.Create('chromium', 'r6', 123)
+    culprit.builds['m/b61/61'] = {}
+    culprit.builds['m/b62/62'] = {}
+    culprit.put()
+
+    pipeline = SendNotificationForCulpritPipeline()
+    self.assertTrue(pipeline.run('m', 'b61', 61, 'chromium', 'r6', False,
+                                 create_revert_cl_pipeline.CREATED_BY_SHERIFF))
+    self.assertEqual(1, len(rietveld_requests))

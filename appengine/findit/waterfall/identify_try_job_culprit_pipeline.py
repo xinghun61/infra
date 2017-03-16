@@ -8,6 +8,8 @@ import logging
 
 from google.appengine.ext import ndb
 
+from common import appengine_util
+from common import constants
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from common.pipeline_wrapper import BasePipeline
 from common.waterfall import failure_type
@@ -19,9 +21,8 @@ from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall import suspected_cl_util
-from waterfall.send_notification_for_culprit_pipeline import (
-    SendNotificationForCulpritPipeline)
-
+from waterfall.revert_and_notify_culprit_pipeline import (
+    RevertAndNotifyCulpritPipeline)
 
 GIT_REPO = CachedGitilesRepository(
     HttpClientAppengine(), 'https://chromium.googlesource.com/chromium/src.git')
@@ -183,44 +184,23 @@ def _GetSuspectedCLFoundByHeuristicForCompile(analysis):
 def _GetHeuristicSuspectedCLs(analysis):
   """Gets revisions of suspected cls found by heuristic approach."""
   if analysis and analysis.suspected_cls:
-    return [(cl['repo_name'], cl['revision']) for cl in analysis.suspected_cls]
+    return [[cl['repo_name'], cl['revision']] for cl in analysis.suspected_cls]
   return []
 
 
-def _StartSendNotificationPipeline(
-    master_name, builder_name, build_number, repo_name, revision,
-    send_notification_right_now):
+def _RevertOrNotifyCulprits(
+    master_name, builder_name, build_number, culprits, heuristic_cls,
+    compile_suspected_cl, try_job_type):
+  """Reverts or sends notifications to the identified culprits."""
   try:
-    pipeline = SendNotificationForCulpritPipeline(
-        master_name, builder_name, build_number, repo_name, revision,
-        send_notification_right_now)
+    pipeline = RevertAndNotifyCulpritPipeline(
+      master_name, builder_name, build_number, culprits, heuristic_cls,
+      compile_suspected_cl, try_job_type)
+    pipeline.target = (  # pylint: disable=W0201
+        appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
     pipeline.start()
   except Exception:  # pragma: no cover.
-    logging.exception('Failed to notify culprit.')
-
-
-def _NotifyCulprits(master_name, builder_name, build_number, culprits,
-                    heuristic_cls, compile_suspected_cl):
-  """Sends notifications to the identified culprits."""
-
-  if culprits:
-    # There is a try job result, so check if any of the culprits
-    # was also found by heuristic analysis.
-    for culprit in culprits.itervalues():
-      send_notification_right_now = False
-      send_notification_right_now = (
-          culprit['repo_name'], culprit['revision']) in heuristic_cls
-      _StartSendNotificationPipeline(
-          master_name, builder_name, build_number,
-          culprit['repo_name'], culprit['revision'],
-          send_notification_right_now)
-  elif compile_suspected_cl:
-    # A special case where try job didn't find any suspected cls, but
-    # heuristic found a suspected_cl.
-    _StartSendNotificationPipeline(
-        master_name, builder_name, build_number,
-        compile_suspected_cl['repo_name'], compile_suspected_cl['revision'],
-        send_notification_right_now=True)
+    logging.exception('Failed to revert or notify culprit.')
 
 
 def _GetTestFailureCausedByCL(result):
@@ -404,6 +384,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     # Updates suspected_cl.
     UpdateSuspectedCLs()
 
-    _NotifyCulprits(master_name, builder_name, build_number, culprits,
-                    heuristic_cls, compile_suspected_cl)
+    _RevertOrNotifyCulprits(
+        master_name, builder_name, build_number, culprits, heuristic_cls,
+        compile_suspected_cl, try_job_type)
     return result.get('culprit') if result else None
