@@ -3,13 +3,13 @@
 # found in the LICENSE file.
 
 # Represent status of a revert CL created by Findit.
-REVERTED = 0
+COMMITTED = 0
 DUPLICATE = 1
 FALSE_POSITIVE = 2
 
 
 STATUS_TO_DESCRIPTION = {
-    REVERTED: 'reverted',
+    COMMITTED: 'committed',
     DUPLICATE: 'duplicate',
     FALSE_POSITIVE: 'false_positive',
 }

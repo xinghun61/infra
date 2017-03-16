@@ -19,7 +19,7 @@ class RevertCL(ndb.Model):
   # Time when the revert CL is committed.
   committed_time = ndb.DateTimeProperty(indexed=False)
 
-  # Status of this revert: REVERTED, DUPLICATE or FALSE_POSITIVE.
+  # Status of this revert: COMMITTED, DUPLICATE or FALSE_POSITIVE.
   status = ndb.IntegerProperty(indexed=False)
 
 
@@ -52,6 +52,12 @@ class BaseSuspectedCL(ndb.Model):
 
   # Status of the process of reverting culprit.
   revert_status = ndb.IntegerProperty(indexed=False, default=None)
+
+  # The time the sheriff decided to take action on reverting this suspected CL.
+  # If Findit's revert CL was committed, this will be the timestamp the sheriff
+  # commited it. If the sheriff committed their own, this will be the timestamp
+  # their revert CL was created. None if this suspected cl is a false positive.
+  sheriff_action_time = ndb.DateTimeProperty(indexed=False)
 
   @property
   def revert_cl_url(self):

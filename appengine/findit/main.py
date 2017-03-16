@@ -13,6 +13,7 @@ from findit_api import FindItApi
 from handlers import build_failure
 from handlers import calculate_confidence_scores
 from handlers import check_duplicate_failures
+from handlers import check_reverted_cls
 from handlers import config
 from handlers import culprit
 from handlers import failure_log
@@ -83,6 +84,7 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/check-duplicate-failures',
      check_duplicate_failures.CheckDuplicateFailures),
     ('/waterfall/check-flake', check_flake.CheckFlake),
+    ('/waterfall/check-reverted-cls', check_reverted_cls.CheckRevertedCLs),
     ('/waterfall/config', config.Configuration),
     ('/waterfall/culprit', culprit.Culprit),
     ('/waterfall/failure', build_failure.BuildFailure),

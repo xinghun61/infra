@@ -6,3 +6,7 @@ cron:
 - description: Send ts_mon metrics
   url: /internal/cron/ts_mon/send
   schedule: every 1 minutes
+
+- description: Every day check reverted cls
+  url: /waterfall/check-reverted-cls
+  schedule: every day 00:00
