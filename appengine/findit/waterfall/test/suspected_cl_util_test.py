@@ -3,8 +3,10 @@
 # found in the LICENSE file.
 
 import datetime
+import mock
 
 from common.waterfall import failure_type
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from model import analysis_approach_type
 from model import suspected_cl_status
 from model.suspected_cl_confidence import ConfidenceInformation
@@ -526,3 +528,18 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
             self.cl_confidences.test_heuristic_try_job.confidence), confidence)
     self.assertEqual(
         analysis_approach_type.TRY_JOB, approach)
+
+
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  def testGetCulpritChangeLog(self, mock_fn):
+    class MockedChangeLog(object):
+      commit_position = 123
+      code_review_url = 'code_review_url'
+
+    mock_fn.return_value = MockedChangeLog()
+
+    commit_position, code_review_url = suspected_cl_util.GetCulpritInfo(
+        'chromium', 'rev')
+    self.assertEqual(commit_position, 123)
+    self.assertEqual(code_review_url, 'code_review_url')
+

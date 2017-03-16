@@ -14,6 +14,18 @@ class CodeReview(object):  # pragma: no cover.
     """
     self._server_hostname = server_hostname
 
+  def GetCodeReviewUrl(self, change_id):
+    """Gets the code review url for a change.
+
+    Args:
+      change_id (str or int): The change id of the CL on Gerrit or the issue
+          number of the CL on Rietveld.
+
+    Returns:
+      The code review url for the change.
+    """
+    raise NotImplementedError()
+
   def PostMessage(self, change_id, message):
     """Posts the given message to the CL codereview of the given change id.
 

@@ -33,6 +33,9 @@ class Rietveld(codereview.CodeReview):
   def __init__(self, server_hostname):
     super(Rietveld, self).__init__(server_hostname)
 
+  def GetCodeReviewUrl(self, change_id):
+    return 'https://%s/%s/' % (self._server_hostname, change_id)
+
   def _GetXsrfToken(self):
     """Returns the xsrf token for follow-up requests."""
     headers = {
@@ -171,7 +174,7 @@ class Rietveld(codereview.CodeReview):
   def GetClDetails(self, change_id):
     params = {'messages': 'true'}
     url = 'https://%s/api/%s' % (self._server_hostname, change_id)
-    issue_url = 'https://%s/%s/' % (self._server_hostname, change_id)
+    issue_url = self.GetCodeReviewUrl(change_id)
     status_code, content = self.HTTP_CLIENT.Get(url, params=params)
     if status_code == 200:  # pragma: no branch
       return self._ParseClInfo(json.loads(content), cl_info.ClInfo(issue_url))

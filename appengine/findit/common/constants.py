@@ -49,3 +49,5 @@ WHITELISTED_APP_ACCOUNTS = [
 # Directory of html templates.
 HTML_TEMPLATE_DIR = os.path.realpath(
     os.path.join(os.path.dirname(__file__), os.path.pardir, 'templates'))
+
+DEFAULT_SERVICE_ACCOUNT = 'findit-for-me@appspot.gserviceaccount.com'
