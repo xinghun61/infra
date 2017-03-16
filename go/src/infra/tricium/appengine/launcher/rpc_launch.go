@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"infra/tricium/api/admin/v1"
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 )
 
@@ -79,13 +80,17 @@ func launch(c context.Context, req *admin.LaunchRequest, wp common.WorkflowProvi
 	}
 	wfTask := tq.NewPOSTTask("/tracker/internal/workflow-launched", nil)
 	wfTask.Payload = b
-	// TODO(emso): select dev/prod swarming/isolate serve based on devserver and dev/prod tricium instance.
 	// Isolate initial intput.
-	inputHash, err := isolator.IsolateGitFileDetails(c, req.Project, req.GitRepo, req.GitRef, req.Paths)
+	inputHash, err := isolator.IsolateGitFileDetails(c, &tricium.Data_GitFileDetails{
+		Repository: req.GitRepo,
+		Ref:        req.GitRef,
+		Paths:      req.Paths,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to isolate git file details: %v", err)
 	}
 	logging.Infof(c, "[launcher] Isolated git file details, hash: %q", inputHash)
+	// TODO(emso): select dev/prod swarming/isolate serve based on devserver and dev/prod tricium instance.
 	// Prepare trigger requests for root workers.
 	wTasks := []*tq.Task{}
 	for _, worker := range wf.RootWorkers() {

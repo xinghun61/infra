@@ -47,7 +47,7 @@ message Data {
 
     string repository = 2;
     string ref = 3;
-    repeated string path = 4;
+    repeated string paths = 4;
   }
 
 

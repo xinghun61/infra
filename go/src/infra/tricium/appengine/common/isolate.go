@@ -51,7 +51,7 @@ type Isolator interface {
 	//   ...
 	// }
 	// Note that this isolate has not command and includes no other isolates.
-	IsolateGitFileDetails(c context.Context, project, gitRepo, gitRef string, paths []string) (string, error)
+	IsolateGitFileDetails(c context.Context, d *tricium.Data_GitFileDetails) (string, error)
 
 	// IsolateWorker isolates the provided worker.
 	//
@@ -78,17 +78,12 @@ type IsolateServer struct {
 }
 
 // IsolateGitFileDetails isolates git file details, see the Isolator interface.
-func (s *IsolateServer) IsolateGitFileDetails(c context.Context, project, gitRepo, gitRef string, paths []string) (string, error) {
+func (s *IsolateServer) IsolateGitFileDetails(c context.Context, d *tricium.Data_GitFileDetails) (string, error) {
 	chunks := make([]*isoChunk, 2)
 	mode := 0444
 
 	// Create Git file details chunk.
-	gitDetailsData, err := (&jsonpb.Marshaler{}).MarshalToString(&tricium.Data_GitFileDetails{
-		Platforms:  0,
-		Repository: gitRepo,
-		Ref:        gitRef,
-		Path:       paths,
-	})
+	gitDetailsData, err := (&jsonpb.Marshaler{}).MarshalToString(d)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal git file details to JSON: %v", err)
 	}
@@ -105,8 +100,11 @@ func (s *IsolateServer) IsolateGitFileDetails(c context.Context, project, gitRep
 
 	// Create isolate chunk.
 	iso := isolated.New()
-	// TODO(emso): Specify data type file in data type details.
-	iso.Files["tricium/data/git_file_details.json"] = *chunks[0].file
+	path, err := tricium.GetPathForDataType(d)
+	if err != nil {
+		return "", fmt.Errorf("failed to get data file path, data: %v", d)
+	}
+	iso.Files[path] = *chunks[0].file
 	isoData, err := json.Marshal(iso)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal git file details isolate: %v", err)
@@ -301,7 +299,7 @@ type MockIsolator struct{}
 // IsolateGitFileDetails is a mock function for MockIsolator.
 //
 // For any testing actually using the return values, create a new mock.
-func (*MockIsolator) IsolateGitFileDetails(c context.Context, project, gitRepo, gitRef string, paths []string) (string, error) {
+func (*MockIsolator) IsolateGitFileDetails(c context.Context, d *tricium.Data_GitFileDetails) (string, error) {
 	return "mockmockmock", nil
 }
 
