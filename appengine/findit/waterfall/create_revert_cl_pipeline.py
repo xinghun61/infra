@@ -120,10 +120,13 @@ def _RevertCulprit(repo_name, revision):
   # 3. Add reviewers.
   sheriffs = rotations.current_sheriffs()
   message = textwrap.dedent("""
-    We find you currently are Chrome sheriff, could you review this revert CL
-    which should fix failures in the build cycles as shown on:
-    https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
-        culprit.key.urlsafe())
+      Sheriffs:
+
+      Please confirm and commit this reverting CL if it is the right fix.
+      The original CL was identified as the culprit for failures in the build
+      cycles as shown on:
+      https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
+          culprit.key.urlsafe())
   success = codereview.AddReviewers(revert_change_id, sheriffs, message)
 
   if not success:  # pragma: no cover
