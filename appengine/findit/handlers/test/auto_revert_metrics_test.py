@@ -91,5 +91,5 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
         [reverted_suspected_cl, duplicate_fast_suspected_cl,
          duplicate_slow_suspected_cl, false_positive_suspected_cl,
          slow_suspected_cl, false_positive_suspected_cl_no_revert])
-    print metrics
+
     self.assertEqual(expected_metrics, metrics)
