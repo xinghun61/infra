@@ -16,6 +16,7 @@ from model import analysis_status as status
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import suspected_cl_util
+from waterfall import waterfall_config
 
 
 CREATED_BY_FINDIT = 0
@@ -157,4 +158,7 @@ class CreateRevertCLPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, repo_name, revision):
-    return _RevertCulprit(repo_name, revision)
+    if waterfall_config.GetActionSettings().get(
+        'revert_compile_culprit', False):
+      return _RevertCulprit(repo_name, revision)
+    return None

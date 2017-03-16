@@ -90,6 +90,7 @@ _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS = {
 _MOCK_ACTION_SETTINGS = {
     'cr_notification_build_threshold': 2,
     'cr_notification_latency_limit_minutes': 1000,
+    'revert_compile_culprit': True,
 }
 
 _MOCK_CHECK_FLAKE_SETTINGS = {
@@ -912,10 +913,17 @@ class ConfigTest(testing.AppengineTestCase):
 
   def testValidateActionSettings(self):
     self.assertFalse(config._ValidateActionSettings({}))
+    self.assertFalse(config._ValidateActionSettings(
+        {
+            'cr_notification_build_threshold': 2,
+            'cr_notification_latency_limit_minutes': 1000,
+            'revert_compile_culprit': 'True',  # Should be boolean.
+        }))
     self.assertTrue(config._ValidateActionSettings(
         {
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
+            'revert_compile_culprit': True
         }))
 
   def testValidateFlakeAnalyzerTryJobRerunSettings(self):

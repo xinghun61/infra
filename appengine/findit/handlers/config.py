@@ -199,7 +199,8 @@ def _ValidateActionSettings(settings):
   return (isinstance(settings, dict) and
           isinstance(settings.get('cr_notification_build_threshold'), int) and
           isinstance(
-              settings.get('cr_notification_latency_limit_minutes'), int))
+              settings.get('cr_notification_latency_limit_minutes'), int) and
+          isinstance(settings.get('revert_compile_culprit'), bool))
 
 
 def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):

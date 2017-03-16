@@ -115,6 +115,7 @@ _DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS = {
 _DEFAULT_ACTION_SETTINGS = {
     'cr_notification_build_threshold': 2,
     'cr_notification_latency_limit_minutes': 30,
+    'revert_compile_culprit': True,
 }
 
 

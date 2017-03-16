@@ -17,6 +17,7 @@ from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import create_revert_cl_pipeline
 from waterfall import suspected_cl_util
+from waterfall import waterfall_config
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.test import wf_testcase
 
@@ -152,6 +153,17 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.COMPLETED)
     self.assertIsNotNone(culprit.revert_cl)
+
+  @mock.patch.object(waterfall_config, 'GetActionSettings',
+                     return_value={})
+  def testRevertTurnedOff(self, _):
+    repo_name = 'chromium'
+    revision = 'rev1'
+
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
+    revert_status = pipeline.run(repo_name, revision)
+
+    self.assertIsNone(revert_status)
 
   def testRevertHasCompleted(self):
     repo_name = 'chromium'
