@@ -18,33 +18,6 @@ DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
 CACHE_NAME_RE = re.compile(ur'^[a-z0-9_]{1,4096}$')
 
 
-# Regular expressions below are copied from
-# https://chromium.googlesource.com/infra/infra/+/468bb43/appengine/chrome_infra_packages/cipd/impl.py
-# https://chromium.googlesource.com/infra/infra/+/468bb43/appengine/chrome_infra_packages/cas/impl.py
-
-PACKAGE_NAME_RE = re.compile(r'^([a-z0-9_\-]+/)*[a-z0-9_\-]+$')
-INSTANCE_ID_RE = re.compile(r'^[0-9a-f]{40}$')
-TAG_KEY_RE = re.compile(r'^[a-z0-9_\-]+$')
-REF_RE = re.compile(r'^[a-z0-9_\-]{1,100}$')
-TAG_MAX_LEN = 400
-
-
-# CIPD package name template parameters allow a user to reference different
-# packages for different enviroments. Inspired by
-# https://chromium.googlesource.com/infra/infra/+/f1072a132c68532b548458392c5444f04386d684/build/README.md
-# The values of the parameters are computed on the bot.
-#
-# Platform parameter value is "<os>-<arch>" string, where
-# os can be "linux", "mac" or "windows" and arch can be "386", "amd64" or
-# "armv6l".
-PARAM_PLATFORM = '${platform}'
-# OS version parameter defines major and minor version of the OS distribution.
-# It is useful if package depends on .dll/.so libraries provided by the OS.
-# Example values: "ubuntu14_04", "mac10_9", "win6_1".
-PARAM_OS_VER = '${os_ver}'
-ALL_PARAMS = (PARAM_PLATFORM, PARAM_OS_VER)
-
-
 def read_properties(recipe):
   """Parses build properties from the recipe message.
 
@@ -152,25 +125,6 @@ def validate_relative_path(path, ctx):
     ctx.error('path cannot start with "/"')
 
 
-def validate_cipd_package_cfg(package, ctx):
-  """Validates a CipdPackage message.
-
-  If final is False, does not validate for completeness.
-  """
-  template = package.package_name
-  for p in ALL_PARAMS:
-    template = template.replace(p, 'x')
-  if not PACKAGE_NAME_RE.match(template):
-    ctx.error('package_name must be a valid CIPD package name template')
-
-  validate_relative_path(package.path, ctx)
-
-  if not (INSTANCE_ID_RE.match(package.version) or
-          TAG_KEY_RE.match(package.version.split(':', 1)[0]) or
-          REF_RE.match(package.version)):
-    ctx.error('version must be a valid CIPD package version')
-
-
 def validate_recipe_cfg(recipe, ctx, final=True):
   """Validates a Recipe message.
 
@@ -234,10 +188,6 @@ def validate_builder_cfg(builder, ctx, final=True):
   validate_dimensions('dimension', builder.dimensions, ctx)
   if final and not has_pool_dimension(builder.dimensions):
     ctx.error('has no "pool" dimension')
-
-  for i, p in enumerate(builder.cipd_packages):
-    with ctx.prefix('cipd_package #%d: ', i + 1):
-      validate_cipd_package_cfg(p, ctx)
 
   for i, c in enumerate(builder.caches):
     with ctx.prefix('cache #%d: ', i + 1):

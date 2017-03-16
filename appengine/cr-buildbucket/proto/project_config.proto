@@ -71,19 +71,7 @@ message Swarming {
   // a user that has permissions to schedule a build to the bucket, can override
   // this config.
   message Builder {
-    message CipdPackage {
-      // A template of a full CIPD package name, e.g
-      // "infra/tools/authutil/${platform}". This can be parametrized using
-      // ${platform} and ${os_ver} parameters, where ${platform} will be
-      // expanded into "<os>-<architecture>" and ${os_ver} will be expanded to
-      // OS version name.
-      optional string package_name = 1;
-      // Path to dir, relative to the task working dir, where to install the
-      // package. The path cannot be empty or start with a slash.
-      optional string path = 2;
-      // Valid package version for all packages matched by package name.
-      optional string version = 3;
-    }
+    reserved 8;
 
     // Describes a named cache that should be present on the bot.
     // See also https://github.com/luci/luci-py/blob/3a2941345cf011a96bcd83d76328395323245bb5/appengine/swarming/swarming_rpcs.py#L166
@@ -92,7 +80,7 @@ message Swarming {
       optional string name = 1;
       // Relative path to the directory that will be linked to the named cache.
       // Required.
-      // A path cannot be shared among multiple caches or CIPD installations.
+      // A path cannot be shared among multiple caches.
       // A task will fail if a file/dir with the same name already exists.
       optional string path = 2;
     }
@@ -110,8 +98,6 @@ message Swarming {
     //
     // If value is not specified ("<key>:"), then it excludes a default value.
     repeated string dimensions = 3;
-    // CIPD packages to install on the builder.
-    repeated CipdPackage cipd_packages = 8;
     // Specifies that a recipe to run.
     optional Recipe recipe = 4;
     // Swarming task priority.

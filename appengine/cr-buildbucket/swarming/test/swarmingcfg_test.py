@@ -45,11 +45,6 @@ class SwarmingCfgTest(testing.AppengineTestCase):
               name: "git_chromium"
               path: "git_cache"
             }
-            cipd_packages {
-              package_name: "infra/test"
-              path: "third_party"
-              version: "latest"
-            }
             recipe {
               repository: "https://x.com"
               name: "foo"
@@ -103,18 +98,11 @@ class SwarmingCfgTest(testing.AppengineTestCase):
             swarming_tags: "builder:b2"
             dimensions: "x:y"
             dimensions: "x:y2"
-            cipd_packages {
-              package_name: ""
-              path: "/"
-              version: "::"
-            }
-            cipd_packages {
-              package_name: "$name"
-              path: "\\path"
-              version: "VER_1"
-            }
             caches {}
             caches { name: "a/b" path: "a" }
+            caches { name: "b" path: "a\\c" }
+            caches { name: "c" path: "a/.." }
+            caches { name: "d" path: "/a" }
             recipe {
               properties: ""
               properties: ":"
@@ -139,20 +127,13 @@ class SwarmingCfgTest(testing.AppengineTestCase):
           ('builder b2: tag #1: do not specify builder tag; '
            'it is added by swarmbucket automatically'),
           'builder b2: dimension #2: duplicate key x',
-          ('builder b2: cipd_package #1: '
-           'package_name must be a valid CIPD package name template'),
-          'builder b2: cipd_package #1: path cannot start with "/"',
-          ('builder b2: cipd_package #1: '
-           'version must be a valid CIPD package version'),
-          ('builder b2: cipd_package #2: '
-           'package_name must be a valid CIPD package name template'),
-          ('builder b2: cipd_package #2: path cannot contain \\. '
-           'On Windows forward-slashes will be replaced with back-slashes.'),
-          ('builder b2: cipd_package #2: '
-           'version must be a valid CIPD package version'),
           'builder b2: cache #1: name is required',
           'builder b2: cache #1: path is required',
           'builder b2: cache #2: name "a/b" does not match ^[a-z0-9_]{1,4096}$',
+          ('builder b2: cache #3: path cannot contain \\. '
+           'On Windows forward-slashes will be replaced with back-slashes.'),
+          'builder b2: cache #4: path cannot contain ".."',
+          'builder b2: cache #5: path cannot start with "/"',
           'builder b2: recipe: properties #1: does not have colon',
           'builder b2: recipe: properties #2: key not specified',
           ('builder b2: recipe: properties #3: '
@@ -183,14 +164,6 @@ class SwarmingCfgTest(testing.AppengineTestCase):
             swarming_tags: "builder:b2"
             dimensions: "x:y"
             dimensions: "x:y2"
-            cipd_packages {
-              package_name: "${foo}"
-            }
-            cipd_packages {
-              package_name: "${platform}"
-              path: ".."
-              version: "$ref"
-            }
             recipe {
               properties: ""
               properties: ":"
@@ -215,14 +188,6 @@ class SwarmingCfgTest(testing.AppengineTestCase):
           ('builder b2: tag #1: do not specify builder tag; '
            'it is added by swarmbucket automatically'),
           'builder b2: dimension #2: duplicate key x',
-          ('builder b2: cipd_package #1: '
-           'package_name must be a valid CIPD package name template'),
-          'builder b2: cipd_package #1: path is required',
-          ('builder b2: cipd_package #1: '
-           'version must be a valid CIPD package version'),
-          'builder b2: cipd_package #2: path cannot contain ".."',
-          ('builder b2: cipd_package #2: '
-           'version must be a valid CIPD package version'),
           'builder b2: recipe: properties #1: does not have colon',
           'builder b2: recipe: properties #2: key not specified',
           ('builder b2: recipe: properties #3: '

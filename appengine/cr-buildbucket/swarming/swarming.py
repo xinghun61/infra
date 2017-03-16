@@ -348,7 +348,6 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
           task_properties.get('dimensions', []),
       ))
 
-  _add_cipd_packages(builder_cfg, task_properties)
   _add_named_caches(builder_cfg, task_properties)
 
   if builder_cfg.execution_timeout_secs > 0:
@@ -374,25 +373,6 @@ def _to_swarming_dimensions(dims):
     for key, value in
     (s.split(':', 1) for s in dims)
   ]
-
-
-def _add_cipd_packages(builder_cfg, task_properties):
-  """Adds/replaces packages defined in the config to the task properties."""
-  cipd_input = task_properties.setdefault('cipd_input', {})
-  task_packages = {
-    p.get('package_name'): p
-    for p in cipd_input.get('packages', [])
-  }
-  for p in builder_cfg.cipd_packages:
-    task_packages[p.package_name] = {
-      'package_name': p.package_name,
-      'path': p.path,
-      'version': p.version,
-    }
-  cipd_input['packages'] = sorted(
-      task_packages.itervalues(),
-      key=lambda p: p.get('package_name')
-  )
 
 
 def _add_named_caches(builder_cfg, task_properties):

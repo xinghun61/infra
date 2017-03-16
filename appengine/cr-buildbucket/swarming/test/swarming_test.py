@@ -76,11 +76,6 @@ class SwarmingTest(testing.AppengineTestCase):
             name: "build_chromium"
             path: "out"
           }
-          cipd_packages {
-            package_name: "infra/test/foo/${platform}"
-            path: "third_party"
-            version: "deadbeef"
-          }
         }
         builders {
           name: "builder"
@@ -91,11 +86,6 @@ class SwarmingTest(testing.AppengineTestCase):
           recipe {
             properties: "predefined-property:x"
             properties_j: "predefined-property-bool:true"
-          }
-          cipd_packages {
-            package_name: "infra/test/baz"
-            path: "."
-            version: "lkgr"
           }
           priority: 108
         }
@@ -355,14 +345,9 @@ class SwarmingTest(testing.AppengineTestCase):
               'version': 'latest',
             },
             {
-              'package_name': 'infra/test/baz',
-              'path': '.',
-              'version': 'lkgr',
-            },
-            {
               'package_name': 'infra/test/foo/${platform}',
               'path': 'third_party',
-              'version': 'deadbeef',
+              'version': 'stable',
             },
           ],
         },
@@ -506,14 +491,9 @@ class SwarmingTest(testing.AppengineTestCase):
               'version': 'latest',
             },
             {
-              'package_name': 'infra/test/baz',
-              'path': '.',
-              'version': 'lkgr',
-            },
-            {
               'package_name': 'infra/test/foo/${platform}',
               'path': 'third_party',
-              'version': 'deadbeef',
+              'version': 'stable',
             },
           ],
         }
