@@ -4,12 +4,9 @@
 
 from collections import defaultdict
 import copy
-import logging
 
 from google.appengine.ext import ndb
 
-from common import appengine_util
-from common import constants
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from common.pipeline_wrapper import BasePipeline
 from common.waterfall import failure_type
@@ -186,21 +183,6 @@ def _GetHeuristicSuspectedCLs(analysis):
   if analysis and analysis.suspected_cls:
     return [[cl['repo_name'], cl['revision']] for cl in analysis.suspected_cls]
   return []
-
-
-def _RevertOrNotifyCulprits(
-    master_name, builder_name, build_number, culprits, heuristic_cls,
-    compile_suspected_cl, try_job_type):
-  """Reverts or sends notifications to the identified culprits."""
-  try:
-    pipeline = RevertAndNotifyCulpritPipeline(
-      master_name, builder_name, build_number, culprits, heuristic_cls,
-      compile_suspected_cl, try_job_type)
-    pipeline.target = (  # pylint: disable=W0201
-        appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
-    pipeline.start()
-  except Exception:  # pragma: no cover.
-    logging.exception('Failed to revert or notify culprit.')
 
 
 def _GetTestFailureCausedByCL(result):
@@ -384,7 +366,6 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     # Updates suspected_cl.
     UpdateSuspectedCLs()
 
-    _RevertOrNotifyCulprits(
+    yield RevertAndNotifyCulpritPipeline(
         master_name, builder_name, build_number, culprits, heuristic_cls,
         compile_suspected_cl, try_job_type)
-    return result.get('culprit') if result else None

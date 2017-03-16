@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from testing_utils import testing
-
+from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import failure_type
 from libs.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_approach_type
@@ -17,9 +16,13 @@ from waterfall import build_util
 from waterfall import identify_try_job_culprit_pipeline
 from waterfall.identify_try_job_culprit_pipeline import(
     IdentifyTryJobCulpritPipeline)
+from waterfall.revert_and_notify_culprit_pipeline import (
+    RevertAndNotifyCulpritPipeline)
+from waterfall.test import wf_testcase
 
 
-class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
+class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
+  app_module = pipeline_handlers._APP
 
   def _MockGetChangeLog(self, revision):
     class MockedChangeLog(object):
@@ -441,15 +444,20 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
+    self.MockPipeline(RevertAndNotifyCulpritPipeline,
+                      None,
+                      expected_args=[master_name, builder_name, build_number,
+                                     None, [], None, failure_type.COMPILE])
+    pipeline = IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, ['rev1'],
         failure_type.COMPILE, '1', None)
+    pipeline.start()
+    self.execute_queued_tasks()
+
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
     self.assertEqual(analysis_status.COMPLETED, try_job.status)
     self.assertEqual([], try_job.compile_results)
-    self.assertIsNone(culprit)
     self.assertIsNone(try_job_data.culprits)
     self.assertIsNone(analysis.result_status)
     self.assertIsNone(analysis.suspected_cls)
@@ -489,11 +497,6 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
-        master_name, builder_name, build_number, ['rev1'],
-        failure_type.COMPILE, '1', compile_result)
-
     expected_culprit = 'rev2'
     expected_suspected_cl = {
         'revision': 'rev2',
@@ -522,9 +525,16 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         'top_score': None
     }]
 
-    import json
-    print json.dumps(culprit, indent=2)
-    self.assertEqual(expected_compile_result['culprit'], culprit)
+    self.MockPipeline(RevertAndNotifyCulpritPipeline,
+                      None,
+                      expected_args=[master_name, builder_name, build_number,
+                                     {expected_culprit: expected_suspected_cl},
+                                     [], None, failure_type.COMPILE])
+    pipeline = IdentifyTryJobCulpritPipeline(
+        master_name, builder_name, build_number, ['rev1'],
+        failure_type.COMPILE, '1', compile_result)
+    pipeline.start()
+    self.execute_queued_tasks()
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_compile_result, try_job.compile_results[-1])
@@ -564,13 +574,18 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
+    self.MockPipeline(RevertAndNotifyCulpritPipeline,
+                      None,
+                      expected_args=[master_name, builder_name, build_number,
+                                     {}, [], None, failure_type.COMPILE])
+    pipeline = IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, ['rev1'],
         failure_type.COMPILE, '1', compile_result)
+    pipeline.start()
+    self.execute_queued_tasks()
+
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
-    self.assertIsNone(culprit)
     self.assertEqual(analysis_status.COMPLETED, try_job.status)
 
     try_job_data = WfTryJobData.Get(try_job_id)
@@ -596,12 +611,15 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
+    self.MockPipeline(RevertAndNotifyCulpritPipeline,
+                      None,
+                      expected_args=[master_name, builder_name, build_number,
+                                     None, [], None, failure_type.TEST])
+    pipeline = IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, ['rev1', 'rev2'],
         failure_type.TEST, '1', None)
-
-    self.assertIsNone(culprit)
+    pipeline.start()
+    self.execute_queued_tasks()
 
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertIsNone(try_job_data.culprits)
@@ -635,12 +653,16 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     analysis.suspected_cls = [suspected_cl]
     analysis.put()
 
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
+    self.MockPipeline(RevertAndNotifyCulpritPipeline,
+                      None,
+                      expected_args=[master_name, builder_name, build_number,
+                                     None, [['chromium', 'rev1']], None,
+                                     failure_type.TEST])
+    pipeline = IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, ['rev1', 'rev2'],
         failure_type.TEST, '1', None)
-
-    self.assertIsNone(culprit)
+    pipeline.start()
+    self.execute_queued_tasks()
 
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertIsNone(try_job_data.culprits)
@@ -674,7 +696,7 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.status = analysis_status.RUNNING
     try_job.put()
-    
+
     try_job_data = WfTryJobData.Create(try_job_id)
     try_job_data.try_job_key = try_job.key
     try_job_data.put()
@@ -682,12 +704,16 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
+    self.MockPipeline(RevertAndNotifyCulpritPipeline,
+                      None,
+                      expected_args=[master_name, builder_name, build_number,
+                                     {}, [], None,
+                                     failure_type.TEST])
+    pipeline = IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, [], failure_type.TEST, '1',
         test_result)
-
-    self.assertIsNone(culprit)
+    pipeline.start()
+    self.execute_queued_tasks()
 
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertIsNone(try_job_data.culprits)
@@ -728,11 +754,6 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
-        master_name, builder_name, build_number, ['rev3'], failure_type.TEST,
-        '1', test_result)
-
     expected_suspected_cl = {
         'revision': 'rev3',
         'repo_name': 'chromium'
@@ -747,15 +768,16 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         }
     ]
 
-    expected_culprit = {
-        'a_test': {
-            'tests': {
-                'a_test1': expected_suspected_cl
-            }
-        }
-    }
-
-    self.assertEqual(expected_culprit, culprit)
+    self.MockPipeline(RevertAndNotifyCulpritPipeline,
+                      None,
+                      expected_args=[master_name, builder_name, build_number,
+                                     {'rev3': expected_suspected_cl}, [], None,
+                                     failure_type.TEST])
+    pipeline = IdentifyTryJobCulpritPipeline(
+        master_name, builder_name, build_number, ['rev3'], failure_type.TEST,
+        '1', test_result)
+    pipeline.start()
+    self.execute_queued_tasks()
 
     try_job_data = WfTryJobData.Get(try_job_id)
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -819,11 +841,6 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(
-        master_name, builder_name, build_number, ['rev1', 'rev2'],
-        failure_type.TEST, '1', test_result)
-
     a_test1_suspected_cl = {
         'revision': 'rev1',
         'commit_position': 1,
@@ -884,7 +901,21 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
         }
     }
 
-    self.assertEqual(expected_test_result['culprit'], culprit)
+    expected_culprits = {
+      'rev1': a_test1_suspected_cl,
+      'rev2': a_test2_suspected_cl
+    }
+
+    self.MockPipeline(RevertAndNotifyCulpritPipeline,
+                      None,
+                      expected_args=[master_name, builder_name, build_number,
+                                     expected_culprits, [], None,
+                                     failure_type.TEST])
+    pipeline = IdentifyTryJobCulpritPipeline(
+        master_name, builder_name, build_number, ['rev1', 'rev2'],
+        failure_type.TEST, '1', test_result)
+    pipeline.start()
+    self.execute_queued_tasks()
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_test_result, try_job.test_results[-1])
@@ -991,9 +1022,17 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     try_job_data.try_job_key = try_job.key
     try_job_data.put()
 
-    pipeline = IdentifyTryJobCulpritPipeline()
-    pipeline.run(master_name, builder_name, build_number, [revision],
-                 failure_type.COMPILE, '1', compile_result)
+    self.MockPipeline(RevertAndNotifyCulpritPipeline,
+                      None,
+                      expected_args=[master_name, builder_name, build_number,
+                                     {revision: heuristic_suspected_cl},
+                                     [[repo_name, revision]], None,
+                                     failure_type.COMPILE])
+    pipeline = IdentifyTryJobCulpritPipeline(
+        master_name, builder_name, build_number, [revision],
+        failure_type.COMPILE, '1', compile_result)
+    pipeline.start()
+    self.execute_queued_tasks()
 
     self.assertEqual(analysis.result_status,
                      result_status.FOUND_UNTRIAGED)
@@ -1065,45 +1104,21 @@ class IdentifyTryJobCulpritPipelineTest(testing.AppengineTestCase):
     builder_name = 'b'
     build_number = 8
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number).put()
-    pipeline = IdentifyTryJobCulpritPipeline()
-    culprit = pipeline.run(master_name, builder_name, build_number, ['rev1'],
-                           failure_type.TEST, None, None)
-    self.assertIsNone(culprit)
+    WfTryJob.Create(master_name, builder_name, build_number).put()
+
+    self.MockPipeline(RevertAndNotifyCulpritPipeline,
+                      None,
+                      expected_args=[master_name, builder_name, build_number,
+                                     None, [], None, failure_type.TEST])
+    pipeline = IdentifyTryJobCulpritPipeline(
+        master_name, builder_name, build_number, ['rev1'],
+        failure_type.TEST, None, None)
+    pipeline.start()
+    self.execute_queued_tasks()
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(try_job.test_results, [])
     self.assertEqual(try_job.status, analysis_status.COMPLETED)
-
-  def testNotifyCulprits(self):
-    instances = []
-
-    class MockedRevertAndNotifyCulpritPipeline(object):
-
-      def __init__(self, *args):
-        self.args = args
-        self.started = False
-        instances.append(self)
-
-      def start(self):
-        self.started = True
-
-    self.mock(
-        identify_try_job_culprit_pipeline, 'RevertAndNotifyCulpritPipeline',
-        MockedRevertAndNotifyCulpritPipeline)
-
-    culprits = {
-        'r1': {
-            'repo_name': 'chromium',
-            'revision': 'r1',
-        }
-    }
-    heuristic_cls = [('chromium', 'r1')]
-
-    identify_try_job_culprit_pipeline._RevertOrNotifyCulprits(
-        'm', 'b', 1, culprits, heuristic_cls, None, failure_type.TEST)
-    self.assertEqual(1, len(instances))
-    self.assertTrue(instances[0].started)
 
   def testGetSuspectedCLFoundByHeuristicForCompile(self):
     master_name = 'm'
