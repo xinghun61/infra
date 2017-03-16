@@ -7,6 +7,7 @@ from testing_utils import testing
 from common import chrome_dependency_fetcher
 from common.dependency import Dependency
 from common.pipeline_wrapper import pipeline_handlers
+from common.waterfall import failure_type
 from libs.gitiles.diff import ChangeType
 from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
 
@@ -103,6 +104,22 @@ class ExtractDEPSInfoPipelineTest(testing.AppengineTestCase):
     failure_info = {
         'failed': True,
         'chromium_revision': None,
+    }
+    change_logs = {}
+    expected_deps_info = {
+        'deps': {},
+        'deps_rolls': {},
+    }
+
+    pipeline = ExtractDEPSInfoPipeline()
+    deps_info = pipeline.run(failure_info, change_logs)
+    self.assertEqual(expected_deps_info, deps_info)
+
+  def testBailOutIfInfraFailure(self):
+    failure_info = {
+        'failed': True,
+        'failure_type': failure_type.INFRA,
+        'chromium_revision': '00baf00ba',
     }
     change_logs = {}
     expected_deps_info = {

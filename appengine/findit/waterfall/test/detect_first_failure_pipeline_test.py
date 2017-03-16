@@ -184,6 +184,23 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(failure_info['failed'])
 
   @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  def testAnalyzeInfraExceptionBuild(self, mock_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 120
+
+    self._CreateAndSaveWfAnanlysis(
+        master_name, builder_name, build_number, analysis_status.RUNNING)
+
+    # Setup build data for builds:
+    mock_fn.return_value = self._GetBuildData(master_name, builder_name, 120)
+
+    pipeline = DetectFirstFailurePipeline()
+    failure_info = pipeline.run(master_name, builder_name, build_number)
+
+    self.assertEqual(failure_info['failure_type'], failure_type.INFRA)
+
+  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
   def testStopLookingBackIfFindTheFirstBuild(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'

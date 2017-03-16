@@ -6,6 +6,7 @@ import logging
 
 from common import chrome_dependency_fetcher
 from common.pipeline_wrapper import BasePipeline
+from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 
@@ -132,6 +133,10 @@ class ExtractDEPSInfoPipeline(BasePipeline):
     """
     if not failure_info['failed'] or not failure_info['chromium_revision']:
       # Bail out if no failed step or no chromium revision.
+      return {'deps': {}, 'deps_rolls': {}}
+
+    # Bail out on infra failure
+    if failure_info.get('failure_type') == failure_type.INFRA:
       return {'deps': {}, 'deps_rolls': {}}
 
     chromium_revision = failure_info['chromium_revision']

@@ -559,6 +559,17 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(0, len(result['failures']))
     self.assertEqual([], suspected_cls)
 
+  def testAnalyzeBuildWithInfraFailure(self):
+    failure_info = {
+        'failed': True,
+        'failure_type': failure_type.INFRA,
+        'chromium_revision': '00baf00ba',
+    }
+    result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
+        failure_info, change_logs=None, deps_info=None, failure_signals=None)
+    self.assertEqual(0, len(result['failures']))
+    self.assertEqual([], suspected_cls)
+
   def testAnalyzeBuildFailure(self):
     failure_info = {
         'master_name': 'm',

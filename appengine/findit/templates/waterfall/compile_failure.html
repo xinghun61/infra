@@ -20,13 +20,17 @@
     {% else %}
       First Failure: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}">{{build_number}}</a><br>
     {% endif %}
-    {% if last_pass %}
-      Last Pass: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{last_pass}}">{{last_pass}}</a><br>
-      {% if last_pass + 1 != first_failure %}
-      <div class="warning">Be careful, compile was not run or purple in builds before first failure!</div>
-      {% endif %}
+    {% if infra_exception %}
+      <div class="warning">This build failed due to an infra exception. Analysis skipped.</div>
     {% else %}
-      <div class="warning">Last Pass: Unknown!</div>
+      {% if last_pass %}
+        Last Pass: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{last_pass}}">{{last_pass}}</a><br>
+        {% if last_pass + 1 != first_failure %}
+        <div class="warning">Be careful, compile was not run or purple in builds before first failure!</div>
+        {% endif %}
+      {% else %}
+        <div class="warning">Last Pass: Unknown!</div>
+      {% endif %}
     {% endif %}
     {%if show_debug_info %}
       <a href="/waterfall/failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/compile/logs/stdio">compile stdio</a>

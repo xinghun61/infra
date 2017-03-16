@@ -6,6 +6,7 @@ import mock
 import os
 
 from common.pipeline_wrapper import pipeline_handlers
+from common.waterfall import failure_type
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from waterfall import buildbot
@@ -291,6 +292,18 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     failure_info = {
         'failed': True,
         'chromium_revision': None,
+    }
+    expected_signals = {}
+
+    pipeline = ExtractSignalPipeline()
+    signals = pipeline.run(failure_info)
+    self.assertEqual(expected_signals, signals)
+
+  def testBailOutIfInfraFailure(self):
+    failure_info = {
+        'failed': True,
+        'failure_type': failure_type.INFRA,
+        'chromium_revision': '00baf00ba',
     }
     expected_signals = {}
 

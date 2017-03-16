@@ -20,6 +20,7 @@ from waterfall import swarming_util
 _MAX_BUILDS_TO_CHECK = 20
 _NON_FAILURE_STATUS = ['SUCCESS', 'SKIPPED', 'UNKNOWN']
 _PRE_TEST_PREFIX = 'PRE_'
+_INFRA_EXCEPTION = 4
 
 
 def _RemoveAllPrefixes(test):
@@ -48,7 +49,10 @@ def _RemoveAllPrefixes(test):
 def _GetFailureType(build_info):
   if not build_info.failed_steps:
     return failure_type.UNKNOWN
+  # TODO(robertocn): Consider also bailing out of tests with infra failures.
   if constants.COMPILE_STEP_NAME in build_info.failed_steps:
+    if build_info.result == _INFRA_EXCEPTION:
+      return failure_type.INFRA
     return failure_type.COMPILE
   # TODO(http://crbug.com/602733): differentiate test steps from infra ones.
   return failure_type.TEST

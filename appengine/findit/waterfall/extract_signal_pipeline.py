@@ -12,6 +12,7 @@ from google.appengine.api.urlfetch import ResponseTooLargeError
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
+from common.waterfall import failure_type
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from waterfall import buildbot
@@ -110,6 +111,10 @@ class ExtractSignalPipeline(BasePipeline):
     signals = {}
     if not failure_info['failed'] or not failure_info['chromium_revision']:
       # Bail out if no failed step or no chromium revision.
+      return signals
+
+    # Bail out on infra failure
+    if failure_info.get('failure_type') == failure_type.INFRA:
       return signals
 
     master_name = failure_info['master_name']

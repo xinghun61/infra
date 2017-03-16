@@ -390,7 +390,7 @@ class BuildFailure(BaseHandler):
     }
 
   def _PrepareDataForCompileFailure(self, analysis, data):
-
+    data['infra_exception'] = analysis.failure_type_str == 'infra'
     # Check result from heuristic analysis.
     _PopulateHeuristicDataForCompileFailure(analysis, data)
     # Check result from try job.
@@ -452,7 +452,8 @@ class BuildFailure(BaseHandler):
     data['suspected_cls'] = _GetAllSuspectedCLsAndCheckStatus(
         master_name, builder_name, build_number, analysis)
 
-    if analysis.failure_type == failure_type.COMPILE:
+    if analysis.failure_type == failure_type.COMPILE or (
+        analysis.failure_type == failure_type.INFRA):
       self._PrepareDataForCompileFailure(analysis, data)
       return {
         'template': 'waterfall/compile_failure.html',

@@ -6,6 +6,7 @@ from collections import defaultdict
 import os
 import re
 
+from common.waterfall import failure_type
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.diff import ChangeType
@@ -705,6 +706,10 @@ def AnalyzeBuildFailure(
 
   if not failure_info['failed'] or not failure_info['chromium_revision']:
     # Bail out if no failed step or no chromium revision.
+    return analysis_result, []
+
+  # Bail out on infra failure
+  if failure_info.get('failure_type') == failure_type.INFRA:
     return analysis_result, []
 
   def CreateCLInfoDict(justification_dict, build_number, change_log):

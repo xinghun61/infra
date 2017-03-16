@@ -7,6 +7,7 @@ from datetime import datetime
 from testing_utils import testing
 
 from common.pipeline_wrapper import pipeline_handlers
+from common.waterfall import failure_type
 from waterfall.pull_changelog_pipeline import PullChangelogPipeline
 
 
@@ -113,6 +114,18 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
     failure_info = {
         'failed': True,
         'chromium_revision': None,
+    }
+    expected_change_logs = {}
+
+    pipeline = PullChangelogPipeline()
+    change_logs = pipeline.run(failure_info)
+    self.assertEqual(expected_change_logs, change_logs)
+
+  def testBailOutIfInfraFailure(self):
+    failure_info = {
+        'failed': True,
+        'chromium_revision': '00baf00ba',
+        'failure_type': failure_type.INFRA
     }
     expected_change_logs = {}
 
