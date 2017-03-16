@@ -8,6 +8,13 @@ indexes:
   - name: build_start_time
     direction: desc
 
+- kind: WfAnalysis
+  properties:
+  - name: aborted
+    direction: asc
+  - name: build_start_time
+    direction: desc
+
 - kind: WfFailureGroup
   properties:
   - name: build_failure_type

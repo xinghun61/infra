@@ -113,6 +113,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(analysis)
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertIsNone(analysis.result_status)
+    self.assertTrue(analysis.aborted)
 
   def testAnalyzeBuildFailurePipelineNotAbortedIfWithoutError(self):
     master_name = 'm'

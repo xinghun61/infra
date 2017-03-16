@@ -48,7 +48,8 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     if not analysis.completed:
       analysis.status = analysis_status.ERROR
       analysis.result_status = None
-      analysis.put()
+    analysis.aborted = True
+    analysis.put()
 
   def finalized(self):
     self._LogUnexpectedAborting(self.was_aborted)

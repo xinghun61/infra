@@ -97,6 +97,7 @@ class WfAnalysis(BaseBuildModel):
     """Resets to the state as if no analysis is run."""
     self.pipeline_status_path = None
     self.status = analysis_status.PENDING
+    self.aborted = False
     self.request_time = None
     self.start_time = None
     self.end_time = None
@@ -150,6 +151,9 @@ class WfAnalysis(BaseBuildModel):
   updated_time = ndb.DateTimeProperty(indexed=False, auto_now=True)
   # Record which version of analysis.
   version = ndb.StringProperty(indexed=False)
+
+  # Whether any sub-pipeline of Heuristic or try-job analysis was aborted.
+  aborted = ndb.BooleanProperty(indexed=False, default=False)
 
   # Analysis result for the build failure.
   not_passed_steps = ndb.StringProperty(indexed=False, repeated=True)
