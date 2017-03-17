@@ -267,7 +267,6 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
   builder_cfg = _prepare_builder_config(
       swarming_cfg, builder_cfg, swarming_param)
 
-  # Render task template.
   try:
     task_template_rev, task_template, canary = yield get_task_template_async(
         canary, canary_required)
@@ -275,6 +274,8 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
     raise errors.InvalidInputError(ex.message)
   task_template_params = {
     'bucket': build.bucket,
+    'builder_hash': (
+        hashlib.sha256('%s:%s' % (build.bucket, builder_cfg.name)).hexdigest()),
     'cache_dir': CACHE_DIR,
     'builder': builder_cfg.name,
     'project': project_id,
@@ -318,6 +319,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
       'properties_json': json.dumps(build_properties, sort_keys=True),
     })
 
+  # Render task template.
   task_template_params = {
     k: v or '' for k, v in task_template_params.iteritems()}
   task = format_obj(task_template, task_template_params)
