@@ -63,10 +63,10 @@ class CondaEnv(object):
       self._module_api.m.file.rmtree('removing conda', self.path)
 
   def _call(self, cmd):
-    return self._module_api.m.step(
-        ' '.join(['conda'] + cmd),
-        [self.conda_exe] + cmd + ['--yes'],
-        env={'PYTHONPATH': None})
+    with self._module_api.m.step.context({'env': {'PYTHONPATH': None}}):
+      return self._module_api.m.step(
+          ' '.join(['conda'] + cmd),
+          [self.conda_exe] + cmd + ['--yes'])
 
 
 class CondaApi(recipe_api.RecipeApi):
@@ -114,7 +114,8 @@ class CondaApi(recipe_api.RecipeApi):
         ]
       else:
         install_cmd = ['/bin/bash', installer, '-b', '-p', path]
-      self.m.step('install miniconda', install_cmd, env={'PYTHONPATH': ''})
+      with self.m.step.context({'env': {'PYTHONPATH': ''}}):
+        self.m.step('install miniconda', install_cmd)
       return CondaEnv(self, version, path)
     finally:
       self.m.file.rmtree('remove miniconda installer', tmp)

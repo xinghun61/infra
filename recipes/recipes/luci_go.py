@@ -55,8 +55,9 @@ def _run_presubmit(api, patch_root, bot_update_step):
     '--upstream', upstream,
     '--rietveld_email', ''
   ]
-  api.python('presubmit', api.path['checkout'].join('go', 'env.py'),
-             presubmit_cmd, env={'PRESUBMIT_BUILDER': '1'})
+  with api.step.context({'env': {'PRESUBMIT_BUILDER': '1'}}):
+    api.python('presubmit', api.path['checkout'].join('go', 'env.py'),
+               presubmit_cmd)
 
 
 def _commit_change(api, patch_root):

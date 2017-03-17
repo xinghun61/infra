@@ -41,11 +41,11 @@ def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber,
     env = {'GOOS': goos, 'GOARCH': goarch}
 
   # Build packages (don't upload them yet).
-  api.python(
-      'cipd - build packages' + step_suffix,
-      api.path['checkout'].join('build', 'build.py'),
-      ['--builder', api.properties.get('buildername')],
-      env=env)
+  with api.step.context({'env': env}):
+    api.python(
+        'cipd - build packages' + step_suffix,
+        api.path['checkout'].join('build', 'build.py'),
+        ['--builder', api.properties.get('buildername')])
 
   # Verify they are good. Run tests only when building packages for the host
   # platform, since the host can't run binaries build with cross-compilation
@@ -62,18 +62,18 @@ def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber,
     'git_revision:%s' % rev,
   ]
   try:
-    return api.python(
-        'cipd - upload packages' + step_suffix,
-        api.path['checkout'].join('build', 'build.py'),
-        [
-          '--no-rebuild',
-          '--upload',
-          '--service-account-json',
-          api.cipd.default_bot_service_account_credentials,
-          '--json-output', api.json.output(),
-          '--builder', api.properties.get('buildername'),
-        ] + ['--tags'] + tags,
-        env=env)
+    with api.step.context({'env': env}):
+      return api.python(
+          'cipd - upload packages' + step_suffix,
+          api.path['checkout'].join('build', 'build.py'),
+          [
+            '--no-rebuild',
+            '--upload',
+            '--service-account-json',
+            api.cipd.default_bot_service_account_credentials,
+            '--json-output', api.json.output(),
+            '--builder', api.properties.get('buildername'),
+          ] + ['--tags'] + tags)
   finally:
     step_result = api.step.active_result
     output = step_result.json.output or {}
@@ -95,11 +95,12 @@ def build_luci(api):
 
   files = sorted(api.file.listdir('listing go bin', go_bin))
   absfiles = [api.path.join(go_bin, i) for i in files]
-  api.python(
-      'upload go bin',
-      api.depot_tools.upload_to_google_storage_path,
-      ['-b', 'chromium-luci'] + absfiles,
-      env={'DEPOT_TOOLS_GSUTIL_BIN_DIR': api.path['cache'].join('gsutil')})
+  with api.step.context({'env': {
+      'DEPOT_TOOLS_GSUTIL_BIN_DIR': api.path['cache'].join('gsutil')}}):
+    api.python(
+        'upload go bin',
+        api.depot_tools.upload_to_google_storage_path,
+        ['-b', 'chromium-luci'] + absfiles)
   for name, abspath in zip(files, absfiles):
     sha1 = api.file.read(
         '%s sha1' % str(name), abspath + '.sha1',

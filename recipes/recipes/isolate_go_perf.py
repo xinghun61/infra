@@ -85,11 +85,12 @@ def build_isolate(api):
 
 
 def upload_isolate(api, isolate):
-  api.python(
-      'upload go bin',
-      api.depot_tools.upload_to_google_storage_path,
-      ['-b', 'chromium-luci', isolate],
-      env={'DEPOT_TOOLS_GSUTIL_BIN_DIR': api.path['cache'].join('gsutil')})
+  with api.step.context({'env': {
+      'DEPOT_TOOLS_GSUTIL_BIN_DIR': api.path['cache'].join('gsutil')}}):
+    api.python(
+        'upload go bin',
+        api.depot_tools.upload_to_google_storage_path,
+        ['-b', 'chromium-luci', isolate])
   sha1 = api.file.read('isolate sha1', str(isolate) + '.sha1',
                        test_data='0123456789abcdeffedcba987654321012345678')
   api.step.active_result.presentation.step_text = sha1

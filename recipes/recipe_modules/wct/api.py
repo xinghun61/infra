@@ -34,6 +34,7 @@ class WCTApi(recipe_api.RecipeApi):
     }
     wct_bin = wct_root.join('node_modules', 'web-component-tester', 'bin',
         'wct')
-    self.m.step('Run WCT', ['xvfb-run', '-a', wct_bin, 'test', '--root', root,
-        '--verbose', '--simpleOutput', '--browsers', 'chrome'], env=env)
+    with self.m.step.context({'env': env}):
+      self.m.step('Run WCT', ['xvfb-run', '-a', wct_bin, 'test', '--root', root,
+          '--verbose', '--simpleOutput', '--browsers', 'chrome'])
 
