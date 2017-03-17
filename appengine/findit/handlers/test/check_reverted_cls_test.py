@@ -22,6 +22,10 @@ from waterfall.test import wf_testcase
 _MOCKED_FINDIT_REVERTING_CL = cl_info.ClInfo('codereview.chromium.org/456')
 _MOCKED_FINDIT_REVERTING_CL.commits = [
     cl_info.Commit('1001', 'e5f6a7b8', datetime(2017, 3, 15, 1, 10))]
+_MOCKED_FINDIT_REVERTING_CL.commit_attempts = {
+    '1001': cl_info.CommitAttempt(
+        '1001', 'sheriff@chromium.org', datetime(2017, 3, 15, 0, 7)),
+}
 _MOCKED_FINDIT_REVERTED_CL_INFO = cl_info.ClInfo('codereview.chromium.org/123')
 _MOCKED_FINDIT_REVERTED_CL_INFO.commits = [
     cl_info.Commit('1000', 'a1b2c3d4', 1)]
@@ -34,6 +38,10 @@ _MOCKED_SHERIFF_REVERTING_CL = cl_info.ClInfo(
     'codereview.chromium.org/456')
 _MOCKED_SHERIFF_REVERTING_CL.commits = [
     cl_info.Commit('1001', 'e5f6a7b8', datetime(2017, 3, 15, 0, 8))]
+_MOCKED_SHERIFF_REVERTING_CL.commit_attempts = {
+    '1001': cl_info.CommitAttempt(
+        '1001', 'sheriff@chromium.org', datetime(2017, 3, 15, 0, 7)),
+}
 _MOCKED_SHERIFF_REVERTED_CL_INFO = cl_info.ClInfo('codereview.chromium.org/123')
 _MOCKED_SHERIFF_REVERTED_CL_INFO.commits = [
     cl_info.Commit('1000', 'a1b2c3d4', 1)]

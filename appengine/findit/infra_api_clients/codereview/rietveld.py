@@ -132,6 +132,11 @@ class Rietveld(codereview.CodeReview):
     patchset_to_revision_regex = re.compile(
         r'Committed patchset #\d+ \(id:\d+\) as '
         r'https://.*/(?P<revision>[a-f\d]{40})')
+    # NB: We capture the email as any non-space characters after 'by' to avoid
+    # matching in case the email is followed by ` to run a CQ dry run`
+    commit_attempt_regex = re.compile(
+        r'^The CQ bit was checked by [^ ]+$')
+
     def patchset_to_revision_func(cl, message):
       matches = patchset_to_revision_regex.match(message['text'])
       if not matches:
@@ -157,7 +162,20 @@ class Rietveld(codereview.CodeReview):
       revert = cl_info.Revert(patchset_id, revert_cl, reverter, timestamp)
       cl.reverts.append(revert)
 
-    details_funcs = [patchset_to_revision_func, patchset_reverted_to_issue_func]
+    def commit_attempt_func(cl, message):
+      matches = commit_attempt_regex.match(message['text'])
+      if not matches:
+        return
+      timestamp = time_util.UTCDatetimeFromNaiveString(message['date'])
+      committer = message['sender']
+      patchset_id = str(message['patchset'])
+      cl.AddCqAttempt(patchset_id, committer, timestamp)
+
+    details_funcs = [
+        patchset_to_revision_func,
+        patchset_reverted_to_issue_func,
+        commit_attempt_func,
+      ]
 
     # Sort by timestamp
     messages = sorted(

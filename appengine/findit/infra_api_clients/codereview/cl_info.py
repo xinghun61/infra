@@ -25,6 +25,24 @@ class Commit(object):  # pragma: no cover
     }
 
 
+class CommitAttempt(object):  # pragma: no cover
+
+  def __init__(self, patchset_id, user_email, timestamp):
+    # A string such as '20001'.
+    self.patchset_id = patchset_id
+    # The timestamp of the message as stored in the code review issue.
+    self.last_cq_timestamp = timestamp
+    # The user who clicked the commit checkbox
+    self.committing_user_email = user_email
+
+  def serialize(self):
+    return {
+        'patchset_id': self.patchset_id,
+        'committing_user_email': self.committing_user_email,
+        'timestamp': time_util.FormatDatetime(self.last_cq_timestamp),
+    }
+
+
 class Revert(object):  # pragma: no cover
 
   def __init__(self, patchset_id, reverting_cl, reverting_user_email,
@@ -54,6 +72,8 @@ class ClInfo(object):  # pragma: no cover
 
   def __init__(self, review_url):
     self.url = review_url
+    # A map of patchset_id to CommitAttempt objects.
+    self.commit_attempts = {}
     # A list of Commit objects.
     self.commits = []
     # A list of Revert objects.
@@ -65,10 +85,22 @@ class ClInfo(object):  # pragma: no cover
     # List of reviewers' emails
     self.reviewers = []
 
+  def AddCqAttempt(self, patchset_id, committer, timestamp):
+    if patchset_id not in self.commit_attempts.keys():
+      self.commit_attempts[patchset_id] = CommitAttempt(
+          patchset_id, committer, timestamp)
+    else:
+      commit_attempt = self.commit_attempts[patchset_id]
+      if timestamp > commit_attempt.last_cq_timestamp:
+        commit_attempt.last_cq_timestamp = timestamp
+        commit_attempt.committing_user_email = committer
+
   def serialize(self):
     return {
         'url': self.url,
         'commits': [x.serialize() for x in self.commits],
+        'commit_attempts': [x.serialize() for x in
+                            self.commit_attempts.values()],
         'reverts': [x.serialize() for x in self.reverts],
         'closed': self.closed,
         'cc': self.cc,

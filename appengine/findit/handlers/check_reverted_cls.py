@@ -63,12 +63,11 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
 
         if reverting_user == constants.DEFAULT_SERVICE_ACCOUNT:
           # The sheriff used Findit's reverting CL.
-          # TODO(lijeffrey): The timestamp in the commit is based on the message
-          # and not necessarily the CQ time. Once CQ time is extracted use that
-          # for better accuracy.
           revert_cl.committed_time = revert_commit.timestamp
           revert_cl.status = revert_cl_status.COMMITTED
-          suspected_cl.sheriff_action_time = revert_commit.timestamp
+          cq_attempt = revert.reverting_cl.commit_attempts[
+              revert_commit.patchset_id]
+          suspected_cl.sheriff_action_time = cq_attempt.last_cq_timestamp
           suspected_cl.put()
           break
         else:

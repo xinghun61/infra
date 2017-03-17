@@ -161,6 +161,18 @@ class RietveldTest(testing.AppengineTestCase):
              'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa'
          }
      ],
+     'commit_attempts': [
+         {
+             'committing_user_email': u'author@chromium.org',
+             'patchset_id': '100001',
+             'timestamp': '2017-02-23 00:52:00 UTC'
+         },
+         {
+             'committing_user_email': u'author@chromium.org',
+             'patchset_id': '120001',
+             'timestamp': '2017-02-23 21:24:47 UTC',
+         }
+     ],
      'reverts': [
          {
              'patchset_id': '100001',
@@ -173,6 +185,13 @@ class RietveldTest(testing.AppengineTestCase):
                          'patchset_id': '20001',
                          'timestamp': '2017-02-23 23:17:54 UTC',
                          'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa'
+                     }
+                 ],
+                 'commit_attempts': [
+                     {
+                         'committing_user_email': u'author@chromium.org',
+                         'patchset_id': '20001',
+                         'timestamp': '2017-02-23 21:24:47 UTC'
                      }
                  ],
                  'reverts': [],
