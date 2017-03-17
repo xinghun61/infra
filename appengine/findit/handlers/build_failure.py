@@ -390,7 +390,7 @@ class BuildFailure(BaseHandler):
     }
 
   def _PrepareDataForCompileFailure(self, analysis, data):
-    data['infra_exception'] = analysis.failure_type_str == 'infra'
+    data['infra_exception'] = analysis.failure_type == failure_type.INFRA
     # Check result from heuristic analysis.
     _PopulateHeuristicDataForCompileFailure(analysis, data)
     # Check result from try job.
@@ -452,6 +452,9 @@ class BuildFailure(BaseHandler):
     data['suspected_cls'] = _GetAllSuspectedCLsAndCheckStatus(
         master_name, builder_name, build_number, analysis)
 
+    # TODO(crbug.com/702444): Do not assume failure_type.INFRA implies a
+    # compile failure. Either use a special template, or choose the appropriate
+    # one based on the type of job (compile/test).
     if analysis.failure_type == failure_type.COMPILE or (
         analysis.failure_type == failure_type.INFRA):
       self._PrepareDataForCompileFailure(analysis, data)
