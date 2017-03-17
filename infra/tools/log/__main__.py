@@ -8,6 +8,8 @@ Commands:
   list <log>            Lists all machines that write this log
   cat <log>             Prints a log from all machines
   cat <log> <machine>   Prints a log from one machine
+  master <master name>  Prints a log from a master.  This is an alias for
+                        cit log cat master_twistd_log master.<master name>
 """
 import logging
 import sys
@@ -66,6 +68,13 @@ class Log(app.BaseApplication):
       return cl.cat(args.target)
     elif args.command == 'help':  # pragma: no cover
       self.parser.print_help()
+    elif args.command == 'master':  # pragma: no cover
+      if not args.target:
+        self.parser.error('Missing master name')
+      master = args.target[0]
+      if not master.startswith('master.'):
+        master = 'master.' + master
+      return cl.cat(['master_twistd_log', master])
     else:  # pragma: no cover
       self.parser.error('Unkown command: %s' % args.command)
 
