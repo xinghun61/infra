@@ -5,7 +5,7 @@
 
 service: default
 runtime: custom
-vm: true
+env: flex
 entrypoint: gunicorn -b :$PORT service:app
 
 handlers:
@@ -15,15 +15,15 @@ handlers:
 health_check:
   enable_health_check: True
   check_interval_sec: 10
-  timeout_sec: 4
-  unhealthy_threshold: 2 # "unhealthy" after this many consecutive fails.
+  timeout_sec: 10
+  unhealthy_threshold: 10 # "unhealthy" after this many consecutive fails.
   healthy_threshold: 2 # "healthy again" after this many OKs.
-  restart_threshold: 360 # Restart VM after this many consecutive fails.
+  restart_threshold: 300 # Restart VM after this many consecutive fails.
 
 automatic_scaling:
-  max_num_instances: 5
+  max_num_instances: 1
 
 resources:
-  memory_gb: 20
-  disk_size_gb: 20
+  memory_gb: 6
+  disk_size_gb: 40
 

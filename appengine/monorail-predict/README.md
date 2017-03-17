@@ -18,10 +18,9 @@ ok.
 
 The API is very simple, and for now only provides suggestions for Issue
 Components based on text entered by the user: ```POST``` to ```/_predict``` a
-JSON object of the form: ```
-{'text': 'text to classify'}
-```
-and it will return a JSON object of the form:
+JSON object of the form: ```{'text': 'text to classify'}``` and it will return
+a JSON object of the form:
+
 ```
 {'components': ['Component1', 'Component2', 'etc']}
 ```
@@ -39,6 +38,7 @@ approximation of the accept rate for the time being.
 
 You will need an auth token json file. Go to the 
 [monorail-predict Service Accounts page](https://console.cloud.google.com/iam-admin/serviceaccounts/project?project=monorail-predict)
+(or the [monorail-predict-staging Service Accounts page](https://console.cloud.google.com/iam-admin/serviceaccounts/project?project=monorail-predict-staging))
 and select the options menu (three dot menu on the far right) for the
 "App Engine default service account" service account. Then select "Create key"
 from the dropdown menu. In the "Create private key" pop-up dialog, select
@@ -47,19 +47,24 @@ named monorail-predict-something.json to your Downloads directory on your
 workstation. 
 
 You should then run
+
 ```
 export GOOGLE_APPLICATION_CREDENTIALS=~/Downloads/monorail-predict-whatever.json
 ```
+
 before running the actual server, in the same shell where you will run the
 server. Make sure this environment variable is always set before trying to
 run the server because it will fail to load the model files from GCS if you
 don't.
 
 Finally, to start the servier from this directory:
+
 ```
 gunicorn -b :5000 service:app
 ```
+
 Or just running this should work too:
+
 ```
 python service.py
 ```
