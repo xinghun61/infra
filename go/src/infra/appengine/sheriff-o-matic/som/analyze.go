@@ -14,12 +14,13 @@ import (
 	"infra/monitoring/messages"
 
 	"github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
+	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
-
 	dmp "github.com/sergi/go-diff/diffmatchpatch"
 )
 
@@ -66,6 +67,14 @@ func getAnalyzeHandler(ctx *router.Context) {
 	// TODO(seanmccullough): Set a.MasterOnly, BuilderOnly, Build etc based on Params.
 
 	if client.GetReader(c) == nil {
+		transport, err := auth.GetRPCTransport(c, auth.AsSelf)
+		if err != nil {
+			errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error getting transport: %v", err))
+			return
+		}
+
+		c = urlfetch.Set(c, transport)
+
 		miloReader := client.NewMiloReader(c, "")
 		memcachingReader := client.NewMemcacheReader(miloReader)
 		c = client.WithReader(c, memcachingReader)
