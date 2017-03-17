@@ -36,6 +36,7 @@ class ApiTests(object):
 
   def setUpTests(self):
     gae_ts_mon.reset_for_unittest(disable=True)
+    auth.disable_process_cache()
 
     self.future_date = utils.utcnow() + datetime.timedelta(minutes=1)
     # future_ts is str because INT64 values are formatted as strings.
@@ -61,7 +62,7 @@ class ApiTests(object):
     msg = api.build_to_message(self.test_build)
     self.assertEqual(msg.lease_expiration_ts, yesterday_timestamp)
 
-  ##################################### GET ####################################
+  ####### GET ##################################################################
 
   @mock.patch('service.get', autospec=True)
   def test_get(self, get):
@@ -84,7 +85,7 @@ class ApiTests(object):
     get.return_value = None
     self.expect_error('get', {'id': 1}, 'BUILD_NOT_FOUND')
 
-  ##################################### PUT ####################################
+  ####### PUT ##################################################################
 
   @mock.patch('service.add', autospec=True)
   def test_put(self, add):
@@ -150,7 +151,7 @@ class ApiTests(object):
     }
     self.expect_error('put', req, 'INVALID_INPUT')
 
-  #################################### RETRY ###################################
+  ####### RETRY ################################################################
 
   @mock.patch('service.retry', autospec=True)
   def test_retry(self, retry):
@@ -194,7 +195,7 @@ class ApiTests(object):
     retry.side_effect = errors.BuildNotFoundError
     self.expect_error('retry', {'id': 42}, 'BUILD_NOT_FOUND')
 
-  ################################## PUT_BATCH #################################
+  ####### PUT_BATCH ############################################################
 
   @mock.patch('service.add_many_async', autospec=True)
   def test_put_batch(self, add_many_async):
@@ -261,7 +262,7 @@ class ApiTests(object):
       'error': {'reason': 'INVALID_INPUT', 'message': 'Just bad'},
     })
 
-  #################################### SEARCH ##################################
+  ####### SEARCH ###############################################################
 
   @mock.patch('service.search', autospec=True)
   def test_search(self, search):
@@ -296,7 +297,7 @@ class ApiTests(object):
     self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
     self.assertEqual(res['next_cursor'], 'the cursor')
 
-  ##################################### PEEK ###################################
+  ####### PEEK #################################################################
 
   @mock.patch('service.peek', autospec=True)
   def test_peek(self, peek):
@@ -314,7 +315,7 @@ class ApiTests(object):
     self.assertEqual(peeked_build['id'], str(self.test_build.key.id()))
     self.assertEqual(res['next_cursor'], 'the cursor')
 
-  #################################### LEASE ###################################
+  ####### LEASE ################################################################
 
   @mock.patch('service.lease', autospec=True)
   def test_lease(self, lease):
@@ -355,7 +356,7 @@ class ApiTests(object):
     }
     self.expect_error('lease', req, 'CANNOT_LEASE_BUILD')
 
-  #################################### RESET ###################################
+  ####### RESET ################################################################
 
   @mock.patch('service.reset', autospec=True)
   def test_reset(self, reset):
@@ -369,7 +370,7 @@ class ApiTests(object):
     self.assertEqual(res['build']['id'], str(self.test_build.key.id()))
     self.assertFalse('lease_key' in res['build'])
 
-  #################################### START ###################################
+  ####### START ################################################################
 
   @mock.patch('service.start', autospec=True)
   def test_start(self, start):
@@ -396,7 +397,7 @@ class ApiTests(object):
     res = self.call_api('start', req).json_body
     self.assertEqual(res['error']['reason'], 'BUILD_IS_COMPLETED')
 
-  #################################### HEATBEAT ################################
+  ####### HEATBEAT #############################################################
 
   @mock.patch('service.heartbeat', autospec=True)
   def test_heartbeat(self, heartbeat):
@@ -475,7 +476,7 @@ class ApiTests(object):
     }
     self.call_api('heartbeat_batch', req, status=500)
 
-  ################################## SUCCEED ###################################
+  ####### SUCCEED ##############################################################
 
   @mock.patch('service.succeed', autospec=True)
   def test_succeed(self, succeed):
@@ -509,7 +510,7 @@ class ApiTests(object):
       res['build']['result_details_json'], req['result_details_json'])
     self.assertIn('bot_id:bot42', res['build']['tags'])
 
-  #################################### FAIL ####################################
+  ####### FAIL #################################################################
 
   @mock.patch('service.fail', autospec=True)
   def test_infra_failure(self, fail):
@@ -536,7 +537,7 @@ class ApiTests(object):
     self.assertEqual(
       res['build']['result_details_json'], req['result_details_json'])
 
-  #################################### CANCEL ##################################
+  ####### CANCEL ###############################################################
 
   @mock.patch('service.cancel', autospec=True)
   def test_cancel(self, cancel):
@@ -548,7 +549,7 @@ class ApiTests(object):
     cancel.assert_called_once_with(req['id'])
     self.assertEqual(int(res['build']['id']), req['id'])
 
-  ################################# CANCEL_BATCH ###############################
+  ####### CANCEL_BATCH #########################################################
 
   @mock.patch('service.cancel')
   def test_cancel_batch(self, cancel):
@@ -568,7 +569,7 @@ class ApiTests(object):
     self.assertEqual(res1['error']['reason'], 'BUILD_IS_COMPLETED')
     cancel.assert_any_call(2)
 
-  ##########################  DELETE_MANY_BUILDS  ##############################
+  ####### DELETE_MANY_BUILDS ###################################################
 
   @mock.patch('service.delete_many_builds', autospec=True)
   def test_delete_many_builds(self, delete_many_builds):
@@ -583,7 +584,7 @@ class ApiTests(object):
         'chromium', model.BuildStatus.SCHEDULED, tags=['tag:0'],
         created_by='nodir@google.com')
 
-  ############################# PAUSE ##########################################
+  ####### PAUSE ################################################################
 
   @mock.patch('service.pause', autospec=True)
   def test_pause(self, pause):
@@ -596,7 +597,7 @@ class ApiTests(object):
     self.assertEqual(res, {})
 
 
-  ##############################  GET_BUCKET  ##################################
+  ####### GET_BUCKET ###########################################################
 
   @mock.patch('config.get_buildbucket_cfg_url', autospec=True)
   def test_get_bucket(self, get_buildbucket_cfg_url):
@@ -645,7 +646,7 @@ class ApiTests(object):
     }
     self.call_api('get_bucket', req, status=403)
 
-  #################################### ERRORS ##################################
+  ####### ERRORS ###############################################################
 
   @mock.patch('service.get', autospec=True)
   def error_test(self, error_class, reason, get):
@@ -669,7 +670,7 @@ class ApiTests(object):
     get.side_effect = auth.AuthorizationError
     self.call_api('get', {'id': 123}, status=403)
 
-  ############################# LONGEST_PENDING_TIME ###########################
+  ####### LONGEST_PENDING_TIME #################################################
 
   @mock.patch('service.longest_pending_time', autospec=True)
   def test_longest_pending_time(self, longest_pending_time):
@@ -681,6 +682,34 @@ class ApiTests(object):
     res = self.call_api('longest_pending_time', req).json_body
     self.assertEqual(res['longest_pending_time_sec'], 42)
     longest_pending_time.assert_called_once_with('chromium', 'x')
+
+  ####### BACKFILL_TAG_INDEX ###################################################
+
+  @mock.patch('api.enqueue_task')
+  def test_backfill_tag_index(self, enqueue_task):
+    auth.bootstrap_group(auth.ADMIN_GROUP, [auth.Anonymous])
+    req = {
+      'tag': 'buildset',
+      'shards': '64',
+    }
+    self.call_api('backfill_tag_index', req, status=(200, 204))
+    enqueue_task.assert_called_once_with(
+      'backfill-tag-index',
+      '/internal/task/buildbucket/backfill-tag-index/tag:buildset-start',
+      utils.encode_to_json({
+        'action': 'start',
+        'tag': 'buildset',
+        'shards': 64,
+      }))
+
+  def test_backfill_tag_index_fails(self):
+    auth.bootstrap_group(auth.ADMIN_GROUP, [auth.Anonymous])
+    self.call_api(
+        'backfill_tag_index', {}, status=400)
+    self.call_api(
+        'backfill_tag_index', {'tag': 'buildset'}, status=400)
+    self.call_api(
+        'backfill_tag_index', {'tag': 'buildset', 'shards': 0}, status=400)
 
 
 class EndpointsApiTest(testing.EndpointsTestCase, ApiTests):
@@ -697,3 +726,4 @@ class Webapp2ApiTest(test_case.Webapp2EndpointsTestCase, ApiTests):
   def setUp(self):
     super(Webapp2ApiTest, self).setUp()
     self.setUpTests()
+    auth.api.reset_local_state()

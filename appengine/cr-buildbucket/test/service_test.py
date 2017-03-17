@@ -326,12 +326,20 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(len(idx.entries), 2)
     self.assertEqual(idx.entries[0].bucket, 'chromium')
 
-  def test_add_too_many(self):
-    with self.assertRaises(errors.InvalidInputError):
-      service.add_many_async([
-        service.BuildRequest(bucket='chromium', tags=['buildset:a'])
-        for _ in xrange(2000)
-      ]).get_result()
+  def test_add_too_many_to_index(self):
+    service.add_many_async([
+      service.BuildRequest(bucket='chromium', tags=['buildset:a'])
+      for _ in xrange(2000)
+    ]).get_result()
+    index = model.TagIndex.get_by_id('buildset:a')
+    self.assertIsNotNone(index)
+    self.assertTrue(index.permanently_incomplete)
+    self.assertEqual(len(index.entries), 0)
+
+    # One more for coverage.
+    service.add_many_async([
+      service.BuildRequest(bucket='chromium', tags=['buildset:a'])
+    ]).get_result()
 
   ################################### RETRY ####################################
 

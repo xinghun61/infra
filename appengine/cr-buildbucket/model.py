@@ -196,6 +196,13 @@ class TagIndex(ndb.Model):
     TagIndex has no parent.
   """
 
+  MAX_ENTRY_COUNT = 1000
+
+  # if incomplete, this TagIndex should not be used in search.
+  # It is set to True if there are more than MAX_ENTRY_COUNT builds
+  # for this tag.
+  permanently_incomplete = ndb.BooleanProperty()
+
   # entries is a superset of all builds that have the tag equal to the id of
   # this entity. It may contain references to non-existent builds or builds that
   # do not actually have this tag; such builds must be ignored.

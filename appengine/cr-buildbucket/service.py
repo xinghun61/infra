@@ -1142,24 +1142,26 @@ def _add_to_tag_index_async(tag, new_entries):
   @ndb.transactional_tasklet
   def txn_async():
     idx = (yield model.TagIndex.get_by_id_async(tag)) or model.TagIndex(id=tag)
+    if idx.permanently_incomplete:
+      return
 
     # Avoid going beyond 1Mb entity size limit by limiting the number of entries
     new_size = len(idx.entries) + len(new_entries)
-    if new_size > 1000:
-      raise errors.InvalidInputError(
-          'Tag index: too many builds with tag "%s": %d' % (tag, new_size))
-
-    # idx.entries is sorted by descending.
-    # Build ids are monotonically decreasing, so most probably new entries will
-    # be added to the end.
-    fast_path = (
-      not idx.entries or
-      idx.entries[-1].build_id > new_entries[0].build_id)
-    idx.entries.extend(new_entries)
-    if not fast_path:
-      # Atypical case
-      logging.warning('hitting slow path in maintaining tag index')
-      idx.entries.sort(key=lambda e: e.build_id, reverse=True)
+    if new_size > model.TagIndex.MAX_ENTRY_COUNT:
+      idx.permanently_incomplete = True
+      idx.entries = []
+    else:
+      # idx.entries is sorted by descending.
+      # Build ids are monotonically decreasing, so most probably new entries
+      # will be added to the end.
+      fast_path = (
+        not idx.entries or
+        idx.entries[-1].build_id > new_entries[0].build_id)
+      idx.entries.extend(new_entries)
+      if not fast_path:
+        # Atypical case
+        logging.warning('hitting slow path in maintaining tag index')
+        idx.entries.sort(key=lambda e: e.build_id, reverse=True)
     yield idx.put_async()
 
   return txn_async()

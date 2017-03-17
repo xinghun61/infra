@@ -6,7 +6,9 @@ import functools
 import json
 import logging
 
+from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
+
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
@@ -227,7 +229,7 @@ def datetime_to_timestamp_safe(value):
 class BuildBucketApi(remote.Service):
   """API for scheduling builds."""
 
-  ###################################  GET  ####################################
+  ####### GET ##################################################################
 
   @buildbucket_api_method(
       id_resource_container(), BuildResponseMessage,
@@ -240,7 +242,7 @@ class BuildBucketApi(remote.Service):
       raise errors.BuildNotFoundError()
     return build_to_response_message(build)
 
-  ###################################  PUT  ####################################
+  ####### PUT ##################################################################
 
   @buildbucket_api_method(
       PutRequestMessage, BuildResponseMessage,
@@ -258,7 +260,7 @@ class BuildBucketApi(remote.Service):
     ))
     return build_to_response_message(build, include_lease_key=True)
 
-  ################################  PUT_BATCH  #################################
+  ####### PUT_BATCH ############################################################
 
   class PutBatchRequestMessage(messages.Message):
     builds = messages.MessageField(PutRequestMessage, 1, repeated=True)
@@ -300,7 +302,7 @@ class BuildBucketApi(remote.Service):
       res.results.append(one_res)
     return res
 
-  ##################################  RETRY   ##################################
+  ####### RETRY ################################################################
 
   class RetryRequestMessage(messages.Message):
     client_operation_id = messages.StringField(1)
@@ -322,7 +324,7 @@ class BuildBucketApi(remote.Service):
     )
     return build_to_response_message(build, include_lease_key=True)
 
-  ##################################  SEARCH   #################################
+  ####### SEARCH ###############################################################
 
   SEARCH_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
       message_types.VoidMessage,
@@ -368,7 +370,7 @@ class BuildBucketApi(remote.Service):
         next_cursor=next_cursor,
     )
 
-  ###################################  PEEK  ###################################
+  ####### PEEK #################################################################
 
   PEEK_REQUEST_RESOURCE_CONTAINER = endpoints.ResourceContainer(
       message_types.VoidMessage,
@@ -393,7 +395,7 @@ class BuildBucketApi(remote.Service):
         builds=map(build_to_message, builds),
         next_cursor=next_cursor)
 
-  ##################################  LEASE  ###################################
+  ####### LEASE ################################################################
 
   class LeaseRequestBodyMessage(messages.Message):
     lease_expiration_ts = messages.IntegerField(1)
@@ -420,7 +422,7 @@ class BuildBucketApi(remote.Service):
     assert build.lease_key is not None
     return build_to_response_message(build, include_lease_key=True)
 
-  #################################  RESET  ####################################
+  ####### RESET ################################################################
 
   @buildbucket_api_method(
       id_resource_container(), BuildResponseMessage,
@@ -431,8 +433,8 @@ class BuildBucketApi(remote.Service):
     build = service.reset(request.id)
     return build_to_response_message(build)
 
-  #################################  STARTED  ##################################
-
+  ####### START ################################################################
+  
   class StartRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1)
     url = messages.StringField(2)
@@ -446,7 +448,7 @@ class BuildBucketApi(remote.Service):
     build = service.start(request.id, request.lease_key, url=request.url)
     return build_to_response_message(build)
 
-  #################################  HEARTBEAT  ################################
+  ####### HEARTBEAT ############################################################
 
   class HeartbeatRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1, required=True)
@@ -515,7 +517,7 @@ class BuildBucketApi(remote.Service):
     results = service.heartbeat_batch(heartbeats)
     return self.HeartbeatBatchResponseMessage(results=map(to_message, results))
 
-  #################################  SUCCEED  ##################################
+  ####### SUCCEED ##############################################################
 
   class SucceedRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1)
@@ -537,7 +539,7 @@ class BuildBucketApi(remote.Service):
         new_tags=request.new_tags)
     return build_to_response_message(build)
 
-  ###################################  FAIL  ###################################
+  ####### FAIL #################################################################
 
   class FailRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1)
@@ -562,7 +564,7 @@ class BuildBucketApi(remote.Service):
     )
     return build_to_response_message(build)
 
-  ##################################  CANCEL  ##################################
+  ####### CANCEL ###############################################################
 
   @buildbucket_api_method(
       id_resource_container(), BuildResponseMessage,
@@ -573,7 +575,7 @@ class BuildBucketApi(remote.Service):
     build = service.cancel(request.id)
     return build_to_response_message(build)
 
-  ###############################  CANCEL_BATCH  ###############################
+  ####### CANCEL_BATCH #########################################################
 
   class CancelBatchRequestMessage(messages.Message):
     build_ids = messages.IntegerField(1, repeated=True)
@@ -603,7 +605,7 @@ class BuildBucketApi(remote.Service):
       res.results.append(one_res)
     return res
 
-  ##########################  DELETE_MANY_BUILDS  #############################
+  ####### DELETE_MANY_BUILDS ###################################################
 
   class DeleteManyBuildsResponse(messages.Message):
     # set by buildbucket_api_method
@@ -628,7 +630,7 @@ class BuildBucketApi(remote.Service):
         tags=request.tag[:], created_by=request.created_by)
     return self.DeleteManyBuildsResponse()
 
-  ###########################  PAUSE ###########################################
+  ####### PAUSE ################################################################
 
   class PauseResponse(messages.Message):
     pass
@@ -647,7 +649,7 @@ class BuildBucketApi(remote.Service):
     service.pause(request.bucket, request.is_paused)
     return self.PauseResponse()
 
-  ##############################  GET_BUCKET  ##################################
+  ####### GET_BUCKET ###########################################################
 
   @buildbucket_api_method(
       endpoints.ResourceContainer(
@@ -672,7 +674,7 @@ class BuildBucketApi(remote.Service):
         config_file_url=config.get_buildbucket_cfg_url(bucket.project_id),
     )
 
-  ###########################  LONGEST_PENDING_TIME ############################
+  ####### LONGEST_PENDING_TIME #################################################
 
   class LongestPendingTimeResponse(messages.Message):
     longest_pending_time_sec = messages.FloatField(1)
@@ -693,3 +695,34 @@ class BuildBucketApi(remote.Service):
     return self.LongestPendingTimeResponse(
         longest_pending_time_sec=wait_time.total_seconds(),
     )
+
+  ####### BACKFILL_TAG_INDEX ###################################################
+
+  @buildbucket_api_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          tag=messages.StringField(1, required=True),
+          shards=messages.IntegerField(2, required=True),
+      ),
+      message_types.VoidMessage)
+  @auth.require(auth.is_admin)
+  def backfill_tag_index(self, request):
+    """Backfills TagIndex entites from builds."""
+    if request.shards <= 0:
+      raise endpoints.BadRequestException('shards must be positive')
+    enqueue_task(
+      'backfill-tag-index',
+      ('/internal/task/buildbucket/backfill-tag-index/tag:%s-start' %
+       request.tag),
+      utils.encode_to_json({
+        'action': 'start',
+        'tag': request.tag,
+        'shards': request.shards,
+      }))
+    return message_types.VoidMessage()
+
+
+# mocked in tests.
+def enqueue_task(queue_name, url, payload):  # pragma: no cover
+  task = taskqueue.Task(url=url, payload=payload)
+  return task.add(queue_name=queue_name)
