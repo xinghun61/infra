@@ -110,7 +110,8 @@ class LogQuery(object):
           'this may take a long time...')
     if not limit:  # pragma: no branch
       limit = self.limit
-    tzoffset = datetime.timedelta(seconds=time.altzone)
+    tzoffset = datetime.timedelta(
+        seconds=time.altzone if time.daylight else time.timezone)
     offset = time.altzone / 60 / 60
     print >>sys.stderr, (
         'NOTE: All times are in local system time (%g hour(s)).' % -offset)
