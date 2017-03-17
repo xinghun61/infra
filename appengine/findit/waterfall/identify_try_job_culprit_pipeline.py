@@ -300,15 +300,20 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     def UpdateTryJobResult():
       try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
       if culprits:
-        result_to_update = (
+        results_to_update = (
             try_job_result.compile_results if
             try_job_type == failure_type.COMPILE else
             try_job_result.test_results)
-        if (result_to_update and
-            result_to_update[-1]['try_job_id'] == try_job_id):
-          result_to_update[-1].update(result)
-        else:  # pragma: no cover
-          result_to_update.append(result)
+        updated = False
+        for result_to_update in results_to_update:
+          if try_job_id == result_to_update['try_job_id']:  # pragma: no branch
+            result_to_update.update(result)
+            updated = True
+            break
+
+        if not updated:  # pragma: no cover
+          results_to_update.append(result)
+
       try_job_result.status = analysis_status.COMPLETED
       try_job_result.put()
 
