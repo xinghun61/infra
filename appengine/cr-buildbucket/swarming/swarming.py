@@ -31,6 +31,7 @@ import datetime
 import hashlib
 import json
 import logging
+import posixpath
 import random
 import string
 
@@ -65,6 +66,11 @@ DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/task?id={task_id}'
 # a strong signal if the canary is broken.
 # If it is, the template must be reverted to a stable version ASAP.
 DEFAULT_CANARY_TEMPLATE_PERCENTAGE = 10
+
+# This is the path, relative to swarming run dir, to the directory that contains
+# symlinks to swarming named caches. It will be prepended to paths of caches
+# defined in swarmbucket configs.
+CACHE_DIR = 'cache'
 
 
 ################################################################################
@@ -269,6 +275,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
     raise errors.InvalidInputError(ex.message)
   task_template_params = {
     'bucket': build.bucket,
+    'cache_dir': CACHE_DIR,
     'builder': builder_cfg.name,
     'project': project_id,
     'swarming_hostname': swarming_cfg.hostname,
@@ -376,20 +383,31 @@ def _to_swarming_dimensions(dims):
 
 
 def _add_named_caches(builder_cfg, task_properties):
-  """Adds/replaces named caches defined in the config to the task properties."""
-  task_caches = {
-    c.get('name'): c
-    for c in task_properties.get('caches', [])
-  }
+  """Adds/replaces named caches to/in the task properties.
+
+  Assumes builder_cfg is valid.
+  """
+  template_caches = task_properties.get('caches', [])
+  task_properties['caches'] = []
+
+  names = set()
+  paths = set()
   for c in builder_cfg.caches:
-    task_caches[c.name] = {
-      'name': c.name,
-      'path': c.path,
-    }
-  task_properties['caches'] = sorted(
-      task_caches.itervalues(),
-      key=lambda p: p.get('name'),
-  )
+    if c.path.startswith('cache/'):  # pragma: no cover
+      # TODO(nodir): remove this code path onces clients remove "cache/" from
+      # their configs.
+      cache_path = c.path
+    else:
+      cache_path = posixpath.join(CACHE_DIR, c.path)
+    names.add(c.name)
+    paths.add(cache_path)
+    task_properties['caches'].append({'path': cache_path, 'name': c.name, })
+
+  for c in template_caches:
+    if c.get('path') not in paths and c.get('name') not in names:
+      task_properties['caches'].append(c)
+
+  task_properties['caches'].sort(key=lambda p: p.get('path'))
 
 
 @ndb.tasklet

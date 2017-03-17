@@ -78,10 +78,9 @@ message Swarming {
     message CacheEntry {
       // Unique name of the cache. Required. Length is limited to 4096.
       optional string name = 1;
-      // Relative path to the directory that will be linked to the named cache.
-      // Required.
-      // A path cannot be shared among multiple caches.
-      // A task will fail if a file/dir with the same name already exists.
+      // Path to the directory that will be linked to the named cache,
+      // relative to the recipe cache directory.
+      // Required. Must be unique.
       optional string path = 2;
     }
 

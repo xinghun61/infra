@@ -189,9 +189,21 @@ def validate_builder_cfg(builder, ctx, final=True):
   if final and not has_pool_dimension(builder.dimensions):
     ctx.error('has no "pool" dimension')
 
+  cache_paths = set()
+  cache_names = set()
   for i, c in enumerate(builder.caches):
     with ctx.prefix('cache #%d: ', i + 1):
       validate_cache_entry(c, ctx)
+      if c.name:
+        if c.name in cache_names:
+          ctx.error('duplicate name')
+        else:
+          cache_names.add(c.name)
+      if c.path:
+        if c.path in cache_paths:
+          ctx.error('duplicate path')
+        else:
+          cache_paths.add(c.path)
 
   with ctx.prefix('recipe: '):
     validate_recipe_cfg(builder.recipe, ctx, final=final)

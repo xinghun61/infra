@@ -69,20 +69,20 @@ class SwarmingTest(testing.AppengineTestCase):
             name: "recipe"
           }
           caches {
-            name: "git_chromium"
-            path: "git_cache"
-          }
-          caches {
-            name: "build_chromium"
-            path: "out"
+            path: "git"
+            name: "git"
           }
         }
         builders {
-          name: "builder"
+          name: "linux_chromium_rel_ng"
           swarming_tags: "buildertag:yes"
           dimensions: "os:Linux"
           dimensions: "pool:Chrome"
           dimensions: "cpu:"
+          caches {
+            path: "builder"
+            name: "linux_chromium_rel_ng"
+          }
           recipe {
             properties: "predefined-property:x"
             properties_j: "predefined-property-bool:true"
@@ -103,23 +103,24 @@ class SwarmingTest(testing.AppengineTestCase):
         'config.get_bucket_async', autospec=True, side_effect=get_bucket_async)
 
     self.task_template = {
-      'name': 'buildbucket-$bucket-$builder',
+      'name': 'buildbucket:${bucket}:${builder}',
       'priority': '100',
       'expiration_secs': '3600',
       'properties': {
         'execution_timeout_secs': '3600',
-        'inputs_ref': {
-          'isolatedserver': 'https://isolateserver.appspot.com',
-          'namespace': 'default-gzip',
-          'isolated': 'cbacbdcbabcd'
-        },
         'extra_args': [
           'cook',
-          '-repository', '$repository',
-          '-revision', '$revision',
-          '-recipe', '$recipe',
-          '-properties', '$properties_json',
-          '-logdog-project', '$project',
+          '-repository', '${repository}',
+          '-revision', '${revision}',
+          '-recipe', '${recipe}',
+          '-properties', '${properties_json}',
+          '-logdog-project', '${project}',
+        ],
+        'caches': [
+          {
+            'path': '${cache_dir}/builder',
+            'name': 'builder:${bucket}:${builder}',
+          }
         ],
         'cipd_input': {
           'packages': [
@@ -167,7 +168,7 @@ class SwarmingTest(testing.AppengineTestCase):
     build = model.Build(
       id=1,
       bucket='bucket',
-      parameters={'builder_name': 'builder'}
+      parameters={'builder_name': 'linux_chromium_rel_ng'}
     )
     self.assertTrue(swarming.is_for_swarming_async(build).get_result())
 
@@ -184,7 +185,7 @@ class SwarmingTest(testing.AppengineTestCase):
     build = model.Build(
         id=1,
         bucket='bucket',
-        parameters={'builder_name': 'builder'}
+        parameters={'builder_name': 'linux_chromium_rel_ng'}
     )
     self.assertTrue(swarming.is_for_swarming_async(build).get_result())
 
@@ -242,9 +243,8 @@ class SwarmingTest(testing.AppengineTestCase):
     build = model.Build(
       id=1,
       bucket='bucket',
-      tags=['builder:builder'],
       parameters={
-        'builder_name': 'builder',
+        'builder_name': 'linux_chromium_rel_ng',
         'swarming': {
           'canary_template': False,
         },
@@ -269,7 +269,7 @@ class SwarmingTest(testing.AppengineTestCase):
           ],
         },
         'tags': [
-          'builder:builder',
+          'builder:linux_chromium_rel_ng',
           'buildertag:yes',
           'commontag:yes',
           'master:master.bucket',
@@ -290,7 +290,7 @@ class SwarmingTest(testing.AppengineTestCase):
     actual_task_def = net.json_request_async.call_args[1]['payload']
     del actual_task_def['pubsub_auth_token']
     expected_task_def = {
-      'name': 'buildbucket-bucket-builder',
+      'name': 'buildbucket:bucket:linux_chromium_rel_ng',
       'priority': '108',
       'expiration_secs': '3600',
       'tags': [
@@ -299,7 +299,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'buildbucket_hostname:None',
         'buildbucket_template_canary:false',
         'buildbucket_template_revision:template_rev',
-        'builder:builder',
+        'builder:linux_chromium_rel_ng',
         'buildertag:yes',
         'commontag:yes',
         'recipe_name:recipe',
@@ -308,11 +308,6 @@ class SwarmingTest(testing.AppengineTestCase):
       ],
       'properties': {
         'execution_timeout_secs': '3600',
-        'inputs_ref': {
-          'isolatedserver': 'https://isolateserver.appspot.com',
-          'namespace': 'default-gzip',
-          'isolated': 'cbacbdcbabcd'
-        },
         'extra_args': [
           'cook',
           '-repository', 'https://example.com/repo',
@@ -321,7 +316,7 @@ class SwarmingTest(testing.AppengineTestCase):
           '-properties', json.dumps({
             'a': 'b',
             'blamelist': ['bob@example.com'],
-            'buildername': 'builder',
+            'buildername': 'linux_chromium_rel_ng',
             'predefined-property': 'x',
             'predefined-property-bool': True,
             'repository': 'https://chromium.googlesource.com/chromium/src',
@@ -334,8 +329,8 @@ class SwarmingTest(testing.AppengineTestCase):
           {'key': 'pool', 'value': 'Chrome'},
         ]),
         'caches': [
-          {'name': 'build_chromium', 'path': 'out'},
-          {'name': 'git_chromium', 'path': 'git_cache'},
+          {'path': 'cache/builder', 'name': 'linux_chromium_rel_ng'},
+          {'path': 'cache/git', 'name': 'git'},
         ],
         'cipd_input': {
           'packages': [
@@ -363,12 +358,12 @@ class SwarmingTest(testing.AppengineTestCase):
     self.assertEqual(actual_task_def, expected_task_def)
 
     self.assertEqual(set(build.tags), {
-      'builder:builder',
+      'builder:linux_chromium_rel_ng',
       'swarming_dimension:cores:8',
       'swarming_dimension:os:Linux',
       'swarming_dimension:pool:Chrome',
       'swarming_hostname:chromium-swarm.appspot.com',
-      'swarming_tag:builder:builder',
+      'swarming_tag:builder:linux_chromium_rel_ng',
       'swarming_tag:buildertag:yes',
       'swarming_tag:commontag:yes',
       'swarming_tag:master:master.bucket',
@@ -402,10 +397,11 @@ class SwarmingTest(testing.AppengineTestCase):
         id=1,
         bucket='bucket',
         parameters={
-          'builder_name': 'builder',
+          'builder_name': 'linux_chromium_rel_ng',
           'swarming': {
             'canary_template': True,
-          }        },
+          }
+        },
     )
 
     self.json_response = {
@@ -419,7 +415,7 @@ class SwarmingTest(testing.AppengineTestCase):
           ],
         },
         'tags': [
-          'builder:builder',
+          'builder:linux_chromium_rel_ng',
           'buildertag:yes',
           'commontag:yes',
           'master:master.bucket',
@@ -439,7 +435,7 @@ class SwarmingTest(testing.AppengineTestCase):
     actual_task_def = net.json_request_async.call_args[1]['payload']
     del actual_task_def['pubsub_auth_token']
     expected_task_def = {
-      'name': 'buildbucket-bucket-builder-canary',
+      'name': 'buildbucket:bucket:linux_chromium_rel_ng-canary',
       'priority': '108',
       'expiration_secs': '3600',
       'tags': [
@@ -448,7 +444,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'buildbucket_hostname:None',
         'buildbucket_template_canary:true',
         'buildbucket_template_revision:template_rev',
-        'builder:builder',
+        'builder:linux_chromium_rel_ng',
         'buildertag:yes',
         'commontag:yes',
         'recipe_name:recipe',
@@ -457,18 +453,13 @@ class SwarmingTest(testing.AppengineTestCase):
       ],
       'properties': {
         'execution_timeout_secs': '3600',
-        'inputs_ref': {
-          'isolatedserver': 'https://isolateserver.appspot.com',
-          'namespace': 'default-gzip',
-          'isolated': 'cbacbdcbabcd'
-        },
         'extra_args': [
           'cook',
           '-repository', 'https://example.com/repo',
           '-revision', 'HEAD',
           '-recipe', 'recipe',
           '-properties', json.dumps({
-            'buildername': 'builder',
+            'buildername': 'linux_chromium_rel_ng',
             'predefined-property': 'x',
             'predefined-property-bool': True,
           }, sort_keys=True),
@@ -480,8 +471,8 @@ class SwarmingTest(testing.AppengineTestCase):
           {'key': 'pool', 'value': 'Chrome'},
         ]),
         'caches': [
-          {'name': 'build_chromium', 'path': 'out'},
-          {'name': 'git_chromium', 'path': 'git_cache'},
+          {'path': 'cache/builder', 'name': 'linux_chromium_rel_ng'},
+          {'path': 'cache/git', 'name': 'git'},
         ],
         'cipd_input': {
           'packages': [
@@ -509,12 +500,12 @@ class SwarmingTest(testing.AppengineTestCase):
     self.assertEqual(actual_task_def, expected_task_def)
 
     self.assertEqual(set(build.tags), {
-      'builder:builder',
+      'builder:linux_chromium_rel_ng',
       'swarming_dimension:cores:8',
       'swarming_dimension:os:Linux',
       'swarming_dimension:pool:Chrome',
       'swarming_hostname:chromium-swarm.appspot.com',
-      'swarming_tag:builder:builder',
+      'swarming_tag:builder:linux_chromium_rel_ng',
       'swarming_tag:buildertag:yes',
       'swarming_tag:commontag:yes',
       'swarming_tag:master:master.bucket',
@@ -531,7 +522,7 @@ class SwarmingTest(testing.AppengineTestCase):
         id=1,
         bucket='bucket',
         parameters={
-          'builder_name': 'builder',
+          'builder_name': 'linux_chromium_rel_ng',
           'swarming': {
             'canary_template': True,
           }
@@ -560,7 +551,7 @@ class SwarmingTest(testing.AppengineTestCase):
           ],
         },
         'tags': [
-          'builder:builder',
+          'builder:linux_chromium_rel_ng',
           'buildertag:yes',
           'commontag:yes',
           'master:master.bucket',
@@ -575,7 +566,7 @@ class SwarmingTest(testing.AppengineTestCase):
     build = model.Build(
         id=1,
         bucket='bucket',
-        parameters={'builder_name': 'builder'},
+        parameters={'builder_name': 'linux_chromium_rel_ng'},
     )
     swarming.create_task_async(build).get_result()
 
@@ -588,7 +579,7 @@ class SwarmingTest(testing.AppengineTestCase):
         id=1,
         bucket='bucket',
         parameters={
-          'builder_name': 'builder',
+          'builder_name': 'linux_chromium_rel_ng',
           'swarming': {
             'override_builder_cfg': {
               # Override cores dimension.
@@ -610,7 +601,7 @@ class SwarmingTest(testing.AppengineTestCase):
           ],
         },
         'tags': [
-          'builder:builder',
+          'builder:linux_chromium_rel_ng',
           'buildertag:yes',
           'commontag:yes',
           'master:master.bucket',
@@ -634,7 +625,7 @@ class SwarmingTest(testing.AppengineTestCase):
         id=1,
         bucket='bucket',
         parameters={
-          'builder_name': 'builder',
+          'builder_name': 'linux_chromium_rel_ng',
           'swarming': {
             'override_builder_cfg': [],
           }
@@ -647,7 +638,7 @@ class SwarmingTest(testing.AppengineTestCase):
         id=1,
         bucket='bucket',
         parameters={
-          'builder_name': 'builder',
+          'builder_name': 'linux_chromium_rel_ng',
           'swarming': {
             'override_builder_cfg': {
               'name': 'x',
@@ -662,7 +653,7 @@ class SwarmingTest(testing.AppengineTestCase):
         id=1,
         bucket='bucket',
         parameters={
-          'builder_name': 'builder',
+          'builder_name': 'linux_chromium_rel_ng',
           'swarming': {
             'override_builder_cfg': {
               'blabla': 'x',
@@ -678,7 +669,7 @@ class SwarmingTest(testing.AppengineTestCase):
         id=1,
         bucket='bucket',
         parameters={
-          'builder_name': 'builder',
+          'builder_name': 'linux_chromium_rel_ng',
           'swarming': {
             'override_builder_cfg': {
               'dimensions': ['pool:'],
@@ -693,7 +684,7 @@ class SwarmingTest(testing.AppengineTestCase):
     build = model.Build(
       id=1,
       bucket='bucket',
-      parameters={'builder_name': 'builder'},
+      parameters={'builder_name': 'linux_chromium_rel_ng'},
       lease_key=12345,
     )
     with self.assertRaises(errors.InvalidInputError):

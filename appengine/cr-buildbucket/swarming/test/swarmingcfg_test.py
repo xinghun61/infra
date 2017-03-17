@@ -200,6 +200,20 @@ class SwarmingCfgTest(testing.AppengineTestCase):
           'builder b2: priority must be in [0, 200] range; got 300',
         ])
 
+    self.cfg_test(
+        '''
+          hostname: "https://example.com"
+          builders {
+            name: "rel"
+            caches { name: "a" path: "a" }
+            caches { name: "a" path: "a" }
+          }
+        ''',
+        [
+          'builder rel: cache #2: duplicate name',
+          'builder rel: cache #2: duplicate path',
+        ])
+
 
   def test_default_recipe(self):
     self.cfg_test(
