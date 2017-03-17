@@ -23,6 +23,13 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
   """
 
   HTTP_CLIENT = HttpClientAppengine()
+  # Making this pipeline asynchronous by setting this class variable.
+  async = True
+
+  def __init__(self, *args, **kwargs):
+    super(ProcessBaseSwarmingTaskResultPipeline, self).__init__(*args, **kwargs)
+    # This attribute is meant for use by the unittest only.
+    self.last_params = {}
 
   def _CheckTestsRunStatuses(self, output_json, *_):
     """Checks result status for each test run and saves the numbers accordingly.
@@ -70,125 +77,50 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         pass
     raise ValueError('Failed to parse %s' % time_string)  # pragma: no cover
 
-  def _MonitorSwarmingTask(self, task_id, *call_args):
-    """Monitors the swarming task and waits for it to complete."""
-    assert task_id
+  def delay_callback(self, **kwargs):  # pragma: no cover
+    self.last_params = kwargs
+    countdown = kwargs.get('server_query_interval_seconds', 60)
+    task = self.get_callback_task(countdown=countdown, params=kwargs)
+    task.add(self.queue_name)
 
-    step_name_no_platform = None
+  def _GetPipelineResult(self, step_name, step_name_no_platform, task):
+    # The sub-classes may use properties of the task as part of the result.
+    _ = task
+    return step_name, step_name_no_platform
+
+  # Arguments number differs from overridden method - pylint: disable=W0221
+  def callback(self, task_id, step_name, call_args, deadline,
+               server_query_interval_seconds, task_started, task_completed,
+               step_name_no_platform, pipeline_id=None):
+    """Monitors the swarming task and waits for it to complete."""
+    _ = pipeline_id  # We don't do anything with this id.
+    self.last_params = {
+        'task_id': task_id,
+        'step_name': step_name,
+        'call_args': call_args,
+        'deadline': deadline,
+        'server_query_interval_seconds': server_query_interval_seconds,
+        'task_started': task_started,
+        'task_completed': task_completed,
+        'step_name_no_platform': step_name_no_platform,
+    }
+    assert task_id
     task = self._GetSwarmingTask(*call_args)
 
-    if task_id.lower() == NO_TASK:  # pragma: no branch
-      # This situation happens in flake analysis: if the step with flaky test
-      # didn't exist in checked build, we should skip the build.
-      task.task_id = None
-      task.status = analysis_status.SKIPPED
-      task.put()
-      self._UpdateMasterFlakeAnalysis(
-          *call_args, pass_rate=-1, flake_swarming_task=task)
-      return step_name_no_platform
-
-    timeout_hours = waterfall_config.GetSwarmingSettings().get(
-        'task_timeout_hours')
-    deadline = time.time() + timeout_hours * 60 * 60
-    server_query_interval_seconds = waterfall_config.GetSwarmingSettings().get(
-        'server_query_interval_seconds')
-    task_started = False
-    task_completed = False
-
-    while not task_completed:
-      data, error = swarming_util.GetSwarmingTaskResultById(
-          task_id, self.HTTP_CLIENT)
-
-      if error:
-        # An error occurred at some point when trying to retrieve data from
-        # the swarming server, even if eventually successful.
-        task.error = error
+    def timeout_check():
+      if task_completed and data is not None:
+        task.created_time = (task.created_time or
+                             self._ConvertDateTime(data.get('created_ts')))
+        task.started_time = (task.started_time or
+                             self._ConvertDateTime(data.get('started_ts')))
+        task.completed_time = (task.completed_time or
+                               self._ConvertDateTime(data.get('completed_ts')))
         task.put()
-
-        if not data:
-          # Even after retry, no data was recieved.
-          task.status = analysis_status.ERROR
-          break
-
-      task_state = data['state']
-      exit_code = (data.get('exit_code') if
-                   task_state == swarming_util.STATE_COMPLETED else None)
-      step_name_no_platform = (
-          step_name_no_platform or swarming_util.GetTagValue(
-              data.get('tags', {}), 'ref_name'))
-
-      if task_state not in swarming_util.STATES_RUNNING:
-        task_completed = True
-
-        if (task_state == swarming_util.STATE_COMPLETED and
-            int(exit_code) != swarming_util.TASK_FAILED):
-          outputs_ref = data.get('outputs_ref')
-
-          # If swarming task aborted because of errors in request arguments,
-          # it's possible that there is no outputs_ref.
-          if not outputs_ref:
-            task.status = analysis_status.ERROR
-            task.error = {
-                'code': swarming_util.NO_TASK_OUTPUTS,
-                'message': 'outputs_ref is None'
-            }
-            task.put()
-            break
-
-          output_json, error = swarming_util.GetSwarmingTaskFailureLog(
-              outputs_ref, self.HTTP_CLIENT)
-
-          task.status = analysis_status.COMPLETED
-
-          if error:
-            task.error = error
-
-            if not output_json:
-              # Retry was ultimately unsuccessful.
-              task.status = analysis_status.ERROR
-
-          tests_statuses = self._CheckTestsRunStatuses(output_json, *call_args)
-          task.tests_statuses = tests_statuses
-          task.put()
-        else:
-          if exit_code is not None:
-            # Swarming task completed, but the task failed.
-            code = int(exit_code)
-            message = swarming_util.EXIT_CODE_DESCRIPTIONS[code]
-          else:
-            # The swarming task did not complete.
-            code = swarming_util.STATES_NOT_RUNNING_TO_ERROR_CODES[task_state]
-            message = task_state
-
-          task.status = analysis_status.ERROR
-          task.error = {
-              'code': code,
-              'message': message
-          }
-          task.put()
-
-          logging_str = 'Swarming task stopped with status: %s' % task_state
-          if exit_code:  # pragma: no cover
-            logging_str += ' and exit_code: %s - %s' % (
-                exit_code, swarming_util.EXIT_CODE_DESCRIPTIONS[code])
-          logging.error(logging_str)
-
-        tags = data.get('tags', {})
-        priority_str = swarming_util.GetTagValue(tags, 'priority')
-        if priority_str:
-          task.parameters['priority'] = int(priority_str)
-
-        task.put()
-      else:  # pragma: no cover
-        if task_state == 'RUNNING' and not task_started:
-          # swarming task just starts, update status.
-          task_started = True
-          task.status = analysis_status.RUNNING
-          task.put()
-        time.sleep(server_query_interval_seconds)
-
-      # Timeout.
-      if time.time() > deadline:
+        pipeline_result = self._GetPipelineResult(
+            step_name, step_name_no_platform, task)
+        self.complete(pipeline_result)
+      elif time.time() > deadline:  # pragma: no cover
+        # Timeout.
         # Updates status as ERROR.
         task.status = analysis_status.ERROR
         task.error = {
@@ -196,23 +128,122 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
             'message': 'Process swarming task result timed out'
         }
         task.put()
+        timeout_hours = waterfall_config.GetSwarmingSettings().get(
+            'task_timeout_hours')
         logging.error('Swarming task timed out after %d hours.' % timeout_hours)
-        break  # Stops the loop and return.
+        pipeline_result = self._GetPipelineResult(
+            step_name, step_name_no_platform, task)
+        self.complete(pipeline_result)
+      # TODO(robertocn): Remove this clause when the system reliably receives
+      # notifications from swarming via pubsub.
+      else:
+        self.delay_callback(
+            task_id=task_id,
+            step_name=step_name,
+            call_args=call_args,
+            deadline=deadline,
+            server_query_interval_seconds=server_query_interval_seconds,
+            task_started=task_started,
+            task_completed=task_completed,
+            step_name_no_platform=step_name_no_platform,
+        )
 
-    # Update swarming task metadata.
-    task.created_time = (task.created_time or
-                         self._ConvertDateTime(data.get('created_ts')))
-    task.started_time = (task.started_time or
-                         self._ConvertDateTime(data.get('started_ts')))
-    task.completed_time = (task.completed_time or
-                           self._ConvertDateTime(data.get('completed_ts')))
-    task.put()
+    data, error = swarming_util.GetSwarmingTaskResultById(
+        task_id, self.HTTP_CLIENT)
 
-    return step_name_no_platform
+    if error:
+      # An error occurred at some point when trying to retrieve data from
+      # the swarming server, even if eventually successful.
+      task.error = error
+      task.put()
+
+      if not data:
+        # Even after retry, no data was recieved.
+        task.status = analysis_status.ERROR
+        task.put()
+        timeout_check()
+        return
+
+    task_state = data['state']
+    exit_code = (data.get('exit_code') if
+                 task_state == swarming_util.STATE_COMPLETED else None)
+    step_name_no_platform = (
+        step_name_no_platform or swarming_util.GetTagValue(
+            data.get('tags', {}), 'ref_name'))
+
+    if task_state not in swarming_util.STATES_RUNNING:
+      task_completed = True
+
+      if (task_state == swarming_util.STATE_COMPLETED and
+          int(exit_code) != swarming_util.TASK_FAILED):
+        outputs_ref = data.get('outputs_ref')
+
+        # If swarming task aborted because of errors in request arguments,
+        # it's possible that there is no outputs_ref.
+        if not outputs_ref:
+          task.status = analysis_status.ERROR
+          task.error = {
+              'code': swarming_util.NO_TASK_OUTPUTS,
+              'message': 'outputs_ref is None'
+          }
+          task.put()
+          timeout_check()
+          return
+
+        output_json, error = swarming_util.GetSwarmingTaskFailureLog(
+            outputs_ref, self.HTTP_CLIENT)
+
+        task.status = analysis_status.COMPLETED
+
+        if error:
+          task.error = error
+
+          if not output_json:
+            # Retry was ultimately unsuccessful.
+            task.status = analysis_status.ERROR
+
+        tests_statuses = self._CheckTestsRunStatuses(output_json, *call_args)
+        task.tests_statuses = tests_statuses
+        task.put()
+      else:
+        if exit_code is not None:
+          # Swarming task completed, but the task failed.
+          code = int(exit_code)
+          message = swarming_util.EXIT_CODE_DESCRIPTIONS[code]
+        else:
+          # The swarming task did not complete.
+          code = swarming_util.STATES_NOT_RUNNING_TO_ERROR_CODES[task_state]
+          message = task_state
+
+        task.status = analysis_status.ERROR
+        task.error = {
+            'code': code,
+            'message': message
+        }
+        task.put()
+
+        logging_str = 'Swarming task stopped with status: %s' % task_state
+        if exit_code:  # pragma: no cover
+          logging_str += ' and exit_code: %s - %s' % (
+              exit_code, swarming_util.EXIT_CODE_DESCRIPTIONS[code])
+        logging.error(logging_str)
+
+      tags = data.get('tags', {})
+      priority_str = swarming_util.GetTagValue(tags, 'priority')
+      if priority_str:
+        task.parameters['priority'] = int(priority_str)
+      task.put()
+    else:  # pragma: no cover
+      if task_state == 'RUNNING' and not task_started:
+        # swarming task just starts, update status.
+        task_started = True
+        task.status = analysis_status.RUNNING
+        task.put()
+    timeout_check()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, step_name, task_id,
-          *args):
+  def run(self, master_name, builder_name, build_number, step_name,
+          task_id=None, *args):
     """Monitors a swarming task.
 
     Args:
@@ -222,11 +253,33 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
       step_name (str): The failed test step name.
       task_id (str): The task id to query the swarming server on the progresss
         of a swarming task.
-
-    Returns:
-      A dict of lists for reliable/flaky tests.
     """
     call_args = self._GetArgs(master_name, builder_name, build_number,
                               step_name, *args)
-    step_name_no_platform = self._MonitorSwarmingTask(task_id, *call_args)
-    return step_name, step_name_no_platform
+    timeout_hours = waterfall_config.GetSwarmingSettings().get(
+        'task_timeout_hours')
+    deadline = time.time() + timeout_hours * 60 * 60
+    server_query_interval_seconds = waterfall_config.GetSwarmingSettings().get(
+        'server_query_interval_seconds')
+    task_started = False
+    task_completed = False
+    step_name_no_platform = None
+    if not task_id:
+      task_id = self._GetSwarmingTask(*call_args).task_id
+
+    if task_id.lower() == NO_TASK:  # pragma: no branch
+      # This situation happens in flake analysis: if the step with flaky test
+      # didn't exist in checked build, we should skip the build.
+      task = self._GetSwarmingTask(*call_args)
+      task.task_id = None
+      task.status = analysis_status.SKIPPED
+      task.put()
+      self._UpdateMasterFlakeAnalysis(
+          *call_args, pass_rate=-1, flake_swarming_task=task)
+      self.complete(self._GetPipelineResult(
+            step_name, step_name_no_platform, task))
+      return
+
+    self.callback(
+        task_id, step_name, call_args, deadline, server_query_interval_seconds,
+        task_started, task_completed, step_name_no_platform)

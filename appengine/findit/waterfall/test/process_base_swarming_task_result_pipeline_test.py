@@ -220,9 +220,15 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     pipeline = ProcessFlakeSwarmingTaskResultPipeline()
-    step_name, task_info = pipeline.run(
+    pipeline.start_test()
+    pipeline.run(
         self.master_name, self.builder_name, self.build_number, self.step_name,
         'task_id1', self.build_number, self.test_name, 1)
+    pipeline.callback(**pipeline.last_params)
+    # Reload from ID to get all internal properties in sync.
+    pipeline = ProcessFlakeSwarmingTaskResultPipeline.from_id(
+        pipeline.pipeline_id)
+    step_name, task_info = pipeline.outputs.default.value
     self.assertEqual('abc_tests', task_info)
     self.assertEqual(self.step_name, step_name)
 
@@ -240,9 +246,13 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
-    step_name, task_info = pipeline.run(
+    pipeline.start_test()
+    pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name)
+    # Reload from ID to get all internal properties in sync.
+    pipeline = ProcessSwarmingTaskResultPipeline.from_id(pipeline.pipeline_id)
+    step_name, task_info = pipeline.outputs.default.value
 
     self.assertEqual(self.step_name, step_name)
     self.assertIsNone(task_info[0])
@@ -265,6 +275,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.start_test()
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, self.step_name)
 
@@ -284,6 +295,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.start_test()
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, self.step_name)
 
@@ -301,6 +313,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.start_test()
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, self.step_name)
 
@@ -317,6 +330,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.start_test()
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, self.step_name)
 
@@ -331,6 +345,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.start_test()
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, self.step_name)
 
@@ -351,6 +366,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.start_test()
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, self.step_name)
 
@@ -373,9 +389,14 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
-    step_name, task_info = pipeline.run(
+    pipeline.start_test()
+    pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name)
+    pipeline.callback(**pipeline.last_params)
+    # Reload from ID to get all internal properties in sync.
+    pipeline = ProcessSwarmingTaskResultPipeline.from_id(pipeline.pipeline_id)
+    step_name, task_info = pipeline.outputs.default.value
 
     self.assertEqual(self.step_name, step_name)
     self.assertEqual('abc_tests', task_info[0])
@@ -417,9 +438,15 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     pipeline = ProcessFlakeSwarmingTaskResultPipeline()
-    step_name_no_platform = pipeline._MonitorSwarmingTask(
-        task_id, self.master_name, self.builder_name, self.build_number,
-        self.step_name, self.build_number, self.test_name, 1)
+    pipeline.start_test()
+    pipeline.run(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name, task_id, self.build_number,
+        self.test_name, 1)
+    # Reload from ID to get all internal properties in sync.
+    pipeline = ProcessFlakeSwarmingTaskResultPipeline.from_id(
+        pipeline.pipeline_id)
+    _, step_name_no_platform = pipeline.outputs.default.value
 
     self.assertIsNone(task.task_id)
     self.assertEqual(analysis_status.SKIPPED, task.status)

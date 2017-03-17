@@ -43,9 +43,14 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
-    step_name, task_info = pipeline.run(
+    pipeline.start_test()
+    pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name)
+    pipeline.callback(**pipeline.last_params)
+    # Reload from ID to get all internal properties in sync.
+    pipeline = ProcessSwarmingTaskResultPipeline.from_id(pipeline.pipeline_id)
+    step_name, task_info = pipeline.outputs.default.value
 
     self.assertEqual(self.step_name, step_name)
     self.assertEqual('abc_tests', task_info[0])
@@ -75,9 +80,14 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
-    step_name, task_info = pipeline.run(
+    pipeline.start_test()
+    pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name)
+    pipeline.callback(**pipeline.last_params)
+    # Reload from ID to get all internal properties in sync.
+    pipeline = ProcessSwarmingTaskResultPipeline.from_id(pipeline.pipeline_id)
+    step_name, task_info = pipeline.outputs.default.value
 
     self.assertEqual(self.step_name, step_name)
     self.assertIsNone(task_info[0])

@@ -141,11 +141,17 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     pipeline = ProcessFlakeSwarmingTaskResultPipeline()
-    step_name, task_info = pipeline.run(
+    pipeline.start_test()
+    pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name,
         'task_id1', self.build_number, self.test_name,
         analysis.version_number)
+    pipeline.callback(**pipeline.last_params)
+    # Reload from ID to get all internal properties in sync.
+    pipeline = ProcessFlakeSwarmingTaskResultPipeline.from_id(
+        pipeline.pipeline_id)
+    step_name, task_info = pipeline.outputs.default.value
     self.assertEqual('abc_tests', task_info)
     self.assertEqual(self.step_name, step_name)
 

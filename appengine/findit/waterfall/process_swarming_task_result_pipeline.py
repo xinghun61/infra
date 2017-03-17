@@ -26,22 +26,5 @@ class ProcessSwarmingTaskResultPipeline(ProcessBaseSwarmingTaskResultPipeline):
     return WfSwarmingTask.Get(master_name, builder_name, build_number,
                               step_name)
 
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, step_name):
-    """Monitors a swarming task.
-
-    Args:
-      master_name (str): The master name.
-      builder_name (str): The builder name.
-      build_number (str): The build number.
-      step_name (str): The failed test step name.
-
-    Returns:
-      A dict of lists for reliable/flaky tests.
-    """
-    call_args = self._GetArgs(
-        master_name, builder_name, build_number, step_name)
-    task = self._GetSwarmingTask(*call_args)
-    task_id = task.task_id
-    step_name_no_platform = self._MonitorSwarmingTask(task_id, *call_args)
+  def _GetPipelineResult(self, step_name, step_name_no_platform, task):
     return step_name, (step_name_no_platform, task.reliable_tests)
