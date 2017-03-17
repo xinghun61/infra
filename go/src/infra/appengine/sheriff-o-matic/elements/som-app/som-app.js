@@ -123,7 +123,7 @@
         value: {
           // The order the sections appear in the array is the order they
           // appear on the page.
-          'default': ['notifications', 'alertsList', 'bugQueue'],
+          'default': ['notifications', 'bugQueue', 'alertsList'],
           'trooper': ['notifications', 'bugQueue', 'swarmingBots', 'alertsList']
         },
       },
