@@ -383,7 +383,7 @@ func loadConfigsAndRun(ctx context.Context) error {
 	case *replay != "":
 		r = client.NewReplay(*replay)
 	case *miloHost != "":
-		ctx = urlfetch.Set(ctx, http.DefaultTransport)
+		ctx = urlfetch.Set(ctx, transport)
 		r = client.NewMiloReader(ctx, *miloHost)
 	}
 	if *snapshot != "" {
