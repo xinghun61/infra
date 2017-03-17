@@ -133,7 +133,7 @@ function createSummaryCell(td, cell) {
 */
 function createAttrAndUnfiltCell(td, cell) {
   if(cell['noWrap'] == 'yes') {
-    td.className += ' nowrap';
+    td.className += ' nowrapspan';
   }
   if(cell['align']) {
     td.setAttribute('align', cell['align']);
@@ -172,20 +172,14 @@ function fillNonColumnLabels(td, labels) {
 function fillValues(td, values) {
   if (values.length > 0) {
     values.forEach( function(value, index, array) {
+      var span = document.createElement('span');
       if (value['isDerived']) {
-        var i = document.createElement('i');
-        if (index == array.length-1) {
-          i.textContent = value['item'];
-        } else {
-          i.textContent = (value['item'] + ',');
-        }
-        td.appendChild(i);
-      } else {
-        if (index == array.length-1) {
-          td.textContent = td.textContent + value['item'];
-        } else {
-          td.textContent = td.textContent + value['item'] + ',';
-        }
+        span.className = 'derived';
+      }
+      span.textContent = value['item'];
+      td.appendChild(span);
+      if (index != array.length-1) {
+        td.appendChild(document.createTextNode(', '));
       }
     });
   } else {
