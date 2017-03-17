@@ -646,13 +646,13 @@ class MonorailRequest(object):
   def GetIntParam(self, query_param_name, default_value=None):
     """Get an integer param from the URL or default."""
     value = self.request.params.get(query_param_name)
-    if value is None:
+    if value is None or value == '':
       return default_value
 
     try:
       return int(value)
     except (TypeError, ValueError):
-      return default_value
+      raise InputException('Invalid value for integer param')
 
   def GetPositiveIntParam(self, query_param_name, default_value=None):
     """Returns 0 if the user-provided value is less than 0."""
@@ -677,7 +677,7 @@ class MonorailRequest(object):
     try:
       return [int(p) for p in param_list]
     except (TypeError, ValueError):
-      return default_value
+      raise InputException('Invalid value for integer list param')
 
   def GetBoolParam(self, query_param_name, default_value=None):
     """Get a boolean param from the URL or default."""

@@ -160,7 +160,7 @@ class UrlFormattingTest(unittest.TestCase):
     query = []
     for name in framework_helpers.RECOGNIZED_PARAMS:
       params[name] = name
-      query.append('%s=%s' % (name, name))
+      query.append('%s=%s' % (name, 123))
     path = '/dude/wheres/my/car'
     expected = '%s?%s' % (path, '&'.join(query))
     mr = testing_helpers.MakeMonorailRequest(path=expected)
@@ -173,7 +173,7 @@ class UrlFormattingTest(unittest.TestCase):
     for name in framework_helpers.RECOGNIZED_PARAMS:
       params[name] = name
       if name is not 'can' and name is not 'start':
-        query_pairs.append('%s=%s' % (name, name))
+        query_pairs.append('%s=%s' % (name, 123))
     path = '/dude/wheres/my/car'
     mr = testing_helpers.MakeMonorailRequest(
         path='%s?%s' % (path, '&'.join(query_pairs)))
@@ -191,7 +191,7 @@ class UrlFormattingTest(unittest.TestCase):
     for name in framework_helpers.RECOGNIZED_PARAMS:
       params[name] = name
       if name is not 'can' and name is not 'start':
-        query_pairs.append('%s=%s' % (name, name))
+        query_pairs.append('%s=%s' % (name, 123))
     path = '/dude/wheres/my/car'
     mr = testing_helpers.MakeMonorailRequest(
         path='%s?%s' % (path, '&'.join(query_pairs)))

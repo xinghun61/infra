@@ -10,6 +10,7 @@ import unittest
 import webapp2
 
 from framework import framework_helpers
+from framework import monorailrequest
 from framework import permissions
 from services import service_manager
 from testing import fake
@@ -194,20 +195,6 @@ class IssueOriginalTest(unittest.TestCase):
 
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?seq=1',
-        project=self.proj)
-    with self.assertRaises(webapp2.HTTPException) as cm:
-      self.servlet._GetIssueAndComment(mr)
-    self.assertEquals(404, cm.exception.code)
-
-    _request, mr = testing_helpers.GetRequestObjects(
-        path='/p/proj/issues/original?id=abc',
-        project=self.proj)
-    with self.assertRaises(webapp2.HTTPException) as cm:
-      self.servlet._GetIssueAndComment(mr)
-    self.assertEquals(404, cm.exception.code)
-
-    _request, mr = testing_helpers.GetRequestObjects(
-        path='/p/proj/issues/original?seq=abc',
         project=self.proj)
     with self.assertRaises(webapp2.HTTPException) as cm:
       self.servlet._GetIssueAndComment(mr)

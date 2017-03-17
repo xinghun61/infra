@@ -142,13 +142,6 @@ class PeopleDetailTest(unittest.TestCase):
     with self.assertRaises(monorailrequest.InputException):
       _result = self.servlet.ParsePersonData(mr, post_data)
 
-    mr = testing_helpers.MakeMonorailRequest(
-        path='/p/proj/people/detail?u=',
-        project=self.project)
-    post_data = fake.PostData()
-    with self.assertRaises(monorailrequest.InputException):
-      _result = self.servlet.ParsePersonData(mr, post_data)
-
   def testParsePersonData_NoDetails(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/people/detail?u=111',

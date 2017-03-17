@@ -14,7 +14,7 @@ class TestingHelpersTest(unittest.TestCase):
 
   def testMakeMonorailRequest(self):
     mr = testing_helpers.MakeMonorailRequest(
-        path='/foo?key1=2&key2=a%20string&key3')
+        path='/foo?key1=2&key2=&key3')
 
     self.assertEqual(None, mr.GetIntParam('foo'))
     self.assertEqual(2, mr.GetIntParam('key1'))

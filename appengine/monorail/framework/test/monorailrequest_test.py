@@ -91,7 +91,7 @@ class MonorailRequestUnitTest(unittest.TestCase):
   def tearDown(self):
     self.mox.UnsetStubs()
 
-  def testGetIntParamConvertsQueryParamToInt(self):
+  def testGetIntParam_ConvertsQueryParamToInt(self):
     notice_id = 12345
     mr = testing_helpers.MakeMonorailRequest(
         path='/foo?notice=%s' % notice_id)
@@ -100,7 +100,7 @@ class MonorailRequestUnitTest(unittest.TestCase):
     self.assert_(isinstance(value, int))
     self.assertEqual(notice_id, value)
 
-  def testGetIntParamConvertsQueryParamToLong(self):
+  def testGetIntParam_ConvertsQueryParamToLong(self):
     notice_id = 12345678901234567890
     mr = testing_helpers.MakeMonorailRequest(
         path='/foo?notice=%s' % notice_id)
@@ -109,7 +109,7 @@ class MonorailRequestUnitTest(unittest.TestCase):
     self.assertTrue(isinstance(value, long))
     self.assertEqual(notice_id, value)
 
-  def testGetIntListParamNoParam(self):
+  def testGetIntListParam_NoParam(self):
     mr = monorailrequest.MonorailRequest()
     mr.ParseRequest(
         webapp2.Request.blank('servlet'), self.services, self.profiler)
@@ -117,7 +117,7 @@ class MonorailRequestUnitTest(unittest.TestCase):
     self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
                       ['test'])
 
-  def testGetIntListParamOneValue(self):
+  def testGetIntListParam_OneValue(self):
     mr = monorailrequest.MonorailRequest()
     mr.ParseRequest(
         webapp2.Request.blank('servlet?ids=11'), self.services, self.profiler)
@@ -125,7 +125,7 @@ class MonorailRequestUnitTest(unittest.TestCase):
     self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
                       [11])
 
-  def testGetIntListParamMultiValue(self):
+  def testGetIntListParam_MultiValue(self):
     mr = monorailrequest.MonorailRequest()
     mr.ParseRequest(
         webapp2.Request.blank('servlet?ids=21,22,23'), self.services,
@@ -134,23 +134,19 @@ class MonorailRequestUnitTest(unittest.TestCase):
     self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
                       [21, 22, 23])
 
-  def testGetIntListParamBogusValue(self):
+  def testGetIntListParam_BogusValue(self):
     mr = monorailrequest.MonorailRequest()
-    mr.ParseRequest(
-        webapp2.Request.blank('servlet?ids=not_an_int'), self.services,
-        self.profiler)
-    self.assertEquals(mr.GetIntListParam('ids'), None)
-    self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
-                      ['test'])
+    with self.assertRaises(monorailrequest.InputException):
+      mr.ParseRequest(
+          webapp2.Request.blank('servlet?ids=not_an_int'), self.services,
+          self.profiler)
 
-  def testGetIntListParamMalformed(self):
+  def testGetIntListParam_Malformed(self):
     mr = monorailrequest.MonorailRequest()
-    mr.ParseRequest(
-        webapp2.Request.blank('servlet?ids=31,32,,'), self.services,
-        self.profiler)
-    self.assertEquals(mr.GetIntListParam('ids'), None)
-    self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
-                      ['test'])
+    with self.assertRaises(monorailrequest.InputException):
+      mr.ParseRequest(
+          webapp2.Request.blank('servlet?ids=31,32,,'), self.services,
+          self.profiler)
 
   def testDefaultValuesNoUrl(self):
     """If request has no param, default param values should be used."""
