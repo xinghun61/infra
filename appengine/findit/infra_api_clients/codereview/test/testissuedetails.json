@@ -90,7 +90,7 @@
             ],
             "text": "The CQ bit was checked by author@chromium.org to run a CQ dry run",
             "issue_was_closed": false,
-            "disapproval": false, 
+            "disapproval": false,
             "date": "2017-02-21 19:30:50.769900",
             "approval": false,
             "patchset": 20001,
@@ -391,7 +391,7 @@
             "recipients": [
                 "author@chromium.org"
             ],
-            "text": "Committed patchset #7 (id:120001) as https://chromium.googlesource.com/chromium/src/+/deadbeefdeadbeefc001c001c001ce120ce120aa",
+            "text": "Committed patchset #7 (id:120001) manually as deadbeefdeadbeefc001c001c001ce120ce120aa.",
             "issue_was_closed": true,
             "disapproval": false,
             "date": "2017-02-23 23:17:54.803300",

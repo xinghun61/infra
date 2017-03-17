@@ -205,6 +205,21 @@ class RietveldTest(testing.AppengineTestCase):
      'reviewers': [u'someone@chromium.org'],
      'closed': True})
 
+  @mock.patch(
+      'libs.time_util.UTCDatetimeFromNaiveString',
+      lambda x: datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f'))
+  def testGetClDetailsManualCommit(self):
+    rietveld_url = 'https://server.host.name'
+    change_id = '123456001'
+    with open(os.path.join(os.path.dirname(__file__),
+              'manualtestissuedetails.json')) as f:
+      response = 200, f.read()
+    self.http_client.SetResponse('%s/api/%s?messages=true' %
+                                 (rietveld_url, change_id), response)
+    cl_info = self.rietveld.GetClDetails(change_id)
+
+    self.assertEqual(2, len(cl_info.commits))
+
   @mock.patch('infra_api_clients.codereview.rietveld.Rietveld._SendPostRequest')
   def testAddReviewersNewReviewer(self, mock_send):
     mock_send.return_value = (200, 'OK')

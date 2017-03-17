@@ -130,8 +130,8 @@ class Rietveld(codereview.CodeReview):
         r'created in (?P<issueurl>.*) by .*'
         r'.\n\nThe reason for reverting is: .*')
     patchset_to_revision_regex = re.compile(
-        r'Committed patchset #\d+ \(id:\d+\) as '
-        r'https://.*/(?P<revision>[a-f\d]{40})')
+        r'Committed patchset #\d+ \(id:\d+\) (manually )?as '
+        r'(https://.*/)?(?P<revision>[a-f\d]{40})\.?')
     # NB: We capture the email as any non-space characters after 'by' to avoid
     # matching in case the email is followed by ` to run a CQ dry run`
     commit_attempt_regex = re.compile(
