@@ -5,8 +5,13 @@ This page can be found at: [g.co/bugatrooper](http://g.co/bugatrooper)
 Have an issue with a piece of build infrastructure?
 Our troopers are here to help.
 
-Oncall hours: primary shift is on workdays 10am-6pm MTV time. APAC and
-EMEA timezones also have trooper shifts limited mostly to P0 issues.
+Oncall hours: we have 3 oncall sites each covering during their site's work office hours:
+
++ APAC covers 0100 - 0700 UTC
++ EMEA covers 0900 - 1700 UTC
++ MTV  covers 1800 - 0100 UTC (1000 - 1800 MTV)
+
+APAC and EMEA sites primarily respond to P0s for critical infrastructures and are pager-driven.
 
 The primary way to contact a trooper is via [crbug.com](http://crbug.com) using
 the templates and priorities established below. If you need to find the current
