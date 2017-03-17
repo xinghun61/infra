@@ -24,21 +24,14 @@ def main(argv):
   args = parser.parse_args(argv)
   infra_libs.logs.process_argparse_options(args)
 
-  if args.minutes_in_future < 0 and not args.eod:
-    parser.error('--minutes-in-future must be nonnegative, use 0 for "now", '
-                 'or --eod')
-
-  # 15 minutes is the default, so don't get hung up on that.
-  if (args.minutes_in_future > 0 and args.minutes_in_future != 15) and args.eod:
-    parser.error('--minutes-in-future is mutually exclusive with --eod')
-
-  if args.rolling and args.eod:
-    parser.error('--rolling is mutually exclusive with --eod')
-
   if args.eod:
-    restart_time = None
-  else:
-    restart_time = restart.get_restart_time_delta(args.minutes_in_future)
+    parser.error('usage of "--eod" is deprecated, all restarts should be'
+                 ' attended and during a trooper oncall shift')
+
+  if args.minutes_in_future < 0:
+    parser.error('--minutes-in-future must be nonnegative, use 0 for "now"')
+
+  restart_time = restart.get_restart_time_delta(args.minutes_in_future)
 
   return restart.run(args.masters, args.masters_regex, restart_time,
                      args.rolling, args.reviewer, args.bug, args.force,

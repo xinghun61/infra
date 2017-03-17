@@ -27,13 +27,10 @@ LOGGER = logging.getLogger(__name__)
 
 MM_REPO = 'https://chrome-internal.googlesource.com/infradata/master-manager'
 
+DEFAULT_RESTART_MINUTES = 15
 
 class MasterNotFoundException(Exception):
   pass
-
-
-# Default minutes/seconds for "end of day" time.
-DEFAULT_EOD = (18, 30)
 
 
 RestartSpec = collections.namedtuple('RestartSpec',
@@ -43,7 +40,6 @@ RestartSpec = collections.namedtuple('RestartSpec',
 _MASTER_CONFIGS = {
   'chromiumos': {'ref': 'chromeos'},
   'chromeos': {
-    'eod': (17, 30),
     'message': """\
 A %(master)s master restart is *almost always* accompanied by a Chromite
 "master" branch pin bump. This should be performed RIGHT BEFORE the time the
@@ -90,7 +86,7 @@ def add_argparse_options(parser):
            'concatentated with any masters provided at the end of the command. '
            '"master." prefix can be omitted.')
   parser.add_argument(
-      '-m', '--minutes-in-future', default=15, type=int,
+      '-m', '--minutes-in-future', default=DEFAULT_RESTART_MINUTES, type=int,
       help='how many minutes in the future to schedule the restart. '
            'use 0 for "now." default %(default)d')
   parser.add_argument(
@@ -99,7 +95,7 @@ def add_argparse_options(parser):
            'each master.')
   parser.add_argument(
       '--eod', action='store_true',
-      help='schedules restart for 6:30PM Google Standard Time.')
+      help='Deprecated flag - all restarts should be attended')
   parser.add_argument(
       '-b', '--bug', default=None,
       help='Bug containing master restart request.')
@@ -142,7 +138,7 @@ def get_master_names(desired_master_state, name_regex):
 def get_restart_spec(name, restart_time):
   """Creates a new RestartSpec for master named <name> at <restart_time>.
 
-  _MASTER_CONFIGS is consulted to see if there is a "message" and/or "eod" value
+  _MASTER_CONFIGS is consulted to see if there is a "message" value
   for the given master. If those config settings aren't found, defaults are
   used.
 
@@ -181,8 +177,7 @@ def get_restart_spec(name, restart_time):
     d['message'] = d['message'] % {'master': name}
 
   if restart_time is None:
-    # End of Day
-    restart_time = get_restart_time_eod(*d.get('eod', DEFAULT_EOD))
+    restart_time = get_restart_time_delta(DEFAULT_RESTART_MINUTES)
 
   return RestartSpec(
       name=name,
@@ -190,15 +185,6 @@ def get_restart_spec(name, restart_time):
       message=d.get('message'),
       restart_time=restart_time,
   )
-
-
-def get_restart_time_eod(hour, minute):
-  gst_now = datetime.datetime.now(pytz.timezone("America/Los_Angeles"))
-  if gst_now.hour > hour or (gst_now.hour == hour and gst_now.minute > minute):
-    # next 6:30PM is tomorrow
-    gst_now += datetime.timedelta(days=1)
-  gst_now = gst_now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-  return gst_now.astimezone(pytz.UTC).replace(tzinfo=None)
 
 
 def get_restart_time_delta(mins):
