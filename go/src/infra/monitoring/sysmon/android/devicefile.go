@@ -19,7 +19,7 @@ type status string
 const (
 	fileVersion         = 1
 	previousFileVersion = fileVersion - 1
-	fileName            = "android_device_status.json"
+	fileGlob            = "*__android_device_status.json"
 	maxStaleness        = time.Second * 160
 
 	notFound       status = "not_found"

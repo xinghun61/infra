@@ -63,10 +63,12 @@ var (
 
 	metricReadStatus = metric.NewString("dev/android_device_metric_read/status",
 		"status of the last metric read",
-		nil)
+		nil,
+		field.String("file_name"))
 	metricSecondsStale = metric.NewFloat("dev/android_device_metric_read/seconds_stale",
 		"seconds since the status file was written",
-		nil)
+		nil,
+		field.String("file_name"))
 
 	portPathRE = regexp.MustCompile(`\d+/\d+`)
 )
@@ -74,32 +76,42 @@ var (
 // Register adds tsmon callbacks to set android metrics.
 func Register() {
 	tsmon.RegisterCallback(func(c context.Context) {
-		if err := update(c); err != nil {
+		usr, err := user.Current()
+		if err != nil {
+			logging.Errorf(c, "Failed to fetch current user: %s", err)
+		} else if err = update(c, usr.HomeDir); err != nil {
 			logging.Errorf(c, "Failed to update Android metrics: %s", err)
 		}
 	})
 }
 
-func update(c context.Context) error {
-	usr, err := user.Current()
+func update(c context.Context, usrHome string) error {
+	allFiles, err := filepath.Glob(filepath.Join(usrHome, ".android", fileGlob))
 	if err != nil {
 		return err
 	}
-
-	file, status, staleness, err := loadFile(c, filepath.Join(usr.HomeDir, fileName))
-	metricReadStatus.Set(c, string(status))
-	if status == notFound {
-		// Don't log an error message if the file wasn't found - this is the
+	if len(allFiles) == 0 {
+		// Don't log an error message if no files were found - this is the
 		// usual case on most machines.
 		return nil
 	}
-	metricSecondsStale.Set(c, staleness)
-	if err != nil {
-		return err
+	var lastErr error
+	for _, pathToFile := range allFiles {
+		file, status, staleness, err := loadFile(c, pathToFile)
+		baseFileName := filepath.Base(pathToFile)
+		metricReadStatus.Set(c, string(status), baseFileName)
+		if status == notFound {
+			logging.Warningf(c, "Expected status file %s, but did not find it.", pathToFile)
+			continue
+		}
+		metricSecondsStale.Set(c, staleness, baseFileName)
+		if err == nil {
+			updateFromFile(c, file)
+		} else {
+			lastErr = err
+		}
 	}
-
-	updateFromFile(c, file)
-	return nil
+	return lastErr
 }
 
 func updateFromFile(c context.Context, f deviceStatusFile) {

@@ -5,13 +5,55 @@
 package android
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/luci/luci-go/common/clock/testclock"
 	"github.com/luci/luci-go/common/tsmon"
 	"golang.org/x/net/context"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+func TestFileGlobbing(t *testing.T) {
+	now := time.Date(2000, 1, 2, 3, 4, 5, 0, time.UTC) // Unix timestamp 946782245
+	c := context.Background()
+	c, _ = testclock.UseTime(c, now)
+
+	Convey("In a temporary directory", t, func() {
+		tmpPath, err := ioutil.TempDir("", "android-devicefile-test")
+		So(err, ShouldBeNil)
+		defer os.RemoveAll(tmpPath)
+		err = os.Mkdir(filepath.Join(tmpPath, ".android"), 0777)
+		So(err, ShouldBeNil)
+		path := filepath.Join(tmpPath, ".android")
+		fileNames := []string{
+			strings.Replace(fileGlob, "*", "file1", 1),
+			strings.Replace(fileGlob, "*", "file2", 1),
+			strings.Replace(fileGlob, "*", "file3", 1),
+		}
+		Convey("loads a number of empty files", func() {
+			for _, fileName := range fileNames {
+				err := ioutil.WriteFile(filepath.Join(path, fileName), []byte(`{"version": 1, "timestamp": 946782245, "devices": {}}`), 0644)
+				So(err, ShouldBeNil)
+			}
+			err = update(c, tmpPath)
+			So(err, ShouldBeNil)
+		})
+		Convey("loads a number of broken files", func() {
+			for _, fileName := range fileNames {
+				err := ioutil.WriteFile(filepath.Join(path, fileName), []byte(`not json`), 0644)
+				So(err, ShouldBeNil)
+			}
+			err = update(c, tmpPath)
+			So(err, ShouldNotBeNil)
+		})
+	})
+}
 
 func TestMetrics(t *testing.T) {
 	c := context.Background()
