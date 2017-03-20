@@ -10,6 +10,7 @@ from testing_utils import testing
 
 from handlers import culprit
 from model import analysis_status as status
+from model.wf_culprit import WfCulprit
 from model.wf_suspected_cl import WfSuspectedCL
 
 
@@ -50,3 +51,15 @@ class CulpritTest(testing.AppengineTestCase):
         '/culprit?key=%s&format=json' % suspected_cl.key.urlsafe())
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_result, response.json_body)
+
+  def testLegacyData(self):
+    culprit_cl = WfCulprit(builds=[['m', 'b', 1]])
+    builds = culprit._GetBuildInfoAsDict(culprit_cl)
+    expected_builds = [
+        {
+            'master_name': 'm',
+            'builder_name': 'b',
+            'build_number': 1,
+        }
+    ]
+    self.assertEqual(expected_builds, builds)
