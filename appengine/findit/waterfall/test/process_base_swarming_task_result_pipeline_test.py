@@ -452,3 +452,46 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.SKIPPED, task.status)
     self.assertEqual(-1, analysis.data_points[-1].pass_rate)
     self.assertIsNone(step_name_no_platform)
+
+  @mock.patch.object(swarming_util, 'GetSwarmingTaskFailureLog',
+                     return_value=(_SAMPLE_FAILURE_LOG, None))
+  def testProcessSwarmingTaskResultPipelineIdempotency(self, _):
+    # End to end test.
+    task = WfSwarmingTask.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+    task.task_id = 'task_id1'
+    task.put()
+
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.start_test()
+    # NB, run is called twice.
+    pipeline.run(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+    pipeline.run(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+    pipeline.callback(**pipeline.last_params)
+    # Reload from ID to get all internal properties in sync.
+    pipeline = ProcessSwarmingTaskResultPipeline.from_id(pipeline.pipeline_id)
+    step_name, task_info = pipeline.outputs.default.value
+
+    self.assertEqual(self.step_name, step_name)
+    self.assertEqual('abc_tests', task_info[0])
+    self.assertEqual(
+        _EXPECTED_CLASSIFIED_TESTS['reliable_tests'], task_info[1])
+
+    task = WfSwarmingTask.Get(
+        self.master_name, self.builder_name, self.build_number, self.step_name)
+
+    self.assertEqual(analysis_status.COMPLETED, task.status)
+    self.assertEqual(_EXPECTED_TESTS_STATUS, task.tests_statuses)
+    self.assertEqual(
+        _EXPECTED_CLASSIFIED_TESTS, task.classified_tests)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 6, 538220),
+                     task.created_time)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 9, 90550),
+                     task.started_time)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 33, 9),
+                     task.completed_time)

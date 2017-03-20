@@ -94,20 +94,10 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
                step_name_no_platform, pipeline_id=None):
     """Monitors the swarming task and waits for it to complete."""
     _ = pipeline_id  # We don't do anything with this id.
-    self.last_params = {
-        'task_id': task_id,
-        'step_name': step_name,
-        'call_args': call_args,
-        'deadline': deadline,
-        'server_query_interval_seconds': server_query_interval_seconds,
-        'task_started': task_started,
-        'task_completed': task_completed,
-        'step_name_no_platform': step_name_no_platform,
-    }
     assert task_id
     task = self._GetSwarmingTask(*call_args)
 
-    def timeout_check():
+    def check_task_completion():
       if task_completed and data is not None:
         task.created_time = (task.created_time or
                              self._ConvertDateTime(data.get('created_ts')))
@@ -134,19 +124,25 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         pipeline_result = self._GetPipelineResult(
             step_name, step_name_no_platform, task)
         self.complete(pipeline_result)
-      # TODO(robertocn): Remove this clause when the system reliably receives
-      # notifications from swarming via pubsub.
       else:
-        self.delay_callback(
-            task_id=task_id,
-            step_name=step_name,
-            call_args=call_args,
-            deadline=deadline,
-            server_query_interval_seconds=server_query_interval_seconds,
-            task_started=task_started,
-            task_completed=task_completed,
-            step_name_no_platform=step_name_no_platform,
-        )
+        self.last_params = {
+            'task_id': task_id,
+            'step_name': step_name,
+            'call_args': call_args,
+            'deadline': deadline,
+            'server_query_interval_seconds': server_query_interval_seconds,
+            'task_started': task_started,
+            'task_completed': task_completed,
+            'step_name_no_platform': step_name_no_platform,
+        }
+      # Update the stored callback url with possibly modified params.
+        new_callback_url = self.get_callback_url(**self.last_params)
+        if task.callback_url != new_callback_url:  # pragma: no cover
+          task.callback_url = new_callback_url
+          task.put()
+        # TODO(robertocn): Remove this line when the system reliably receives
+        # notifications from swarming via pubsub.
+        self.delay_callback(**self.last_params)
 
     data, error = swarming_util.GetSwarmingTaskResultById(
         task_id, self.HTTP_CLIENT)
@@ -161,7 +157,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         # Even after retry, no data was recieved.
         task.status = analysis_status.ERROR
         task.put()
-        timeout_check()
+        check_task_completion()
         return
 
     task_state = data['state']
@@ -187,7 +183,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
               'message': 'outputs_ref is None'
           }
           task.put()
-          timeout_check()
+          check_task_completion()
           return
 
         output_json, error = swarming_util.GetSwarmingTaskFailureLog(
@@ -239,7 +235,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         task_started = True
         task.status = analysis_status.RUNNING
         task.put()
-    timeout_check()
+    check_task_completion()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number, step_name,
@@ -256,6 +252,14 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     """
     call_args = self._GetArgs(master_name, builder_name, build_number,
                               step_name, *args)
+    task = self._GetSwarmingTask(*call_args)
+    if not task_id:
+      task_id = task.task_id
+
+    # Check to make this method idempotent.
+    if task.callback_url and self.pipeline_id in task.callback_url:
+      return
+
     timeout_hours = waterfall_config.GetSwarmingSettings().get(
         'task_timeout_hours')
     deadline = time.time() + timeout_hours * 60 * 60
@@ -264,8 +268,6 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     task_started = False
     task_completed = False
     step_name_no_platform = None
-    if not task_id:
-      task_id = self._GetSwarmingTask(*call_args).task_id
 
     if task_id.lower() == NO_TASK:  # pragma: no branch
       # This situation happens in flake analysis: if the step with flaky test
@@ -280,6 +282,18 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
             step_name, step_name_no_platform, task))
       return
 
-    self.callback(
-        task_id, step_name, call_args, deadline, server_query_interval_seconds,
-        task_started, task_completed, step_name_no_platform)
+    self.last_params = {
+        'task_id': task_id,
+        'step_name': step_name,
+        'call_args': call_args,
+        'deadline': deadline,
+        'server_query_interval_seconds': server_query_interval_seconds,
+        'task_started': task_started,
+        'task_completed': task_completed,
+        'step_name_no_platform': step_name_no_platform,
+    }
+
+    task.callback_url = self.get_callback_url(**self.last_params)
+    task.put()
+
+    self.callback(**self.last_params)
