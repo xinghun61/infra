@@ -15,6 +15,14 @@ it and report a result back.
 *   Bugs: [Infra-BuildBucket label](https://crbug.com?q=label=Infra-Buildbucket)
 *   Owner: nodir@
 
+## Swarmbucket
+
+Buildbucket has native integration with Swarming and Recipes.
+A bucket can define builders and a buildbucket build in such bucket is converted
+to a swarming task that runs a recipe.
+The results are reported back to buildbucket when the task compeltes.
+See [Swarming](doc/swarming.md).
+
 ## Buildbot
 
 Buildbucket is integrated with buildbot. You can schedule, cancel, search for
