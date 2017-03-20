@@ -646,10 +646,12 @@ class SubNotify(webapp2.RequestHandler):
       if not build:
         if utils.utcnow() < created_time + datetime.timedelta(minutes=1):
           self.stop(
-              'Build %s for task %s not found yet.',
+              'Build for a swarming task not found yet\nBuild: %s\nTask: %s',
               build_id, task_url, redeliver=True)
         else:
-          self.stop('Build %s for task %s not found.', build_id, task_url)
+          self.stop(
+              'Build for a swarming task not found\nBuild: %s\nTask: %s',
+              build_id, task_url)
       elif build.swarming_hostname != hostname:
         self.stop(
             'swarming_hostname %s of build %s does not match %s',
