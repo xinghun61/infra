@@ -230,7 +230,6 @@ func cacheKeyForBuild(master *messages.MasterLocation, builder string, number in
 }
 
 func (r *reader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
-	// TODO: get this from cache.
 	r.bLock.Lock()
 	build, ok := r.bCache[cacheKeyForBuild(master, builder, buildNum)]
 	r.bLock.Unlock()
@@ -264,6 +263,12 @@ func (r *reader) Build(ctx context.Context, master *messages.MasterLocation, bui
 	if err != nil {
 		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
+	}
+
+	if build.Finished {
+		r.bLock.Lock()
+		r.bCache[cacheKeyForBuild(master, builder, buildNum)] = build
+		r.bLock.Unlock()
 	}
 
 	return build, nil

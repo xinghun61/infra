@@ -9,6 +9,9 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"net/http"
+	"os"
+	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -29,6 +32,10 @@ const (
 type miloReader struct {
 	reader
 	host string
+	// bCache is a map of build cache key to Build message.
+	bCache map[string]*messages.Build
+	// bLock protects bCache
+	bLock sync.Mutex
 }
 
 // NewMiloReader returns a new reader implementation, which will read data from Milo.
@@ -36,7 +43,7 @@ func NewMiloReader(ctx context.Context, host string) readerType {
 	if host == "" {
 		host = miloHost
 	}
-	return &miloReader{
+	mr := &miloReader{
 		host: host,
 		reader: reader{
 			hc: &trackingHTTPClient{
@@ -47,9 +54,26 @@ func NewMiloReader(ctx context.Context, host string) readerType {
 			bCache: map[string]*messages.Build{},
 		},
 	}
+
+	// According to https://cloud.google.com/appengine/docs/standard/python/tools/using-local-server
+	// we can detect if we're running on app engine with this.
+	k, ok := os.LookupEnv("SERVER_SOFTWARE")
+	if ok && strings.HasPrefix(k, "Google App Engine/") {
+		mr.bCache = map[string]*messages.Build{}
+	}
+	return mr
 }
 
 func (r *miloReader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
+	if r.bCache != nil {
+		r.bLock.Lock()
+		build, ok := r.bCache[cacheKeyForBuild(master, builder, buildNum)]
+		r.bLock.Unlock()
+		if ok {
+			return build, nil
+		}
+	}
+
 	miloClient := &prpc.Client{
 		Host:    r.host,
 		C:       &http.Client{Transport: urlfetch.Get(ctx)},
@@ -67,6 +91,12 @@ func (r *miloReader) Build(ctx context.Context, master *messages.MasterLocation,
 	build := &messages.Build{}
 	if err := json.Unmarshal(resp.Data, build); err != nil {
 		return nil, err
+	}
+
+	if build.Finished && r.bCache != nil {
+		r.bLock.Lock()
+		r.bCache[cacheKeyForBuild(master, builder, buildNum)] = build
+		r.bLock.Unlock()
 	}
 
 	return build, nil
