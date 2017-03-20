@@ -170,7 +170,7 @@ class RietveldTest(testing.AppengineTestCase):
          {
              'committing_user_email': u'author@chromium.org',
              'patchset_id': '120001',
-             'timestamp': '2017-02-23 21:24:47 UTC',
+             'timestamp': '2017-02-23 23:17:54 UTC',
          }
      ],
      'reverts': [

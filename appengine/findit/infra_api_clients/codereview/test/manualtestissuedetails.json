@@ -160,7 +160,7 @@
             "auto_generated": true
         },
         {
-            "sender": "commit-bot@chromium.org",
+            "sender": "author@chromium.org",
             "recipients": [
                 "author@chromium.org"
             ],

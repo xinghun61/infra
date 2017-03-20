@@ -130,22 +130,33 @@ class Rietveld(codereview.CodeReview):
         r'created in (?P<issueurl>.*) by .*'
         r'.\n\nThe reason for reverting is: .*')
     patchset_to_revision_regex = re.compile(
-        r'Committed patchset #\d+ \(id:\d+\) (manually )?as '
-        r'(https://.*/)?(?P<revision>[a-f\d]{40})\.?')
+        r'Committed patchset #\d+ \(id:\d+\) as '
+        r'https://.*/(?P<revision>[a-f\d]{40})')
+    patchset_to_revision_manual_regex = re.compile(
+        r'Committed patchset #\d+ \(id:\d+\) manually as '
+        r'(?P<revision>[a-f\d]{40})\.')
     # NB: We capture the email as any non-space characters after 'by' to avoid
     # matching in case the email is followed by ` to run a CQ dry run`
     commit_attempt_regex = re.compile(
         r'^The CQ bit was checked by [^ ]+$')
 
     def patchset_to_revision_func(cl, message):
-      matches = patchset_to_revision_regex.match(message['text'])
-      if not matches:
+      matches_cq = patchset_to_revision_regex.match(message['text'])
+      matches_manual = patchset_to_revision_manual_regex.match(message['text'])
+      matches_any = matches_cq or matches_manual
+      if not matches_any:
         return
       patchset_id = str(message.get('patchset'))
-      revision = matches.group('revision')
+      revision = matches_any.group('revision')
       timestamp = time_util.UTCDatetimeFromNaiveString(message['date'])
       commit = cl_info.Commit(patchset_id, revision, timestamp)
       cl.commits.append(commit)
+      if matches_manual:
+        committer = message['sender']
+        # When a patch is manually landed, there is no cq attempt, but since
+        # we care about when action was taken, we take the timing of the commit
+        # itself as the commit attempt timestamp.
+        cl.AddCqAttempt(patchset_id, committer, timestamp)
 
     def patchset_reverted_to_issue_func(cl, message):
       matches = patchset_reverted_to_issue_regex.match(message['text'])
