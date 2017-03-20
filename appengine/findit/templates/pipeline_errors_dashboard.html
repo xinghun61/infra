@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<head>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Pipeline Errors Dashboard</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
+  <script>
+    function createUrl(parameters) {
+      var params = [];
+      for (var key in parameters) {
+        if (parameters[key] != undefined) {
+          params.push(key + '=' + parameters[key])
+        }
+      }
+
+      if (params.length == 0) {
+        return 'pipeline-errors-dashboard';
+      } else {
+        return 'pipeline-errors-dashboard?' + params.join('&');
+      }
+    };
+
+    function requestDataBetweenDateRange(e) {
+      var parameters = {}
+      parameters['start_date'] = $('#start_date').val() == 'mm/dd/yyyy' ? undefined : $('#start_date').val();
+      parameters['end_date'] = $('#end_date').val() == 'mm/dd/yyyy' ? undefined : $('#end_date').val();
+      newUrl = createUrl(parameters);
+      window.location.replace(newUrl);
+      e.preventDefault();
+    };
+
+    $(document).ready(function() {
+      $('#submit').click(requestDataBetweenDateRange);
+    });
+  </script>
+</head>
+<body>
+  <form>
+    Start Date
+    <input type="date" id="start_date" value={{ start_date }}></input>
+    End Date
+    <input type="date" id="end_date" value={{ end_date }}></input>
+    <input type="submit" id="submit"></input>
+  </form>
+  <br>
+  <b>Aborted Analyses:</b><br>
+  {% if analyses %}
+    <table>
+      <tr>
+        <th></th>
+        <th>Build Start Time</th>
+        <th>Build</th>
+        <th>Failure Type</th>
+      </tr>
+      <tbody>
+      {% for analysis in analyses %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ analysis.build_start_time }}</td>
+          <td>{{ analysis.master_name }}, {{ analysis.builder_name }},
+            <a href="/waterfall/failure?url=https://luci-milo.appspot.com/buildbot/{{analysis.master_name}}/{{analysis.builder_name}}/{{analysis.build_number}}">
+              {{ analysis.build_number }}
+            </a>
+          </td>
+          <td>{{ analysis.analysis_type }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    No analyses were detected to have pipelines aborted unexpectedly in the date range requested.
+  {% endif %}
+</body>
