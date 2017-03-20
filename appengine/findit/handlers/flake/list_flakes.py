@@ -10,19 +10,18 @@ from google.appengine.datastore.datastore_query import Cursor
 
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
+from gae_libs import dashboard_util
 from libs import time_util
 from model import analysis_status
 from model import result_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
-
 PAGE_SIZE = 100
 
 
-def FilterMasterFlakeAnalysis(
+def _GetFlakeAnalysisFilterQuery(
     master_flake_analysis_query, step_name=None, test_name=None,
-    start_date=None, end_date=None, status_code=result_status.UNSPECIFIED,
-    cursor=None, direction='next'):
+    start_date=None, end_date=None, status_code=result_status.UNSPECIFIED):
   if step_name:
     master_flake_analysis_query = master_flake_analysis_query.filter(
         MasterFlakeAnalysis.step_name == step_name)
@@ -39,47 +38,18 @@ def FilterMasterFlakeAnalysis(
     master_flake_analysis_query = master_flake_analysis_query.filter(
         MasterFlakeAnalysis.result_status == status_code)
 
-  master_flake_analysis_query_older = master_flake_analysis_query.order(
-      -MasterFlakeAnalysis.request_time)
-
-  # If filters by step_name and/or test_name, don't do paging.
-  if step_name or test_name:
-    analyses = master_flake_analysis_query_older.fetch()
-    return analyses, None, False
-
-  if direction.lower() == 'previous':
-    master_flake_analysis_query_newer = master_flake_analysis_query.order(
-        MasterFlakeAnalysis.request_time)
-    analyses, next_cursor, more = master_flake_analysis_query_newer.fetch_page(
-        PAGE_SIZE, start_cursor=cursor.reversed())
-    analyses.reverse()
-  else:
-    analyses, next_cursor, more = master_flake_analysis_query_older.fetch_page(
-        PAGE_SIZE, start_cursor=cursor)
-
-  return analyses, next_cursor, more
+  return master_flake_analysis_query
 
 
 class ListFlakes(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
   def _GetStartAndEndDates(self, triage):
-    start_date = None
-    end_date = None
+    if not triage:
+      return None, None
 
-    if triage:
-      midnight_today = datetime.combine(time_util.GetUTCNow(), time.min)
-      midnight_yesterday = midnight_today - timedelta(days=1)
-      midnight_tomorrow = midnight_today + timedelta(days=1)
-
-      start = self.request.get('start_date')
-      end = self.request.get('end_date')
-      start_date = (datetime.strptime(start, '%Y-%m-%d') if start else
-                    midnight_yesterday)
-      end_date = (datetime.strptime(end, '%Y-%m-%d') if end else
-                  midnight_tomorrow)
-
-    return start_date, end_date
+    return dashboard_util.GetStartAndEndDates(self.request.get('start_date'),
+                                              self.request.get('end_date'))
 
   def HandleGet(self):
     status_code = int(
@@ -87,25 +57,26 @@ class ListFlakes(BaseHandler):
     step_name = self.request.get('step_name').strip()
     test_name = self.request.get('test_name').strip()
     triage = self.request.get('triage') == '1'
-    cursor = Cursor(urlsafe=self.request.get('cursor'))
-    direction = self.request.get('direction').strip()
 
     # Only allow querying by start/end dates for admins during triage to avoid
     # overcomplicating the UI for other users.
     start_date, end_date = self._GetStartAndEndDates(triage)
 
-    master_flake_analyses, next_cursor, more = FilterMasterFlakeAnalysis(
+    master_flake_analysis_query = _GetFlakeAnalysisFilterQuery(
         MasterFlakeAnalysis.query(), step_name, test_name, start_date, end_date,
-        status_code, cursor, direction)
+        status_code)
 
-    next_cursor = next_cursor.urlsafe() if next_cursor else ''
-    used_cursor = cursor.urlsafe() if cursor else ''
-    if direction == 'previous':
-      prev_cursor = next_cursor if more else ''
-      cursor = used_cursor
+    # If filters by step_name and/or test_name, don't do paging.
+    if step_name or test_name:
+      analyses = master_flake_analysis_query.order(
+          -MasterFlakeAnalysis.request_time).fetch()
+      prev_cursor = ''
+      cursor = ''
     else:
-      prev_cursor = used_cursor
-      cursor = next_cursor if more else ''
+      analyses, prev_cursor, cursor = dashboard_util.GetPagedResults(
+          master_flake_analysis_query, MasterFlakeAnalysis.request_time,
+          self.request.get('cursor'), self.request.get('direction').strip(),
+          page_size=PAGE_SIZE)
 
     data = {
         'master_flake_analyses': [],
@@ -114,7 +85,6 @@ class ListFlakes(BaseHandler):
         'test_name_filter': test_name,
         'prev_cursor': prev_cursor,
         'cursor': cursor,
-        'more': more,
     }
 
     if triage:  # pragma: no cover
@@ -122,7 +92,7 @@ class ListFlakes(BaseHandler):
       data['start_date'] = start_date
       data['end_date'] = end_date
 
-    for master_flake_analysis in master_flake_analyses:
+    for master_flake_analysis in analyses:
       data['master_flake_analyses'].append({
           'build_analysis_status': master_flake_analysis.status_description,
           'build_number': master_flake_analysis.build_number,
