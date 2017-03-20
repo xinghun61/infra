@@ -236,17 +236,14 @@
         var swarmingTaskId = dataPoint.task_id;
         var buildNumber = dataPoint.build_number;
         var thisBuildGitHash = dataPoint.git_hash;
-        var previousBuildCommitPosition = dataPoint.previous_build_commit_position;
-        var previousBuildGitHash = dataPoint.previous_build_git_hash;
+        var lowerBoundCommitPosition = dataPoint.lower_bound_commit_position;
+        var lowerBoundRegressionRange = dataPoint.lower_bound_git_hash;
         var tryJobUrl = dataPoint.try_job_url;
 
         var tooltipStr = 'Pass Rate: ' + passRate + '%';
 
-        if (previousBuildCommitPosition && previousBuildGitHash && thisBuildCommitPosition && thisBuildGitHash) {
-          tooltipStr += '<br>Range: <a href="https://crrev.com/' + previousBuildGitHash + '..' + thisBuildGitHash + '?pretty=fuller" target="_blank">' + previousBuildCommitPosition + ':' + thisBuildCommitPosition + '</a>';
-        } else if (thisBuildCommitPosition && thisBuildGitHash) {
-          // Previous information not available, so only show this build.
-          tooltipStr += '<br>Commit: <a href="https://crrev.com/' + thisBuildGitHash + '" target="_blank">' + thisBuildCommitPosition + '</a>';
+        if (lowerBoundCommitPosition && lowerBoundRegressionRange && thisBuildCommitPosition && thisBuildGitHash) {
+          tooltipStr += '<br>Range: <a href="https://crrev.com/' + lowerBoundRegressionRange + '..' + thisBuildGitHash + '?pretty=fuller" target="_blank">' + lowerBoundCommitPosition + ':' + thisBuildCommitPosition + '</a>';
         }
 
         if (swarmingTaskId) {
@@ -332,7 +329,7 @@
     <b>Analysis Result:</b><br>
     Regression range analysis:  {{ analysis_status }}<br>
     {% if suspected_flake.commit_position and suspected_flake.git_hash %}
-      <li>Regression Range: <a href="https://crrev.com/{{ suspected_flake.previous_build_git_hash }}..{{ suspected_flake.git_hash }}?pretty=fuller" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.previous_build_commit_position }}:{{ suspected_flake.commit_position }}</a>
+      <li>Regression Range: <a href="https://crrev.com/{{ suspected_flake.lower_bound_git_hash }}..{{ suspected_flake.git_hash }}?pretty=fuller" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.lower_bound_commit_position }}:{{ suspected_flake.commit_position }}</a>
         {% if suspected_flake.confidence %}
           (Confidence: {{ '%0.1f%%' % (suspected_flake.confidence * 100) }})
         {% endif %}

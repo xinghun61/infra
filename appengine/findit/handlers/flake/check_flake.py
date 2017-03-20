@@ -33,8 +33,8 @@ def _GetSuspectedFlakeInfo(analysis):
           'build_number': int,
           'commit_position': int,
           'git_hash': str,
-          'previous_build_commit_position': int,
-          'previous_build_git_hash': str,
+          'lower_bound_commit_position': int,
+          'lower_bound_git_hash': str,
           'triage_result': int (correct, incorrect, etc.)
       }
   """
@@ -49,9 +49,9 @@ def _GetSuspectedFlakeInfo(analysis):
       'build_number': analysis.suspected_flake_build_number,
       'commit_position': data_point.commit_position,
       'git_hash': data_point.git_hash,
-      'previous_build_commit_position': (
+      'lower_bound_commit_position': (
           data_point.previous_build_commit_position),
-      'previous_build_git_hash': data_point.previous_build_git_hash,
+      'lower_bound_git_hash': data_point.previous_build_git_hash,
       'triage_result': (
           analysis.triage_history[-1].triage_result if analysis.triage_history
           else triage_status.UNTRIAGED)
@@ -85,26 +85,35 @@ def _GetCulpritInfo(analysis):
 
 
 def _GetCoordinatesData(analysis):
+
+  def _GetBasicData(point):
+    return {
+        'commit_position': point.commit_position,
+        'pass_rate': point.pass_rate,
+        'task_id': point.task_id,
+        'build_number': point.build_number,
+        'git_hash': point.git_hash,
+        'try_job_url': point.try_job_url
+    }
+
   if not analysis or not analysis.data_points:
     return []
 
+  # Order by commit position from earliest to latest.
+  data_points = sorted(analysis.data_points, key=lambda x: x.commit_position)
   coordinates = []
 
-  for data_point in analysis.data_points:
-    coordinates.append({
-        'commit_position': data_point.commit_position,
-        'pass_rate': data_point.pass_rate,
-        'task_id': data_point.task_id,
-        'build_number': data_point.build_number,
-        'git_hash': data_point.git_hash,
-        'previous_build_commit_position': (
-            data_point.previous_build_commit_position),
-        'previous_build_git_hash': data_point.previous_build_git_hash,
-        'try_job_url': data_point.try_job_url
-    })
+  previous_data_point = data_points[0]
+  data = _GetBasicData(previous_data_point)
+  coordinates.append(data)
 
-  # Order by build number from earliest to latest.
-  coordinates.sort(key=lambda x: x['commit_position'])
+  for i in range(1, len(data_points)):
+    data_point = data_points[i]
+    data = _GetBasicData(data_point)
+    data['lower_bound_commit_position'] = previous_data_point.commit_position
+    data['lower_bound_git_hash'] = previous_data_point.git_hash
+    previous_data_point = data_point
+    coordinates.append(data)
 
   return coordinates
 

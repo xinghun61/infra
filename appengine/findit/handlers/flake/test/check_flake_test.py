@@ -375,8 +375,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'build_number': analysis.suspected_flake_build_number,
         'commit_position': 2,
         'git_hash': 'git_hash_2',
-        'previous_build_commit_position': 1,
-        'previous_build_git_hash': 'git_hash_1',
+        'lower_bound_commit_position': 1,
+        'lower_bound_git_hash': 'git_hash_1',
         'triage_result': 0
     }
     self.assertEqual(expected_result,
@@ -410,15 +410,25 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     try_job_url = 'try_job_url'
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, build_number, step_name, test_name)
-    data_point = DataPoint()
-    data_point.build_number = build_number
-    data_point.pass_rate = success_rate
-    data_point.commit_position = 2
-    data_point.git_hash = 'git_hash_2'
-    data_point.previous_build_commit_position = 1
-    data_point.previous_build_git_hash = 'git_hash_1'
-    data_point.try_job_url = try_job_url
-    analysis.data_points.append(data_point)
+    data_point_1 = DataPoint()
+    data_point_1.build_number = build_number
+    data_point_1.pass_rate = success_rate
+    data_point_1.commit_position = 5
+    data_point_1.git_hash = 'git_hash_5'
+    data_point_1.previous_build_commit_position = 4
+    data_point_1.previous_build_git_hash = 'git_hash_4'
+    data_point_1.try_job_url = try_job_url
+    analysis.data_points.append(data_point_1)
+
+    data_point_2 = DataPoint()
+    data_point_2.build_number = build_number - 3
+    data_point_2.pass_rate = success_rate
+    data_point_2.commit_position = 2
+    data_point_2.git_hash = 'git_hash_2'
+    data_point_2.previous_build_commit_position = 1
+    data_point_2.previous_build_git_hash = 'git_hash_1'
+    data_point_2.try_job_url = try_job_url
+    analysis.data_points.append(data_point_2)
     analysis.Save()
 
     expected_result = [
@@ -426,10 +436,18 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'commit_position': 2,
             'pass_rate': success_rate,
             'task_id': None,
-            'build_number': build_number,
+            'build_number': build_number - 3,
             'git_hash': 'git_hash_2',
-            'previous_build_commit_position': 1,
-            'previous_build_git_hash': 'git_hash_1',
+            'try_job_url': try_job_url
+        },
+        {
+            'commit_position': 5,
+            'pass_rate': success_rate,
+            'task_id': None,
+            'build_number': build_number,
+            'git_hash': 'git_hash_5',
+            'lower_bound_commit_position': 2,
+            'lower_bound_git_hash': 'git_hash_2',
             'try_job_url': try_job_url
         }
     ]
@@ -443,5 +461,5 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point2.build_number = 1
 
     data_points = [data_point1, data_point2]
-    self.assertEqual((1,1),
+    self.assertEqual((1, 1),
                      check_flake._GetNumbersOfDataPointGroups(data_points))
