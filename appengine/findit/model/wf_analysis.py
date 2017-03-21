@@ -153,7 +153,7 @@ class WfAnalysis(BaseBuildModel):
   version = ndb.StringProperty(indexed=False)
 
   # Whether any sub-pipeline of Heuristic or try-job analysis was aborted.
-  aborted = ndb.BooleanProperty(indexed=False, default=False)
+  aborted = ndb.BooleanProperty(indexed=True, default=False)
 
   # Analysis result for the build failure.
   not_passed_steps = ndb.StringProperty(indexed=False, repeated=True)

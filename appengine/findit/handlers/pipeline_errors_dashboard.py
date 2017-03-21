@@ -6,6 +6,8 @@ from datetime import datetime
 from datetime import time
 from datetime import timedelta
 
+from google.appengine.ext import ndb
+
 from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from common.waterfall import failure_type
@@ -52,27 +54,27 @@ class PipelineErrorsDashboard(BaseHandler):
   def HandleGet(self):
     """Lists WfAnalysis entities detected to have been aborted."""
     midnight_today = datetime.combine(time_util.GetUTCNow(), time.min)
-
     start = self.request.get('start_date')
     end = self.request.get('end_date')
 
     start_date, end_date = _GetStartEndDates(start, end, midnight_today)
 
     analyses = WfAnalysis.query(
-        WfAnalysis.build_start_time >= start_date,
-        WfAnalysis.build_start_time < end_date).order(
-            -WfAnalysis.build_start_time).fetch(_COUNT)
+        ndb.AND(
+            WfAnalysis.build_start_time >= start_date,
+            WfAnalysis.build_start_time < end_date,
+            WfAnalysis.aborted == True)).order(
+                -WfAnalysis.build_start_time).fetch(_COUNT)
 
-    aborted_analyses = []
+    analyses_data = []
 
     for analysis in analyses:
-      if analysis.aborted:
-        aborted_analyses.append(_Serialize(analysis))
+      analyses_data.append(_Serialize(analysis))
 
     data = {
         'start_date': time_util.FormatDatetime(start_date),
         'end_date': time_util.FormatDatetime(end_date),
-        'analyses': aborted_analyses,
+        'analyses': analyses_data,
     }
 
     return {
