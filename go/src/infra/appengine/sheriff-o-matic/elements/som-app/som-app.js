@@ -442,6 +442,11 @@
             b.extension.builders.length :
             1;
 
+        let aHasSuspectedCLs = a.extension && a.extension.suspected_cls;
+        let bHasSuspectedCLs = b.extension && b.extension.suspected_cls;
+        let aHasFindings = a.extension && a.extension.has_findings;
+        let bHasFindings = b.extension && b.extension.has_findings;
+
         if (a.severity != b.severity) {
           // Note: 3 is the severity number for Infra Failures.
           // We want these at the bottom of the severities for sheriffs.
@@ -462,6 +467,28 @@
         }
 
         if (aAnn.snoozed == bAnn.snoozed && aHasBugs == bHasBugs) {
+          // We want to show alerts with Findit results above.
+          // Show alerts with revert CL from Findit first;
+          // the alerts with suspected_cls;
+          // then alerts with flaky tests;
+          // then alerts with no Findit results.
+          if (aHasSuspectedCLs && bHasSuspectedCLs) {
+            for (let key in b.extension.suspected_cls) {
+              if (b.extension.suspected_cls[key].reverting_cl_url) {
+                return 1;
+              }
+            }
+            return -1;
+          } else if (aHasSuspectedCLs) {
+            return -1;
+          } else if (bHasSuspectedCLs) {
+            return 1;
+          } else if (aHasFindings) {
+            return -1;
+          } else if (bHasFindings) {
+            return 1;
+          }
+
           if (aBuilders < bBuilders) {
             return 1;
           }

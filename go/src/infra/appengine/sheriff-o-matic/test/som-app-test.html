@@ -208,6 +208,12 @@
             key: 'hello', title: 'd'},
           {extension: { builders: [{name: 'g'}], reasons: [ {step: 'a'} ]},
             key: 'test', title: 'c'},
+          {extension: { builders: [{name: 'h'}], reasons: [ {step: 'a'} ], suspected_cls: [{revision: '1'}]},
+           title: 'h'},
+          {extension: { builders: [{name: 'i'}], reasons: [ {step: 'a'} ], suspected_cls: [{revision: 'rev2', reverting_cl_url: 'revert_url'}]},
+           title: 'i'},
+          {extension: { builders: [{name: 'j'}], reasons: [ {step: 'a'} ], has_findings: true},
+           title: 'j'},
         ]
       };
 
@@ -227,7 +233,7 @@
       let names = sortedAlerts.map((alr) => {
         return alr.extension.builders[0].name;
       })
-      assert.deepEqual(names, ['a', 'c', 'd', 'e', 'f', 'g']);
+      assert.deepEqual(names, ['i', 'h', 'j', 'a', 'c', 'd', 'e', 'f', 'g']);
       // b has a bug so it goes between c/d (no annotations) and a (snoozed).
       // a is snoozed, goes to the bottom.
     });
