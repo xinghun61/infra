@@ -507,7 +507,7 @@ _AC_SimpleStore.prototype.completions = function(prefix, toFilter) {
   // Match the modifiedPrefix anywhere as long as it is either at the very
   // beginning "Th" -> "The Hobbit", or comes immediately after a word separator
   // such as "Ga" -> "The-Great-Gatsby".
-  var patternRegex = '^(.*[-=><:@., ])?(' + modifiedPrefix + ')(.*)';
+  var patternRegex = '^(.*\\W)?(' + modifiedPrefix + ')(.*)';
   var pattern = new RegExp(patternRegex, 'i' /* ignore case */);
 
   // We keep separate lists of possible completions that were generated
