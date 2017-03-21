@@ -1,3 +1,28 @@
+# Release Notes sheriff-o-matic 2017-03-21
+
+- 5 commits, 2 bugs affected since c0759a0 (2017-03-14T22:01:58Z)
+- 4 Authors:
+  - chanli@chromium.org
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+  - davidriley@chromium.org
+
+## Changes in this release
+
+- [[SoM-Findit] Modify color of Findit result message.](https://chromium-review.googlesource.com/456765) (chanli@chromium.org)
+- [[som] Authenticate requests to luci-milo](https://chromium-review.googlesource.com/456769) (seanmccullough@chromium.org)
+- [SoM: Move bug queue to the top again.](https://chromium-review.googlesource.com/456768) (zhangtiff@google.com)
+- [[som] Do not linkify Chrome OS links.](https://chromium-review.googlesource.com/456737) (davidriley@chromium.org)
+- [[SoM-Findit] Add reverting CL to Findit results on Sheriff-o-Matic.](https://chromium-review.googlesource.com/453985) (chanli@chromium.org)
+
+
+## Bugs updated, by author
+- chanli@chromium.org:
+  -  [https://crbug.com/700636](https://crbug.com/700636)
+
+- davidriley@chromium.org:
+  -  [https://crbug.com/702291](https://crbug.com/702291)
+
 # Release Notes sheriff-o-matic 2017-03-14
 
 - 3 commits, 2 bugs affected since 007a419 (2017-03-01T00:26:34Z)
