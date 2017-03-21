@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"time"
 
 	"infra/monitoring/messages"
@@ -19,7 +20,6 @@ import (
 	"golang.org/x/net/context"
 
 	"cloud.google.com/go/pubsub"
-	"google.golang.org/api/iterator"
 )
 
 var (
@@ -55,54 +55,68 @@ func main() {
 	}
 
 	sub := client.Subscription(*subName)
+	sub.ReceiveSettings.MaxExtension = time.Minute
+	sub.ReceiveSettings.MaxOutstandingMessages = 1 // Process one at a time.
 
-	it, err := sub.Pull(ctx, pubsub.MaxExtension(time.Minute))
-	if err != nil {
-		log.Fatalf("error constructing iterator: %v", err)
-	}
-
-	defer it.Stop()
+	subCtx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
 
 	// Stop pulling messages from the topic if the OS interrupts us (e.g. user
 	// hits ctrl-c).
 	go func() {
 		<-quit
-		it.Stop()
+		cancelFunc()
 	}()
 
-	for i := 0; i < *numConsume; i++ {
-		m, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			log.Fatalf("advancing iterator: %v", err)
-			m.Done(false)
-			break
-		}
-
-		reader, err := zlib.NewReader(bytes.NewReader(m.Data))
-		if err != nil {
-			log.Fatalf("zlib decoding: %v", err)
-			m.Done(false)
-			break
-		}
-		dec := json.NewDecoder(reader)
-		extract := buildMasterMsg{}
-		if err = dec.Decode(&extract); err != nil {
-			log.Fatalf("json decoding: %v", err)
-			m.Done(false)
-			break
+	remainingConsume := int32(*numConsume)
+	err = sub.Receive(subCtx, func(_ context.Context, msg *pubsub.Message) {
+		// Handle this message. Note that we pass the OUTER Context here, which will
+		// not be cancelled if subCtx is cancelled.
+		wasError := handleMessage(ctx, msg)
+		if !wasError {
+			msg.Ack()
+		} else {
+			msg.Nack()
+			cancelFunc()
 		}
 
-		handler := &sompubsub.BuildHandler{Store: sompubsub.NewInMemAlertStore()}
-		for _, b := range extract.Builds {
-			err := handler.HandleBuild(ctx, b)
-			if err != nil {
-				log.Fatalf("error: %+v", err)
-			}
+		// If we've hit our consumption limit, stop receiving additional messages.
+		if atomic.AddInt32(&remainingConsume, -1) <= 0 {
+			// Cancel JUST our subscription Context. Our outer Context, "ctx", will
+			// not be canceled by this.
+			cancelFunc()
 		}
-
-		m.Done(true)
+	})
+	if err != nil {
+		log.Fatalf("failed to Receive on Subscription: %s", err)
 	}
+}
+
+// handleMessage handles the supplied Pub/Sub message. It returns true if the
+// message was successfully handled, and false if it was not.
+func handleMessage(ctx context.Context, msg *pubsub.Message) bool {
+	reader, err := zlib.NewReader(bytes.NewReader(msg.Data))
+	if err != nil {
+		log.Printf("error: zlib decoding [%s]: %v", msg.ID, err)
+		return false
+	}
+	dec := json.NewDecoder(reader)
+	extract := buildMasterMsg{}
+	if err = dec.Decode(&extract); err != nil {
+		log.Printf("error: json decoding [%s]: %v", msg.ID, err)
+		return false
+	}
+
+	// Handle our build via Handler. Note that this passes the OUTER Context,
+	// which will not be cancelled if "subCtx" is cancelled.
+	handler := &sompubsub.BuildHandler{Store: sompubsub.NewInMemAlertStore()}
+	for _, b := range extract.Builds {
+		err := handler.HandleBuild(ctx, b)
+		if err != nil {
+			log.Printf("error: handling [%s]: %+v", msg.ID, err)
+			return false
+		}
+	}
+
+	return true
 }

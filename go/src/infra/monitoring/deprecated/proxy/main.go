@@ -5,25 +5,22 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"infra/libs/infraenv"
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"time"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/cloudlogging"
-	luciErrors "github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/cloudlog"
 	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/luci/luci-go/common/sync/parallel"
 	"github.com/luci/luci-go/common/tsmon"
 	"github.com/luci/luci-go/common/tsmon/distribution"
 	"github.com/luci/luci-go/common/tsmon/field"
@@ -104,9 +101,6 @@ type application struct {
 
 	pubsub   *pubsubClient
 	endpoint endpointService
-
-	shutdownOnce sync.Once
-	shutdownC    chan struct{} // When closed, signals application to shut down.
 }
 
 // newApplication instantiates a new application instance and its associated
@@ -114,8 +108,7 @@ type application struct {
 func newApplication(c config) *application {
 	// Create Endpoint client.
 	app := application{
-		config:    &c,
-		shutdownC: make(chan struct{}),
+		config: &c,
 	}
 	return &app
 }
@@ -141,141 +134,43 @@ func (a *application) loadServices(ctx context.Context, client *http.Client) err
 }
 
 // run executes the application.
-func (a *application) run(ctx context.Context) error {
-	// Setup common context parameters.
-	ctx, cancelFunc := context.WithCancel(ctx)
+func (a *application) run() error {
+	// Although we call pullAckMessages without backoff or a throttle, the calls
+	// to the Pub/Sub service use retry library's exponential backoff, so we
+	// don't need to implement DoS protection at this level.
+	return a.pubsub.receive(a.numWorkers, func(ctx context.Context, msg *pubsub.Message) {
+		if err := a.proxySingleMessage(ctx, msg); err != nil {
+			log.Errorf(log.SetError(ctx, err), "Error sending messages to proxy.")
+			sentCount.Add(ctx, 1, "failure")
 
-	// Monitor our shutdown singal. Cancel our context if it is closed.
-	go func() {
-		<-a.shutdownC
-
-		log.Infof(ctx, "Shutdown signal received; cancelling context.")
-		cancelFunc()
-	}()
-
-	wg := sync.WaitGroup{}
-	for i := 0; i < a.config.numWorkers; i++ {
-		i := i
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-
-			a.process(log.SetField(ctx, "worker", i), i)
-		}(i)
-	}
-
-	wg.Wait()
-	return nil
-}
-
-// shutdown signals the application to terminate.
-func (a *application) shutdown() {
-	a.shutdownOnce.Do(func() {
-		close(a.shutdownC)
-	})
-}
-
-// isShutdown tests if the application has received a shutdown signal.
-func (a *application) isShutdown() bool {
-	select {
-	case <-a.shutdownC:
-		return true
-	default:
-		return false
-	}
-}
-
-// process runs in its own goroutine and continuously processes data in the
-// configured subscription.
-func (a *application) process(ctx context.Context, workerID int) {
-	for !a.isShutdown() {
-		// Although we call pullAckMessages without backoff or a throttle, the calls
-		// to the Pub/Sub service use retry library's exponential backoff, so we
-		// don't need to implement DoS protection at this level.
-		err := a.pubsub.pullAckMessages(ctx, workerID, func(msgs []*pubsub.Message) {
-			log.Fields{
-				"count": len(msgs),
-			}.Infof(ctx, "Pull()ed messages from subscription.")
-
-			if err := a.proxyMessages(ctx, msgs); err != nil {
-				log.Errorf(log.SetError(ctx, err), "Error sending messages to proxy.")
+			if errors.IsTransient(err) {
+				// Transient error: retry.
+				msg.Nack()
+			} else {
+				// Non-transient error: consume the message.
+				msg.Ack()
 			}
-		})
-		if err == errNoMessages {
-			log.Fields{
-				"delay": noMessageDelay,
-			}.Debugf(ctx, "Received no messages; sleeping for next round.")
-			a.sleepWithInterrupt(ctx, noMessageDelay)
-		} else if err != nil {
-			log.Errorf(log.SetError(ctx, err), "process: Failed to Pull() round of messages.")
-		}
-	}
-}
-
-// sleepWithInterrupt attempts to sleep for the specified duration, aborting
-// early if the application is shutdown, returning true.
-func (a *application) sleepWithInterrupt(ctx context.Context, amount time.Duration) bool {
-	select {
-	case <-clock.After(ctx, noMessageDelay):
-		return false
-	case <-a.shutdownC:
-		return true
-	}
-}
-
-// proxyMessages forwards a set of pubsub messages to the endpoint proxy.
-func (a *application) proxyMessages(ctx context.Context, msgs []*pubsub.Message) error {
-	startTime := clock.Now(ctx)
-
-	log.Fields{
-		"size": len(msgs),
-	}.Debugf(ctx, "Sending messages to Proxy.")
-
-	// TODO: Batch messages together into larger pushes.
-	// TODO: Validate messages.
-	err := parallel.FanOutIn(func(c chan<- func() error) {
-		for idx, msg := range msgs {
-			msg := msg
-			c <- func() error {
-				ctx := log.SetFields(ctx, log.Fields{
-					"size":      len(msg.Data),
-					"messageID": msg.ID,
-				})
-
-				err := a.proxySingleMessage(ctx, msg)
-
-				// If we hit a transient error, set the message's element to nil,
-				// causing it to not be ACKed.
-				if err != nil {
-					transient := luciErrors.IsTransient(err)
-					log.Fields{
-						log.ErrorKey: err,
-						"transient":  transient,
-					}.Errorf(ctx, "Error when pushing message.")
-					if transient {
-						msgs[idx] = nil
-					}
-				}
-				return err
-			}
+		} else {
+			// Success: consume the message.
+			sentCount.Add(ctx, 1, "success")
+			msg.Ack()
 		}
 	})
-
-	duration := clock.Now(ctx).Sub(startTime)
-
-	merr, _ := err.(luciErrors.MultiError)
-	log.Fields{
-		"errorStatus": err,
-		"count":       len(msgs),
-		"errorCount":  len(merr),
-	}.Infof(ctx, "Sent messages to endpoint.")
-	sentCount.Add(ctx, int64(len(msgs)), "success")
-	sentCount.Add(ctx, int64(len(merr)), "failure")
-	sentDuration.Add(ctx, float64(duration/time.Millisecond))
-	return err
 }
 
 func (a *application) proxySingleMessage(ctx context.Context, msg *pubsub.Message) error {
+	startTime := clock.Now(ctx)
+	defer func() {
+		duration := clock.Now(ctx).Sub(startTime)
+		sentDuration.Add(ctx, float64(duration/time.Millisecond))
+	}()
+
+	// TODO: Validate messages.
+	ctx = log.SetFields(ctx, log.Fields{
+		"size":      len(msg.Data),
+		"messageID": msg.ID,
+	})
+
 	log.Debugf(ctx, "Sending data to monitoring endpoint.")
 
 	// Refuse to transmit message if it's too large.
@@ -348,6 +243,9 @@ func mainImpl(args []string) int {
 		ctx = cloudlog.Use(ctx, cloudlog.Config{}, buf)
 	}
 
+	ctx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
+
 	app := newApplication(config)
 	if err := app.loadServices(ctx, client); err != nil {
 		log.Errorf(log.SetError(ctx, err), "Failed to initialize services.")
@@ -370,7 +268,7 @@ func mainImpl(args []string) int {
 
 				log.Infof(log.SetField(ctx, "signal", sig),
 					"Received signal; starting shutdown.")
-				app.shutdown()
+				cancelFunc()
 			} else {
 				// Triggered multiple times; immediately shut down.
 				os.Exit(1)
@@ -384,7 +282,7 @@ func mainImpl(args []string) int {
 	}()
 
 	log.Infof(ctx, "Starting application execution...")
-	if err := app.run(ctx); err != nil {
+	if err := app.run(); err != nil {
 		log.Errorf(log.SetError(ctx, err), "Error during application execution.")
 		return 1
 	}

@@ -6,27 +6,19 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"net/http"
-	"time"
 
-	"cloud.google.com/go/pubsub"
 	"github.com/luci/luci-go/common/auth"
-	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/tsmon/distribution"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/common/tsmon/types"
-	"golang.org/x/net/context"
-	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
-)
 
-const (
-	// The maximum number of items that can be pulled from a subscription at once.
-	maxSubscriptionPullSize = 100
+	"cloud.google.com/go/pubsub"
+	"golang.org/x/net/context"
+	"google.golang.org/api/option"
 )
 
 var (
@@ -71,8 +63,7 @@ func (c *pubsubConfig) addFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.project, "pubsub-project", "", "The name of the Pub/Sub project.")
 	fs.StringVar(&c.subscription, "pubsub-subscription", "", "The name of the Pub/Sub subscription.")
 	fs.StringVar(&c.topic, "pubsub-topic", "", "The name of the Pub/Sub topic.")
-	fs.IntVar(&c.batchSize, "pubsub-batch-size", maxSubscriptionPullSize,
-		"The Pub/Sub batch size.")
+	fs.IntVar(&c.batchSize, "pubsub-batch-size", 0, "The Pub/Sub batch size. If <=0, default will be used.")
 	fs.BoolVar(&c.create, "pubsub-create", false,
 		"Create the subscription and/or topic if they don't exist.")
 }
@@ -86,8 +77,7 @@ type pubSubService interface {
 	CreatePullSub(sub string, topic string) error
 	TopicExists(string) (bool, error)
 	CreateTopic(string) error
-	Pull(sub string, count int) ([]*pubsub.Message, error)
-	Ack(string, []*pubsub.Message) error
+	Receive(sub string, workers int, cb func(context.Context, *pubsub.Message)) error
 }
 
 // pubSubServiceImpl is an implementation of the pubSubService that uses the
@@ -129,32 +119,10 @@ func (s *pubSubServiceImpl) CreateTopic(topic string) error {
 	return err
 }
 
-func (s *pubSubServiceImpl) Pull(sub string, count int) ([]*pubsub.Message, error) {
-	it, err := s.client.Subscription(sub).Pull(s.ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer it.Stop()
-	var msgs []*pubsub.Message
-
-	for i := 0; i < count; i++ {
-		msg, err := it.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
-		msgs = append(msgs, msg)
-	}
-	return msgs, nil
-}
-
-func (s *pubSubServiceImpl) Ack(sub string, msgs []*pubsub.Message) error {
-	for _, m := range msgs {
-		m.Done(true)
-	}
-	return nil
+func (s *pubSubServiceImpl) Receive(subName string, workers int, cb func(context.Context, *pubsub.Message)) error {
+	sub := s.client.Subscription(subName)
+	sub.ReceiveSettings.MaxOutstandingMessages = workers
+	return sub.Receive(s.ctx, cb)
 }
 
 // A pubsubClient interfaces with a Cloud Pub/Sub subscription.
@@ -178,8 +146,6 @@ func newPubSubClient(ctx context.Context, config pubsubConfig, svc pubSubService
 	}
 	if config.batchSize <= 0 {
 		return nil, errors.New("pubsub: batch size must be at least 1")
-	} else if config.batchSize > maxSubscriptionPullSize {
-		return nil, fmt.Errorf("pubsub: batch size cannot exceed %d", maxSubscriptionPullSize)
 	}
 
 	p := pubsubClient{
@@ -273,102 +239,8 @@ func (p *pubsubClient) setupSubscription(ctx context.Context) error {
 	return nil
 }
 
-// pullAckMessages pulls a set of messages from the configured Subscription.
-// If no messages are available, errNoMessages will be returned.
-//
-// handler is a method that returns true if there was a transient failure,
-// indicating that the messages shouldn't be ACK'd.
-func (p *pubsubClient) pullAckMessages(ctx context.Context, workerID int, handler func([]*pubsub.Message)) error {
-	var err error
-	var msgs []*pubsub.Message
-	ackCount := 0
-
-	// Report the duration of a Pull/ACK cycle.
-	startTime := clock.Now(ctx)
-	defer func() {
-		totalDuration := clock.Now(ctx).Sub(startTime)
-		log.Fields{
-			"count":    len(msgs),
-			"ackCount": ackCount,
-			"duration": totalDuration,
-		}.Infof(ctx, "Pull/ACK cycle complete.")
-	}()
-
-	err = retryCall(ctx, "Pull()", func() error {
-		var err error
-		msgs, err = p.service.Pull(p.subscription, p.batchSize)
-		return p.wrapTransient(err)
-	})
-	pullDuration := clock.Now(ctx).Sub(startTime)
-	log.Fields{
-		log.ErrorKey: err,
-		"duration":   pullDuration,
-		"count":      len(msgs),
-	}.Debugf(ctx, "Pull() complete.")
-
-	pullDurationMetric.Add(ctx, float64(pullDuration/time.Millisecond))
-	messageCount.Add(ctx, int64(len(msgs)), workerID)
-
-	if err != nil {
-		return err
-	}
-
-	if len(msgs) == 0 {
-		return errNoMessages
-	}
-
-	defer func() {
-		ackCount, err = p.ackMessages(ctx, msgs)
-		if err != nil {
-			log.Warningf(log.SetError(ctx, err), "Failed to ACK messages!")
-		}
-	}()
-	handler(msgs)
-	return nil
-}
-
-// ackMessages ACKs the supplied messages. If a message is nil, it will be
-// ignored.
-func (p *pubsubClient) ackMessages(ctx context.Context, messages []*pubsub.Message) (int, error) {
-	var ackMsgs []*pubsub.Message
-	skipped := 0
-	for _, msg := range messages {
-		if msg != nil {
-			ackMsgs = append(ackMsgs, msg)
-		} else {
-			skipped++
-		}
-	}
-	if len(ackMsgs) == 0 {
-		return 0, nil
-	}
-
-	startTime := clock.Now(ctx)
-	ctx = log.SetFields(ctx, log.Fields{
-		"count":   len(ackMsgs),
-		"skipped": skipped,
-	})
-	err := retryCall(ctx, "Ack()", func() error {
-		return p.wrapTransient(p.service.Ack(p.subscription, ackMsgs))
-	})
-	duration := clock.Now(ctx).Sub(startTime)
-
-	ackDurationMetric.Add(ctx, float64(duration/time.Millisecond))
-
-	if err != nil {
-		log.Fields{
-			log.ErrorKey: err,
-			"duration":   duration,
-		}.Errorf(ctx, "Failed to ACK messages.")
-		ackCount.Add(ctx, int64(len(messages)), "failure")
-		return 0, err
-	}
-
-	log.Fields{
-		"duration": duration,
-	}.Debugf(ctx, "Successfully ACK messages.")
-	ackCount.Add(ctx, int64(len(messages)), "success")
-	return len(ackMsgs), nil
+func (p *pubsubClient) receive(workers int, cb func(context.Context, *pubsub.Message)) error {
+	return p.service.Receive(p.subscription, workers, cb)
 }
 
 // wrapTransient examines the supplied error. If it's not a recognized error
