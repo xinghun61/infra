@@ -48,8 +48,8 @@ class EmailFmtTest(unittest.TestCase):
   def testParseEmailMessage(self):
     msg = testing_helpers.MakeMessage(testing_helpers.HEADER_LINES, 'awesome!')
 
-    (from_addr, to_addrs, cc_addrs, references, subject,
-     body) = emailfmt.ParseEmailMessage(msg)
+    (from_addr, to_addrs, cc_addrs, references, incident_id,
+     subject, body) = emailfmt.ParseEmailMessage(msg)
 
     self.assertEqual('user@example.com', from_addr)
     self.assertEqual(['proj@monorail.example.com'], to_addrs)
@@ -58,13 +58,14 @@ class EmailFmtTest(unittest.TestCase):
     self.assertEqual(['<0=969704940193871313=13442892928193434663='
                       'proj@monorail.example.com>'],
                      references)
+    self.assertEqual('', incident_id)
     self.assertEqual('Issue 123 in proj: broken link', subject)
     self.assertEqual('awesome!', body)
 
     references_header = ('References', '<1234@foo.com> <5678@bar.com>')
     msg = testing_helpers.MakeMessage(
         testing_helpers.HEADER_LINES + [references_header], 'awesome!')
-    (from_addr, to_addrs, cc_addrs, references, subject,
+    (from_addr, to_addrs, cc_addrs, references, incident_id, subject,
      body) = emailfmt.ParseEmailMessage(msg)
     self.assertItemsEqual(
         ['<5678@bar.com>',
@@ -79,13 +80,14 @@ class EmailFmtTest(unittest.TestCase):
           testing_helpers.HEADER_LINES + [('Precedence', precedence)],
           'I am on vacation!')
 
-      (from_addr, to_addrs, cc_addrs, in_reply_to, subject,
+      (from_addr, to_addrs, cc_addrs, references, incident_id, subject,
        body) = emailfmt.ParseEmailMessage(msg)
 
       self.assertEqual('', from_addr)
       self.assertEqual([], to_addrs)
       self.assertEqual([], cc_addrs)
-      self.assertEqual('', in_reply_to)
+      self.assertEqual('', references)
+      self.assertEqual('', incident_id)
       self.assertEqual('', subject)
       self.assertEqual('', body)
 
@@ -106,12 +108,14 @@ class EmailFmtTest(unittest.TestCase):
         emailfmt._ExtractAddrs(header_val))
 
   def CheckIdentifiedValues(
-      self, project_addr, subject, expected_project_name, expected_local_id):
+      self, project_addr, subject, expected_project_name, expected_local_id,
+      expected_verb=None):
     """Testing helper function to check 3 results against expected values."""
-    project_name, local_id = emailfmt.IdentifyProjectAndIssue(
-        project_addr, subject)
+    project_name, verb = emailfmt.IdentifyProjectAndVerb(project_addr)
+    local_id = emailfmt.IdentifyIssue(project_name, subject)
     self.assertEqual(expected_project_name, project_name)
     self.assertEqual(expected_local_id, local_id)
+    self.assertEqual(expected_verb, verb)
 
   def testIdentifyProjectAndIssues_Normal(self):
     """Parse normal issue notification subject lines."""
@@ -133,7 +137,7 @@ class EmailFmtTest(unittest.TestCase):
     self.CheckIdentifiedValues(
         'night@monorail.example.com',
         'Issue 451 in day: something is fishy',
-        None, 451)
+        'night', None)
 
   def testIdentifyProjectAndIssues_Compact(self):
     """Parse compact subject lines."""
@@ -155,7 +159,7 @@ class EmailFmtTest(unittest.TestCase):
     self.CheckIdentifiedValues(
         'night@monorail.example.com',
         'day:451: something is fishy',
-        None, 451)
+        'night', None)
 
   def testIdentifyProjectAndIssues_NotAMatch(self):
     """These subject lines do not match the ones we send."""

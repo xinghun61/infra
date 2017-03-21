@@ -79,10 +79,13 @@ class InboundEmailTest(unittest.TestCase):
     self.mox.VerifyAll()
     self.assertIsNone(ret)
 
-  def testProcessMail_ProjectUnidentified(self):
-    self.mox.StubOutWithMock(emailfmt, 'IdentifyProjectAndIssue')
-    emailfmt.IdentifyProjectAndIssue(
-        self.project_addr, mox.IgnoreArg()).AndReturn((None, None))
+  def testProcessMail_IssueUnidentified(self):
+    self.mox.StubOutWithMock(emailfmt, 'IdentifyProjectAndVerb')
+    emailfmt.IdentifyProjectAndVerb(self.project_addr).AndReturn(('proj', None))
+
+    self.mox.StubOutWithMock(emailfmt, 'IdentifyIssue')
+    emailfmt.IdentifyIssue('proj', mox.IgnoreArg()).AndReturn((None))
+
     self.mox.ReplayAll()
 
     ret = self.inbound.ProcessMail(self.msg, self.project_addr)
@@ -196,6 +199,13 @@ class InboundEmailTest(unittest.TestCase):
 
     ret = self.inbound.ProcessMail(self.msg, self.project_addr)
     self.mox.VerifyAll()
+    self.assertIsNone(ret)
+
+  def testProcessAlert_NonWhitelistedSender(self):
+    # TODO(zhangtiff): Check to make sure the error path was hit.
+    ret = self.inbound.ProcessAlert(
+        self.cnxn, self.project, self.project_addr, 'user@malicious.com',
+        'user@example.com', 111L, 'issue title', 'issue body', 'incident-id')
     self.assertIsNone(ret)
 
   def testProcessIssueReply_NoIssue(self):

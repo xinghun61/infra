@@ -19,6 +19,7 @@ from google.appengine.ext.webapp.mail_handlers import BounceNotificationHandler
 
 import webapp2
 
+import settings
 from features import commitlogcommands
 from features import notify
 from framework import emailfmt
@@ -83,16 +84,17 @@ class InboundEmail(webapp2.RequestHandler):
     # TODO(jrobbins): If the message is HUGE, don't even try to parse
     # it. Silently give up.
 
-    (from_addr, to_addrs, cc_addrs, references, subject,
+    (from_addr, to_addrs, cc_addrs, references, incident_id, subject,
      body) = emailfmt.ParseEmailMessage(msg)
 
-    logging.info('Proj addr:  %r', project_addr)
-    logging.info('From addr:  %r', from_addr)
-    logging.info('Subject:    %r', subject)
-    logging.info('To:         %r', to_addrs)
-    logging.info('Cc:         %r', cc_addrs)
-    logging.info('References: %r', references)
-    logging.info('Body:       %r', body)
+    logging.info('Proj addr:   %r', project_addr)
+    logging.info('From addr:   %r', from_addr)
+    logging.info('Subject:     %r', subject)
+    logging.info('To:          %r', to_addrs)
+    logging.info('Cc:          %r', cc_addrs)
+    logging.info('References:  %r', references)
+    logging.info('Incident Id: %r', incident_id)
+    logging.info('Body:        %r', body)
 
     # If message body is very large, reject it and send an error email.
     if emailfmt.IsBodyTooBigToParse(body):
@@ -103,13 +105,27 @@ class InboundEmail(webapp2.RequestHandler):
     if not emailfmt.IsProjectAddressOnToLine(project_addr, to_addrs):
       return None
 
-    # Identify the project and artifact to update.
-    project_name, local_id = emailfmt.IdentifyProjectAndIssue(
-        project_addr, subject)
-    if not project_addr or not local_id:
-      logging.info('Could not identify issue: %s %s', project_addr, subject)
-      # No error message, because message was probably not intended for us.
-      return None
+    project_name, verb = emailfmt.IdentifyProjectAndVerb(project_addr)
+
+    is_alert = verb and verb.lower() == 'alert'
+    error_addr = from_addr
+    local_id = None
+    author_addr = from_addr
+
+    if is_alert:
+      error_addr = settings.alert_escalation_email
+      author_addr = settings.alert_service_account
+
+      # Don't allow issue creation emails that are replies to other emails.
+      if references:
+        logging.info('Rejected alert with references: %s', references)
+        return None
+    else:
+      local_id = emailfmt.IdentifyIssue(project_name, subject)
+      if not project_addr or not local_id:
+        logging.info('Could not identify issue: %s %s', project_addr, subject)
+        # No error message, because message was probably not intended for us.
+        return None
 
     cnxn = sql.MonorailConnection()
     if self.services.cache_manager:
@@ -117,13 +133,14 @@ class InboundEmail(webapp2.RequestHandler):
 
     project = self.services.project.GetProjectByName(cnxn, project_name)
 
+    # TODO(zhangtiff): Add separate email templates for alert error cases.
     if not project or project.state != project_pb2.ProjectState.LIVE:
       return _MakeErrorMessageReplyTask(
-          project_addr, from_addr, self._templates['project_not_found'])
+          project_addr, error_addr, self._templates['project_not_found'])
 
     if not project.process_inbound_email:
       return _MakeErrorMessageReplyTask(
-          project_addr, from_addr, self._templates['replies_disabled'],
+          project_addr, error_addr, self._templates['replies_disabled'],
           project_name=project_name)
 
     # Verify that this is a reply to a notification that we could have sent.
@@ -131,40 +148,105 @@ class InboundEmail(webapp2.RequestHandler):
       for ref in references:
         if emailfmt.ValidateReferencesHeader(ref, project, from_addr, subject):
           break  # Found a message ID that we could have sent.
-      else:
+      else: # for-else: if loop completes with no valid reference found.
         return _MakeErrorMessageReplyTask(
             project_addr, from_addr, self._templates['not_a_reply'])
 
-    # Authenticate the from-addr and perm check.
+    # Authenticate the author_addr and perm check.
     # Note: If the issue summary line is changed, a new thread is created,
     # and replies to the old thread will no longer work because the subject
     # line hash will not match, which seems reasonable.
     try:
-      auth = monorailrequest.AuthData.FromEmail(cnxn, from_addr, self.services)
-      from_user_id = auth.user_id
+      auth = monorailrequest.AuthData.FromEmail(
+          cnxn, author_addr, self.services)
+      author_id = auth.user_id
     except user_svc.NoSuchUserException:
-      from_user_id = None
-    if not from_user_id:
+      author_id = None
+    if not author_id:
       return _MakeErrorMessageReplyTask(
-          project_addr, from_addr, self._templates['no_account'])
+          project_addr, error_addr, self._templates['no_account'])
 
     if auth.user_pb.banned:
       logging.info('Banned user %s tried to post to %s',
                    from_addr, project_addr)
       return _MakeErrorMessageReplyTask(
-          project_addr, from_addr, self._templates['banned'])
+          project_addr, error_addr, self._templates['banned'])
 
     perms = permissions.GetPermissions(
         auth.user_pb, auth.effective_ids, project)
 
+    # If the email is an alert, switch to the alert handling path.
+    if is_alert:
+        self.ProcessAlert(cnxn, project, project_addr, from_addr, author_addr,
+            author_id, subject, body, incident_id)
+        return None
+
+    # This email is a response to an email about a comment.
     self.ProcessIssueReply(
-        cnxn, project, local_id, project_addr, from_addr, from_user_id,
+        cnxn, project, local_id, project_addr, from_addr, author_id,
         auth.effective_ids, perms, body)
 
     return None
 
+
+  def ProcessAlert(
+      self, cnxn, project, project_addr, from_addr, author_addr,
+      author_id, subject, body, incident_id):
+    """Examine an an alert issue email and create an issue based on the email.
+
+    Args:
+      cnxn: connection to SQL database.
+      project: Project PB for the project containing the issue.
+      project_addr: string email address the alert email was sent to.
+      from_addr: string email address of the user who sent the alert email
+          to our server.
+      author_addr: string email address of the user who will file the
+          alert issue.
+      author_id: int user ID of user who will file the alert issue.
+      body: string email body text of the reply email.
+      incident_id: string containing an optional unique incident used to
+          de-dupe alert issues.
+
+    Returns:
+      A list of follow-up work items, e.g., to notify other users of
+      the new comment, or to notify the user that their reply was not
+      processed.
+
+    Side-effect:
+      Adds a new comment to the issue, if no error is reported.
+    """
+    # Make sure the email address is whitelisted.
+    if not from_addr.endswith(settings.alert_whitelisted_suffixes):
+        logging.info('Unauthorized %s tried to send alert to %s',
+                     from_addr, project_addr)
+        return None
+
+    # Create the actual issue from the email data.
+    # TODO(zhangtiff): Set labels, components, etc based on email content.
+    cc_ids = []
+    status = 'new'
+    owner = None
+    labels = ['Infra-Troopers', 'Restrict-View-Google']
+    field_values = []
+    component_ids = []
+    body = 'Filed by %s on behalf of %s\n' % (author_addr, from_addr)
+
+    if incident_id:
+        labels.append('Incident-Id-' + incident_id)
+
+        # Query for existing bug with the label. Add a reply to the latest open
+        # bug with a matching label if such a bug exists.
+        # Otherwise, create a new bug.
+
+
+    self.services.issue.CreateIssue(
+        cnxn, self.services, project.project_id, subject, status, owner,
+        cc_ids, labels, field_values, component_ids, author_id, body)
+    self.services.project.UpdateRecentActivity(cnxn, project.project_id)
+
+
   def ProcessIssueReply(
-      self, cnxn, project, local_id, project_addr, from_addr, from_user_id,
+      self, cnxn, project, local_id, project_addr, from_addr, author_id,
       effective_ids, perms, body):
     """Examine an issue reply email body and add a comment to the issue.
 
@@ -176,7 +258,7 @@ class InboundEmail(webapp2.RequestHandler):
           that project.
       from_addr: string email address of the user who sent the email
           reply to our server.
-      from_user_id: int user ID of user who sent the reply email.
+      author_id: int user ID of user who sent the reply email.
       effective_ids: set of int user IDs for the user (including any groups),
           or an empty set if user is not signed in.
       perms: PermissionSet for the user who sent the reply email.
@@ -222,7 +304,7 @@ class InboundEmail(webapp2.RequestHandler):
 
     lines = body.strip().split('\n')
     uia = commitlogcommands.UpdateIssueAction(local_id)
-    uia.Parse(cnxn, project.project_name, from_user_id, lines, self.services,
+    uia.Parse(cnxn, project.project_name, author_id, lines, self.services,
               strip_quoted_lines=True)
     uia.Run(cnxn, self.services, allow_edit=allow_edit)
 

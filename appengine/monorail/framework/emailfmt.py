@@ -47,14 +47,15 @@ def ParseEmailMessage(msg):
     msg: email.message.Message object for the email message sent to us.
 
   Returns:
-    A tuple: from_addr, to_addrs, cc_addrs, references, subject, body.
+    A tuple: from_addr, to_addrs, cc_addrs, references,
+    incident_id, subject, body.
   """
   # Ignore messages that are probably not from humans, see:
   # http://google.com/search?q=precedence+bulk+junk
   precedence = msg.get('precedence', '')
   if precedence.lower() in ['bulk', 'junk']:
     logging.info('Precedence: %r indicates an autoresponder', precedence)
-    return '', [], [], '', '', ''
+    return '', [], [], '', '', '', ''
 
   from_addrs = _ExtractAddrs(msg.get('from', ''))
   if from_addrs:
@@ -66,6 +67,7 @@ def ParseEmailMessage(msg):
   cc_addrs = _ExtractAddrs(msg.get('cc', ''))
 
   in_reply_to = msg.get('in-reply-to', '')
+  incident_id = msg.get('x-incident-id', '')
   references = msg.get('references', '').split()
   references = list({ref for ref in [in_reply_to] + references if ref})
   subject = _StripSubjectPrefixes(msg.get('subject', ''))
@@ -79,7 +81,8 @@ def ParseEmailMessage(msg):
         body = body.decode('utf-8')
       break  # Only consider the first text part.
 
-  return from_addr, to_addrs, cc_addrs, references, subject, body
+  return (from_addr, to_addrs, cc_addrs, references, incident_id, subject,
+          body)
 
 
 def _ExtractAddrs(header_value):
@@ -241,6 +244,7 @@ def ValidateReferencesHeader(message_ref, project, from_addr, subject):
 
 PROJECT_EMAIL_RE = re.compile(
     r'(?P<project>[-a-z0-9]+)'
+    r'(\+(?P<verb>[a-z0-9]+))?'
     r'@(?P<domain>[-a-z0-9.]+)')
 
 ISSUE_CHANGE_SUBJECT_RE = re.compile(
@@ -254,34 +258,24 @@ ISSUE_CHANGE_COMPACT_SUBJECT_RE = re.compile(
     r'(?P<summary>.+)')
 
 
-def IdentifyProjectAndIssue(project_addr, subject):
-  """Parse the domain name, project name, and artifact id from a reply.
+def IdentifyIssue(project_name, subject):
+  """Parse the artifact id from a reply and verify it is a valid issue.
 
   Args:
-    project_addr: string email address that the email was delivered to,
-        it must match the Reply-To: header sent in the notification message.
+    project_name: string the project to search for the issue in.
     subject: string email subject line received, it must match the one
         sent.  Leading prefixes like "Re:" should already have been stripped.
 
   Returns:
-    A 2-tuple: (project_name, local_id).  If either or both are
-    None, they could not be determined.
+    An int local_id for the id of the issue. None if no id is found or the id
+    is not valid.
   """
-  # Ignore any inbound email sent to a "no_reply@" address.
-  if project_addr.startswith('no_reply@'):
-    return None, None
-
-  project_name = None
-
-  m = PROJECT_EMAIL_RE.match(project_addr.lower())
-  if m:
-    project_name = m.group('project')
 
   issue_project_name, local_id_str = _MatchSubject(subject)
 
   if project_name != issue_project_name:
     # Something is wrong with the project name.
-    project_name = None
+    return None
 
   logging.info('project_name = %r', project_name)
   logging.info('local_id_str = %r', local_id_str)
@@ -291,7 +285,22 @@ def IdentifyProjectAndIssue(project_addr, subject):
   except (ValueError, TypeError):
     local_id = None
 
-  return project_name, local_id
+  return local_id
+
+
+def IdentifyProjectAndVerb(project_addr):
+    # Ignore any inbound email sent to a "no_reply@" address.
+    if project_addr.startswith('no_reply@'):
+      return None, None
+
+    project_name = None
+    verb = None
+    m = PROJECT_EMAIL_RE.match(project_addr.lower())
+    if m:
+      project_name = m.group('project')
+      verb = m.group('verb')
+
+    return project_name, verb
 
 
 def _MatchSubject(subject):
