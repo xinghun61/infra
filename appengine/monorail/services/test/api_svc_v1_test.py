@@ -427,18 +427,42 @@ class MonorailApiTest(testing.EndpointsTestCase):
         project_id=12345)
 
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2)
+        12345, 1, 'Issue 1', 'New', 2, project_name='test-project')
     issue2 = fake.MakeTestIssue(
-        12345, 2, 'Issue 2', 'New', 2)
+        12345, 2, 'Issue 2', 'New', 2, project_name='test-project')
     issue3 = fake.MakeTestIssue(
-        12345, 3, 'Issue 3', 'New', 2)
-    issue4 = fake.MakeTestIssue(
-        12345, 4, 'Issue 4', 'New', 2)
-    self.services.issue.TestAddIssue(issue1)
+        12345, 3, 'Issue 3', 'New', 2, project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
     self.services.issue.TestAddIssue(issue2)
     self.services.issue.TestAddIssue(issue3)
-    self.services.issue.TestAddIssue(issue4)
+
+    self.request['updates'] = {
+        'summary': 'new summary',
+        'status': 'Started',
+        'owner': 'requester@example.com',
+        'cc': ['user@example.com'],
+        'labels': ['add_label', '-remove_label'],
+        'blockedOn': ['2'],
+        'blocking': ['3'],
+        }
+    resp = self.call_api('issues_comments_insert', self.request).json_body
+    self.assertEqual('requester@example.com', resp['author']['name'])
+    self.assertEqual('Updated', resp['updates']['status'])
+    self.assertEqual(0, issue1.merged_into)
+
+  def testIssuesCommentsInsert_MergeInto(self):
+    """Insert comment that merges an issue into another issue."""
+
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[2], committer_ids=[1],
+        project_id=12345)
+
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 2, project_name='test-project')
+    issue2 = fake.MakeTestIssue(
+        12345, 2, 'Issue 2', 'New', 2, project_name='test-project')
+    self.services.issue.TestAddIssue(issue1)
+    self.services.issue.TestAddIssue(issue2)
 
     self.request['updates'] = {
         'summary': 'new summary',
@@ -446,12 +470,15 @@ class MonorailApiTest(testing.EndpointsTestCase):
         'owner': 'requester@example.com',
         'cc': ['user@example.com'],
         'labels': ['add_label', '-remove_label'],
-        'blockedOn': ['2'],
-        'blocking': ['3'],
-        'merged_into': 4}
+        'mergedInto': '2',
+        }
     resp = self.call_api('issues_comments_insert', self.request).json_body
     self.assertEqual('requester@example.com', resp['author']['name'])
     self.assertEqual('Updated', resp['updates']['status'])
+    self.assertEqual(issue2.issue_id, issue1.merged_into)
+    issue2_comments = self.services.issue.GetCommentsForIssue(
+      'cnxn', issue2.issue_id)
+    self.assertEqual(2, len(issue2_comments))  # description and merge
 
   def testIssuesCommentInsert_CustomFields(self):
     """Update custom field values."""

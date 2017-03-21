@@ -44,8 +44,9 @@ from services import usergroup_svc
 from sitewide import sitewide_helpers
 from tracker import field_helpers
 from tracker import issuedetail
-from tracker import tracker_constants
 from tracker import tracker_bizobj
+from tracker import tracker_constants
+from tracker import tracker_helpers
 
 from infra_libs import ts_mon
 
@@ -424,8 +425,19 @@ class MonorailApi(remote.Service):
           api_pb2_v1_helpers.convert_component_ids(
               mar.config, components_remove_strs))
       if request.updates.mergedInto:
-        updates_dict['merged_into'] = self._services.issue.LookupIssueID(
-            mar.cnxn, issue.project_id, int(request.updates.mergedInto))
+        merge_project_name, merge_local_id = tracker_bizobj.ParseIssueRef(
+            request.updates.mergedInto)
+        merge_into_project = self._services.project.GetProjectByName(
+            mar.cnxn, merge_project_name or issue.project_name)
+        merge_into_issue = self._services.issue.GetIssueByLocalID(
+            mar.cnxn, merge_into_project.project_id, merge_local_id)
+        merge_allowed = tracker_helpers.IsMergeAllowed(
+            merge_into_issue, mar, self._services)
+        if not merge_allowed:
+          raise permissions.PermissionException(
+            'User is not allowed to merge into issue %s:%s' %
+            (merge_into_issue.project_name, merge_into_issue.local_id))
+        updates_dict['merged_into'] = merge_into_issue.issue_id
       (updates_dict['field_vals_add'], updates_dict['field_vals_remove'],
        updates_dict['fields_clear'], updates_dict['fields_labels_add'],
        updates_dict['fields_labels_remove']) = (
@@ -483,6 +495,20 @@ class MonorailApi(remote.Service):
         mar.cnxn, move_to_project.project_id, issue.local_id, mar.auth.user_id,
         content, amendments=[
             tracker_bizobj.MakeProjectAmendment(move_to_project.project_name)])
+
+    if 'merged_into' in updates_dict:
+      new_starrers = tracker_helpers.GetNewIssueStarrers(
+          mar.cnxn, self._services, issue.issue_id, merge_into_issue.issue_id)
+      tracker_helpers.AddIssueStarrers(
+          mar.cnxn, self._services, mar,
+          merge_into_issue.issue_id, merge_into_project, new_starrers)
+      _merge_comment = tracker_helpers.MergeCCsAndAddComment(
+        self._services, mar, issue, merge_into_project, merge_into_issue)
+      merge_into_issue_cmnts = self._services.issue.GetCommentsForIssue(
+          mar.cnxn, merge_into_issue.issue_id)
+      notify.PrepareAndSendIssueChangeNotification(
+          merge_into_issue.issue_id, framework_helpers.GetHostPort(),
+          mar.auth.user_id, len(merge_into_issue_cmnts) - 1, send_email=True)
 
     tracker_fulltext.IndexIssues(
         mar.cnxn, [issue], self._services.user, self._services.issue,

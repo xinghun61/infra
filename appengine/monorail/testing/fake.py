@@ -1379,6 +1379,9 @@ class IssueService(object):
       amendments.append(tracker_bizobj.MakeStatusAmendment(
           'Updated', issue.status))
 
+    if merged_into is not None:
+      issue.merged_into = merged_into
+
     if not amendments and (not comment or not comment.strip()):
       return [], None
 
