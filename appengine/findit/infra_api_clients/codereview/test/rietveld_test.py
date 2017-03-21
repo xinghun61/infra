@@ -130,7 +130,7 @@ class RietveldTest(testing.AppengineTestCase):
         {'revert_reason': 'reason', 'revert_cq': 0, 'no_redirect': 'True'})
 
   @mock.patch(
-      'libs.time_util.UTCDatetimeFromNaiveString',
+      'libs.time_util.DatetimeFromString',
       lambda x: datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f'))
   def testGetClDetails(self):
     rietveld_url = 'https://server.host.name'
@@ -206,7 +206,7 @@ class RietveldTest(testing.AppengineTestCase):
      'closed': True})
 
   @mock.patch(
-      'libs.time_util.UTCDatetimeFromNaiveString',
+      'libs.time_util.DatetimeFromString',
       lambda x: datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f'))
   def testGetClDetailsManualCommit(self):
     rietveld_url = 'https://server.host.name'

@@ -148,7 +148,7 @@ class Rietveld(codereview.CodeReview):
         return
       patchset_id = str(message.get('patchset'))
       revision = matches_any.group('revision')
-      timestamp = time_util.UTCDatetimeFromNaiveString(message['date'])
+      timestamp = time_util.DatetimeFromString(message['date'])
       commit = cl_info.Commit(patchset_id, revision, timestamp)
       cl.commits.append(commit)
       if matches_manual:
@@ -168,7 +168,7 @@ class Rietveld(codereview.CodeReview):
       # Support both https://host/1234 and https://host/1234/
       change_id =  url_parts[-1] or url_parts[-2]
       reverter = message['sender']
-      timestamp = time_util.UTCDatetimeFromNaiveString(message['date'])
+      timestamp = time_util.DatetimeFromString(message['date'])
       revert_cl = self.GetClDetails(change_id)
       revert = cl_info.Revert(patchset_id, revert_cl, reverter, timestamp)
       cl.reverts.append(revert)
@@ -177,7 +177,7 @@ class Rietveld(codereview.CodeReview):
       matches = commit_attempt_regex.match(message['text'])
       if not matches:
         return
-      timestamp = time_util.UTCDatetimeFromNaiveString(message['date'])
+      timestamp = time_util.DatetimeFromString(message['date'])
       committer = message['sender']
       patchset_id = str(message['patchset'])
       cl.AddCqAttempt(patchset_id, committer, timestamp)
@@ -191,7 +191,7 @@ class Rietveld(codereview.CodeReview):
     # Sort by timestamp
     messages = sorted(
         data['messages'],
-        key=lambda x: time_util.UTCDatetimeFromNaiveString(x.get('date')))
+        key=lambda x: time_util.DatetimeFromString(x.get('date')))
     for message in messages:
       for f in details_funcs:
         f(cl, message)
