@@ -58,7 +58,9 @@ func NewMiloReader(ctx context.Context, host string) readerType {
 	// According to https://cloud.google.com/appengine/docs/standard/python/tools/using-local-server
 	// we can detect if we're running on app engine with this.
 	k, ok := os.LookupEnv("SERVER_SOFTWARE")
-	if ok && strings.HasPrefix(k, "Google App Engine/") {
+	// Don't use a cache on app engine, since these processes are long
+	// lived.
+	if !(ok || strings.HasPrefix(k, "Google App Engine/")) {
 		mr.bCache = map[string]*messages.Build{}
 	}
 	return mr
