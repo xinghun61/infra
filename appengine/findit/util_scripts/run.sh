@@ -111,9 +111,9 @@ deploy_findit_for_prod() {
   echo "Code was synced successfully."
 
   # Check uncommitted local changes.
-  local changed_file_number="$(git status --porcelain | wc -l)"
+  local changed_file_number="$(git status --porcelain | grep -v 'appengine/findit/util_scripts/' | wc -l)"
   if [[ "${changed_file_number}" != "0" ]]; then
-    echo "You have uncommitted local changes!"
+    echo "You have uncommitted local changes of ${changed_file_number} file(s)!"
     echo "Please run 'git status' to check local changes."
     return
   fi
