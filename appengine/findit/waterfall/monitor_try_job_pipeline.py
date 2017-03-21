@@ -309,54 +309,49 @@ class MonitorTryJobPipeline(BasePipeline):
         'timeout_hours': timeout_hours,
         'backoff_time': backoff_time,
     }
-    callback_url = self.get_callback_url(**self.last_params)
+    callback_url = self.get_callback_url(callback_params=json.dumps(
+        self.last_params))
 
     try_job_data.callback_url = callback_url
     try_job_data.put()
 
     # Guarantee one callback 10 minutes after the deadline to clean up even if
     # buildbucket fails to call us back.
-    self.delay_callback((timeout_hours * 60 + 10) * 60, **self.last_params)
+    self.delay_callback((timeout_hours * 60 + 10) * 60,
+                        callback_params=self.last_params)
 
     # Run immediately in case the job already went from scheduled to started.
-    self.callback(**self.last_params)
+    self.callback(callback_params=self.last_params)
 
   def delay_callback(self, countdown, **kwargs):  # pragma: no cover
-    self.last_params = kwargs
+    self.last_params = kwargs['callback_params']
     task = self.get_callback_task(countdown=countdown, params=kwargs)
     task.add(self.queue_name)
 
-  def callback(
-      self, urlsafe_try_job_key, try_job_type, try_job_id, deadline, start_time,
-      already_set_started, error_count, max_error_times,
-      default_pipeline_wait_seconds, timeout_hours, backoff_time,
-      pipeline_id=None):
+  def callback(self, callback_params, pipeline_id=None):
     """Updates the TryJobData entities with status from buildbucket."""
-    # Coercing non-strings and None-ables in case they come as strings.
-    try_job_type = int(try_job_type)
-    deadline = float(deadline)
-    start_time = None if start_time == 'None' else start_time
-    already_set_started = already_set_started == 'True'
-    error_count = int(error_count)
-    max_error_times = int(max_error_times)
-    default_pipeline_wait_seconds = int(default_pipeline_wait_seconds)
-    timeout_hours = int(timeout_hours)
-    backoff_time = int(backoff_time)
-    self.last_params = {
-        'try_job_id': try_job_id,
-        'try_job_type': try_job_type,
-        'urlsafe_try_job_key': urlsafe_try_job_key,
-        'deadline': deadline,
-        'start_time': start_time,
-        'already_set_started': already_set_started,
-        'error_count': error_count,
-        'max_error_times': max_error_times,
-        'default_pipeline_wait_seconds': default_pipeline_wait_seconds,
-        'timeout_hours': timeout_hours,
-        'backoff_time': backoff_time,
-    }
+    # callback_params may have been serialized if the callback was converted to
+    # a URL.
+    if isinstance(callback_params, basestring):
+      callback_params = json.loads(callback_params)
+    self.last_params = callback_params
+
     _ = pipeline_id  # We do nothing with this id.
+
+    try_job_id = callback_params['try_job_id']
     assert try_job_id
+
+    urlsafe_try_job_key = callback_params['urlsafe_try_job_key']
+    try_job_type = callback_params['try_job_type']
+    deadline = callback_params['deadline']
+    start_time = callback_params['start_time']
+    already_set_started = callback_params['already_set_started']
+    error_count = callback_params['error_count']
+    max_error_times = callback_params['max_error_times']
+    default_pipeline_wait_seconds = callback_params[
+        'default_pipeline_wait_seconds']
+    timeout_hours = callback_params['timeout_hours']
+    backoff_time = callback_params['backoff_time']
 
     if try_job_type == failure_type.FLAKY_TEST:
       try_job_data = FlakeTryJobData.Get(try_job_id)
@@ -370,17 +365,19 @@ class MonitorTryJobPipeline(BasePipeline):
         error_count += 1
         self.delay_callback(
             backoff_time,
-            try_job_id=try_job_id,
-            try_job_type=try_job_type,
-            urlsafe_try_job_key=urlsafe_try_job_key,
-            deadline=deadline,
-            start_time=start_time,
-            already_set_started=already_set_started,
-            error_count=error_count,
-            max_error_times=max_error_times,
-            default_pipeline_wait_seconds=default_pipeline_wait_seconds,
-            timeout_hours=timeout_hours,
-            backoff_time=backoff_time * 2,
+            callback_params={
+                'try_job_id': try_job_id,
+                'try_job_type': try_job_type,
+                'urlsafe_try_job_key': urlsafe_try_job_key,
+                'deadline': deadline,
+                'start_time': start_time,
+                'already_set_started': already_set_started,
+                'error_count': error_count,
+                'max_error_times': max_error_times,
+                'default_pipeline_wait_seconds': default_pipeline_wait_seconds,
+                'timeout_hours': timeout_hours,
+                'backoff_time': backoff_time * 2,
+            }
         )
         return
       else:  # pragma: no cover
@@ -422,17 +419,19 @@ class MonitorTryJobPipeline(BasePipeline):
             time_util.MicrosecondsToDatetime(build.request_time))
         try_job_data.try_job_url = build.url
         try_job_data.callback_url = self.get_callback_url(
-            try_job_id=try_job_id,
-            try_job_type=try_job_type,
-            urlsafe_try_job_key=urlsafe_try_job_key,
-            deadline=deadline,
-            start_time=start_time,
-            already_set_started=already_set_started,
-            error_count=error_count,
-            max_error_times=max_error_times,
-            default_pipeline_wait_seconds=default_pipeline_wait_seconds,
-            timeout_hours=timeout_hours,
-            backoff_time=backoff_time,
+            callback_params=json.dumps({
+                'try_job_id': try_job_id,
+                'try_job_type': try_job_type,
+                'urlsafe_try_job_key': urlsafe_try_job_key,
+                'deadline': deadline,
+                'start_time': start_time,
+                'already_set_started': already_set_started,
+                'error_count': error_count,
+                'max_error_times': max_error_times,
+                'default_pipeline_wait_seconds': default_pipeline_wait_seconds,
+                'timeout_hours': timeout_hours,
+                'backoff_time': backoff_time,
+            })
         )
         try_job_data.put()
 

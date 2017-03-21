@@ -4,6 +4,7 @@
 
 from collections import defaultdict
 import datetime
+import json
 import logging
 import time
 
@@ -78,7 +79,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     raise ValueError('Failed to parse %s' % time_string)  # pragma: no cover
 
   def delay_callback(self, **kwargs):  # pragma: no cover
-    self.last_params = kwargs
+    self.last_params = kwargs['callback_params']
     countdown = kwargs.get('server_query_interval_seconds', 60)
     task = self.get_callback_task(countdown=countdown, params=kwargs)
     task.add(self.queue_name)
@@ -89,12 +90,23 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     return step_name, step_name_no_platform
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def callback(self, task_id, step_name, call_args, deadline,
-               server_query_interval_seconds, task_started, task_completed,
-               step_name_no_platform, pipeline_id=None):
+  def callback(self, callback_params, pipeline_id=None):
     """Monitors the swarming task and waits for it to complete."""
+    if isinstance(callback_params, basestring):
+      callback_params = json.loads(callback_params)
+
     _ = pipeline_id  # We don't do anything with this id.
+    task_id = callback_params['task_id']
     assert task_id
+    step_name = callback_params['step_name']
+    call_args = callback_params['call_args']
+    deadline = callback_params['deadline']
+    server_query_interval_seconds = callback_params[
+        'server_query_interval_seconds']
+    task_started = callback_params['task_started']
+    task_completed = callback_params['task_completed']
+    step_name_no_platform = callback_params['step_name_no_platform']
+
     task = self._GetSwarmingTask(*call_args)
 
     def check_task_completion():
@@ -135,14 +147,15 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
             'task_completed': task_completed,
             'step_name_no_platform': step_name_no_platform,
         }
-      # Update the stored callback url with possibly modified params.
-        new_callback_url = self.get_callback_url(**self.last_params)
+        # Update the stored callback url with possibly modified params.
+        new_callback_url = self.get_callback_url(callback_params=json.dumps(
+            self.last_params))
         if task.callback_url != new_callback_url:  # pragma: no cover
           task.callback_url = new_callback_url
           task.put()
         # TODO(robertocn): Remove this line when the system reliably receives
         # notifications from swarming via pubsub.
-        self.delay_callback(**self.last_params)
+        self.delay_callback(callback_params=self.last_params)
 
     data, error = swarming_util.GetSwarmingTaskResultById(
         task_id, self.HTTP_CLIENT)
@@ -293,7 +306,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         'step_name_no_platform': step_name_no_platform,
     }
 
-    task.callback_url = self.get_callback_url(**self.last_params)
+    task.callback_url = self.get_callback_url(callback_params=json.dumps(
+        self.last_params))
     task.put()
 
-    self.callback(**self.last_params)
+    self.callback(callback_params=self.last_params)

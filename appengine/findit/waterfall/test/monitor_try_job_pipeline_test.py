@@ -157,7 +157,82 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = MonitorTryJobPipeline()
     pipeline.start_test()
     pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
-    pipeline.callback(**pipeline.last_params)
+    pipeline.callback(pipeline.last_params)
+
+    # Reload from ID to get all internal properties in sync.
+    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    compile_result = pipeline.outputs.default.value
+
+    expected_compile_result = {
+        'report': {
+            'result': {
+                'rev1': 'passed',
+                'rev2': 'failed'
+            },
+            'metadata': {
+                'regression_range_size': regression_range_size
+            }
+        },
+        'url': 'url',
+        'try_job_id': '1',
+    }
+
+    self.assertEqual(expected_compile_result, compile_result)
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(expected_compile_result, try_job.compile_results[-1])
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
+
+    try_job_data = WfTryJobData.Get(try_job_id)
+    self.assertEqual(try_job_data.regression_range_size, regression_range_size)
+
+  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
+  def testGetTryJobsForCompileSuccessSerializedCallback(self, mock_module):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+    regression_range_size = 2
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+    try_job.compile_results = [
+        {
+            'report': None,
+            'url': 'url',
+            'try_job_id': '1',
+        }
+    ]
+    try_job.status = analysis_status.RUNNING
+    try_job.put()
+
+    build_response = {
+        'id': '1',
+        'url': 'url',
+        'status': 'COMPLETED',
+        'result_details_json': json.dumps({
+            'properties': {
+                'report': {
+                    'result': {
+                        'rev1': 'passed',
+                        'rev2': 'failed'
+                    },
+                    'metadata': {
+                        'regression_range_size': 2
+                    }
+                }
+            }
+        })
+    }
+    mock_module.GetTryJobs.return_value = [
+        (None, buildbucket_client.BuildbucketBuild(build_response))]
+
+    pipeline = MonitorTryJobPipeline()
+    pipeline.start_test()
+    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
+    pipeline.callback(json.dumps(pipeline.last_params))
 
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
@@ -277,7 +352,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
     # Since run() calls callback() immediately, we use -1.
     for _ in range (len(get_tryjobs_responses) - 1):
-      pipeline.callback(**pipeline.last_params)
+      pipeline.callback(pipeline.last_params)
 
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
@@ -404,7 +479,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
     # Since run() calls callback() immediately, we use -1.
     for _ in range (len(get_tryjobs_responses) - 1):
-      pipeline.callback(**pipeline.last_params)
+      pipeline.callback(pipeline.last_params)
 
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
@@ -494,7 +569,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = MonitorTryJobPipeline()
     pipeline.start_test()
     pipeline.run(try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
-    pipeline.callback(**pipeline.last_params)
+    pipeline.callback(pipeline.last_params)
 
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
