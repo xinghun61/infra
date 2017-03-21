@@ -166,6 +166,8 @@ function expandDescriptionPart(descriptionPart) {
             var newValue = "";
             if (inputElements[i].value) {
                 newValue = inputElements[i].value;
+                // Escape all '$' chars before calling expandedPart.replace().
+                newValue = newValue.replace(/\$/g, '$$$$');
             }
             expandedPart = expandedPart.replace(varName, newValue);
         }
