@@ -302,7 +302,16 @@ def add_many_async(build_request_list):
           results[i] = (build, None)
 
   # Phase 4: for each pending request, generate a new build id.
-  new_build_ids = {i: model.new_build_id() for i, _ in pending_reqs()}
+  build_id_set = set()
+  new_build_ids = {}
+  for i, _ in pending_reqs():
+    while True:
+      build_id = model.new_build_id()
+      if build_id not in build_id_set:  # pragma: no branch
+        break
+    build_id_set.add(build_id)
+    new_build_ids[i] = build_id
+
   if new_build_ids:
     # Phase 5: for each pending request, for each indexed tag, add an entry to a
     # tag index.
