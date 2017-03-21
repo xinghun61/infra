@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from common.base_handler import BaseHandler, Permission
+from model import analysis_approach_type
 from model.wf_culprit import WfCulprit
 from waterfall import build_util
 
@@ -25,14 +26,26 @@ def _GetBuildInfoAsDict(culprit):
         'build_number': build_info[2],
     }
 
-  def ConvertBuildIdToADict(build_id):
-    build_info = build_util.GetBuildInfoFromId(build_id)
-    return ConvertBuildInfoToADict(build_info)
+  def GetListOfTryJobBuilds(builds):
+    displayed_builds = {}
+    for build_id, build in builds.iteritems():
+      if analysis_approach_type.TRY_JOB not in build.get('approaches', []):
+        continue
+
+      build_info = build_util.GetBuildInfoFromId(build_id)
+      master_name = build_info[0]
+      builder_name = build_info[1]
+      build_number = build_info[2]
+      if (not displayed_builds.get((master_name, builder_name)) or
+          displayed_builds[(master_name, builder_name)][0] > build_number):
+        displayed_builds[(master_name, builder_name)] = (build_number, )
+
+    return [k + v for k, v in displayed_builds.iteritems()]
 
   if isinstance(culprit, WfCulprit):
     return map(ConvertBuildInfoToADict, culprit.builds)
   else:
-    return map(ConvertBuildIdToADict, culprit.builds)
+    return map(ConvertBuildInfoToADict, GetListOfTryJobBuilds(culprit.builds))
 
 
 class Culprit(BaseHandler):

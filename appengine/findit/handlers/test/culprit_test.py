@@ -9,6 +9,7 @@ import webapp2
 from testing_utils import testing
 
 from handlers import culprit
+from model import analysis_approach_type
 from model import analysis_status as status
 from model.wf_culprit import WfCulprit
 from model.wf_suspected_cl import WfSuspectedCL
@@ -20,8 +21,12 @@ class CulpritTest(testing.AppengineTestCase):
 
   def testGetCulpritSuccess(self):
     suspected_cl = WfSuspectedCL.Create('chromium', 'r1', 123)
-    suspected_cl.builds['m/b1/1'] = {}
-    suspected_cl.builds['m/b2/2'] = {}
+    suspected_cl.builds['m/b1/1'] = {
+        'approaches': [analysis_approach_type.TRY_JOB]}
+    suspected_cl.builds['m/b1/2'] = {
+        'approaches': [analysis_approach_type.TRY_JOB]}
+    suspected_cl.builds['m/b2/2'] = {
+        'approaches': [analysis_approach_type.HEURISTIC]}
     suspected_cl.cr_notification_status = status.COMPLETED
     suspected_cl.cr_notification_time = datetime(2016, 06, 24, 10, 03, 00)
     suspected_cl.put()
@@ -37,12 +42,7 @@ class CulpritTest(testing.AppengineTestCase):
                 'master_name': 'm',
                 'builder_name': 'b1',
                 'build_number': '1',
-            },
-            {
-                'master_name': 'm',
-                'builder_name': 'b2',
-                'build_number': '2',
-            },
+            }
         ],
         'key': suspected_cl.key.urlsafe(),
     }
