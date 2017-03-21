@@ -71,8 +71,8 @@ class MetaFeatureValueTest(unittest.TestCase):
   def testFormatReasons(self):
     """Tests ``FormatReasons`` returnes a list of formated reasons."""
     self.assertEqual(self.feature.reason,
-                     'Feature0: 1.000000 -- reason0\n'
-                     'Feature1: 0.000000 -- reason1')
+                     'Feature0:\nreason0\n\n'
+                     'Feature1:\nreason1\n')
     self.assertEqual(self.feature.reason, self.feature._reason)
 
   def testAggregateChangedFilesAggregates(self):

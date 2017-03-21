@@ -6,6 +6,9 @@ from google.appengine.ext import ndb
 
 from model.crash.crash_analysis import CrashAnalysis
 
+_CLUSTERFUZZ_TESTCASE_URL_TEMPLATE = (
+    'https://clusterfuzz.com/v2/testcase-detail/%s')
+
 
 class ClusterfuzzAnalysis(CrashAnalysis):
   """Represents an analysis of a Clusterfuzz crash."""
@@ -14,6 +17,7 @@ class ClusterfuzzAnalysis(CrashAnalysis):
   crashed_address = ndb.StringProperty()
   sanitizer = ndb.StringProperty()
   job_type = ndb.StringProperty()
+  testcase = ndb.StringProperty()
 
   def Reset(self):
     super(ClusterfuzzAnalysis, self).Reset()
@@ -21,6 +25,7 @@ class ClusterfuzzAnalysis(CrashAnalysis):
     self.crashed_address = None
     self.sanitizer = None
     self.job_type = None
+    self.testcase = None
 
   def Initialize(self, crash_data):
     """(Re)Initializes a CrashAnalysis ndb.Model from ``ClusterfuzzData``."""
@@ -29,3 +34,9 @@ class ClusterfuzzAnalysis(CrashAnalysis):
     self.crashed_address = crash_data.crashed_address
     self.sanitizer = crash_data.sanitizer
     self.job_type = crash_data.job_type
+    self.testcase = crash_data.testcase
+
+  @property
+  def crash_url(self):  # pragma: no cover
+    return (_CLUSTERFUZZ_TESTCASE_URL_TEMPLATE % self.testcase
+            if self.testcase else '')

@@ -12,34 +12,47 @@ import webapp2
 
 from testing_utils import testing
 
-from handlers.crash import fracas_dashboard
+from handlers.crash import dashboard
 from libs import time_util
 from model import analysis_status
 from model import result_status
 from model import triage_status
-from model.crash.fracas_crash_analysis import FracasCrashAnalysis
+from model.crash.chrome_crash_analysis import ChromeCrashAnalysis
 
 
-class FracasDashBoardTest(testing.AppengineTestCase):
+class MockDashBoard(dashboard.DashBoard):
+
+  @property
+  def crash_analysis_cls(self):
+    return ChromeCrashAnalysis
+
+  @property
+  def client(self):
+    return 'MockClient'
+
+
+class DashBoardTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication(
-      [('/fracas-dashboard', fracas_dashboard.FracasDashBoard), ], debug=True)
+      [('/mock-dashboard', MockDashBoard), ], debug=True)
 
   def setUp(self):
-    super(FracasDashBoardTest, self).setUp()
+    super(DashBoardTest, self).setUp()
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+    self.handler = MockDashBoard()
     self.keys = self._AddAnalysisResults()
-    self.fracas_crashes = []
+    self.crashes = []
     for key in self.keys:
-      self.fracas_crashes.append(self._GenerateDisplayData(key))
+      self.crashes.append(self._GenerateDisplayData(key))
 
     self.default_start_date = datetime(2016, 7, 3, 0, 0, 0, 0)
     self.default_end_date = datetime(2016, 7, 5, 0, 0, 0, 0)
 
   def testFracasDashBoardHandler(self):
-    response = self.test_app.get('/fracas-dashboard')
+    response = self.test_app.get('/mock-dashboard')
     self.assertEqual(200, response.status_int)
 
   def _CreateAnalysisResult(self, crash_identifiers):
-    analysis = FracasCrashAnalysis.Create(crash_identifiers)
+    analysis = self.handler.crash_analysis_cls.Create(crash_identifiers)
     analysis.status = analysis_status.RUNNING
     return analysis
 
@@ -128,7 +141,7 @@ class FracasDashBoardTest(testing.AppengineTestCase):
     return keys
 
   def _GenerateDisplayData(self, crash_identifiers):
-    crash = FracasCrashAnalysis.Get(crash_identifiers)
+    crash = self.handler.crash_analysis_cls.Get(crash_identifiers)
     return {
         'signature': crash.signature,
         'version': crash.crashed_version,
@@ -139,99 +152,102 @@ class FracasDashBoardTest(testing.AppengineTestCase):
         'suspected_cls':crash.result['suspected_cls'],
         'suspected_project': crash.result['suspected_project'],
         'suspected_components': crash.result['suspected_components'],
-        'stack_trace': crash.stack_trace,
-        'historical_metadata': json.dumps(crash.historical_metadata),
         'key': crash.key.urlsafe()
     }
 
   def testDisplayAllAnalysisResults(self):
     expected_result = {
-        'fracas_crashes': [self.fracas_crashes[4],
-                           self.fracas_crashes[3],
-                           self.fracas_crashes[2],
-                           self.fracas_crashes[1],
-                           self.fracas_crashes[0]],
+        'client': self.handler.client,
+        'crashes': [self.crashes[4],
+                    self.crashes[3],
+                    self.crashes[2],
+                    self.crashes[1],
+                    self.crashes[0]],
         'end_date': time_util.FormatDatetime(self.default_end_date),
         'regression_range_triage_status': '-1',
         'suspected_cls_triage_status': '-1',
         'found_suspects': '-1',
         'has_regression_range': '-1',
-        'start_date': time_util.FormatDatetime(self.default_start_date)
+        'start_date': time_util.FormatDatetime(self.default_start_date),
     }
 
-    response_json = self.test_app.get('/fracas-dashboard?format=json'
+    response_json = self.test_app.get('/mock-dashboard?format=json'
                                       '&start_date=2016-07-03'
                                       '&end_date=2016-07-05')
     self.assertEqual(200, response_json.status_int)
+
     self.assertEqual(expected_result, response_json.json_body)
 
   def testFilterWithFoundSuspects(self):
     expected_result = {
-        'fracas_crashes': [self.fracas_crashes[3],
-                           self.fracas_crashes[0]],
+        'client': self.handler.client,
+        'crashes': [self.crashes[3], self.crashes[0]],
         'end_date': time_util.FormatDatetime(self.default_end_date),
         'regression_range_triage_status': '-1',
         'suspected_cls_triage_status': '-1',
         'found_suspects': 'yes',
         'has_regression_range': '-1',
-        'start_date': time_util.FormatDatetime(self.default_start_date)
+        'start_date': time_util.FormatDatetime(self.default_start_date),
     }
 
     response_json = self.test_app.get(
-        '/fracas-dashboard?found_suspects=yes&format=json'
+        '/mock-dashboard?found_suspects=yes&format=json'
         '&start_date=2016-07-03&end_date=2016-07-05')
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)
 
   def testFilterWithHasRegression(self):
     expected_result = {
-        'fracas_crashes': [self.fracas_crashes[4],
-                           self.fracas_crashes[3],
-                           self.fracas_crashes[2]],
+        'client': self.handler.client,
+        'crashes': [self.crashes[4],
+                    self.crashes[3],
+                    self.crashes[2]],
         'end_date': time_util.FormatDatetime(self.default_end_date),
         'regression_range_triage_status': '-1',
         'suspected_cls_triage_status': '-1',
         'found_suspects': '-1',
         'has_regression_range': 'yes',
-        'start_date': time_util.FormatDatetime(self.default_start_date)
+        'start_date': time_util.FormatDatetime(self.default_start_date),
     }
 
     response_json = self.test_app.get(
-        '/fracas-dashboard?has_regression_range=yes&format=json'
+        '/mock-dashboard?has_regression_range=yes&format=json'
         '&start_date=2016-07-03&end_date=2016-07-05')
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)
 
   def testFilterWithSuspectsUntriaged(self):
     expected_result = {
-        'fracas_crashes': [self.fracas_crashes[2]],
+        'client': self.handler.client,
+        'crashes': [self.crashes[2]],
         'end_date': time_util.FormatDatetime(self.default_end_date),
         'regression_range_triage_status': '-1',
         'suspected_cls_triage_status': str(triage_status.UNTRIAGED),
         'found_suspects': '-1',
         'has_regression_range': '-1',
-        'start_date': time_util.FormatDatetime(self.default_start_date)
+        'start_date': time_util.FormatDatetime(self.default_start_date),
     }
 
     response_json = self.test_app.get(
-        '/fracas-dashboard?suspected_cls_triage_status=%d&format=json'
+        '/mock-dashboard?suspected_cls_triage_status=%d&format=json'
         '&start_date=2016-07-03&end_date=2016-07-05' % triage_status.UNTRIAGED)
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)
 
   def testFilterWithSuspectsTriagedUnsure(self):
     expected_result = {
-        'fracas_crashes': [self.fracas_crashes[4]],
+        'client': self.handler.client,
+        'crashes': [self.crashes[4]],
         'end_date': time_util.FormatDatetime(self.default_end_date),
         'regression_range_triage_status': '-1',
         'suspected_cls_triage_status': str(triage_status.TRIAGED_UNSURE),
         'found_suspects': '-1',
         'has_regression_range': '-1',
-        'start_date': time_util.FormatDatetime(self.default_start_date)
+        'start_date': time_util.FormatDatetime(self.default_start_date),
     }
 
     response_json = self.test_app.get(
-        '/fracas-dashboard?suspected_cls_triage_status=%d&format=json'
+        '/mock-dashboard?suspected_cls_triage_status=%d&format=json'
         '&start_date=2016-07-03&end_date=2016-07-05' %
         triage_status.TRIAGED_UNSURE)
     self.assertEqual(200, response_json.status_int)
@@ -239,36 +255,19 @@ class FracasDashBoardTest(testing.AppengineTestCase):
 
   def testFilterWithRegressionRangeTriagedUnsure(self):
     expected_result = {
-        'fracas_crashes': [self.fracas_crashes[4]],
+        'client': self.handler.client,
+        'crashes': [self.crashes[4]],
         'end_date': time_util.FormatDatetime(self.default_end_date),
         'regression_range_triage_status': str(triage_status.TRIAGED_UNSURE),
         'suspected_cls_triage_status': '-1',
         'found_suspects': '-1',
         'has_regression_range': '-1',
-        'start_date': time_util.FormatDatetime(self.default_start_date)
+        'start_date': time_util.FormatDatetime(self.default_start_date),
     }
 
     response_json = self.test_app.get(
-        '/fracas-dashboard?regression_range_triage_status=%d&format=json'
+        '/mock-dashboard?regression_range_triage_status=%d&format=json'
         '&start_date=2016-07-03&end_date=2016-07-05' %
         triage_status.TRIAGED_UNSURE)
-    self.assertEqual(200, response_json.status_int)
-    self.assertEqual(expected_result, response_json.json_body)
-
-  def testGetTopCountResults(self):
-    expected_result = {
-        'fracas_crashes': [self.fracas_crashes[4],
-                           self.fracas_crashes[3]],
-        'end_date': time_util.FormatDatetime(self.default_end_date),
-        'regression_range_triage_status': '-1',
-        'suspected_cls_triage_status': '-1',
-        'found_suspects': '-1',
-        'has_regression_range': '-1',
-        'start_date': time_util.FormatDatetime(self.default_start_date)
-    }
-
-    response_json = self.test_app.get('/fracas-dashboard?count=2&format=json'
-                                      '&start_date=2016-07-03'
-                                      '&end_date=2016-07-05')
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)

@@ -198,3 +198,7 @@ class CrashAnalysis(ndb.Model):
     return CrashReport(self.crashed_version, self.signature, self.platform,
                        self.stacktrace, self.regression_range,
                        self.dependencies, self.dependency_rolls)
+
+  @property
+  def crash_url(self):
+    raise NotImplementedError()

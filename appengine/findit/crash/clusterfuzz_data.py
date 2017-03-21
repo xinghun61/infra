@@ -77,6 +77,7 @@ class ClusterfuzzData(CrashData):
               'crashed_address': '0x000000',
               'sanitizer': 'ASAN',
               'job_type': 'android_asan_win'
+              'testcase': 230193501234
           },
           'platform': 'linux',    # On which platform the crash occurs.
           # Identify which client this request is for.
@@ -111,6 +112,7 @@ class ClusterfuzzData(CrashData):
     self._sanitizer = _SANITIZER_SHORT_NAME_TO_SANITIZER_TYPE.get(
         customized_data['sanitizer'])
     self._job_type = customized_data['job_type']
+    self._testcase = customized_data['testcase']
 
   @property
   def crashed_type(self):
@@ -127,6 +129,10 @@ class ClusterfuzzData(CrashData):
   @property
   def job_type(self):
     return self._job_type
+
+  @property
+  def testcase(self):
+    return self._testcase
 
   @property
   def stacktrace(self):

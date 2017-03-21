@@ -15,7 +15,7 @@ import webapp2
 
 from testing_utils import testing
 
-from handlers.crash import triage_fracas_analysis
+from handlers.crash import triage_analysis
 from libs import time_util
 from model import analysis_status
 from model import result_status
@@ -23,13 +23,13 @@ from model import triage_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 
-class TriageFracasAnalysisTest(testing.AppengineTestCase):
+class TriageAnalysisTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication(
-      [('/triage-fracas-analysis',
-        triage_fracas_analysis.TriageFracasAnalysis)], debug=True)
+      [('/triage-analysis',
+        triage_analysis.TriageAnalysis)], debug=True)
 
   def setUp(self):
-    super(TriageFracasAnalysisTest, self).setUp()
+    super(TriageAnalysisTest, self).setUp()
     analysis = FracasCrashAnalysis.Create({'signature': 'signature'})
     analysis.signature = 'signature'
     analysis.crashed_version = '53.0.2750.0'
@@ -65,8 +65,8 @@ class TriageFracasAnalysisTest(testing.AppengineTestCase):
     self.key = analysis.key
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
-  def testTriageFracasAnalysisHandler(self):
-    response = self.test_app.post('/triage-fracas-analysis?key=%s' %
+  def testTriageAnalysisHandler(self):
+    response = self.test_app.post('/triage-analysis?key=%s' %
                                   self.key.urlsafe())
     self.assertEqual(200, response.status_int)
 
@@ -91,7 +91,7 @@ class TriageFracasAnalysisTest(testing.AppengineTestCase):
     ]
     for update in updates:
 
-      self.test_app.post('/triage-fracas-analysis?key=%s' % self.key.urlsafe(),
+      self.test_app.post('/triage-analysis?key=%s' % self.key.urlsafe(),
                          {'update-data': json.dumps(update)})
       analysis = self.key.get()
       for key, value in update.iteritems():
@@ -99,7 +99,7 @@ class TriageFracasAnalysisTest(testing.AppengineTestCase):
 
   def testUpdateNote(self):
     update = {'note': 'this is a note. +2314>?'}
-    self.test_app.post('/triage-fracas-analysis?key=%s' % self.key.urlsafe(),
+    self.test_app.post('/triage-analysis?key=%s' % self.key.urlsafe(),
                        {'update-data': json.dumps(update)})
     analysis = self.key.get()
     self.assertEqual(analysis.note, update['note'])

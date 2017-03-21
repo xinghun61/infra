@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <head>
-  <title>Fracas Dashboard</title>
+  <title>{{client}} dashboard</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
@@ -20,7 +20,7 @@
       }
     };
 
-    function getFiltersUrl() {
+    function getFiltersUrl(client) {
       var parameters = {}
       parameters['start_date'] = $('#start_date').val() == 'mm/dd/yyyy' ? undefined : $('#start_date').val();
       parameters['end_date'] = $('#end_date').val() == 'mm/dd/yyyy' ? undefined : $('#end_date').val();
@@ -28,13 +28,13 @@
       parameters['has_regression_range'] = $('#has_regression_range').val() == 'default' ? undefined : $('#has_regression_range').val();
       parameters['suspected_cls_triage_status'] = $('#suspected_cls_triage_status').val() == 'default' ? undefined : $('#suspected_cls_triage_status').val();
       parameters['regression_range_triage_status'] = $('#regression_range_triage_status').val() == 'default' ? undefined : $('#regression_range_triage_status').val();
-      return createUrl('fracas-dashboard', parameters);
+      return createUrl(client + '-dashboard', parameters);
     };
 
     $(document).ready(function() {
       $('#submit').click(function(e) {
         e.preventDefault();
-        var new_url = getFiltersUrl();
+        var new_url = getFiltersUrl('{{client}}');
         $('#dashboard-table').load(new_url + ' #dashboard-table');
         //Replaces the url of this page with new url without refreshing page.
         history.pushState({}, null, new_url);
@@ -110,34 +110,34 @@
         <th>Suspected components</th>
       </tr>
       <tbody>
-        {% for fracas_crash in fracas_crashes %}
+        {% for crash in crashes %}
           <tr>
             <td>
-              <a href="./fracas-result-feedback?key={{fracas_crash.key}}" target="_blank">{{fracas_crash.signature}}</a>
+              <a href="./{{client}}-result-feedback?key={{crash.key}}" target="_blank">{{crash.signature}}</a>
             </td>
             <td>
-              <a href="https://chromium.googlesource.com/chromium/src.git/+/{{fracas_crash.version}}" target="_blank">{{fracas_crash.version}}</a>
+              <a href="https://chromium.googlesource.com/chromium/src.git/+/{{crash.version}}" target="_blank">{{crash.version}}</a>
             </td>
-            <td>{{ fracas_crash.channel }}</td>
-            <td>{{ fracas_crash.platform }}</td>
-            {% if fracas_crash.regression_range %}
-              <td><a href="https://chromium.googlesource.com/chromium/src/+log/{{fracas_crash.regression_range[0]}}..{{fracas_crash.regression_range[1]}}?pretty=fuller">{{fracas_crash.regression_range[0]}} : {{fracas_crash.regression_range[1]}}</td>
+            <td>{{ crash.channel }}</td>
+            <td>{{ crash.platform }}</td>
+            {% if crash.regression_range %}
+              <td><a href="https://chromium.googlesource.com/chromium/src/+log/{{crash.regression_range[0]}}..{{crash.regression_range[1]}}?pretty=fuller">{{crash.regression_range[0]}} : {{crash.regression_range[1]}}</td>
             {% else %}
               <td></td>
             {% endif %}
             <td>
-            {% if fracas_crash.suspected_cls %}
-              {% for suspected_cl in fracas_crash.suspected_cls %}
+            {% if crash.suspected_cls %}
+              {% for suspected_cl in crash.suspected_cls %}
               <li>
                 <a href="{{suspected_cl.url}}">{{suspected_cl.revision}}</a>
               </li>
               {% endfor %}
             {% endif %}
             </td>
-            <td>{{ fracas_crash.suspected_project }}</td>
+            <td>{{ crash.suspected_project }}</td>
             <td>
-            {% if fracas_crash.suspected_components %}
-              {% for component in fracas_crash.suspected_components %}
+            {% if crash.suspected_components %}
+              {% for component in crash.suspected_components %}
               <li>{{component}}</li>
               {% endfor %}
             {% endif %}

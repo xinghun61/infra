@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <head>
-  <title>Fracas result feedback</title>
+  <title>{{client}} result feedback</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
   <style>
@@ -58,8 +58,8 @@
     var culprit_project = '{{culprit_project}}' == 'None' ? undefined : '{{culprit_project}}';
     var culprit_components = {{culprit_components | tojson | safe}};
 
-    var note = '{{note}}' == 'None' ? undefined : '{{note}}';
-
+    var note = {{note | tojson | safe}}
+    var note = note == null ? undefined : note.replace(/['"]+/g, '');
 
     function createUrl(base_url, parameters) {
       var params = [];
@@ -81,12 +81,12 @@
       var parameters = {};
       parameters.status = 'Unconfirmed';
       parameters.labels = 'Pri-2,Restrict-View-Google';
-      parameters.components = 'Tools>Test>Findit';
-      parameters.summary = encodeURIComponent('[Findit] Findit bug or feature');
+      parameters.components = 'Tools>Test>Predator';
+      parameters.summary = encodeURIComponent('[Predator] Predator bug or feature');
       parameters.comment = encodeURIComponent(
           'Signature: {{signature}}\nVersion: {{version}}\n' +
           'Channel: {{channel}}\nPlatform: {{platform}}\n\n' +
-          'Findit result: ' + window.location.href +
+          'Predator result: ' + window.location.href +
           '\n\nWhat is the bug or feature?');
       return createUrl('https://code.google.com/p/chromium/issues/entry',
                        parameters);
@@ -127,7 +127,7 @@
       }
       update_data[result + '_triage_status'] = triage_status;
 
-      $.post('triage-fracas-analysis?key={{key}}', {'update-data': JSON.stringify(update_data)}, function(data) {
+      $.post('triage-analysis?key={{key}}', {'update-data': JSON.stringify(update_data)}, function(data) {
         if (data['success']) {
           $('.triaged[result_property=\'' + result + '\']').addClass('triage').removeClass('triaged');
           target.addClass('triaged').removeClass('triage');
@@ -158,7 +158,7 @@
           update_data[properties[i]] = value;
         }
       }
-      $.post('triage-fracas-analysis?key={{key}}', {'update-data': JSON.stringify(update_data)}, function(data) {
+      $.post('triage-analysis?key={{key}}', {'update-data': JSON.stringify(update_data)}, function(data) {
           if (!data['success']) {
             alert('Failed to update datastore. Please refresh and try again.');
           }
@@ -195,11 +195,17 @@
 </head>
 <body>
   <div>
-    <b>Crash:</b> (<a href="#" id='monorail-bug'>File a Findit bug</a>)
-    <br>
+    {% if crash_url %}
+      <a href='{{crash_url}}'><b>Crash:</b></a>
+    {% else %}
+      <b>Crash:</b>
+    {% endif %}
+    (<a href="#" id='monorail-bug'>File a Predator bug</a>)<br>
     Signature: {{signature}}<br>
     Version: <a href="https://chromium.googlesource.com/chromium/src.git/+/{{version}}">{{version}}</a><br>
-    Channel: {{channel}}<br>
+    {% if channel %}
+      Channel: {{channel}}<br>
+    {% endif %}
     Platform: {{platform}}<br>
     Request time: {{request_time}}<br>
     <br>
@@ -210,38 +216,40 @@
     <pre>{{stack_trace}}</pre>
   </div>
 
-  <div>
-    <br>
-    <b> Historical metadata (last 20 versions):</b>
-    <table id="reliable_failures_table">
-      <tbody>
-        <tr>
-          <td align="center">Version</td>
-          {% for metadata in historical_metadata %}
-            <td align="center" width="40"> {{metadata.chrome_version}} </td>
-          {% endfor %}
-        </tr>
-        <tr>
-          <td align="center">CPM</td>
-          {% for metadata in historical_metadata %}
-            <td align="center" width="40"> {{metadata.cpm}} </td>
-          {% endfor %}
-        </tr>
-        <tr>
-          <td align="center">Total clients</td>
-          {% for metadata in historical_metadata %}
-            <td align="center" width="40"> {{metadata.client_number}} </td>
-          {% endfor %}
-        </tr>
-        <tr>
-          <td align="center">Total reports</td>
-          {% for metadata in historical_metadata %}
-            <td align="center" width="40"> {{metadata.report_number}} </td>
-          {% endfor %}
-        </tr>
-      </tbody>
-    </table>
-  </div>
+  {% if historical_metadata %}
+    <div>
+      <br>
+      <b> Historical metadata (last 20 versions):</b>
+      <table id="reliable_failures_table">
+        <tbody>
+          <tr>
+            <td align="center">Version</td>
+            {% for metadata in historical_metadata %}
+              <td align="center" width="40"> {{metadata.chrome_version}} </td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td align="center">CPM</td>
+            {% for metadata in historical_metadata %}
+              <td align="center" width="40"> {{metadata.cpm}} </td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td align="center">Total clients</td>
+            {% for metadata in historical_metadata %}
+              <td align="center" width="40"> {{metadata.client_number}} </td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td align="center">Total reports</td>
+            {% for metadata in historical_metadata %}
+              <td align="center" width="40"> {{metadata.report_number}} </td>
+            {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
 
   <div>
     <br>
@@ -264,43 +272,43 @@
   <div>
 
   <div>
-    {% if analysis_completed %}
-      <br><br>
-      {% if analysis_failed %}
-      <span class="error">No result because of some error in analysis!<br></span>
+    <br><br>
+    {% if analysis_failed or not analysis_completed %}
+    <span class="error">No result because of some error in analysis!<br></span>
+    {% else %}
+    <b> Suspected cls: </b>
+      {% if suspected_cls %}
+      <table id="suspected_cls_table">
+        <tr>
+          <th>Suspected cls</th>
+          <th>Author</th>
+          <th>Time</th>
+          <th>Score</th>
+          <th>Reasons</th>
+          <th>Changed files</th>
+        </tr>
+        <tbody>
+          {% for suspected_cl in suspected_cls %}
+            <tr>
+              <td align="center"> <a href={{suspected_cl.url}}>{{suspected_cl.revision}}</a> </td>
+              <td align="center"> <a href={{suspected_cl.author}}>{{suspected_cl.author}}</a> </td>
+              <td align="center"> <a href={{suspected_cl.time}}>{{suspected_cl.time}}</a> </td>
+              <td align="center"> {{suspected_cl.confidence}} </td>
+              <td align="left"><pre>{{suspected_cl.reasons}}</pre></td>
+              <td align="left">
+                {% for changed_file in suspected_cl.changed_files %}
+                  <li>
+                  <a href={{changed_file.blame_url}}>{{changed_file.file}}</a><br>
+                  <pre>{{changed_file.info}}</pre>
+                  </li>
+                {% endfor %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
       {% else %}
-      <b> Suspected cls: </b>
-        {% if suspected_cls %}
-        <table id="suspected_cls_table">
-          <tr>
-            <th>Suspected cls</th>
-            <th>Score</th>
-            <th>Reasons</th>
-          </tr>
-          <tbody>
-            {% for suspected_cl in suspected_cls %}
-              <tr>
-                <td align="center"> <a href={{suspected_cl.url}}>{{suspected_cl.revision}}</a> </td>
-                <td align="center"> {{suspected_cl.confidence}} </td>
-                <td align="left">
-                {% if suspected_cl.reason %}
-                  <pre>{{suspected_cl.reason}}</pre>
-                {% else %}
-                  {% for changed_file in suspected_cl.changed_files %}
-                    <li>
-                    <a href={{changed_file.blame_url}}>{{changed_file.file}}</a> <br>
-                    <pre>{{changed_file.info}}</pre>
-                    </li>
-                  {% endfor %}
-                {% endif %}
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-          Not found <br>
-        {% endif %}
+        Not found <br>
       {% endif %}
     {% endif %}
     <div class="triage-area">

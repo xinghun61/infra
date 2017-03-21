@@ -13,7 +13,6 @@ from common.base_handler import BaseHandler
 from common.base_handler import Permission
 from libs import time_util
 from model import triage_status
-from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
 
 @ndb.transactional
@@ -49,11 +48,11 @@ def _UpdateAnalysis(key, user_name, update_data):
   return success
 
 
-class TriageFracasAnalysis(BaseHandler):
+class TriageAnalysis(BaseHandler):
   PERMISSION_LEVEL = Permission.CORP_USER
 
   def HandlePost(self):
-    """Sets the manual triage result for fracas analysis."""
+    """Sets the manual triage result for crash analysis."""
     key = ndb.Key(urlsafe=self.request.get('key'))
     update_data = self.request.params.get('update-data')
     if not update_data:

@@ -20,9 +20,9 @@ class CrashedGroup(namedtuple('CrashedGroup', ['value'])):
   """
   __slots__ = ()
 
-  @classmethod
-  def name(cls):  # pragma: no cover
-    return cls.__name__
+  @property
+  def name(self):  # pragma: no cover
+    return self.__class__.__name__
 
 
 # TODO(wrengr): it's not clear why the ``priority`` is stored at all,
@@ -34,10 +34,6 @@ class FrameInfo(namedtuple('FrameInfo', ['frame', 'priority'])):
   """Represents a frame and information of the ``CallStack`` it belongs to."""
 
   __slots__ = ()
-
-  def __str__(self):  # pragma: no cover
-    return '%s(frame = %s, priority = %d)' % (
-        self.__class__.__name__, str(self.frame), self.priority)
 
 
 class CrashMatch(namedtuple('CrashMatch',

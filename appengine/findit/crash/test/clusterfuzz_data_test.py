@@ -36,6 +36,8 @@ class CusterfuzzDataTest(StacktraceTestSuite):
                      raw_crash_data['customized_data']['job_type'])
     self.assertEqual(crash_data.regression_range,
                      raw_crash_data['customized_data']['regression_range'])
+    self.assertEqual(crash_data.testcase,
+                     raw_crash_data['customized_data']['testcase'])
 
   def testParseStacktraceFailed(self):
     """Tests that ``stacktrace`` is None when failed to pars stacktrace."""

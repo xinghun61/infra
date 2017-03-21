@@ -71,3 +71,13 @@ class ChromeCrashAnalysisTest(PredatorTestCase):
     analysis.Initialize(crash_data)
     self.assertEqual(analysis.channel, channel)
     self.assertEqual(analysis.historical_metadata, historical_metadata)
+
+  def testCustomizedData(self):
+    """Tests ``customized_data`` property."""
+    analysis = ChromeCrashAnalysis()
+    analysis.channel = 'dummy channel'
+    analysis.historical_metadata = []
+
+    self.assertDictEqual(analysis.customized_data,
+                         {'channel': analysis.channel,
+                          'historical_metadata': analysis.historical_metadata})

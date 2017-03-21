@@ -172,7 +172,8 @@ class PredatorTestCase(TestCase):  # pragma: no cover
         'dependency_rolls': dependency_rolls or [{'dep_path': 'src/',
                                                   'repo_url': 'https://repo',
                                                   'old_revision': 'rev1',
-                                                  'new_revision': 'rev5'}]
+                                                  'new_revision': 'rev5'}],
+        'testcase': testcase
     }
 
     crash_data = {

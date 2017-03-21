@@ -29,21 +29,3 @@ class SanitizerType(object):
   SYZYASAN = 'SYZYASAN'
   UBSAN = 'UBSAN'
   UNSUPPORTED = 'UNSUPPORTED'
-
-  stacktrace_marker_to_sanitizer = {
-      'AddressSanitizer': ADDRESS_SANITIZER,
-      'ThreadSanitizer': THREAD_SANITIZER,
-      'MemorySanitizer': MEMORY_SANITIZER,
-      'syzyasan': SYZYASAN,
-      ': runtime error:': UBSAN
-  }
-
-  # Some signature may contain others, for example 'syzyasan' contains 'asan',
-  # in order to match signature in build type correctly, use ordered dict with
-  # decreasing length of signature.
-  job_type_marker_to_sanitizer = OrderedDict(
-      [('syzyasan', SYZYASAN),
-       ('ubsan', UBSAN),
-       ('asan', ADDRESS_SANITIZER),
-       ('msan', MEMORY_SANITIZER),
-       ('tsan', THREAD_SANITIZER)])

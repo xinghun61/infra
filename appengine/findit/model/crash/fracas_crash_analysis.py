@@ -9,4 +9,6 @@ from model.crash.chrome_crash_analysis import ChromeCrashAnalysis
 
 class FracasCrashAnalysis(ChromeCrashAnalysis):
   """Represents an analysis of a Chrome crash on Fracas."""
-  pass
+  @property
+  def crash_url(self):  # pragma: no cover
+    return ''

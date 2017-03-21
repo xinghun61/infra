@@ -114,7 +114,7 @@ class FeatureValue(Element): # pragma: no cover
 
   @property
   def reason(self):
-    return ('%s: %f -- %s' % (self._name, self._value, self._reason)
+    return ('%s:\n%s\n' % (self._name, self._reason)
             if self._reason else None)
 
   @property

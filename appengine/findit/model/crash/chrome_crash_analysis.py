@@ -7,7 +7,7 @@ from google.appengine.ext import ndb
 from model.crash.crash_analysis import CrashAnalysis
 
 
-class ChromeCrashAnalysis(CrashAnalysis):
+class ChromeCrashAnalysis(CrashAnalysis):  # pylint: disable=W0223
   """Represents an analysis of a Chrome Crash (Cracas or Fracas)."""
   # Customized properties for Fracas crash.
   historical_metadata = ndb.JsonProperty(indexed=False)
@@ -23,3 +23,8 @@ class ChromeCrashAnalysis(CrashAnalysis):
     super(ChromeCrashAnalysis, self).Initialize(crash_data)
     self.channel = crash_data.channel
     self.historical_metadata = crash_data.historical_metadata
+
+  @property
+  def customized_data(self):
+    return {'historical_metadata': self.historical_metadata,
+            'channel': self.channel}
