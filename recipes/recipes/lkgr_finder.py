@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from recipe_engine.recipe_api import Property
+from recipe_engine.types import freeze
 
 DEPS = [
   'depot_tools/bot_update',
@@ -13,18 +14,22 @@ DEPS = [
   'recipe_engine/step',
 ]
 
+
 PROPERTIES = {
-  'lkgr_project': Property(
-      default=None, kind=str, help='Project to calculate lkgr for.'),
-  'allowed_lag': Property(
-      default=None, kind=int,
-      help='How many hours to allow since an LKGR update '
-           'before it\'s considered out-of-date.'),
+  'buildername': Property(kind=str),
 }
 
 
-def RunSteps(api, lkgr_project, allowed_lag):
-  assert lkgr_project
+BUILDERS = freeze({
+  'V8 lkgr finder': {
+    'project': 'v8',
+    'allowed_lag': 4,
+  },
+})
+
+
+def RunSteps(api, buildername):
+  botconfig = BUILDERS[buildername]
   api.gclient.set_config('infra')
   api.bot_update.ensure_checkout()
   api.gclient.runhooks()
@@ -32,29 +37,30 @@ def RunSteps(api, lkgr_project, allowed_lag):
   # TODO(machenbach): Create and upload lkgr-status html file.
   args = [
     'infra.services.lkgr_finder',
-    '--project=%s' % lkgr_project,
+    '--project=%s' % botconfig['project'],
     # TODO(machenbach,friedman): Add shared creds for status apps.
-    '--password-file=/creds/gatekeeper/%s_status_password' % lkgr_project,
+    '--password-file=/creds/gatekeeper/%s_status_password' %
+        botconfig['project'],
     '--verbose',
     '--email-errors',
     '--post',
   ]
 
-  if allowed_lag is not None:
-    args.append('--allowed-lag=%d' % allowed_lag)
+  if botconfig.get('allowed_lag') is not None:
+    args.append('--allowed-lag=%d' % botconfig['allowed_lag'])
 
   api.python(
-      'calculate %s lkgr' % lkgr_project,
+      'calculate %s lkgr' % botconfig['project'],
       api.path['checkout'].join('run.py'),
       args,
   )
 
 
 def GenTests(api):
+  for buildername, botconfig in BUILDERS.iteritems():
     yield (
-        api.test('v8') +
+        api.test(botconfig['project']) +
         api.properties.generic(
-            lkgr_project='v8',
-            allowed_lag=4,
+            buildername=buildername,
         )
     )
