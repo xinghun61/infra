@@ -134,7 +134,7 @@ class WfAnalysis(BaseBuildModel):
   build_completed = ndb.BooleanProperty(indexed=False)
   # Whether it is a compile failure, test failure, infra failure or others.
   # Refer to common/waterfall/failure_type.py for all the failure types.
-  build_failure_type = ndb.IntegerProperty(indexed=False)
+  build_failure_type = ndb.IntegerProperty(indexed=True)
 
   # The url path to the pipeline status page.
   pipeline_status_path = ndb.StringProperty(indexed=False)

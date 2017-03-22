@@ -15,6 +15,10 @@ class WfStep(BaseBuildModel):
   log_data = ndb.BlobProperty(indexed=False, compressed=True)
   isolated = ndb.BooleanProperty(default=False)
 
+  @ndb.ComputedProperty
+  def step_name(self):
+    return self.key.pairs()[1][1]
+
   @staticmethod
   def _CreateKey(
       master_name, builder_name, build_number, step_name):  # pragma: no cover
