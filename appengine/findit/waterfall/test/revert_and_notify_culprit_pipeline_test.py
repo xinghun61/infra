@@ -62,7 +62,8 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.MockPipeline(CreateRevertCLPipeline,
                       create_revert_cl_pipeline.CREATED_BY_SHERIFF,
-                      expected_args=[repo_name, revision])
+                      expected_args=[master_name, builder_name, build_number,
+                                     repo_name, revision])
     self.MockPipeline(SendNotificationForCulpritPipeline,
                       None,
                       expected_args=[

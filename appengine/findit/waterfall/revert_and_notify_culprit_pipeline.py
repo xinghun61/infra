@@ -26,7 +26,8 @@ class RevertAndNotifyCulpritPipeline(BasePipeline):
 
         send_notification_right_now = [repo_name, revision] in heuristic_cls
 
-        revert_status = yield CreateRevertCLPipeline(repo_name, revision)
+        revert_status = yield CreateRevertCLPipeline(
+            master_name, builder_name, build_number, repo_name, revision)
         yield SendNotificationForCulpritPipeline(
             master_name, builder_name, build_number, culprit['repo_name'],
             culprit['revision'], send_notification_right_now, revert_status)
