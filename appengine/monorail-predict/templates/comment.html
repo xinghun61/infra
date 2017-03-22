@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <body>
-    <h1>Enter some text</h1>
-
+  <h1>Component Prediction</h1>
+    <h2>Enter some text</h2>
     <form action="/_predict" method="POST">
         <input type="text" name="text">
         <input type="submit" name="comment-form" value="Send">
+    </form>
+
+    <h2>Enter Directory Paths</h2>
+    <form action="/_predict_dir" method="POST">
+      <input type="text" name="text">
+      <input type="submit" name="dir-predict" value="Directory-Mapper">
     </form>
 </body>
 </html>

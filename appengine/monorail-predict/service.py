@@ -7,6 +7,7 @@
 """
 
 import logging
+import os
 import sklearn
 import pickle
 import json
@@ -23,8 +24,9 @@ from flask import Flask, request, render_template
 
 
 # These parameters determine the location of the model files on GCS.
-BUCKET = 'monorail-predict'
-MODEL_TIME = 1473989566
+#MODEL_TIME = 1473989566
+MODEL_TIME = 1473288723
+DIR_MODEL_TIME = 20170321
 
 
 app = Flask(__name__)
@@ -34,6 +36,8 @@ app = Flask(__name__)
 # to serve requests.
 ready = False
 index_map, vectorizer, tfidf_transformer, clf = None, None, None, None
+component_definition = None
+vectorizer_dir, tfidf_transformer_dir, clf_dir= None, None, None
 
 
 @app.route('/')
@@ -54,6 +58,27 @@ def predict():
   for index in np.where(predictions)[0]:
     predictions_path.append(index_map[index])
 
+  return json.dumps({'components': predictions_path})
+
+
+@app.route('/_predict_dir', methods=['POST'])
+def predict_dir():
+  predictions_path = []
+  dir_paths = request.form['text']
+  dir_paths = dir_paths.split(',')
+  counts_dir = vectorizer_dir.transform(dir_paths)
+  tfidf_dir = tfidf_transformer_dir.transform(counts_dir)
+  prediction_result = clf_dir.predict(tfidf_dir)
+
+  for input_i in range(0, len(prediction_result)):
+    tmp_prediction_index = [input_i for input_i, predict_label_j
+                            in enumerate(prediction_result[input_i])
+                            if predict_label_j == 1]
+    tmp_prediction_component = []
+    for tmp_index in tmp_prediction_index:
+      tmp_prediction_component.append(component_definition[tmp_index])
+
+    predictions_path.append(tmp_prediction_component)
   return json.dumps({'components': predictions_path})
 
 
@@ -155,12 +180,32 @@ def get_model(bucket, filename):
 
 @app.before_first_request
 def load_data():
+  bucket_name = os.environ.get('GCLOUD_PROJECT')
   global ready, index_map, vectorizer, tfidf_transformer, clf
-  index_map = get_model(BUCKET, 'model/{}-index-map.pkl'.format(MODEL_TIME))
-  vectorizer = get_model(BUCKET, 'model/{}-vectorizer.pkl'.format(MODEL_TIME))
-  tfidf_transformer = get_model(BUCKET,
-                                  'model/{}-transformer.pkl'.format(MODEL_TIME))
-  clf = get_model(BUCKET, 'model/{}-classifier.pkl'.format(MODEL_TIME))
+  index_map = get_model(bucket_name,
+                        'issue_model/{}-index-map.pkl'.format(MODEL_TIME))
+  vectorizer = get_model(bucket_name,
+                         'issue_model/{}-vectorizer.pkl'.format(MODEL_TIME))
+  tfidf_transformer = get_model(bucket_name,
+                                'issue_model/{}-transformer.pkl'.format(
+                                    MODEL_TIME))
+  clf = get_model(bucket_name, 'issue_model/{}-classifier.pkl'.format(
+      MODEL_TIME))
+
+  # Load directory component prediction model
+  global ready, component_definition, vectorizer_dir
+  global tfidf_transformer_dir, clf_dir
+  component_definition = get_model(bucket_name,
+                                   'dir_model/{}-component_def.pkl'.format(
+                                       DIR_MODEL_TIME))
+  vectorizer_dir = get_model(bucket_name,
+                             'dir_model/{}-vectorizer.pkl'.format(
+                                 DIR_MODEL_TIME))
+  tfidf_transformer_dir = get_model(bucket_name,
+                                    'dir_model/{}-transformer.pkl'.format(
+                                        DIR_MODEL_TIME))
+  clf_dir = get_model(bucket_name,
+                      'dir_model/{}-classifier.pkl'.format(DIR_MODEL_TIME))
   ready = True
 
 
@@ -173,4 +218,3 @@ if __name__ == '__main__':
   # not have started at all.
   loading_thread.start()
   app.run(host='0.0.0.0', port='5000')
-

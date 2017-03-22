@@ -29,6 +29,7 @@ RUN update-alternatives --set libblas.so.3 \
 
 RUN pip install -U numpy scipy scikit-learn
 RUN pip install --upgrade google-api-python-client
+RUN pip install oauth2client==3.0.0
 
 ENTRYPOINT [ "gunicorn", "-b", ":8080", "--workers", "1", "--threads", "5", "service:app" ]
 

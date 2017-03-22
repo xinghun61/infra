@@ -22,8 +22,7 @@ health_check:
 
 automatic_scaling:
   max_num_instances: 1
-
+  
 resources:
   memory_gb: 6
   disk_size_gb: 40
-
