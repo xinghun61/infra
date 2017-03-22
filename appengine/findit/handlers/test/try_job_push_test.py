@@ -114,23 +114,25 @@ class TryJobPushTest(testing.AppengineTestCase):
     try_job_in_progress.last_buildbucket_response = {'status': 'STARTED'}
     try_job_in_progress.put()
 
-    self.test_app.post('/pubsub/tryjobpush', params={
-        'data': json.dumps({
-            'message':{
-                'attributes':{
-                    'auth_token': pubsub_callback.GetVerificationToken(),
-                    'build_id': 12345,
-                },
-                'data': base64.b64encode(json.dumps({
-                    'build_id': 12345,
-                    'user_data': json.dumps({
-                        'Message-Type': 'BuildbucketStatusChange',
-                    }),
-                })),
-            },
-        }),
-        'format': 'json',
-    })
+    with mock.patch('google.appengine.api.taskqueue.add') as mock_queue:
+      self.test_app.post('/pubsub/tryjobpush', params={
+          'data': json.dumps({
+              'message':{
+                  'attributes':{
+                      'auth_token': pubsub_callback.GetVerificationToken(),
+                      'build_id': 12345,
+                  },
+                  'data': base64.b64encode(json.dumps({
+                      'build_id': 12345,
+                      'user_data': json.dumps({
+                          'Message-Type': 'BuildbucketStatusChange',
+                      }),
+                  })),
+              },
+          }),
+          'format': 'json',
+      })
+      mock_queue.assert_called_once()
 
   @mock.patch('logging.warning')
   def testTryJobPushMissingCallback(self, logging_mock):

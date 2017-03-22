@@ -52,9 +52,13 @@ class SwarmingPush(BaseHandler):
             continue
           if swarming_task.callback_url:
             url = swarming_task.callback_url
-            target = appengine_util.GetTargetNameForModule(
-                constants.WATERFALL_BACKEND)
-            taskqueue.add(method='GET', url=url, target=target)
+            # TODO(robertocn): After a transitional period, all swarming_task
+            # entities should have a targed defined. Remove the or clause.
+            target = swarming_task.callback_target or (
+                appengine_util.GetTargetNameForModule(
+                    constants.WATERFALL_BACKEND))
+            taskqueue.add(method='GET', url=url, target=target,
+                          queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
             return {}
           else:
             logging.warning('The swarming task referenced by pubsub does not '

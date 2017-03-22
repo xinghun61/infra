@@ -92,22 +92,24 @@ class SwarmingPushTest(testing.AppengineTestCase):
     task.callback_url = '/callback?pipeline_id=f9f89162ef32c7fb7'
     task.put()
 
-    self.test_app.post('/pubsub/swarmingpush', params={
-        'data': json.dumps({
-            'message':{
-                'attributes':{
-                    'auth_token': pubsub_callback.GetVerificationToken(),
-                },
-                'data': base64.b64encode(json.dumps({
-                    'task_id': '12345',
-                    'userdata': json.dumps({
-                        'Message-Type': 'SwarmingTaskStatusChange',
-                    }),
-                })),
-            },
-        }),
-        'format': 'json',
-    })
+    with mock.patch('google.appengine.api.taskqueue.add') as mock_queue:
+      self.test_app.post('/pubsub/swarmingpush', params={
+          'data': json.dumps({
+              'message':{
+                  'attributes':{
+                      'auth_token': pubsub_callback.GetVerificationToken(),
+                  },
+                  'data': base64.b64encode(json.dumps({
+                      'task_id': '12345',
+                      'userdata': json.dumps({
+                          'Message-Type': 'SwarmingTaskStatusChange',
+                      }),
+                  })),
+              },
+          }),
+          'format': 'json',
+      })
+      mock_queue.assert_called_once()
 
   @mock.patch('logging.warning')
   def testSwarmingPushMissingCallback(self, logging_mock):

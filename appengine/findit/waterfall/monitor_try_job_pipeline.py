@@ -8,6 +8,8 @@ import time
 
 from google.appengine.ext import ndb
 
+from common import appengine_util
+from common import constants
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
 from common.waterfall import buildbucket_client
@@ -325,8 +327,10 @@ class MonitorTryJobPipeline(BasePipeline):
 
   def delay_callback(self, countdown, **kwargs):  # pragma: no cover
     self.last_params = kwargs['callback_params']
-    task = self.get_callback_task(countdown=countdown, params=kwargs)
-    task.add(self.queue_name)
+    target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
+    task = self.get_callback_task(countdown=countdown, params=kwargs,
+                                  target=target)
+    task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
   def callback(self, callback_params, pipeline_id=None):
     """Updates the TryJobData entities with status from buildbucket."""
@@ -433,6 +437,8 @@ class MonitorTryJobPipeline(BasePipeline):
                 'backoff_time': backoff_time,
             })
         )
+        try_job_data.callback_target = appengine_util.GetTargetNameForModule(
+            constants.WATERFALL_BACKEND)
         try_job_data.put()
 
     if time.time() > deadline:  # pragma: no cover

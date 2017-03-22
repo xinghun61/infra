@@ -9,6 +9,8 @@ import logging
 import time
 
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common import appengine_util
+from common import constants
 from common.pipeline_wrapper import BasePipeline
 from model import analysis_status
 from waterfall import swarming_util
@@ -80,9 +82,11 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
 
   def delay_callback(self, **kwargs):  # pragma: no cover
     self.last_params = kwargs['callback_params']
+    target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
     countdown = kwargs.get('server_query_interval_seconds', 60)
-    task = self.get_callback_task(countdown=countdown, params=kwargs)
-    task.add(self.queue_name)
+    task = self.get_callback_task(countdown=countdown, params=kwargs,
+                                  target=target)
+    task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
   def _GetPipelineResult(self, step_name, step_name_no_platform, task):
     # The sub-classes may use properties of the task as part of the result.
@@ -152,6 +156,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
             self.last_params))
         if task.callback_url != new_callback_url:  # pragma: no cover
           task.callback_url = new_callback_url
+          task.callback_target = appengine_util.GetTargetNameForModule(
+              constants.WATERFALL_BACKEND)
           task.put()
         # TODO(robertocn): Remove this line when the system reliably receives
         # notifications from swarming via pubsub.

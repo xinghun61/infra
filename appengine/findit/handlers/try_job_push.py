@@ -50,9 +50,13 @@ class TryJobPush(BaseHandler):
             continue
           if try_job_data.callback_url:
             url = try_job_data.callback_url
-            target = appengine_util.GetTargetNameForModule(
-                constants.WATERFALL_BACKEND)
-            taskqueue.add(method='GET', url=url, target=target)
+            # TODO(robertocn): After a transitional period, all try_job_data
+            # entities should have a targed defined. Remove the or clause.
+            target = try_job_data.callback_target or (
+                appengine_util.GetTargetNameForModule(
+                    constants.WATERFALL_BACKEND))
+            taskqueue.add(method='GET', url=url, target=target,
+                          queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
             return {}
           else:
             logging.warning('The tryjob referenced by pubsub does not have an '

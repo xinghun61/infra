@@ -37,6 +37,9 @@ class BaseTryJobData(ndb.Model):
   # A URL to call back the pipeline monitoring the progress of this tryjob.
   callback_url = ndb.StringProperty(indexed=False)
 
+  # The name of the target for the callback url
+  callback_target = ndb.StringProperty(indexed=False)
+
   @ndb.ComputedProperty
   def master_name(self):  # pragma: no cover
     return BaseTryJob.GetMasterName(self.try_job_key)
