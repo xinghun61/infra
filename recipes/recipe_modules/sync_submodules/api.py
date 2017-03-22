@@ -34,7 +34,8 @@ class AbsolutePath(config_types.BasePath):
 
 class SyncSubmodulesApi(recipe_api.RecipeApi):
   def __call__(self, source, dest, source_ref='refs/heads/master',
-               dest_ref='refs/heads/master', extra_submodules=None):
+               dest_ref='refs/heads/master', extra_submodules=None,
+               deps_path_prefix=None):
     """
     Args:
       source: URL of the git repository to mirror.
@@ -43,10 +44,15 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
       dest_ref: git ref in the destination repository to push to.
       extra_submodules: a list of "path=URL" strings.  These are added as extra
           submodules.
+      deps_path_prefix: path prefix used to filter out DEPS. DEPS with the
+          prefix are included.
     """
 
     if extra_submodules is None:  # pragma: nocover
       extra_submodules = []
+
+    if deps_path_prefix is None:
+      deps_path_prefix = '%s/' % Humanish(source)
 
     # remote_run creates a temporary directory for our pwd, but that means big
     # checkouts get thrown away every build, and take 15 minutes to re-fetch
@@ -87,7 +93,7 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
     deps2submodules_cmd = [
         'python',
         self.resource('deps2submodules.py'),
-        '--path-prefix', '%s/' % Humanish(source),
+        '--path-prefix', deps_path_prefix,
         self.m.path.join(checkout_dir, 'DEPS'),
     ]
     for extra_submodule in extra_submodules:
