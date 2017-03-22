@@ -14,7 +14,7 @@ DEPS = [
 ]
 
 PROPERTIES = {
-  'project': Property(
+  'lkgr_project': Property(
       default=None, kind=str, help='Project to calculate lkgr for.'),
   'allowed_lag': Property(
       default=None, kind=int,
@@ -23,8 +23,8 @@ PROPERTIES = {
 }
 
 
-def RunSteps(api, project, allowed_lag):
-  assert project
+def RunSteps(api, lkgr_project, allowed_lag):
+  assert lkgr_project
   api.gclient.set_config('infra')
   api.bot_update.ensure_checkout()
   api.gclient.runhooks()
@@ -32,9 +32,9 @@ def RunSteps(api, project, allowed_lag):
   # TODO(machenbach): Create and upload lkgr-status html file.
   args = [
     'infra.services.lkgr_finder',
-    '--project=%s' % project,
+    '--project=%s' % lkgr_project,
     # TODO(machenbach,friedman): Add shared creds for status apps.
-    '--password-file=/creds/gatekeeper/%s_status_password' % project,
+    '--password-file=/creds/gatekeeper/%s_status_password' % lkgr_project,
     '--verbose',
     '--email-errors',
     '--post',
@@ -44,7 +44,7 @@ def RunSteps(api, project, allowed_lag):
     args.append('--allowed-lag=%d' % allowed_lag)
 
   api.python(
-      'calculate %s lkgr' % project,
+      'calculate %s lkgr' % lkgr_project,
       api.path['checkout'].join('run.py'),
       args,
   )
@@ -54,7 +54,7 @@ def GenTests(api):
     yield (
         api.test('v8') +
         api.properties.generic(
-            project='v8',
+            lkgr_project='v8',
             allowed_lag=4,
         )
     )
