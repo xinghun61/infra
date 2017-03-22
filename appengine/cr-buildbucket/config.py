@@ -28,6 +28,7 @@ from proto import project_config_pb2
 from swarming import swarmingcfg
 import errors
 
+CURRENT_BUCKET_SCHEMA_VERSION = 2
 ACL_SET_NAME_RE = re.compile('^[a-z0-9_]+$')
 
 @utils.cache
@@ -86,6 +87,12 @@ def validate_buildbucket_cfg(cfg, ctx):
 
       validate_access_list(acl_set.acls, ctx)
 
+  mixin_ctx = validation.Context(  # pragma: no cover
+      on_message=lambda msg: ctx.msg(msg.severity, '%s', msg.text))
+  swarmingcfg.validate_builder_mixins(cfg.builder_mixins, mixin_ctx)
+  mixins_are_valid = not mixin_ctx.result().has_errors
+  mixin_by_name = {m.name for m in cfg.builder_mixins}
+
   is_sorted = True
   bucket_names = set()
 
@@ -119,7 +126,8 @@ def validate_buildbucket_cfg(cfg, ctx):
 
       if bucket.HasField('swarming'):  # pragma: no cover
         with ctx.prefix('swarming: '):
-          swarmingcfg.validate_cfg(bucket.swarming, ctx)
+          swarmingcfg.validate_cfg(
+              bucket.swarming, mixin_by_name, mixins_are_valid, ctx)
   if not is_sorted:
     ctx.warning('Buckets are not sorted by name')
 
@@ -142,6 +150,9 @@ class Bucket(ndb.Model):
   Entity key:
     Root entity. Id is bucket name.
   """
+  # Version of entity schema. If not current, cron_update_buckets will update
+  # the entity forcefully.
+  entity_schema_version = ndb.IntegerProperty()
   # Project id in luci-config.
   project_id = ndb.StringProperty(required=True)
   # Bucket revision matches its config revision.
@@ -219,7 +230,8 @@ def cron_update_buckets():
   """Synchronizes Bucket entities with configs fetched from luci-config.
 
   When storing in the datastore, inlines the referenced ACL sets and clears
-  the acl_sets message field.
+  the acl_sets message field. Also inlines swarmbucket builder defaults and
+  mixins and clears Builder.mixins field.
   """
   config_map = config.get_project_configs(
     cfg_path(), project_config_pb2.BuildbucketCfg)
@@ -234,9 +246,12 @@ def cron_update_buckets():
     revision = revision or 'sha1:%s' % hashlib.sha1(
       project_cfg.SerializeToString()).hexdigest()
     acl_sets_by_name = {a.name: a for a in project_cfg.acl_sets}
+    builder_mixins_by_name = {m.name: m for m in project_cfg.builder_mixins}
+
     for bucket_cfg in project_cfg.buckets:
       bucket = Bucket.get_by_id(bucket_cfg.name)
       if (bucket and
+          bucket.entity_schema_version == CURRENT_BUCKET_SCHEMA_VERSION and
           bucket.project_id == project_id and
           bucket.revision == revision and
           bucket.config_content_binary):
@@ -262,6 +277,15 @@ def cron_update_buckets():
 
       _normalize_acls(bucket_cfg.acls)
 
+      if bucket_cfg.HasField('swarming'):
+        # Flatten builders before putting to datastore.
+        for b in bucket_cfg.swarming.builders:
+          swarmingcfg.flatten_builder(
+              b,
+              bucket_cfg.swarming.builder_defaults,
+              builder_mixins_by_name)
+        bucket_cfg.swarming.ClearField('builder_defaults')
+
       @ndb.transactional
       def update_bucket():
         bucket = Bucket.get_by_id(bucket_cfg.name)
@@ -274,6 +298,7 @@ def cron_update_buckets():
               bucket_cfg.name, project_id, bucket.project_id)
             return
         if (bucket and
+            bucket.entity_schema_version == CURRENT_BUCKET_SCHEMA_VERSION and
             bucket.project_id == project_id and
             bucket.revision == revision and
             bucket.config_content_binary):  # pragma: no coverage
@@ -282,6 +307,7 @@ def cron_update_buckets():
         report_reservation = bucket is None or bucket.project_id != project_id
         Bucket(
           id=bucket_cfg.name,
+          entity_schema_version=CURRENT_BUCKET_SCHEMA_VERSION,
           project_id=project_id,
           revision=revision,
           config_content=protobuf.text_format.MessageToString(bucket_cfg),

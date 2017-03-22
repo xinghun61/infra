@@ -62,11 +62,12 @@ def merge_dimensions(d1, d2):
   parse = lambda d: dict(a.split(':', 1) for a in d)
   dims = parse(d1)
   dims.update(parse(d2))
-  return ['%s:%s' % (k, v) for k, v in sorted(dims.iteritems()) if v]
+  return sorted('%s:%s' % (k, v) for k, v in dims.iteritems() if v)
 
 
 def merge_builder(b1, b2):
   """Merges Builder message b2 into b1. Expects messages to be valid."""
+  assert not b2.mixins, 'do not merge unflattened builders'
   dims = merge_dimensions(b1.dimensions, b2.dimensions)
   recipe = None
   if b1.HasField('recipe') or b2.HasField('recipe'):  # pragma: no branch
@@ -75,6 +76,15 @@ def merge_builder(b1, b2):
 
   b1.MergeFrom(b2)
   b1.dimensions[:] = dims
+  b1.swarming_tags[:] = sorted(set(b1.swarming_tags))
+
+  caches = [
+    t[1]
+    for t in sorted({c.name: c for c in b1.caches}.iteritems())
+  ]
+  del b1.caches[:]
+  b1.caches.extend(caches)
+
   if recipe:  # pragma: no branch
     b1.recipe.CopyFrom(recipe)
 
@@ -173,8 +183,10 @@ def validate_recipe_properties(properties, properties_j, ctx):
           ctx.error(ex)
 
 
-def validate_builder_cfg(builder, ctx, final=True):
+def validate_builder_cfg(builder, mixin_names, final, ctx):
   """Validates a Builder message.
+
+  Does not apply mixins, only checks that a referenced mixin exists.
 
   If final is False, does not validate for completeness.
   """
@@ -211,6 +223,12 @@ def validate_builder_cfg(builder, ctx, final=True):
   if builder.priority > 200:
     ctx.error('priority must be in [0, 200] range; got %d', builder.priority)
 
+  for m in builder.mixins:
+    if not m:
+      ctx.error('referenced mixin name is empty')
+    elif m not in mixin_names:
+      ctx.error('mixin "%s" is not defined', m)
+
 
 def validate_cache_entry(entry, ctx):
   if not entry.name:
@@ -221,7 +239,73 @@ def validate_cache_entry(entry, ctx):
   validate_relative_path(entry.path, ctx)
 
 
-def validate_cfg(swarming, ctx):
+def validate_builder_mixins(mixins, ctx):
+  """Validates mixins.
+
+  Checks that:
+  - mixins' attributes have valid values
+  - mixins have unique names
+  - mixins do not have circular references.
+  """
+  by_name = {m.name: m for m in mixins}
+  seen = set()
+  for i, m in enumerate(mixins):
+    with ctx.prefix('builder_mixin %s: ' % (m.name or '#%s' % (i + 1))):
+      if not m.name:
+        # with final=False below, validate_builder_cfg will ignore name.
+        ctx.error('name unspecified')
+      elif m.name in seen:
+        ctx.error('duplicate name')
+      else:
+        seen.add(m.name)
+      validate_builder_cfg(m, by_name, False, ctx)
+
+  # Check circular references.
+  circles = set()
+
+  def check_circular(chain):
+    mixin = by_name[chain[-1]]
+    for sub_name in mixin.mixins:
+      if not sub_name or sub_name not in by_name:
+        # This may happen if validation above fails.
+        # We've already reported this, so ignore here.
+        continue
+      try:
+        recurrence = chain.index(sub_name)
+      except ValueError:
+        recurrence = -1
+      if recurrence >= 0:
+        circle = chain[recurrence:]
+
+        # make circle deterministic
+        smallest = circle.index(min(circle))
+        circle = circle[smallest:] + circle[:smallest]
+
+        circles.add(tuple(circle))
+        continue
+
+      chain.append(sub_name)
+      try:
+        check_circular(chain)
+      finally:
+        chain.pop()
+
+  for name in by_name:
+    check_circular([name])
+  for circle in sorted(circles):
+    circle = list(circle) + [circle[0]]
+    ctx.error('circular mixin chain: %s', ' -> '.join(circle))
+
+
+def validate_cfg(swarming, mixins, mixins_are_valid, ctx):
+  """Validates a project_config_pb2.Swarming message.
+
+  Args:
+    swarming (project_config_pb2.Swarming): the config to validate.
+    mixins (dict): {mixin_name: mixin}, builder mixins that may be used by
+      builders.
+    mixins_are_valid (bool): if True, mixins are valid.
+  """
   def make_subctx():
     return validation.Context(
         on_message=lambda msg: ctx.msg(msg.severity, '%s', msg.text))
@@ -231,26 +315,59 @@ def validate_cfg(swarming, ctx):
   if swarming.task_template_canary_percentage.value > 100:
     ctx.error('task_template_canary_percentage.value must must be in [0, 100]')
 
-  with ctx.prefix('builder_defaults: '):
-    if swarming.builder_defaults.name:
-      ctx.error('do not specify default name')
-    subctx = make_subctx()
-    validate_builder_cfg(swarming.builder_defaults, subctx, final=False)
-    builder_defaults_has_errors = subctx.result().has_errors
+  should_try_merge = mixins_are_valid
+  if swarming.HasField('builder_defaults'):
+    with ctx.prefix('builder_defaults: '):
+      if swarming.builder_defaults.name:
+        ctx.error('do not specify default name')
+      subctx = make_subctx()
+      validate_builder_cfg(swarming.builder_defaults, mixins, False, subctx)
+      if subctx.result().has_errors:
+        should_try_merge = False
 
   for i, b in enumerate(swarming.builders):
     with ctx.prefix('builder %s: ' % (b.name or '#%s' % (i + 1))):
       # Validate b before merging, otherwise merging will fail.
       subctx = make_subctx()
-      validate_builder_cfg(b, subctx, final=False)
-      if subctx.result().has_errors or builder_defaults_has_errors:
+      validate_builder_cfg(b, mixins, False, subctx)
+      if subctx.result().has_errors or not should_try_merge:
         # Do no try to merge invalid configs.
         continue
 
-      merged = copy.deepcopy(swarming.builder_defaults)
-      merge_builder(merged, b)
-      validate_builder_cfg(merged, ctx)
+      merged = copy.deepcopy(b)
+      flatten_builder(merged, swarming.builder_defaults, mixins)
+      validate_builder_cfg(merged, mixins, True, ctx)
 
 
 def has_pool_dimension(dimensions):
   return any(d.startswith('pool:') for d in dimensions)
+
+
+def flatten_builder(builder, defaults, mixins):
+  """Inlines defaults or mixins into the builder.
+
+  Applies defaults, then mixins and then reapplies values defined in |builder|.
+  Flattenes defaults and referenced mixins recursively.
+
+  This operation is NOT idempotent if defaults!=None.
+
+  Args:
+    builder (project_config_pb2.Builder): the builder to flatten.
+    defaults (project_config_pb2.Builder): builder defaults.
+      May use mixins.
+    mixins ({str: project_config_pb2.Builder} dict): a map of mixin names
+      that can be inlined. All referenced mixins must be in this dict.
+      Applied after defaults.
+  """
+  if not defaults and not builder.mixins:
+    return
+  orig_mixins = builder.mixins
+  builder.ClearField('mixins')
+  orig_without_mixins = copy.deepcopy(builder)
+  if defaults:
+    flatten_builder(defaults, None, mixins)
+    merge_builder(builder, defaults)
+  for m in orig_mixins:
+    flatten_builder(mixins[m], None, mixins)
+    merge_builder(builder, mixins[m])
+  merge_builder(builder, orig_without_mixins)

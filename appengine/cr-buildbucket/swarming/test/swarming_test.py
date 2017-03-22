@@ -59,35 +59,36 @@ class SwarmingTest(testing.AppengineTestCase):
       swarming {
         hostname: "chromium-swarm.appspot.com"
         url_format: "https://example.com/{swarming_hostname}/{task_id}"
-        builder_defaults {
-          swarming_tags: "commontag:yes"
-          dimensions: "cores:8"
-          dimensions: "pool:default"
-          dimensions: "cpu:x86-6"
-          recipe {
-            repository: "https://example.com/repo"
-            name: "recipe"
-          }
-          caches {
-            path: "git"
-            name: "git"
-          }
-        }
         builders {
           name: "linux_chromium_rel_ng"
           swarming_tags: "buildertag:yes"
+          swarming_tags: "commontag:yes"
+          dimensions: "cores:8"
           dimensions: "os:Linux"
           dimensions: "pool:Chrome"
-          dimensions: "cpu:"
-          caches {
-            path: "builder"
-            name: "linux_chromium_rel_ng"
-          }
+          priority: 108
           recipe {
-            properties: "predefined-property:x"
+            repository: "https://example.com/repo"
+            name: "recipe"
+            properties_j: "predefined-property:\\\"x\\\""
             properties_j: "predefined-property-bool:true"
           }
-          priority: 108
+          caches {
+            path: "a"
+            name: "a"
+          }
+          caches {
+            path: "builder"
+            name: "shared_builder_cache"
+          }
+          caches {
+            path: "git_cache"
+            name: "git_chromium"
+          }
+          caches {
+            path: "out"
+            name: "build_chromium"
+          }
         }
       }
     '''
@@ -117,10 +118,7 @@ class SwarmingTest(testing.AppengineTestCase):
           '-logdog-project', '${project}',
         ],
         'caches': [
-          {
-            'path': '${cache_dir}/builder',
-            'name': 'builder:${bucket}:${builder}',
-          }
+          {'path': '${cache_dir}/builder', 'name': 'builder_${builder_hash}'},
         ],
         'cipd_input': {
           'packages': [
@@ -216,8 +214,8 @@ class SwarmingTest(testing.AppengineTestCase):
         swarming.validate_build_parameters(p['builder_name'], p)
 
   def test_execution_timeout(self):
-    self.bucket_cfg.swarming.builder_defaults.execution_timeout_secs = 120
-    builder_cfg = project_config_pb2.Swarming.Builder(name='fast-builder')
+    builder_cfg = project_config_pb2.Builder(
+        name='fast-builder', execution_timeout_secs=120)
 
     build = model.Build(
         id=1,
@@ -329,8 +327,10 @@ class SwarmingTest(testing.AppengineTestCase):
           {'key': 'pool', 'value': 'Chrome'},
         ]),
         'caches': [
-          {'path': 'cache/builder', 'name': 'linux_chromium_rel_ng'},
-          {'path': 'cache/git', 'name': 'git'},
+          {'path': 'cache/a', 'name': 'a'},
+          {'path': 'cache/builder', 'name': 'shared_builder_cache'},
+          {'path': 'cache/git_cache', 'name': 'git_chromium'},
+          {'path': 'cache/out', 'name': 'build_chromium'},
         ],
         'cipd_input': {
           'packages': [
@@ -471,8 +471,10 @@ class SwarmingTest(testing.AppengineTestCase):
           {'key': 'pool', 'value': 'Chrome'},
         ]),
         'caches': [
-          {'path': 'cache/builder', 'name': 'linux_chromium_rel_ng'},
-          {'path': 'cache/git', 'name': 'git'},
+          {'path': 'cache/a', 'name': 'a'},
+          {'path': 'cache/builder', 'name': 'shared_builder_cache'},
+          {'path': 'cache/git_cache', 'name': 'git_chromium'},
+          {'path': 'cache/out', 'name': 'build_chromium'},
         ],
         'cipd_input': {
           'packages': [
@@ -642,6 +644,21 @@ class SwarmingTest(testing.AppengineTestCase):
           'swarming': {
             'override_builder_cfg': {
               'name': 'x',
+            },
+          }
+        },
+    )
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.create_task_async(build).get_result()
+
+    build = model.Build(
+        id=1,
+        bucket='bucket',
+        parameters={
+          'builder_name': 'linux_chromium_rel_ng',
+          'swarming': {
+            'override_builder_cfg': {
+              'mixins': ['x'],
             },
           }
         },

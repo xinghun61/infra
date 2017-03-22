@@ -37,8 +37,29 @@ message AclSet {
   repeated Acl acls = 2;
 }
 
-// Configuration of buildbucket-swarming integration for one bucket.
-message Swarming {
+
+// Defines a swarmbucket builder or a builder mixin. A builder has a name, a
+// category and specifies what should happen if a build is scheduled to that
+// builder.
+//
+// SECURITY WARNING: if adding more fields to this message, keep in mind that
+// a user that has permissions to schedule a build to the bucket, can override
+// this config.
+message Builder {
+  reserved 8;
+
+  // Describes a named cache that should be present on the bot.
+  // See also https://github.com/luci/luci-py/blob/3a2941345cf011a96bcd83d76328395323245bb5/appengine/swarming/swarming_rpcs.py#L166
+  message CacheEntry {
+    // Unique name of the cache. Required. Length is limited to 4096.
+    optional string name = 1;
+    // Path to the directory that will be linked to the named cache,
+    // relative to the recipe cache directory.
+    // Required. Must be unique.
+    optional string path = 2;
+  }
+
+  // Specifies a recipe to run.
   message Recipe {
     // Repository URL of the recipe package.
     optional string repository = 1;
@@ -64,49 +85,129 @@ message Swarming {
     repeated string properties_j = 4;
   }
 
-  // A builder has a name, a category and specifies what should happen if a
-  // build is scheduled to that builder.
+  // Name of the builder or builder mixin.
   //
-  // SECURITY WARNING: if adding more fields to this message, keep in mind that
-  // a user that has permissions to schedule a build to the bucket, can override
-  // this config.
-  message Builder {
-    reserved 8;
+  // If a builder name, will be propagated to "builder" build tag and
+  // "buildername" recipe property.
+  optional string name = 1;
+  // Names of mixins to apply to this builder definition.
+  //
+  // FLATTENING
+  //
+  // Final builder/mixin values are computed as follows:
+  // - start with an empty builder definition.
+  // - if this is a builder, apply values in a bucket's builder_defaults,
+  //   flattened in advance.
+  // - apply each mixin, flattened in advance, in the same order.
+  // - apply values in this builder/mixin.
+  //
+  // EXAMPLE
+  //
+  //   A definition
+  //
+  //     builder_mixins {
+  //       name: "foo"
+  //       dimensions: "os:Linux"
+  //       dimensions: "cpu:x86"
+  //       recipe {
+  //         repository: "https://example.com"
+  //         name: "x"
+  //       }
+  //     }
+  //     builder_mixins {
+  //       name: "bar"
+  //       dimensions: "cores:8"
+  //       dimensions: "cpu:x86-64"
+  //     }
+  //     bucket {
+  //       name: "luci.x.try"
+  //       swarming {
+  //         builders {
+  //           name: "release"
+  //           mixins: "foo"
+  //           mixins: "bar"
+  //           recipe {
+  //             name: "y"
+  //           }
+  //         }
+  //       }
+  //     }
+  //
+  //   is equivalent to
+  //
+  //     bucket {
+  //      name: "luci.x.try"
+  //      swarming {
+  //         builders {
+  //           name: "release"
+  //           dimensions: "os:Linux"
+  //           dimensions: "cpu:x86-64"
+  //           dimensions: "cores:8"
+  //           recipe {
+  //             repository: "https://example.com"
+  //             name: "y"
+  //           }
+  //         }
+  //       }
+  //     }
+  //
+  // A NOTE ON DIAMOND MERGES
+  //
+  // Given
+  //   B mixes in A and overrides some values defined in A
+  //   C mixes in A
+  //   D mixes in B and C
+  // B's overrides won't affect D because D mixes in C after B.
+  //
+  //   builder_mixins {
+  //     name: "A"
+  //     dimensions: "dim:a"
+  //   }
+  //   builder_mixins {
+  //     name: "B"
+  //     mixins: "A"
+  //     dimensions: "dim:b"
+  //   }
+  //   builder_mixins {
+  //     name: "C"
+  //     mixins: "A"
+  //   }
+  //   ...
+  //   builders {
+  //     name: "D"
+  //     mixins: "B"
+  //     mixins: "C"
+  //   }
+  //
+  // D's dim will be "a", not "b" because it is "a" in C which is applied after
+  // B.
+  //
+  // OTHER
+  //
+  // Circular references are prohibited.
+  repeated string mixins = 10;
+  // Builder category. Will be used for visual grouping, for example in Code Review.
+  optional string category = 6;
+  // Will be become to swarming task tags.
+  // Each tag will end up in "swarming_tag" buildbucket tag, for example
+  // "swarming_tag:builder:release"
+  repeated string swarming_tags = 2;
+  // Colon-delimited key-value pair of task dimensions.
+  //
+  // If value is not specified ("<key>:"), then it excludes a default value.
+  repeated string dimensions = 3;
+  // Specifies that a recipe to run.
+  optional Recipe recipe = 4;
+  // Swarming task priority.
+  optional uint32 priority = 5;
+  // Maximum build execution time. Not to be confused with pending time.
+  optional uint32 execution_timeout_secs = 7;
+  // Caches that should be present on the bot.
+  repeated CacheEntry caches = 9;
+}
 
-    // Describes a named cache that should be present on the bot.
-    // See also https://github.com/luci/luci-py/blob/3a2941345cf011a96bcd83d76328395323245bb5/appengine/swarming/swarming_rpcs.py#L166
-    message CacheEntry {
-      // Unique name of the cache. Required. Length is limited to 4096.
-      optional string name = 1;
-      // Path to the directory that will be linked to the named cache,
-      // relative to the recipe cache directory.
-      // Required. Must be unique.
-      optional string path = 2;
-    }
-
-    // Name of the builder. Will be propagated to "builder" build tag and
-    // "buildername" recipe property.
-    optional string name = 1;
-    // Builder category. Will be used for visual grouping, for example in Code Review.
-    optional string category = 6;
-    // Will be become to swarming task tags.
-    // Each tag will end up in "swarming_tag" buildbucket tag, for example
-    // "swarming_tag:builder:release"
-    repeated string swarming_tags = 2;
-    // Colon-delimited key-value pair of task dimensions.
-    //
-    // If value is not specified ("<key>:"), then it excludes a default value.
-    repeated string dimensions = 3;
-    // Specifies that a recipe to run.
-    optional Recipe recipe = 4;
-    // Swarming task priority.
-    optional uint32 priority = 5;
-    // Maximum build execution time. Not to be confused with pending time.
-    optional uint32 execution_timeout_secs = 7;
-    // Caches that should be present on the bot.
-    repeated CacheEntry caches = 9;
-  }
-
+// Configuration of buildbucket-swarming integration for one bucket.
+message Swarming {
   // Hostname of the swarming instance, e.g. "chromium-swarm.appspot.com".
   optional string hostname = 1;
   // Used to generate a URL for Build, may contain parameters
@@ -115,6 +216,7 @@ message Swarming {
   optional string url_format = 2;
 
   // Defines default values for builders.
+  // Cannot be used in buckets that use builder mixins.
   optional Builder builder_defaults = 3;
 
   // Configuration for each builder.
@@ -154,4 +256,8 @@ message BuildbucketCfg {
   repeated Bucket buckets = 1;
   // A list of ACL sets. Names must be unique.
   repeated AclSet acl_sets = 2;
+  // A list of builder mixin definitions.
+  // A mixin can be referenced in any builder defined within the BuildbucketCfg.
+  // See also Buider.mixins field.
+  repeated Builder builder_mixins = 3;
 }

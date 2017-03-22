@@ -168,7 +168,7 @@ def validate_build_parameters(builder_name, params):
     override_builder_cfg_data = swarming.pop('override_builder_cfg', None)
     if override_builder_cfg_data is not None:
       assert_object('swarming.override_builder_cfg', override_builder_cfg_data)
-      override_builder_cfg = project_config_pb2.Swarming.Builder()
+      override_builder_cfg = project_config_pb2.Builder()
       try:
         protoutil.merge_dict(
             override_builder_cfg_data, override_builder_cfg)
@@ -176,11 +176,13 @@ def validate_build_parameters(builder_name, params):
         bad('swarming.override_builder_cfg parameter: %s', ex)
       if override_builder_cfg.name:
         bad('swarming.override_builder_cfg cannot override builder name')
+      if override_builder_cfg.mixins:
+        bad('swarming.override_builder_cfg cannot use mixins')
       ctx = validation.Context.raise_on_error(
           exc_type=errors.InvalidInputError,
           prefix='swarming.override_builder_cfg parameter: ')
       swarmingcfg_module.validate_builder_cfg(
-          override_builder_cfg, ctx, final=False)
+          override_builder_cfg, [], False, ctx)
 
     if swarming:
       bad('unrecognized keys in swarming param: %r', swarming.keys())
@@ -217,25 +219,24 @@ def should_use_canary_template(percentage):  # pragma: no cover
   return random.randint(0, 99) < percentage
 
 
-def _prepare_builder_config(swarming_cfg, builder_cfg, swarming_param):
+def _prepare_builder_config(builder_cfg, swarming_param):
   """Returns final version of builder config to use for |build|.
 
   Expects arguments to be valid.
   """
-  # Apply defaults.
-  result = copy.deepcopy(swarming_cfg.builder_defaults)
-  swarmingcfg_module.merge_builder(result, builder_cfg)
+  # Builders are already flattened in the datastore.
+  result = builder_cfg
 
   # Apply overrides in the swarming parameter.
   override_builder_cfg_data = swarming_param.get('override_builder_cfg', {})
   if override_builder_cfg_data:
-    override_builder_cfg = project_config_pb2.Swarming.Builder()
+    override_builder_cfg = project_config_pb2.Builder()
     protoutil.merge_dict(override_builder_cfg_data, result)
     ctx = validation.Context.raise_on_error(
         exc_type=errors.InvalidInputError,
         prefix='swarming.override_buider_cfg parameter: ')
     swarmingcfg_module.merge_builder(result, override_builder_cfg)
-    swarmingcfg_module.validate_builder_cfg(result, ctx)
+    swarmingcfg_module.validate_builder_cfg(result, [], True, ctx)
   return result
 
 
@@ -264,8 +265,7 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
       canary_percentage = swarming_cfg.task_template_canary_percentage.value
     canary = should_use_canary_template(canary_percentage)
 
-  builder_cfg = _prepare_builder_config(
-      swarming_cfg, builder_cfg, swarming_param)
+  builder_cfg = _prepare_builder_config(builder_cfg, swarming_param)
 
   try:
     task_template_rev, task_template, canary = yield get_task_template_async(

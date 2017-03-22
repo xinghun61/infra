@@ -18,6 +18,24 @@ import mock
 from proto import project_config_pb2
 import config
 
+LUCI_CHROMIUM_TRY_CONFIG_TEXT = (
+'''name: "luci.chromium.try"
+acls {
+  role: READER
+  group: "all"
+}
+swarming {
+  builders {
+    name: "release"
+    dimensions: "os:Linux"
+    dimensions: "pool:default"
+    recipe {
+      repository: "https://example.com"
+      name: "x"
+    }
+  }
+}
+''')
 
 MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT = (
 '''name: "master.tryserver.chromium.linux"
@@ -70,17 +88,6 @@ acls {
   identity: "user:root@google.com"
 }
 ''')
-
-MASTER_SWARMING_CONFIG_TEXT = (
-'''name: "luci.swarming"
-acls {
-  role: WRITER
-  identity: "user:root@google.com"
-}
-swarming {
-}
-''')
-
 
 def parse_cfg(text):
   cfg = project_config_pb2.BuildbucketCfg()
@@ -200,6 +207,27 @@ class ConfigTest(testing.AppengineTestCase):
           group: "all"
         }
       }
+      builder_mixins {
+        name: "recipe-x"
+        recipe {
+          repository: "https://example.com"
+          name: "x"
+        }
+      }
+      buckets {
+        name: "luci.chromium.try"
+        acl_sets: "public"
+        swarming {
+          builder_defaults {
+            dimensions: "pool:default"
+          }
+          builders {
+            name: "release"
+            mixins: "recipe-x"
+            dimensions: "os:Linux"
+          }
+        }
+      }
       buckets {
         name: "master.tryserver.chromium.linux"
         acl_sets: "public"
@@ -255,7 +283,17 @@ class ConfigTest(testing.AppengineTestCase):
     actual = sorted(actual, key=lambda b: b.key)
     expected = [
       config.Bucket(
+          id='luci.chromium.try',
+          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+          project_id='chromium',
+          revision='deadbeef',
+          config_content=LUCI_CHROMIUM_TRY_CONFIG_TEXT,
+          config_content_binary=text_to_binary(
+              LUCI_CHROMIUM_TRY_CONFIG_TEXT),
+      ),
+      config.Bucket(
           id='master.tryserver.chromium.linux',
+          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
           project_id='chromium',
           revision='deadbeef',
           config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
@@ -264,6 +302,7 @@ class ConfigTest(testing.AppengineTestCase):
       ),
       config.Bucket(
           id='master.tryserver.chromium.win',
+          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
           project_id='chromium',
           revision='deadbeef',
           config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
@@ -272,6 +311,7 @@ class ConfigTest(testing.AppengineTestCase):
       ),
       config.Bucket(
           id='master.tryserver.test',
+          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
           project_id='test',
           revision='babe',
           config_content=MASTER_TRYSERVER_TEST_CONFIG_TEXT,
@@ -280,6 +320,7 @@ class ConfigTest(testing.AppengineTestCase):
       ),
       config.Bucket(
           id='master.tryserver.v8',
+          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
           project_id='v8',
           revision='sha1:cfc761d7a953a72ddea8f3d4c9a28e69777ca22c',
           config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
@@ -350,6 +391,7 @@ class ConfigTest(testing.AppengineTestCase):
     # Will not be updated.
     config.Bucket(
         id='master.tryserver.v8',
+        entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
         project_id='v8',
         revision='deadbeef',
         config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
@@ -359,6 +401,7 @@ class ConfigTest(testing.AppengineTestCase):
     # Will be deleted.
     config.Bucket(
         id='master.tryserver.chromium.win',
+        entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
         project_id='chromium',
         revision='deadbeef',
         config_content=MASTER_TRYSERVER_CHROMIUM_WIN_CONFIG_TEXT,
@@ -373,6 +416,7 @@ class ConfigTest(testing.AppengineTestCase):
     expected = [
       config.Bucket(
           id='master.tryserver.chromium.linux',
+          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
           project_id='chromium',
           revision='new!',
           config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
@@ -381,6 +425,7 @@ class ConfigTest(testing.AppengineTestCase):
       ),
       config.Bucket(
           id='master.tryserver.chromium.mac',
+          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
           project_id='chromium',
           revision='new!',
           config_content=MASTER_TRYSERVER_CHROMIUM_MAC_CONFIG_TEXT,
@@ -389,6 +434,7 @@ class ConfigTest(testing.AppengineTestCase):
       ),
       config.Bucket(
           id='master.tryserver.v8',
+          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
           project_id='v8',
           revision='deadbeef',
           config_content=MASTER_TRYSERVER_V8_CONFIG_TEXT,
@@ -418,6 +464,7 @@ class ConfigTest(testing.AppengineTestCase):
     expected = [
       config.Bucket(
           id='bucket',
+          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
           project_id='bar',
           revision='deadbeef',
           config_content='name: "bucket"\n',
