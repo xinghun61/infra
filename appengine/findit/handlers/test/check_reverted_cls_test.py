@@ -93,12 +93,26 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       suspected_cl_util, 'GetCulpritInfo',
+      return_value=(1, 'badhost.org/123'))
+  @mock.patch.object(
+      codereview_util, 'GetCodeReviewForReview', return_value=None)
+  def testCheckRevertStatusOfSuspectedCLRevertedNoCodeReview(
+      self, *_):
+    suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
+    suspected_cl.revert_cl = RevertCL()
+
+    self.assertFalse(
+      check_reverted_cls._CheckRevertStatusOfSuspectedCL(suspected_cl))
+
+  @mock.patch.object(
+      suspected_cl_util, 'GetCulpritInfo',
       return_value=(1, 'codereview.chromium.org/123'))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=Rietveld(
           'codereview.chromium.org'))
-  @mock.patch.object(
-      codereview_util, 'GetChangeIdForReview', return_value='123')
+  @mock.patch(
+      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
+      mock.Mock(return_value='123'))
   @mock.patch.object(Rietveld, 'GetClDetails',
                      return_value=_MOCKED_FINDIT_REVERTED_CL_INFO)
   def testCheckRevertStatusOfSuspectedCLReverted(
@@ -116,9 +130,10 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
       return_value=(1, 'codereview.chromium.org/123'))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=Rietveld(
-          'codereview.chromium.org'))
-  @mock.patch.object(
-      codereview_util, 'GetChangeIdForReview', return_value='123')
+        'codereview.chromium.org'))
+  @mock.patch(
+      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
+      mock.Mock(return_value='123'))
   @mock.patch.object(Rietveld, 'GetClDetails',
                      return_value=_MOCKED_SHERIFF_REVERTED_CL_INFO)
   def testCheckRevertStatusOfSuspectedCLSheriffIgnored(
@@ -137,8 +152,9 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview',
       return_value=Rietveld('codereview.chromium.org'))
-  @mock.patch.object(
-      codereview_util, 'GetChangeIdForReview', return_value='123')
+  @mock.patch(
+      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
+      mock.Mock(return_value='123'))
   @mock.patch.object(
       Rietveld, 'GetClDetails',
       return_value=_MOCKED_SHERIFF_FAST_REVERTED_CL_INFO)
@@ -157,8 +173,9 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=Rietveld(
           'codereview.chromium.org'))
-  @mock.patch.object(
-      codereview_util, 'GetChangeIdForReview', return_value='123')
+  @mock.patch(
+      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
+      mock.Mock(return_value='123'))
   @mock.patch.object(Rietveld, 'GetClDetails',
                      return_value=_MOCKED_FINDIT_FALSE_POSITIVE_CL_INFO)
   def testCheckRevertStatusOfSuspectedCLFalsePositive(self, *_):

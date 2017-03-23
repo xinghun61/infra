@@ -45,7 +45,9 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
     return None
 
   codereview = codereview_util.GetCodeReviewForReview(original_code_review_url)
-  issue_id = codereview_util.GetChangeIdForReview(original_code_review_url)
+  if not codereview:
+    return None
+  issue_id = codereview.GetChangeIdForReview(original_code_review_url)
   cl_info = codereview.GetClDetails(issue_id)
   reverts_to_check = cl_info.GetRevertCLsByRevision(revision)
   reverts_to_check.sort(key=lambda x: x.timestamp)

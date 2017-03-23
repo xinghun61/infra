@@ -280,3 +280,11 @@ class MastersTest(wf_testcase.WaterfallTestCase):
             'minimum_confidence_score_to_run_tryjobs': 0.6
         },
         waterfall_config.GetCheckFlakeSettings())
+
+  def testGetCodeReviewSettings(self):
+    self.assertEqual(
+      {
+        'rietveld_hosts': ['codereview.chromium.org'],
+        'gerrit_hosts': ['chromium-review.googlesource.com'],
+      },
+      waterfall_config.GetCodeReviewSettings())

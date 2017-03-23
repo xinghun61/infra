@@ -34,6 +34,7 @@
     findit.downloadBuildDataSettings = {{ download_build_data_settings | tojson | safe }};
     findit.actionSettings = {{ action_settings | tojson | safe }};
     findit.checkFlakeSettings = {{ check_flake_settings | tojson | safe }};
+    findit.codeRevewSettings = {{ code_review_settings | tojson | safe }};
 
     function getJsonOfTextarea(textId) {
       return JSON.parse($('#' + textId).val());
@@ -73,7 +74,8 @@
         'swarming_settings': getJsonOfTextarea('swarming-settings'),
         'download_build_data_settings': getJsonOfTextarea('download-build-data-settings'),
         'action_settings': getJsonOfTextarea('action-settings'),
-        'check_flake_settings': getJsonOfTextarea('check-flake-settings')
+        'check_flake_settings': getJsonOfTextarea('check-flake-settings'),
+        'code_review_settings': getJsonOfTextarea('code-review-settings')
       };
       $.post('/waterfall/config', { data: JSON.stringify(newConfig) }).done(function(){
         window.location.replace(createUrl(null));  // Reload after successful saving.
@@ -95,7 +97,8 @@
       $('#swarming-settings').val(getStringFromJson(findit.swarmingSettings));
       $('#download-build-data-settings').val(getStringFromJson(findit.downloadBuildDataSettings));
       $('#action-settings').val(getStringFromJson(findit.actionSettings));
-      $('#check-flake-settings').val(getStringFromJson(findit.checkFlakeSettings))
+      $('#check-flake-settings').val(getStringFromJson(findit.checkFlakeSettings));
+      $('#code-review-settings').val(getStringFromJson(findit.codeReviewSettings));
 
       if ({{ version }} < 2) {
         $('#previous-version-button').attr('disabled', 'disabled');
@@ -153,6 +156,10 @@
   <div>
     Check Test Flakiness Settings:<br>
     <textarea id="check-flake-settings" rows="10" cols="80"></textarea>
+  </div>
+  <div>
+    CodeReview Settings:<br>
+    <textarea id="code-review-settings" rows="10" cols="80"></textarea>
   </div>
   <br>
   <button type="submit" id="save-button">Save</button>

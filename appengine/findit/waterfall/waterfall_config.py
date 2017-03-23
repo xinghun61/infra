@@ -232,3 +232,7 @@ def GetActionSettings():
 
 def GetCheckFlakeSettings():
   return FinditConfig().Get().check_flake_settings
+
+
+def GetCodeReviewSettings():
+  return FinditConfig().Get().code_review_settings

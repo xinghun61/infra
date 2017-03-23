@@ -85,8 +85,8 @@ def _RevertCulprit(
       suspected_cl_util.GetCulpritInfo(repo_name, revision))
 
   codereview = codereview_util.GetCodeReviewForReview(culprit_code_review_url)
-  culprit_change_id = codereview_util.GetChangeIdForReview(
-    culprit_code_review_url)
+  culprit_change_id = codereview.GetChangeIdForReview(
+      culprit_code_review_url) if codereview else None
 
   if not codereview or not culprit_change_id:  # pragma: no cover
     logging.error('Failed to get change id for %s/%s' % (repo_name, revision))
@@ -123,8 +123,10 @@ def _RevertCulprit(
     _UpdateCulprit(repo_name, revision, status.SKIPPED)
     return SKIPPED
 
-  revert_change_id = codereview_util.GetChangeIdForReview(
-      findit_revert.reverting_cl.url) if findit_revert else None
+  revert_change_id = None
+  if findit_revert:
+    revert_change_id = codereview.GetChangeIdForReview(
+        findit_revert.reverting_cl.url)
 
   # TODO (chanli): Better handle cases where 2 analyses are trying to revert
   # at the same time.

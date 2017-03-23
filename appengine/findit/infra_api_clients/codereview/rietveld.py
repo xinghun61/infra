@@ -234,3 +234,7 @@ class Rietveld(codereview.CodeReview):
 
     status_code, content = self._SendPostRequest(url_path, form_fields)
     return status_code == 200 and content == 'OK'
+
+  def GetChangeIdForReview(self, review_url):  # pragma: no cover
+    u = urlparse.urlparse(review_url)
+    return u.path.split('/')[-1]

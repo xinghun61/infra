@@ -138,3 +138,11 @@ class FinditConfig(VersionedConfig):
   #     'minimum_confidence_score_to_run_tryjobs': 0.6
   # }
   check_flake_settings = ndb.JsonProperty(indexed=False, default={})
+
+  # A dict containing settings for interacting with code review systems.
+  # For example,
+  # {
+  #     'rietveld_hosts': ['codereview.chromium.org'],
+  #     'gerrit_hosts': ['chromium-review.googlesource.com'],
+  # }
+  code_review_settings = ndb.JsonProperty(indexed=False, default={})

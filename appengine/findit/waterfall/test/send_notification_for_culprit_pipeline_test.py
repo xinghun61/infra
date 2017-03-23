@@ -165,7 +165,7 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(pipeline.run('m', 'b71', 71, 'chromium', 'r7', False))
     self.assertEqual(0, len(rietveld_requests))
 
-  def testDontSendNotificationIfFinditRvertedCulprit(self):
+  def testDontSendNotificationIfFinditRevertedCulprit(self):
     pipeline = SendNotificationForCulpritPipeline()
     self.assertFalse(pipeline.run('m', 'b71', 71, 'chromium', 'r7', False,
                                   create_revert_cl_pipeline.CREATED_BY_FINDIT))

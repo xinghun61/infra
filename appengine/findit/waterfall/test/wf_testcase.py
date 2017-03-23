@@ -144,6 +144,12 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
 }
 
 
+_DEFAULT_CODE_REVIEW_SETTINGS = {
+    'rietveld_hosts': ['codereview.chromium.org'],
+    'gerrit_hosts': ['chromium-review.googlesource.com'],
+}
+
+
 DEFAULT_CONFIG_DATA = {
     'steps_for_masters_rules': _DEFAULT_STEPS_FOR_MASTERS_RULES,
     'builders_to_trybots': _DEFAULT_TRY_BOT_MAPPING,
@@ -152,6 +158,7 @@ DEFAULT_CONFIG_DATA = {
     'download_build_data_settings': _DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS,
     'action_settings': _DEFAULT_ACTION_SETTINGS,
     'check_flake_settings': _DEFAULT_CHECK_FLAKE_SETTINGS,
+    'code_review_settings': _DEFAULT_CODE_REVIEW_SETTINGS,
 }
 
 

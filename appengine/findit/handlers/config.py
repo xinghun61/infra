@@ -236,6 +236,11 @@ def _ValidateCheckFlakeSettings(settings):
                      float) and
           isinstance(settings.get('update_monorail_bug'), bool))
 
+def _ValidateCodeReviewSettings(settings):
+  return (isinstance(settings, dict) and
+          isinstance(settings.get('rietveld_hosts'), list) and
+          isinstance(settings.get('gerrit_hosts'), list))
+
 
 # Maps config properties to their validation functions.
 _CONFIG_VALIDATION_FUNCTIONS = {
@@ -246,6 +251,7 @@ _CONFIG_VALIDATION_FUNCTIONS = {
     'download_build_data_settings': _ValidateDownloadBuildDataSettings,
     'action_settings': _ValidateActionSettings,
     'check_flake_settings': _ValidateCheckFlakeSettings,
+    'code_review_settings': _ValidateCodeReviewSettings,
 }
 
 
@@ -310,6 +316,7 @@ class Configuration(BaseHandler):
         'download_build_data_settings': settings.download_build_data_settings,
         'action_settings': settings.action_settings,
         'check_flake_settings': settings.check_flake_settings,
+        'code_review_settings': settings.code_review_settings,
         'version': settings.version_number,
         'latest_version': latest_version,
         'updated_by': settings.updated_by,

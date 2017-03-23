@@ -117,6 +117,11 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
     'minimum_confidence_score_to_run_tryjobs': 0.6
 }
 
+_MOCK_CODE_REVIEW_SETTINGS = {
+    'rietveld_hosts': ['rietveld.org'],
+    'gerrit_hosts': ['gerrit.org'],
+}
+
 _MOCK_VERSION_NUMBER = 12
 
 
@@ -133,7 +138,8 @@ class ConfigTest(testing.AppengineTestCase):
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
-        'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS
+        'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
+        'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
     }
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
@@ -152,6 +158,7 @@ class ConfigTest(testing.AppengineTestCase):
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
         'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
+        'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
@@ -170,7 +177,8 @@ class ConfigTest(testing.AppengineTestCase):
         'swarming_settings': _MOCK_SWARMING_SETTINGS,
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
-        'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS
+        'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
+        'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
     }
     wf_config.FinditConfig.Get().Update(users.GetCurrentUser(), True,
                                         **config_data)
@@ -187,6 +195,7 @@ class ConfigTest(testing.AppengineTestCase):
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
         'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
+        'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
@@ -873,7 +882,8 @@ class ConfigTest(testing.AppengineTestCase):
             'swarming_settings': _MOCK_SWARMING_SETTINGS,
             'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
             'action_settings': _MOCK_ACTION_SETTINGS,
-            'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS
+            'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
+            'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS
         })
     }
 
@@ -903,6 +913,7 @@ class ConfigTest(testing.AppengineTestCase):
         'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
         'action_settings': _MOCK_ACTION_SETTINGS,
         'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
+        'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
@@ -1120,3 +1131,13 @@ class ConfigTest(testing.AppengineTestCase):
             'dive_rate_threshold': 0.4,
             'max_iterations_to_rerun': 800,
         }))
+
+  def testValidateCodeReviewSettings(self):
+    self.assertTrue(config._ValidateCodeReviewSettings({
+        'rietveld_hosts': ['abc.com'],
+        'gerrit_hosts': ['def.com'],
+    }))
+    self.assertFalse(config._ValidateCodeReviewSettings({
+        'rietveld_hosts': 'abc.com',
+        'gerrit_hosts': 'def.com',
+    }))

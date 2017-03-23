@@ -64,7 +64,8 @@ def _UpdateNotificationStatus(repo_name, revision, new_status):
 def _SendNotificationForCulprit(
     repo_name, revision, commit_position, code_review_url, revert_status):
   codereview = codereview_util.GetCodeReviewForReview(code_review_url)
-  change_id = codereview_util.GetChangeIdForReview(code_review_url)
+  change_id = codereview.GetChangeIdForReview(
+      code_review_url) if codereview else None
   sent = False
   if codereview and change_id:
     # Occasionally, a commit was not uploaded for code-review.
