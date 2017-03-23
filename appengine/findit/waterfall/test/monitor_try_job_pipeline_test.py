@@ -59,7 +59,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
 
     monitor_try_job_pipeline._UpdateTryJobMetadata(
-        try_job_data, failure_type.COMPILE, None, None, error, False)
+        try_job_data, failure_type.COMPILE, None, error, False)
     self.assertEqual(try_job_data.error, error_data)
 
   def testUpdateTryJobMetadata(self):
@@ -96,7 +96,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
 
     monitor_try_job_pipeline._UpdateTryJobMetadata(
-        try_job_data, failure_type.COMPILE, None, build, None, False)
+        try_job_data, failure_type.COMPILE, build, None, False)
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertIsNone(try_job_data.error)
     self.assertEqual(try_job_data.regression_range_size, 2)
@@ -107,7 +107,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.try_job_url, url)
 
     monitor_try_job_pipeline._UpdateTryJobMetadata(
-        try_job_data, failure_type.COMPILE, None, build, None, True)
+        try_job_data, failure_type.COMPILE, build, None, True)
     self.assertEqual(try_job_data.error, expected_error_dict)
     self.assertEqual(try_job_data.error_code, try_job_error.TIMEOUT)
 
@@ -212,6 +212,9 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'id': '1',
         'url': 'url',
         'status': 'COMPLETED',
+        'completed_ts': '1454367574000000',
+        'created_ts': '1454367570000000',
+        'updated_ts': '1454367574000000',
         'result_details_json': json.dumps({
             'properties': {
                 'report': {
@@ -260,6 +263,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertEqual(try_job_data.regression_range_size, regression_range_size)
+    self.assertIsInstance(try_job_data.start_time, datetime)
 
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
   def testGetTryJobsForTestMissingTryJobData(self, mock_module):

@@ -47,6 +47,8 @@ def FormatDatetime(date):
   """Returns a string representing the given UTC datetime."""
   if not date:
     return None
+  elif isinstance(date, basestring):  # pragma: no cover
+    return date
   else:
     return date.strftime('%Y-%m-%d %H:%M:%S UTC')
 
@@ -62,6 +64,7 @@ def DatetimeFromString(date):
       '%Y-%m-%dT%H:%M:%S.%f',
       '%Y-%m-%d %H:%M:%S',
       '%Y-%m-%dT%H:%M:%S',
+      '%Y-%m-%d %H:%M:%S UTC'
   ]
   for format_str in valid_formats:
     try:
