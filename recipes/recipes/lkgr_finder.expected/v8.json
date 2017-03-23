@@ -76,9 +76,31 @@
       "--verbose",
       "--email-errors",
       "--post",
-      "--allowed-lag=4"
+      "--allowed-lag=4",
+      "--html",
+      "/path/to/tmp/"
     ],
     "name": "calculate v8 lkgr"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "cp",
+      "-a",
+      "public-read",
+      "<html>lkgr-status</html>",
+      "gs://chromium-v8/lkgr-status/v8-lkgr-status.html"
+    ],
+    "infra_step": true,
+    "name": "gsutil upload",
+    "~followup_annotations": [
+      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-v8/lkgr-status/v8-lkgr-status.html@@@"
+    ]
   },
   {
     "name": "$result",
