@@ -16,8 +16,9 @@ def RunSteps(api):
   dest_repo = api.properties.get('dest_repo', source_repo + '/codesearch')
   extra_submodules = [
       x for x in api.properties.get('extra_submodules', '').split(',') if x]
-
-  api.sync_submodules(source_repo, dest_repo, extra_submodules=extra_submodules)
+  deps_path_prefix = api.properties.get('deps_path_prefix', None)
+  api.sync_submodules(source_repo, dest_repo, extra_submodules=extra_submodules,
+                      deps_path_prefix=deps_path_prefix)
 
 
 def GenTests(api):
@@ -38,3 +39,10 @@ def GenTests(api):
   yield api.test('with_two_extra_submodules') + api.properties(
       buildername='foo_builder',
       extra_submodules='src/foo=https://www.foo.com,src/bar=http://www.bar.com')
+  yield (
+      api.test('basic_with_prefix') +
+      api.properties(
+          source='https://chromium.googlesource.com/external/webrtc',
+          buildername='foo_builder',
+          deps_path_prefix='src/')
+  )
