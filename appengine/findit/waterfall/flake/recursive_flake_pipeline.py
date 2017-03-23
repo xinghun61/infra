@@ -47,7 +47,7 @@ _MINIMUM_PERCENT_BOT = 0.1
 
 def _UpdateAnalysisStatusUponCompletion(
     analysis, suspected_build, status, error, build_confidence_score=None,
-    try_job_status=analysis_status.SKIPPED):
+    try_job_status=analysis_status.SKIPPED):  # pragma: no cover
   if suspected_build is None:
     analysis.end_time = time_util.GetUTCNow()
     analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
@@ -61,7 +61,7 @@ def _UpdateAnalysisStatusUponCompletion(
   analysis.put()
 
 
-def _GetETAToStartAnalysis(manually_triggered):
+def _GetETAToStartAnalysis(manually_triggered):  # pragma: no cover
   """Returns an ETA as of a UTC datetime.datetime to start the analysis.
 
   If not urgent, Swarming tasks should be run off PST peak hours from 11am to
@@ -99,7 +99,7 @@ def _GetETAToStartAnalysis(manually_triggered):
 
 
 def _IsSwarmingTaskSufficientForCacheHit(
-    flake_swarming_task, number_of_iterations):
+    flake_swarming_task, number_of_iterations):  # pragma: no cover
   """Determines whether or not a swarming task is sufficient for a cache hit.
 
   Args:
@@ -126,7 +126,7 @@ def _IsSwarmingTaskSufficientForCacheHit(
 
 def _GetBestBuildNumberToRun(
     master_name, builder_name, preferred_run_build_number, step_name, test_name,
-    step_size, number_of_iterations):
+    step_size, number_of_iterations):  # pragma: no cover
   """Finds the optimal nearby swarming task build number to use for a cache hit.
 
   Builds are searched back looking for something either already completed or in
@@ -183,7 +183,8 @@ def _GetBestBuildNumberToRun(
   return candidate_build_number or preferred_run_build_number
 
 
-def _GetListOfNearbyBuildNumbers(preferred_run_build_number, maximum_threshold):
+def _GetListOfNearbyBuildNumbers(
+    preferred_run_build_number, maximum_threshold):  # pragma: no cover
   """Gets a list of numbers within range near preferred_run_build_number.
 
   Args:
@@ -211,7 +212,7 @@ def _GetListOfNearbyBuildNumbers(preferred_run_build_number, maximum_threshold):
   return nearby_build_numbers
 
 
-class RecursiveFlakePipeline(BasePipeline):
+class RecursiveFlakePipeline(BasePipeline):  # pragma: no cover
 
   def __init__(
       self, master_name, builder_name, preferred_run_build_number,
@@ -399,7 +400,7 @@ class RecursiveFlakePipeline(BasePipeline):
             manually_triggered=manually_triggered)
 
 
-def _NormalizeDataPoints(data_points):
+def _NormalizeDataPoints(data_points):  # pragma: no cover
   normalized_data_points = [
       (lambda data_point: NormalizedDataPoint(
           data_point.build_number, data_point.pass_rate))(
@@ -408,7 +409,7 @@ def _NormalizeDataPoints(data_points):
       normalized_data_points, key=lambda k: k.run_point_number, reverse=True)
 
 
-def _UpdateIterationsToRerun(analysis, iterations_to_rerun):
+def _UpdateIterationsToRerun(analysis, iterations_to_rerun):  # pragma: no cover
   if not iterations_to_rerun or not analysis.algorithm_parameters:
     return
 
@@ -419,14 +420,14 @@ def _UpdateIterationsToRerun(analysis, iterations_to_rerun):
       'iterations_to_rerun'] = iterations_to_rerun
 
 
-def _RemoveRerunBuildDataPoint(analysis):
+def _RemoveRerunBuildDataPoint(analysis):  # pragma: no cover
   if len(analysis.data_points) < 1 or analysis.data_points[-1].try_job_url:
     return
 
   analysis.data_points.pop()
 
 
-class NextBuildNumberPipeline(BasePipeline):
+class NextBuildNumberPipeline(BasePipeline):  # pragma: no cover
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   # Unused argument - pylint: disable=W0613
