@@ -25,6 +25,7 @@ import time
 import urllib
 
 from third_party import ezt
+from third_party import httpagentparser
 
 from google.appengine.api import users
 
@@ -260,13 +261,23 @@ class Servlet(webapp2.RequestHandler):
       if settings.dev_mode:
         csp_header = 'Content-Security-Policy-Report-Only'
         csp_scheme = 'http:'
-      user_agent = self.mr.request.headers.get('User-Agent', '')
-      csp_supports_nonce = (
-          ('Chrome' in user_agent or 'Firefox' in user_agent) and
-          ('Edge' not in user_agent))
+      user_agent_str = self.mr.request.headers.get('User-Agent', '')
+      ua = httpagentparser.detect(user_agent_str)
+      browser, browser_major_version = 'Unknown browser', 0
+      if ua.has_key('browser'):
+        browser = ua['browser']['name']
+        try:
+          browser_major_version = int(ua['browser']['version'].split('.')[0])
+        except ValueError:
+          logging.warn('Could not parse version: %r', ua['browser']['version'])
+      csp_supports_nonce = browser in ('Chrome', 'Firefox')
+      csp_supports_report_sample = (
+        (browser == 'Chrome' and browser_major_version >= 59) or
+        (browser == 'Opera' and browser_major_version >= 46))
       self.response.headers.add(csp_header,
            ("default-src %(scheme)s ; "
             "script-src"
+            " %(rep_samp)s"  # Report 40 chars of any inline violation.
             " 'unsafe-inline'"  # Only counts in browsers that lack CSP2.
             " 'strict-dynamic'"  # Allows <script nonce> to load more.
             " https://www.gstatic.com/recaptcha/api2/"
@@ -281,6 +292,7 @@ class Servlet(webapp2.RequestHandler):
             'nonce': nonce,
             'scheme': csp_scheme,
             'csp_self': '' if csp_supports_nonce else "'self'",
+            'rep_samp': 'report-sample' if csp_supports_report_sample else '',
             }))
 
       page_data.update(self._GatherFlagData(self.mr))
