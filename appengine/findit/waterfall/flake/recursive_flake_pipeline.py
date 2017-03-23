@@ -20,8 +20,8 @@ from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
 from waterfall.flake import lookback_algorithm
+from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.lookback_algorithm import NormalizedDataPoint
-from waterfall.flake.recursive_flake_try_job_pipeline import CreateCulprit
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
@@ -47,7 +47,7 @@ _MINIMUM_PERCENT_BOT = 0.1
 
 def _UpdateAnalysisStatusUponCompletion(
     analysis, suspected_build, status, error, build_confidence_score=None,
-    try_job_status=analysis_status.SKIPPED):  # pragma: no cover
+    try_job_status=analysis_status.SKIPPED):
   if suspected_build is None:
     analysis.end_time = time_util.GetUTCNow()
     analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
@@ -61,7 +61,7 @@ def _UpdateAnalysisStatusUponCompletion(
   analysis.put()
 
 
-def _GetETAToStartAnalysis(manually_triggered):  # pragma: no cover
+def _GetETAToStartAnalysis(manually_triggered):
   """Returns an ETA as of a UTC datetime.datetime to start the analysis.
 
   If not urgent, Swarming tasks should be run off PST peak hours from 11am to
@@ -99,7 +99,7 @@ def _GetETAToStartAnalysis(manually_triggered):  # pragma: no cover
 
 
 def _IsSwarmingTaskSufficientForCacheHit(
-    flake_swarming_task, number_of_iterations):  # pragma: no cover
+    flake_swarming_task, number_of_iterations):
   """Determines whether or not a swarming task is sufficient for a cache hit.
 
   Args:
@@ -126,7 +126,7 @@ def _IsSwarmingTaskSufficientForCacheHit(
 
 def _GetBestBuildNumberToRun(
     master_name, builder_name, preferred_run_build_number, step_name, test_name,
-    step_size, number_of_iterations):  # pragma: no cover
+    step_size, number_of_iterations):
   """Finds the optimal nearby swarming task build number to use for a cache hit.
 
   Builds are searched back looking for something either already completed or in
@@ -183,8 +183,7 @@ def _GetBestBuildNumberToRun(
   return candidate_build_number or preferred_run_build_number
 
 
-def _GetListOfNearbyBuildNumbers(
-    preferred_run_build_number, maximum_threshold):  # pragma: no cover
+def _GetListOfNearbyBuildNumbers(preferred_run_build_number, maximum_threshold):
   """Gets a list of numbers within range near preferred_run_build_number.
 
   Args:
@@ -212,7 +211,7 @@ def _GetListOfNearbyBuildNumbers(
   return nearby_build_numbers
 
 
-class RecursiveFlakePipeline(BasePipeline):  # pragma: no cover
+class RecursiveFlakePipeline(BasePipeline):
 
   def __init__(
       self, master_name, builder_name, preferred_run_build_number,
@@ -400,7 +399,7 @@ class RecursiveFlakePipeline(BasePipeline):  # pragma: no cover
             manually_triggered=manually_triggered)
 
 
-def _NormalizeDataPoints(data_points):  # pragma: no cover
+def _NormalizeDataPoints(data_points):
   normalized_data_points = [
       (lambda data_point: NormalizedDataPoint(
           data_point.build_number, data_point.pass_rate))(
@@ -409,7 +408,7 @@ def _NormalizeDataPoints(data_points):  # pragma: no cover
       normalized_data_points, key=lambda k: k.run_point_number, reverse=True)
 
 
-def _UpdateIterationsToRerun(analysis, iterations_to_rerun):  # pragma: no cover
+def _UpdateIterationsToRerun(analysis, iterations_to_rerun):
   if not iterations_to_rerun or not analysis.algorithm_parameters:
     return
 
@@ -420,14 +419,14 @@ def _UpdateIterationsToRerun(analysis, iterations_to_rerun):  # pragma: no cover
       'iterations_to_rerun'] = iterations_to_rerun
 
 
-def _RemoveRerunBuildDataPoint(analysis):  # pragma: no cover
+def _RemoveRerunBuildDataPoint(analysis):
   if len(analysis.data_points) < 1 or analysis.data_points[-1].try_job_url:
     return
 
   analysis.data_points.pop()
 
 
-class NextBuildNumberPipeline(BasePipeline):  # pragma: no cover
+class NextBuildNumberPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   # Unused argument - pylint: disable=W0613
@@ -529,7 +528,7 @@ class NextBuildNumberPipeline(BasePipeline):  # pragma: no cover
             logging.info('Single commit in the blame list of suspected build')
             culprit_confidence_score = confidence.SteppinessForCommitPosition(
                 analysis.data_points, suspected_build_point.commit_position)
-            culprit = CreateCulprit(
+            culprit = recursive_flake_try_job_pipeline.CreateCulprit(
                 suspected_build_point.git_hash,
                 suspected_build_point.commit_position,
                 culprit_confidence_score)

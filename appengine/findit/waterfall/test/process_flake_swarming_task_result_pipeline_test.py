@@ -13,6 +13,7 @@ from waterfall import build_util
 from waterfall import process_flake_swarming_task_result_pipeline
 from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
+from waterfall import process_flake_swarming_task_result_pipeline
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
 from waterfall.test import (
@@ -37,8 +38,11 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock(swarming_util, 'GetSwarmingTaskResultById',
               self._MockedGetSwarmingTaskResultById)
 
+  @mock.patch.object(
+      process_flake_swarming_task_result_pipeline,
+      '_GetCommitsBetweenRevisions', return_value=['r4', 'r3', 'r2', 'r1'])
   @mock.patch.object(build_util, 'GetBuildInfo')
-  def testCheckTestsRunStatuses(self, mocked_fn):
+  def testCheckTestsRunStatuses(self, mocked_fn, _):
     build_info = BuildInfo(
         self.master_name, self.build_number, self.build_number)
     build_info.commit_position = 12345
@@ -65,8 +69,11 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
             base_test._SAMPLE_FAILURE_LOG, *call_params))
     self.assertEqual(base_test._EXPECTED_TESTS_STATUS, tests_statuses)
 
+  @mock.patch.object(
+      process_flake_swarming_task_result_pipeline,
+      '_GetCommitsBetweenRevisions', return_value=['r4', 'r3', 'r2', 'r1'])
   @mock.patch.object(build_util, 'GetBuildInfo')
-  def testCheckTestsRunStatusesZeroBuildNumber(self, mocked_fn):
+  def testCheckTestsRunStatusesZeroBuildNumber(self, mocked_fn, _):
     build_info = BuildInfo(self.master_name, self.build_number, 0)
     build_info.commit_position = 12345
     build_info.chromium_revision = 'a1b2c3d4'
@@ -85,8 +92,11 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         self.test_name, 1)
     self.assertIsNone(analysis.data_points[0].previous_build_commit_position)
 
+  @mock.patch.object(
+      process_flake_swarming_task_result_pipeline,
+      '_GetCommitsBetweenRevisions', return_value=['r4', 'r3', 'r2', 'r1'])
   @mock.patch.object(build_util, 'GetBuildInfo')
-  def testCheckTestsRunStatusesWhenTestDoesNotExist(self, mocked_fn):
+  def testCheckTestsRunStatusesWhenTestDoesNotExist(self, mocked_fn, _):
     build_info = BuildInfo(
         self.master_name, self.builder_name, self.build_number)
     build_info.commit_position = 12345

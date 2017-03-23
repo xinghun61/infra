@@ -11,6 +11,7 @@ from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import build_util
+from waterfall import process_flake_swarming_task_result_pipeline
 from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
 from waterfall.process_base_swarming_task_result_pipeline import (
@@ -194,8 +195,11 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
             _SAMPLE_FAILURE_LOG))
     self.assertEqual(_EXPECTED_TESTS_STATUS, tests_statuses)
 
+  @mock.patch.object(
+      process_flake_swarming_task_result_pipeline,
+      '_GetCommitsBetweenRevisions', return_value=['r4', 'r3', 'r2', 'r1'])
   @mock.patch.object(build_util, 'GetBuildInfo')
-  def testMonitorSwarmingTaskTimeOut(self, mocked_fn):
+  def testMonitorSwarmingTaskTimeOut(self, mocked_fn, _):
     build_info = BuildInfo(
         self.master_name, self.builder_name, self.build_number)
     build_info.commit_position = 12345
@@ -457,8 +461,11 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(datetime.datetime(2016, 2, 10, 18, 33, 9),
                      task.completed_time)
 
+  @mock.patch.object(
+      process_flake_swarming_task_result_pipeline,
+      '_GetCommitsBetweenRevisions', return_value=['r4', 'r3', 'r2', 'r1'])
   @mock.patch.object(build_util, 'GetBuildInfo')
-  def testMonitorSwarmingTaskStepNotExist(self, mocked_fn):
+  def testMonitorSwarmingTaskStepNotExist(self, mocked_fn, _):
     task_id = NO_TASK
 
     build_info = BuildInfo(
