@@ -70,6 +70,7 @@ def RunSteps(api, buildername):
       botconfig['lkgr_status_gs_path'],
       '%s-lkgr-status.html' % botconfig['project'],
       args=['-a', 'public-read'],
+      metadata={'Content-Type': 'text/html'},
     )
 
 

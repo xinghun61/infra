@@ -90,6 +90,8 @@
       "--",
       "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
       "----",
+      "-h",
+      "Content-Type:text/html",
       "cp",
       "-a",
       "public-read",
