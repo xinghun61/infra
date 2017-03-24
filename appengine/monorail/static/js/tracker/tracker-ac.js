@@ -401,6 +401,10 @@ function TKR_setUpSearchStore(
                 'Issues that are blocking other issues');
   TKR_addACItem(searchWordsNeg, docDict, '-has:blocking',
                 'Issues that are not blocking other issues');
+  TKR_addACItem(searchWords, docDict, 'has:mergedinto',
+                'Issues that were merged into other issues');
+  TKR_addACItem(searchWordsNeg, docDict, '-has:mergedinto',
+                'Issues that were not merged into other issues');
 
   TKR_addACItem(searchWords, docDict, 'is:starred',
                 'Starred by me');
@@ -434,6 +438,8 @@ function TKR_setUpSearchStore(
                 'Blocked on the specified issues');
   TKR_addACItem(searchWords, docDict, 'blocking:1',
                 'Blocking the specified issues');
+  TKR_addACItem(searchWords, docDict, 'mergedinto:1',
+                'Merged into the specified issues');
   TKR_addACItem(searchWords, docDict, 'is:ownerbouncing',
                 'Issues with owners we cannot contact');
   TKR_addACItem(searchWords, docDict, 'is:spam', 'Issues classified as spam');
