@@ -58,6 +58,7 @@ class ResultFeedbackTest(testing.AppengineTestCase):
         'reason': 'some reason',
         'confidence': 1
     }
+
     analysis.result = {'found': True,
                        'suspected_cls': [suspected_cl],
                        'suspected_components': ['Blink>API', 'Blink>DOM'],
@@ -115,6 +116,8 @@ class ResultFeedbackTest(testing.AppengineTestCase):
     }
 
   def testDisplayAnanlysisResultWithStactraceString(self):
+    self.analysis.culprit_cls = [
+        'https://chromium.googlesource.com/chromium/src/+/346a']
     expected_result = self._GenerateDisplayData(self.analysis)
     response_json = self.test_app.get('/result-feedback?format=json&'
                                       'key=%s' % self.analysis.key.urlsafe())

@@ -61,6 +61,13 @@ class ResultFeedback(BaseHandler):
         stack_strs.append('\n'.join([str(frame) for frame in stack.frames]))
       stacktrace_str = '\n'.join(stack_strs)
 
+    # Legacy culprit cls is a list of Suspect.ToDict(), new data is just a list
+    # of commit urls.
+    culprit_cls = None
+    if analysis.culprit_cls:
+      culprit_cls = [(cl if isinstance(cl, basestring) else cl['url'])
+                     for cl in analysis.culprit_cls]
+
     data = {
         'client': self.client,
         'crash_url': analysis.crash_url,
@@ -73,7 +80,7 @@ class ResultFeedback(BaseHandler):
         'stack_trace': stacktrace_str,
         'suspected_cls': analysis.result.get(
             'suspected_cls') if analysis.result else None ,
-        'culprit_cls': analysis.culprit_cls,
+        'culprit_cls': culprit_cls,
         'suspected_project': analysis.result.get(
             'suspected_project') if analysis.result else None,
         'culprit_project': analysis.culprit_project,

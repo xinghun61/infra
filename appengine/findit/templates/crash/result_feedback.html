@@ -100,7 +100,15 @@
       return 'culprit_' + result;
     }
 
+    function convertClsToString(cls) {
+      result_str = '';
+      for (var i in cls) {
+        result_str += cls[i] + '\n';
+      }
+      return result_str;
+    }
 
+    //Action to take when click triage (correct/incorrect/unsure) buttons.
     function triageAnalysisResult(e) {
       var target = $(this);
       if (target.hasClass('triaged'))
@@ -112,18 +120,23 @@
       var culprit_result = getCulpritPropertyNameForResult(result)
       if (target.hasClass('incorrect')) {
         var triage_status = 1;
+        update_data[culprit_result] = null;
       } else if (target.hasClass('correct')) {
         var triage_status = 2;
+        //Converts a list of suspected cl dicts to a list of commit urls.
         if (result == 'suspected_cls') {
-          update_data[culprit_result] = window[result];
-          for (var i in update_data[culprit_result]) {
-            update_data[culprit_result][i] = update_data[culprit_result][i]['url'];
+          var culprits = [];
+          for (var i in window[result]) {
+            culprits[i] = window[result][i]['url'];
           }
-        } else {
-          update_data[culprit_result] = window[result];
         }
+        else {
+          var culprits = window[result];
+        }
+        update_data[culprit_result] = culprits;
       } else if (target.hasClass('unsure')) {
         var triage_status = 3;
+        update_data[culprit_result] = null;
       }
       update_data[result + '_triage_status'] = triage_status;
 
@@ -132,10 +145,19 @@
           $('.triaged[result_property=\'' + result + '\']').addClass('triage').removeClass('triaged');
           target.addClass('triaged').removeClass('triage');
           if (triage_status == 2) {
-            $('#' + result + '_culprit_input').addClass('not-display');
-            $('#' + culprit_result).val(update_data[culprit_result]);
-          } else {
+            culprit_result_str = update_data[culprit_result];
+            if (culprit_result == 'culprit_cls') {
+              culprit_result_str = convertClsToString(update_data[culprit_result])
+            }
+            $('#' + culprit_result).val(culprit_result_str);
+          }
+          //Show the input box for suspected_cl anyway even if the triage result is correct, this is because we may have 3 result, but only one of them is correct,
+          //we want the know the exact correct culprit.
+          if (result == 'suspected_cls' || triage_status != 2) {
             $('#' + result + '_culprit_input').removeClass('not-display');
+          }
+          else {
+            $('#' + result + '_culprit_input').addClass('not-display');
           }
         } else {
           alert('Failed to update triage results. Please refresh and try again.');
@@ -148,6 +170,7 @@
     }
 
 
+    //Action after clicking save button.
     function saveCulprits(e) {
       e.preventDefault();
       var update_data = {};
@@ -155,6 +178,9 @@
       for (var i in properties) {
         var value = $('#' + properties[i]).val()
         if (value) {
+          if (properties[i] == 'culprit_cls') {
+            value = value.split('\n').filter(function(s) {return s != ''})
+          }
           update_data[properties[i]] = value;
         }
       }
@@ -178,14 +204,18 @@
           $('#' + result + '_culprit_input').removeClass('not-display');
         } else if (triage_status == 2) {  // Triaged-correct.
           $('.correct[result_property=\'' + result + '\']').addClass('triaged').removeClass('triage');
-          $('#' + result + '_culprit_input').addClass('not-display');
+          if (result == 'suspected_cls') {
+            $('#' + result + '_culprit_input').removeClass('not-display');
+          } else {
+            $('#' + result + '_culprit_input').addClass('not-display');
+          }
         } else if (triage_status == 3) {  // Triaged-unsure.
           $('.unsure[result_property=\'' + result + '\']').addClass('triaged').removeClass('triage');
           $('#' + result + '_culprit_input').removeClass('not-display');
         }
       });
       $('#culprit_regression_range').val(culprit_regression_range);
-      $('#culprit_cls').val(culprit_cls);
+      $('#culprit_cls').val(convertClsToString(culprit_cls));
       $('#culprit_project').val(culprit_project);
       $('#culprit_components').val(culprit_components);
       $('#note').val(note);
