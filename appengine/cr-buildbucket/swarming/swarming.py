@@ -484,9 +484,6 @@ def create_task_async(build):
   build.leasee = _self_identity()
   build.never_leased = False
 
-  # Make it STARTED right away
-  # because swarming does not notify on task start.
-  build.status = model.BuildStatus.STARTED
   url_format = bucket_cfg.swarming.url_format or DEFAULT_URL_FORMAT
   build.url = url_format.format(
       swarming_hostname=bucket_cfg.swarming.hostname,
@@ -732,7 +729,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
     @ndb.transactional_tasklet
     def txn(build_key):
       build = yield build_key.get_async()
-      if build.status != model.BuildStatus.STARTED:  # pragma: no cover
+      if build.status == model.BuildStatus.COMPLETED:  # pragma: no cover
         return
 
       need_put = False
@@ -768,8 +765,11 @@ class CronUpdateBuilds(webapp2.RequestHandler):
   @decorators.require_cronjob
   def get(self):  # pragma: no cover
     q = model.Build.query(
-        model.Build.status == model.BuildStatus.STARTED,
-        model.Build.swarming_task_id != None)
+        model.Build.swarming_task_id != None,
+        # We cannot have a second negation filter, so use IN.
+        # This will result in two datastore queries, which is fine.
+        model.Build.status.IN(
+            [model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED]))
     q.map_async(self.update_build_async).get_result()
 
 

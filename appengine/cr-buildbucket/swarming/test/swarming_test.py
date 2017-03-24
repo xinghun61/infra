@@ -1130,10 +1130,20 @@ class CronUpdateTest(testing.AppengineTestCase):
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_update_build_async(self, load_task_result_async):
     load_task_result_async.return_value = futuristic({
-      'state': 'COMPLETED',
+      'state': 'RUNNING',
     })
 
     build = self.build
+    swarming.CronUpdateBuilds().update_build_async(build).get_result()
+    build = build.key.get()
+    self.assertEqual(build.status, model.BuildStatus.STARTED)
+    self.assertIsNotNone(build.lease_key)
+    self.assertIsNone(build.complete_time)
+
+    load_task_result_async.return_value = futuristic({
+      'state': 'COMPLETED',
+    })
+
     swarming.CronUpdateBuilds().update_build_async(build).get_result()
     build = build.key.get()
     self.assertEqual(build.status, model.BuildStatus.COMPLETED)
