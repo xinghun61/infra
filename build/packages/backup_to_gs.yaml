@@ -1,0 +1,11 @@
+package: infra/tools/backup_to_gs/${platform}
+description: backup_to_gs backs up directories to Google Cloud Storage.
+builders:
+  - infra-continuous-precise-32
+  - infra-continuous-precise-64
+go_packages:
+  - infra/tools/backup_to_gs
+root: ../../go/bin
+data:
+  - file: backup_to_gs{exe_suffix}
+  - version_file: .versions/backup_to_gs{exe_suffix}.cipd_version
