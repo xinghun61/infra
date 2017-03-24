@@ -571,6 +571,8 @@
         1001: 'PFQ failures',
         1002: 'Canary failures',
         1003: 'Release branch failures',
+        1004: 'Chrome PFQ informational failures',
+        1005: 'Chromium PFQ informational failures',
       }[category];
     },
 
