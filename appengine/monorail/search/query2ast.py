@@ -114,6 +114,7 @@ _ISSUE_FIELDS_LIST = [
     ('label', TXT),
     ('label_id', NUM),
     ('mergedinto', NUM),
+    ('mergedinto_id', NUM),
     ('open', BOOL),
     ('owner', TXT),
     ('ownerbouncing', BOOL),

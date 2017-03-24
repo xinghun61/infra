@@ -151,6 +151,20 @@ def _PreprocessBlockingCond(
       int_values=issue_ids)
 
 
+def _PreprocessMergedIntoCond(
+    cnxn, cond, project_ids, services, _harmonized_config):
+  """Preprocess mergedinto=xyz and has:mergedinto conds.
+
+  Preprocesses mergedinto=xyz cond into mergedinto_id:issue_ids.
+  Preprocesses has:mergedinto cond into has:mergedinto_id.
+  """
+  issue_ids = _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services)
+  return ast_pb2.Condition(
+      op=_TextOpToIntOp(cond.op),
+      field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['mergedinto_id']],
+      int_values=issue_ids)
+
+
 def _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services):
   """Returns global IDs from the local IDs provided in the cond."""
   # Get {project_name: project} for all projects in project_ids.
@@ -404,6 +418,7 @@ _PREPROCESSORS = {
     'spam': _PreprocessIsSpamCond,
     'blockedon': _PreprocessBlockedOnCond,
     'blocking': _PreprocessBlockingCond,
+    'mergedinto': _PreprocessMergedIntoCond,
     'status': _PreprocessStatusCond,
     'label': _PreprocessLabelCond,
     'component': _PreprocessComponentCond,

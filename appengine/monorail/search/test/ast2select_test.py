@@ -217,6 +217,27 @@ class AST2SelectTest(unittest.TestCase):
           where)
       self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
+  def testMergedIntoIDCond_MultiValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['mergedinto_id']
+    txt_cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.EQ, [fd], ['1', '2', '3'], [])
+    num_cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1L, 2L, 3L])
+
+    for cond, expected in ((txt_cond, ['1', '2', '3']),
+                           (num_cond, [1L, 2L, 3L])):
+      left_joins, where = ast2select._ProcessMergedIntoIDCond(
+          cond, 'Cond1', 'Issue1')
+      self.assertEqual(
+          [('IssueRelation AS Cond1 ON Issue.id = Cond1.issue_id AND '
+            'Cond1.kind = %s AND Cond1.dst_issue_id IN (%s,%s,%s)',
+            ['mergedinto'] + expected)],
+          left_joins)
+      self.assertTrue(sql._IsValidJoin(left_joins[0][0]))
+      self.assertEqual(
+          [('Cond1.issue_id IS NOT NULL', [])],
+          where)
+      self.assertTrue(sql._IsValidWhereCond(where[0][0]))
+
   def testHasBlockedCond(self):
     for op, expected in ((ast_pb2.QueryOp.IS_DEFINED, 'IS NOT NULL'),
                          (ast_pb2.QueryOp.IS_NOT_DEFINED, 'IS NULL')):

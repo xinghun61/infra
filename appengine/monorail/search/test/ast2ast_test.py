@@ -290,6 +290,33 @@ class AST2ASTTest(unittest.TestCase):
         'project prefixes is ambiguous and is currently not supported.',
         cm.exception.message)
 
+  def testPreprocessMergedIntoCond_WithSingleProjectID(self):
+    field = BUILTIN_ISSUE_FIELDS['mergedinto']
+    id_field = BUILTIN_ISSUE_FIELDS['mergedinto_id']
+    self.services.project.TestAddProject('Project1', project_id=1)
+    issue1 = fake.MakeTestIssue(
+        project_id=1, local_id=1, summary='sum', status='new', owner_id=2,
+        issue_id=101)
+    issue2 = fake.MakeTestIssue(
+        project_id=1, local_id=2, summary='sum', status='new', owner_id=2,
+        issue_id=102)
+    self.services.issue.TestAddIssue(issue1)
+    self.services.issue.TestAddIssue(issue2)
+
+    for local_ids, expected in (
+        (['1'], [101]),  # One existing issue.
+        (['Project1:1'], [101]),  # One existing issue with project prefix.
+        (['1', '2'], [101, 102]),  # Two existing issues.
+        (['3'], [])):  # Non-existant issue.
+      cond = ast_pb2.MakeCond(
+          ast_pb2.QueryOp.TEXT_HAS, [field], local_ids, [])
+      new_cond = ast2ast._PreprocessMergedIntoCond(
+          self.cnxn, cond, [1], self.services, None)
+      self.assertEqual(ast_pb2.QueryOp.EQ, new_cond.op)
+      self.assertEqual([id_field], new_cond.field_defs)
+      self.assertEqual(expected, new_cond.int_values)
+      self.assertEqual([], new_cond.str_values)
+
   def testPreprocessIsSpamCond(self):
     spam_field = BUILTIN_ISSUE_FIELDS['spam']
     is_spam_field = BUILTIN_ISSUE_FIELDS['is_spam']

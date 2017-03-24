@@ -69,26 +69,33 @@ def BuildSQLQuery(query_ast):
 
 def _ProcessBlockedOnIDCond(cond, alias, _user_alias):
   """Convert a blockedon_id=issue_id cond to SQL."""
-  return _GetBlockIDCond(cond, alias, blocking_id=False)
+  return _ProcessRelatedIDCond(cond, alias, 'blockedon')
 
 
 def _ProcessBlockingIDCond(cond, alias, _user_alias):
   """Convert a blocking_id:1,2 cond to SQL."""
-  return _GetBlockIDCond(cond, alias, blocking_id=True)
+  return _ProcessRelatedIDCond(cond, alias, 'blockedon', reverse_relation=True)
 
 
-def _GetBlockIDCond(cond, alias, blocking_id=False):
-  """Convert either a blocking_id or blockedon_id cond to SQL.
+def _ProcessMergedIntoIDCond(cond, alias, _user_alias):
+  """Convert a mergedinto:1,2 cond to SQL."""
+  return _ProcessRelatedIDCond(cond, alias, 'mergedinto')
 
-  If blocking_id is False then it is treated as a blockedon_id request,
-  otherwise it is treated as a blocking_id request.
+
+def _ProcessRelatedIDCond(cond, alias, kind, reverse_relation=False):
+  """Convert either blocking_id, blockedon_id, or mergedinto_id cond to SQL.
+
+  Normally, we query for issue_id values where the dst_issue_id matches the
+  IDs specified in the cond.  However, when reverse_relation is True, we
+  query for dst_issue_id values where issue_id matches.  This is done for
+  blockedon_id.
   """
-  matching_issue_col = 'issue_id' if blocking_id else 'dst_issue_id'
-  ret_issue_col = 'dst_issue_id' if blocking_id else 'issue_id'
+  matching_issue_col = 'issue_id' if reverse_relation else 'dst_issue_id'
+  ret_issue_col = 'dst_issue_id' if reverse_relation else 'issue_id'
 
   kind_cond_str, kind_cond_args = _Compare(
       alias, ast_pb2.QueryOp.EQ, tracker_pb2.FieldTypes.STR_TYPE, 'kind',
-      ['blockedon'])
+      [kind])
   left_join_str = (
       'IssueRelation AS {alias} ON Issue.id = {alias}.{ret_issue_col} AND '
        '{kind_cond}').format(
@@ -443,6 +450,7 @@ _PROCESSORS = {
     'component_id': _ProcessComponentIDCond,
     'blockedon_id': _ProcessBlockedOnIDCond,
     'blocking_id': _ProcessBlockingIDCond,
+    'mergedinto_id': _ProcessMergedIntoIDCond,
     'attachment': _ProcessAttachmentCond,
     }
 
