@@ -328,6 +328,12 @@
   <div>
     <b>Analysis Result:</b><br>
     Regression range analysis:  {{ analysis_status }}<br>
+
+    {% if last_attempted_swarming_task_id %}
+      <br>
+      Last-attempted swarming task: <a href="https://chromium-swarm.appspot.com/task?id={{ last_attempted_swarming_task_id }}" target="_blank"></a>
+      <br>
+    {% endif %}
     {% if suspected_flake.commit_position and suspected_flake.git_hash %}
       <li>Regression Range: <a href="https://crrev.com/{{ suspected_flake.lower_bound_git_hash }}..{{ suspected_flake.git_hash }}?pretty=fuller" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.lower_bound_commit_position }}:{{ suspected_flake.commit_position }}</a>
         {% if suspected_flake.confidence %}
@@ -342,6 +348,16 @@
     {% if try_job_status %}
       <br>
       Culprit analysis:  {{ try_job_status }}<br>
+    {% endif %}
+    {% if last_attempted_try_job %}
+      <br>
+      Last-attempted try job:
+      {% if last_attempted_try_job.url %}
+        <a href="{{ last_attempted_try_job.url }}" target="_blank">{{ last_attempted_try_job.status }}</a>
+      {% else %}
+        {{ last_attempted_try_job.status }}
+      {% endif %}
+      <br>
     {% endif %}
     {% if (culprit.commit_position or culprit.revision) and culprit.url %}
       <li>Culprit: <a href="{{ culprit.url }}" target="_blank" style="color:red;font-weight:bold">{{ culprit.commit_position or culprit.revision }}</a>

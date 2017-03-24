@@ -18,6 +18,8 @@ from model.analysis_status import STATUS_TO_DESCRIPTION
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.flake_culprit import FlakeCulprit
+from model.flake.flake_try_job import FlakeTryJob
+from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake import flake_analysis_service
@@ -136,7 +138,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'version_number': 1,
         'show_debug_info': False,
         'culprit': {},
-        'try_job_status': None
+        'try_job_status': None,
+        'last_attempted_swarming_task_id': None,
+        'last_attempted_try_job': {}
     }
 
     self.assertEquals(200, response.status_int)
@@ -240,7 +244,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'version_number': 1,
         'show_debug_info': False,
         'culprit': {},
-        'try_job_status': None
+        'try_job_status': None,
+        'last_attempted_swarming_task_id': None,
+        'last_attempted_try_job': {}
     }
 
     self.assertEqual(200, response.status_int)
@@ -463,3 +469,79 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_points = [data_point1, data_point2]
     self.assertEqual((1, 1),
                      check_flake._GetNumbersOfDataPointGroups(data_points))
+
+  def testGetLastAttemptedTryJobDetailsNoRevision(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.last_attempted_revision = None
+    self.assertEqual({}, check_flake._GetLastAttemptedTryJobDetails(analysis))
+
+  def testGetLastAttemptedTryJobDetailsNoTryJob(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.last_attempted_revision = 'r1'
+    self.assertEqual({}, check_flake._GetLastAttemptedTryJobDetails(analysis))
+
+  def testGetLastAttemptedTryJobDetailsNoTryJobID(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    revision = 'r1'
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    analysis.last_attempted_revision = revision
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, revision)
+    try_job.put()
+    self.assertEqual({}, check_flake._GetLastAttemptedTryJobDetails(analysis))
+
+  def testGetLastAttemptedTryJobDetailsNoTryJobData(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    revision = 'r1'
+    try_job_id = '12345'
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    analysis.last_attempted_revision = revision
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, revision)
+    try_job.try_job_ids = [try_job_id]
+    try_job.put()
+    self.assertEqual({}, check_flake._GetLastAttemptedTryJobDetails(analysis))
+
+  def testGetLastAttemptedTryJobDetails(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    revision = 'r1'
+    try_job_id = '12345'
+    try_job_url = 'url'
+    status = analysis_status.RUNNING
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    analysis.last_attempted_revision = revision
+    analysis.put()
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, revision)
+    try_job.try_job_ids = [try_job_id]
+    try_job.status = status
+    try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.try_job_url = try_job_url
+    try_job_data.put()
+    self.assertEqual(
+        {
+            'url': try_job_url,
+            'status': analysis_status.STATUS_TO_DESCRIPTION.get(status)
+        },
+        check_flake._GetLastAttemptedTryJobDetails(analysis))

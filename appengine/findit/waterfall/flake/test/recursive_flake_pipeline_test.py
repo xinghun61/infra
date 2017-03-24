@@ -8,7 +8,6 @@ import mock
 
 from common import constants
 from common.pipeline_wrapper import pipeline_handlers
-from libs import time_util
 from model import analysis_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_swarming_task import FlakeSwarmingTask
@@ -60,6 +59,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.MockUTCNow(mocked_utcnow)
     self.assertEqual(mocked_utcnow,
                      recursive_flake_pipeline._GetETAToStartAnalysis(True))
+
   def testGetETAToStartAnalysisWhenTriggeredOnPSTWeekend(self):
     # Sunday 1pm in PST, and Sunday 8pm in UTC.
     mocked_pst_now = datetime(2016, 9, 04, 13, 0, 0, 0)
@@ -70,6 +70,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
       timezone_func.side_effect = [mocked_pst_now, None]
       self.assertEqual(mocked_utc_now,
                        recursive_flake_pipeline._GetETAToStartAnalysis(False))
+
   def testGetETAToStartAnalysisWhenTriggeredOffPeakHoursOnPSTWeekday(self):
     # Tuesday 1am in PST, and Tuesday 8am in UTC.
     mocked_pst_now = datetime(2016, 9, 20, 1, 0, 0, 0)
@@ -80,6 +81,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
       timezone_func.side_effect = [mocked_pst_now, None]
       self.assertEqual(mocked_utc_now,
                        recursive_flake_pipeline._GetETAToStartAnalysis(False))
+
   def testGetETAToStartAnalysisWhenTriggeredInPeakHoursOnPSTWeekday(self):
     # Tuesday 1pm in PST, and Tuesday 8pm in UTC.
     seconds_delay = 10
@@ -101,7 +103,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                        timezone_func.call_args_list[0])
       self.assertEqual(mock.call('UTC', mocked_pst_eta),
                        timezone_func.call_args_list[1])
-
 
   @mock.patch.object(RecursiveFlakePipeline, '_BotsAvailableForTask',
                      return_value=True)
@@ -276,16 +277,26 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, master_build_number, step_name, test_name)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
+  def testUpdateAnalysisUponCompletion(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.last_attempted_swarming_task_id = '12345'
+    recursive_flake_pipeline._UpdateAnalysisStatusUponCompletion(
+        analysis, 100, analysis_status.COMPLETED, None)
+    self.assertEqual(analysis.suspected_flake_build_number, 100)
+    self.assertIsNone(analysis.last_attempted_swarming_task_id)
+
   def testUpdateAnalysisUponCompletionError(self):
     expected_error = {
         'code': 1,
         'message': 'some error message'
     }
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.last_attempted_swarming_task_id = '12345'
     recursive_flake_pipeline._UpdateAnalysisStatusUponCompletion(
         analysis, 100, analysis_status.COMPLETED, expected_error)
     self.assertEqual(expected_error, analysis.error)
     self.assertEqual(analysis.suspected_flake_build_number, 100)
+    self.assertEqual(analysis.last_attempted_swarming_task_id, '12345')
 
   def testGetListOfNearbyBuildNumbers(self):
     self.assertEqual(
@@ -844,9 +855,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     version_number = 1
 
     step_metadata = {
-      'dimensions': {
-          'os': 'OS'
-      }
+        'dimensions': {
+            'os': 'OS'
+        }
     }
 
     mock_fn.return_value = {
@@ -986,13 +997,13 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
 
     analysis = MasterFlakeAnalysis.Create(
-      master_name, builder_name, master_build_number, step_name, test_name)
+        master_name, builder_name, master_build_number, step_name, test_name)
     analysis.status = analysis_status.COMPLETED
     analysis.Save()
 
     rfp = RecursiveFlakePipeline(
-      master_name, builder_name, build_number, step_name, test_name,
-      analysis.version_number, master_build_number)
+        master_name, builder_name, build_number, step_name, test_name,
+        analysis.version_number, master_build_number)
 
     rfp._LogUnexpectedAbort()
 

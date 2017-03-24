@@ -14,6 +14,8 @@ from libs import time_util
 from model import analysis_status
 from model import triage_status
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.flake_try_job import FlakeTryJob
+from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
@@ -129,6 +131,29 @@ def _GetNumbersOfDataPointGroups(data_points):
       build_level_number += 1
 
   return build_level_number, revision_level_number
+
+
+def _GetLastAttemptedTryJobDetails(analysis):
+  last_attempted_revision = analysis.last_attempted_revision
+  if not last_attempted_revision:
+    return {}
+
+  try_job = FlakeTryJob.Get(
+      analysis.master_name, analysis.builder_name, analysis.step_name,
+      analysis.test_name, last_attempted_revision)
+
+  if not try_job or not try_job.try_job_ids:
+    return {}
+
+  try_job_id = try_job.try_job_ids[-1]
+  try_job_data = FlakeTryJobData.Get(try_job_id)
+  if not try_job_data:
+    return {}
+
+  return {
+      'status': analysis_status.STATUS_TO_DESCRIPTION.get(try_job.status),
+      'url': try_job_data.try_job_url
+  }
 
 
 class CheckFlake(BaseHandler):
@@ -265,6 +290,9 @@ class CheckFlake(BaseHandler):
         'analysis_status': analysis.status_description,
         'try_job_status': analysis_status.STATUS_TO_DESCRIPTION.get(
             analysis.try_job_status),
+        'last_attempted_swarming_task_id': (
+            analysis.last_attempted_swarming_task_id),
+        'last_attempted_try_job': _GetLastAttemptedTryJobDetails(analysis),
         'version_number': analysis.version_number,
         'suspected_flake': suspected_flake,
         'culprit': culprit,

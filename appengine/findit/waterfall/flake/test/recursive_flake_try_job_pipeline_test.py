@@ -26,7 +26,7 @@ from waterfall.flake.recursive_flake_try_job_pipeline import (
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
-    UpdateAnalysisTryJobStatusUponCompletion)
+    UpdateAnalysisUponCompletion)
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
@@ -68,7 +68,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     iterations_to_rerun = analysis.algorithm_parameters.get(
-      'try_job_rerun', {}).get('iterations_to_rerun')
+        'try_job_rerun', {}).get('iterations_to_rerun')
 
     try_job = FlakeTryJob.Create(
         master_name, builder_name, step_name, test_name, revision)
@@ -117,6 +117,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(
         FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
                         revision))
+    self.assertEqual(analysis.last_attempted_revision, revision)
+    self.assertIsNone(analysis.last_attempted_swarming_task_id)
 
   def testRecursiveFlakeTryJobPipelineDoNotStartIfError(self):
     master_name = 'm'
@@ -367,30 +369,38 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(culprit.url)
     self.assertEqual(repo_name, culprit.repo_name)
 
-  def testUpdateAnalysisTryJobStatusUponCompletionFound(self):
+  def testUpdateAnalysisUponCompletionFound(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.last_attempted_revision = 'a1b2c3d4'
     culprit = FlakeCulprit.Create('repo_name', 'a1b2c3d4', 12345, 'url')
-    UpdateAnalysisTryJobStatusUponCompletion(
+    UpdateAnalysisUponCompletion(
         analysis, culprit, analysis_status.COMPLETED, None)
     self.assertIsNone(analysis.error)
+    self.assertIsNone(analysis.last_attempted_revision)
+    self.assertIsNone(analysis.last_attempted_swarming_task_id)
     self.assertEqual(culprit.revision, analysis.culprit.revision)
     self.assertEqual(analysis_status.COMPLETED, analysis.try_job_status)
     self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
 
-  def testUpdateAnalysisTryJobStatusUponCompletionNotFound(self):
+  def testUpdateAnalysisUponCompletionNotFound(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    UpdateAnalysisTryJobStatusUponCompletion(
+    analysis.last_attempted_revision = 'a1b2c3d4'
+    UpdateAnalysisUponCompletion(
         analysis, None, analysis_status.COMPLETED, None)
     self.assertIsNone(analysis.error)
+    self.assertIsNone(analysis.last_attempted_revision)
+    self.assertIsNone(analysis.last_attempted_swarming_task_id)
     self.assertIsNone(analysis.culprit)
     self.assertEqual(analysis_status.COMPLETED, analysis.try_job_status)
     self.assertEqual(result_status.NOT_FOUND_UNTRIAGED, analysis.result_status)
 
-  def testUpdateAnalysisTryJobStatusError(self):
+  def testUpdateAnalysisUponCompletionError(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    UpdateAnalysisTryJobStatusUponCompletion(
+    analysis.last_attempted_revision = 'a1b2c3d4'
+    UpdateAnalysisUponCompletion(
         analysis, None, analysis_status.ERROR, {'error': 'errror'})
     self.assertIsNotNone(analysis.error)
+    self.assertEqual('a1b2c3d4', analysis.last_attempted_revision)
     self.assertIsNone(analysis.culprit)
     self.assertEqual(analysis_status.ERROR, analysis.try_job_status)
     self.assertIsNone(analysis.result_status)
@@ -443,7 +453,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     build_id = 'b1'
 
     analysis = MasterFlakeAnalysis.Create(
-      master_name, builder_name, master_build_number, step_name, test_name)
+        master_name, builder_name, master_build_number, step_name, test_name)
     analysis.status = analysis_status.COMPLETED
     analysis.Save()
 
@@ -483,7 +493,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     commit_position = 1
 
     analysis = MasterFlakeAnalysis.Create(
-      master_name, builder_name, master_build_number, step_name, test_name)
+        master_name, builder_name, master_build_number, step_name, test_name)
     analysis.status = analysis_status.COMPLETED
     analysis.Save()
 

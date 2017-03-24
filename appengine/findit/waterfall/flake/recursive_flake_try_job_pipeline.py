@@ -53,18 +53,21 @@ def CreateCulprit(revision, commit_position, confidence_score,
   return culprit
 
 
-def UpdateAnalysisTryJobStatusUponCompletion(
+def UpdateAnalysisUponCompletion(
     flake_analysis, culprit, status, error):
   flake_analysis.end_time = time_util.GetUTCNow()
   flake_analysis.try_job_status = status
 
   if error:
     flake_analysis.error = error
-  elif culprit:
-    flake_analysis.culprit = culprit
-    flake_analysis.result_status = result_status.FOUND_UNTRIAGED
   else:
-    flake_analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
+    flake_analysis.last_attempted_swarming_task_id = None
+    flake_analysis.last_attempted_revision = None
+    if culprit:
+      flake_analysis.culprit = culprit
+      flake_analysis.result_status = result_status.FOUND_UNTRIAGED
+    else:
+      flake_analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
 
   flake_analysis.put()
 
@@ -156,7 +159,8 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
       # Set try_job_status as RUNNING to indicate the analysis is in try-job
       # mode.
       analysis.try_job_status = analysis_status.RUNNING
-      analysis.put()
+    analysis.last_attempted_revision = revision
+    analysis.put()
 
     with pipeline.InOrder():
       iterations_to_rerun = analysis.algorithm_parameters.get(
@@ -235,7 +239,7 @@ class NextCommitPositionPipeline(BasePipeline):
 
     # Don't call another pipeline if the previous try job failed.
     if try_job_data.error:
-      UpdateAnalysisTryJobStatusUponCompletion(
+      UpdateAnalysisUponCompletion(
           flake_analysis, None, analysis_status.ERROR, try_job_data.error)
       yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
       return
@@ -264,7 +268,7 @@ class NextCommitPositionPipeline(BasePipeline):
           suspected_commit_position)
       culprit = CreateCulprit(
           culprit_revision, suspected_commit_position, confidence_score)
-      UpdateAnalysisTryJobStatusUponCompletion(
+      UpdateAnalysisUponCompletion(
           flake_analysis, culprit, analysis_status.COMPLETED, None)
 
       yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())

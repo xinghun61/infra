@@ -178,6 +178,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                      task.started_time)
     self.assertEqual(datetime.datetime(2016, 2, 10, 18, 33, 9),
                      task.completed_time)
+    self.assertEqual(analysis.last_attempted_swarming_task_id, 'task_id1')
 
   @mock.patch.object(CachedGitilesRepository, 'GetCommitsBetweenRevisions',
                      return_value=['r4', 'r3', 'r2', 'r1'])

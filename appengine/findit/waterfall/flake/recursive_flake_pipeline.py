@@ -25,7 +25,7 @@ from waterfall.flake.lookback_algorithm import NormalizedDataPoint
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
-    UpdateAnalysisTryJobStatusUponCompletion)
+    UpdateAnalysisUponCompletion)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
@@ -53,6 +53,11 @@ def _UpdateAnalysisStatusUponCompletion(
     analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
   else:
     analysis.suspected_flake_build_number = suspected_build
+
+  if not error:
+    # Clear the last attempted swarming task id since it will be stored in
+    # the data point.
+    analysis.last_attempted_swarming_task_id = None
 
   analysis.error = error
   analysis.status = status
@@ -220,10 +225,9 @@ class RecursiveFlakePipeline(BasePipeline):
       use_nearby_neighbor=False, step_size=0, retries=0
   ):
     super(RecursiveFlakePipeline, self).__init__(
-      master_name, builder_name, preferred_run_build_number,
-      step_name, test_name, version_number, triggering_build_number,
-      step_metadata, manually_triggered, use_nearby_neighbor, step_size, retries
-    )
+        master_name, builder_name, preferred_run_build_number, step_name,
+        test_name, version_number, triggering_build_number, step_metadata,
+        manually_triggered, use_nearby_neighbor, step_size, retries)
     self.master_name = master_name
     self.builder_name = builder_name
     self.preferred_run_build_number = preferred_run_build_number
@@ -274,8 +278,8 @@ class RecursiveFlakePipeline(BasePipeline):
       return
 
     flake_analysis = MasterFlakeAnalysis.GetVersion(
-      self.master_name, self.builder_name, self.triggering_build_number,
-      self.step_name, self.test_name, version=self.version_number)
+        self.master_name, self.builder_name, self.triggering_build_number,
+        self.step_name, self.test_name, version=self.version_number)
 
     if flake_analysis and not flake_analysis.completed:
       flake_analysis.status = analysis_status.ERROR
@@ -332,15 +336,15 @@ class RecursiveFlakePipeline(BasePipeline):
     if not can_start_analysis:
       retries += 1
       pipeline_job = RecursiveFlakePipeline(
-        master_name, builder_name, preferred_run_build_number, step_name,
-        test_name, version_number, triggering_build_number, step_metadata,
-        manually_triggered=manually_triggered,
-        use_nearby_neighbor=use_nearby_neighbor, step_size=step_size,
-        retries=retries)
+          master_name, builder_name, preferred_run_build_number, step_name,
+          test_name, version_number, triggering_build_number, step_metadata,
+          manually_triggered=manually_triggered,
+          use_nearby_neighbor=use_nearby_neighbor, step_size=step_size,
+          retries=retries)
       # Disable attribute 'target' defined outside __init__ pylint warning,
       # because pipeline generates its own __init__ based on run function.
       pipeline_job.target = (  # pylint: disable=W0201
-        appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
+          appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
 
       if retries > _MAX_RETRY_TIMES:
         pipeline_job._StartOffPSTPeakHours(
@@ -376,7 +380,7 @@ class RecursiveFlakePipeline(BasePipeline):
         flake_analysis.put()
 
       # TODO(lijeffrey): Allow custom parameters supplied by user.
-      iterations =flake_analysis.algorithm_parameters.get(
+      iterations = flake_analysis.algorithm_parameters.get(
           'swarming_rerun', {}).get('iterations_to_rerun', 100)
       actual_run_build_number = _GetBestBuildNumberToRun(
           master_name, builder_name, preferred_run_build_number, step_name,
@@ -483,7 +487,7 @@ class NextBuildNumberPipeline(BasePipeline):
         0, triggering_build_number - max_build_numbers_to_look_back)
 
     if ((next_build_number < last_build_number or
-        next_build_number >= triggering_build_number) and
+         next_build_number >= triggering_build_number) and
         not iterations_to_rerun):  # Finished.
       build_confidence_score = None
       if suspected_build is not None:
@@ -532,7 +536,7 @@ class NextBuildNumberPipeline(BasePipeline):
                 suspected_build_point.git_hash,
                 suspected_build_point.commit_position,
                 culprit_confidence_score)
-            UpdateAnalysisTryJobStatusUponCompletion(
+            UpdateAnalysisUponCompletion(
                 analysis, culprit, analysis_status.COMPLETED, None)
         else:
           logging.error('Cannot run flake try jobs against empty blame list')
@@ -540,7 +544,7 @@ class NextBuildNumberPipeline(BasePipeline):
               'error': 'Could not start try jobs',
               'message': 'Empty blame list'
           }
-          UpdateAnalysisTryJobStatusUponCompletion(
+          UpdateAnalysisUponCompletion(
               analysis, None, analysis_status.ERROR, error)
 
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())

@@ -109,8 +109,8 @@ class MasterFlakeAnalysis(
     if not self.algorithm_parameters:
       return -1
     return (self.algorithm_parameters.get('swarming_rerun', {}).get(
-                'iterations_to_rerun') or
-            self.algorithm_parameters.get('iterations_to_rerun'))
+        'iterations_to_rerun') or self.algorithm_parameters.get(
+            'iterations_to_rerun'))
 
   @staticmethod
   def _CreateAnalysisId(
@@ -193,6 +193,8 @@ class MasterFlakeAnalysis(
     self.try_job_status = None
     self.data_points = []
     self.result_status = None
+    self.last_attempted_swarming_task_id = None
+    self.last_attempted_revision = None
 
   # The original build/step/test in which a flake actually occurred.
   # A CQ trybot step has to be mapped to a Waterfall buildbot step.
@@ -267,3 +269,9 @@ class MasterFlakeAnalysis(
   # Overall conclusion of analysis result for the flake. Found untriaged, Found
   # Correct, etc. used to filter what is displayed on the check flake dashboard.
   result_status = ndb.IntegerProperty(indexed=True)
+
+  # The task id of the last-attempted swarming task.
+  last_attempted_swarming_task_id = ndb.StringProperty(indexed=False)
+
+  # The revision the last-attempted try job tried to run on.
+  last_attempted_revision = ndb.StringProperty(indexed=False)
