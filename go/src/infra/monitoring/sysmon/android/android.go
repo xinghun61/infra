@@ -70,19 +70,34 @@ var (
 		nil,
 		field.String("file_name"))
 
+	allMetrics = []types.Metric{
+		cpuTemp,
+		battTemp,
+		battCharge,
+		devStatus,
+		devType,
+		devOS,
+		devUptime,
+		memFree,
+		memTotal,
+		procCount,
+		metricReadStatus,
+		metricSecondsStale,
+	}
+
 	portPathRE = regexp.MustCompile(`\d+/\d+`)
 )
 
 // Register adds tsmon callbacks to set android metrics.
 func Register() {
-	tsmon.RegisterCallback(func(c context.Context) {
+	tsmon.RegisterGlobalCallback(func(c context.Context) {
 		usr, err := user.Current()
 		if err != nil {
 			logging.Errorf(c, "Failed to fetch current user: %s", err)
 		} else if err = update(c, usr.HomeDir); err != nil {
 			logging.Errorf(c, "Failed to update Android metrics: %s", err)
 		}
-	})
+	}, allMetrics...)
 }
 
 func update(c context.Context, usrHome string) error {
