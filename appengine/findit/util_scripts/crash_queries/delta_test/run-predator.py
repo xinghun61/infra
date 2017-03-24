@@ -28,31 +28,30 @@ from crash.findit_for_chromecrash import FinditForChromeCrash
 from crash.type_enums import CrashClient
 from crash_queries.delta_test import delta_util
 from git_checkout.local_git_repository import LocalGitRepository
+from model.crash import crash_analysis
 from model.crash.crash_config import CrashConfig
 import remote_api
-
-_FRACAS_FEEDBACK_URL_TEMPLATE = (
-    'https://%s.appspot.com/crash/fracas-result-feedback?key=%s')
 
 
 def StoreResults(crash, client_id, app_id, id_to_culprits, lock, config,
                  verbose=False):
   """Stores predator result of crash into id_to_culprits dict."""
   crash_id = crash.key.urlsafe()
-  crash_url = _FRACAS_FEEDBACK_URL_TEMPLATE % (app_id, crash_id)
+  feedback_url = crash_analysis._FEEDBACK_URL_TEMPLATE % (
+      app_id, client_id, crash_id)
   try:
     findit = FinditForClientID(client_id, LocalGitRepository, config)
     culprit = findit.FindCulprit(crash.ToCrashReport())
     with lock:
       id_to_culprits[crash_id] = culprit
       if verbose:
-        print '\n\nCrash:', crash_url
+        print '\n\nCrash:', feedback_url
         print json.dumps(culprit.ToDicts()[0] if culprit else {'found': False},
                          indent=4, sort_keys=True)
   except Exception:
     with lock:
       id_to_culprits[crash_id] = None
-      print '\n\nCrash:', crash_url
+      print '\n\nCrash:', feedback_url
       print traceback.format_exc()
 
 

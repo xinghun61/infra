@@ -79,7 +79,7 @@ def RunDeltaTest():
   argparser.add_argument(
       '--app',
       '-a',
-      default=os.getenv('APP_ID', 'findit-for-me-dev'),
+      default=os.getenv('APP_ID', 'predator-for-me-staging'),
       help=('App id of the App engine app that query needs to access. '
             'Defualts to findit-for-me-dev. You can also set enviroment '
             'variable by \'export APP_ID=your-app-id\' to replace '

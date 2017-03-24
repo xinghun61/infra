@@ -27,10 +27,6 @@ from crash.type_enums import CrashClient
 from model.crash.cracas_crash_analysis import CracasCrashAnalysis
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
-# TODO(katesonia): Remove the default value after adding validity check to
-# config.
-_FRACAS_FEEDBACK_URL_TEMPLATE = 'https://%s/crash/fracas-result-feedback?key=%s'
-
 
 class FinditForChromeCrash(Findit):  # pylint: disable=W0223
   """Find culprits for crash reports from the Chrome Crash server."""
@@ -108,12 +104,6 @@ class FinditForCracas(  # pylint: disable=W0223
     # TODO: inline CracasCrashAnalysis.Get stuff here.
     return CracasCrashAnalysis.Get(crash_identifiers)
 
-  def ProcessResultForPublishing(self, result, key):  # pragma: no cover.
-    """Cracas specific processing of result data for publishing."""
-    # TODO(katesonia) Add feedback page link information to result after
-    # feedback page of Cracas is added.
-    return result
-
 
 class FinditForFracas(FinditForChromeCrash):  # pylint: disable=W0223
   @classmethod
@@ -127,9 +117,3 @@ class FinditForFracas(FinditForChromeCrash):  # pylint: disable=W0223
   def GetAnalysis(self, crash_identifiers):
     # TODO: inline FracasCrashAnalysis.Get stuff here.
     return FracasCrashAnalysis.Get(crash_identifiers)
-
-  def ProcessResultForPublishing(self, result, key):
-    """Fracas specific processing of result data for publishing."""
-    result['feedback_url'] = _FRACAS_FEEDBACK_URL_TEMPLATE % (
-        appengine_util.GetDefaultVersionHostname(), key)
-    return result

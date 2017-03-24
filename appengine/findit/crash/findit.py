@@ -219,9 +219,10 @@ class Findit(object):
     model.put()
     return True
 
-  def ProcessResultForPublishing(self, result, key):  # pragma: no cover
-    """Client specific processing of result data for publishing."""
-    raise NotImplementedError()
+  def ProcessResultForPublishing(self, result, analysis):  # pragma: no cover
+    """Add Predator internal feedback_url to result."""
+    result['feedback_url'] = analysis.feedback_url
+    return result
 
   def GetPublishableResult(self, crash_identifiers, analysis):
     """Converts a culprit result into a publishable result for client.
@@ -245,7 +246,7 @@ class Findit(object):
         cl['confidence'] = round(cl['confidence'], 2)
         cl.pop('reasons', None)
 
-    result = self.ProcessResultForPublishing(result, analysis.key.urlsafe())
+    result = self.ProcessResultForPublishing(result, analysis)
     logging.info('Publish result:\n%s',
                  json.dumps(result, indent=4, sort_keys=True))
     return {

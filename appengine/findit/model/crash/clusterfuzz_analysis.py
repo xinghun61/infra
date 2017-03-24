@@ -4,6 +4,7 @@
 
 from google.appengine.ext import ndb
 
+from crash.type_enums import CrashClient
 from model.crash.crash_analysis import CrashAnalysis
 
 _CLUSTERFUZZ_TESTCASE_URL_TEMPLATE = (
@@ -35,6 +36,10 @@ class ClusterfuzzAnalysis(CrashAnalysis):
     self.sanitizer = crash_data.sanitizer
     self.job_type = crash_data.job_type
     self.testcase = crash_data.testcase
+
+  @property
+  def client_id(self):  # pragma: no cover
+    return CrashClient.CLUSTERFUZZ
 
   @property
   def crash_url(self):  # pragma: no cover

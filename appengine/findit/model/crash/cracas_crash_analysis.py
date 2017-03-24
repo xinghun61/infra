@@ -5,6 +5,7 @@
 import logging
 import urllib
 
+from crash.type_enums import CrashClient
 from model.crash.chrome_crash_analysis import ChromeCrashAnalysis
 
 _PLATFORM_TO_PRODUCT_NAME = {'win': 'Chrome',
@@ -19,6 +20,9 @@ class CracasCrashAnalysis(ChromeCrashAnalysis):
   """Represents an analysis of a Chrome crash on Cracas."""
 
   @property
+  def client_id(self):  # pragma: no cover
+    return CrashClient.CRACAS
+
   def crash_url(self):  # pragma: no cover
     product_name = _PLATFORM_TO_PRODUCT_NAME.get(self.platform)
     query = ('product.name=\'%s\' AND custom_data.ChromeCrashProto.'

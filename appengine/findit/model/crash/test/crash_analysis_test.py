@@ -4,6 +4,7 @@
 
 import copy
 from datetime import datetime
+import mock
 
 from crash.crash_report import CrashReport
 from crash.type_enums import CrashClient
@@ -11,8 +12,20 @@ from crash.test.predator_testcase import PredatorTestCase
 from model import analysis_status
 from model import result_status
 from model import triage_status
+from model.crash import crash_analysis
 from model.crash.crash_analysis import CrashAnalysis
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
+
+
+class MockCrashAnalysis(CrashAnalysis):  # pragma: no cover
+
+  @property
+  def client_id(self):
+    return 'mock_client'
+
+  @property
+  def crash_url(self):
+    return ''
 
 
 class CrashAnalysisTest(PredatorTestCase):
@@ -150,3 +163,18 @@ class CrashAnalysisTest(PredatorTestCase):
     expected_crash_report = CrashReport(chrome_version, signature, platform,
                                         None, regression_range, {}, {})
     self.assertTupleEqual(analysis.ToCrashReport(), expected_crash_report)
+
+  @mock.patch('google.appengine.ext.ndb.Key.urlsafe')
+  @mock.patch('common.appengine_util.GetDefaultVersionHostname')
+  def testFeedbackUrlProperty(self, mocked_get_default_host, mock_urlsafe):
+    """Tests ``feedback_url`` property."""
+    mock_host = 'https://host'
+    mocked_get_default_host.return_value = mock_host
+    mock_key = 'abcde'
+    mock_urlsafe.return_value = mock_key
+
+    mock_analysis = MockCrashAnalysis()
+    mock_analysis.put()
+    self.assertEqual(mock_analysis.feedback_url,
+                     crash_analysis._FEEDBACK_URL_TEMPLATE % (
+                         mock_host, mock_analysis.client_id, mock_key))

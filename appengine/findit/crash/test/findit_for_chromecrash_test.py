@@ -26,7 +26,7 @@ from crash.type_enums import CrashClient
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_status
-from model.crash.crash_analysis import CrashAnalysis
+from model.crash import crash_analysis
 from model.crash.crash_config import CrashConfig
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
@@ -136,13 +136,12 @@ class FinditForFracasTest(PredatorTestCase):
         'client_id': self._client.client_id,
         'crash_identifiers': {'signature': 'sig'},
         'result': {
-            'feedback_url': (
-                findit_for_chromecrash._FRACAS_FEEDBACK_URL_TEMPLATE % (
-                    mocked_host, urlsafe_key)),
+            'feedback_url': crash_analysis._FEEDBACK_URL_TEMPLATE % (
+                mocked_host, CrashClient.FRACAS, urlsafe_key),
             'other': 'data'
         }
     }
 
     self.assertDictEqual(self._client.GetPublishableResult(crash_identifiers,
-                                                            analysis),
+                                                           analysis),
                          expected_processed_suspect)

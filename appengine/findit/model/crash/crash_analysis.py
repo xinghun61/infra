@@ -9,10 +9,13 @@ import logging
 
 from google.appengine.ext import ndb
 
+from common import appengine_util
 from crash.crash_report import CrashReport
 from libs import time_util
 from model import analysis_status
 from model import triage_status
+
+_FEEDBACK_URL_TEMPLATE = 'https://%s/crash/%s-result-feedback?key=%s'
 
 
 class CrashAnalysis(ndb.Model):
@@ -198,6 +201,16 @@ class CrashAnalysis(ndb.Model):
     return CrashReport(self.crashed_version, self.signature, self.platform,
                        self.stacktrace, self.regression_range,
                        self.dependencies, self.dependency_rolls)
+
+  @property
+  def client_id(self):
+    raise NotImplementedError()
+
+  @property
+  def feedback_url(self):
+    return _FEEDBACK_URL_TEMPLATE % (
+        appengine_util.GetDefaultVersionHostname(), self.client_id,
+        self.key.urlsafe())
 
   @property
   def crash_url(self):
