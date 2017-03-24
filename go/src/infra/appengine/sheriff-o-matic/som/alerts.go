@@ -49,6 +49,11 @@ func getAlertsHandler(ctx *router.Context) {
 
 	results := []*AlertsJSON{}
 	q := datastore.NewQuery("AlertsJSON")
+	// TODO(seanmccullough): remove this check once we turn down a-d and only
+	// use the cron tasks for alerts for all trees. See crbug.com/705074
+	if tree == "chromium" {
+		tree = "milo.chromium"
+	}
 	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
 	q = q.Order("-Date")
 	q = q.Limit(1)
