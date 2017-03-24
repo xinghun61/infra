@@ -146,6 +146,17 @@ class AST2SortTest(unittest.TestCase):
          ('{alias}.issue_id {sort_dir}', [])],
         order_by)
 
+  def testProcessMergedIntoSD(self):
+    left_joins, order_by = ast2sort._ProcessMergedIntoSD(self.fmt)
+    self.assertEqual(
+        [('IssueRelation AS {alias} ON Issue.id = {alias}.issue_id '
+          'AND {alias}.kind = %s', ['mergedinto'])],
+        left_joins)
+    self.assertEqual(
+        [('ISNULL({alias}.dst_issue_id) {sort_dir}', []),
+         ('{alias}.dst_issue_id {sort_dir}', [])],
+        order_by)
+
   def testProcessCustomAndLabelSD(self):
     pass  # TODO(jrobbins): fill in this test case
 

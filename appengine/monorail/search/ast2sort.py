@@ -192,6 +192,17 @@ def _ProcessBlockingSD(fmt):
   return left_joins, order_by
 
 
+def _ProcessMergedIntoSD(fmt):
+  """Convert a 'mergedinto' sort directive into SQL."""
+  left_joins = [
+      (fmt('IssueRelation AS {alias} ON Issue.id = {alias}.issue_id '
+           'AND {alias}.kind = %s'),
+       ['mergedinto'])]
+  order_by = [(fmt('ISNULL({alias}.dst_issue_id) {sort_dir}'), []),
+              (fmt('{alias}.dst_issue_id {sort_dir}'), [])]
+  return left_joins, order_by
+
+
 def _ProcessOwnerLastVisitSD(fmt):
   """Convert a 'ownerlastvisit' sort directive into SQL."""
   left_joins = [
@@ -316,6 +327,7 @@ _PROCESSORS = {
     'blocked': _ProcessBlockedSD,
     'blockedon': _ProcessBlockedOnSD,
     'blocking': _ProcessBlockingSD,
+    'mergedinto': _ProcessMergedIntoSD,
     'ownerlastvisit': _ProcessOwnerLastVisitSD,
     }
 
