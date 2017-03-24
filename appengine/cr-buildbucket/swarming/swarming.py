@@ -800,6 +800,7 @@ def _call_api_async(
   if impersonated_identity:
     delegation_token = yield auth.delegate_async(
         audience=[_self_identity()],
+        services=['https://%s' % hostname],
         impersonate=impersonated_identity,
     )
   url = 'https://%s/_ah/api/swarming/v1/%s' % (hostname, path)
