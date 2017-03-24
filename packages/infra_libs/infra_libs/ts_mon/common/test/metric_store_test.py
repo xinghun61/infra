@@ -14,7 +14,6 @@ from infra_libs.ts_mon.common import errors
 from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import metrics
 from infra_libs.ts_mon.common import targets
-from infra_libs.ts_mon.common.test import stubs
 
 
 class DefaultModifyFnTest(unittest.TestCase):

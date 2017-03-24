@@ -9,16 +9,14 @@ import unittest
 
 import mock
 
-from testing_support import auto_stub
-
 from infra_libs.ts_mon.common import distribution
 from infra_libs.ts_mon.common import errors
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import metric_store
 from infra_libs.ts_mon.common import metrics
+from infra_libs.ts_mon.common import monitors
 from infra_libs.ts_mon.common import targets
-from infra_libs.ts_mon.common.test import stubs
-from infra_libs.ts_mon.protos.new import metrics_pb2 as new_metrics_pb2
+from infra_libs.ts_mon.protos import metrics_pb2
 
 
 class GlobalsTest(unittest.TestCase):
@@ -39,44 +37,45 @@ class GlobalsTest(unittest.TestCase):
     self.state_patcher.stop()
 
   def test_flush(self):
-    interface.state.global_monitor = stubs.MockMonitor()
-    interface.state.target = stubs.MockTarget()
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
+    interface.state.target = mock.create_autospec(targets.Target)
 
     # pylint: disable=unused-argument
-    def serialize_to(pb, start_time, fields, value, target):
-      pb.name = 'foo'
+    def populate_data_set(pb):
+      pb.metric_name = 'foo'
 
     fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
     fake_metric.name = 'fake'
-    fake_metric.serialize_to.side_effect = serialize_to
+    fake_metric.populate_data_set.side_effect = populate_data_set
     interface.register(fake_metric)
     interface.state.store.set('fake', (), None, 123)
 
     interface.flush()
-    interface.state.global_monitor.send.assert_called_once()
+    self.assertEqual(1, interface.state.global_monitor.send.call_count)
     proto = interface.state.global_monitor.send.call_args[0][0]
-    self.assertEqual(1, len(proto.data))
-    self.assertEqual('foo', proto.data[0].name)
+    self.assertEqual(1,
+        len(proto.metrics_collection[0].metrics_data_set[0].data))
+    self.assertEqual('foo',
+        proto.metrics_collection[0].metrics_data_set[0].metric_name)
 
   def test_flush_empty(self):
-    interface.state.global_monitor = stubs.MockMonitor()
-    interface.state.target = stubs.MockTarget()
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
+    interface.state.target = mock.create_autospec(targets.Target)
 
     interface.flush()
-    interface.state.global_monitor.send.assert_not_called()
+    self.assertFalse(interface.state.global_monitor.send.called)
 
   def test_flush_new(self):
     interface.state.metric_name_prefix = '/infra/test/'
-    interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
     interface.state.target = targets.TaskTarget('a', 'b', 'c', 'd', 1)
-    interface.state.use_new_proto = True
 
     counter = metrics.CounterMetric('counter', 'desc', None)
     interface.register(counter)
     counter.increment_by(3)
 
     interface.flush()
-    interface.state.global_monitor.send.assert_called_once()
+    self.assertEqual(1, interface.state.global_monitor.send.call_count)
 
     proto = interface.state.global_monitor.send.call_args[0][0]
     self.assertEqual(1, len(proto.metrics_collection))
@@ -87,17 +86,16 @@ class GlobalsTest(unittest.TestCase):
 
   def test_flush_empty_new(self):
     interface.state.metric_name_prefix = '/infra/test/'
-    interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
     interface.state.target = targets.TaskTarget('a', 'b', 'c', 'd', 1)
-    interface.state.use_new_proto = True
 
     interface.flush()
-    interface.state.global_monitor.send.assert_not_called()
+    self.assertFalse(interface.state.global_monitor.send.called)
 
   def test_flush_disabled(self):
     interface.reset_for_unittest(disable=True)
-    interface.state.global_monitor = stubs.MockMonitor()
-    interface.state.target = stubs.MockTarget()
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
+    interface.state.target = mock.create_autospec(targets.Target)
     interface.flush()
     self.assertFalse(interface.state.global_monitor.send.called)
 
@@ -107,23 +105,25 @@ class GlobalsTest(unittest.TestCase):
       interface.flush()
 
   def test_flush_many(self):
-    interface.state.global_monitor = stubs.MockMonitor()
-    interface.state.target = stubs.MockTarget()
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
+    interface.state.target = mock.create_autospec(targets.Target)
+    interface.state.target.__hash__.return_value = 42
 
     # pylint: disable=unused-argument
-    def serialize_to(pb, start_time, fields, value, target):
-      pb.name = 'foo'
+    def populate_data_set(pb):
+      pb.metric_name = 'foo'
 
     # We can't use the mock's call_args_list here because the same object is
     # reused as the argument to both calls and cleared inbetween.
     data_lengths = []
     def send(proto):
-      data_lengths.append(len(proto.data))
+      data_lengths.append(len(
+          proto.metrics_collection[0].metrics_data_set[0].data))
     interface.state.global_monitor.send.side_effect = send
 
     fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
     fake_metric.name = 'fake'
-    fake_metric.serialize_to.side_effect = serialize_to
+    fake_metric.populate_data_set.side_effect = populate_data_set
     interface.register(fake_metric)
 
     for i in xrange(501):
@@ -134,9 +134,8 @@ class GlobalsTest(unittest.TestCase):
     self.assertListEqual([500, 1], data_lengths)
 
   def test_flush_many_new(self):
-    interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
     interface.state.target = targets.TaskTarget('a', 'b', 'c', 'd', 1)
-    interface.state.use_new_proto = True
 
     # We can't use the mock's call_args_list here because the same object is
     # reused as the argument to both calls and cleared inbetween.
@@ -162,7 +161,7 @@ class GlobalsTest(unittest.TestCase):
     self.assertListEqual([500, 1], data_lengths)
 
   def test_flush_different_target_fields(self):
-    interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
     interface.state.target = targets.TaskTarget('s', 'j', 'r', 'h')
     metric = metrics.GaugeMetric('m', 'desc', None)
 
@@ -170,26 +169,27 @@ class GlobalsTest(unittest.TestCase):
     metric.set(456, target_fields={'service_name': 'foo'})
     interface.flush()
 
-    interface.state.global_monitor.send.assert_called_once()
+    self.assertEqual(1, interface.state.global_monitor.send.call_count)
     proto = interface.state.global_monitor.send.call_args[0][0]
-    self.assertEqual(2, len(proto.data))
-    self.assertEqual(123, proto.data[0].gauge)
-    self.assertEqual(456, proto.data[1].gauge)
-    self.assertEqual('s', proto.data[0].task.service_name)
-    self.assertEqual('foo', proto.data[1].task.service_name)
+    self.assertEqual(2, len(proto.metrics_collection))
+    self.assertEqual(123,
+        proto.metrics_collection[0].metrics_data_set[0].data[0].int64_value)
+    self.assertEqual(456,
+        proto.metrics_collection[1].metrics_data_set[0].data[0].int64_value)
+    self.assertEqual('s', proto.metrics_collection[0].task.service_name)
+    self.assertEqual('foo', proto.metrics_collection[1].task.service_name)
 
   def test_flush_different_target_fields_new(self):
     interface.state.metric_name_prefix = '/infra/test/'
-    interface.state.global_monitor = stubs.MockMonitor()
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
     interface.state.target = targets.TaskTarget('s', 'j', 'r', 'h')
-    interface.state.use_new_proto = True
     metric = metrics.GaugeMetric('m', 'desc', None)
 
     metric.set(123)
     metric.set(456, target_fields={'service_name': 'foo'})
     interface.flush()
 
-    interface.state.global_monitor.send.assert_called_once()
+    self.assertEqual(1, interface.state.global_monitor.send.call_count)
     proto = interface.state.global_monitor.send.call_args[0][0]
     col = proto.metrics_collection
     self.assertEqual(2, len(col))
@@ -199,16 +199,17 @@ class GlobalsTest(unittest.TestCase):
     self.assertEqual('foo', col[1].task.service_name)
 
   def test_send_modifies_metric_values(self):
-    interface.state.global_monitor = stubs.MockMonitor()
-    interface.state.target = stubs.MockTarget()
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
+    interface.state.target = mock.create_autospec(targets.Target)
+    interface.state.target.__hash__.return_value = 42
 
     # pylint: disable=unused-argument
-    def serialize_to(pb, start_time, fields, value, target):
-      pb.name = 'foo'
+    def populate_data_set(pb):
+      pb.metric_name = 'foo'
 
     fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
     fake_metric.name = 'fake'
-    fake_metric.serialize_to.side_effect = serialize_to
+    fake_metric.populate_data_set.side_effect = populate_data_set
     interface.register(fake_metric)
 
     # Setting this will modify store._values in the middle of iteration.
@@ -410,11 +411,10 @@ class FlushThreadTest(unittest.TestCase):
 
 
 class GenerateNewProtoTest(unittest.TestCase):
-  """Test _generate_proto_new()."""
+  """Test _generate_proto()."""
 
   def setUp(self):
     interface.state = interface.State()
-    interface.state.use_new_proto = True
     interface.state.metric_name_prefix = '/infra/test/'
     interface.state.target = targets.TaskTarget(
         service_name='service', job_name='job', region='region',
@@ -439,7 +439,7 @@ class GenerateNewProtoTest(unittest.TestCase):
     counter1.increment()
     counter2.increment_by(4, target_fields={'task_num': 1})
 
-    protos = list(interface._generate_proto_new())
+    protos = list(interface._generate_proto())
     self.assertEqual(1, len(protos))
 
     proto = protos[0]
@@ -478,10 +478,10 @@ class GenerateNewProtoTest(unittest.TestCase):
     interface.register(counter)
     counter.increment({'a': 1, 'b': True, 'c': 'test'})
 
-    proto = list(interface._generate_proto_new())[0]
+    proto = list(interface._generate_proto())[0]
     data_set = proto.metrics_collection[0].metrics_data_set[0]
 
-    field_type = new_metrics_pb2.MetricsDataSet.MetricFieldDescriptor
+    field_type = metrics_pb2.MetricsDataSet.MetricFieldDescriptor
     self.assertEqual('a', data_set.field_descriptor[0].name)
     self.assertEqual(field_type.INT64, data_set.field_descriptor[0].field_type)
 
@@ -507,8 +507,8 @@ class GenerateNewProtoTest(unittest.TestCase):
 class GlobalCallbacksTest(unittest.TestCase):
   def setUp(self):
     interface.reset_for_unittest()
-    interface.state.global_monitor = stubs.MockMonitor()
-    interface.state.target = stubs.MockTarget()
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
+    interface.state.target = mock.create_autospec(targets.Target)
 
   def test_register_global_metrics(self):
     metric = metrics.GaugeMetric('test', 'foo', None)
