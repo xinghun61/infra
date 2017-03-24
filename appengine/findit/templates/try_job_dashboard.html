@@ -23,10 +23,11 @@
       }
     };
 
-    function requestDataBetweenDateRange(e) {
+    function requestData(e) {
       var parameters = {}
       parameters['start_date'] = $('#start_date').val() == 'mm/dd/yyyy' ? undefined : $('#start_date').val();
       parameters['end_date'] = $('#end_date').val() == 'mm/dd/yyyy' ? undefined : $('#end_date').val();
+      parameters['category'] = $('#category').val();
       newUrl = createUrl(parameters);
       window.location.replace(newUrl);
       e.preventDefault();
@@ -47,16 +48,25 @@
           $('#buildbucket-response-dialog').dialog('open');
         })
       });
-      $('#submit').click(requestDataBetweenDateRange);
+      $('#submit').click(requestData);
+      if ('{{ category }}') {
+        $('#category').val('{{ category }}');
+      }
     });
   </script>
 </head>
 <body>
   <form>
-    Start Date
+    Start date
     <input type="date" id="start_date" value={{ start_date }}></input>
-    End Date
+    End date
     <input type="date" id="end_date" value={{ end_date }}></input>
+    Try job category:
+    <select id="category">
+      <option value="both" selected="selected">both</option>
+      <option value="flake">flake</option>
+      <option value="waterfall">waterfall</option>
+    </select>
     <input type="submit" id="submit"></input>
   </form>
   <br>
@@ -67,7 +77,7 @@
         <tr>
           <th>Master</th>
           <th>Builder</th>
-          <th>Build #</th>
+          <th>Link to Analysis</th>
           <th>Try Job Type</th>
           <th>Request Time</th>
           <th>Pending Time</th>
@@ -117,7 +127,7 @@
         <tr>
           <th>Master</th>
           <th>Builder</th>
-          <th>Build #</th>
+          <th>Link to Analysis</th>
           <th>Try Job Type</th>
           <th>Request Time</th>
           <th>Pending Time</th>
@@ -167,7 +177,7 @@
         <tr>
           <th>Master</th>
           <th>Builder</th>
-          <th>Build #</th>
+          <th>Link to Analysis</th>
           <th>Try Job Type</th>
           <th>Request Time</th>
           <th>Pending Time</th>

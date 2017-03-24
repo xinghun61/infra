@@ -4,10 +4,13 @@
 
 from datetime import datetime
 import json
+import mock
 
 import webapp2
 
 from handlers import try_job_dashboard
+from model.flake.flake_try_job import FlakeTryJob
+from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 
@@ -35,6 +38,30 @@ class TryJobDashboardTest(testing.AppengineTestCase):
 
       for field, expected_data in expected_try_job_data.iteritems():
         self.assertEqual(expected_data, actual_try_job_data.get(field))
+
+  def testGetMidnightToday(self):
+    self.assertEqual(
+        datetime,
+        type(try_job_dashboard._GetMidnightToday()))
+
+  @mock.patch.object(try_job_dashboard, '_GetMidnightToday',
+                     return_value=datetime(2017, 3, 19, 0, 0, 0))
+  def testGetStartEndDates(self, _):
+    self.assertEqual(
+        (datetime(2017, 3, 18, 0, 0, 0), datetime(2017, 3, 20, 0, 0, 0)),
+        try_job_dashboard._GetStartEndDates(None, None))
+    self.assertEqual(
+        (None, datetime(2017, 3, 20, 0, 0, 0)),
+        try_job_dashboard._GetStartEndDates(
+            None, '2017-03-19'))
+    self.assertEqual(
+        (datetime(2017, 3, 18, 0, 0, 0), datetime(2017, 3, 20, 0, 0, 0)),
+        try_job_dashboard._GetStartEndDates(
+            '2017-03-18', None))
+    self.assertEqual(
+        (datetime(2017, 3, 15, 0, 0, 0), datetime(2017, 3, 16, 0, 0, 0)),
+        try_job_dashboard._GetStartEndDates(
+            '2017-03-15', '2017-03-16'))
 
   def testFormatDuration(self):
     self.assertEqual(try_job_dashboard._FormatDuration(None, None),
@@ -118,6 +145,18 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     }
     try_job_completed.put()
 
+    flake_try_job_completed = FlakeTryJobData.Create(4)
+    flake_try_job_completed.try_job_key = FlakeTryJob.Create(
+        'm', 'b', 's', 't', 'a1b2c3d4').key
+    flake_try_job_completed.start_time = datetime(2016, 5, 4, 0, 0, 1)
+    flake_try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
+    flake_try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
+    flake_try_job_completed.try_job_url = 'url4'
+    flake_try_job_completed.last_buildbucket_response = {
+        'status': 'COMPLETED'
+    }
+    flake_try_job_completed.put()
+
     expected_try_job_in_progress_display_data = {
         'master_name': 'm',
         'builder_name': 'b',
@@ -151,6 +190,16 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         'last_buildbucket_response': '{"status": "COMPLETED"}'
     }
 
+    expected_flake_try_job_completed_display_data = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'try_job_type': 'flake',
+        'request_time': '2016-05-04 00:00:00 UTC',
+        'try_job_url': 'url4',
+        'last_buildbucket_response': '{"status": "COMPLETED"}',
+        'git_hash': 'a1b2c3d4'
+    }
+
     response = self.test_app.get(
         '/try-job-dashboard?format=json&start_date=2016-05-03')
     response_data = response.json_body
@@ -167,5 +216,83 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         [expected_try_job_with_error_display_data],
         try_jobs_with_error)
     self.validateTryJobDisplayData(
+        [expected_try_job_completed_display_data,
+         expected_flake_try_job_completed_display_data],
+        successfully_completed_try_jobs)
+
+  def testGetFlakeTryJobs(self):
+    flake_try_job_completed = FlakeTryJobData.Create(4)
+    flake_try_job_completed.try_job_key = FlakeTryJob.Create(
+        'm', 'b', 's', 't', 'a1b2c3d4').key
+    flake_try_job_completed.start_time = datetime(2016, 5, 4, 0, 0, 1)
+    flake_try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
+    flake_try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
+    flake_try_job_completed.try_job_url = 'url4'
+    flake_try_job_completed.last_buildbucket_response = {
+        'status': 'COMPLETED'
+    }
+    flake_try_job_completed.put()
+
+    expected_flake_try_job_completed_display_data = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'try_job_type': 'flake',
+        'request_time': '2016-05-04 00:00:00 UTC',
+        'try_job_url': 'url4',
+        'last_buildbucket_response': '{"status": "COMPLETED"}',
+        'git_hash': 'a1b2c3d4'
+    }
+
+    response = self.test_app.get(
+        '/try-job-dashboard?format=json&start_date=2016-05-03&category=flake')
+    response_data = response.json_body
+    successfully_completed_try_jobs = response_data.get(
+        'successfully_completed_try_jobs')
+
+    self.assertEqual(response.status_int, 200)
+    self.validateTryJobDisplayData(
+        [expected_flake_try_job_completed_display_data],
+        successfully_completed_try_jobs)
+
+  def testGetWaterfallTryJobs(self):
+    try_job_completed = WfTryJobData.Create(3)
+    try_job_completed.try_job_key = WfTryJob.Create('m', 'b', 3).key
+    try_job_completed.try_job_type = 'compile'
+    try_job_completed.start_time = datetime(2016, 5, 4, 0, 0, 1)
+    try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
+    try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
+    try_job_completed.try_job_url = 'url3'
+    try_job_completed.culprits = {
+        'compile': {
+            '12345': 'failed'
+        }
+    }
+    try_job_completed.last_buildbucket_response = {
+        'status': 'COMPLETED'
+    }
+    try_job_completed.put()
+
+    expected_try_job_completed_display_data = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 3,
+        'try_job_type': 'compile',
+        'request_time': '2016-05-04 00:00:00 UTC',
+        'try_job_url': 'url3',
+        'culprit_found': True,
+        'last_buildbucket_response': '{"status": "COMPLETED"}'
+    }
+
+    response = self.test_app.get(
+        ('/try-job-dashboard?format=json&start_date=2016-05-03&'
+         'category=waterfall'))
+    response_data = response.json_body
+    successfully_completed_try_jobs = response_data.get(
+        'successfully_completed_try_jobs')
+
+    self.assertEqual(response.status_int, 200)
+    self.validateTryJobDisplayData(
         [expected_try_job_completed_display_data],
         successfully_completed_try_jobs)
+
+
