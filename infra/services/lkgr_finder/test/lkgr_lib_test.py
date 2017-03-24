@@ -44,9 +44,9 @@ class FetchBuilderJsonTest(unittest.TestCase):
   @mock.patch(
       'infra.services.lkgr_finder.lkgr_lib.FetchBuilderJsonFromMilo',
       autospec=True)
-  def testAllBuildersFailed(self, mocked_fetch):
-    mocked_fetch.side_effect = iter([httplib2.HttpLib2Error,
-                                     httplib2.HttpLib2Error])
+  @mock.patch('time.sleep', return_value=None)
+  def testAllBuildersFailed(self, mocked_sleep, mocked_fetch):
+    mocked_fetch.side_effect = httplib2.HttpLib2Error
     build_data, failures = lkgr_lib.FetchBuildData(self.test_masters,
                                                    max_threads=1)
     self.assertEquals(failures, 2)
@@ -56,9 +56,13 @@ class FetchBuilderJsonTest(unittest.TestCase):
   @mock.patch(
       'infra.services.lkgr_finder.lkgr_lib.FetchBuilderJsonFromMilo',
       autospec=True)
-  def testSomeBuildersFailed(self, mocked_fetch):
-    mocked_fetch.side_effect = iter([{'build1': 'success'},
-                                     httplib2.HttpLib2Error])
+  @mock.patch('time.sleep', return_value=None)
+  def testSomeBuildersFailed(self, mocked_sleep, mocked_fetch):
+    def _raise_http_err(master, builder, **kwargs):
+      if builder == 'builder1':
+        return {'build1': 'success'}
+      raise httplib2.HttpLib2Error()
+    mocked_fetch.side_effect = _raise_http_err
     build_data,failures = lkgr_lib.FetchBuildData(self.test_masters,
                                                   max_threads=1)
     self.assertEquals(failures, 1)

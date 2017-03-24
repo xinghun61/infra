@@ -22,6 +22,7 @@ import socket
 import subprocess
 import sys
 import threading
+import time
 import xml.etree.ElementTree as xml
 
 import infra_libs
@@ -186,10 +187,25 @@ def FetchBuilderJson(fetch_q):
     except Queue.Empty:
       return
 
+    limits = [100, 50, 25, 10]
+    sleep = 1
     try:
-      builder_history = FetchBuilderJsonFromMilo(GetMasterNameFromURL(
-          master_url), builder, service_account_file=service_account)
-      output_builds[builder] = builder_history
+      for i in xrange(len(limits)):  # pragma: no branch
+        try:
+          builder_history = FetchBuilderJsonFromMilo(
+              GetMasterNameFromURL(master_url), builder,
+              limit=limits[i], service_account_file=service_account)
+          output_builds[builder] = builder_history
+          break
+        except httplib2.HttpLib2Error:
+          if i == len(limits)-1:
+            raise
+          LOGGER.warning(
+              'HTTP Error when fetching past %d builds of %s. Will try '
+              'fetching %d builds after a %d second sleep.',
+              limits[i], builder, limits[i+1], sleep)
+          time.sleep(sleep)
+          sleep *= 2
     except httplib2.HttpLib2Error as e:
       LOGGER.error(
           'RequestException while fetching %s/%s:\n%s',
