@@ -81,8 +81,8 @@
       return extension && extension.suspected_cls;
     },
 
-    _haveRevertingCL: function(cl) {
-      return cl && cl.reverting_cl_url;
+    _haveRevertCL: function(cl) {
+      return cl && cl.revert_cl_url;
     },
 
     _haveRegressionRanges: function(regression_ranges) {
