@@ -100,7 +100,7 @@ containing things that are configured per-master.
 This is a *required* field. It must be set to the name of the Python
 class of the buildbot master that this master is based on. This is
 usually one of the classes defined in
-[build/site-config/config-bootstrap.py](/chromium/tools/build/+/master/site_config/config_bootstrap.py).
+[site_config/config_default.py](https://chromium.googlesource.com/chromium/tools/build/+/master/site_config/config_default.py).
 
 For example, if you were setting up a new master in the -m1 VLAN, you
 would be subclassing Master.Master1, so this value would be `'Master1'`.
