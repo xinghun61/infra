@@ -48,7 +48,13 @@ class LinkableText(object):
 
   WATERFALL_URLS = {
       'chromeos': 'https://uberchromegw.corp.google.com/i/chromeos',
+      # chromium-status.appspot.com:
+      'chromium': 'https://build.chromium.org/p/chromium',
       'chromiumos': 'http://build.chromium.org/p/chromiumos',
+      # infra-status.appspot.com:
+      'infra': 'https://build.chromium.org/p/chromium.infra',
+      # v8-status.appspot.com:
+      'v8': 'https://build.chromium.org/p/client.v8',
   }
 
   APP_PREFIXES = (
@@ -147,6 +153,13 @@ class LinkableText(object):
     cls.register_converter(
         r'("cbuildbot" on "([^"]+)")',
         r'%s/builders/\2' % cls.WATERFALL_URLS['chromiumos'], r'\1', False)
+
+    # Try to linkify /builder path names according to the tree.
+    if BasePage.APP_NAME in cls.WATERFALL_URLS:
+      cls.register_converter(
+          r'([^/]*)/builders([^"]+) ',
+          r'%s/builders\2' % cls.WATERFALL_URLS[BasePage.APP_NAME], r'\2',
+          False)
 
     # Convert all other URLs into links. Regexp based on @stephenhay's idea from
     # https://mathiasbynens.be/demo/url-regex.
