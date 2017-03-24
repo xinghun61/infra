@@ -11,16 +11,19 @@ CRASH_INFO_FIELDS = ['signature', 'platform']
 
 
 def PrintCrashInfo(crash):
-  print '\nCrash %s' % crash['id']
   for crash_info_field in CRASH_INFO_FIELDS:
     print '%s: %s' % (crash_info_field, crash[crash_info_field])
 
 
 def CrashPrinter(client_id, app_id,
                  start_date, end_date,
-                 print_func=PrintCrashInfo):
+                 print_func=PrintCrashInfo,
+                 signature=None):
+
+  property_values = {'signature': signature} if signature else None
   for crash in crash_iterator.IterateCrashes(client_id, app_id,
                                              fields=CRASH_INFO_FIELDS,
                                              start_date=start_date,
-                                             end_date=end_date):
+                                             end_date=end_date,
+                                             property_values=property_values):
     print_func(crash)

@@ -35,7 +35,7 @@ class CrashAnalysis(ndb.Model):
   stack_trace = ndb.StringProperty(indexed=False)
 
   # The signature of the crash.
-  signature = ndb.StringProperty(indexed=False)
+  signature = ndb.StringProperty(indexed=True)
 
   # The platform of this crash.
   platform = ndb.StringProperty(indexed=False)

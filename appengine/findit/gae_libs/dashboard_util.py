@@ -10,6 +10,8 @@ from google.appengine.datastore.datastore_query import Cursor
 
 from libs import time_util
 
+DATE_FORMAT = '%Y-%m-%d'
+
 PAGE_SIZE = 100
 _PREVIOUS = 'previous'
 _NEXT = 'next'
@@ -25,9 +27,9 @@ def GetStartAndEndDates(start_date=None, end_date=None):
   midnight_yesterday = midnight_today - timedelta(days=1)
   midnight_tomorrow = midnight_today + timedelta(days=1)
 
-  start_date = (datetime.strptime(start_date, '%Y-%m-%d') if start_date else
-                midnight_yesterday)
-  end_date = (datetime.strptime(end_date, '%Y-%m-%d') if end_date else
+  start_date = (datetime.strptime(start_date, DATE_FORMAT) if start_date
+                else midnight_yesterday)
+  end_date = (datetime.strptime(end_date, DATE_FORMAT) if end_date else
               midnight_tomorrow)
 
   return start_date, end_date

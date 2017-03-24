@@ -1,6 +1,7 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+from collections import OrderedDict
 
 from datetime import datetime
 from datetime import time
@@ -11,13 +12,13 @@ from common.base_handler import BaseHandler, Permission
 from gae_libs import dashboard_util
 from libs import time_util
 
-
-_PROPERTY_TO_VALUE_CONVERTER = {
-    'found_suspects': lambda x: x == 'yes',
-    'has_regression_range': lambda x: x == 'yes',
-    'suspected_cls_triage_status': int,
-    'regression_range_triage_status': int,
-}
+_PROPERTY_TO_VALUE_CONVERTER = OrderedDict([
+    ('found_suspects', lambda x: x == 'yes'),
+    ('has_regression_range', lambda x: x == 'yes'),
+    ('suspected_cls_triage_status', int),
+    ('regression_range_triage_status', int),
+    ('signature', lambda x: x.strip().replace('%20', ' ')),
+])
 
 _PAGE_SIZE = 100
 
@@ -34,6 +35,7 @@ class DashBoard(BaseHandler):
     raise NotImplementedError()
 
   def Filter(self, query, start_date=None, end_date=None):
+    """Filters crash analysis by both unequal and equal filters."""
     query = self.crash_analysis_cls.query(
         self.crash_analysis_cls.requested_time >= start_date,
         self.crash_analysis_cls.requested_time < end_date)
@@ -58,7 +60,7 @@ class DashBoard(BaseHandler):
     page_size = self.request.get('n') or _PAGE_SIZE
     # TODO(katesonia): Add pagination here.
     crash_list = query.order(
-        -self.crash_analysis_cls.requested_time).fetch(page_size)
+        -self.crash_analysis_cls.requested_time).fetch(int(page_size))
 
     crashes = []
     for crash in crash_list:
@@ -90,6 +92,7 @@ class DashBoard(BaseHandler):
             'regression_range_triage_status', '-1'),
         'client': self.client,
         'crashes': crashes,
+        'signature': self.request.get('signature')
     }
 
     return {

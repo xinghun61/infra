@@ -28,6 +28,7 @@
       parameters['has_regression_range'] = $('#has_regression_range').val() == 'default' ? undefined : $('#has_regression_range').val();
       parameters['suspected_cls_triage_status'] = $('#suspected_cls_triage_status').val() == 'default' ? undefined : $('#suspected_cls_triage_status').val();
       parameters['regression_range_triage_status'] = $('#regression_range_triage_status').val() == 'default' ? undefined : $('#regression_range_triage_status').val();
+      parameters['signature'] = $('#signature').val() == ''? undefined : $('#signature').val();
       return createUrl(client + '-dashboard', parameters);
     };
 
@@ -51,6 +52,7 @@
       if ('{{regression_range_triage_status}}' != '-1') {
         $('#regression_range_triage_status').val('{{regression_range_triage_status}}');
       }
+      $('#signature').val('{{signature}}');
     });
   </script>
 </head>
@@ -92,6 +94,9 @@
       <option value="2">Triaged-Correct</option>
       <option value="3">Triaged-Unsure</option>
     </select>
+
+    <br/><br/>Signature
+    <input id="signature" size=35></input>
 
     <input type="submit" id="submit" value="Filter"></input>
   </form>

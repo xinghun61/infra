@@ -12,6 +12,7 @@ import webapp2
 
 from testing_utils import testing
 
+from gae_libs import dashboard_util
 from handlers.crash import dashboard
 from libs import time_util
 from model import analysis_status
@@ -45,7 +46,7 @@ class DashBoardTest(testing.AppengineTestCase):
       self.crashes.append(self._GenerateDisplayData(key))
 
     self.default_start_date = datetime(2016, 7, 3, 0, 0, 0, 0)
-    self.default_end_date = datetime(2016, 7, 5, 0, 0, 0, 0)
+    self.default_end_date = datetime(2016, 7, 9, 0, 0, 0, 0)
 
   def testFracasDashBoardHandler(self):
     response = self.test_app.get('/mock-dashboard')
@@ -126,14 +127,21 @@ class DashBoardTest(testing.AppengineTestCase):
                           'regression_range': ['53.0.2749.0', '53.0.2750.0']}
     analyses[4].found_suspects = False
 
+    analyses[0].culprit_cls = ['https://chromium.googlesource.com/'
+                               'chromium/src/+/346aqerq3']
     self._SetResultsTriageStatus(analyses[0], triage_status.TRIAGED_INCORRECT)
+
+    analyses[1].culprit_cls = ['https://chromium.googlesource.com/'
+                               'chromium/src/+/346aqerq3']
     self._SetResultsTriageStatus(analyses[1], triage_status.TRIAGED_CORRECT)
+    analyses[3].culprit_cls = ['https://chromium.googlesource.com/'
+                               'chromium/src/+/346aqerq3']
     self._SetResultsTriageStatus(analyses[3], triage_status.TRIAGED_CORRECT)
     self._SetResultsTriageStatus(analyses[4], triage_status.TRIAGED_UNSURE)
 
     for i, analysis in enumerate(analyses):
       analysis.requested_time = (datetime(2016, 7, 4, 12, 50, 17, 0) +
-                                 timedelta(seconds=10 * i))
+                                 timedelta(hours=24 * i))
       analysis.has_regression_range = not analysis.result[
           'regression_range'] is None
       analysis.put()
@@ -169,11 +177,13 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
+        'signature': ''
     }
 
-    response_json = self.test_app.get('/mock-dashboard?format=json'
-                                      '&start_date=2016-07-03'
-                                      '&end_date=2016-07-05')
+    response_json = self.test_app.get(
+        '/mock-dashboard?format=json&start_date=%s&end_date=%s' % (
+            self.default_start_date.strftime(dashboard_util.DATE_FORMAT),
+            self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
     self.assertEqual(200, response_json.status_int)
 
     self.assertEqual(expected_result, response_json.json_body)
@@ -188,12 +198,16 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': 'yes',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
+        'signature': ''
     }
 
     response_json = self.test_app.get(
         '/mock-dashboard?found_suspects=yes&format=json'
-        '&start_date=2016-07-03&end_date=2016-07-05')
+        '&start_date=%s&end_date=%s' % (
+            self.default_start_date.strftime(dashboard_util.DATE_FORMAT),
+            self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
     self.assertEqual(200, response_json.status_int)
+
     self.assertEqual(expected_result, response_json.json_body)
 
   def testFilterWithHasRegression(self):
@@ -208,11 +222,14 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': 'yes',
         'start_date': time_util.FormatDatetime(self.default_start_date),
+        'signature': ''
     }
 
     response_json = self.test_app.get(
         '/mock-dashboard?has_regression_range=yes&format=json'
-        '&start_date=2016-07-03&end_date=2016-07-05')
+        '&start_date=%s&end_date=%s' % (
+            self.default_start_date.strftime(dashboard_util.DATE_FORMAT),
+            self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)
 
@@ -226,11 +243,15 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
+        'signature': ''
     }
 
     response_json = self.test_app.get(
         '/mock-dashboard?suspected_cls_triage_status=%d&format=json'
-        '&start_date=2016-07-03&end_date=2016-07-05' % triage_status.UNTRIAGED)
+        '&start_date=%s&end_date=%s' % (
+            triage_status.UNTRIAGED,
+            self.default_start_date.strftime(dashboard_util.DATE_FORMAT),
+            self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)
 
@@ -244,12 +265,15 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
+        'signature': ''
     }
 
     response_json = self.test_app.get(
         '/mock-dashboard?suspected_cls_triage_status=%d&format=json'
-        '&start_date=2016-07-03&end_date=2016-07-05' %
-        triage_status.TRIAGED_UNSURE)
+        '&start_date=%s&end_date=%s' % (
+            triage_status.TRIAGED_UNSURE,
+            self.default_start_date.strftime(dashboard_util.DATE_FORMAT),
+            self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)
 
@@ -263,11 +287,57 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
+        'signature': ''
     }
 
     response_json = self.test_app.get(
         '/mock-dashboard?regression_range_triage_status=%d&format=json'
-        '&start_date=2016-07-03&end_date=2016-07-05' %
-        triage_status.TRIAGED_UNSURE)
+        '&start_date=%s&end_date=%s' % (
+            triage_status.TRIAGED_UNSURE,
+            self.default_start_date.strftime(dashboard_util.DATE_FORMAT),
+            self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
+    self.assertEqual(200, response_json.status_int)
+    self.assertEqual(expected_result, response_json.json_body)
+
+  def testGetTopCountResults(self):
+    expected_result = {
+        'client': self.handler.client,
+        'crashes': [self.crashes[4],
+                    self.crashes[3]],
+        'end_date': time_util.FormatDatetime(self.default_end_date),
+        'regression_range_triage_status': '-1',
+        'suspected_cls_triage_status': '-1',
+        'found_suspects': '-1',
+        'has_regression_range': '-1',
+        'start_date': time_util.FormatDatetime(self.default_start_date),
+        'signature': ''
+    }
+
+    response_json = self.test_app.get(
+        '/mock-dashboard?n=2&format=json&start_date=%s&end_date=%s' % (
+            self.default_start_date.strftime(dashboard_util.DATE_FORMAT),
+            self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
+    self.assertEqual(200, response_json.status_int)
+    self.assertEqual(expected_result, response_json.json_body)
+
+  def testSearchSignature(self):
+    """Tests search by signature in dashboard."""
+    expected_result = {
+        'client': self.handler.client,
+        'crashes': [self.crashes[4]],
+        'end_date': time_util.FormatDatetime(self.default_end_date),
+        'regression_range_triage_status': '-1',
+        'suspected_cls_triage_status': '-1',
+        'found_suspects': '-1',
+        'has_regression_range': '-1',
+        'start_date': time_util.FormatDatetime(self.default_start_date),
+        'signature': self.crashes[4]['signature']
+    }
+
+    response_json = self.test_app.get(
+        '/mock-dashboard?format=json&start_date=%s&end_date=%s&signature=%s' % (
+            self.default_start_date.strftime(dashboard_util.DATE_FORMAT),
+            self.default_end_date.strftime(dashboard_util.DATE_FORMAT),
+            self.crashes[4]['signature']))
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)

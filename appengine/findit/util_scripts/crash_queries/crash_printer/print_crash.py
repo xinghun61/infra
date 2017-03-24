@@ -44,19 +44,24 @@ if __name__ == '__main__':
   argparser.add_argument(
       '--client',
       '-c',
-      default='fracas',
+      default='cracas',
       help=('Possible values are: fracas, cracas, clusterfuzz. Right now, only '
             'fracas is supported.'))
 
   argparser.add_argument(
       '--app',
       '-a',
-      default=os.getenv('APP_ID', 'findit-for-me-dev'),
+      default=os.getenv('APP_ID', 'predator-for-me-staging'),
       help=('App id of the App engine app that query needs to access. '
             'Defualts to findit-for-me-dev. You can set enviroment variable by'
             ' \'export APP_ID=your-app-id\' to replace the default value.'))
 
+  argparser.add_argument(
+      '--signature',
+      help='Signature of the crash.')
+
   args = argparser.parse_args()
 
   crash_printer.CrashPrinter(args.client, args.app,
-                             start_date=args.since, end_date=args.until)
+                             start_date=args.since, end_date=args.until,
+                             signature=args.signature)
