@@ -14,14 +14,15 @@
 
 """Rietveld-BuildBucket integration module."""
 
+import binascii
 import datetime
+import hashlib
 import json
 import logging
 import random
 import time
 import uuid
 
-from google.appengine.api import app_identity
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
@@ -38,11 +39,11 @@ BUILDBUCKET_API_ROOT = (
 # https://chromium.googlesource.com/infra/infra/+/master/appengine/cr-buildbucket/doc/index.md#buildset-tag
 BUILDSET_TAG_FORMAT = 'patch/rietveld/{hostname}/{issue}/{patch}'
 
-AUTH_SERVICE_ID = 'chrome-infra-auth'
+
 IMPERSONATION_TOKEN_MINT_URL = (
-    'https://%s.appspot.com/auth_service/api/v1/delegation/token/create' %
-    AUTH_SERVICE_ID)
-IMPERSONATION_TOKEN_CACHE_KEY_FORMAT = 'impersonation_token/v2/%s'
+    'https://luci-token-server.appspot.com/prpc/tokenserver.minter.TokenMinter/'
+    'MintDelegationToken')
+IMPERSONATION_TOKEN_CACHE_KEY_FORMAT = 'impersonation_token/v3/%s'
 
 
 class BuildBucketError(Exception):
@@ -322,6 +323,17 @@ def get_swarmbucket_builders():
 ## Buildbucket RPC.
 
 
+def _get_token_fingerprint(blob):
+  """Given a blob with signed token returns first 16 bytes of its SHA256 as hex.
+
+  It can be used to identify this particular token in logs.
+  """
+  assert isinstance(blob, basestring)
+  if isinstance(blob, unicode):
+    blob = blob.encode('ascii', 'ignore')
+  return binascii.hexlify(hashlib.sha256(blob).digest()[:16])
+
+
 @ndb.tasklet
 def _mint_delegation_token_async():
   """Generates an access token to impersonate the current user, if any.
@@ -341,37 +353,57 @@ def _mint_delegation_token_async():
     # concurrent requests start to refresh the token at the same time.
     token, exp_ts, lifetime_sec = token_envelope
     if time.time() < exp_ts - lifetime_sec * 0.05 * random.random():
+      logging.info(
+          'Fetched cached delegation token: fingerprint=%s',
+          _get_token_fingerprint(token))
       raise ndb.Return(token)
 
   # Request a new one.
   logging.debug('Minting a delegation token for %s', account.email)
   req = {
-    'audience': ['user:%s' % app_identity.get_service_account_name()],
+    'delegatedIdentity': 'user:%s' % account.email,
+    'audience': ['REQUESTOR'],
     'services': ['service:%s' % BUILDBUCKET_APP_ID],
-    'impersonate': 'user:%s' % account.email,
+    'validityDuration': 5*3600,
   }
   resp = yield net.json_request_async(
       IMPERSONATION_TOKEN_MINT_URL,
       method='POST',
       payload=req,
-      scopes=net.EMAIL_SCOPE)
-  token = resp.get('delegation_token')
-  if not token:
+      scopes=net.EMAIL_SCOPE,
+      headers={'Accept': 'application/json; charset=utf-8'})
+
+  signed_token = resp.get('token')
+  if not signed_token:
     raise BuildBucketError(
         'Could not mint a delegation token. Response: %s' % resp)
 
+  token_struct = resp.get('delegationSubtoken')
+  if not token_struct or not isinstance(token_struct, dict):
+    logging.error('Bad delegation token response: %s', resp)
+    raise BuildBucketError('Could not mint a delegation token')
+
+  logging.info(
+      'Token server "%s" generated token (subtoken_id=%s, fingerprint=%s):\n%s',
+      resp.get('serviceVersion'),
+      token_struct.get('subtokenId'),
+      _get_token_fingerprint(signed_token),
+      json.dumps(
+          token_struct,
+          sort_keys=True, indent=2, separators=(',', ': ')))
+
   # Put to cache.
-  validity_duration_sec = resp.get('validity_duration')
-  assert isinstance(validity_duration_sec, int)
+  validity_duration_sec = token_struct.get('validityDuration')
+  assert isinstance(validity_duration_sec, (int, float))
   if validity_duration_sec >= 10:
     validity_duration_sec -= 10  # Refresh the token 10 sec in advance.
     exp_ts = int(time.time() + validity_duration_sec)
     yield ctx.memcache_set(
         key=cache_key,
-        value=(token, exp_ts, validity_duration_sec),
+        value=(signed_token, exp_ts, validity_duration_sec),
         time=exp_ts)
 
-  raise ndb.Return(token)
+  raise ndb.Return(signed_token)
 
 
 @ndb.tasklet

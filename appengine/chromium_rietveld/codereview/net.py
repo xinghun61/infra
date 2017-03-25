@@ -209,6 +209,8 @@ def json_request_async(
       deadline=deadline,
       max_attempts=max_attempts)
   try:
+    if response.startswith(")]}'\n"):
+      response = response[5:]
     response = json.loads(response)
   except ValueError as e:
     raise Error('Bad JSON response: %s' % e, None, response)

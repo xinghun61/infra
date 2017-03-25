@@ -16,14 +16,12 @@
 """Tests for buildbucket client."""
 
 import json
-import logging
 import unittest
 
 import setup
 setup.process_args()
 
 
-from google.appengine.api import app_identity
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
@@ -188,7 +186,7 @@ class BuildbucketFunctionsTest(TestCase):
       ],
     }
     self.fake_responses = [
-      {'delegation_token': 'deltok', 'validity_duration': 1000},
+      {'token': 'deltok', 'delegationSubtoken': {'validityDuration': 18000}},
       put_builds_response,
     ]
     actual_builds = buildbucket.get_builds_for_patchset_async(
@@ -197,9 +195,10 @@ class BuildbucketFunctionsTest(TestCase):
 
     mint_token_req_body = self.requests[0][1]['payload']
     self.assertEqual(mint_token_req_body, {
-      'audience': ['user:test@localhost'],
+      'audience': ['REQUESTOR'],
       'services': ['service:cr-buildbucket-test'],
-      'impersonate': 'user:johndoe@chromium.org',
+      'delegatedIdentity': 'user:johndoe@chromium.org',
+      'validityDuration': 18000,
     })
     put_builds_req_headers = self.requests[1][1]['headers']
     self.assertEqual(
@@ -218,7 +217,7 @@ class BuildbucketFunctionsTest(TestCase):
       ]
     }
     self.fake_responses = [
-      {'delegation_token': 'deltok', 'validity_duration': 1000},
+      {'token': 'deltok', 'delegationSubtoken': {'validityDuration': 18000}},
       put_builds_response,
     ]
     issue = models.Issue(
