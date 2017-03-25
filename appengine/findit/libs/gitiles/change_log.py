@@ -72,37 +72,42 @@ class Contributor(namedtuple('Contributor', ['name', 'email', 'time'])):
 
 class ChangeLog(namedtuple('ChangeLog',
     ['author', 'committer', 'revision', 'commit_position', 'message',
-     'touched_files', 'commit_url', 'code_review_url', 'reverted_revision'])):
+     'touched_files', 'commit_url', 'code_review_url', 'reverted_revision',
+     'review_server_host', 'review_change_id'])):
   """Represents the change log of a revision."""
   __slots__ = ()
 
   def __new__(cls, author, committer, revision, commit_position, message,
               touched_files, commit_url, code_review_url=None,
-              reverted_revision=None):
+              reverted_revision=None, review_server_host=None,
+              review_change_id=None):
     return super(cls, ChangeLog).__new__(
         cls, author, committer, revision, commit_position, message,
-        touched_files, commit_url, code_review_url, reverted_revision)
+        touched_files, commit_url, code_review_url, reverted_revision,
+        review_server_host, review_change_id)
 
   def ToDict(self):
     """Returns the change log as a JSON object."""
     json_data = {
-      'author': {
-        'name': self.author.name,
-        'email': self.author.email,
-        'time': self.author.time,
-      },
-      'committer': {
-        'name': self.committer.name,
-        'email': self.committer.email,
-        'time': self.committer.time,
-      },
-      'revision': self.revision,
-      'commit_position': self.commit_position,
-      'touched_files': [],
-      'message': self.message,
-      'commit_url': self.commit_url,
-      'code_review_url': self.code_review_url,
-      'reverted_revision': self.reverted_revision,
+        'author': {
+            'name': self.author.name,
+            'email': self.author.email,
+            'time': self.author.time,
+        },
+        'committer': {
+            'name': self.committer.name,
+            'email': self.committer.email,
+            'time': self.committer.time,
+        },
+        'revision': self.revision,
+        'commit_position': self.commit_position,
+        'touched_files': [],
+        'message': self.message,
+        'commit_url': self.commit_url,
+        'code_review_url': self.code_review_url,
+        'reverted_revision': self.reverted_revision,
+        'review_server_host': self.review_server_host,
+        'review_change_id': self.review_change_id
     }
     for touched_file in self.touched_files:
       json_data['touched_files'].append(touched_file.ToDict())
@@ -127,5 +132,6 @@ class ChangeLog(namedtuple('ChangeLog',
                     info['committer']['time']),
         info['revision'], info['commit_position'], info['message'],
         touched_files, info['commit_url'], info['code_review_url'],
-        info['reverted_revision']
+        info['reverted_revision'], info.get('review_server_host'),
+        info.get('review_change_id')
     )

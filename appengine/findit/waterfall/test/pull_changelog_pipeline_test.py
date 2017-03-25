@@ -92,7 +92,9 @@ class PullChangelogPipelineTest(testing.AppengineTestCase):
         'commit_url': REV1_COMMIT_LOG_URL,
         'code_review_url': None,
         'revision': 'rev1',
-        'reverted_revision': None
+        'reverted_revision': None,
+        'review_server_host': None,
+        'review_change_id': None,
       }
     }
 

@@ -261,8 +261,9 @@ class GitChangeLogParser(GitParser):
     if not 'revision' in info:
       return None
 
-    info['commit_position'], info['code_review_url'] = (
-        commit_util.ExtractCommitPositionAndCodeReviewUrl(info['message']))
+    change_info = commit_util.ExtractChangeInfo(info['message'])
+    info['commit_position'] = change_info.get('commit_position')
+    info['code_review_url'] = change_info.get('code_review_url')
     info['reverted_revision'] = commit_util.GetRevertedRevision(
         info['message'])
     info['commit_url'] = '%s/+/%s' % (repo_url, info['revision'])

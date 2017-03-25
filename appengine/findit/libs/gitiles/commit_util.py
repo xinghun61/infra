@@ -3,17 +3,25 @@
 # found in the LICENSE file.
 
 import re
+import urlparse
 
-CODE_REVIEW_URL_PATTERN = re.compile(
-    '^(?:Review URL|Review-Url): (.*\d+).*$', re.IGNORECASE)
+RIETVELD_CODE_REVIEW_URL_PATTERN = re.compile(
+    '^(?:Review URL|Review-Url): (?P<url>.*/(?P<change_id>\d+)).*$',
+    re.IGNORECASE)
 COMMIT_POSITION_PATTERN = re.compile(
-    '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$', re.IGNORECASE)
+    '^Cr-Commit-Position: refs/heads/master@{#(?P<commit_position>\d+)}$',
+    re.IGNORECASE)
 REVERTED_REVISION_PATTERN = re.compile(
-    '^> Committed: https://.+/([0-9a-fA-F]{40})$', re.IGNORECASE)
-START_OF_CR_COMMIT_POSITION = -5
+    '^> Committed: https://.+/(?P<revision>[0-9a-fA-F]{40})$', re.IGNORECASE)
+
+GERRIT_CHANGE_ID_PATTERN = re.compile(
+    '^Change-Id: (?P<change_id>.*)$', re.IGNORECASE)
+GERRIT_REVIEW_URL_PATTERN =re.compile(
+    '^Reviewed-on: (?P<url>.*/\d+).*$', re.IGNORECASE)
+CHANGE_INFO_PATTERN = re.compile('^.*:.*$', re.IGNORECASE)
 
 
-def ExtractCommitPositionAndCodeReviewUrl(message):
+def ExtractChangeInfo(message):
   """Returns the commit position and code review url in the commit message.
 
   A "commit position" is something similar to SVN version ids; i.e.,
@@ -24,29 +32,71 @@ def ExtractCommitPositionAndCodeReviewUrl(message):
   only for pretty printing to humans.
 
   Returns:
-    (commit_position, code_review_url)
+    change_info (dict): information about a change. For example:
+    Gerrit:
+    {
+        'commit_position': 12345,
+        'code_review_url':
+            'https://chromium-review.googlesource.com/54322',
+        'host': 'chromium-review.googlesource.com',
+        'change_id': 'Iaa1234567fer890'
+    }
+
+    Rietveld:
+    {
+        'commit_position': 12345,
+        'code_review_url': 'https://codereview.chromium.org/1234567890',
+        'host': 'codereview.chromium.org',
+        'change_id': '1234567890'
+    }
   """
+  change_info = {
+      'commit_position': None,
+      'code_review_url': None,
+      'host': None,
+      'change_id': None
+  }
   if not message:
-    return (None, None)
+    return change_info
 
-  commit_position = None
-  code_review_url = None
-
-  # Commit position and code review url are in the last 5 lines.
-  lines = message.strip().split('\n')[START_OF_CR_COMMIT_POSITION:]
+  lines = message.strip().split('\n')
   lines.reverse()
 
   for line in lines:
-    if commit_position is None:
+    if (line != '' and not line.isspace() and
+        not CHANGE_INFO_PATTERN.match(line)):
+      # Breaks when hit the first first non-empty and non-space line
+      # which is not in format "footer-name:value".
+      break
+
+    if not change_info['commit_position']:
       match = COMMIT_POSITION_PATTERN.match(line)
       if match:
-        commit_position = int(match.group(1))
+        change_info['commit_position'] = int(match.group('commit_position'))
 
-    if code_review_url is None:
-      match = CODE_REVIEW_URL_PATTERN.match(line)
+    if not change_info['host']:
+      match = RIETVELD_CODE_REVIEW_URL_PATTERN.match(line)
       if match:
-        code_review_url = match.group(1)
-  return (commit_position, code_review_url)
+        change_info['code_review_url'] = match.group('url')
+        change_info['host'] = urlparse.urlparse(match.group('url')).netloc
+        change_info['change_id'] = match.group('change_id')
+      else:
+        match = GERRIT_REVIEW_URL_PATTERN.match(line)
+        if match:
+          change_info['host'] = urlparse.urlparse(match.group('url')).netloc
+
+    if not change_info['change_id']:
+      match = GERRIT_CHANGE_ID_PATTERN.match(line)
+      if match:
+        change_info['change_id'] = match.group('change_id')
+
+  if (not change_info['code_review_url'] and
+      change_info['host'] and change_info['change_id']):
+    # For code review urls for Gerrit CLs, we want to unify them in
+    # 'https://host/q/change_id' format.
+    change_info['code_review_url'] = 'https://%s/q/%s' % (
+        change_info['host'], change_info['change_id'])
+  return change_info
 
 
 def NormalizeEmail(email):

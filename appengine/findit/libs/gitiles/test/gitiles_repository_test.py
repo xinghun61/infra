@@ -15,9 +15,9 @@ from libs.gitiles.change_log import ChangeLog
 from libs.http import retry_http_client
 
 
-COMMIT_MESSAGE = ('Add popover for snapshot canvas log.\n\n'
-                  'Review URL: https://codereview.chromium.org/320423004\n\n'
-                  'Review URL: https://codereview.chromium.org/328113005\n\n'
+COMMIT_MESSAGE = ('Add popover for snapshot canvas log.\n'
+                  'Review URL: https://codereview.chromium.org/320423004\n'
+                  'Review URL: https://codereview.chromium.org/328113005\n'
                   'Cr-Commit-Position: refs/heads/master@{#175976}')
 
 COMMIT_LOG = """)]}'
@@ -131,7 +131,9 @@ EXPECTED_CHANGE_LOG_JSON = {
         'https://repo.test/+/bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb',
     'code_review_url': 'https://codereview.chromium.org/328113005',
     'revision': 'bcfd5a12eea05588aee98b7cf7e032d8cb5b58bb',
-    'reverted_revision': None
+    'reverted_revision': None,
+    'review_server_host': 'codereview.chromium.org',
+    'review_change_id': '328113005',
 }
 
 COMMIT_LOG_WITH_UNKNOWN_FILE_CHANGE_TYPE = """)]}'
@@ -421,7 +423,6 @@ class GitRepositoryTest(TestCase):
         '_SendRequestForJsonResponse', _MockSendRequestForJsonResponse)
 
     changelogs = self.git_repo.GetChangeLogs('0', '2')
-
     self.assertEqual(len(changelogs), 1)
     self.assertEqual(changelogs[0].ToDict(), EXPECTED_CHANGE_LOG_JSON)
 

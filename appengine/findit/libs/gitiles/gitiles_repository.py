@@ -107,8 +107,7 @@ class GitilesRepository(GitRepository):
         self._GetDateTimeFromString(data['time']))
 
   def _ParseChangeLogFromLogData(self, data):
-    commit_position, code_review_url = (
-        commit_util.ExtractCommitPositionAndCodeReviewUrl(data['message']))
+    change_info = commit_util.ExtractChangeInfo(data['message'])
 
     touched_files = []
     for file_diff in data['tree_diff']:
@@ -125,8 +124,10 @@ class GitilesRepository(GitRepository):
     return ChangeLog(
         self._ContributorFromDict(data['author']),
         self._ContributorFromDict(data['committer']),
-        data['commit'], commit_position, data['message'], touched_files, url,
-        code_review_url, reverted_revision)
+        data['commit'], change_info.get('commit_position'), data['message'],
+        touched_files, url,change_info.get('code_review_url'),
+        reverted_revision, change_info.get('host'),
+        change_info.get('change_id'))
 
   def GetChangeLog(self, revision):
     """Returns the change log of the given revision."""
