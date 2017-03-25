@@ -9,6 +9,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
 
+  'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
@@ -49,8 +50,7 @@ def RunSteps(api, project_under_test, auth_with_account):
   # This requires getting the refs.cfg from luci_config, reading the local
   # patched version, etc.
   result = api.luci_config.get_project_config(project_under_test, 'recipes.cfg')
-  recipes_cfg = api.luci_config.parse_textproto(result['content'].split('\n'))
-  path = recipes_cfg['recipes_path'][0].split('/')
+  path = api.json.loads(result['content'])['recipes_path'].split('/')
 
   api.step(
       'recipe simulation test', [
@@ -70,7 +70,7 @@ def GenTests(api):
       api.luci_config.get_projects(('build',)) +
       api.luci_config.get_project_config(
           'build', 'recipes.cfg',
-          'recipes_path: "foobar"')
+          '{"recipes_path": "foobar"}')
   )
 
   yield (
@@ -85,5 +85,5 @@ def GenTests(api):
       api.luci_config.get_projects(('build',)) +
       api.luci_config.get_project_config(
           'build', 'recipes.cfg',
-          'recipes_path: "foobar"')
+          '{"recipes_path": "foobar"}')
   )
