@@ -19,6 +19,10 @@ from infra.services.android_docker import usb_device
 
 _REGISTRY_URL = 'gcr.io'
 
+# Location of file that will prevent this script from spawning new containers.
+# Useful when draining a host in order to debug failures.
+_SHUTDOWN_FILE = '/b/shutdown.stamp'
+
 
 def get_host_uptime():
   """Returns host uptime in minutes."""
@@ -52,11 +56,16 @@ def add_device(docker_client, android_devices, args):
 
 
 def launch(docker_client, android_devices, args):
+  draining = os.path.exits(_SHUTDOWN_FILE)
+  if draining:
+    logging.info(
+        'In draining state due to existence of %s. No new containers will be '
+        'created.', _SHUTDOWN_FILE)
   running_containers = docker_client.get_running_containers()
   # Reboot the host if needed. Will attempt to kill all running containers
   # gracefully before triggering reboot.
   host_uptime = get_host_uptime()
-  if host_uptime > args.max_host_uptime:
+  if host_uptime > args.max_host_uptime and not draining:
     logging.debug('Host uptime over max uptime (%d > %d)',
                   host_uptime, args.max_host_uptime)
     if len(running_containers) > 0:
@@ -88,18 +97,24 @@ def launch(docker_client, android_devices, args):
     # TODO(bpastene): Maybe enable auto cleanup with the -rm option?
     docker_client.delete_stopped_containers()
 
-    # Send SIGTERM to bots in containers that have been running for too long.
-    docker_client.stop_old_containers(
-        running_containers, args.max_container_uptime)
+    # Send SIGTERM to bots in containers that have been running for too long,
+    # or all of them regardless of uptime if draining.
+    if draining:
+      for c in running_containers:
+        c.kill_swarming_bot()
+    else:
+      docker_client.stop_old_containers(
+          running_containers, args.max_container_uptime)
 
     # Create a container for each device that doesn't already have one.
-    needs_cgroup_update = docker_client.create_missing_containers(
-        running_containers, android_devices, image_url, args.swarming_server)
+    if not draining:
+      needs_cgroup_update = docker_client.create_missing_containers(
+          running_containers, android_devices, image_url, args.swarming_server)
 
-    # For each device that was granted a new container, add it to the
-    # container's cgroup.
-    if len(needs_cgroup_update) > 0:
-      add_device(docker_client, needs_cgroup_update, args)
+      # For each device that was granted a new container, add it to the
+      # container's cgroup.
+      if len(needs_cgroup_update) > 0:
+        add_device(docker_client, needs_cgroup_update, args)
 
 
 def main():
