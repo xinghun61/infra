@@ -272,6 +272,7 @@ def create_task_def_async(
     'bucket': build.bucket,
     'builder_hash': (
         hashlib.sha256('%s:%s' % (build.bucket, builder_cfg.name)).hexdigest()),
+    'build_id': build.key.id(),
     'cache_dir': CACHE_DIR,
     'builder': builder_cfg.name,
     'project': project_id,
