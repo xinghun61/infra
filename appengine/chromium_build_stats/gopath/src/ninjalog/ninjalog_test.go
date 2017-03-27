@@ -6,6 +6,7 @@ package ninjalog
 
 import (
 	"bytes"
+	"io/ioutil"
 	"reflect"
 	"sort"
 	"strings"
@@ -410,5 +411,92 @@ func TestFlow(t *testing.T) {
 
 	if !reflect.DeepEqual(flow, want) {
 		t.Errorf("Flow()=%v; want=%v", flow, want)
+	}
+}
+
+func BenchmarkParse(b *testing.B) {
+	data, err := ioutil.ReadFile("testdata/ninja_log")
+	if err != nil {
+		b.Errorf(`ReadFile("testdata/ninja_log")=_, %v; want_, <nil>`, err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		_, err := Parse(".ninja_log", bytes.NewReader(data))
+		if err != nil {
+			b.Errorf(`Parse()=_, %v; want=_, <nil>`, err)
+		}
+	}
+}
+
+func BenchmarkDedup(b *testing.B) {
+	data, err := ioutil.ReadFile("testdata/ninja_log")
+	if err != nil {
+		b.Errorf(`ReadFile("testdata/ninja_log")=_, %v; want_, <nil>`, err)
+	}
+
+	njl, err := Parse(".ninja_log", bytes.NewReader(data))
+	if err != nil {
+		b.Errorf(`Parse()=_, %v; want=_, <nil>`, err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		steps := make([]Step, len(njl.Steps))
+		copy(steps, njl.Steps)
+		Dedup(steps)
+	}
+}
+
+func BenchmarkFlow(b *testing.B) {
+	data, err := ioutil.ReadFile("testdata/ninja_log")
+	if err != nil {
+		b.Errorf(`ReadFile("testdata/ninja_log")=_, %v; want_, <nil>`, err)
+	}
+
+	njl, err := Parse(".ninja_log", bytes.NewReader(data))
+	if err != nil {
+		b.Errorf(`Parse()=_, %v; want=_, <nil>`, err)
+	}
+	steps := Dedup(njl.Steps)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		flowInput := make([]Step, len(steps))
+		copy(flowInput, steps)
+		Flow(flowInput)
+	}
+}
+
+func BenchmarkToTraces(b *testing.B) {
+	data, err := ioutil.ReadFile("testdata/ninja_log")
+	if err != nil {
+		b.Errorf(`ReadFile("testdata/ninja_log")=_, %v; want_, <nil>`, err)
+	}
+
+	njl, err := Parse(".ninja_log", bytes.NewReader(data))
+	if err != nil {
+		b.Errorf(`Parse()=_, %v; want=_, <nil>`, err)
+	}
+	steps := Dedup(njl.Steps)
+	flow := Flow(steps)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		ToTraces(flow, 1)
+	}
+}
+
+func BenchmarkDedupFlowToTraces(b *testing.B) {
+	data, err := ioutil.ReadFile("testdata/ninja_log")
+	if err != nil {
+		b.Errorf(`ReadFile("testdata/ninja_log")=_, %v; want_, <nil>`, err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		njl, err := Parse(".ninja_log", bytes.NewReader(data))
+		if err != nil {
+			b.Errorf(`Parse()=_, %v; want=_, <nil>`, err)
+		}
+
+		steps := Dedup(njl.Steps)
+		flow := Flow(steps)
+		ToTraces(flow, 1)
 	}
 }
