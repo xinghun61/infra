@@ -191,7 +191,8 @@ func main() {
 	tsmonFlags := tsmon.NewFlags()
 	tsmonFlags.Flush = tsmon.FlushManual
 	tsmonFlags.Target.TargetType = target.TaskType
-	tsmonFlags.Target.TaskServiceName = "backups"
+	tsmonFlags.Target.TaskServiceName = "backup_to_gs"
+	tsmonFlags.Target.TaskJobName = "backup_to_gs"
 	tsmonFlags.Register(fs)
 
 	loggingConfig := logging.Config{Level: logging.Info}
