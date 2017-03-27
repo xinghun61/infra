@@ -1,0 +1,442 @@
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/vaadin-combo-box/vaadin-combo-box.html">
+
+<dom-module id="tr-flakiness">
+  <template>
+    <style>
+      :host {
+        display: block;
+        padding: 10px;
+        width: 100%;
+      }
+      .loading {
+        text-align: center;
+        margin: 20px 0;
+      }
+      .error {
+        text-align: center;
+        color: red;
+        margin: 20px 0;
+      }
+      .grid-container {
+        @apply(--layout-vertical);
+        @apply(--layout-center-justified);
+        margin: 15px 0;
+      }
+      .grid-header {
+        @apply(--layout-horizontal);
+        background-color: #757575;
+        color: #fff;
+        font-weight: 400;
+        padding: 10px;
+      }
+      .grid-row {
+        @apply(--layout-horizontal);
+        @apply(--layout-center-justified);
+        background-color: #fff;
+        border-top: 1px solid #F5F5F5;
+        padding: 10px;
+        height: 19px;
+        overflow: hidden;
+      }
+      .grid-row-link {
+        color: inherit;
+        font-weight: 300;
+        text-decoration: none;
+        cursor: pointer;
+        border-bottom: none;
+      }
+      .grid-row:hover {
+        background-color: #F5F5F5;
+        font-weight: 400;
+      }
+      .test-name {
+        @apply(--layout-flex);
+        overflow: hidden;
+      }
+      .test-stats {
+        @apply(--layout-horizontal);
+        width: 150px;
+      }
+      #omnibox {
+        --paper-input-container-disabled: {
+          opacity: 0.7;
+        }
+      }
+      .notice {
+        margin: 0;
+      }
+      paper-tooltip {
+        --paper-tooltip: {
+          font-size: 12px;
+          line-height: 1.2;
+          max-width: 500px;
+        }
+      }
+      .design-doc {
+        text-align: right;
+      }
+    </style>
+
+    <p class="notice">
+      This section of the app is currently in dogfood phase and should only be
+      used by Blink teams. Please expect changes to the UI and functionality as
+      we will incorporate your feedback. We will also notify you when it becomes
+      available to all Chromium teams.
+    </p>
+
+    <!-- Omnibox selector for test group -->
+    <div class="error" hidden$="[[!_errorGroups]]">
+      [[_formatError(_errorGroups)]]
+    </div>
+    <iron-ajax
+        id="groupsAjax"
+        url="/data/test_flakiness/groups"
+        handle-as="json"
+        loading="{{_loadingGroups}}"
+        last-response="{{_groups}}"
+        last-error="{{_errorGroups}}"></iron-ajax>
+    <vaadin-combo-box
+        id="omnibox"
+        allow-custom-value
+        disabled="[[_loadingGroups]]"
+        label="[[_omniboxLabel(_loadingGroups)]]">
+    </vaadin-combo-box>
+
+    <!-- List of flaky tests -->
+    <div class="loading" hidden$="[[!_loadingData]]">Loading data... </div>
+    <div class="error" hidden$="[[!_errorData]]">
+      [[_formatError(_errorData)]]
+    </div>
+    <iron-ajax
+        id="dataAjax"
+        url="/data/test_flakiness/list"
+        handle-as="json"
+        loading="{{_loadingData}}"
+        last-response="{{_data}}"
+        last-error="{{_errorData}}"></iron-ajax>
+    <div id="tests" hidden$="[[_isEmpty(_data)]]">
+      <div class="grid-container">
+        <div class="grid-header">
+          <div class="test-name">Test Name</div>
+          <div class="test-stats" id="flaky-failures-header">
+            Flaky Failures*
+          </div>
+          <paper-tooltip for="flaky-failures-header" animation-delay="0">
+            This column shows a number of flaky test failures out of total
+            tries. Note that we only count the failures that are certain to be
+            caused by flakiness, therefore this is a lower-bound. Runs in which
+            the test has failed all tries may be also caused by flakiness, but
+            are also likely to be caused by a reliable test failure on CQ,
+            therefore we ignore them. More details can be found in the design
+            doc linked in the bottom of the page.
+          </paper-tooltip>
+          <div class="test-stats" id="flakiness-header">
+            Flakiness*
+          </div>
+          <paper-tooltip for="flakiness-header" animation-delay="0">
+            This is an estimate of the probability of a test to fail. It is
+            based on the number of detected flaky failures in the "Flaky
+            Failures" column, but it is also statistically corrected for
+            undetected flaky failures making it a good approximation of the true
+            test flakiness. More details can be found in the design doc linked
+            in the bottom of the page.
+          </paper-tooltip>
+          <div class="test-stats" id="fr-header">
+           CQ False Rejections*
+          </div>
+          <paper-tooltip for="fr-header" animation-delay="0">
+            Number of flaky builds in which corresponding test has failed in the
+            last 7 days. We find flaky builds by searching for pairs of failed
+            and passed CQ builds on the same patchset. The reduce false
+            positives caused by changes in the tree between the builds, we
+            require failed and passed builds to be started within 12 hours from
+            each other and filter out tests that failed with and without patch.
+          </paper-tooltip>
+        </div>
+        <template is="dom-repeat" items="[[_data]]" as="test">
+          <a class="grid-row-link" href="[[_getTestResultsUrl(test)]]">
+            <div class="grid-row">
+              <div class="test-name">[[test.test_name]]</div>
+              <div class="test-stats">[[test.total_flaky_failures]] / [[test.total_tries]]</div>
+              <div class="test-stats">[[_showPercentage(test.flakiness)]]%</div>
+              <div class="test-stats">[[test.cq_false_rejections]]</div>
+            </div>
+          </a>
+        </template>
+      </div>
+    </div>
+    <div class="design-doc">
+      (<a href="https://docs.google.com/document/d/1g587hOo4KySenWGNzZnItINI7zFP8hsNDn_CyhQ6X5Q">design doc</a>)
+    </div>
+  </template>
+  <script>
+    (function() {
+      'use strict';
+
+      var GroupKind = {
+        TEAM: 'team',
+        DIR: 'dir',
+        UNKNOWN_TEAM: 'unknown-team',
+        UNKNOWN_DIR: 'unknown-dir',
+        TEST_SUITE: 'test-suite',
+        SEARCH: 'search',
+      };
+
+      Polymer({
+        is: 'tr-flakiness',
+
+        properties: {
+          _groups: {
+            type: Array,
+            value: function() { return []; },
+            observer: '_updateSuggestions',
+          },
+          _loadingGroups: {
+            type: Boolean,
+            value: false,
+          },
+          _loadingData: {
+            type: Boolean,
+            value: false,
+          },
+          _data: {
+            type: Array,
+            value: function() { return []; },
+          },
+          _ignoreGroupChangeOnce: {
+            type: Boolean,
+            value: false,
+          },
+        },
+
+        observers: [
+          '_subrouteChanged(route.path)',
+        ],
+
+        listeners: {
+          'omnibox.value-changed': '_selectGroup',
+        },
+
+        _omniboxLabel: function(loadingGroups) {
+          if (loadingGroups) {
+            return 'Loading...'
+          }
+          return 'Please enter search term e.g. team name, test suite name, ' +
+            'dir name or any part of the test name';
+        },
+
+        _getTestResultsUrl: function(test) {
+          // TODO(sergiyb): Investigate why for some tests, we get no recorded
+          // runs, e.g. for "LoaderTest.Foo".
+          return '/dashboards/flakiness_dashboard.html#testType=' +
+              encodeURIComponent(test.normalized_step_name) + '&tests=' +
+              encodeURIComponent(test.test_name);
+        },
+
+        _showPercentage: function(rate) {
+          return (rate * 100).toFixed(2);
+        },
+
+        _formatError: function(errorObj) {
+          if (!errorObj)
+            return;
+
+          if (errorObj.error && typeof errorObj.error == "string")
+            return errorObj.error
+
+          console.error(errorObj);
+          return 'Unknown error';
+        },
+
+        _isEmpty: function(obj) {
+          if (typeof obj === 'undefined') {
+            return true;
+          } else if (typeof obj === 'object') {
+            if (Array.isArray(obj)) {
+              return obj.length === 0;
+            } else {
+              return (obj === null || Object.keys(obj).length === 0 &&
+                      obj.constructor === Object);
+            }
+          } else {
+            return !Boolean(obj);
+          }
+        },
+
+        _labelForGroup: function(group) {
+          switch (group.kind) {
+            case GroupKind.TEAM:
+              return 'team:' + group.name;
+            case GroupKind.DIR:
+              return 'dir:' + group.name;
+            case GroupKind.UNKNOWN_TEAM:
+              return 'team:unknown';
+            case GroupKind.UNKNOWN_DIR:
+              return 'dir:unknown';
+            case GroupKind.TEST_SUITE:
+              return 'test-suite:' + group.name;
+            default:
+              console.error('Unexpected group kind:', group.kind);
+          }
+        },
+
+        _updateSuggestions: function() {
+          let suggestions = [];
+          let selectedValue;
+          for (let i = 0; i < this._groups.length; i++) {
+            let group = this._groups[i];
+            let label = this._labelForGroup(group);
+            if (label) {
+              // We use 1-based indicies since vaadin-combo-box treats value 0
+              // as empty selection.
+              suggestions.push({label: label, value: i+1});
+            }
+
+            if (this._group && group.name === this._group.name &&
+                group.kind === this._group.kind) {
+              selectedValue = i + 1;
+            }
+          }
+
+          suggestions.sort(function(a, b) {
+            if (a.label < b.label) {
+              return -1;
+            } else if (a.label > b.label) {
+              return 1;
+            } else {
+              return 0;
+            }
+          });
+
+          this.$.omnibox.items = suggestions;
+          if (this._group) {
+            if (this._group.kind === 'all') {
+              // Do nothing. Leave search box empty.
+            } else if (this._group.kind === 'search') {
+              this._updateSelectedGroup(this._group.name)
+            } else {
+              this._updateSelectedGroup(selectedValue);
+            }
+          }
+        },
+
+        _updateSelectedGroup: function(value) {
+          if (value !== this.$.omnibox.value) {
+            this._ignoreGroupChangeOnce = true;
+            this.$.omnibox.value = value;
+          }
+        },
+
+        _navigateTo: function(group) {
+          let path = group ? '/' + group.kind + '/' + group.name : '';
+          if (this.route.path != path) {
+            this.set('route.path', path);
+          }
+        },
+
+        _selectGroup: function(ev) {
+          if (this._ignoreGroupChangeOnce) {
+            this._ignoreGroupChangeOnce = false;
+            return;
+          }
+
+          let value = ev.detail.value;
+          if (!value) {
+            return;
+          }
+
+          if (typeof value === 'number') {
+            this._navigateTo(this._groups[value - 1]);
+          } else if (typeof value === 'string') {
+            // Detect when the user selects an element from the autocompletion
+            // list (e.g. test-suite:LoaderTest), then places the cursor into
+            // the input field, makes no changes and hits Enter. The vaadin-
+            // combo-box treats this as a custom value, but we should find the
+            // matching item in the list and mark it as selected instead.
+            for (let i in this.$.omnibox.items) {
+              if (this.$.omnibox.items[i].label == value) {
+                self._updateSelectedGroup(this.$.ominibox.items[i].value)
+                return;
+              }
+            }
+
+            this._navigateTo({kind: 'search', name: value});
+          } else {
+            console.error('Unexpected value type for selected group');
+          }
+        },
+
+        _loadData: function() {
+          if (!this._group) {
+            console.error('Tried to load data without specifying the group');
+            return;
+          }
+
+          this._data = '';
+          this._error = '';
+          this.$.dataAjax.params = {
+            'groupKind': this._group.kind,
+            'groupName': this._group.name,
+          };
+          this.$.dataAjax.generateRequest();
+        },
+
+        _parseGroupFromPath: function(newPath) {
+          if (!newPath) {
+            return;
+          }
+
+          let path = newPath.replace(/^\//, '');  // strip leading slash
+          if (path === '') {
+            return;
+          }
+
+          let slash = path.indexOf('/')
+          if (slash === -1) {
+            console.error('Missing slash (/) in the subpath.');
+            this._navigateTo();
+            return;
+          }
+
+          let kind = path.substr(0, slash);
+          let name = path.substr(slash + 1);
+
+          if (Object.values(GroupKind).indexOf(kind) === -1) {
+            console.error('Unknown group kind in the subpath.');
+            this._navigateTo();
+            return;
+          }
+
+          if (!name) {
+            console.error('Empty name in the subpath.');
+            this._navigateTo();
+            return;
+          }
+
+          return {
+            kind: kind,
+            name: name,
+          };
+        },
+
+        _subrouteChanged: function(newPath) {
+          this._group = this._parseGroupFromPath(newPath)
+          if (this._group) {
+            this._loadData();
+          } else {
+            this._group = {kind: 'all', name: 'all'}
+            this._loadData();
+            this._updateSelectedGroup('');
+          }
+
+          if (!this.$.omnibox.items || this.$.omnibox.items.length === 0) {
+            this.$.groupsAjax.generateRequest();
+          }
+        },
+      });
+    })();
+  </script>
+</dom-module>
