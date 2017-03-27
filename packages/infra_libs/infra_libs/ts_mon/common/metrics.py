@@ -471,24 +471,6 @@ class _DistributionMetricBase(Metric):
   def _populate_value_type(self, data_set_pb):
     data_set_pb.value_type = metrics_pb2.DISTRIBUTION
 
-  @staticmethod
-  def _running_zero_generator(iterable):
-    """Compresses sequences of zeroes in the iterable into negative zero counts.
-
-    For example an input of [1, 0, 0, 0, 2] is converted to [1, -3, 2].
-    """
-
-    count = 0
-
-    for value in iterable:
-      if value == 0:
-        count += 1
-      else:
-        if count != 0:
-          yield -count
-          count = 0
-        yield value
-
   def add(self, value, fields=None, target_fields=None):
     def modify_fn(dist, value):
       if dist == 0:

@@ -440,34 +440,6 @@ class FloatMetricTest(TestBase):
     self.assertFalse(m.is_cumulative())
 
 
-class RunningZeroGeneratorTest(TestBase):
-
-  def assertZeroes(self, expected, sequence):
-    self.assertEquals(expected,
-        list(metrics._DistributionMetricBase._running_zero_generator(sequence)))
-
-  def test_running_zeroes(self):
-    self.assertZeroes([1, -1, 1], [1, 0, 1])
-    self.assertZeroes([1, -2, 1], [1, 0, 0, 1])
-    self.assertZeroes([1, -3, 1], [1, 0, 0, 0, 1])
-    self.assertZeroes([1, -1, 1, -1, 2], [1, 0, 1, 0, 2])
-    self.assertZeroes([1, -1, 1, -2, 2], [1, 0, 1, 0, 0, 2])
-    self.assertZeroes([1, -2, 1, -2, 2], [1, 0, 0, 1, 0, 0, 2])
-
-  def test_leading_zeroes(self):
-    self.assertZeroes([-1, 1], [0, 1])
-    self.assertZeroes([-2, 1], [0, 0, 1])
-    self.assertZeroes([-3, 1], [0, 0, 0, 1])
-
-  def test_trailing_zeroes(self):
-    self.assertZeroes([1], [1])
-    self.assertZeroes([1], [1, 0])
-    self.assertZeroes([1], [1, 0, 0])
-    self.assertZeroes([], [])
-    self.assertZeroes([], [0])
-    self.assertZeroes([], [0, 0])
-
-
 class DistributionMetricTest(TestBase):
 
   def _test_distribution_proto(self, dist):
@@ -512,7 +484,7 @@ class DistributionMetricTest(TestBase):
       self.assertEqual(stream_kind, data_set.stream_kind)
       self.assertEqual(7, data.distribution_value.count)
 
-  def test_generate_geomertic_distribution(self):
+  def test_generate_geometric_distribution(self):
     bucketer = distribution.GeometricBucketer(growth_factor=10**2,
                                               num_finite_buckets=10)
     dists = [
@@ -527,7 +499,7 @@ class DistributionMetricTest(TestBase):
     for dist, stream_kind in dists:
       data_set, data = self._test_distribution_proto(dist)
 
-      self.assertListEqual([0, 1, 5, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+      self.assertListEqual([1, 5, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
                            list(data.distribution_value.bucket_count))
       self.assertEqual(
           10, data.distribution_value.exponential_buckets.num_finite_buckets)
@@ -541,7 +513,7 @@ class DistributionMetricTest(TestBase):
     m.add(1)
     m.add(10)
     m.add(100)
-    self.assertEquals({2: 1, 6: 1, 11: 1}, m.get().buckets)
+    self.assertEquals({1: 1, 5: 1, 10: 1}, m.get().buckets)
     self.assertEquals(111, m.get().sum)
     self.assertEquals(3, m.get().count)
 
