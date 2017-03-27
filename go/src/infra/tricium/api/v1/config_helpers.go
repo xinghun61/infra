@@ -23,6 +23,18 @@ func ProjectIsKnown(sc *ServiceConfig, project string) bool {
 	return false
 }
 
+// LookupProjectDetails lookups up the project details entry for the provided project.
+//
+// Unknown projects results in nil.
+func LookupProjectDetails(sc *ServiceConfig, project string) *ProjectDetails {
+	for _, p := range sc.Projects {
+		if p.Name == project {
+			return p
+		}
+	}
+	return nil
+}
+
 // CanRequest checks the current user can make service requests for the project.
 func CanRequest(c context.Context, pc *ProjectConfig) (bool, error) {
 	return checkAcls(c, pc, Acl_REQUESTER)
@@ -141,33 +153,33 @@ func GetRecipeCmd(sc *ServiceConfig, platform Platform_Name) (*Cmd, error) {
 // A valid analyzer config entry has a name, valid deps and valid impl entries.
 // Note that there are more requirements for an analyzer config to be fully
 // valid in a merged config, for instance, data dependencies are required.
-func IsAnalyzerValid(a *Analyzer, sc *ServiceConfig) (bool, error) {
+func IsAnalyzerValid(a *Analyzer, sc *ServiceConfig) error {
 	if a.GetName() == "" {
-		return false, errors.New("missing name in analyzer config")
+		return errors.New("missing name in analyzer config")
 	}
 	pm := make(map[Platform_Name]bool)
 	for _, i := range a.Impls {
 		needs, err := LookupDataTypeDetails(sc, a.Needs)
 		if err != nil {
-			return false, errors.New("analyzer has impl that needs unknown data type")
+			return errors.New("analyzer has impl that needs unknown data type")
 		}
 		provides, err := LookupDataTypeDetails(sc, a.Provides)
 		if err != nil {
-			return false, errors.New("analyzer has impl that provides unknown data type")
+			return errors.New("analyzer has impl that provides unknown data type")
 		}
 		ok, err := IsImplValid(i, sc, needs, provides)
 		if !ok {
-			return false, fmt.Errorf("invalid impl for analyzer %s: %v", a.Name, err)
+			return fmt.Errorf("invalid impl for analyzer %s: %v", a.Name, err)
 		}
 		if i.ProvidesForPlatform == Platform_ANY {
 			continue
 		}
 		if _, ok := pm[i.ProvidesForPlatform]; ok {
-			return false, fmt.Errorf("multiple impl providing data for platform %v", i.ProvidesForPlatform)
+			return fmt.Errorf("multiple impl providing data for platform %v", i.ProvidesForPlatform)
 		}
 		pm[i.ProvidesForPlatform] = true
 	}
-	return true, nil
+	return nil
 }
 
 // IsImplValid checks if the impl entry is valid.

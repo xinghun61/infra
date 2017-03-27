@@ -237,7 +237,7 @@ func updateTracking(ctx context.Context, p *GerritProject, changes []gerrit.Chan
 	// TODO(emso): consider depending on the order provided by datastore, that is, depend
 	// on keys and values being in the same order from GetMulti.
 	// Create map of tracked changes.
-	t := make(map[string]GerritChange)
+	t := map[string]GerritChange{}
 	for _, c := range tc {
 		if c != nil {
 			t[c.ChangeID] = *c

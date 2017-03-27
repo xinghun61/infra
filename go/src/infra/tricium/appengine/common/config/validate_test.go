@@ -13,16 +13,13 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-	// TODO(emso): test validate
-}
-
-func TestMerge(t *testing.T) {
 	Convey("Test Environment", t, func() {
-
+		project := "playground"
 		analyzer := "PyLint"
 		platform := tricium.Platform_UBUNTU
 		config := "enable"
 		sd := &tricium.ServiceConfig{
+			SwarmingWorkerTopic: "worker/completion",
 			Platforms: []*tricium.Platform_Details{
 				{
 					Name:       platform,
@@ -37,6 +34,12 @@ func TestMerge(t *testing.T) {
 				{
 					Type:               tricium.Data_RESULTS,
 					IsPlatformSpecific: true,
+				},
+			},
+			Projects: []*tricium.ProjectDetails{
+				{
+					Name: project,
+					SwarmingServiceAccount: "swarming@email.com",
 				},
 			},
 		}
@@ -66,7 +69,8 @@ func TestMerge(t *testing.T) {
 		}
 
 		Convey("Supported analyzer platform OK", func() {
-			_, err := merge(sd, &tricium.ProjectConfig{
+			_, err := Validate(sd, &tricium.ProjectConfig{
+				Name:      project,
 				Analyzers: analyzers,
 				Selections: []*tricium.Selection{
 					{
@@ -79,7 +83,8 @@ func TestMerge(t *testing.T) {
 		})
 
 		Convey("Non-supported analyzer platform causes error", func() {
-			_, err := merge(sd, &tricium.ProjectConfig{
+			_, err := Validate(sd, &tricium.ProjectConfig{
+				Name:      project,
 				Analyzers: analyzers,
 				Selections: []*tricium.Selection{
 					{
@@ -92,7 +97,8 @@ func TestMerge(t *testing.T) {
 		})
 
 		Convey("Supported analyzer config OK", func() {
-			_, err := merge(sd, &tricium.ProjectConfig{
+			_, err := Validate(sd, &tricium.ProjectConfig{
+				Name:      project,
 				Analyzers: analyzers,
 				Selections: []*tricium.Selection{
 					{
@@ -111,7 +117,8 @@ func TestMerge(t *testing.T) {
 		})
 
 		Convey("Non-supported analyzer config causes error", func() {
-			_, err := merge(sd, &tricium.ProjectConfig{
+			_, err := Validate(sd, &tricium.ProjectConfig{
+				Name:      project,
 				Analyzers: analyzers,
 				Selections: []*tricium.Selection{
 					{
@@ -133,7 +140,6 @@ func TestMerge(t *testing.T) {
 
 func TestMergeAnalyzers(t *testing.T) {
 	Convey("Test Environment", t, func() {
-
 		analyzer := "PyLint"
 		platform := tricium.Platform_UBUNTU
 		sc := &tricium.ServiceConfig{

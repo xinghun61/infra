@@ -5,46 +5,141 @@
 package launcher
 
 import (
-	"errors"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	ds "github.com/luci/gae/service/datastore"
 	tq "github.com/luci/gae/service/taskqueue"
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"golang.org/x/net/context"
+
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
+	"infra/tricium/appengine/common/config"
 	trit "infra/tricium/appengine/common/testing"
+)
+
+const (
+	hello        = "Hello"
+	fileIsolator = "FileIsolator"
+	pylint       = "PyLint"
+	project      = "playground/gerrit-tricium"
 )
 
 // mockConfigProvider mocks the common.WorkflowProvider interface.
 type mockConfigProvider struct {
 }
 
-func (*mockConfigProvider) ReadConfigForProject(c context.Context, project string) (*admin.Workflow, error) {
-	return &admin.Workflow{
-		Workers: []*admin.Worker{
+func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
+	return &tricium.ServiceConfig{
+		SwarmingWorkerTopic: "worker/completion",
+		Projects: []*tricium.ProjectDetails{
 			{
-				Name:  "Hello",
-				Needs: tricium.Data_GIT_FILE_DETAILS,
+				Name: project,
+				SwarmingServiceAccount: "swarming@email.com",
+			},
+		},
+		Platforms: []*tricium.Platform_Details{
+			{
+				Name:       tricium.Platform_UBUNTU,
+				Dimensions: []string{"pool:Chrome", "os:Ubuntu14.04"},
+				HasRuntime: true,
+			},
+		},
+		DataDetails: []*tricium.Data_TypeDetails{
+			{
+				Type:               tricium.Data_GIT_FILE_DETAILS,
+				IsPlatformSpecific: false,
 			},
 			{
-				Name:  "World",
-				Needs: tricium.Data_GIT_FILE_DETAILS,
+				Type:               tricium.Data_FILES,
+				IsPlatformSpecific: false,
 			},
 			{
-				Name:  "Goodbye",
-				Needs: tricium.Data_CLANG_DETAILS,
+				Type:               tricium.Data_CLANG_DETAILS,
+				IsPlatformSpecific: true,
+			},
+			{
+				Type:               tricium.Data_RESULTS,
+				IsPlatformSpecific: true,
+			},
+		},
+		Analyzers: []*tricium.Analyzer{
+			{
+				Name:     hello,
+				Needs:    tricium.Data_GIT_FILE_DETAILS,
+				Provides: tricium.Data_RESULTS,
+				Impls: []*tricium.Impl{
+					{
+						ProvidesForPlatform: tricium.Platform_UBUNTU,
+						RuntimePlatform:     tricium.Platform_UBUNTU,
+						Impl: &tricium.Impl_Cmd{
+							Cmd: &tricium.Cmd{
+								Exec: "hello",
+							},
+						},
+						Deadline: 120,
+					},
+				},
+			},
+			{
+				Name:     fileIsolator,
+				Needs:    tricium.Data_GIT_FILE_DETAILS,
+				Provides: tricium.Data_FILES,
+				Impls: []*tricium.Impl{
+					{
+						ProvidesForPlatform: tricium.Platform_UBUNTU,
+						RuntimePlatform:     tricium.Platform_UBUNTU,
+						Impl: &tricium.Impl_Cmd{
+							Cmd: &tricium.Cmd{
+								Exec: "fileisolator",
+							},
+						},
+						Deadline: 120,
+					},
+				},
+			},
+			{
+				Name:     pylint,
+				Needs:    tricium.Data_FILES,
+				Provides: tricium.Data_RESULTS,
+				Impls: []*tricium.Impl{
+					{
+						ProvidesForPlatform: tricium.Platform_UBUNTU,
+						RuntimePlatform:     tricium.Platform_UBUNTU,
+						Impl: &tricium.Impl_Cmd{
+							Cmd: &tricium.Cmd{
+								Exec: "pylint",
+							},
+						},
+						Deadline: 120,
+					},
+				},
 			},
 		},
 	}, nil
 }
-func (*mockConfigProvider) ReadConfigForRun(c context.Context, runID int64) (*admin.Workflow, error) {
-	return nil, errors.New("Should not ask for a config using a run ID")
+
+func (*mockConfigProvider) GetProjectConfig(c context.Context, project string) (*tricium.ProjectConfig, error) {
+	return &tricium.ProjectConfig{
+		Name: project,
+		Selections: []*tricium.Selection{
+			{
+				Analyzer: fileIsolator,
+				Platform: tricium.Platform_UBUNTU,
+			},
+			{
+				Analyzer: hello,
+				Platform: tricium.Platform_UBUNTU,
+			},
+			{
+				Analyzer: pylint,
+				Platform: tricium.Platform_UBUNTU,
+			},
+		},
+	}, nil
 }
 
 func TestLaunchRequest(t *testing.T) {
@@ -55,7 +150,7 @@ func TestLaunchRequest(t *testing.T) {
 		Convey("Launch request", func() {
 			err := launch(ctx, &admin.LaunchRequest{
 				RunId:   runID,
-				Project: "test-project",
+				Project: project,
 				GitRef:  "ref/test",
 				Paths: []string{
 					"README.md",
@@ -69,7 +164,7 @@ func TestLaunchRequest(t *testing.T) {
 			})
 
 			Convey("Stores workflow config", func() {
-				wf := &common.Workflow{ID: runID}
+				wf := &config.Workflow{ID: runID}
 				err := ds.Get(ctx, wf)
 				So(err, ShouldBeNil)
 			})
@@ -87,7 +182,7 @@ func TestLaunchRequest(t *testing.T) {
 					"README.md",
 					"README2.md",
 				},
-			}, &mockConfigProvider{}, &common.MockIsolator{})
+			}, config.MockProvider, &common.MockIsolator{})
 			So(err, ShouldBeNil)
 
 			Convey("Succeeding launch request for the same run enqueues no track request", func() {

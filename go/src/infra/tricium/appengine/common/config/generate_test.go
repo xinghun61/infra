@@ -10,11 +10,8 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"golang.org/x/net/context"
-
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
-	trit "infra/tricium/appengine/common/testing"
 )
 
 const (
@@ -25,20 +22,19 @@ const (
 	platform = tricium.Platform_UBUNTU
 )
 
-// mockConfigProvider mocks the common.ConfigProvider interface.
-type mockConfigProvider struct{}
-
-func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
-	return &tricium.ServiceConfig{
+var (
+	sc = &tricium.ServiceConfig{
+		SwarmingWorkerTopic: "worker/completion",
 		Projects: []*tricium.ProjectDetails{
 			{
 				Name: project,
+				SwarmingServiceAccount: "swarming@email.com",
 			},
 		},
 		Platforms: []*tricium.Platform_Details{
 			{
 				Name:       platform,
-				Dimensions: []string{"pool:Chrome", "os:Ubuntu14.04"},
+				Dimensions: []string{"pool:Chrome", "os:Ubuntu13.04"},
 				HasRuntime: true,
 			},
 		},
@@ -79,70 +75,66 @@ func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 				},
 			},
 		},
-	}, nil
-}
-func (*mockConfigProvider) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
-	return &tricium.ProjectConfig{
-		Name: project,
-		Analyzers: []*tricium.Analyzer{
-			{
-				Name:     mylint,
-				Needs:    tricium.Data_FILES,
-				Provides: tricium.Data_RESULTS,
-				Impls: []*tricium.Impl{
-					{
-						ProvidesForPlatform: platform,
-						RuntimePlatform:     platform,
-						Impl: &tricium.Impl_Cmd{
-							Cmd: &tricium.Cmd{
-								Exec: "mylint",
-							},
-						},
-						Deadline: 200,
-					},
-				},
-			},
-			{
-				Name:     isolator,
-				Needs:    tricium.Data_GIT_FILE_DETAILS,
-				Provides: tricium.Data_FILES,
-				Impls: []*tricium.Impl{
-					{
-						ProvidesForPlatform: platform,
-						RuntimePlatform:     platform,
-						Impl: &tricium.Impl_Cmd{
-							Cmd: &tricium.Cmd{
-								Exec: "git-file-isolator",
-							},
-						},
-						Deadline: 500,
-					},
-				},
-			},
-		},
-		Selections: []*tricium.Selection{
-			{
-				Analyzer: isolator,
-				Platform: platform,
-			},
-			{
-				Analyzer: pylint,
-				Platform: platform,
-			},
-			{
-				Analyzer: mylint,
-				Platform: platform,
-			},
-		},
-	}, nil
-}
+	}
+)
 
 func TestGenerate(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
-		ctx := tt.Context()
+		pc := &tricium.ProjectConfig{
+			Name: project,
+			Analyzers: []*tricium.Analyzer{
+				{
+					Name:     mylint,
+					Needs:    tricium.Data_FILES,
+					Provides: tricium.Data_RESULTS,
+					Impls: []*tricium.Impl{
+						{
+							ProvidesForPlatform: platform,
+							RuntimePlatform:     platform,
+							Impl: &tricium.Impl_Cmd{
+								Cmd: &tricium.Cmd{
+									Exec: "mylint",
+								},
+							},
+							Deadline: 199,
+						},
+					},
+				},
+				{
+					Name:     isolator,
+					Needs:    tricium.Data_GIT_FILE_DETAILS,
+					Provides: tricium.Data_FILES,
+					Impls: []*tricium.Impl{
+						{
+							ProvidesForPlatform: platform,
+							RuntimePlatform:     platform,
+							Impl: &tricium.Impl_Cmd{
+								Cmd: &tricium.Cmd{
+									Exec: "git-file-isolator",
+								},
+							},
+							Deadline: 499,
+						},
+					},
+				},
+			},
+			Selections: []*tricium.Selection{
+				{
+					Analyzer: isolator,
+					Platform: platform,
+				},
+				{
+					Analyzer: pylint,
+					Platform: platform,
+				},
+				{
+					Analyzer: mylint,
+					Platform: platform,
+				},
+			},
+		}
 		Convey("correct selection generates workflow", func() {
-			wf, err := generate(ctx, &admin.GenerateWorkflowRequest{Project: project}, &mockConfigProvider{})
+			wf, err := Generate(sc, pc, []string{})
 			So(err, ShouldBeNil)
 			So(len(wf.Workers), ShouldEqual, 3)
 		})
@@ -184,20 +176,20 @@ func TestCheckWorkflowSanity(t *testing.T) {
 func TestFollowWorkerDeps(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		Convey("circular dep causes error", func() {
-			visited := make(map[string]*admin.Worker)
-			workers := make(map[string]*admin.Worker)
+			visited := map[string]*admin.Worker{}
+			workers := map[string]*admin.Worker{}
 			w := &admin.Worker{
 				Name:  "FileIsolator",
 				Needs: tricium.Data_GIT_FILE_DETAILS,
 				Next:  []string{"FileIsolator"},
 			}
 			workers[w.Name] = w
-			err := followWorkerDeps(w, workers, visited)
+			err := checkWorkerDeps(w, workers, visited)
 			So(err, ShouldNotBeNil)
 		})
 		Convey("multiple paths to worker causes error", func() {
-			visited := make(map[string]*admin.Worker)
-			workers := make(map[string]*admin.Worker)
+			visited := map[string]*admin.Worker{}
+			workers := map[string]*admin.Worker{}
 			w := &admin.Worker{
 				Name:  "FileIsolator",
 				Needs: tricium.Data_GIT_FILE_DETAILS,
@@ -215,14 +207,14 @@ func TestFollowWorkerDeps(t *testing.T) {
 			workers[w.Name] = w
 			workers[w2.Name] = w2
 			workers[w3.Name] = w3
-			err := followWorkerDeps(w, workers, visited)
+			err := checkWorkerDeps(w, workers, visited)
 			So(err, ShouldBeNil)
-			err = followWorkerDeps(w3, workers, visited)
+			err = checkWorkerDeps(w3, workers, visited)
 			So(err, ShouldNotBeNil)
 		})
 		Convey("ok deps render no error", func() {
-			visited := make(map[string]*admin.Worker)
-			workers := make(map[string]*admin.Worker)
+			visited := map[string]*admin.Worker{}
+			workers := map[string]*admin.Worker{}
 			w := &admin.Worker{
 				Name:  "FileIsolator",
 				Needs: tricium.Data_GIT_FILE_DETAILS,
@@ -239,7 +231,7 @@ func TestFollowWorkerDeps(t *testing.T) {
 			workers[w.Name] = w
 			workers[w2.Name] = w2
 			workers[w3.Name] = w3
-			err := followWorkerDeps(w, workers, visited)
+			err := checkWorkerDeps(w, workers, visited)
 			So(err, ShouldBeNil)
 		})
 	})
@@ -406,15 +398,13 @@ func TestCreateWorker(t *testing.T) {
 			So(w.Cmd.Args[5], ShouldEqual, "--revision")
 			So(w.Cmd.Args[6], ShouldEqual, rev)
 			So(w.Cmd.Args[7], ShouldEqual, "--properties")
-			So(w.Cmd.Args[8], ShouldEqual, fmt.Sprintf("{\"%s\": \"%s\",}", config, configValue))
+			So(w.Cmd.Args[8], ShouldEqual, fmt.Sprintf("{\"%s\":\"%s\"}", config, configValue))
 		})
 	})
 }
 
 func TestResolveSuccessorWorkers(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		tt := &trit.Testing{}
-		ctx := tt.Context()
 		linux := tricium.Platform_UBUNTU
 		win := tricium.Platform_WINDOWS
 		fiLinux := "FileIsolator_Ubuntu"
@@ -423,8 +413,6 @@ func TestResolveSuccessorWorkers(t *testing.T) {
 		ciWin := "ClangIsolator_Win"
 		ctLinux := "ClangTidy_Ubuntu"
 		ctWin := "ClangTidy_Win"
-		cp := &mockConfigProvider{}
-		sc, _ := cp.GetServiceConfig(ctx)
 		Convey("Connects simple data types correctly", func() {
 			w := []*admin.Worker{
 				{

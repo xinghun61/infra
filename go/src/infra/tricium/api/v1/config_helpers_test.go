@@ -35,6 +35,24 @@ func TestProjectIsKnown(t *testing.T) {
 	})
 }
 
+func TestLookupProjectDetails(t *testing.T) {
+	Convey("Test Environment", t, func() {
+
+		project := "playground/gerrit-tricium"
+		sc := &ServiceConfig{Projects: []*ProjectDetails{{Name: project}}}
+
+		Convey("Known project is known", func() {
+			p := LookupProjectDetails(sc, project)
+			So(p, ShouldNotBeNil)
+		})
+
+		Convey("Unknown project is unknown", func() {
+			p := LookupProjectDetails(sc, "blabla")
+			So(p, ShouldBeNil)
+		})
+	})
+}
+
 func TestCanRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		ctx := memory.Use(memlogger.Use(context.Background()))
@@ -231,8 +249,7 @@ func TestIsValid(t *testing.T) {
 
 		Convey("Analyzer config without name causes error", func() {
 			a := &Analyzer{}
-			ok, err := IsAnalyzerValid(a, sc)
-			So(ok, ShouldBeFalse)
+			err := IsAnalyzerValid(a, sc)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -241,8 +258,7 @@ func TestIsValid(t *testing.T) {
 				Name:  "PyLint",
 				Impls: []*Impl{{}},
 			}
-			ok, err := IsAnalyzerValid(a, sc)
-			So(ok, ShouldBeFalse)
+			err := IsAnalyzerValid(a, sc)
 			So(err, ShouldNotBeNil)
 		})
 

@@ -20,6 +20,7 @@ import (
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
+	"infra/tricium/appengine/common/config"
 )
 
 // LauncherServer represents the Tricium pRPC Launcher server.
@@ -45,31 +46,41 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 	if len(req.Paths) == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
-	if err := launch(c, req, &common.LuciConfigWorkflowProvider{},
+	if err := launch(c, req, config.LuciConfigProvider,
 		&common.IsolateServer{IsolateServerURL: common.IsolateDevServerURL}); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to launch workflow: %v", err)
 	}
 	return &admin.LaunchResponse{}, nil
 }
 
-func launch(c context.Context, req *admin.LaunchRequest, wp common.WorkflowProvider, isolator common.Isolator) error {
+func launch(c context.Context, req *admin.LaunchRequest, cp config.Provider, isolator common.Isolator) error {
 	// Guard checking if there is already a stored workflow for the run ID in the request, if so stop here.
-	w := &common.Workflow{ID: req.RunId}
+	w := &config.Workflow{ID: req.RunId}
 	if err := ds.Get(c, w); err != ds.ErrNoSuchEntity {
-		logging.Infof(c, "Launch request for launched workflow, run ID: %s", req.RunId)
+		logging.Infof(c, "[launcher] Launch request for launched workflow, run ID: %s", req.RunId)
 		return nil
 	}
-	// Read and convert workflow to string.
-	wf, err := wp.ReadConfigForProject(c, req.Project)
+	// Generate workflow and convert to string.
+	sc, err := cp.GetServiceConfig(c)
 	if err != nil {
-		return fmt.Errorf("failed to read workflow config for project %s: %v", req.Project, err)
+		logging.WithError(err).Errorf(c, "failed to get service config")
+		return err
+	}
+	pc, err := cp.GetProjectConfig(c, req.Project)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "failed to get project config")
+		return err
+	}
+	wf, err := config.Generate(sc, pc, req.Paths)
+	if err != nil {
+		return fmt.Errorf("failed to generate workflow config for project %s: %v", req.Project, err)
 	}
 	wfb, err := proto.Marshal(wf)
 	if err != nil {
 		return fmt.Errorf("failed to marshal workflow proto: %v", err)
 	}
 	// Prepare workflow config entry to store.
-	wfConfig := &common.Workflow{
+	wfConfig := &config.Workflow{
 		ID:                 req.RunId,
 		SerializedWorkflow: wfb,
 	}

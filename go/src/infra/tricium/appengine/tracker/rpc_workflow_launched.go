@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"infra/tricium/api/admin/v1"
-	"infra/tricium/appengine/common"
+	"infra/tricium/appengine/common/config"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -30,14 +30,14 @@ func (*trackerServer) WorkflowLaunched(c context.Context, req *admin.WorkflowLau
 	if req.RunId == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
 	}
-	if err := workflowLaunched(c, req, &common.DatastoreWorkflowConfigProvider{}); err != nil {
+	if err := workflowLaunched(c, req, config.DatastoreWorkflowProvider); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to track workflow launched: %v", err)
 	}
 	return &admin.WorkflowLaunchedResponse{}, nil
 }
 
-func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp common.WorkflowProvider) error {
-	wf, err := wp.ReadConfigForRun(c, req.RunId)
+func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp config.WorkflowProvider) error {
+	wf, err := wp.ReadWorkflowForRun(c, req.RunId)
 	if err != nil {
 		return fmt.Errorf("failed to read workflow config: %v", err)
 	}

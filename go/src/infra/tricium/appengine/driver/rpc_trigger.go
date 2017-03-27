@@ -19,6 +19,7 @@ import (
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"
+	"infra/tricium/appengine/common/config"
 )
 
 // DriverServer represents the Tricium pRPC Driver server.
@@ -37,7 +38,7 @@ func (*driverServer) Trigger(c context.Context, req *admin.TriggerRequest) (*adm
 	if req.IsolatedInputHash == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
 	}
-	if err := trigger(c, req, &common.DatastoreWorkflowConfigProvider{},
+	if err := trigger(c, req, config.DatastoreWorkflowProvider,
 		&common.SwarmingServer{
 			SwarmingServerURL: req.SwarmingServerUrl,
 			IsolateServerURL:  req.IsolateServerUrl,
@@ -47,8 +48,8 @@ func (*driverServer) Trigger(c context.Context, req *admin.TriggerRequest) (*adm
 	return &admin.TriggerResponse{}, nil
 }
 
-func trigger(c context.Context, req *admin.TriggerRequest, wp common.WorkflowProvider, sw common.SwarmingAPI, isolator common.Isolator) error {
-	workflow, err := wp.ReadConfigForRun(c, req.RunId)
+func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowProvider, sw common.SwarmingAPI, isolator common.Isolator) error {
+	workflow, err := wp.ReadWorkflowForRun(c, req.RunId)
 	if err != nil {
 		return fmt.Errorf("failed to read workflow config: %v", err)
 	}

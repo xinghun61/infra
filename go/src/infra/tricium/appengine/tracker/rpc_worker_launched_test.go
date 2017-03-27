@@ -33,7 +33,7 @@ func TestWorkerLaunchedRequest(t *testing.T) {
 		// Mark workflow as launched and add tracking entries for workers.
 		err = workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
 			RunId: runID,
-		}, &mockConfigProvider{})
+		}, mockWorkflowProvider{})
 		So(err, ShouldBeNil)
 
 		// Mark worker as launched.

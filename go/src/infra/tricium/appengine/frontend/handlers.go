@@ -22,7 +22,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"infra/tricium/api/v1"
-	"infra/tricium/appengine/common"
+	"infra/tricium/appengine/common/config"
 	"infra/tricium/appengine/common/pipeline"
 	"infra/tricium/appengine/common/track"
 )
@@ -35,7 +35,7 @@ func landingPageHandler(c *router.Context) {
 
 func resultsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
-	r, err := runs(c, &common.LuciConfigProvider{})
+	r, err := runs(c, config.LuciConfigProvider)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to retrieve runs")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -47,7 +47,7 @@ func resultsHandler(ctx *router.Context) {
 }
 
 // runs returns list of runs for projects readable to the current user.
-func runs(c context.Context, cp common.ConfigProvider) ([]*track.Run, error) {
+func runs(c context.Context, cp config.Provider) ([]*track.Run, error) {
 	// TODO(emso): This only lists the last 20 runs, when the UI is ready improve to list more.
 	var runs []*track.Run
 	q := ds.NewQuery("Run").Order("-Received").Limit(20)

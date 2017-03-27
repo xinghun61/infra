@@ -33,13 +33,13 @@ message ServiceConfig {
   //
   // Specific recipe details for the worker will be added as flags at the
   // end of the argument list.
-  Cmd RecipeCmd = 6;
+  Cmd recipe_cmd = 6;
 
   // Base recipe packages used for workers implemented as recipes.
   //
   // These packages will be adjusted for the platform in question, by appending
   // platform name details to the end of the package name.
-  repeated CipdPackage RecipePackages = 7;
+  repeated CipdPackage recipe_packages = 7;
 }
 
 message ProjectDetails {

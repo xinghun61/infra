@@ -5,7 +5,6 @@
 package tracker
 
 import (
-	"errors"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -26,11 +25,11 @@ const (
 	fileIsolator         = "GitFileIsolator_Ubuntu14.04-x86-64"
 )
 
-// mockConfigProvider mocks common.WorkflowProvider.
-type mockConfigProvider struct {
+// mockWorkflowProvider mocks common.WorkflowProvider.
+type mockWorkflowProvider struct {
 }
 
-func (*mockConfigProvider) ReadConfigForRun(c context.Context, runID int64) (*admin.Workflow, error) {
+func (mockWorkflowProvider) ReadWorkflowForRun(c context.Context, runID int64) (*admin.Workflow, error) {
 	return &admin.Workflow{
 		Workers: []*admin.Worker{
 			{
@@ -52,9 +51,6 @@ func (*mockConfigProvider) ReadConfigForRun(c context.Context, runID int64) (*ad
 		},
 	}, nil
 }
-func (*mockConfigProvider) ReadConfigForProject(c context.Context, project string) (*admin.Workflow, error) {
-	return nil, errors.New("Should not try to retrieve workflow config using a project name")
-}
 
 func TestWorkflowLaunchedRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
@@ -74,7 +70,7 @@ func TestWorkflowLaunchedRequest(t *testing.T) {
 			// Mark workflow as launched.
 			err = workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
 				RunId: runID,
-			}, &mockConfigProvider{})
+			}, mockWorkflowProvider{})
 			So(err, ShouldBeNil)
 
 			Convey("Marks run as launched", func() {

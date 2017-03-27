@@ -25,7 +25,7 @@ func TestCollectRequest(t *testing.T) {
 			err := collect(ctx, &admin.CollectRequest{
 				RunId:  runID,
 				Worker: "World",
-			}, &mockConfigProvider{}, &common.MockSwarmingAPI{}, &common.MockIsolator{})
+			}, mockWorkflowProvider{}, &common.MockSwarmingAPI{}, &common.MockIsolator{})
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track request", func() {
@@ -41,7 +41,7 @@ func TestCollectRequest(t *testing.T) {
 			err := collect(ctx, &admin.CollectRequest{
 				RunId:  runID,
 				Worker: "Hello",
-			}, &mockConfigProvider{}, &common.MockSwarmingAPI{}, &common.MockIsolator{})
+			}, mockWorkflowProvider{}, &common.MockSwarmingAPI{}, &common.MockIsolator{})
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track request", func() {

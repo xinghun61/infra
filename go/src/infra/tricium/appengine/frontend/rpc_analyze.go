@@ -5,7 +5,6 @@
 package frontend
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 
@@ -23,6 +22,7 @@ import (
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
+	"infra/tricium/appengine/common/config"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -49,7 +49,7 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	if len(req.Paths) == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
-	runID, err := analyze(c, req, &common.LuciConfigProvider{})
+	runID, err := analyze(c, req, config.LuciConfigProvider)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "analyze failed: %v", err)
 		return nil, grpc.Errorf(codes.Internal, "failed to execute analyze request")
@@ -58,18 +58,10 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	return &tricium.AnalyzeResponse{runID}, nil
 }
 
-func analyze(c context.Context, req *tricium.AnalyzeRequest, cp common.ConfigProvider) (string, error) {
-	// TODO(emso): let a failed project config request mean project is unknown and skip getting the service config?
-	sc, err := cp.GetServiceConfig(c)
-	if err != nil {
-		return "", fmt.Errorf("failed to get service config: %v", err)
-	}
-	if !tricium.ProjectIsKnown(sc, req.Project) {
-		return "", errors.New("unknown project")
-	}
+func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.Provider) (string, error) {
 	pc, err := cp.GetProjectConfig(c, req.Project)
 	if err != nil {
-		return "", fmt.Errorf("failed to get project config: %v", err)
+		return "", fmt.Errorf("failed to get project config, project: %q: %v", req.Project, err)
 	}
 	ok, err := tricium.CanRequest(c, pc)
 	if err != nil {

@@ -18,6 +18,7 @@ import (
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"
+	"infra/tricium/appengine/common/config"
 )
 
 // Collect processes one collect request to the Tricium driver.
@@ -32,7 +33,7 @@ func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*adm
 	if req.IsolatedInputHash == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
 	}
-	if err := collect(c, req, &common.DatastoreWorkflowConfigProvider{},
+	if err := collect(c, req, config.DatastoreWorkflowProvider,
 		&common.SwarmingServer{
 			SwarmingServerURL: req.SwarmingServerUrl,
 			IsolateServerURL:  req.IsolateServerUrl,
@@ -43,8 +44,8 @@ func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*adm
 	return &admin.CollectResponse{}, nil
 }
 
-func collect(c context.Context, req *admin.CollectRequest, wp common.WorkflowProvider, sw common.SwarmingAPI, isolator common.Isolator) error {
-	wf, err := wp.ReadConfigForRun(c, req.RunId)
+func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowProvider, sw common.SwarmingAPI, isolator common.Isolator) error {
+	wf, err := wp.ReadWorkflowForRun(c, req.RunId)
 	if err != nil {
 		return fmt.Errorf("failed to read workflow config: %v", err)
 	}

@@ -5,7 +5,6 @@
 package driver
 
 import (
-	"errors"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -20,13 +19,10 @@ import (
 )
 
 // mockConfigProvider mocks common.WorkflowProvider.
-type mockConfigProvider struct {
+type mockWorkflowProvider struct {
 }
 
-func (*mockConfigProvider) ReadConfigForProject(c context.Context, project string) (*admin.Workflow, error) {
-	return nil, errors.New("Should not try to retrieve workflow config from project name")
-}
-func (*mockConfigProvider) ReadConfigForRun(c context.Context, runID int64) (*admin.Workflow, error) {
+func (mockWorkflowProvider) ReadWorkflowForRun(c context.Context, runID int64) (*admin.Workflow, error) {
 	return &admin.Workflow{
 		Workers: []*admin.Worker{
 			{
@@ -57,7 +53,7 @@ func TestTriggerRequest(t *testing.T) {
 			err := trigger(ctx, &admin.TriggerRequest{
 				RunId:  runID,
 				Worker: "Hello",
-			}, &mockConfigProvider{}, &common.MockSwarmingAPI{}, &common.MockIsolator{})
+			}, mockWorkflowProvider{}, &common.MockSwarmingAPI{}, &common.MockIsolator{})
 			So(err, ShouldBeNil)
 			Convey("Enqueues track request", func() {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.TrackerQueue]), ShouldEqual, 1)
