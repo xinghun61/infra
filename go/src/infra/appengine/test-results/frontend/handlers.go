@@ -75,11 +75,6 @@ func init() {
 	r.GET("/data/test_flakiness/list", baseMW, testFlakinessListHandler)
 	r.GET("/data/test_flakiness/groups", baseMW, testFlakinessGroupsHandler)
 
-	// TODO(sergiyb): Remove these after updating all other apps using them.
-	// This should be removed after the following CL lands:
-	//   https://chromium-review.googlesource.com/c/450278/
-	r.GET("/builders", baseMW.Extend(reportOldEndpoint), getBuildersHandler)
-
 	http.DefaultServeMux.Handle("/", r)
 }
 
