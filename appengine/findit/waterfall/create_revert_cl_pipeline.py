@@ -160,7 +160,9 @@ def _RevertCulprit(
   message = textwrap.dedent("""
       Sheriffs:
 
-      Please confirm and commit this reverting CL if it is the right fix.
+      Please confirm and "Quick L-G-T-M & CQ" this revert if it is correct.
+      If it is a false positive, please close it.
+
       The original CL was identified as the culprit for failures in the build
       cycles as shown on:
       https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
