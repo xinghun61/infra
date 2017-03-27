@@ -333,6 +333,10 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	}
 	props["$recipe_engine/path"] = pathProps
 
+	// Use "generic" infra path config. See
+	// https://chromium.googlesource.com/chromium/tools/depot_tools/+/master/recipes/recipe_modules/infra_paths/
+	props["path_config"] = "generic"
+
 	if err := c.mode.addProperties(props, env); err != nil {
 		return nil, errors.Annotate(err).Reason("chosen mode could not add properties").Err()
 	}
