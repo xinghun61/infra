@@ -34,7 +34,7 @@
     findit.downloadBuildDataSettings = {{ download_build_data_settings | tojson | safe }};
     findit.actionSettings = {{ action_settings | tojson | safe }};
     findit.checkFlakeSettings = {{ check_flake_settings | tojson | safe }};
-    findit.codeRevewSettings = {{ code_review_settings | tojson | safe }};
+    findit.codeReviewSettings = {{ code_review_settings | tojson | safe }};
 
     function getJsonOfTextarea(textId) {
       return JSON.parse($('#' + textId).val());
