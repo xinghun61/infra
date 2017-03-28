@@ -203,13 +203,7 @@ def get_bucket_async(name):
 @ndb.non_transactional
 def get_bucket(name):
   """Returns a (project, project_config_pb2.Bucket) tuple."""
-  bucket = Bucket.get_by_id(name)
-  if bucket is None:
-    return (None, None)
-  return (
-      bucket.project_id,
-      parse_binary_bucket_config(bucket.config_content_binary),
-  )
+  return get_bucket_async(name).get_result()
 
 
 def _normalize_acls(acls):

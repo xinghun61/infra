@@ -6,6 +6,7 @@ import collections
 import contextlib
 import datetime
 import logging
+import sys
 import urlparse
 
 from google.appengine.api import taskqueue
@@ -195,6 +196,25 @@ class BuildRequest(_BuildRequestBase):
         (identity or auth.get_current_identity()).to_bytes(),
         self.client_operation_id))
 
+  def create_build(self, build_id, created_by):
+    """Converts the request to a build."""
+    build = model.Build(
+        id=build_id,
+        bucket=self.bucket,
+        tags=self.tags,
+        parameters=self.parameters,
+        status=model.BuildStatus.SCHEDULED,
+        created_by=created_by,
+        never_leased=self.lease_expiration_date is None,
+        pubsub_callback=self.pubsub_callback,
+        retry_of=self.retry_of,
+    )
+    if self.lease_expiration_date is not None:
+      build.lease_expiration_date = self.lease_expiration_date
+      build.leasee = created_by
+      build.regenerate_lease_key()
+    return build
+
 
 def add(build_request):
   """Sync version of add_async."""
@@ -237,155 +257,175 @@ def add_many_async(build_request_list):
     Any exception that datastore operations can raise.
   """
 
-  # This function puts a batch of builds. It happens in several phases:
-  # 1. Validate requests.
-  # 2. Check permissions.
-  # 3. Look for cached builds.
-  # 4. Generate new build ids
-  # 5. Update tag indexes.
-  # 6. Put new builds and update cache.
-  # Details of each phase are desribed below.
-
   # Preliminary preparations.
-  assert all(isinstance(b, BuildRequest) for b in build_request_list)
+  assert all(isinstance(r, BuildRequest) for r in build_request_list)
   # A list of all requests. If a i-th request is None, it means it is done.
   build_request_list = build_request_list[:]
   pending_reqs = lambda: ((i, r) for i, r in enumerate(build_request_list) if r)
   results = [None] * len(build_request_list)  # return value of this function
-
-  # Phase 1: validate and normalize requests.
-  # For each invalid request, mark it as done and save the exception in results.
-  for i, r in pending_reqs():
-    try:
-      build_request_list[i] = r.normalize()
-    except errors.InvalidInputError as ex:
-      build_request_list[i] = None
-      results[i] = (None, ex)
-
-  # Phase 2: for each pending request, check ACLs.
-  # Make one ACL query per bucket.
-  # Raise an exception if at least one request is denied, as opposed to saving
-  # the exception in results, for backward compatibility.
-  buckets = set(r.bucket for _, r in pending_reqs() if r)
-  can_add_futs = {b: acl.can_add_build_async(b) for b in buckets}
-  yield can_add_futs.values()
-  for b, can_fut in can_add_futs.iteritems():
-    if not can_fut.get_result():
-      raise acl.current_identity_cannot('add builds to bucket %s', b)
-
-  # Phase 3: for each pending request that has a client operation id, check if
-  # a build with the same client operation id is in memcache.
-  # Mark resolved requests as done and save found builds in results.
+  identity = auth.get_current_identity()
   ctx = ndb.get_context()
-  cached_build_id_futs = {
-    i: ctx.memcache_get(r._client_op_memcache_key())
-    for i, r in pending_reqs()
-    if r.client_operation_id is not None
-  }
-  if cached_build_id_futs:
+  new_builds = {}
+
+  def validate_and_normalize():
+    """Validates and normalizes requests.
+
+    For each invalid request, mark it as done and save the exception in results.
+    """
+    for i, r in pending_reqs():
+      try:
+        build_request_list[i] = r.normalize()
+      except errors.InvalidInputError as ex:
+        build_request_list[i] = None
+        results[i] = (None, ex)
+
+  @ndb.tasklet
+  def check_access_async():
+    """For each pending request, check ACLs.
+
+    Make one ACL query per bucket.
+    Raise an exception if at least one request is denied, as opposed to saving
+    the exception in results, for backward compatibility.
+    """
+    buckets = set(r.bucket for _, r in pending_reqs())
+    can_add_futs = {b: acl.can_add_build_async(b) for b in buckets}
+    yield can_add_futs.values()
+    for b, can_fut in can_add_futs.iteritems():
+      if not can_fut.get_result():
+        raise acl.current_identity_cannot('add builds to bucket %s', b)
+
+  @ndb.tasklet
+  def check_cached_builds_async():
+    """Look for existing builds by client operation ids.
+
+    For each pending request that has a client operation id, check if a build
+    with the same client operation id is in memcache.
+    Mark resolved requests as done and save found builds in results.
+    """
+    cached_build_id_futs = {
+      i: ctx.memcache_get(r._client_op_memcache_key())
+      for i, r in pending_reqs()
+      if r.client_operation_id is not None
+    }
+    if not cached_build_id_futs:
+      return
+
     yield cached_build_id_futs.values()
     cached_build_ids = {
       f.get_result(): i
       for i, f in cached_build_id_futs.iteritems()
       if f.get_result() is not None
     }
-    if cached_build_ids:
-      cached_builds = yield ndb.get_multi_async([
-        ndb.Key(model.Build, build_id)
-        for build_id in cached_build_ids
-      ])
-      for build in cached_builds:
-        if build:  # pragma: no branch
-          # A cached build has been found.
-          i = cached_build_ids[build.key.id()]
-          build_request_list[i] = None
-          results[i] = (build, None)
+    if not cached_build_ids:
+      return
+    cached_builds = yield ndb.get_multi_async([
+      ndb.Key(model.Build, build_id)
+      for build_id in cached_build_ids
+    ])
+    for b in cached_builds:
+      if b:  # pragma: no branch
+        # A cached build has been found.
+        i = cached_build_ids[b.key.id()]
+        build_request_list[i] = None
+        results[i] = (b, None)
 
-  # Phase 4: for each pending request, generate a new build id.
-  build_id_set = set()
-  new_build_ids = {}
-  for i, _ in pending_reqs():
-    while True:
-      build_id = model.new_build_id()
-      if build_id not in build_id_set:  # pragma: no branch
-        break
-    build_id_set.add(build_id)
-    new_build_ids[i] = build_id
+  def create_new_builds():
+    """Initializes new_builds.
 
-  if new_build_ids:
-    # Phase 5: for each pending request, for each indexed tag, add an entry to a
-    # tag index.
-    index_entries = collections.defaultdict(list)
+    For each pending request, create a Build entity, but don't put it.
+    """
+    build_ids = set()
     for i, r in pending_reqs():
-      for t in _indexed_tags(r.tags):
-        index_entries[t].append(model.TagIndexEntry(
-            build_id=new_build_ids[i], bucket=r.bucket))
-    if index_entries:
-      yield [
-        _add_to_tag_index_async(tag, entries)
-        for tag, entries in index_entries.iteritems()
-      ]
+      while True:
+        build_id = model.new_build_id()
+        if build_id not in build_ids:  # pragma: no branch
+          break
+      build_ids.add(build_id)
+      new_builds[i] = r.create_build(build_id, identity)
 
-    # Phase 6: for each pending request, put a new build and, if a client
-    # operation id was specified, cache it.
-    put_builds = {
-      i: _put_build_async(new_build_ids[i], r)
-      for i, r in pending_reqs()
-    }
-    yield put_builds.values()
-    for i, put in put_builds.iteritems():
-      results[i] = (put.get_result(), None)
+  @ndb.tasklet
+  def create_swarming_tasks_async():
+    """Creates a swarming task for each new build in a swarming bucket."""
+    buckets = set(b.bucket for b in new_builds.itervalues())
+    bucket_cfg_futs = {b: config.get_bucket_async(b) for b in buckets}
+    yield bucket_cfg_futs.values()
+    create_tasks = []
+    for b in new_builds.itervalues():
+      _, cfg = bucket_cfg_futs[b.bucket].get_result()
+      if config.is_swarming_config(cfg):
+        create_tasks.append(swarming.create_task_async(b))
+    yield create_tasks
+
+  def cancel_swarming_tasks_async():
+    cancel_tasks = []
+    for b in new_builds.values():
+      if b.swarming_hostname and b.swarming_task_id:
+        cancel_tasks.append(swarming.cancel_task_async(
+            b.swarming_hostname, b.swarming_task_id))
+    return cancel_tasks
+
+  def update_tag_indexes_async():
+    """Updates tag indexes.
+
+    For each new build, for each indexed tag, add an entry to a tag index.
+    """
+    index_entries = collections.defaultdict(list)
+    for b in new_builds.itervalues():
+      for t in _indexed_tags(b.tags):
+        index_entries[t].append(model.TagIndexEntry(
+            build_id=b.key.id(), bucket=b.bucket))
+    return [
+      _add_to_tag_index_async(tag, entries)
+      for tag, entries in index_entries.iteritems()
+    ]
+
+  @ndb.tasklet
+  def put_and_cache_builds_async():
+    """Puts new builds, updates metrics and memcache."""
+    yield ndb.put_multi_async(new_builds.values())
+    memcache_sets = []
+    for i, b in new_builds.iteritems():
+      logging.info(
+          'Build %s for bucket %s was created by %s',
+          b.key.id(), b.bucket, identity.to_bytes())
+      metrics.increment(metrics.CREATE_COUNT, b)
+      results[i] = (b, None)
+
+      r = build_request_list[i]
+      if r.client_operation_id:
+        memcache_sets.append(
+            ctx.memcache_set(r._client_op_memcache_key(), b.key.id(), 60))
+    yield memcache_sets
+
+  validate_and_normalize()
+  yield check_access_async()
+  yield check_cached_builds_async()
+  create_new_builds()
+  if new_builds:
+    try:
+      with _with_swarming_api_error_converter():
+        yield create_swarming_tasks_async()
+      # Update tag indexes after swarming tasks are successfully created,
+      # as opposed to before, to avoid creating tag index entries for
+      # nonexistent builds in case swarming task creation fails.
+      yield update_tag_indexes_async()
+      yield put_and_cache_builds_async()
+    except:  # pragma: no cover
+      # Save exception info before the next try..except.
+      exi = sys.exc_info()
+      # Try to cancel swarming tasks. Best effort.
+      try:
+        yield cancel_swarming_tasks_async()
+      except Exception as ex:
+        # Emit an error log entry so we can alert on high rate of these errors.
+        logging.error('could not clean swarming tasks after creation\n%s', ex)
+      raise exi[0], exi[1], exi[2]
 
   # Validate and return results.
   assert all(results), results
   assert all(build or ex for build, ex in results), results
   assert all(not (build and ex) for build, ex in results), results
   raise ndb.Return(results)
-
-
-@ndb.tasklet
-def _put_build_async(build_id, req):
-  identity = auth.get_current_identity()
-  build = model.Build(
-      id=build_id,
-      bucket=req.bucket,
-      tags=req.tags,
-      parameters=req.parameters,
-      status=model.BuildStatus.SCHEDULED,
-      created_by=identity,
-      never_leased=req.lease_expiration_date is None,
-      pubsub_callback=req.pubsub_callback,
-      retry_of=req.retry_of,
-  )
-  if req.lease_expiration_date is not None:
-    build.lease_expiration_date = req.lease_expiration_date
-    build.leasee = identity
-    build.regenerate_lease_key()
-
-  for_swarming = yield swarming.is_for_swarming_async(build)
-  if for_swarming:  # pragma: no cover
-    with _with_swarming_api_error_converter():
-      yield swarming.create_task_async(build)
-
-  try:
-    yield build.put_async()
-  except:  # pragma: no cover
-    # Best effort.
-    if for_swarming:
-      with _with_swarming_api_error_converter():
-        yield swarming.cancel_task_async(
-            build.swarming_hostname, build.swarming_task_id)
-    raise
-  if req.client_operation_id:
-    # Cache it as soon as possible after the build entity is created.
-    ctx = ndb.get_context()
-    yield ctx.memcache_set(req._client_op_memcache_key(), build_id, 60)
-
-  logging.info(
-      'Build %s was created by %s', build.key.id(), identity.to_bytes())
-  metrics.increment(metrics.CREATE_COUNT, build)
-
-  raise ndb.Return(build)
 
 
 @contextlib.contextmanager

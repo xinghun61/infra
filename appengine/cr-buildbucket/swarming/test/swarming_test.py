@@ -95,13 +95,9 @@ class SwarmingTest(testing.AppengineTestCase):
     self.bucket_cfg = project_config_pb2.Bucket()
     protobuf.text_format.Merge(bucket_cfg_text, self.bucket_cfg)
 
-    def get_bucket_async(name):
-      if name == 'bucket':
-        return futuristic(('chromium', self.bucket_cfg))
-      else:
-        return futuristic(('chromium', project_config_pb2.Bucket(name=name)))
     self.patch(
-        'config.get_bucket_async', autospec=True, side_effect=get_bucket_async)
+        'config.get_bucket_async', autospec=True,
+        return_value=futuristic(('chromium', self.bucket_cfg)))
 
     self.task_template = {
       'name': 'buildbucket:${bucket}:${builder}',
@@ -162,34 +158,6 @@ class SwarmingTest(testing.AppengineTestCase):
     self.patch(
         'components.auth.delegate_async', return_value=futuristic('blah'))
 
-  def test_is_for_swarming(self):
-    build = model.Build(
-      id=1,
-      bucket='bucket',
-      parameters={'builder_name': 'linux_chromium_rel_ng'}
-    )
-    self.assertTrue(swarming.is_for_swarming_async(build).get_result())
-
-    build.parameters['builder_name'] = 'other'
-    # This build is still destined for Swarming, even though such builder
-    # does not exist.
-    self.assertTrue(swarming.is_for_swarming_async(build).get_result())
-
-    self.assertFalse(
-        swarming.is_for_swarming_async(model.Build(id=1, bucket='other'))
-          .get_result())
-
-  def test_is_for_swarming_no_template(self):
-    build = model.Build(
-        id=1,
-        bucket='bucket',
-        parameters={'builder_name': 'linux_chromium_rel_ng'}
-    )
-    self.assertTrue(swarming.is_for_swarming_async(build).get_result())
-
-    self.task_template = None
-    self.assertFalse(swarming.is_for_swarming_async(build).get_result())
-
   def test_validate_build_parameters(self):
     bad = [
       {'properties': []},
@@ -239,21 +207,21 @@ class SwarmingTest(testing.AppengineTestCase):
 
   def test_create_task_async(self):
     build = model.Build(
-      id=1,
-      bucket='bucket',
-      parameters={
-        'builder_name': 'linux_chromium_rel_ng',
-        'swarming': {
-          'canary_template': False,
+        id=1,
+        bucket='bucket',
+        parameters={
+          'builder_name': 'linux_chromium_rel_ng',
+          'swarming': {
+            'canary_template': False,
+          },
+          'properties': {
+            'a': 'b',
+          },
+          'changes': [{
+            'author': {'email': 'bob@example.com'},
+            'repo_url': 'https://chromium.googlesource.com/chromium/src',
+          }]
         },
-        'properties': {
-          'a': 'b',
-        },
-        'changes': [{
-          'author': {'email': 'bob@example.com'},
-          'repo_url': 'https://chromium.googlesource.com/chromium/src',
-        }]
-      },
     )
 
     self.json_response = {
@@ -283,8 +251,8 @@ class SwarmingTest(testing.AppengineTestCase):
 
     # Test swarming request.
     self.assertEqual(
-      net.json_request_async.call_args[0][0],
-      'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new')
+        net.json_request_async.call_args[0][0],
+        'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new')
     actual_task_def = net.json_request_async.call_args[1]['payload']
     del actual_task_def['pubsub_auth_token']
     expected_task_def = {
@@ -374,7 +342,31 @@ class SwarmingTest(testing.AppengineTestCase):
       'swarming_task_id:deadbeef',
     })
     self.assertEqual(
-      build.url, 'https://example.com/chromium-swarm.appspot.com/deadbeef')
+        build.url, 'https://example.com/chromium-swarm.appspot.com/deadbeef')
+
+  def test_create_task_async_for_non_swarming_bucket(self):
+    self.bucket_cfg.ClearField('swarming')
+    build = model.Build(
+        id=1,
+        bucket='bucket',
+        parameters={'builder_name': 'linux_chromium_rel_ng'},
+    )
+
+    with self.assertRaises(errors.InvalidInputError):
+      swarming.create_task_async(build).get_result()
+
+  def test_create_task_async_without_template(self):
+    self.task_template = None
+    self.task_template_canary = None
+
+    build = model.Build(
+        id=1,
+        bucket='bucket',
+        parameters={'builder_name': 'linux_chromium_rel_ng'},
+    )
+
+    with self.assertRaises(swarming.TemplateNotFound):
+      swarming.create_task_async(build).get_result()
 
   def test_create_task_async_bad_request(self):
     build = model.Build(id=1, bucket='bucket')

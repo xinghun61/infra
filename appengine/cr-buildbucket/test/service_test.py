@@ -12,6 +12,7 @@ from google.appengine.ext import ndb
 from testing_utils import testing
 import mock
 
+from proto import project_config_pb2
 from test import future
 import acl
 import config
@@ -37,24 +38,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     # acl.can_async is patched in setUp()
     acl.can_async.side_effect = can_async
 
-  def mock_bucket_config(self, is_swarming=False):
-    # Mock whether the config has attributes (protobuf HasField).
-    def mock_has_field(attr):
-      assert attr == 'swarming'
-      return is_swarming
-    config_mock = mock.Mock()
-    config_mock.HasField.side_effect = mock_has_field
-    self.patch(
-        'config.get_bucket',
-        autospec=True,
-        side_effect = lambda name: ('project', config_mock))
-
   def setUp(self):
     super(BuildBucketServiceTest, self).setUp()
     self.test_build = model.Build(
       bucket='chromium',
       parameters={
-        'buildername': 'infra',
+        'builder_name': 'infra',
         'changes': [{
           'author': 'nodir@google.com',
           'message': 'buildbucket: initial commit'
@@ -69,10 +58,26 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.patch('acl.can_async', return_value=future(True))
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
-    self.patch('swarming.is_for_swarming_async')
-    swarming.is_for_swarming_async.return_value = ndb.Future()
-    swarming.is_for_swarming_async.return_value.set_result(False)
-    self.patch('swarming.create_task_async')
+
+    self.chromium_bucket = project_config_pb2.Bucket(name='chromium')
+    self.chromium_swarming = project_config_pb2.Swarming(
+        hostname='chromium-swarm.appspot.com',
+        builders=[
+          project_config_pb2.Builder(
+              name='infra',
+              dimensions=['pool:default'],
+              recipe=project_config_pb2.Builder.Recipe(
+                repository='https://example.com',
+                name='presubmit',
+              ),
+          ),
+        ],
+    )
+    self.patch(
+        'config.get_bucket_async',
+        return_value=future(('project', self.chromium_bucket)))
+    self.patch('swarming.create_task_async', return_value=future(None))
+    self.patch('swarming.cancel_task_async', return_value=future(None))
 
   def put_many_builds(self, count=100):
     for _ in xrange(count):
@@ -135,16 +140,39 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       self.add(bucket='bucket', parameters=[])
 
   def test_add_with_swarming_400(self):
-    swarming.is_for_swarming_async.return_value = ndb.Future()
-    swarming.is_for_swarming_async.return_value.set_result(True)
+    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
     swarming.create_task_async.side_effect = net.Error(
         '', status_code=400, response='bad request')
     with self.assertRaises(errors.InvalidInputError):
       self.add(bucket=self.test_build.bucket)
 
+  def test_add_with_swarming_200_and_400(self):
+    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
+
+    def create_task_async(b):
+      if b.parameters['i'] == 1:
+        raise net.Error('', status_code=400, response='bad request')
+      b.swarming_hostname = self.chromium_bucket.swarming.hostname
+      b.swarming_task_id = 'deadbeef'
+
+    swarming.create_task_async.side_effect = create_task_async
+
+    with self.assertRaises(errors.InvalidInputError):
+      service.add_many_async([
+        service.BuildRequest(
+            bucket=self.chromium_bucket.name,
+            parameters={'builder_name': 'infra', 'i': 0},
+        ),
+        service.BuildRequest(
+            bucket=self.chromium_bucket.name,
+            parameters={'builder_name': 'infra', 'i': 1},
+        )
+      ]).get_result()
+    swarming.cancel_task_async.assert_called_with(
+        self.chromium_bucket.swarming.hostname, 'deadbeef')
+
   def test_add_with_swarming_403(self):
-    swarming.is_for_swarming_async.return_value = ndb.Future()
-    swarming.is_for_swarming_async.return_value.set_result(True)
+    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
     swarming.create_task_async.side_effect = net.AuthError(
       '', status_code=403, response='access denied')
     with self.assertRaises(auth.AuthorizationError):
@@ -1083,8 +1111,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   ###########################  LONGEST_PENDING_TIME ############################
 
   def test_pause_bucket(self):
-    self.mock_bucket_config(False)
-
     self.test_build.bucket = 'foo'
     self.put_many_builds(5)
 
@@ -1097,8 +1123,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertFalse(any(b.bucket == 'foo' for b in builds))
 
   def test_pause_all_requested_buckets(self):
-    self.mock_bucket_config(False)
-
     self.test_build.bucket = 'foo'
     self.put_many_builds(5)
 
@@ -1107,8 +1131,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(len(builds), 0)
 
   def test_pause_then_unpause(self):
-    self.mock_bucket_config(False)
-
     self.test_build.bucket = 'foo'
     self.test_build.put()
 
@@ -1122,22 +1144,21 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(len(builds), 1)
 
   def test_pause_bucket_invalid_bucket_name(self):
-    self.mock_bucket_config(False)
     with self.assertRaises(errors.InvalidInputError):
       service.pause('wharbl|gharbl', True)
 
   def test_pause_bucket_auth_error(self):
-    self.mock_bucket_config(False)
     self.mock_cannot(acl.Action.PAUSE_BUCKET)
     with self.assertRaises(auth.AuthorizationError):
       service.pause('test', True)
 
   def test_pause_invalid_bucket(self):
+    config.get_bucket_async.return_value = future((None, None))
     with self.assertRaises(errors.InvalidInputError):
       service.pause('test', True)
 
   def test_pause_swarming_bucket(self):
-    self.mock_bucket_config(True)
+    self.chromium_bucket.swarming.MergeFrom(self.chromium_swarming)
     with self.assertRaises(errors.InvalidInputError):
       service.pause('test', True)
 

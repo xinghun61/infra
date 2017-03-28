@@ -77,7 +77,11 @@ CACHE_DIR = 'cache'
 # Creation/cancellation of tasks.
 
 
-class CanaryTemplateNotFound(Exception):
+class TemplateNotFound(Exception):
+  """Raised when a task template is not found."""
+
+
+class CanaryTemplateNotFound(TemplateNotFound):
   """Raised when canary template is explicitly requested, but not found."""
 
 
@@ -118,24 +122,6 @@ def get_task_template_async(canary, canary_required=True):
     revision, text = yield component_config.get_self_config_async(
         'swarming_task_template.json', store_last_good=True)
   raise ndb.Return(revision, json.loads(text) if text else None, canary)
-
-
-@utils.memcache_async('swarming/is_for_swarming', ['bucket_name'], time=10 * 60)
-@ndb.tasklet
-def _is_for_swarming_async(bucket_name):
-  """Returns True if swarming is configured for the bucket."""
-  _, cfg = yield config.get_bucket_async(bucket_name)
-  raise ndb.Return(bool(cfg and config.is_swarming_config(cfg)))
-
-
-@ndb.tasklet
-def is_for_swarming_async(build):
-  """Returns True if |build|'s bucket are designed for swarming."""
-  result = False
-  _, task_template, _ = yield get_task_template_async(False)
-  if task_template:  # pragma: no branch
-    result = yield _is_for_swarming_async(build.bucket)
-  raise ndb.Return(result)
 
 
 def validate_build_parameters(builder_name, params):
@@ -272,6 +258,9 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
         canary, canary_required)
   except CanaryTemplateNotFound as ex:
     raise errors.InvalidInputError(ex.message)
+  if not task_template:
+    raise TemplateNotFound('task template is not configured')
+
   task_template_params = {
     'bucket': build.bucket,
     'builder_hash': (
@@ -416,7 +405,7 @@ def _add_named_caches(builder_cfg, task_properties):
 def create_task_async(build):
   """Creates a swarming task for the build and mutates the build.
 
-  May be called only if is_for_swarming(build) == True.
+  May be called only if build's bucket is configured for swarming.
 
   Raises:
     errors.InvalidInputError if build attribute values are inavlid.
@@ -431,6 +420,10 @@ def create_task_async(build):
   if not isinstance(builder_name, basestring):
     raise errors.InvalidInputError('Invalid builder name %r' % builder_name)
   project_id, bucket_cfg = yield config.get_bucket_async(build.bucket)
+
+  if not bucket_cfg.HasField('swarming'):
+    raise errors.InvalidInputError(
+        'Bucket %s is not configured for swarming' % build.bucket)
 
   builder_cfg = None
   for b in bucket_cfg.swarming.builders:  # pragma: no branch
