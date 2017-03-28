@@ -5,6 +5,7 @@
 package tracker
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -50,10 +51,13 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		ID:     workerKey.StringID(),
 		Parent: workerKey.Parent(),
 	}
-	// TODO(emso): add DoneFailure if results
-	results, err := isolator.FetchIsolatedResults(c, req.IsolatedOutputHash)
+	resultsStr, err := isolator.FetchIsolatedResults(c, req.IsolatedOutputHash)
 	if err != nil {
 		return fmt.Errorf("failed to fetch isolated worker resul: %v", err)
+	}
+	results := tricium.Data_Results{}
+	if err := json.Unmarshal([]byte(resultsStr), &results); err != nil {
+		return fmt.Errorf("failed to unmarshal results data: %v", err)
 	}
 	workerResultKey := ds.NewKey(c, "WorkerResult", req.Worker, 0, workerKey)
 	// TODO(emso): Revisit storing of results.
@@ -61,7 +65,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	workerResult := &track.WorkerResult{
 		ID:     workerResultKey.StringID(),
 		Parent: workerResultKey.Parent(),
-		Result: results,
+		Result: resultsStr,
 	}
 	workerState := tricium.State_SUCCESS
 	if req.ExitCode != 0 {
@@ -139,7 +143,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			done <- nil
 		}()
 		go func() {
-			// Update worker state and isolated output.
+			// Update worker state, isolated output, and number of result comments.
 			if err := ds.Get(c, worker); err != nil {
 				done <- fmt.Errorf("failed to retrieve worker: %v", err)
 				return
@@ -149,6 +153,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			}
 			worker.IsolateServerURL = req.IsolateServerUrl
 			worker.IsolatedOutput = req.IsolatedOutputHash
+			worker.NumResultComments = len(results.Comments)
 			if err := ds.Put(c, worker); err != nil {
 				done <- fmt.Errorf("failed to mark worker as done-*: %v", err)
 				return

@@ -93,7 +93,7 @@ message Data {
 
     // Zero or more results found as comments, either inline comments or change
     // comments (comments without line positions).
-    repeated Comment comment = 2;
+    repeated Comment comments = 2;
 
     // POSSIBLE EXTENSION: More kinds of results here, for instance, coverage.
   }

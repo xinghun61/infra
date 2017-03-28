@@ -53,7 +53,7 @@ type AnalyzerInvocation struct {
 	// Name of the analyzer. The workflow for a run may have several
 	// workers for one analyzer, each running on different platforms.
 	Name string
-	// State of this analyzer run; launched, or done-*, with done indicating success.
+	// State of this analyzer run; running, success, or failure.
 	// This state is an aggregation of the run state of analyzer workers.
 	State tricium.State
 }
@@ -67,10 +67,10 @@ type WorkerInvocation struct {
 	Parent *ds.Key `gae:"$parent"`
 	// Name of the worker. Same as that used in the workflow configuration.
 	Name string
-	// State of this worker run; launched, or done-*, with done indicating success.
+	// State of this worker run; running, success, or failure.
 	State tricium.State
-	// Name of the platform configuration used for the swarming task of this worker.
-	Platform string
+	// Platform this worker is producing results for.
+	Platform tricium.Platform_Name
 	// Isolate server URL.
 	IsolateServerURL string `gae:",noindex"`
 	// Hash to the isolated input provided to the corresponding swarming task.
@@ -85,6 +85,8 @@ type WorkerInvocation struct {
 	SwarmingURL string `gae:",noindex"`
 	// Swarming task ID.
 	TaskID string `gae:",noindex"`
+	// Number of result comments produced by this worker.
+	NumResultComments int
 }
 
 // WorkerResult tracks the results from a worker.

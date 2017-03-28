@@ -109,7 +109,7 @@ func extractAnalyzerWorkerStructure(c context.Context, wf *admin.Workflow) map[s
 			ID:       w.Name,
 			Name:     w.Name,
 			State:    tricium.State_PENDING,
-			Platform: w.ProvidesForPlatform.String(),
+			Platform: w.ProvidesForPlatform,
 		}
 		for _, n := range w.Next {
 			aw.Next = append(aw.Next, n)

@@ -5,18 +5,48 @@
 package tracker
 
 import (
+	"encoding/json"
+	"errors"
 	"testing"
 
 	ds "github.com/luci/gae/service/datastore"
 
 	. "github.com/smartystreets/goconvey/convey"
 
+	"golang.org/x/net/context"
+
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
-	"infra/tricium/appengine/common"
 	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
 )
+
+// MockIsolator mocks the Isolator interface for testing.
+type mockIsolator struct{}
+
+func (*mockIsolator) IsolateGitFileDetails(c context.Context, d *tricium.Data_GitFileDetails) (string, error) {
+	return "mockmockmock", nil
+}
+func (*mockIsolator) IsolateWorker(c context.Context, worker *admin.Worker, inputIsolate string) (string, error) {
+	return "mockmockmock", nil
+}
+func (*mockIsolator) LayerIsolates(c context.Context, isolatedInput, isolatedOutput string) (string, error) {
+	return "mockmockmock", nil
+}
+func (*mockIsolator) FetchIsolatedResults(c context.Context, isolatedOutput string) (string, error) {
+	result := &tricium.Data_Results{
+		Comments: []*tricium.Data_Comment{
+			{
+				Message: "Hello",
+			},
+		},
+	}
+	res, err := json.Marshal(result)
+	if err != nil {
+		return "", errors.New("failed to marshall mock result")
+	}
+	return string(res), nil
+}
 
 func TestWorkerDoneRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
@@ -50,7 +80,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 			RunId:    runID,
 			Worker:   fileIsolator,
 			ExitCode: 0,
-		}, &common.MockIsolator{})
+		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 
 		Convey("Marks worker as done", func() {

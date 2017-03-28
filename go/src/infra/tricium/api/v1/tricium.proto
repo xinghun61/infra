@@ -62,11 +62,15 @@ message ProgressRequest {
   // If provided, only progress for the provided analyzer will be returned.
   // The analyzer name should match the name of the analyzer in the Tricium
   // configuration.
+  //
+  // NB! Currently not supported.
   string analyzer = 2;
 
   // Optional platform that may be provided together with an analyzer name.
   //
   // If provided, only progress for the provided analyzer and platform will be provided.
+  //
+  // NB! Currently not supported.
   Platform platform = 3;
 }
 
@@ -78,6 +82,8 @@ message ProgressResponse {
   //
   // For a provided run ID this corresponds to all analyzers and platforms, and
   // for any selection of these, a subset is returned.
+  //
+  // NB! Selection of a subset is currently not supported.
   repeated AnalyzerProgress analyzer_progress = 2;
 }
 
@@ -86,7 +92,7 @@ message AnalyzerProgress {
   string analyzer = 1;
 
   // The platform for which the analyzer progress is reported.
-  Platform platform = 2;
+  Platform.Name platform = 2;
 
   // The state of the analyzer.
   //
@@ -98,7 +104,7 @@ message AnalyzerProgress {
   //
   // For analyzers that are done which have produced result in the form of
   // comments.
-  int32 nbr_result_comments = 4;
+  int32 num_result_comments = 4;
 }
 
 message ResultsRequest {
@@ -115,7 +121,7 @@ message ResultsRequest {
   // Optional platform that can be provided together with an analyzer name.
   //
   // If provided, only results for the provided platform and analyzer are returned.
-  Platform platform = 3;
+  Platform.Name platform = 3;
 }
 
 message ResultsResponse {
