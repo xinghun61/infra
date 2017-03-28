@@ -3,12 +3,11 @@
 # found in the LICENSE file.
 
 
-class NormalizedDataPoint(object):
+class NormalizedDataPoint():
 
-  def __init__(self, run_point_number, pass_rate, has_valid_artifact=True):
+  def __init__(self, run_point_number, pass_rate):
     self.run_point_number = run_point_number
     self.pass_rate = pass_rate
-    self.has_valid_artifact = has_valid_artifact
 
 
 def _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
@@ -19,46 +18,17 @@ def _TestDoesNotExist(pass_rate):
   return pass_rate < 0
 
 
-def GetCategorizedDataPoints(data_points):
-  valid_points = []
-  invalid_points = []
-  for data_point in data_points:
-    if data_point.has_valid_artifact:
-      valid_points.append(data_point)
-    else:
-      invalid_points.append(data_point)
-
-  return valid_points, invalid_points
-
-
-def _FindNeighbor(invalid_run_point, all_builds):
-  """Looks for a neighbor to replace or stop the analysis.
-
-  Args:
-    invalid_run_point (int): The build number with invalid artifact.
-    all_builds (list): A list of build numbers that have been checked.
-
-  Returns: New build to check.
-  """
-  return (invalid_run_point - 1 if invalid_run_point + 1 in all_builds else
-          invalid_run_point + 1)
-
-
-def _SequentialSearch(
-    analyzed_points, lower_boundary_index, all_builds, invalid_builds):
+def _SequentialSearch(data_points, lower_boundary_index):
   """Determines the next run number for sequential search, or the culprit.
 
       Should only be called by GetNextRunPointNumber when sequential search
       is ready.
 
   Args:
-    analyzed_points (list): A list of already-computed data points to analyze
+    data_points (list): A list of already-computed data points to analyze
         whether sequential search is done or needs to continue.
     lower_boundary_index (int): The index in |data_list| to check whether
         sequential search is already done.
-    all_builds (list): A list of build numbers that have been checked.
-    invalid_builds (list): A list of build numbers that cannot be used because
-        the build artifact is invalid.
 
   Returns:
     next_run_point (int): The next run point in sequential search. Will be None
@@ -69,27 +39,15 @@ def _SequentialSearch(
         calling function.
   """
 
-  lower_boundary = analyzed_points[lower_boundary_index].run_point_number
+  lower_boundary = data_points[lower_boundary_index].run_point_number
   run_after_lower_boundary = (
-      analyzed_points[lower_boundary_index - 1].run_point_number)
+      data_points[lower_boundary_index - 1].run_point_number)
+
   if run_after_lower_boundary == lower_boundary + 1:
     # Sequential search is done, return culprit.
     return None, run_after_lower_boundary, None
 
-  next_run_point = lower_boundary + 1
-  result = None
-
-  while next_run_point in invalid_builds:
-    next_run_point = _FindNeighbor(next_run_point, all_builds)
-
-  if next_run_point in all_builds:
-    # next_run_point is valid and the result should be stable (if flaky, this
-    # function should have returned earlier). The build next to it should be
-    # the suspect.
-    result = next_run_point + 1
-    next_run_point = None
-
-  return next_run_point, result, None
+  return lower_boundary + 1, None, None
 
 
 def GetNextRunPointNumber(data_points, algorithm_settings,
@@ -125,21 +83,15 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
   flakes_in_a_row = 0
   dives_in_a_row = 0
   next_run_point = None
+  number_of_data_points = len(data_points)
 
-  valid_points, invalid_points = GetCategorizedDataPoints(data_points)
-  # Gets all builds with invalid artifacts, this should be empty for try jobs.
-  invalid_builds = [ip.run_point_number for ip in invalid_points]
-  all_builds = [dp.run_point_number for dp in data_points]
-
-  number_of_valid_points = len(valid_points)
-
-  for i in xrange(number_of_valid_points):
-    pass_rate = valid_points[i].pass_rate
-    run_point_number = valid_points[i].run_point_number
+  for i in xrange(number_of_data_points):
+    pass_rate = data_points[i].pass_rate
+    run_point_number = data_points[i].run_point_number
 
     if _TestDoesNotExist(pass_rate):
       if flakes_in_a_row:
-        return _SequentialSearch(valid_points, i, all_builds, invalid_points)
+        return _SequentialSearch(data_points, i)
       else:
         # No flaky region has been identified, no findings.
         return None, None, None
@@ -158,7 +110,7 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
       if iterations_to_rerun > max_iterations_to_rerun:
         # Cannot increase iterations_to_rerun, need to make a decision.
         if flakes_in_a_row:  # Ready for sequential search.
-          return _SequentialSearch(valid_points, i,  all_builds, invalid_builds)
+          return _SequentialSearch(data_points, i)
         else:  # First build is stable, bail out.
           return None, None, None
 
@@ -177,7 +129,7 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
         # Check for dives. A dive is a sudden drop in pass rate.
         # Check the pass_rate of previous run, if this is the first data_point,
         # consider the virtual previous run is stable.
-        previous_pass_rate = valid_points[i - 1].pass_rate if i > 0 else 0
+        previous_pass_rate = data_points[i - 1].pass_rate if i > 0 else 0
 
         if _IsStable(
             previous_pass_rate, lower_flake_threshold, upper_flake_threshold):
@@ -204,18 +156,12 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
 
         # Dived out.
         # Flake region must have been found, ready for sequential search.
-        return _SequentialSearch(
-            valid_points, i - dives_in_a_row + 1, all_builds, invalid_builds)
+        return _SequentialSearch(data_points, i - dives_in_a_row + 1)
       else:
         step_size = flakes_in_a_row
         next_run_point = run_point_number - step_size
 
-  next_run_point = (
-      next_run_point if next_run_point >= lower_bound_run_point_number else
-      lower_bound_run_point_number)
-  result = None
+  if next_run_point < lower_bound_run_point_number:
+    return lower_bound_run_point_number, None, None
 
-  while next_run_point in invalid_builds:
-    next_run_point = _FindNeighbor(next_run_point, all_builds)
-
-  return next_run_point, result, None
+  return next_run_point, None, None

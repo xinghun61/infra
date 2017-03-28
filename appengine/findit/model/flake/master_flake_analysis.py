@@ -50,10 +50,6 @@ class DataPoint(ndb.Model):
   # The URL to the try job that generated this data point, if any.
   try_job_url = ndb.StringProperty(indexed=False)
 
-  # A flag indicates whether the checked build has valid artifact.
-  # This flag is only for build level data points.
-  has_valid_artifact = ndb.BooleanProperty(indexed=False, default=True)
-
   def GetCommitPosition(self, revision):
     """Gets the commit position of a revision within blame_list.
 
@@ -84,16 +80,6 @@ class DataPoint(ndb.Model):
             commit_position <= self.commit_position)
     return self.blame_list[
         length - (self.commit_position - commit_position) - 1]
-
-  def GetDictOfCommitPositionAndRevision(self):
-    """Gets a dict of commit_position:revision items for this data_point."""
-    blamed_cls = {}
-    commit_position = self.commit_position
-    for i in xrange(len(self.blame_list) - 1, -1, -1):
-      blamed_cls[commit_position] = self.blame_list[i]
-      commit_position -= 1
-
-    return blamed_cls
 
 
 class MasterFlakeAnalysis(

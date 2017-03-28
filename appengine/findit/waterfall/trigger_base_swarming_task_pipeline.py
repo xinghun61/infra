@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import copy
-import json
 import logging
 import time
 
@@ -12,13 +11,11 @@ from common.waterfall.pubsub_callback import MakeSwarmingPubsubCallback
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model import analysis_status
-from waterfall import buildbot
 from waterfall import swarming_util
 from waterfall import waterfall_config
 
 
 NO_TASK = 'no_task'
-NO_TASK_EXCEPTION = 'no_task - exception'
 
 
 class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
@@ -195,27 +192,6 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     raise NotImplementedError(
         '_GetIterationsToRerun should be implemented in child class')
 
-  def _ReferredBuildExceptionedOut(
-      self, master_name, builder_name, build_number, http_client):
-    """Checks if the build had exception, if so don't run the step."""
-    json_data = buildbot.buildbot.GetBuildDataFromBuildMaster(
-      	master_name, builder_name, build_number, http_client)
-    if not json_data:
-      logging.error('Failed to get build data for %s, %s, %s' % (
-          master_name, builder_name, build_number))
-      return False
-
-    try:
-      build_data = json.loads(json_data)
-    except ValueError:
-      logging.error('Failed to decode build data for %s, %s, %s' % (
-          master_name, builder_name, build_number))
-      return False
-
-    build_result = buildbot.GetBuildResult(build_data)
-
-    return build_result == buildbot.EXCEPTION
-
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number, step_name, tests,
           iterations_to_rerun=None):
@@ -246,9 +222,6 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
         master_name, builder_name, build_number, http_client,
         {'stepname': step_name})
     if len(swarming_task_items) < 1:
-      if self._ReferredBuildExceptionedOut(
-          master_name, builder_name, build_number, http_client):
-        return NO_TASK_EXCEPTION
       return NO_TASK
 
     ref_task_id = swarming_task_items[0]['task_id']

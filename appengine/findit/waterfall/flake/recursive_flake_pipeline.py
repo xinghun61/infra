@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import copy
 from datetime import timedelta
 import logging
 import random
@@ -407,8 +406,8 @@ class RecursiveFlakePipeline(BasePipeline):
 def _NormalizeDataPoints(data_points):
   normalized_data_points = [
       (lambda data_point: NormalizedDataPoint(
-          data_point.build_number, data_point.pass_rate,
-          data_point.has_valid_artifact))(d) for d in data_points]
+          data_point.build_number, data_point.pass_rate))(
+              d) for d in data_points]
   return sorted(
       normalized_data_points, key=lambda k: k.run_point_number, reverse=True)
 
@@ -429,31 +428,6 @@ def _RemoveRerunBuildDataPoint(analysis):
     return
 
   analysis.data_points.pop()
-
-
-def _GetFullBlamedCLsAndLowerBound(suspected_build_point, data_points):
-  """Gets Full blame list and lower bound of try jobs.
-
-  For cases like B1(Stable) - B2(Exception) - B3(Flaky), the blame list should
-  be revisions in B2 and B3, and lower bound should be B1.commit_position + 1.
-  """
-  blamed_cls = suspected_build_point.GetDictOfCommitPositionAndRevision()
-  _, invalid_points = lookback_algorithm.GetCategorizedDataPoints(
-      data_points)
-  if not invalid_points:
-    return blamed_cls, suspected_build_point.previous_build_commit_position + 1
-
-  build_lower_bound = suspected_build_point.build_number
-  point_lower_bound = suspected_build_point
-  invalid_points.sort(key=lambda k: k.build_number, reverse=True)
-  for data_point in invalid_points:
-    if data_point.build_number != build_lower_bound - 1:
-      break
-    build_lower_bound = data_point.build_number
-    blamed_cls.update(data_point.GetDictOfCommitPositionAndRevision())
-    point_lower_bound = data_point
-
-  return blamed_cls, point_lower_bound.previous_build_commit_position + 1
 
 
 class NextBuildNumberPipeline(BasePipeline):
@@ -545,17 +519,14 @@ class NextBuildNumberPipeline(BasePipeline):
         suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
         assert suspected_build_point
 
-        blamed_cls, lower_bound = _GetFullBlamedCLsAndLowerBound(
-            suspected_build_point, analysis.data_points)
-
-        if blamed_cls:
-          if len(blamed_cls) > 1:
-            logging.info('Running try-jobs against commits in regressions')
+        if suspected_build_point.blame_list:
+          if len(suspected_build_point.blame_list) > 1:
+            logging.info('Running try-jobs against commits in suspected build')
             start_commit_position = suspected_build_point.commit_position - 1
-            start_revision = blamed_cls[start_commit_position]
+            start_revision = suspected_build_point.GetRevisionAtCommitPosition(
+                start_commit_position)
             yield RecursiveFlakeTryJobPipeline(
-                analysis.key.urlsafe(), start_commit_position, start_revision,
-                lower_bound)
+                analysis.key.urlsafe(), start_commit_position, start_revision)
             return  # No update to bug yet.
           else:
             logging.info('Single commit in the blame list of suspected build')
