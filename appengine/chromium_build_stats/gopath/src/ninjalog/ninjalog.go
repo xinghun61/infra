@@ -173,25 +173,39 @@ func Parse(fname string, r io.Reader) (*NinjaLog, error) {
 
 func lineToStep(line string) (Step, error) {
 	var step Step
-	fields := strings.Split(line, "\t")
+
+	// Due to slowness of strings.Split in App Engine Go,
+	// we use more faster implementation.
+	fields := make([]string, 0, 5)
+	for i := 0; i < 5; i += 1 {
+		m := strings.IndexByte(line, '\t')
+		if m < 0 {
+			m = len(line)
+		}
+		fields = append(fields, line[:m])
+		if m < len(line) {
+			line = line[m+1:]
+		}
+	}
+
 	if len(fields) < 5 {
 		return step, fmt.Errorf("few fields:%d", len(fields))
 	}
-	s, err := strconv.Atoi(fields[0])
+	s, err := strconv.ParseUint(fields[0], 10, 0)
 	if err != nil {
 		return step, fmt.Errorf("bad start %s:%v", fields[0], err)
 	}
-	e, err := strconv.Atoi(fields[1])
+	e, err := strconv.ParseUint(fields[1], 10, 0)
 	if err != nil {
 		return step, fmt.Errorf("bad end %s:%v", fields[1], err)
 	}
-	rs, err := strconv.Atoi(fields[2])
+	rs, err := strconv.ParseUint(fields[2], 10, 0)
 	if err != nil {
 		return step, fmt.Errorf("bad restat %s:%v", fields[2], err)
 	}
 	step.Start = time.Duration(s) * time.Millisecond
 	step.End = time.Duration(e) * time.Millisecond
-	step.Restat = rs
+	step.Restat = int(rs)
 	step.Out = fields[3]
 	step.CmdHash = fields[4]
 	return step, nil
