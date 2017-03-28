@@ -10,13 +10,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"golang.org/x/net/context"
 
 	"infra/tools/kitchen/proto"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/system/environ"
@@ -91,32 +89,16 @@ func getRecipesPath(repoDir string) (string, error) {
 			D("path", recipesCfg).
 			Err()
 	}
-	fileContentsStr := string(fileContents)
 
-	recipesPath := ""
-	if strings.HasPrefix(strings.TrimLeft(fileContentsStr, " "), "{") {
-		var cfg struct {
-			RecipesPath string `json:"recipes_path"`
-		}
-		if err := json.Unmarshal(fileContents, &cfg); err != nil {
-			return "", errors.Annotate(err).Reason("could not parse recipes.cfg (JSON) at %(path)q").
-				D("path", recipesCfg).
-				Err()
-		}
-		recipesPath = cfg.RecipesPath
-	} else {
-		// TODO(iannucci): remove this and protos/package.proto as soon as all
-		// recipe repos are using JSON.
-		pkg := &recipe_engine.Package{}
-		if err := proto.UnmarshalText(fileContentsStr, pkg); err != nil {
-			return "", errors.Annotate(err).Reason("could not parse recipes.cfg at %(path)q").
-				D("path", recipesCfg).
-				Err()
-		}
-		recipesPath = pkg.GetRecipesPath()
+	var cfg struct {
+		RecipesPath string `json:"recipes_path"`
 	}
-
-	return recipesPath, nil
+	if err := json.Unmarshal(fileContents, &cfg); err != nil {
+		return "", errors.Annotate(err).Reason("could not parse recipes.cfg at %(path)q").
+			D("path", recipesCfg).
+			Err()
+	}
+	return cfg.RecipesPath, nil
 }
 
 // prepareWorkDir verifies and normalizes a workdir is suitable for a recipe
