@@ -229,15 +229,37 @@ class InboundEmail(webapp2.RequestHandler):
     labels = ['Infra-Troopers', 'Restrict-View-Google']
     field_values = []
     component_ids = []
-    body = 'Filed by %s on behalf of %s\n' % (author_addr, from_addr)
+    body = 'Filed by %s on behalf of %s\n\n%s' % (author_addr, from_addr, body)
 
     if incident_id:
-        labels.append('Incident-Id-' + incident_id)
+      incident_label = 'Incident-Id-' + incident_id
+      labels.append(incident_label)
 
-        # Query for existing bug with the label. Add a reply to the latest open
-        # bug with a matching label if such a bug exists.
-        # Otherwise, create a new bug.
+      label_id = self.services.config.LookupLabelID(
+          cnxn, project.project_id, incident_label)
 
+      if label_id:
+        issue_ids = self.services.issue.GetIIDsByLabelIDs(
+            cnxn, [label_id], project.project_id, None)
+
+        issues, _ = self.services.issue.GetOpenAndClosedIssues(
+            cnxn, issue_ids)
+
+        latest_issue = None
+
+        # Find the most recently modified open issue.
+        for issue in issues:
+          if not latest_issue:
+            latest_issue = issue
+          elif issue.modified_timestamp > latest_issue.modified_timestamp:
+            latest_issue = issue
+
+          if latest_issue:
+            # Add a reply to the existing issue for this incident.
+            self.services.issue.CreateIssueComment(
+                cnxn, project.project_id, latest_issue.local_id, author_id,
+                body)
+            return None
 
     self.services.issue.CreateIssue(
         cnxn, self.services, project.project_id, subject, status, owner,

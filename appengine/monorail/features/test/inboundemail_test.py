@@ -27,6 +27,7 @@ class InboundEmailTest(unittest.TestCase):
   def setUp(self):
     self.cnxn = 'fake cnxn'
     self.services = service_manager.Services(
+        config=fake.ConfigService(),
         issue=fake.IssueService(),
         user=fake.UserService(),
         project=fake.ProjectService())
@@ -205,7 +206,30 @@ class InboundEmailTest(unittest.TestCase):
     # TODO(zhangtiff): Check to make sure the error path was hit.
     ret = self.inbound.ProcessAlert(
         self.cnxn, self.project, self.project_addr, 'user@malicious.com',
-        'user@example.com', 111L, 'issue title', 'issue body', 'incident-id')
+        'user@example.com', 111L, 'issue title', 'issue body', 'incident')
+    self.assertIsNone(ret)
+
+  def testProcessAlert_Basic(self):
+    self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
+    self.services.config.LookupLabelID(
+        self.cnxn, self.project.project_id, 'Incident-Id-incident-1'
+    ).AndReturn(None)
+
+    self.mox.StubOutWithMock(self.services.issue, 'CreateIssue')
+    self.services.issue.CreateIssue(
+        self.cnxn, self.services, self.project.project_id, 'issue title', 'new',
+        None, [], ['Infra-Troopers', 'Restrict-View-Google',
+        'Incident-Id-incident-1'], [], [], 111L,
+        'Filed by user@example.com on behalf of user@google.com\n\nissue body'
+        ).AndReturn(None)
+
+    self.mox.ReplayAll()
+
+    ret = self.inbound.ProcessAlert(
+        self.cnxn, self.project, self.project_addr, 'user@google.com',
+        'user@example.com', 111L, 'issue title', 'issue body', 'incident-1')
+
+    self.mox.VerifyAll()
     self.assertIsNone(ret)
 
   def testProcessIssueReply_NoIssue(self):
