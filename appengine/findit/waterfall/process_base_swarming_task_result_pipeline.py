@@ -94,11 +94,21 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     return step_name, step_name_no_platform
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def callback(self, callback_params, pipeline_id=None):
+  def callback(self, *args, **kwargs):
+    """Transitional callback.
+
+    This temporary hack should accept callbacks in the old format
+    as well as the new one.
+    """
+    assert not args
+    if 'callback_params' in kwargs:
+      return self._callback(**kwargs)
+    return self._callback(callback_params=kwargs)
+
+  def _callback(self, callback_params, pipeline_id=None):
     """Monitors the swarming task and waits for it to complete."""
     if isinstance(callback_params, basestring):
       callback_params = json.loads(callback_params)
-
     _ = pipeline_id  # We don't do anything with this id.
     task_id = callback_params['task_id']
     assert task_id

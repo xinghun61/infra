@@ -157,7 +157,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         self.build_number, self.step_name,
         'task_id1', self.build_number, self.test_name,
         analysis.version_number)
-    pipeline.callback(pipeline.last_params)
+    pipeline.callback(callback_params=pipeline.last_params)
     # Reload from ID to get all internal properties in sync.
     pipeline = ProcessFlakeSwarmingTaskResultPipeline.from_id(
         pipeline.pipeline_id)

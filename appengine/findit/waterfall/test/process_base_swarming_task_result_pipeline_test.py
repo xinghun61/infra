@@ -229,7 +229,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(
         self.master_name, self.builder_name, self.build_number, self.step_name,
         'task_id1', self.build_number, self.test_name, 1)
-    pipeline.callback(pipeline.last_params)
+    pipeline.callback(callback_params=pipeline.last_params)
     # Reload from ID to get all internal properties in sync.
     pipeline = ProcessFlakeSwarmingTaskResultPipeline.from_id(
         pipeline.pipeline_id)
@@ -398,7 +398,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name)
-    pipeline.callback(pipeline.last_params)
+    pipeline.callback(callback_params=pipeline.last_params)
     # Reload from ID to get all internal properties in sync.
     pipeline = ProcessSwarmingTaskResultPipeline.from_id(pipeline.pipeline_id)
     step_name, task_info = pipeline.outputs.default.value
@@ -437,7 +437,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name)
-    pipeline.callback(json.dumps(pipeline.last_params))
+    pipeline.callback(callback_params=json.dumps(pipeline.last_params))
     # Reload from ID to get all internal properties in sync.
     pipeline = ProcessSwarmingTaskResultPipeline.from_id(pipeline.pipeline_id)
     step_name, task_info = pipeline.outputs.default.value
@@ -519,7 +519,46 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name)
-    pipeline.callback(pipeline.last_params)
+    pipeline.callback(callback_params=pipeline.last_params)
+    # Reload from ID to get all internal properties in sync.
+    pipeline = ProcessSwarmingTaskResultPipeline.from_id(pipeline.pipeline_id)
+    step_name, task_info = pipeline.outputs.default.value
+
+    self.assertEqual(self.step_name, step_name)
+    self.assertEqual('abc_tests', task_info[0])
+    self.assertEqual(
+        _EXPECTED_CLASSIFIED_TESTS['reliable_tests'], task_info[1])
+
+    task = WfSwarmingTask.Get(
+        self.master_name, self.builder_name, self.build_number, self.step_name)
+
+    self.assertEqual(analysis_status.COMPLETED, task.status)
+    self.assertEqual(_EXPECTED_TESTS_STATUS, task.tests_statuses)
+    self.assertEqual(
+        _EXPECTED_CLASSIFIED_TESTS, task.classified_tests)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 6, 538220),
+                     task.created_time)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 32, 9, 90550),
+                     task.started_time)
+    self.assertEqual(datetime.datetime(2016, 2, 10, 18, 33, 9),
+                     task.completed_time)
+
+  @mock.patch.object(swarming_util, 'GetSwarmingTaskFailureLog',
+                     return_value=(_SAMPLE_FAILURE_LOG, None))
+  def testProcessSwarmingTaskResultPipelineBackwardCompatibleCallback(self, _):
+    # End to end test.
+    task = WfSwarmingTask.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+    task.task_id = 'task_id1'
+    task.put()
+
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.start_test()
+    pipeline.run(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name)
+    pipeline.callback(**pipeline.last_params)
     # Reload from ID to get all internal properties in sync.
     pipeline = ProcessSwarmingTaskResultPipeline.from_id(pipeline.pipeline_id)
     step_name, task_info = pipeline.outputs.default.value

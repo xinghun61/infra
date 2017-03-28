@@ -333,7 +333,19 @@ class MonitorTryJobPipeline(BasePipeline):
                                   target=target)
     task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
-  def callback(self, callback_params, pipeline_id=None):
+  # Arguments number differs from overridden method - pylint: disable=W0221
+  def callback(self, *args, **kwargs):
+    """Transitional callback.
+
+    This temporary hack should accept callbacks in the old format
+    as well as the new one.
+    """
+    assert not args
+    if 'callback_params' in kwargs:
+      return self._callback(**kwargs)
+    return self._callback(callback_params=kwargs)
+
+  def _callback(self, callback_params, pipeline_id=None):
     """Updates the TryJobData entities with status from buildbucket."""
     # callback_params may have been serialized if the callback was converted to
     # a URL.

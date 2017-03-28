@@ -47,7 +47,7 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name)
-    pipeline.callback(pipeline.last_params)
+    pipeline.callback(callback_params=pipeline.last_params)
     # Reload from ID to get all internal properties in sync.
     pipeline = ProcessSwarmingTaskResultPipeline.from_id(pipeline.pipeline_id)
     step_name, task_info = pipeline.outputs.default.value
@@ -84,7 +84,7 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(
         self.master_name, self.builder_name,
         self.build_number, self.step_name)
-    pipeline.callback(pipeline.last_params)
+    pipeline.callback(callback_params=pipeline.last_params)
     # Reload from ID to get all internal properties in sync.
     pipeline = ProcessSwarmingTaskResultPipeline.from_id(pipeline.pipeline_id)
     step_name, task_info = pipeline.outputs.default.value
