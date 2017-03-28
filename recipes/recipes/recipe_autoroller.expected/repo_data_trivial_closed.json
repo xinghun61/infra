@@ -235,6 +235,21 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "[CACHE]/recipe_autoroller/build/infra/config/recipes.cfg",
+      "/path/to/tmp/json"
+    ],
+    "name": "build.read build recipes.cfg",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@json.output@{}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
       "[TMP_BASE]/recipes_tmp_1/recipes.py",
       "--use-bootstrap",
       "--package",

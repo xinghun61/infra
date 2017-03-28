@@ -171,3 +171,38 @@ def GenTests(api):
           timestamp='2016-02-01T01:23:45') +
       api.time.seed(1454371200)
   )
+
+  yield (
+      api.test('trivial_custom_tbr_no_dryrun') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data('build') +
+      api.override_step_data(
+        'build.read build recipes.cfg',
+        api.json.output({
+          "autoroll_recipe_options": {
+            "trivial": {
+              "tbr_emails": ["foo@bar.example.com", "meep@example.com"],
+            }
+          }
+        }),
+      )
+  )
+
+  yield (
+      api.test('nontrivial_extra_reviewers') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data('build', trivial=False) +
+      api.override_step_data(
+        'build.read build recipes.cfg',
+        api.json.output({
+          "autoroll_recipe_options": {
+            "nontrivial": {
+              "extra_reviewers": ["foo@chromium.org", "foo@bar.example.com",
+                                  "meep@example.com"],
+            }
+          }
+        }),
+      )
+  )

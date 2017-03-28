@@ -87,7 +87,7 @@ _TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 _ROLL_STALE_THRESHOLD = datetime.timedelta(hours=2)
 
 
-def get_commit_message(roll_result, tbrs=()):
+def get_commit_message(roll_result, tbrs=(), extra_reviewers=()):
   """Construct a roll commit message from 'recipes.py autoroll' result.
   """
   trivial = roll_result['trivial']
@@ -103,9 +103,11 @@ def get_commit_message(roll_result, tbrs=()):
   message += '%s\n' % '\n'.join(get_blame(commit_infos))
   message += '\n'
   if not trivial:
-    message += 'R=%s\n' % ','.join(get_reviewers(commit_infos))
+    message += 'R=%s\n' % ','.join(sorted(
+      get_reviewers(commit_infos) | set(extra_reviewers)
+    ))
   if tbrs:
-    message += 'TBR=%s\n' % ','.join(tbrs)
+    message += 'TBR=%s\n' % ','.join(sorted(tbrs))
   message += COMMIT_MESSAGE_FOOTER
   return message
 
@@ -155,6 +157,16 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
             'manual intervention needed: automated roll attempt failed')
 
   def _roll_project(self, project_data, recipes_dir):
+    """
+    Args:
+      project_data - The JSON form of a project_config, e.g. {
+          "repo_type": "GITILES",
+          "id": "foof",
+          "repo_url": "https://chromium.googlesource.com/foof",
+          "name": "Foof"
+        }
+    """
+
     # Keep persistent checkout. Speeds up the roller for large repos
     # like chromium/src.
     workdir = self.m.path['cache'].join(
@@ -222,6 +234,21 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
     recipes_cfg_path = workdir.join('infra', 'config', 'recipes.cfg')
 
+    current_cfg = self.m.json.read(
+      'read %s recipes.cfg' % project_data['id'],
+      recipes_cfg_path, step_test_data=lambda: self.m.json.test_api.output({}))
+
+    autoroll_settings = current_cfg.json.output.get(
+      'autoroll_recipe_options', {})
+    # TODO(iannucci): remove these implied defaults.
+    autoroll_settings.setdefault('trivial', {
+      "tbr_emails": list(TRIVIAL_ROLL_TBR_EMAILS),
+      "automatic_commit": True,
+    })
+    autoroll_settings.setdefault('nontrivial',{
+      "automatic_commit_dry_run": True,
+    })
+
     # Use the recipes bootstrap to checkout coverage.
     roll_step = self.m.step(
         'roll',
@@ -231,7 +258,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
     if roll_result['success']:
       self._process_successful_roll(
-          project_data['repo_url'], repo_data, roll_step, roll_result, workdir)
+          project_data['repo_url'], repo_data, roll_step, roll_result, workdir,
+          autoroll_settings)
       return ROLL_SUCCESS
     else:
       if (not roll_result['roll_details'] and
@@ -262,7 +290,13 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         return ROLL_FAILURE
 
   def _process_successful_roll(
-      self, repo_url, original_repo_data, roll_step, roll_result, workdir):
+      self, repo_url, original_repo_data, roll_step, roll_result, workdir,
+      autoroll_settings):
+    """
+    Args:
+      autoroll_settings - a AutorollRecipeOptions message from the recipe
+        engine, in jsonish form (i.e. a python dict).
+    """
     original_repo_data = original_repo_data or {}
 
     roll_step.presentation.logs['blame'] = get_blame(
@@ -277,16 +311,25 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       self.m.git('commit', '-a', '-m', 'roll recipes.cfg')
 
     tbrs = []
+    extra_reviewers = []
+    upload_args =  []
     if roll_result['trivial']:
-      # Land immediately.
-      upload_args = ['--use-commit-queue']
-      tbrs = TRIVIAL_ROLL_TBR_EMAILS
+      s = autoroll_settings['trivial']
+      tbrs = s.get('tbr_emails', [])
+      if s.get('automatic_commit'):
+        upload_args.append('--use-commit-queue')
     else:
-      upload_args = ['--send-mail', '--cq-dry-run']
+      s = autoroll_settings['nontrivial']
+      upload_args.append('--send-mail')
+      extra_reviewers = s.get('extra_reviewers', [])
+      if s.get('automatic_commit_dry_run'):
+        upload_args.append('--cq-dry-run')
+
     upload_args.extend(['--bypass-hooks', '-f'])
     upload_args.extend(['--gerrit'])
     upload_args.extend([_AUTH_REFRESH_TOKEN_FLAG])
-    commit_message = get_commit_message(roll_result, tbrs=tbrs)
+    commit_message = get_commit_message(
+      roll_result, tbrs=tbrs, extra_reviewers=extra_reviewers)
     with self.m.step.context({'cwd': workdir}):
       self.m.git_cl.upload(
           commit_message, upload_args, name='git cl upload')
