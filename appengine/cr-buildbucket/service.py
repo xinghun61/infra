@@ -354,7 +354,7 @@ def add_many_async(build_request_list):
     create_tasks = []
     for b in new_builds.itervalues():
       _, cfg = bucket_cfg_futs[b.bucket].get_result()
-      if config.is_swarming_config(cfg):
+      if cfg and config.is_swarming_config(cfg):
         create_tasks.append(swarming.create_task_async(b))
     yield create_tasks
 
