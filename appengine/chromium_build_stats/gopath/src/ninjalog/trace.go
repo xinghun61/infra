@@ -42,7 +42,12 @@ func toTrace(step Step, pid int, tid int) Trace {
 
 // ToTraces converts Flow outputs into trace log.
 func ToTraces(steps [][]Step, pid int) []Trace {
-	var traces []Trace
+	traceNum := 0
+	for _, thread := range steps {
+		traceNum += len(thread)
+	}
+
+	traces := make([]Trace, 0, traceNum)
 	for tid, thread := range steps {
 		for _, step := range thread {
 			traces = append(traces, toTrace(step, pid, tid))
