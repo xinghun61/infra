@@ -91,7 +91,9 @@ def validate_tags(tags):
     if t[0] == ':':
       raise errors.InvalidInputError('Invalid tag "%s": starts with ":"')
     if t.startswith('buildset:') and len(t) > MAX_BUILDSET_LENGTH:
-      raise errors.InvalidInputError('Buildset tag is too long: %s', t)
+      raise errors.InvalidInputError('Tag "buildset" is too long: %s', t)
+    if t.startswith('build_address:'):
+      raise errors.InvalidInputError('Tag "build_address" is reserved')
 
 
 _BuildRequestBase = collections.namedtuple('_BuildRequestBase', [
@@ -1220,4 +1222,7 @@ def _indexed_tags(tags):
   """Returns a list of tags that must be indexed."""
   if not tags:
     return []
-  return sorted(set(t for t in tags if t.startswith('buildset:')))
+  return sorted(set(
+      t for t in tags
+      if t.startswith(('buildset:', 'build_address:'))
+  ))

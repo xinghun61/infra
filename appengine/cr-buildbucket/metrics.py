@@ -73,6 +73,12 @@ SCHEDULING_LATENCY = gae_ts_mon.NonCumulativeDistributionMetric(
   [gae_ts_mon.StringField(FIELD_BUCKET)],
   # Bucketer for 1s..48h range
   bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10**0.053))
+SEQUENCE_NUMBER_GEN_DURATION_MS = gae_ts_mon.CumulativeDistributionMetric(
+    'buildbucket/sequence_number/gen_duration',
+    'Duration of a sequence number generation in ms',
+    [gae_ts_mon.StringField('sequence')],
+    # Bucketer for 1ms..5s range
+    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10**0.0374))
 
 
 def fields_for(build, **extra):

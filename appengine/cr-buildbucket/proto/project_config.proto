@@ -204,6 +204,10 @@ message Builder {
   optional uint32 execution_timeout_secs = 7;
   // Caches that should be present on the bot.
   repeated CacheEntry caches = 9;
+  // If true, generate monotonically increasing contiguous numbers for each
+  // build, unique within the builder.
+  // If enabled, limits the build creation rate in this builder to 5 per second.
+  optional bool build_numbers = 11;
 }
 
 // Configuration of buildbucket-swarming integration for one bucket.

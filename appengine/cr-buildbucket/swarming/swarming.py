@@ -53,6 +53,7 @@ import errors
 import model
 import notifications
 import protoutil
+import sequence
 
 PUBSUB_TOPIC = 'swarming'
 BUILDER_PARAMETER = 'builder_name'
@@ -154,6 +155,11 @@ def validate_build_parameters(builder_name, params):
     override_builder_cfg_data = swarming.pop('override_builder_cfg', None)
     if override_builder_cfg_data is not None:
       assert_object('swarming.override_builder_cfg', override_builder_cfg_data)
+      if 'build_numbers' in override_builder_cfg_data:
+        bad(
+            'swarming.override_builder_cfg parameter '
+            'cannot override build_numbers')
+
       override_builder_cfg = project_config_pb2.Builder()
       try:
         protoutil.merge_dict(
@@ -227,7 +233,8 @@ def _prepare_builder_config(builder_cfg, swarming_param):
 
 
 @ndb.tasklet
-def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
+def create_task_def_async(
+    project_id, swarming_cfg, builder_cfg, build, build_number):
   """Creates a swarming task definition for the |build|.
 
   Supports build properties that are supported by Buildbot-Buildbucket
@@ -277,6 +284,8 @@ def create_task_def_async(project_id, swarming_cfg, builder_cfg, build):
     recipe_revision = builder_cfg.recipe.revision or 'HEAD'
 
     build_properties['buildername'] = builder_cfg.name
+    if build_number is not None:  # pragma: no branch
+      build_properties['buildnumber'] = build_number
 
     changes = params.get(PARAM_CHANGES)
     if changes:  # pragma: no branch
@@ -434,8 +443,14 @@ def create_task_async(build):
     raise errors.InvalidInputError(
         'Builder %r is not defined in bucket %r' % (builder_name, build.bucket))
 
+  build_number = None
+  if builder_cfg.build_numbers:  # pragma: no branch
+    seq_name = '%s/%s' % (build.bucket, builder_name)
+    build_number = yield sequence.generate_async(seq_name, 1)
+    build.tags.append('build_address:%s/%d' % (seq_name, build_number))
+
   task = yield create_task_def_async(
-      project_id, bucket_cfg.swarming, builder_cfg, build)
+      project_id, bucket_cfg.swarming, builder_cfg, build, build_number)
   res = yield _call_api_async(
       auth.get_current_identity(),
       bucket_cfg.swarming.hostname, 'tasks/new', method='POST', payload=task,

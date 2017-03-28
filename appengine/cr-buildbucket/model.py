@@ -101,6 +101,7 @@ class Build(ndb.Model):
     parameters (dict): immutable arbitrary build parameters.
     pubsub_callback (PubSubCallback): PubSub message parameters for build status
       change notifications.
+    retry_of (int): id of the original build that this build was derived from.
     lease_expiration_date (datetime): current lease expiration date.
       The moment the build is leased, |lease_expiration_date| is set to
       (utcnow + lease_duration).

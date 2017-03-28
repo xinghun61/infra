@@ -201,6 +201,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       service.validate_tags(['tag,value'])
 
+  def test_validate_tags_build_address(self):
+    with self.assertRaises(errors.InvalidInputError):
+      service.validate_tags(['build_address:1'])
+
   def normalize_tags(self, tags, parameters):
     req = service.BuildRequest(bucket='a', tags=tags, parameters=parameters)
     return req.normalize().tags
