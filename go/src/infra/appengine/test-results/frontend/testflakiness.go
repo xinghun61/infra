@@ -103,17 +103,25 @@ const (
 
 const (
 	flakinessGroupsKey       = "flakinessGroups"
-	flakinessDataKeyTemplate = "flakinessData-%s-%s"
+	flakinessListKeyTemplate = "flakinessList-%s-%s"
+	flakinessDataKeyTemplate = "flakinessData-%s"
 )
 
-// Flakiness represents infromation about a single flaky test.
-type Flakiness struct {
+// FlakinessListItem represents aggregate flakiness data about a flaky test.
+// This information is shown in a table with 1 row per test.
+type FlakinessListItem struct {
 	TestName           string  `json:"test_name"`
 	Flakiness          float64 `json:"flakiness"`
 	NormalizedStepName string  `json:"normalized_step_name"`
 	TotalFlakyFailures uint64  `json:"total_flaky_failures"`
 	TotalTries         uint64  `json:"total_tries"`
 	CQFalseRejections  uint64  `json:"cq_false_rejections"`
+}
+
+// FlakyTestDetails represents detailed information about a flaky test.
+type FlakyTestDetails struct {
+	FlakyBuilds  []string `json:"flaky_builds"`
+	FailedBuilds []string `json:"failed_builds"`
 }
 
 // Group represents infromation about flakiness of a group of tests.
@@ -144,7 +152,7 @@ func writeResponse(ctx *router.Context, funcName string, data interface{}) {
 	}
 }
 
-func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([]Flakiness, error) {
+func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([]FlakinessListItem, error) {
 	var filter string
 	switch group.Kind {
 	case TeamKind:
@@ -181,7 +189,7 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
 	}
 
-	data := make([]Flakiness, 0, len(rows))
+	data := make([]FlakinessListItem, 0, len(rows))
 	for _, row := range rows {
 		name, ok := row.F[0].V.(string)
 		if !ok {
@@ -233,7 +241,7 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 			return nil, errors.Annotate(err).Reason("Failed to convert cq_false_rejections value to uint64").Err()
 		}
 
-		data = append(data, Flakiness{
+		data = append(data, FlakinessListItem{
 			TestName:           name,
 			NormalizedStepName: normalizedStepName,
 			Flakiness:          flakiness,
@@ -246,31 +254,39 @@ func getFlakinessData(ctx context.Context, bq *bigquery.Service, group Group) ([
 	return data, nil
 }
 
-func testFlakinessListHandler(ctx *router.Context) {
-	// TODO(sergiyb): Add a layer of caching results using memcache.
-	name := ctx.Request.FormValue("groupName")
-	kind := ctx.Request.FormValue("groupKind")
+func getFlakinessData(aeCtx context.Context, bq *bigquery.Service, test string) (*FlakyTestDetails, error) {
+	// TODO(sergiyb): Implement this function.
+	return nil, errors.New("Not implemented")
+}
 
-	if kind == "" {
-		writeError(ctx, nil, "testFlakinessListHandler", "missing groupKind parameter")
+func testFlakinessDataHandler(ctx *router.Context) {
+	test := ctx.Request.FormValue("test")
+
+	if test == "" {
+		writeError(ctx, nil, "testFlakinessDataHandler", "missing test parameter")
 		return
 	}
 
-	if name == "" {
-		writeError(ctx, nil, "testFlakinessListHandler", "missing groupName parameter")
-		return
-	}
+	cachedDataHandler(
+		ctx,
+		"testFlakinessDataHandler",
+		fmt.Sprintf(flakinessDataKeyTemplate, test),
+		new(FlakyTestDetails),
+		func(aeCtx context.Context, bq *bigquery.Service) (interface{}, error) {
+			return getFlakinessData(aeCtx, bq, test)
+		},
+	)
+}
 
+func cachedDataHandler(ctx *router.Context, funcName string, key string, data interface{}, fetchData func(aeCtx context.Context, bq *bigquery.Service) (interface{}, error)) {
 	// Check if we have recent results in memcache.
-	var data []Flakiness
-	key := fmt.Sprintf(flakinessDataKeyTemplate, kind, name)
 	memcacheItem, err := memcache.GetKey(ctx.Context, key)
 	if err == nil {
 		if err = json.Unmarshal(memcacheItem.Value(), &data); err != nil {
 			logging.Fields{logging.ErrorKey: err, "item": memcacheItem}.Warningf(
 				ctx.Context, "Failed to unmarshal cached results as JSON")
 		} else {
-			writeResponse(ctx, "testFlakinessListHandler", data)
+			writeResponse(ctx, funcName, data)
 			return
 		}
 	}
@@ -278,13 +294,13 @@ func testFlakinessListHandler(ctx *router.Context) {
 	aeCtx := appengine.WithContext(ctx.Context, ctx.Request)
 	bq, err := createBQService(aeCtx)
 	if err != nil {
-		writeError(ctx, err, "testFlakinessListHandler", "failed create BigQuery client")
+		writeError(ctx, err, funcName, "failed create BigQuery client")
 		return
 	}
 
-	data, err = getFlakinessData(aeCtx, bq, Group{Name: name, Kind: kind})
+	data, err = fetchData(aeCtx, bq)
 	if err != nil {
-		writeError(ctx, err, "testFlakinessListHandler", "failed to get flakiness data")
+		writeError(ctx, err, funcName, "failed to get flakiness data")
 		return
 	}
 
@@ -300,7 +316,32 @@ func testFlakinessListHandler(ctx *router.Context) {
 			ctx.Context, "Failed to marshal query results as JSON: %#v", data)
 	}
 
-	writeResponse(ctx, "testFlakinessListHandler", data)
+	writeResponse(ctx, funcName, data)
+}
+
+func testFlakinessListHandler(ctx *router.Context) {
+	name := ctx.Request.FormValue("groupName")
+	kind := ctx.Request.FormValue("groupKind")
+
+	if kind == "" {
+		writeError(ctx, nil, "testFlakinessListHandler", "missing groupKind parameter")
+		return
+	}
+
+	if name == "" {
+		writeError(ctx, nil, "testFlakinessListHandler", "missing groupName parameter")
+		return
+	}
+
+	cachedDataHandler(
+		ctx,
+		"testFlakinessListHandler",
+		fmt.Sprintf(flakinessListKeyTemplate, kind, name),
+		new([]FlakinessListItem),
+		func(aeCtx context.Context, bq *bigquery.Service) (interface{}, error) {
+			return getFlakinessList(aeCtx, bq, Group{Name: name, Kind: kind})
+		},
+	)
 }
 
 func createBQService(aeCtx context.Context) (*bigquery.Service, error) {
@@ -451,43 +492,13 @@ func getFlakinessGroups(ctx context.Context, bq *bigquery.Service) ([]Group, err
 }
 
 func testFlakinessGroupsHandler(ctx *router.Context) {
-	// Check if we have recent results in memcache.
-	var groups []Group
-	memcacheItem, err := memcache.GetKey(ctx.Context, flakinessGroupsKey)
-	if err == nil {
-		if err = json.Unmarshal(memcacheItem.Value(), &groups); err != nil {
-			logging.Fields{logging.ErrorKey: err, "item": memcacheItem}.Warningf(
-				ctx.Context, "Failed to unmarshal cached results as JSON")
-		} else {
-			writeResponse(ctx, "testFlakinessGroupsHandler", groups)
-			return
-		}
-	}
-
-	aeCtx := appengine.WithContext(ctx.Context, ctx.Request)
-	bq, err := createBQService(aeCtx)
-	if err != nil {
-		writeError(ctx, err, "testFlakinessGroupsHandler", "failed create BigQuery client")
-		return
-	}
-
-	groups, err = getFlakinessGroups(aeCtx, bq)
-	if err != nil {
-		writeError(ctx, err, "testFlakinessGroupsHandler", "failed to get flakiness groups")
-		return
-	}
-
-	// Store results in memcache for 1 hour.
-	if groupsStr, err := json.Marshal(groups); err == nil {
-		memcacheItem.SetValue(groupsStr).SetExpiration(time.Hour)
-		if err = memcache.Set(ctx.Context, memcacheItem); err != nil {
-			logging.WithError(err).Warningf(
-				ctx.Context, "Failed to store query results in memcache")
-		}
-	} else {
-		logging.WithError(err).Warningf(
-			ctx.Context, "Failed to marshal query results as JSON: %#v", groups)
-	}
-
-	writeResponse(ctx, "testFlakinessGroupsHandler", groups)
+	cachedDataHandler(
+		ctx,
+		"testFlakinessGroupsHandler",
+		flakinessGroupsKey,
+		new([]Group),
+		func(aeCtx context.Context, bq *bigquery.Service) (interface{}, error) {
+			return getFlakinessGroups(aeCtx, bq)
+		},
+	)
 }

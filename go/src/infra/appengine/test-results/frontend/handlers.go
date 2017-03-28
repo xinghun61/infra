@@ -74,6 +74,7 @@ func init() {
 	r.GET("/data/builders", baseMW, getBuildersHandler)
 	r.GET("/data/test_flakiness/list", baseMW, testFlakinessListHandler)
 	r.GET("/data/test_flakiness/groups", baseMW, testFlakinessGroupsHandler)
+	r.GET("/data/test_flakiness/data", baseMW, testFlakinessDataHandler)
 
 	http.DefaultServeMux.Handle("/", r)
 }

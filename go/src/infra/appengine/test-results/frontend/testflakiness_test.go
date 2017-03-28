@@ -130,7 +130,7 @@ func TestWriteErrorAndResponse(t *testing.T) {
 	})
 }
 
-func TestGetFlakinessGroups(t *testing.T) {
+func TestFlakinessGroups(t *testing.T) {
 	t.Parallel()
 
 	Convey("getFlakinessGroups", t, func(c C) {
@@ -193,8 +193,8 @@ func TestGetFlakinessGroups(t *testing.T) {
 	})
 }
 
-func TestGetFlakinessData(t *testing.T) {
-	Convey("getFlakinessData", t, func(c C) {
+func TestFlakinessList(t *testing.T) {
+	Convey("getFlakinessList", t, func(c C) {
 		handler := fakeBQHandler{
 			C: c,
 			ExpectedRequests: []*expectedRequest{
@@ -237,9 +237,9 @@ func TestGetFlakinessData(t *testing.T) {
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"foo"}}]`
-			data, err := getFlakinessData(ctx, bq, Group{Name: "foo", Kind: DirKind})
+			data, err := getFlakinessList(ctx, bq, Group{Name: "foo", Kind: DirKind})
 			So(err, ShouldBeNil)
-			So(data, ShouldResemble, []Flakiness{
+			So(data, ShouldResemble, []FlakinessListItem{
 				{
 					TestName:           "test1",
 					NormalizedStepName: "unittests",
@@ -265,7 +265,7 @@ func TestGetFlakinessData(t *testing.T) {
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"foo"}}]`
-			_, err := getFlakinessData(ctx, bq, Group{Name: "foo", Kind: TeamKind})
+			_, err := getFlakinessList(ctx, bq, Group{Name: "foo", Kind: TeamKind})
 			So(err, ShouldBeNil)
 		})
 
@@ -275,7 +275,7 @@ func TestGetFlakinessData(t *testing.T) {
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"unknown-dir"}}]`
-			_, err := getFlakinessData(
+			_, err := getFlakinessList(
 				ctx, bq, Group{Name: UnknownDirKind, Kind: UnknownDirKind})
 			So(err, ShouldBeNil)
 		})
@@ -286,7 +286,7 @@ func TestGetFlakinessData(t *testing.T) {
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"unknown-team"}}]`
-			_, err := getFlakinessData(
+			_, err := getFlakinessList(
 				ctx, bq, Group{Name: UnknownTeamKind, Kind: UnknownTeamKind})
 			So(err, ShouldBeNil)
 		})
@@ -297,7 +297,7 @@ func TestGetFlakinessData(t *testing.T) {
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"FooBar"}}]`
-			_, err := getFlakinessData(
+			_, err := getFlakinessList(
 				ctx, bq, Group{Name: "FooBar", Kind: TestSuiteKind})
 			So(err, ShouldBeNil)
 		})
@@ -308,7 +308,7 @@ func TestGetFlakinessData(t *testing.T) {
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"FooBar"}}]`
-			_, err := getFlakinessData(
+			_, err := getFlakinessList(
 				ctx, bq, Group{Name: "FooBar", Kind: SearchKind})
 			So(err, ShouldBeNil)
 		})
@@ -318,7 +318,7 @@ func TestGetFlakinessData(t *testing.T) {
 			handler.ExpectedRequests[0].Params =
 				`[{"name":"groupname","parameterType":{"type":"STRING"},` +
 					`"parameterValue":{"value":"all"}}]`
-			_, err := getFlakinessData(
+			_, err := getFlakinessList(
 				ctx, bq, Group{Name: AllKind, Kind: AllKind})
 			So(err, ShouldBeNil)
 		})
