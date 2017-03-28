@@ -218,8 +218,21 @@ class MasterFlakeAnalysisTest(TestCase):
     data_point = DataPoint()
     data_point.blame_list = ['r1', 'r2', 'r3']
     data_point.commit_position = 100
-    data_point.previous_build_commit_position = 97
 
     self.assertEqual('r1', data_point.GetRevisionAtCommitPosition(98))
     self.assertEqual('r2', data_point.GetRevisionAtCommitPosition(99))
     self.assertEqual('r3', data_point.GetRevisionAtCommitPosition(100))
+
+  def testGetDictOfCommitPositionAndRevision(self):
+    data_point = DataPoint()
+    data_point.blame_list = ['r1', 'r2', 'r3']
+    data_point.commit_position = 100
+
+    expected_CLs = {
+        100: 'r3',
+        99: 'r2',
+        98: 'r1'
+    }
+
+    self.assertEqual(expected_CLs,
+                     data_point.GetDictOfCommitPositionAndRevision())

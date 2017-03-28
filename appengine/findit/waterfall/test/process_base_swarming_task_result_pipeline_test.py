@@ -22,6 +22,7 @@ from waterfall.process_swarming_task_result_pipeline import (
     ProcessSwarmingTaskResultPipeline)
 from waterfall.test import wf_testcase
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
+from waterfall.trigger_base_swarming_task_pipeline import NO_TASK_EXCEPTION
 
 
 _ISOLATED_SERVER = 'https://isolateserver.appspot.com'
@@ -499,6 +500,41 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.SKIPPED, task.status)
     self.assertEqual(-1, analysis.data_points[-1].pass_rate)
     self.assertIsNone(step_name_no_platform)
+
+  @mock.patch.object(
+      process_flake_swarming_task_result_pipeline,
+      '_GetCommitsBetweenRevisions', return_value=['r4', 'r3', 'r2', 'r1'])
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testMonitorSwarmingTaskBuildException(self, mocked_fn, _):
+    task_id = NO_TASK_EXCEPTION
+
+    build_info = BuildInfo(
+        self.master_name, self.build_number, self.build_number)
+    build_info.commit_position = 12345
+    build_info.chromium_revision = 'a1b2c3d4'
+    mocked_fn.return_value = build_info
+
+    task = FlakeSwarmingTask.Create(
+      self.master_name, self.builder_name, self.build_number, self.step_name,
+      self.test_name)
+    task.put()
+
+    analysis = MasterFlakeAnalysis.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name, self.test_name)
+    analysis.Save()
+
+    pipeline = ProcessFlakeSwarmingTaskResultPipeline()
+    pipeline.start_test()
+    pipeline.run(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name, task_id, self.build_number,
+        self.test_name, 1)
+
+    self.assertIsNone(task.task_id)
+    self.assertEqual(analysis_status.SKIPPED, task.status)
+    self.assertEqual(-1, analysis.data_points[-1].pass_rate)
+    self.assertFalse(analysis.data_points[-1].has_valid_artifact)
 
   @mock.patch.object(swarming_util, 'GetSwarmingTaskFailureLog',
                      return_value=(_SAMPLE_FAILURE_LOG, None))
