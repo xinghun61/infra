@@ -331,7 +331,7 @@
 
     {% if last_attempted_swarming_task_id %}
       <br>
-      Last-attempted swarming task: <a href="https://chromium-swarm.appspot.com/task?id={{ last_attempted_swarming_task_id }}" target="_blank"></a>
+      Last-attempted swarming task: <a href="https://chromium-swarm.appspot.com/task?id={{ last_attempted_swarming_task_id }}" target="_blank">{{ last_attempted_swarming_task_id }}</a>
       <br>
     {% endif %}
     {% if suspected_flake.commit_position and suspected_flake.git_hash %}
