@@ -182,10 +182,11 @@
     "name": "git cl issue",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"issue\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue\": 123456789, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": \"https://codereview.chromium.org/123456789\"@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LINK@issue 123456789@https://codereview.chromium.org/123456789@@@"
     ]
   },
   {
@@ -208,93 +209,6 @@
     "cwd": "[START_DIR]/src",
     "infra_step": true,
     "name": "git branch (2)"
-  },
-  {
-    "cmd": [
-      "git",
-      "checkout",
-      "origin/master"
-    ],
-    "cwd": "[START_DIR]/src",
-    "infra_step": true,
-    "name": "git checkout (3)"
-  },
-  {
-    "cmd": [
-      "git",
-      "branch",
-      "-D",
-      "update_css"
-    ],
-    "cwd": "[START_DIR]/src",
-    "infra_step": true,
-    "name": "git branch (3)"
-  },
-  {
-    "cmd": [
-      "git",
-      "new-branch",
-      "update_css"
-    ],
-    "cwd": "[START_DIR]/src",
-    "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
-    },
-    "infra_step": true,
-    "name": "git new-branch update_css"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-import",
-      "--auto-update",
-      "--auth-refresh-token-json",
-      "/creds/refresh_tokens/blink-w3c-test-autoroller",
-      "css"
-    ],
-    "cwd": "[START_DIR]/src/third_party/WebKit",
-    "name": "update css"
-  },
-  {
-    "cmd": [
-      "git",
-      "cl",
-      "issue",
-      "--json",
-      "/path/to/tmp/json"
-    ],
-    "cwd": "[START_DIR]/src",
-    "infra_step": true,
-    "name": "git cl issue (2)",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"issue\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"issue_url\": null@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "git",
-      "checkout",
-      "origin/master"
-    ],
-    "cwd": "[START_DIR]/src",
-    "infra_step": true,
-    "name": "git checkout (4)"
-  },
-  {
-    "cmd": [
-      "git",
-      "branch",
-      "-D",
-      "update_css"
-    ],
-    "cwd": "[START_DIR]/src",
-    "infra_step": true,
-    "name": "git branch (4)"
   },
   {
     "name": "$result",

@@ -2,10 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Updates w3c tests automatically.
+"""Updates web-platform-tests.
 
-This recipe imports the latest changes to the w3c test repo and attempts
-to upload and commit them if they pass on all commit queue try jobs
+See: //docs/testing/web_platform_tests.md in chromium/src.
 """
 
 import contextlib
@@ -44,22 +43,19 @@ def RunSteps(api):
     finally:
       delete_branch(name)
 
-  def update_w3c_repo(name):
+  with new_branch('update_wpt'):
     script = blink_dir.join('Tools', 'Scripts', 'wpt-import')
     args = [
       '--auto-update',
       '--auth-refresh-token-json',
       '/creds/refresh_tokens/blink-w3c-test-autoroller',
-      name,
+      'wpt',
     ]
     with api.step.context({'cwd': blink_dir}):
-      api.python('update ' + name, script, args)
+      api.python('update wpt', script, args)
+    # TODO(qyearsley): Still add git cl issue link even when a
+    # StepFailure is raised in the above step.
     git_cl_issue_link(api)
-
-  with new_branch('update_wpt'):
-    update_w3c_repo('wpt')
-  with new_branch('update_css'):
-    update_w3c_repo('css')
 
 
 def git_cl_issue_link(api):
@@ -76,33 +72,24 @@ def git_cl_issue_link(api):
 
 def GenTests(api):
   yield (
-      api.test('w3c-test-autoroller') +
+      api.test('wpt-import-with-issue') +
       api.properties(
           mastername='chromium.infra.cron',
           buildername='w3c-test-autoroller',
           slavename='fake-slave') +
       api.step_data(
           'git cl issue',
-          api.json.output({
-              'issue': 123456789,
-              'issue_url': 'https://codereview.chromium.org/123456789'
-          })) +
-      api.step_data(
-          'git cl issue (2)',
           api.json.output({
               'issue': 123456789,
               'issue_url': 'https://codereview.chromium.org/123456789'
           })))
 
   yield (
-      api.test('w3c-test-autoroller-no-issue') +
+      api.test('wpt-import-without-issue') +
       api.properties(
           mastername='chromium.infra.cron',
           buildername='w3c-test-autoroller',
           slavename='fake-slave') +
       api.step_data(
           'git cl issue',
-          api.json.output({'issue': None, 'issue_url': None})) +
-      api.step_data(
-          'git cl issue (2)',
           api.json.output({'issue': None, 'issue_url': None})))
