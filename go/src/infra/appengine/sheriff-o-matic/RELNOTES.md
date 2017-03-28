@@ -1,3 +1,29 @@
+# Release Notes sheriff-o-matic 2017-03-28
+
+- 5 commits, 3 bugs affected since d6d192f (2017-03-21T23:16:56Z)
+- 3 Authors:
+  - chanli@chromium.org
+  - seanmccullough@chromium.org
+  - davidriley@chromium.org
+
+## Changes in this release
+
+- [[som] Default /chromium to use the new GAE cron alerts instead of A-D](https://chromium-review.googlesource.com/459081) (seanmccullough@chromium.org)
+- [[som] Add Gardener PFQ severities.](https://chromium-review.googlesource.com/459066) (davidriley@chromium.org)
+- [[SoM-Findit] Fix mismatch message name.](https://chromium-review.googlesource.com/458588) (chanli@chromium.org)
+- [[SoM-Findit] Sort alerts to display the ones with Findit results on top.](https://chromium-review.googlesource.com/457440) (chanli@chromium.org)
+- [[som] make ?useMilo=1 work with /trooper](https://chromium-review.googlesource.com/457858) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- chanli@chromium.org:
+  -  [https://crbug.com/703368](https://crbug.com/703368)
+  -  [https://crbug.com/704604](https://crbug.com/704604)
+
+- davidriley@chromium.org:
+  -  [https://crbug.com/704321](https://crbug.com/704321)
+
+
 # Release Notes sheriff-o-matic 2017-03-21
 
 - 5 commits, 2 bugs affected since c0759a0 (2017-03-14T22:01:58Z)
