@@ -101,12 +101,20 @@ class Monitor(object):
   must exist in order for any metrics to be sent, although both Targets and
   Metrics may be initialized before the underlying Monitor. If it does not exist
   at the time that a Metric is sent, an exception will be raised.
+
+  send() can be either synchronous or asynchronous.  If synchronous, it needs to
+  make the HTTP request, wait for a response and return None.
+  If asynchronous, send() should start the request and immediately return some
+  object which is later passed to wait() once all requests have been started.
   """
 
   _SCOPES = []
 
   def send(self, metric_pb):
     raise NotImplementedError()
+
+  def wait(self, state):  # pragma: no cover
+    pass
 
 
 class HttpsMonitor(Monitor):
@@ -138,8 +146,7 @@ class HttpsMonitor(Monitor):
     except (ValueError, errors.Error,
             socket.timeout, socket.error, socket.herror, socket.gaierror,
             httplib2.HttpLib2Error):
-      logging.warning('HttpsMonitor.send failed: %s\n',
-                      traceback.format_exc())
+      logging.exception('HttpsMonitor.send failed')
 
 
 class DebugMonitor(Monitor):

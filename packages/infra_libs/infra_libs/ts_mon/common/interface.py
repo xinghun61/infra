@@ -112,8 +112,12 @@ def flush():
   if state.invoke_global_callbacks_on_flush:
     invoke_global_callbacks()
 
+  rpcs = []
   for proto in _generate_proto():
-    state.global_monitor.send(proto)
+    rpcs.append(state.global_monitor.send(proto))
+  for rpc in rpcs:
+    if rpc is not None:
+      state.global_monitor.wait(rpc)
   state.last_flushed = datetime.datetime.utcnow()
 
 

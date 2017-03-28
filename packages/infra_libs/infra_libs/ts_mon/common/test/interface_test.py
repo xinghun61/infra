@@ -39,6 +39,7 @@ class GlobalsTest(unittest.TestCase):
   def test_flush(self):
     interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
     interface.state.target = mock.create_autospec(targets.Target)
+    interface.state.global_monitor.send.return_value = None
 
     # pylint: disable=unused-argument
     def populate_data_set(pb):
@@ -57,6 +58,32 @@ class GlobalsTest(unittest.TestCase):
         len(proto.metrics_collection[0].metrics_data_set[0].data))
     self.assertEqual('foo',
         proto.metrics_collection[0].metrics_data_set[0].metric_name)
+    self.assertFalse(interface.state.global_monitor.wait.called)
+
+  def test_flush_async_monitor(self):
+    interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
+    interface.state.target = mock.create_autospec(targets.Target)
+    rpc = object()
+    interface.state.global_monitor.send.return_value = rpc
+
+    # pylint: disable=unused-argument
+    def populate_data_set(pb):
+      pb.metric_name = 'foo'
+
+    fake_metric = mock.create_autospec(metrics.Metric, spec_set=True)
+    fake_metric.name = 'fake'
+    fake_metric.populate_data_set.side_effect = populate_data_set
+    interface.register(fake_metric)
+    interface.state.store.set('fake', (), None, 123)
+
+    interface.flush()
+    self.assertEqual(1, interface.state.global_monitor.send.call_count)
+    proto = interface.state.global_monitor.send.call_args[0][0]
+    self.assertEqual(1,
+        len(proto.metrics_collection[0].metrics_data_set[0].data))
+    self.assertEqual('foo',
+        proto.metrics_collection[0].metrics_data_set[0].metric_name)
+    interface.state.global_monitor.wait.assert_called_once_with(rpc)
 
   def test_flush_empty(self):
     interface.state.global_monitor = mock.create_autospec(monitors.Monitor)
