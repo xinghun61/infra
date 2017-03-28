@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"infra/tricium/api/admin/v1"
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -65,7 +66,7 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 				done <- fmt.Errorf("failed to retrieve worker: %v", err)
 				return
 			}
-			w.State = track.Launched
+			w.State = tricium.State_RUNNING
 			w.IsolateServerURL = req.IsolateServerUrl
 			w.IsolatedInput = req.IsolatedInputHash
 			w.TaskID = req.TaskId
@@ -84,8 +85,8 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 		if err := ds.Get(c, a); err != nil {
 			return fmt.Errorf("failed to retrieve analyzer: %v", err)
 		}
-		if a.State == track.Pending {
-			a.State = track.Launched
+		if a.State == tricium.State_PENDING {
+			a.State = tricium.State_RUNNING
 			if err := ds.Put(c, a); err != nil {
 				return fmt.Errorf("failed to mark analyzer as launched: %v", err)
 			}

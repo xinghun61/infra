@@ -75,7 +75,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.Provider)
 	// TODO(emso): Read Git repo info from the configuration projects/ endpoint.
 	run := &track.Run{
 		Received: clock.Now(c).UTC(),
-		State:    track.Pending,
+		State:    tricium.State_PENDING,
 		Project:  req.Project,
 	}
 	sr := &track.ServiceRequest{

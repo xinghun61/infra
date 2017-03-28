@@ -12,6 +12,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"infra/tricium/api/admin/v1"
+	"infra/tricium/api/v1"
 	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
 )
@@ -23,7 +24,7 @@ func TestWorkerLaunchedRequest(t *testing.T) {
 
 		// Add pending run entry.
 		run := &track.Run{
-			State: track.Pending,
+			State: tricium.State_PENDING,
 		}
 		err := ds.Put(ctx, run)
 		So(err, ShouldBeNil)
@@ -51,14 +52,14 @@ func TestWorkerLaunchedRequest(t *testing.T) {
 			}
 			err = ds.Get(ctx, w)
 			So(err, ShouldBeNil)
-			So(w.State, ShouldEqual, track.Launched)
+			So(w.State, ShouldEqual, tricium.State_RUNNING)
 			a := &track.AnalyzerInvocation{
 				ID:     analyzerKey.StringID(),
 				Parent: analyzerKey.Parent(),
 			}
 			err = ds.Get(ctx, a)
 			So(err, ShouldBeNil)
-			So(a.State, ShouldEqual, track.Launched)
+			So(a.State, ShouldEqual, tricium.State_RUNNING)
 		})
 	})
 }

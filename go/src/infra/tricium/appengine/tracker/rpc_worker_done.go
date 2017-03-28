@@ -15,7 +15,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 
-	"infra/tricium/api/admin/v1"
+	admin "infra/tricium/api/admin/v1"
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/track"
 )
@@ -62,9 +63,9 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		Parent: workerResultKey.Parent(),
 		Result: results,
 	}
-	workerState := track.DoneSuccess
+	workerState := tricium.State_SUCCESS
 	if req.ExitCode != 0 {
-		workerState = track.DoneException
+		workerState = tricium.State_FAILURE
 	}
 	// Prepare to update state of analyzer invocation.
 	analyzer := &track.AnalyzerInvocation{
@@ -75,24 +76,21 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	if err := ds.GetAll(c, ds.NewQuery("WorkerInvocation").Ancestor(analyzerKey), &workers); err != nil {
 		return fmt.Errorf("failed to retrieve worker invocations: %v", err)
 	}
-	analyzerState := track.DoneSuccess
+	analyzerState := tricium.State_SUCCESS
 	for _, w := range workers {
 		if w.Name == req.Worker {
 			w.State = workerState // Setting state to what we will store in the below transaction.
 		}
 		// When all workers are done, aggregate the result.
-		// All worker DoneSuccess -> analyzer DoneSuccess
-		// One or more workers DoneFailure -> analyzer DoneFailure
-		// If not DoneFailure, then one or more workers DoneException -> analyzer DoneException
-		if w.State.IsDone() {
-			if w.State == track.DoneFailure {
-				analyzerState = track.DoneFailure
-			} else if w.State == track.DoneException && analyzer.State == track.DoneSuccess {
-				analyzerState = track.DoneException
+		// All worker SUCCESSS -> analyzer SUCCESS
+		// One or more workers FAILURE -> analyzer FAILURE
+		if tricium.IsDone(w.State) {
+			if w.State == tricium.State_FAILURE {
+				analyzerState = tricium.State_FAILURE
 			}
 		} else {
 			// Found non-done worker, no change to be made - abort.
-			analyzerState = track.Launched // reset to launched.
+			analyzerState = tricium.State_RUNNING // reset to launched.
 			break
 		}
 	}
@@ -103,24 +101,21 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		return fmt.Errorf("failed to retrieve analyzer invocations: %v", err)
 	}
 	analyzerName := strings.Split(req.Worker, "_")[0]
-	runState := track.DoneSuccess
+	runState := tricium.State_SUCCESS
 	for _, a := range analyzers {
 		if a.Name == analyzerName {
 			a.State = analyzerState // Setting state to what will be stored in the below transaction.
 		}
 		// When all analyzers are done, aggregate the result.
-		// All analyzers DoneSuccess -> run DoneSuccess
-		// One or more analyzers DoneFailure -> run DoneFailure
-		// If not DoneFailure, then one or more analyzers DoneException -> run DoneException
-		if a.State.IsDone() {
-			if a.State == track.DoneFailure {
-				runState = track.DoneFailure
-			} else if a.State == track.DoneException && runState == track.DoneSuccess {
-				runState = track.DoneException
+		// All analyzers SUCCESSS -> run SUCCESS
+		// One or more analyzers FAILURE -> run FAILURE
+		if tricium.IsDone(a.State) {
+			if a.State == tricium.State_FAILURE {
+				runState = tricium.State_FAILURE
 			}
 		} else {
 			// Found non-done analyzer, nothing to update - abort.
-			runState = track.Launched // reset to launched.
+			runState = tricium.State_RUNNING // reset to launched.
 			break
 		}
 	}

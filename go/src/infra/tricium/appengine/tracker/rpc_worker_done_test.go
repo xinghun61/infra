@@ -12,6 +12,7 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"infra/tricium/api/admin/v1"
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
@@ -24,7 +25,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 
 		// Add pending run entry.
 		run := &track.Run{
-			State: track.Pending,
+			State: tricium.State_PENDING,
 		}
 		err := ds.Put(ctx, run)
 		So(err, ShouldBeNil)
@@ -60,14 +61,14 @@ func TestWorkerDoneRequest(t *testing.T) {
 			}
 			err = ds.Get(ctx, w)
 			So(err, ShouldBeNil)
-			So(w.State, ShouldEqual, track.DoneSuccess)
+			So(w.State, ShouldEqual, tricium.State_SUCCESS)
 			a := &track.AnalyzerInvocation{
 				ID:     analyzerKey.StringID(),
 				Parent: analyzerKey.Parent(),
 			}
 			err = ds.Get(ctx, a)
 			So(err, ShouldBeNil)
-			So(a.State, ShouldEqual, track.DoneSuccess)
+			So(a.State, ShouldEqual, tricium.State_SUCCESS)
 		})
 		// TODO(emso): multi-platform analyzer is half done, analyzer stays launched
 	})

@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"infra/tricium/api/admin/v1"
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/config"
 	"infra/tricium/appengine/common/track"
 )
@@ -58,7 +59,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 		}()
 		go func() {
 			// Update Run state to launched.
-			run.State = track.Launched
+			run.State = tricium.State_RUNNING
 			if err := ds.Put(c, run); err != nil {
 				done <- fmt.Errorf("failed to mark workflow as launched: %v", err)
 			}
@@ -99,7 +100,7 @@ func extractAnalyzerWorkerStructure(c context.Context, wf *admin.Workflow) map[s
 				Analyzer: &track.AnalyzerInvocation{
 					ID:    analyzer,
 					Name:  analyzer,
-					State: track.Pending,
+					State: tricium.State_PENDING,
 				},
 			}
 			m[analyzer] = a
@@ -107,7 +108,7 @@ func extractAnalyzerWorkerStructure(c context.Context, wf *admin.Workflow) map[s
 		aw := &track.WorkerInvocation{
 			ID:       w.Name,
 			Name:     w.Name,
-			State:    track.Pending,
+			State:    tricium.State_PENDING,
 			Platform: w.ProvidesForPlatform.String(),
 		}
 		for _, n := range w.Next {

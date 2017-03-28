@@ -6,6 +6,9 @@ syntax = "proto3";
 
 package tricium;
 
+import "infra/tricium/api/v1/data.proto";
+import "infra/tricium/api/v1/platform.proto";
+
 // Tricium implements the main API of the Tricium service.
 service Tricium {
   // Analyze requests analysis of a list of paths.
@@ -15,7 +18,15 @@ service Tricium {
   // returned.
   rpc Analyze(AnalyzeRequest) returns (AnalyzeResponse);
 
-  // TODO(emso): Add RPC for collection of results.
+  // Progress requests progress information for a run.
+  //
+  // A run corresponds to an analyze request and is identified with a run ID.
+  rpc Progress(ProgressRequest) returns (ProgressResponse);
+
+  // Results requests analysis results from a run.
+  //
+  // A run corresponds to an analyze request and is identified with a run ID.
+  rpc Results(ResultsRequest) returns (ResultsResponse);
 }
 
 // AnalyzeRequest contains the details needed for an analysis request.
@@ -33,7 +44,119 @@ message AnalyzeRequest {
 }
 
 message AnalyzeResponse {
-  // ID of the run started for this request. This ID can be used to track
-  // progress and find results.
+  // ID of the run started for this request.
+  //
+  // This ID can be used to track progress and request results.
   string run_id = 1;
+}
+
+message ProgressRequest {
+  // Run ID returned by an analyze request.
+  //
+  // This field must be provided. If nothing else is provided, then
+  // all known progress for the run is returned.
+  string run_id = 1;
+
+  // An optional analyzer name.
+  //
+  // If provided, only progress for the provided analyzer will be returned.
+  // The analyzer name should match the name of the analyzer in the Tricium
+  // configuration.
+  string analyzer = 2;
+
+  // Optional platform that may be provided together with an analyzer name.
+  //
+  // If provided, only progress for the provided analyzer and platform will be provided.
+  Platform platform = 3;
+}
+
+message ProgressResponse {
+  // Overall state for the run provided in the progress request.
+  State state = 1;
+
+  // Analyzer progress matching the requested progress report.
+  //
+  // For a provided run ID this corresponds to all analyzers and platforms, and
+  // for any selection of these, a subset is returned.
+  repeated AnalyzerProgress analyzer_progress = 2;
+}
+
+message AnalyzerProgress {
+  // The analyzer name.
+  string analyzer = 1;
+
+  // The platform for which the analyzer progress is reported.
+  Platform platform = 2;
+
+  // The state of the analyzer.
+  //
+  // For an analyzer on a specific platform this state corresponds to the state
+  // of the worker, else it is the aggregated state of all workers for the analyzer.
+  State state = 3;
+
+  // Number of result comments.
+  //
+  // For analyzers that are done which have produced result in the form of
+  // comments.
+  int32 nbr_result_comments = 4;
+}
+
+message ResultsRequest {
+  // Run ID returned by an analyze request.
+  string run_id = 1;
+
+  // An optional analyzer name.
+  //
+  // If provided, only results for the provided analyzer are returned.
+  // If an analyzer is being run on more than one platform then the merged
+  // results of the analyzer can be returned by exclusion of a specific platform.
+  string analyzer = 2;
+
+  // Optional platform that can be provided together with an analyzer name.
+  //
+  // If provided, only results for the provided platform and analyzer are returned.
+  Platform platform = 3;
+}
+
+message ResultsResponse {
+  // TODO(emso): Support paging of results to deal with large number of results.
+  Data.Results results = 1;
+
+  // Whether the returned results are merged.
+  //
+  // Results may be merged if a result request for an analyzer running on multiple
+  // platforms was made and the request did not include a specific platform.
+  // Results for a run with no specific analyzer selected will be marked as merged
+  // if any included analyzer results were merged.
+  bool is_merged = 2;
+}
+
+enum State {
+  // Pending is for when an analysis request has been received but the corresponding
+  // workflow, analyzer, or workers are not running yet.
+  PENDING = 0;
+
+  // Running is for when the workflow, analyzer, or workers of a request have been launched
+  // but have not finished.
+  RUNNING = 1;
+
+  // Success is for a workflow, analyzer, or worker that successfully completed.
+  //
+  // Success of workflows and analyzers, is aggregated from underlying analyzers and workers,
+  // where full success means success is aggregated.
+  SUCCESS = 2;
+
+  // Failure is for a workflow, analyzer, or worker that completed with failure.
+  //
+  // Failure of workflows and analyzers, is aggregated from underlying analyzers and workers,
+  // where any occurence of failure means failure is aggregated.
+  FAILURE = 3;
+
+  // Canceled is for user canceled workflows, analyzers, and workers.
+  // NB! Not supported yet.
+  CANCELED = 4;
+
+  // Timed out is for workers where the triggered swarming task timed out.
+  // NB! Not supported yet.
+  TIMED_OUT = 5;
 }

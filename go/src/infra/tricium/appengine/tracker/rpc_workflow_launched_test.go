@@ -60,7 +60,7 @@ func TestWorkflowLaunchedRequest(t *testing.T) {
 		Convey("Workflow request", func() {
 			// Add pending run entry.
 			run := &track.Run{
-				State: track.Pending,
+				State: tricium.State_PENDING,
 			}
 			err := ds.Put(ctx, run)
 			So(err, ShouldBeNil)
@@ -77,7 +77,7 @@ func TestWorkflowLaunchedRequest(t *testing.T) {
 				// Run entry is marked as launched.
 				err = ds.Get(ctx, run)
 				So(err, ShouldBeNil)
-				So(run.State, ShouldEqual, track.Launched)
+				So(run.State, ShouldEqual, tricium.State_RUNNING)
 				// Worker and analyzer is marked pending.
 				_, analyzerKey, workerKey := createKeys(ctx, runID, fileIsolator)
 				w := &track.WorkerInvocation{
@@ -86,14 +86,14 @@ func TestWorkflowLaunchedRequest(t *testing.T) {
 				}
 				err = ds.Get(ctx, w)
 				So(err, ShouldBeNil)
-				So(w.State, ShouldEqual, track.Pending)
+				So(w.State, ShouldEqual, tricium.State_PENDING)
 				a := &track.AnalyzerInvocation{
 					ID:     analyzerKey.StringID(),
 					Parent: analyzerKey.Parent(),
 				}
 				err = ds.Get(ctx, a)
 				So(err, ShouldBeNil)
-				So(a.State, ShouldEqual, track.Pending)
+				So(a.State, ShouldEqual, tricium.State_PENDING)
 			})
 		})
 	})

@@ -9,6 +9,8 @@ import (
 	"time"
 
 	ds "github.com/luci/gae/service/datastore"
+
+	"infra/tricium/api/v1"
 )
 
 // Run tracks the processing of one analysis request.
@@ -18,7 +20,7 @@ type Run struct {
 	// Time when the corresponding request was received, time recorded in the reporter.
 	Received time.Time
 	// State of this run; received, launched, or done-*, with done indicating success.
-	State RunState
+	State tricium.State
 	// The project of the request.
 	Project string
 }
@@ -40,32 +42,6 @@ type ServiceRequest struct {
 	GitRef string `gae:",noindex"`
 }
 
-// RunState specifies the state of a run, analyzer, or worker.
-type RunState int8
-
-const (
-	// Pending is for when an analysis request has been received.
-	Pending RunState = iota + 1
-	// Launched is for when the workflow of a request has been launched.
-	Launched
-	// DoneSuccess is for when a workflow, analyzer, or worker has successfully completed.
-	DoneSuccess
-	// DoneFailure is for when a workflow, analyzer, or worker has completed with failure.
-	// For an analyzer or workflow, this state is aggregated from underlying worker or analyzers.
-	// A worker is considered to have completed with failure if it has produced results, when
-	// those results are comments.
-	DoneFailure
-	// DoneException is for when a workflow, analyzer, or worker has completed with an exception.
-	// Any non-zero exit code of a worker is considered an exception.
-	// For an analyzer or workflow, this state is aggregated from underying workers or analyzers.
-	DoneException
-)
-
-// IsDone returns true is state is done regardless the kind of done state.
-func (r RunState) IsDone() bool {
-	return r == DoneSuccess || r == DoneFailure || r == DoneException
-}
-
 // AnalyzerInvocation tracks the execution of an analyzer.
 //
 // This may happen in one or more worker invocations, each running on different platforms.
@@ -79,7 +55,7 @@ type AnalyzerInvocation struct {
 	Name string
 	// State of this analyzer run; launched, or done-*, with done indicating success.
 	// This state is an aggregation of the run state of analyzer workers.
-	State RunState
+	State tricium.State
 }
 
 // WorkerInvocation tracks the execution of a worker.
@@ -92,7 +68,7 @@ type WorkerInvocation struct {
 	// Name of the worker. Same as that used in the workflow configuration.
 	Name string
 	// State of this worker run; launched, or done-*, with done indicating success.
-	State RunState
+	State tricium.State
 	// Name of the platform configuration used for the swarming task of this worker.
 	Platform string
 	// Isolate server URL.

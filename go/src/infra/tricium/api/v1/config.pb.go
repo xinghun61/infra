@@ -31,6 +31,11 @@ It has these top-level messages:
 	Platform
 	AnalyzeRequest
 	AnalyzeResponse
+	ProgressRequest
+	ProgressResponse
+	AnalyzerProgress
+	ResultsRequest
+	ResultsResponse
 */
 package tricium
 
