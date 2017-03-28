@@ -45,7 +45,7 @@ class ProcessFlakeSwarmingTaskResultPipeline(
   def _UpdateMasterFlakeAnalysis(
       self, master_name, builder_name, build_number, step_name,
       master_build_number, test_name, version_number, pass_rate,
-      flake_swarming_task):
+      flake_swarming_task, has_valid_artifact=True):
     """Update MasterFlakeAnalysis to include result of the swarming task."""
     master_flake_analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, master_build_number, step_name, test_name,
@@ -58,6 +58,7 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     data_point.build_number = build_number
     data_point.pass_rate = pass_rate
     data_point.task_id = flake_swarming_task.task_id
+    data_point.has_valid_artifact = has_valid_artifact
 
     # Include git information about each build that was run.
     build_info = build_util.GetBuildInfo(

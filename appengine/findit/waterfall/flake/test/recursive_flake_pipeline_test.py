@@ -608,10 +608,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       recursive_flake_pipeline.confidence, 'SteppinessForBuild',
       return_value=0.7)
-  @mock.patch.object(
-      recursive_flake_pipeline.MasterFlakeAnalysis,
-      'GetDataPointOfSuspectedBuild',
-      return_value=DataPoint())
   def testNextBuildPipelineForSuspectedBuildWithEmptyBlamelist(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -633,6 +629,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     data_point = DataPoint()
     data_point.pass_rate = .08
     data_point.build_number = 100
+    data_point.previous_build_commit_position = 9
     analysis.data_points.append(data_point)
     analysis.put()
 
@@ -694,6 +691,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     data_point.blame_list = ['r1']
     data_point.commit_position = 10
     data_point.build_number = 100
+    data_point.previous_build_commit_position = 9
     analysis.data_points.append(data_point)
     analysis.put()
 
@@ -751,6 +749,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     data_point.build_number = 100
     data_point.blame_list = ['r1', 'r2', 'r3']
     data_point.commit_position = 10
+    data_point.previous_build_commit_position = 7
     analysis.data_points.append(data_point)
     analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
     analysis.put()
@@ -761,7 +760,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_kwargs={})
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
                       '',
-                      expected_args=[analysis.key.urlsafe(), 9, 'r2'],
+                      expected_args=[analysis.key.urlsafe(), 9, 'r2', 8],
                       expected_kwargs={})
 
     pipeline = NextBuildNumberPipeline(
@@ -1008,3 +1007,135 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     rfp._LogUnexpectedAbort()
 
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
+
+  @mock.patch.object(
+      lookback_algorithm, 'GetNextRunPointNumber',
+      return_value=(None, 100, None))
+  @mock.patch.object(
+      recursive_flake_pipeline.confidence, 'SteppinessForBuild',
+      return_value=0.7)
+  def testNextBuildPipelineForExceptionsBeforeSuspectedBuild(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.COMPLETED
+    )
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+
+    data_point1 = DataPoint()
+    data_point1.pass_rate = .08
+    data_point1.build_number = 100
+    data_point1.blame_list = ['r1', 'r2', 'r3']
+    data_point1.commit_position = 10
+    data_point1.previous_build_commit_position = 7
+    data_point2 = DataPoint()
+    data_point2.pass_rate = -1
+    data_point2.build_number = 99
+    data_point2.blame_list = ['r0']
+    data_point2.commit_position = 7
+    data_point2.has_valid_artifact = False
+    data_point2.previous_build_commit_position = 6
+    analysis.data_points.extend(([data_point1, data_point2]))
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.put()
+
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakePipeline,
+                      '',
+                      expected_args=[],
+                      expected_kwargs={})
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
+                      '',
+                      expected_args=[analysis.key.urlsafe(), 9, 'r2', 7],
+                      expected_kwargs={})
+
+    pipeline = NextBuildNumberPipeline(
+        master_name, builder_name, master_build_number, build_number,
+        step_name, test_name, analysis.version_number)
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    self.assertTrue(analysis.completed)
+    self.assertEqual(100, analysis.suspected_flake_build_number)
+    self.assertEqual(0.7, analysis.confidence_in_suspected_build)
+    self.assertIsNone(analysis.culprit)
+
+  @mock.patch.object(
+      lookback_algorithm, 'GetNextRunPointNumber',
+      return_value=(None, 98, None))
+  @mock.patch.object(
+      recursive_flake_pipeline.confidence, 'SteppinessForBuild',
+      return_value=0.7)
+  def testNextBuildPipelineForExceptionBuilds(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    self._CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.PENDING
+    )
+    self._CreateAndSaveFlakeSwarmingTask(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.COMPLETED
+    )
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+
+    data_point1 = DataPoint()
+    data_point1.pass_rate = .08
+    data_point1.build_number = 100
+    data_point1.blame_list = ['r8', 'r9', 'r10']
+    data_point1.commit_position = 10
+    data_point1.previous_build_commit_position = 7
+    data_point2 = DataPoint()
+    data_point2.pass_rate = -1
+    data_point2.build_number = 99
+    data_point2.blame_list = ['r7']
+    data_point2.commit_position = 7
+    data_point2.has_valid_artifact = False
+    data_point2.previous_build_commit_position = 6
+    data_point3 = DataPoint()
+    data_point3.pass_rate = .3
+    data_point3.build_number = 98
+    data_point3.blame_list = ['r5', 'r6']
+    data_point3.commit_position = 6
+    data_point3.previous_build_commit_position = 4
+    analysis.data_points.extend(([data_point1, data_point2, data_point3]))
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.put()
+
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakePipeline,
+                      '',
+                      expected_args=[],
+                      expected_kwargs={})
+    self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
+                      '',
+                      expected_args=[analysis.key.urlsafe(), 5, 'r5', 5],
+                      expected_kwargs={})
+
+    pipeline = NextBuildNumberPipeline(
+        master_name, builder_name, master_build_number, build_number,
+        step_name, test_name, analysis.version_number)
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+    self.assertTrue(analysis.completed)
+    self.assertEqual(98, analysis.suspected_flake_build_number)
+    self.assertEqual(0.7, analysis.confidence_in_suspected_build)
+    self.assertIsNone(analysis.culprit)

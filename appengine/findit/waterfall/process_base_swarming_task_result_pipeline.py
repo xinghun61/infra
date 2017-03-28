@@ -16,6 +16,7 @@ from model import analysis_status
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
+from waterfall.trigger_base_swarming_task_pipeline import NO_TASK_EXCEPTION
 
 
 class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
@@ -298,18 +299,21 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     task_completed = False
     step_name_no_platform = None
 
-    if task_id.lower() == NO_TASK:  # pragma: no branch
+    if task_id.lower() in (NO_TASK, NO_TASK_EXCEPTION):  # pragma: no branch
       # This situation happens in flake analysis: if the step with flaky test
-      # didn't exist in checked build, we should skip the build.
-      task = self._GetSwarmingTask(*call_args)
+      # didn't exist in checked build or the build had exception so the step
+      # with flaky test didn't run at all, we should skip the build.
+      has_valid_artifact = task_id != NO_TASK_EXCEPTION
       task.task_id = None
       task.status = analysis_status.SKIPPED
       task.put()
       self._UpdateMasterFlakeAnalysis(
-          *call_args, pass_rate=-1, flake_swarming_task=task)
+          *call_args, pass_rate=-1, flake_swarming_task=task,
+          has_valid_artifact=has_valid_artifact)
       self.complete(self._GetPipelineResult(
             step_name, step_name_no_platform, task))
       return
+
 
     self.last_params = {
         'task_id': task_id,
