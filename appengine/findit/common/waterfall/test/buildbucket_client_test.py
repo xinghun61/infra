@@ -172,17 +172,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
         'build': {
             'id': '1',
             'url': 'url',
-            'status': 'STARTED',
-            'result_details_json': json.dumps({
-                'properties': {
-                    'report': {
-                        'result': {
-                            'rev1': 'passed',
-                            'rev2': 'failed'
-                        }
-                    }
-                }
-            })
+            'status': 'STARTED'
         }
     }
     self._MockUrlFetch(
@@ -195,15 +185,6 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('1', build.id)
     self.assertEqual('url', build.url)
     self.assertEqual('STARTED', build.status)
-
-    expected_report = {
-        'result': {
-            'rev1': 'passed',
-            'rev2': 'failed'
-        }
-    }
-
-    self.assertEqual(expected_report, build.report)
 
   def testGetTryJobsFailure(self):
     response = {

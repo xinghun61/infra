@@ -16,15 +16,17 @@ from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from common.waterfall import try_job_error
 from common.waterfall.buildbucket_client import BuildbucketBuild
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model import analysis_status
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job_data import WfTryJobData
+from waterfall import buildbot
 from waterfall import monitoring
 from waterfall import waterfall_config
 
 
-def _GetError(buildbucket_response, buildbucket_error, timed_out):
+def _GetError(buildbucket_response, buildbucket_error, timed_out, no_report):
   """Determines whether or not a try job error occurred.
 
   Args:
@@ -32,6 +34,7 @@ def _GetError(buildbucket_response, buildbucket_error, timed_out):
     buildbucket_error: A BuildBucketError object returned from the call to
       buildbucket_client.GetTryJobs()
     timed_out: A bool whether or not Findit abandoned monitoring the try job.
+    no_report: A bool whether we get result report.
 
   Returns:
     A tuple containing an error dict and number representing an error code, or
@@ -98,9 +101,7 @@ def _GetError(buildbucket_response, buildbucket_error, timed_out):
           },
           try_job_error.CI_REPORTED_ERROR)
 
-    if not result_details_json.get('properties', {}).get('report'):
-      # A report should always be included as part of 'properties'. If it is
-      # missing something else is wrong.
+    if no_report:
       return (
           {
               'message': 'No result report was found.',
@@ -124,7 +125,7 @@ def _OnTryJobError(try_job_type, error_dict,
 
 
 def _UpdateTryJobMetadata(try_job_data, try_job_type, buildbucket_build,
-                          buildbucket_error, timed_out):
+                          buildbucket_error, timed_out, report=None):
   buildbucket_response = {}
 
   if buildbucket_build:
@@ -138,17 +139,23 @@ def _UpdateTryJobMetadata(try_job_data, try_job_type, buildbucket_build,
         buildbucket_build.end_time)
 
     if try_job_type != failure_type.FLAKY_TEST:  # pragma: no branch
-      try_job_data.number_of_commits_analyzed = len(
-          buildbucket_build.report.get('result', {}))
-      try_job_data.regression_range_size = buildbucket_build.report.get(
+      if report:
+        try_job_data.number_of_commits_analyzed = len(
+          report.get('result', {}))
+        try_job_data.regression_range_size = report.get(
           'metadata', {}).get('regression_range_size')
+      else:
+        try_job_data.number_of_commits_analyzed = 0
+        try_job_data.regression_range_size = None
 
     try_job_data.try_job_url = buildbucket_build.url
     buildbucket_response = buildbucket_build.response
     try_job_data.last_buildbucket_response = buildbucket_response
 
+  # report should only be {} when error happens on getting report after try job
+  # completed. If try job is still running, report will be set to None.
   error_dict, error_code = _GetError(
-      buildbucket_response, buildbucket_error, timed_out)
+      buildbucket_response, buildbucket_error, timed_out, report == {})
 
   if error_dict:
     try_job_data.error = error_dict
@@ -404,11 +411,18 @@ class MonitorTryJobPipeline(BasePipeline):
             'Error "%s" occurred. Reason: "%s"' % (error.message,
                                                    error.reason))
     elif build.status == BuildbucketBuild.COMPLETED:
+      try_job_master_name, try_job_builder_name, try_job_build_number = (
+          buildbot.ParseBuildUrl(try_job_data.try_job_url))
+      report = buildbot.GetStepLog(
+        try_job_master_name, try_job_builder_name, try_job_build_number,
+        'report', HttpClientAppengine(), 'report')
+
       _UpdateTryJobMetadata(
-          try_job_data, try_job_type, build, error, False)
+          try_job_data, try_job_type, build, error, False,
+          report if report else {})
       result_to_update = self._UpdateTryJobResult(
           urlsafe_try_job_key, try_job_type, try_job_id,
-          build.url, BuildbucketBuild.COMPLETED, build.report)
+          build.url, BuildbucketBuild.COMPLETED, report)
       self.complete(result_to_update[-1])
       return
     else:

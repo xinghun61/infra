@@ -479,11 +479,10 @@ def _ProcessAnnotationsToGetStream(step_name, step, log_type='stdout'):
       # Gets stdout_stream.
       return substep.step.stdout_stream.name
 
-    if log_type.lower() == 'step_metadata':  # pragma: no branch
-      # Gets stream for step_metadata.
-      for link in substep.step.other_links:
-        if link.label.lower() == 'step_metadata':
-          return link.logdog_stream.name
+    # Gets stream for step_metadata.
+    for link in substep.step.other_links:
+      if link.label.lower() == log_type:
+        return link.logdog_stream.name
 
   return None
 
@@ -520,7 +519,6 @@ def GetStepLog(master_name, builder_name, build_number,
 
   # 2. Find the log stream info for the log.
   logdog_stream = _ProcessAnnotationsToGetStream(full_step_name, step, log_type)
-
   # 3. Get the log.
   if not logdog_stream:
     if log_type.lower() == 'stdout':
