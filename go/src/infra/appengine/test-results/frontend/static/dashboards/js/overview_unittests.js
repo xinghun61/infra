@@ -98,7 +98,7 @@ test('htmlForFlakyTests', 6, function() {
             "flakyBelowThreshold": {},
             'flaky': {}
         },
-        'webkit_tests': {
+        'webkit_layout_tests': {
             'testCount': 4,
             "flakyBelowThreshold": {
                 'css3/foo.html': true,
@@ -119,8 +119,8 @@ test('htmlForFlakyTests', 6, function() {
     ok(!container.querySelectorAll('tr')[2]);
 
     var firstRow = container.querySelectorAll('tr')[1];
-    equal(firstRow.querySelector('td:nth-child(1)').textContent, 'webkit_tests');
-    equal(firstRow.querySelector('td:nth-child(1) a').hash, '#testType=webkit_tests&tests=css3/foo.html,css3/bar.html');
+    equal(firstRow.querySelector('td:nth-child(1)').textContent, 'webkit_layout_tests');
+    equal(firstRow.querySelector('td:nth-child(1) a').hash, '#testType=webkit_layout_tests&tests=css3/foo.html,css3/bar.html');
     equal(firstRow.querySelector('td:nth-child(2)').textContent, '2 / 4');
     equal(firstRow.querySelector('td:nth-child(3)').textContent, '50%');
     equal(firstRow.querySelector('td:nth-child(4)').innerHTML, '<div class="flaky-bar" style="width:250px"></div>');

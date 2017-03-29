@@ -52,7 +52,7 @@ test('results files loading', 13, function() {
         successCallback({responseText: '{"version":4,"' + builderName + '":{"failure_map":{"A":"AUDIO","C":"CRASH","F":"TEXT"},"secondsSinceEpoch":[' + Date.now() + '],"tests":{}}}'});
     }
 
-    resourceLoader._builders = builders.getBuilders('webkit_tests');
+    resourceLoader._builders = builders.getBuilders('webkit_layout_tests');
 
     try {
         resourceLoader._loadResultsFiles();
@@ -65,7 +65,7 @@ test('results file failing to load', 2, function() {
     resetGlobals();
 
     var resourceLoader = new loader.Loader();
-    resourceLoader._builders = builders.getBuilders('webkit_tests');
+    resourceLoader._builders = builders.getBuilders('webkit_layout_tests');
     var resourceLoadCount = 0;
     resourceLoader._handleResourceLoad = function() {
         resourceLoadCount++;
@@ -89,7 +89,7 @@ test('Default builder gets set.', 3, function() {
     // Simulate error loading the default builder data, then make sure
     // a new defaultBuilder is set, and isn't the now invalid one.
     var resourceLoader = new loader.Loader();
-    resourceLoader._builders = builders.getBuilders('webkit_tests');
+    resourceLoader._builders = builders.getBuilders('webkit_layout_tests');
 
     var firstBuilder = resourceLoader._builders[0];
     ok(firstBuilder, "Default builder should exist.");
