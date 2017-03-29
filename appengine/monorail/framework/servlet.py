@@ -292,7 +292,7 @@ class Servlet(webapp2.RequestHandler):
             'nonce': nonce,
             'scheme': csp_scheme,
             'csp_self': '' if csp_supports_nonce else "'self'",
-            'rep_samp': 'report-sample' if csp_supports_report_sample else '',
+            'rep_samp': "'report-sample'" if csp_supports_report_sample else '',
             }))
 
       page_data.update(self._GatherFlagData(self.mr))
