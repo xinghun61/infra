@@ -11,7 +11,7 @@ service ChopsServiceStatus {
   rpc ListServices (ListServicesRequest) returns (ListServicesResponse) {}
   rpc GetService (GetServiceRequest) returns (ChopsService) {}
   rpc GetServiceStatus (GetServiceStatusRequest) returns (GetServiceStatusResponse) {}
-  rpc ListIncidents (ListIncidentsRequest) returns (ListIncidentsResponse){}
+  rpc ListIncidents (ListIncidentsRequest) returns (ListIncidentsResponse) {}
   rpc GetIncident (GetIncidentRequest) returns (Incident) {}
   rpc CreateIncident (CreateIncidentRequest) returns (Incident) {}
   rpc UpdateIncident (UpdateIncidentRequest) returns (Incident) {}

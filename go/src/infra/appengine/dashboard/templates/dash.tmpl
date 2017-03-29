@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Chops Status Dashboard</title>
+<style>
+  .dash-summary {
+    text-align: center;
+  }
+  .date-header {
+    font-size: .8em;
+    padding-right: 10px;
+    padding-left: 10px;
+    text-align: center;
+  }
+  header {
+    background-color: rgb(205, 223, 250);
+    font-size: 2em;
+    height: 100px;
+    width: 100%;
+  }
+  .light {
+    height: 11px;
+    padding-right: 4px;
+    padding-left: 12px;
+    width: 11px;
+  }
+  .logo {
+    height: 95px;
+    width: 95px;
+  }
+  .right {
+    text-align: right;
+  }
+  .subtext {
+    font-size: .8em;
+  }
+  table {
+    border-collapse: collapse;
+  }
+  table, td, th {
+    border: 1px solid rgb(205, 223, 250);
+  }
+  th {
+    background-color: rgb(205, 223, 250);
+  }
+  tr {
+    height: 30px;
+  }
+</style>
+<div class="container">
+  <header>
+    <img class="logo" src="../static/chops-logo.png">
+    Chrome Operations
+  </header>
+  <main>
+    <h2>Chrome Operations Status Dashboard</h2>
+    <p class="subtext dash-summary">
+      This page shows performace information for Chrome Operations Services.
+    </p>
+    <p class="subtext dash-summary">
+      Check this page any time to view the current status of the services listed below.
+    </p>
+    {{$dates := .Dates}}
+    {{if .ChopsServices}}
+      <p class="subtext">Projects covered by a Service Level Agreement</p>
+      <table>
+        <tr>
+          <th>Current Status</th>
+          {{range $dates}}
+            <th class="date-header">{{.}}</th>
+          {{end}}
+        </tr>
+        {{range .ChopsServices}}
+          <tr>
+            <td>
+              <a href={{.Sla}}>{{.Name}}</a>
+            </td>
+            {{$name := .Name}}
+            {{range $dates}}
+              <td class="js-{{$name}}-{{.}}"></td>
+            {{end}}
+          </tr>
+        {{end}}
+      </table>
+    {{end}}
+
+    {{if .NonSLAServices}}
+      <p class="subtext">Projects not covered by a Service Level Agreement</p>
+      <table>
+        <tr>
+          <th>Current Status</th>
+          {{range .Dates}}
+            <th class="date-header">{{.}}</th>
+          {{end}}
+        </tr>
+        {{range .NonSLAServices}}
+          <tr>
+            <td>
+              {{.Name}}
+            </td>
+            {{$name := .Name}}
+            {{range $dates}}
+              <td class="js-{{$name}}-{{.}}"></td>
+            {{end}}
+          </tr>
+        {{end}}
+      </table>
+    {{end}}
+
+    <p class="subtext right">
+      <img class="light" src="../static/green.png">No issues
+      <img class="light" src="../static/yellow.png">Service disruption
+      <img class="light" src="../static/red.png">Service outage
+    </p>
+
+  </main>
+</div>
+<script src="../static/add-incidents.js"></script>
+<script>
+  window.__addIncidents({{.}});
+</script>

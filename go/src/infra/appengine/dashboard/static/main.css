@@ -1,50 +1,45 @@
-header {
-    font-size: 2em;
-    width: 100%;
-    height: 100px;
-    background-color: rgb(205, 223, 250);
-}
-
-.date-header {
-    text-align: center;
-    font-size: .8em;
-    padding-right: 10px;
-    padding-left: 10px;
-}
-
-table {
-    border-collapse: collapse;
-}
-
-table, th, td {
-    border: 1px;
-    border-style: solid;
-    border-color: rgb(205, 223, 250);
-}
-
-tr {
-    height: 30px;
-}
-
-th {
-    background-color: rgb(205, 223, 250);
-}
-
 .dash-summary {
-    text-align: center;
+  text-align: center;
 }
-
-.subtext {
-    font-size: .8em;
+.date-header {
+  font-size: .8em;
+  padding-right: 10px;
+  padding-left: 10px;
+  text-align: center;
 }
-
-.right {
-    text-align: right;
+header {
+  background-color: rgb(205, 223, 250);
+  font-size: 2em;
+  height: 100px;
+  width: 100%;
 }
-
 .light {
-    height: 11px;
-    width: 11px;
-    padding-right: 4px;
-    padding-left: 12px;
+  height: 11px;
+  padding-right: 4px;
+  padding-left: 12px;
+  width: 11px;
+}
+logo {
+  height: 95;
+  width: 95;
+}
+.right {
+  text-align: right;
+}
+.subtext {
+  font-size: .8em;
+}
+table {
+  border-collapse: collapse;
+}
+table,
+td,
+th {
+  border: 1px solid rgb(205, 223, 250);
+}
+th {
+  background-color: rgb(205, 223, 250);
+}
+tr {
+  height: 30px;
 }

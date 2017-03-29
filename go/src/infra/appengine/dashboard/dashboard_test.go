@@ -6,18 +6,25 @@ package dashboard
 
 import (
 	"testing"
-
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestDataRetrieved(t *testing.T) {
+	services := []ChopsService{
+		{
+			Name: "testService",
+			Sla:  "www.google.com",
+		},
+	}
 
-	s := ChopsService{}
-	Convey("Use Convey/So", t, func() {
+	testService := ChopsService{
+		Name: "testService",
+		Sla:  "www.google.com",
+	}
 
-		s.Name = "testService"
-		s.SLA = "www.google.com"
-		So(s.Name, ShouldEqual, "testService")
-		So(s.SLA, ShouldEqual, "www.google.com")
-	})
+	for _, service := range services {
+		if service.Name != testService.Name {
+			t.Errorf("Service name, %q, does not match expected service name: %q", service.Name, testService.Name)
+			continue
+		}
+	}
 }

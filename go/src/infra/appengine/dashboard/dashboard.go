@@ -8,19 +8,22 @@ import (
 	"html/template"
 	"net/http"
 	"time"
+
+	"github.com/luci/luci-go/common/logging"
+	"google.golang.org/appengine"
 )
 
 const (
-	// RED is the constant to represent paging alerts.
-	RED = 1
-	// YELLOW is the constant to represent email alerts.
-	YELLOW = 2
+	// alertRed represents paging alerts.
+	alertRed = 1
+	// alertYellow represents email alerts.
+	alertYellow = 2
 )
 
 // ChopsService represents a service that has an SLA.
 type ChopsService struct {
 	Name      string
-	SLA       string
+	Sla       string
 	Incidents []Incident
 }
 
@@ -32,7 +35,7 @@ type NonSLAService struct {
 
 // Incident represents a service disruption or outage incident.
 type Incident struct {
-	ID        int
+	Id        int
 	Open      bool
 	StartTime string
 	EndTime   string
@@ -53,10 +56,10 @@ func init() {
 }
 
 func dashboard(w http.ResponseWriter, r *http.Request) {
-
-	dates := make([]string, 7)
+	ctx := appengine.NewContext(r)
+	dates := []string{}
 	for i := 0; i < 7; i++ {
-		dates[i] = time.Now().AddDate(0, 0, -i).Format("01/02/2006")
+		dates = append(dates, time.Now().AddDate(0, 0, -i).Format("01-02-2006"))
 	}
 	services, nonSLAServices := makeFakeData()
 	pageData := PageData{
@@ -65,55 +68,54 @@ func dashboard(w http.ResponseWriter, r *http.Request) {
 		Dates:          dates,
 	}
 
-	if err := templates.ExecuteTemplate(
-		w, "dash_template.html", pageData); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := templates.ExecuteTemplate(w, "dash.tmpl", pageData); err != nil {
+		logging.Errorf(ctx, "while rendering dashboard: %s", err)
+		return
 	}
 }
 
-func makeFakeData() (services []ChopsService, nonSLAServices []NonSLAService) {
-
+func makeFakeData() ([]ChopsService, []NonSLAService) {
 	incidents := []Incident{
 		{
-			ID:        1,
+			Id:        1,
 			Open:      false,
-			StartTime: "03/17/2017",
-			EndTime:   "03/18/2017",
-			Severity:  RED,
+			StartTime: "03-26-2017",
+			EndTime:   "03-26-2017",
+			Severity:  alertRed,
 		},
 		{
-			ID:        2,
+			Id:        2,
 			Open:      false,
-			StartTime: "03/19/2017",
-			EndTime:   "03/19/2017",
-			Severity:  YELLOW,
+			StartTime: "03-25-2017",
+			EndTime:   "03-25-2017",
+			Severity:  alertYellow,
 		},
 		{
-			ID:        3,
+			Id:        3,
 			Open:      true,
-			StartTime: "03/20/2017",
+			StartTime: "03-28-2017",
 			EndTime:   "",
-			Severity:  RED,
+			Severity:  alertRed,
 		},
 	}
 
-	services = []ChopsService{
+	services := []ChopsService{
 		{
 			Name:      "Monorail",
-			SLA:       "http://www.google.com",
+			Sla:       "http://www.google.com",
 			Incidents: incidents,
 		},
 		{
 			Name:      "Sheriff-O-Matic",
-			SLA:       "http://www.google.com",
+			Sla:       "http://www.google.com",
 			Incidents: incidents,
 		},
 	}
 
-	nonSLAServices = []NonSLAService{
-		{Name: "Commit Queue", Incidents: incidents},
-		{Name: "Code Search", Incidents: incidents},
+	nonSLAServices := []NonSLAService{
+		{Name: "CommitQueue", Incidents: incidents},
+		{Name: "CodeSearch", Incidents: incidents},
 	}
 
-	return
+	return services, nonSLAServices
 }
