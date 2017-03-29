@@ -5,6 +5,7 @@
 from datetime import datetime
 from datetime import time
 from datetime import timedelta
+import logging
 
 from common import constants
 from common.base_handler import BaseHandler
@@ -45,11 +46,24 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
     return None
 
   codereview = codereview_util.GetCodeReviewForReview(original_code_review_url)
+
   if not codereview:
+    logging.error('Could not get codereview for %s', original_code_review_url)
     return None
+
   issue_id = codereview.GetChangeIdForReview(original_code_review_url)
   cl_info = codereview.GetClDetails(issue_id)
+
+  if not cl_info:
+    logging.error('Could not get CL details for %s', original_code_review_url)
+    return None
+
   reverts_to_check = cl_info.GetRevertCLsByRevision(revision)
+
+  if not reverts_to_check:
+    logging.error('Could not get revert info for %s', original_code_review_url)
+    return None
+
   reverts_to_check.sort(key=lambda x: x.timestamp)
 
   if revert_cl:  # Findit attempted to create a revert cl.

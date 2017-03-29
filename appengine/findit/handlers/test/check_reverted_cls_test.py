@@ -102,7 +102,46 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
     suspected_cl.revert_cl = RevertCL()
 
     self.assertFalse(
-      check_reverted_cls._CheckRevertStatusOfSuspectedCL(suspected_cl))
+        check_reverted_cls._CheckRevertStatusOfSuspectedCL(suspected_cl))
+
+  @mock.patch.object(
+      suspected_cl_util, 'GetCulpritInfo',
+      return_value=(1, 'codereview.chromium.org/123'))
+  @mock.patch.object(
+      codereview_util, 'GetCodeReviewForReview',
+      return_value=Rietveld('codereview.chromium.org'))
+  @mock.patch(
+      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
+      mock.Mock(return_value='123'))
+  @mock.patch.object(Rietveld, 'GetClDetails', return_value=None)
+  def testCheckRevertStatusOfSuspectedCLNoClDetails(self, *_):
+    suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
+    suspected_cl.should_be_reverted = True
+
+    self.assertIsNone(
+        check_reverted_cls._CheckRevertStatusOfSuspectedCL(suspected_cl))
+
+  @mock.patch.object(
+      suspected_cl_util, 'GetCulpritInfo',
+      return_value=(1, 'codereview.chromium.org/123'))
+  @mock.patch.object(
+      codereview_util, 'GetCodeReviewForReview',
+      return_value=Rietveld('codereview.chromium.org'))
+  @mock.patch(
+      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
+      mock.Mock(return_value='123'))
+  @mock.patch.object(
+      Rietveld, 'GetClDetails',
+      return_value=_MOCKED_SHERIFF_FAST_REVERTED_CL_INFO)
+  @mock.patch(
+      'infra_api_clients.codereview.cl_info.ClInfo.GetRevertCLsByRevision',
+      mock.Mock(return_value=None))
+  def testCheckRevertStatusOfSuspectedCLNoRevertCLsByRevision(self, *_):
+    suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
+    suspected_cl.should_be_reverted = True
+
+    self.assertIsNone(
+        check_reverted_cls._CheckRevertStatusOfSuspectedCL(suspected_cl))
 
   @mock.patch.object(
       suspected_cl_util, 'GetCulpritInfo',
@@ -130,7 +169,7 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
       return_value=(1, 'codereview.chromium.org/123'))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=Rietveld(
-        'codereview.chromium.org'))
+          'codereview.chromium.org'))
   @mock.patch(
       'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
       mock.Mock(return_value='123'))
