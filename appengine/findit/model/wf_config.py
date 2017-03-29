@@ -144,5 +144,6 @@ class FinditConfig(VersionedConfig):
   # {
   #     'rietveld_hosts': ['codereview.chromium.org'],
   #     'gerrit_hosts': ['chromium-review.googlesource.com'],
+  #     'commit_bot_emails': ['commit-bot@chromium.org'],
   # }
   code_review_settings = ndb.JsonProperty(indexed=False, default={})

@@ -4,37 +4,34 @@
 
 import mock
 
+from testing_utils import testing
+
 from infra_api_clients.codereview import codereview_util
 from infra_api_clients.codereview.rietveld import Rietveld
 from infra_api_clients.codereview.gerrit import Gerrit
-from waterfall.test.wf_testcase import WaterfallTestCase
 
 
-class CodeReviewUtilTest(WaterfallTestCase):
+class CodeReviewUtilTest(testing.AppengineTestCase):
+
+  code_review_settings = {
+    'rietveld_hosts': ['test-rietveld.com'],
+    'gerrit_hosts': ['test-gerrit.com'],
+    'commit_bot_emails': ['bot@sourcecode.com'],
+  }
 
   def testGetCodeReviewForReviewOnRietveld(self):
-    review_url = 'https://codereview.chromium.org/1234'
-    codereview = codereview_util.GetCodeReviewForReview(review_url)
+    review_url = 'https://test-rietveld.com/1234'
+    codereview = codereview_util.GetCodeReviewForReview(
+      review_url, self.code_review_settings)
     self.assertTrue(isinstance(codereview, Rietveld))
-    self.assertEqual('codereview.chromium.org', codereview._server_hostname)
+    self.assertEqual('test-rietveld.com', codereview._server_hostname)
 
   def testGetCodeReviewForReviewOnGerrit(self):
-    review_url = 'https://chromium-review.googlesource.com/c/1234'
-    codereview = codereview_util.GetCodeReviewForReview(review_url)
+    review_url = 'https://test-gerrit.com/c/1234'
+    codereview = codereview_util.GetCodeReviewForReview(
+      review_url, self.code_review_settings)
     self.assertIsInstance(codereview, Gerrit)
 
   def testGetCodeReviewForInvalidReviewUrl(self):
     self.assertIsNone(codereview_util.GetCodeReviewForReview(None))
     self.assertIsNone(codereview_util.GetCodeReviewForReview('invalid.com'))
-
-  def testGetChangeIdForReviewOnRietveld(self):
-    review_url = 'https://codereview.chromium.org/1234'
-    codereview = codereview_util.GetCodeReviewForReview(review_url)
-    change_id = codereview.GetChangeIdForReview(review_url)
-    self.assertEqual('1234', change_id)
-
-  def testGetChangeIdForReviewOnGerrit(self):
-    review_url = 'https://chromium-review.googlesource.com/c/1234'
-    with self.assertRaises(NotImplementedError):
-      codereview = codereview_util.GetCodeReviewForReview(review_url)
-      _ = codereview.GetChangeIdForReview(review_url)

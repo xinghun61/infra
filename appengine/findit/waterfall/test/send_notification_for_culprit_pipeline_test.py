@@ -30,13 +30,11 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   def _MockGitRepository(self, mocked_url):
     def Mocked_GetChangeLog(*_):
       class MockedChangeLog(object):
+        commit_position = 123
+        change_id = '123'
         @property
         def code_review_url(self):
           return mocked_url
-
-        @property
-        def commit_position(self):
-          return 123
 
       return MockedChangeLog()
     self.mock(GitilesRepository, 'GetChangeLog', Mocked_GetChangeLog)

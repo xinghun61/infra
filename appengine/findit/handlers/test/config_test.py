@@ -120,6 +120,7 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
 _MOCK_CODE_REVIEW_SETTINGS = {
     'rietveld_hosts': ['rietveld.org'],
     'gerrit_hosts': ['gerrit.org'],
+    'commit_bot_emails': ['commit-bot@gerrit.org'],
 }
 
 _MOCK_VERSION_NUMBER = 12
@@ -1136,8 +1137,14 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertTrue(config._ValidateCodeReviewSettings({
         'rietveld_hosts': ['abc.com'],
         'gerrit_hosts': ['def.com'],
+        'commit_bot_emails': ['commit-bot@abc.com'],
     }))
     self.assertFalse(config._ValidateCodeReviewSettings({
         'rietveld_hosts': 'abc.com',
         'gerrit_hosts': 'def.com',
+    }))
+    self.assertFalse(config._ValidateCodeReviewSettings({
+        'rietveld_hosts': 'abc.com',
+        'gerrit_hosts': 'def.com',
+        'commit_bot_emails': 'commit-bot@abc.com',
     }))

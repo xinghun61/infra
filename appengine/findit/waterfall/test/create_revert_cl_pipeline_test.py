@@ -32,9 +32,15 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     super(CreateRevertCLPipelineTest, self).setUp()
     self.culprit_commit_position = 123
     self.culprit_code_review_url = 'https://codereview.chromium.org/12345'
+    self.code_review_server_hostname = 'codereview.chromium.org'
+    self.change_id = '12345'
 
     def MockGetCulpritInfo(*_):
-      return self.culprit_commit_position, self.culprit_code_review_url
+      return (
+          self.culprit_commit_position,
+          self.culprit_code_review_url,
+          self.change_id
+      )
     self.mock(suspected_cl_util, 'GetCulpritInfo',
               MockGetCulpritInfo)
 
@@ -49,7 +55,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
 
-    cl_info = ClInfo(self.culprit_code_review_url)
+    cl_info = ClInfo(self.code_review_server_hostname, self.change_id)
     cl_info.commits.append(
       Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
     mock_fn.return_value = cl_info
@@ -73,10 +79,10 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
 
-    cl_info = ClInfo(self.culprit_code_review_url)
+    cl_info = ClInfo(self.code_review_server_hostname, self.change_id)
     cl_info.commits.append(
       Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
-    revert_cl = ClInfo('revert_review_url')
+    revert_cl = ClInfo('revert_review_host', '123V3137')
     cl_info.reverts.append(
       Revert('20001', revert_cl, 'a@b', datetime(2017, 2, 1, 1, 0, 0))
     )
@@ -104,10 +110,10 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
 
-    cl_info = ClInfo(self.culprit_code_review_url)
+    cl_info = ClInfo(self.code_review_server_hostname, self.change_id)
     cl_info.commits.append(
       Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
-    revert_cl = ClInfo('revert_review_url')
+    revert_cl = ClInfo('revert_review_host', '123V3127')
     revert_cl.url = 'https://codereview.chromium.org/54321'
     cl_info.reverts.append(
       Revert('20001', revert_cl, constants.DEFAULT_SERVICE_ACCOUNT,
@@ -139,10 +145,10 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
 
-    cl_info = ClInfo(self.culprit_code_review_url)
+    cl_info = ClInfo(self.code_review_server_hostname, self.change_id)
     cl_info.commits.append(
       Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
-    revert_cl = ClInfo('revert_review_url')
+    revert_cl = ClInfo('revert_review_host', '123V3127')
     revert_cl.url = 'https://codereview.chromium.org/54321'
     cl_info.reverts.append(
       Revert('20001', revert_cl, constants.DEFAULT_SERVICE_ACCOUNT,
@@ -175,10 +181,10 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
 
-    cl_info = ClInfo(self.culprit_code_review_url)
+    cl_info = ClInfo(self.code_review_server_hostname, self.change_id)
     cl_info.commits.append(
       Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
-    revert_cl = ClInfo('revert_review_url')
+    revert_cl = ClInfo('revert_review_host', '123V3127')
     revert_cl.url = 'https://codereview.chromium.org/54321'
     cl_info.reverts.append(
       Revert('20001', revert_cl, constants.DEFAULT_SERVICE_ACCOUNT,

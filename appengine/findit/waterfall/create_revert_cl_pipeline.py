@@ -16,6 +16,7 @@ from infra_api_clients.codereview import codereview_util
 from libs import time_util
 from model import analysis_status as status
 from model.base_suspected_cl import RevertCL
+from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import buildbot
 from waterfall import suspected_cl_util
@@ -81,12 +82,12 @@ def _RevertCulprit(
     return CREATED_BY_FINDIT
 
   # 0. Gets information about this culprit.
-  culprit_commit_position, culprit_code_review_url = (
+  culprit_commit_position, culprit_code_review_url, culprit_change_id = (
       suspected_cl_util.GetCulpritInfo(repo_name, revision))
 
-  codereview = codereview_util.GetCodeReviewForReview(culprit_code_review_url)
-  culprit_change_id = codereview.GetChangeIdForReview(
-      culprit_code_review_url) if codereview else None
+  code_review_settings = FinditConfig().Get().code_review_settings
+  codereview = codereview_util.GetCodeReviewForReview(
+    culprit_code_review_url, code_review_settings)
 
   if not codereview or not culprit_change_id:  # pragma: no cover
     logging.error('Failed to get change id for %s/%s' % (repo_name, revision))
@@ -125,8 +126,7 @@ def _RevertCulprit(
 
   revert_change_id = None
   if findit_revert:
-    revert_change_id = codereview.GetChangeIdForReview(
-        findit_revert.reverting_cl.url)
+    revert_change_id = findit_revert.reverting_cl.change_id
 
   # TODO (chanli): Better handle cases where 2 analyses are trying to revert
   # at the same time.

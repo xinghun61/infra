@@ -153,4 +153,5 @@ def GetCulpritInfo(repo_name, revision):
       HttpClientAppengine(),
       'https://chromium.googlesource.com/chromium/src.git')
   change_log = repo.GetChangeLog(revision)
-  return change_log.commit_position, change_log.code_review_url
+  return (change_log.commit_position, change_log.code_review_url,
+          change_log.change_id)

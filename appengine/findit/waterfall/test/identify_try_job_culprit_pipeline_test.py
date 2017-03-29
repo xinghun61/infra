@@ -30,6 +30,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
       def __init__(self, commit_position, code_review_url):
         self.commit_position = commit_position
         self.code_review_url = code_review_url
+        self.change_id = str(commit_position)
 
     mock_change_logs = {}
     mock_change_logs['rev1'] = MockedChangeLog(1, 'url_1')

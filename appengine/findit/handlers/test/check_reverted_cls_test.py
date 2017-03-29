@@ -19,14 +19,15 @@ from waterfall import suspected_cl_util
 from waterfall.test import wf_testcase
 
 
-_MOCKED_FINDIT_REVERTING_CL = cl_info.ClInfo('codereview.chromium.org/456')
+_MOCKED_FINDIT_REVERTING_CL = cl_info.ClInfo('codereview.chromium.org', '456')
 _MOCKED_FINDIT_REVERTING_CL.commits = [
     cl_info.Commit('1001', 'e5f6a7b8', datetime(2017, 3, 15, 1, 10))]
 _MOCKED_FINDIT_REVERTING_CL.commit_attempts = {
     '1001': cl_info.CommitAttempt(
         '1001', 'sheriff@chromium.org', datetime(2017, 3, 15, 0, 7)),
 }
-_MOCKED_FINDIT_REVERTED_CL_INFO = cl_info.ClInfo('codereview.chromium.org/123')
+_MOCKED_FINDIT_REVERTED_CL_INFO = cl_info.ClInfo('codereview.chromium.org',
+                                                 '123')
 _MOCKED_FINDIT_REVERTED_CL_INFO.commits = [
     cl_info.Commit('1000', 'a1b2c3d4', 1)]
 _MOCKED_FINDIT_REVERTED_CL_INFO.reverts = [
@@ -35,14 +36,15 @@ _MOCKED_FINDIT_REVERTED_CL_INFO.reverts = [
                    datetime(2017, 3, 15, 1, 9))]
 
 _MOCKED_SHERIFF_REVERTING_CL = cl_info.ClInfo(
-    'codereview.chromium.org/456')
+    'codereview.chromium.org', '456')
 _MOCKED_SHERIFF_REVERTING_CL.commits = [
     cl_info.Commit('1001', 'e5f6a7b8', datetime(2017, 3, 15, 0, 8))]
 _MOCKED_SHERIFF_REVERTING_CL.commit_attempts = {
     '1001': cl_info.CommitAttempt(
         '1001', 'sheriff@chromium.org', datetime(2017, 3, 15, 0, 7)),
 }
-_MOCKED_SHERIFF_REVERTED_CL_INFO = cl_info.ClInfo('codereview.chromium.org/123')
+_MOCKED_SHERIFF_REVERTED_CL_INFO = cl_info.ClInfo('codereview.chromium.org',
+                                                  '123')
 _MOCKED_SHERIFF_REVERTED_CL_INFO.commits = [
     cl_info.Commit('1000', 'a1b2c3d4', 1)]
 _MOCKED_SHERIFF_REVERTED_CL_INFO.reverts = [
@@ -54,11 +56,11 @@ _MOCKED_SHERIFF_REVERTED_CL_INFO.reverts = [
                    datetime(2017, 3, 15, 1, 9))]  # Findit slower.
 
 _MOCKED_SHERIFF_FAST_REVERTING_CL = cl_info.ClInfo(
-    'codereview.chromium.org/456')
+    'codereview.chromium.org', '456')
 _MOCKED_SHERIFF_FAST_REVERTING_CL.commits = [
     cl_info.Commit('1001', 'e5f6a7b8', datetime(2017, 3, 15, 0, 8))]
 _MOCKED_SHERIFF_FAST_REVERTED_CL_INFO = cl_info.ClInfo(
-    'codereview.chromium.org/123')
+    'codereview.chromium.org', '123')
 _MOCKED_SHERIFF_FAST_REVERTED_CL_INFO.commits = [
     cl_info.Commit('1000', 'a1b2c3d4', 1)]
 _MOCKED_SHERIFF_FAST_REVERTED_CL_INFO.reverts = [
@@ -67,10 +69,10 @@ _MOCKED_SHERIFF_FAST_REVERTED_CL_INFO.reverts = [
                    datetime(2017, 3, 15, 1, 7))]
 
 _MOCKED_FINDIT_FALSE_POSITIVE_REVERT_CL = cl_info.ClInfo(
-    'codereview.chromium.org/456')
+    'codereview.chromium.org', '456')
 _MOCKED_FINDIT_FALSE_POSITIVE_REVERT_CL.commits = []  # Never committed.
 _MOCKED_FINDIT_FALSE_POSITIVE_CL_INFO = cl_info.ClInfo(
-    'codereview.chromium.org/123')
+    'codereview.chromium.org', '123')
 _MOCKED_FINDIT_FALSE_POSITIVE_CL_INFO.commits = [
     cl_info.Commit('1000', 'a1b2c3d4', 1)]
 _MOCKED_FINDIT_FALSE_POSITIVE_CL_INFO.reverts = [
@@ -93,7 +95,7 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       suspected_cl_util, 'GetCulpritInfo',
-      return_value=(1, 'badhost.org/123'))
+      return_value=(1, 'badhost.org/123', '123'))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=None)
   def testCheckRevertStatusOfSuspectedCLRevertedNoCodeReview(
@@ -106,13 +108,10 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       suspected_cl_util, 'GetCulpritInfo',
-      return_value=(1, 'codereview.chromium.org/123'))
+      return_value=(1, 'codereview.chromium.org/123', '123'))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview',
       return_value=Rietveld('codereview.chromium.org'))
-  @mock.patch(
-      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
-      mock.Mock(return_value='123'))
   @mock.patch.object(Rietveld, 'GetClDetails', return_value=None)
   def testCheckRevertStatusOfSuspectedCLNoClDetails(self, *_):
     suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
@@ -123,13 +122,10 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       suspected_cl_util, 'GetCulpritInfo',
-      return_value=(1, 'codereview.chromium.org/123'))
+      return_value=(1, 'codereview.chromium.org/123', '123'))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview',
       return_value=Rietveld('codereview.chromium.org'))
-  @mock.patch(
-      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
-      mock.Mock(return_value='123'))
   @mock.patch.object(
       Rietveld, 'GetClDetails',
       return_value=_MOCKED_SHERIFF_FAST_REVERTED_CL_INFO)
@@ -145,13 +141,10 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       suspected_cl_util, 'GetCulpritInfo',
-      return_value=(1, 'codereview.chromium.org/123'))
+      return_value=(1, 'codereview.chromium.org/123', '123'))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=Rietveld(
           'codereview.chromium.org'))
-  @mock.patch(
-      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
-      mock.Mock(return_value='123'))
   @mock.patch.object(Rietveld, 'GetClDetails',
                      return_value=_MOCKED_FINDIT_REVERTED_CL_INFO)
   def testCheckRevertStatusOfSuspectedCLReverted(
@@ -166,13 +159,10 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       suspected_cl_util, 'GetCulpritInfo',
-      return_value=(1, 'codereview.chromium.org/123'))
+      return_value=(1, 'codereview.chromium.org/123', '123'))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=Rietveld(
           'codereview.chromium.org'))
-  @mock.patch(
-      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
-      mock.Mock(return_value='123'))
   @mock.patch.object(Rietveld, 'GetClDetails',
                      return_value=_MOCKED_SHERIFF_REVERTED_CL_INFO)
   def testCheckRevertStatusOfSuspectedCLSheriffIgnored(
@@ -187,13 +177,10 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       suspected_cl_util, 'GetCulpritInfo',
-      return_value=(1, 'codereview.chromium.org/123'))
+      return_value=(1, 'codereview.chromium.org/123', '123'))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview',
       return_value=Rietveld('codereview.chromium.org'))
-  @mock.patch(
-      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
-      mock.Mock(return_value='123'))
   @mock.patch.object(
       Rietveld, 'GetClDetails',
       return_value=_MOCKED_SHERIFF_FAST_REVERTED_CL_INFO)
@@ -208,13 +195,10 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       suspected_cl_util, 'GetCulpritInfo',
-      return_value=(1, 'codereview.chromium.org/123'))
+      return_value=(1, 'codereview.chromium.org/123', '123'))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=Rietveld(
           'codereview.chromium.org'))
-  @mock.patch(
-      'infra_api_clients.codereview.rietveld.Rietveld.GetChangeIdForReview',
-      mock.Mock(return_value='123'))
   @mock.patch.object(Rietveld, 'GetClDetails',
                      return_value=_MOCKED_FINDIT_FALSE_POSITIVE_CL_INFO)
   def testCheckRevertStatusOfSuspectedCLFalsePositive(self, *_):

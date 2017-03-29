@@ -11,6 +11,7 @@ from common.pipeline_wrapper import BasePipeline
 from infra_api_clients.codereview import codereview_util
 from libs import time_util
 from model import analysis_status as status
+from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_util
 from waterfall import create_revert_cl_pipeline
@@ -62,10 +63,11 @@ def _UpdateNotificationStatus(repo_name, revision, new_status):
 
 
 def _SendNotificationForCulprit(
-    repo_name, revision, commit_position, code_review_url, revert_status):
-  codereview = codereview_util.GetCodeReviewForReview(code_review_url)
-  change_id = codereview.GetChangeIdForReview(
-      code_review_url) if codereview else None
+    repo_name, revision, commit_position, code_review_url, revert_status,
+    change_id):
+  code_review_settings = FinditConfig().Get().code_review_settings
+  codereview = codereview_util.GetCodeReviewForReview(
+    code_review_url, code_review_settings)
   sent = False
   if codereview and change_id:
     # Occasionally, a commit was not uploaded for code-review.
@@ -116,8 +118,8 @@ class SendNotificationForCulpritPipeline(BasePipeline):
     latency_limit_minutes = action_settings.get(
         'cr_notification_latency_limit_minutes', 1)
 
-    commit_position, code_review_url = suspected_cl_util.GetCulpritInfo(
-        repo_name, revision)
+    commit_position, code_review_url, change_id = (
+        suspected_cl_util.GetCulpritInfo(repo_name, revision))
     build_end_time = build_util.GetBuildEndTime(
         master_name, builder_name, build_number)
     within_time_limit = _WithinNotificationTimeLimit(
@@ -136,4 +138,5 @@ class SendNotificationForCulpritPipeline(BasePipeline):
         send_notification_right_now):
       return False
     return _SendNotificationForCulprit(
-        repo_name, revision, commit_position, code_review_url, revert_status)
+        repo_name, revision, commit_position, code_review_url, revert_status,
+        change_id)

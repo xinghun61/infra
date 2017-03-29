@@ -535,11 +535,11 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
     class MockedChangeLog(object):
       commit_position = 123
       code_review_url = 'code_review_url'
+      change_id = '123'
 
     mock_fn.return_value = MockedChangeLog()
 
-    commit_position, code_review_url = suspected_cl_util.GetCulpritInfo(
-        'chromium', 'rev')
+    commit_position, code_review_url, _ = (
+       suspected_cl_util.GetCulpritInfo('chromium', 'rev'))
     self.assertEqual(commit_position, 123)
     self.assertEqual(code_review_url, 'code_review_url')
-

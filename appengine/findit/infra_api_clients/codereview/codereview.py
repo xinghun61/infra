@@ -26,22 +26,6 @@ class CodeReview(object):  # pragma: no cover.
     """
     raise NotImplementedError()
 
-  def GetChangeIdForReview(self, review_url):
-    """Given a code review url, retrieve an identifier for the change.
-
-    This is specially useful for Gerrit, where the change_id which is the true
-    key for the change is unrelated to the code review number in the default url
-    shown.
-
-    Args:
-      review_url (str): A url to a code review.
-
-    Returns:
-      A value understood by the specific implementation of codereview to
-      uniquely identify a changelist.
-    """
-    raise NotImplementedError()
-
   def PostMessage(self, change_id, message):
     """Posts the given message to the CL codereview of the given change id.
 

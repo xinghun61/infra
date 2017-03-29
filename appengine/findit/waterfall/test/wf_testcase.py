@@ -147,6 +147,7 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
 _DEFAULT_CODE_REVIEW_SETTINGS = {
     'rietveld_hosts': ['codereview.chromium.org'],
     'gerrit_hosts': ['chromium-review.googlesource.com'],
+    'commit_bot_emails': ['commit-bot@chromium.org'],
 }
 
 

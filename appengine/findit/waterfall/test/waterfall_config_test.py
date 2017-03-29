@@ -286,5 +286,6 @@ class MastersTest(wf_testcase.WaterfallTestCase):
       {
         'rietveld_hosts': ['codereview.chromium.org'],
         'gerrit_hosts': ['chromium-review.googlesource.com'],
+        'commit_bot_emails': ['commit-bot@chromium.org'],
       },
       waterfall_config.GetCodeReviewSettings())

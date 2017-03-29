@@ -238,6 +238,7 @@ def _ValidateCheckFlakeSettings(settings):
 
 def _ValidateCodeReviewSettings(settings):
   return (isinstance(settings, dict) and
+          isinstance(settings.get('commit_bot_emails'), list) and
           isinstance(settings.get('rietveld_hosts'), list) and
           isinstance(settings.get('gerrit_hosts'), list))
 

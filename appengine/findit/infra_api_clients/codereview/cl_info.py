@@ -70,18 +70,29 @@ class Revert(object):  # pragma: no cover
 
 class ClInfo(object):  # pragma: no cover
 
-  def __init__(self, review_url):
-    self.url = review_url
+  def __init__(self, server_hostname, change_id):
+    # The host name for the code review site this cl is on.
+    self.server_hostname = server_hostname
+
+    # The number or string that uniquely identifies this change in the given
+    # code review site.
+    self.change_id = change_id
+
     # A map of patchset_id to CommitAttempt objects.
     self.commit_attempts = {}
+
     # A list of Commit objects.
     self.commits = []
+
     # A list of Revert objects.
     self.reverts = []
+
     # Boolean, None for undetermined.
     self.closed = None
+
     # List of emails to cc
     self.cc = []
+
     # List of reviewers' emails
     self.reviewers = []
 
@@ -97,7 +108,8 @@ class ClInfo(object):  # pragma: no cover
 
   def serialize(self):
     return {
-        'url': self.url,
+        'server_hostname': self.server_hostname,
+        'change_id': self.change_id,
         'commits': [x.serialize() for x in self.commits],
         'commit_attempts': [x.serialize() for x in
                             self.commit_attempts.values()],
