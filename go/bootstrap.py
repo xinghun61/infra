@@ -110,9 +110,6 @@ _Layout = collections.namedtuple('Layout', (
 
     # Go package paths of tools to install into the bootstrap environment.
     'go_install_tools',
-
-    # If True, augment the existing GOPATH instead of replacing it.
-    'preserve_gopath',
 ))
 
 class Layout(_Layout):
@@ -132,8 +129,7 @@ _EMPTY_LAYOUT = Layout(
     go_paths=None,
     go_appengine_path=None,
     go_deps_paths=None,
-    go_install_tools=None,
-    preserve_gopath=False)
+    go_install_tools=None)
 
 
 # Infra standard layout.
@@ -153,7 +149,6 @@ LAYOUT = Layout(
     ],
     go_paths=None,
     go_appengine_path=GO_APPENGINE,
-    preserve_gopath=False,
 )
 
 
@@ -432,7 +427,7 @@ def install_deps_tools(layout, force):
   return True
 
 
-def update_vendor_packages(workspace, toolset_root, force=False):
+def update_vendor_packages(workspace, force=False):
   """Runs deps.py to fetch and install pinned packages.
 
   Returns (bool): True if the dependencies were actually updated, False if they
@@ -448,9 +443,7 @@ def update_vendor_packages(workspace, toolset_root, force=False):
     update_out_path = os.path.join(tdir, 'deps_updated.json')
     cmd = [
       sys.executable, '-u', os.path.join(ROOT, 'go', 'deps.py'),
-      '--workspace', workspace,
-      '--goroot', os.path.join(toolset_root, 'go'),
-      'install',
+      '--workspace', workspace, 'install',
       '--update-out', update_out_path,
     ]
     if force:
@@ -470,8 +463,6 @@ def get_go_environ(layout):
 
   Args:
     layout: The Layout to derive the environment from.
-    preserve_gopath (bool): True if environment should be added to existing
-        GOPATH instead of replace it.
   """
   env = os.environ.copy()
   env['GOROOT'] = os.path.join(layout.toolset_root, 'go')
@@ -481,10 +472,7 @@ def get_go_environ(layout):
     env.pop('GOBIN', None)
 
   vendor_paths = layout.vendor_paths or ()
-  all_go_paths = []
-  if layout.preserve_gopath and 'GOPATH' in env:
-    all_go_paths.append(env['GOPATH'])
-  all_go_paths.extend(os.path.join(p, '.vendor') for p in vendor_paths)
+  all_go_paths = [os.path.join(p, '.vendor') for p in vendor_paths]
   if layout.go_paths:
     all_go_paths.extend(layout.go_paths)
   if layout.workspace:
@@ -575,8 +563,7 @@ def bootstrap(layout, logging_level):
     ensure_glide_installed(layout.toolset_root)
     vendor_updated = toolset_updated
     for p in layout.vendor_paths:
-      vendor_updated |= update_vendor_packages(
-          p, layout.toolset_root, force=toolset_updated)
+      vendor_updated |= update_vendor_packages(p, force=toolset_updated)
     if toolset_updated:
       # GOPATH/pkg may have binaries generated with previous version of toolset,
       # they may not be compatible and "go build" isn't smart enough to rebuild
@@ -592,24 +579,13 @@ def bootstrap(layout, logging_level):
         os.environ[k] = v
 
 
-def prepare_go_environ(preserve_gopath=False, toolset_root=None):
+def prepare_go_environ():
   """Returns dict with environment variables to set to use Go toolset.
 
   Installs or updates the toolset and vendored dependencies if necessary.
-
-  Args:
-    preserve_gopath (bool): True if environment should be added to existing
-        GOPATH instead of replace it.
-    toolset_root (str or None): If not None, the path to the toolset root to
-        use.
   """
-  layout = LAYOUT
-  if preserve_gopath:
-    layout = layout._replace(preserve_gopath=preserve_gopath)
-  if toolset_root:
-    layout = layout._replace(toolset_root=toolset_root)
-  bootstrap(layout, logging.INFO)
-  return get_go_environ(layout)
+  bootstrap(LAYOUT, logging.INFO)
+  return get_go_environ(LAYOUT)
 
 
 def find_executable(name, workspaces):
