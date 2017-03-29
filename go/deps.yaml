@@ -273,3 +273,9 @@ import:
 - package: github.com/Microsoft/go-winio
   repo: https://chromium.googlesource.com/external/github.com/Microsoft/go-winio.git
   version: master
+- package: github.com/docker/docker
+  version: tags/v1.13.0
+  repo: https://chromium.googlesource.com/external/github.com/docker/docker.git
+  subpackages:
+  - client
+  - api/types
