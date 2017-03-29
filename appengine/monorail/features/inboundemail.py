@@ -122,7 +122,7 @@ class InboundEmail(webapp2.RequestHandler):
         return None
     else:
       local_id = emailfmt.IdentifyIssue(project_name, subject)
-      if not project_addr or not local_id:
+      if not local_id:
         logging.info('Could not identify issue: %s %s', project_addr, subject)
         # No error message, because message was probably not intended for us.
         return None
@@ -144,7 +144,8 @@ class InboundEmail(webapp2.RequestHandler):
           project_name=project_name)
 
     # Verify that this is a reply to a notification that we could have sent.
-    if not os.environ['SERVER_SOFTWARE'].startswith('Development'):
+    is_development = os.environ['SERVER_SOFTWARE'].startswith('Development')
+    if not (is_alert or is_development):
       for ref in references:
         if emailfmt.ValidateReferencesHeader(ref, project, from_addr, subject):
           break  # Found a message ID that we could have sent.
