@@ -414,9 +414,17 @@ class MonitorTryJobPipeline(BasePipeline):
     elif build.status == BuildbucketBuild.COMPLETED:
       try_job_master_name, try_job_builder_name, try_job_build_number = (
           buildbot.ParseBuildUrl(try_job_data.try_job_url))
-      report = buildbot.GetStepLog(
-        try_job_master_name, try_job_builder_name, try_job_build_number,
-        'report', HttpClientAppengine(), 'report')
+
+      try:
+        report = json.loads(buildbot.GetStepLog(
+            try_job_master_name, try_job_builder_name, try_job_build_number,
+            'report', HttpClientAppengine(), 'report'))
+      except ValueError as e:  # pragma: no cover
+        report = {}
+        logging.exception(
+            'Failed to load result report for %s/%s/%s due to exception %s.' % (
+                try_job_master_name, try_job_builder_name, try_job_build_number,
+                e.message))
 
       _UpdateTryJobMetadata(
           try_job_data, try_job_type, build, error, False,
