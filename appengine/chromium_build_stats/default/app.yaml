@@ -12,7 +12,6 @@
 application: chromium-build-stats
 version: 1
 runtime: go
-instance_class: F2
 api_version: go1
 
 handlers:
