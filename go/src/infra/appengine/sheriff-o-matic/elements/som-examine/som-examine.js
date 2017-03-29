@@ -60,8 +60,12 @@
         this.selectedTest = reason.test_names[0];
         // TODO(martiniss): put the failing step name back into the alert
         // JSON so we don't have to peek at the alert title to tell if
-        // if the failing step is webkit_tests.
-        this.hideWebKitTests = !this.alert.title.startsWith('webkit_tests');
+        // if the failing step is webkit_layout_tests.
+        // TODO(crbug/706192): Remove the check for webkit_tests, once this
+        // step name no longer exists.
+        this.hideWebKitTests = !(
+          this.alert.title.startsWith('webkit_tests') ||
+          this.alert.title.startsWith('webkit_layout_tests'));
       } else {
         this.hideTests = true;
         this.hideWebKitTests = true;
