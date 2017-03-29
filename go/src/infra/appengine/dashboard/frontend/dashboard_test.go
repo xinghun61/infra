@@ -4,19 +4,21 @@
 
 package dashboard
 
+import dashapi "infra/appengine/dashboard/api/dashboard"
+
 import (
 	"testing"
 )
 
 func TestDataRetrieved(t *testing.T) {
-	services := []ChopsService{
+	services := []dashapi.ChopsService{
 		{
 			Name: "testService",
 			Sla:  "www.google.com",
 		},
 	}
 
-	testService := ChopsService{
+	testService := dashapi.ChopsService{
 		Name: "testService",
 		Sla:  "www.google.com",
 	}

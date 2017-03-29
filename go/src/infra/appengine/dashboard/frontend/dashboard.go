@@ -4,6 +4,8 @@
 
 package dashboard
 
+import dashapi "infra/appengine/dashboard/api/dashboard"
+
 import (
 	"html/template"
 	"net/http"
@@ -20,32 +22,10 @@ const (
 	alertYellow = 2
 )
 
-// ChopsService represents a service that has an SLA.
-type ChopsService struct {
-	Name      string
-	Sla       string
-	Incidents []Incident
-}
-
-// NonSLAService represents a service that does not have an SLA yet.
-type NonSLAService struct {
-	Name      string
-	Incidents []Incident
-}
-
-// Incident represents a service disruption or outage incident.
-type Incident struct {
-	Id        int
-	Open      bool
-	StartTime string
-	EndTime   string
-	Severity  int
-}
-
 // PageData contains information needed by the template.
 type PageData struct {
-	ChopsServices  []ChopsService
-	NonSLAServices []NonSLAService
+	ChopsServices  []dashapi.ChopsService
+	NonSLAServices []dashapi.ChopsService
 	Dates          []string
 }
 
@@ -74,24 +54,24 @@ func dashboard(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func makeFakeData() ([]ChopsService, []NonSLAService) {
-	incidents := []Incident{
+func makeFakeData() ([]dashapi.ChopsService, []dashapi.ChopsService) {
+	incidents := []*dashapi.Incident{
 		{
-			Id:        1,
+			Id:        "1",
 			Open:      false,
 			StartTime: "03-26-2017",
 			EndTime:   "03-26-2017",
 			Severity:  alertRed,
 		},
 		{
-			Id:        2,
+			Id:        "2",
 			Open:      false,
 			StartTime: "03-25-2017",
 			EndTime:   "03-25-2017",
 			Severity:  alertYellow,
 		},
 		{
-			Id:        3,
+			Id:        "3",
 			Open:      true,
 			StartTime: "03-28-2017",
 			EndTime:   "",
@@ -99,7 +79,7 @@ func makeFakeData() ([]ChopsService, []NonSLAService) {
 		},
 	}
 
-	services := []ChopsService{
+	services := []dashapi.ChopsService{
 		{
 			Name:      "Monorail",
 			Sla:       "http://www.google.com",
@@ -112,9 +92,9 @@ func makeFakeData() ([]ChopsService, []NonSLAService) {
 		},
 	}
 
-	nonSLAServices := []NonSLAService{
-		{Name: "CommitQueue", Incidents: incidents},
-		{Name: "CodeSearch", Incidents: incidents},
+	nonSLAServices := []dashapi.ChopsService{
+		{Name: "CommitQueue", Incidents: incidents, Sla: ""},
+		{Name: "CodeSearch", Incidents: incidents, Sla: ""},
 	}
 
 	return services, nonSLAServices

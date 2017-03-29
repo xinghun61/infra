@@ -17,17 +17,17 @@
   function renderIncidents(services) {
     for (let i = 0; i < services.length; i++) {
       let service = services[i];
-      let serviceName = service['Name'];
-      for (let j = 0; j < service['Incidents'].length; j++) {
-	let incident = service['Incidents'][j];
-	let tdClass = '.js-' + serviceName + '-' + incident['StartTime'];
+      let serviceName = service['name'];
+      for (let j = 0; j < service['incidents'].length; j++) {
+	let incident = service['incidents'][j];
+	let tdClass = '.js-' + serviceName + '-' + incident['start_time'];
 	let dateCell = document.querySelector(tdClass);
 	let img = document.createElement('img');
 	img.className = 'light';
-	if (incident['Severity'] == Alert.RED) {
+	if (incident['severity'] == Alert.RED) {
           img.src = '../static/red.png';
 	}
-	if (incident['Severity'] == Alert.YELLOW) {
+	if (incident['severity'] == Alert.YELLOW) {
           img.src = '../static/yellow.png';
 	}
 	dateCell.appendChild(img);
