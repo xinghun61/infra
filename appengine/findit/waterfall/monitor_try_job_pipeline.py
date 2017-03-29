@@ -323,21 +323,22 @@ class MonitorTryJobPipeline(BasePipeline):
         self.last_params))
 
     try_job_data.callback_url = callback_url
+    try_job_data.callback_target = appengine_util.GetTargetNameForModule(
+        constants.WATERFALL_BACKEND)
     try_job_data.put()
 
     # Guarantee one callback 10 minutes after the deadline to clean up even if
     # buildbucket fails to call us back.
-    self.delay_callback((timeout_hours * 60 + 10) * 60,
-                        callback_params=self.last_params)
+    self.delay_callback((timeout_hours * 60 + 10) * 60, self.last_params)
 
     # Run immediately in case the job already went from scheduled to started.
     self.callback(callback_params=self.last_params)
 
-  def delay_callback(self, countdown, **kwargs):  # pragma: no cover
-    self.last_params = kwargs['callback_params']
+  def delay_callback(self, countdown, callback_params):
     target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
-    task = self.get_callback_task(countdown=countdown, params=kwargs,
-                                  target=target)
+    task = self.get_callback_task(
+        countdown=countdown, target=target,
+        params={'callback_params': json.dumps(callback_params)})
     task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
@@ -460,8 +461,6 @@ class MonitorTryJobPipeline(BasePipeline):
                 'backoff_time': backoff_time,
             })
         )
-        try_job_data.callback_target = appengine_util.GetTargetNameForModule(
-            constants.WATERFALL_BACKEND)
         try_job_data.put()
 
     if time.time() > deadline:  # pragma: no cover

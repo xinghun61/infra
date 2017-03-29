@@ -81,12 +81,11 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         pass
     raise ValueError('Failed to parse %s' % time_string)  # pragma: no cover
 
-  def delay_callback(self, **kwargs):  # pragma: no cover
-    self.last_params = kwargs['callback_params']
+  def delay_callback(self, countdown, callback_params):
     target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
-    countdown = kwargs.get('server_query_interval_seconds', 60)
-    task = self.get_callback_task(countdown=countdown, params=kwargs,
-                                  target=target)
+    task = self.get_callback_task(
+        countdown=countdown, target=target,
+        params={'callback_params': json.dumps(callback_params)})
     task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
   def _GetPipelineResult(self, step_name, step_name_no_platform, task):
@@ -167,12 +166,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
             self.last_params))
         if task.callback_url != new_callback_url:  # pragma: no cover
           task.callback_url = new_callback_url
-          task.callback_target = appengine_util.GetTargetNameForModule(
-              constants.WATERFALL_BACKEND)
           task.put()
-        # TODO(robertocn): Remove this line when the system reliably receives
-        # notifications from swarming via pubsub.
-        self.delay_callback(callback_params=self.last_params)
 
     data, error = swarming_util.GetSwarmingTaskResultById(
         task_id, self.HTTP_CLIENT)
@@ -184,7 +178,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
       task.put()
 
       if not data:
-        # Even after retry, no data was recieved.
+        # Even after retry, no data was received.
         task.status = analysis_status.ERROR
         task.put()
         check_task_completion()
@@ -328,6 +322,13 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
 
     task.callback_url = self.get_callback_url(callback_params=json.dumps(
         self.last_params))
+    task.callback_target = appengine_util.GetTargetNameForModule(
+        constants.WATERFALL_BACKEND)
     task.put()
 
+    # Guarantee one callback 10 minutes after the deadline to clean up even if
+    # Swarming fails to call us back.
+    self.delay_callback((timeout_hours * 60 + 10) * 60, self.last_params)
+
+    # Run immediately in case the task already went from scheduled to started.
     self.callback(callback_params=self.last_params)
