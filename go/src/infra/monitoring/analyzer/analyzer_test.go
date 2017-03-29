@@ -462,6 +462,60 @@ func TestBuilderStepAlerts(t *testing.T) {
 				},
 			},
 			{
+				name:         "one build failure with findit running",
+				master:       "fake.master",
+				builder:      "fake.builder",
+				recentBuilds: []int64{123},
+				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(123).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
+					Step("fake_step").Results(2).BuilderFaker,
+				finditData: []*messages.FinditResult{
+					{
+						MasterURL:   "https://build.chromium.org/p/fake.master",
+						BuilderName: "fake.builder",
+						BuildNumber: 123,
+						StepName:    "fake_step",
+						HasFindings: false,
+						IsFinished:  false,
+					},
+				},
+				buildsAtFault: []int{123},
+				stepsAtFault:  []string{"fake_step"},
+				wantAlerts: []messages.Alert{
+					{
+						Key:      "fake.master.fake.builder.fake_step.",
+						Title:    "fakeTitle",
+						Type:     messages.AlertBuildFailure,
+						Body:     "",
+						Severity: messages.NewFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name:          "fake.builder",
+									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+									FirstFailure:  123,
+									LatestFailure: 123,
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo:      "test",
+									URL:       "http://test",
+									Revisions: []string{"291569"},
+									Positions: []string{"refs/heads/master@{#291569}"},
+								},
+							},
+							FinditURL:   "https://findit-for-me.appspot.com/waterfall/build-failure?url=https://build.chromium.org/p/fake.master/builders/fake.builder/builds/123",
+							HasFindings: false,
+							IsFinished:  false,
+						},
+					},
+				},
+			},
+			{
 				name:         "one build failure with findit",
 				master:       "fake.master",
 				builder:      "fake.builder",

@@ -58,7 +58,7 @@
     },
 
     _finditIsRunning: function(extension) {
-      return extension && !extension.is_finished && !extension.has_findings;
+      return extension && extension.findit_url && !extension.is_finished && !extension.has_findings;
     },
 
     _finditHasNoResult: function(extension) {

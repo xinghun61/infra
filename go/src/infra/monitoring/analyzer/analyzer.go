@@ -758,7 +758,12 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 			mergedBF.HasFindings = result.HasFindings
 			mergedBF.IsFinished = result.IsFinished
 
-			buildURL := client.BuildURL(master, builderName, result.FirstKnownFailedBuildNumber).String()
+			buildNumberInURL := result.FirstKnownFailedBuildNumber
+			if buildNumberInURL == 0 {
+				// If Findit analysis is still running, result.FirstKnownFailedBuildNumber may be empty.
+				buildNumberInURL = result.BuildNumber
+			}
+			buildURL := client.BuildURL(master, builderName, buildNumberInURL).String()
 			mergedBF.FinditURL = fmt.Sprintf("https://findit-for-me.appspot.com/waterfall/build-failure?url=%s", buildURL)
 		}
 
