@@ -180,9 +180,9 @@ def GenTests(api):
       api.override_step_data(
         'build.read build recipes.cfg',
         api.json.output({
-          "autoroll_recipe_options": {
-            "trivial": {
-              "tbr_emails": ["foo@bar.example.com", "meep@example.com"],
+          'autoroll_recipe_options': {
+            'trivial': {
+              'tbr_emails': ['foo@bar.example.com', 'meep@example.com'],
             }
           }
         }),
@@ -197,12 +197,26 @@ def GenTests(api):
       api.override_step_data(
         'build.read build recipes.cfg',
         api.json.output({
-          "autoroll_recipe_options": {
-            "nontrivial": {
-              "extra_reviewers": ["foo@chromium.org", "foo@bar.example.com",
-                                  "meep@example.com"],
+          'autoroll_recipe_options': {
+            'nontrivial': {
+              'extra_reviewers': ['foo@chromium.org', 'foo@bar.example.com',
+                                  'meep@example.com'],
             }
           }
+        }),
+      )
+  )
+
+  yield (
+      api.test('repo_disabled') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.override_step_data(
+        'build.read build recipes.cfg',
+        api.json.output({
+          'autoroll_recipe_options': {
+            'disable_reason': 'I am a water buffalo.',
+          },
         }),
       )
   )

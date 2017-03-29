@@ -74,7 +74,9 @@ TRIVIAL_ROLL_TBR_EMAILS = (
 #   - empty means the repo is using latest revision of its dependencies
 #   - failure means there are roll candidates but none of them are suitable
 #     for an automated roll
-ROLL_SUCCESS, ROLL_EMPTY, ROLL_FAILURE = range(3)
+#   - skip means that the roll was skipped (not processed). This can happen if
+#     the repo has a 'disable_message' in its autoroll_recipe_options.
+ROLL_SUCCESS, ROLL_EMPTY, ROLL_FAILURE, ROLL_SKIP = range(4)
 
 
 _AUTH_REFRESH_TOKEN_FLAG = (
@@ -248,6 +250,12 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     autoroll_settings.setdefault('nontrivial',{
       "automatic_commit_dry_run": True,
     })
+
+    disable_reason = autoroll_settings.get('disable_reason')
+    if disable_reason:
+      rslt = self.m.python.succeeding_step('disabled', disable_reason)
+      rslt.presentation.states = self.m.step.WARNING
+      return ROLL_SKIP
 
     # Use the recipes bootstrap to checkout coverage.
     roll_step = self.m.step(
