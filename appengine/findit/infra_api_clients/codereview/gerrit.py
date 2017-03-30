@@ -32,7 +32,7 @@ class Gerrit(codereview.CodeReview):  # pragma: no cover
     return json.loads(content)
 
   def _AuthenticatedRequest(self, path_parts, payload=None, method='GET',
-                             headers=None):
+                            headers=None):
     # Prepend /a/ to make the request authenticated.
     if path_parts[0] != 'a':
       path_parts = ['a'] + list(path_parts)
@@ -74,7 +74,32 @@ class Gerrit(codereview.CodeReview):  # pragma: no cover
     raise NotImplementedError()
 
   def AddReviewers(self, change_id, reviewers, message=None):
-    raise NotImplementedError()
+    assert reviewers
+    current_reviewers = self.GetClDetails(change_id).reviewers
+    for reviewer in reviewers:
+      # reviewer must be an email string.
+      assert len(reviewer.split('@')) == 2
+      if reviewer in current_reviewers:
+        # Only add reviewers not currently assinged to the change.
+        continue
+      parts =['changes', change_id, 'reviewers']
+      response = self._Post(parts, body={'reviewer': reviewer})
+      try:
+        reviewers = response['reviewers']
+        if reviewers == []:
+          # This might be okay if a user has more than one email.
+          logging.warning('Reviewer %s already assigned to cl %s under a '
+                          'different email' % (reviewer, change_id))
+          continue
+        new_reviewer = reviewers[0]['email']
+        if new_reviewer != reviewer:
+          # This might be okay if a user has more than one email.
+          logging.warning('Requested to add %s as reviewer to cl %s but '
+                          '%s was added instead.' % (reviewer, change_id,
+                                                     new_reviewer))
+      except (TypeError, KeyError, IndexError):
+        return False
+    return True
 
   def GetClDetails(self, change_id):
     # Create cl info based on the url.
