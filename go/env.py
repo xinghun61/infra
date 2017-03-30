@@ -16,6 +16,7 @@ $ ./env.py go version
 
 assert __name__ == '__main__'
 
+import argparse
 import imp
 import os
 import pipes
@@ -28,8 +29,6 @@ bootstrap = imp.load_source(
     'bootstrap', os.path.join(os.path.dirname(__file__), 'bootstrap.py'))
 
 old = os.environ.copy()
-new = bootstrap.prepare_go_environ()
-
 
 def _escape_special(v):
   """Returns (str): The supplied value, with special shell characters escaped.
@@ -65,12 +64,26 @@ else:
 
 
 def main():
-  if len(sys.argv) == 1:
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--preserve-gopath', action='store_true',
+      help='Preserve the existing GOPATH, appending to it instead of '
+           'overwriting it.')
+  parser.add_argument('--toolset-root', action='store', metavar='PATH',
+      help='Use this path for the toolset root instead of deafult.')
+
+  args, extras = parser.parse_known_args()
+  if extras and extras[0] == '--':
+    extras.pop(0)
+
+  new = bootstrap.prepare_go_environ(
+      preserve_gopath=args.preserve_gopath,
+      toolset_root=args.toolset_root)
+  if not extras:
     for key, value in sorted(new.iteritems()):
       if old.get(key) != value:
         emit_env_var(key, value)
   else:
-    exe = sys.argv[1]
+    exe = extras[0]
     if exe == 'python':
       exe = sys.executable
     else:
@@ -78,7 +91,7 @@ def main():
       # executable is referenced by name (and not by path).
       if os.sep not in exe:
         exe = bootstrap.find_executable(exe, [bootstrap.WORKSPACE])
-    sys.exit(subprocess.call([exe] + sys.argv[2:], env=new))
+    sys.exit(subprocess.call([exe] + extras[1:], env=new))
 
 
 assert __name__ == '__main__'
