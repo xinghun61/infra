@@ -6,7 +6,7 @@
 
   Polymer({
     is: 'som-app',
-    behaviors: [AnnotationManagerBehavior],
+    behaviors: [AnnotationManagerBehavior, AlertTypeBehavior],
     properties: {
       _activeRequests: {
         type: Number,
@@ -450,9 +450,9 @@
         if (a.severity != b.severity) {
           // Note: 3 is the severity number for Infra Failures.
           // We want these at the bottom of the severities for sheriffs.
-          if (a.severity == 3) {
+          if (a.severity == AlertSeverity.InfraFailure) {
             return 1;
-          } else if (b.severity == 3) {
+          } else if (b.severity == AlertSeverity.InfraFailure) {
             return -1;
           }
 
@@ -532,11 +532,13 @@
       return alerts.filter(function(alert) {
         if (isTrooperPage) {
           return alert.tree == category;
+        } else if (category == AlertSeverity.InfraFailure) {
+          // Put trooperable alerts into "Infra failures" on sheriff views
+          return this.isTrooperAlertType(alert.type) || alert.severity == category;
         }
         return alert.severity == category;
-      });
+      }, this);
     },
-
 
     _computeCategories: function(alerts, isTrooperPage) {
       let categories = [];
@@ -544,11 +546,15 @@
         let cat = alert.severity;
         if (isTrooperPage) {
           cat = alert.tree;
+        } else if (this.isTrooperAlertType(alert.type)) {
+          // When not on /trooper, collapse all of the trooper alerts into
+          // the "Infra failures" category.
+           cat = AlertSeverity.InfraFailure;
         }
         if (!categories.includes(cat)) {
           categories.push(cat);
         }
-      });
+      }, this);
 
       return categories;
     },
@@ -582,11 +588,14 @@
         let cat = alert.severity;
         if (isTrooperPage) {
           cat = alert.tree;
+        } else if (this.isTrooperAlertType(alert.type)) {
+          // Collapse all of these into "Infra failures".
+          cat = AlertSeverity.InfraFailure;
         }
         if (category == cat) {
           count++;
         }
-      });
+      }, this);
       return count;
     },
 

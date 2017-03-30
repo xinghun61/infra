@@ -8,6 +8,8 @@
 
 <link rel="import" href="../../elements/som-extension-build-failure/som-extension-build-failure.html">
 <link rel="import" href="../../elements/som-extension-cros-failure/som-extension-cros-failure.html">
+<link rel="import" href="../../elements/som-extension-trooper-failure/som-extension-trooper-failure.html">
+<link rel="import" href="../../elements/som-alert-type-behavior.html">
 <link rel="import" href="../../elements/som-linkify-behavior.html">
 
 <dom-module id="som-alert-item">
@@ -161,17 +163,17 @@
       <div id="collapse" hidden$="[[_isHidden(annotation.opened, useCompactView)]]" class="alert-expanded layout horizontal wrap">
         <div class="alert-controls layout horizontal center flex-child">
           <div class="layout vertical alert-controls-links">
-            <a href$="[[tree]]/examine/[[alert.key]]" hidden$="[[examining]]">Examine</a>
+            <a href$="[[tree]]/examine/[[alert.key]]" hidden$="[[_hideExamine(alert.type, examining, tree)]]">Examine</a>
             <a href$="[[tree]]" hidden$="[[!examining]]">[[tree]]</a>
             <span class$="link [[_commentsClass]]" on-tap="_comment" id="commentsLink">
               <iron-icon icon="question-answer"></iron-icon> ([[_numComments]])
             </span>
           </div>
-          <paper-button class="horizontal layout center" id="link-bug" on-tap="_linkBug" alt="Link a bug" raised noink>
+          <paper-button class="horizontal layout center" id="link-bug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, tree)]]" raised noink>
             <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
             Link/File Bug
           </paper-button>
-          <paper-button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" raised noink>
+          <paper-button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" hidden$="[[_hideActions(alert.type, tree)]]" raised noink>
             <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
             </iron-icon>
             [[_snoozeText]]
@@ -184,6 +186,7 @@
               <a class="alert-link" target="_blank" href$="[[_linkify(linkStyle, link.href)]]">[[link.title]]</a>
             </template>
           </div>
+          <som-extension-trooper-failure tree="[[tree]]" type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-trooper-failure>
           <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-build-failure>
           <som-extension-cros-failure type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-cros-failure>
         </div>

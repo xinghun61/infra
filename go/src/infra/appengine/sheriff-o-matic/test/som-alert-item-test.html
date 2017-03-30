@@ -44,6 +44,45 @@
           element.$$('.alert-title').textContent);
     });
 
+    test('renders actions for trooper failures on /trooper ', function() {
+      element.alert = {
+        type: AlertTypes.IdleBuilder,
+        severity: AlertSeverity.IdleBuilder,
+        title: 'test title',
+        body: 'test body',
+        links: [],
+      };
+      element.tree = 'trooper';
+
+      assert.equal(
+          'test title',
+          element.$$('.alert-title').textContent);
+      assert.isFalse(element.$$('#link-bug').hidden);
+      assert.isFalse(element.$$('#snooze').hidden);
+    });
+
+    test('hides actions for trooper failures on sheriff pages', function() {
+      element.alert = {
+        type: AlertTypes.IdleBuilder,
+        severity: AlertSeverity.IdleBuilder,
+        title: 'test title',
+        body: 'test body',
+        links: [],
+      };
+      element.tree = 'chromium';
+
+      assert.isTrue(element._hideActions(AlertTypes.IdleBuilder, 'chromium'));
+      assert.isFalse(element._hideActions(AlertTypes.IdleBuilder, 'trooper'));
+      assert.isFalse(element._hideExamine(AlertTypes.IdleBuilder, false,
+          'trooper'));
+
+      assert.equal(
+          'test title',
+          element.$$('.alert-title').textContent);
+      assert.isTrue(element.$$('#link-bug').hidden);
+      assert.isTrue(element.$$('#snooze').hidden);
+    });
+
     test('snoozed affects snoozed text', function() {
       element.annotation = {
         snoozed: false,
@@ -147,7 +186,7 @@
     test('uberify useful links', function(done) {
       element.alert = {links: [{title: '', href: chromiumUrl}]};
       element.linkStyle = 'uber';
-     flush(function() {
+      flush(function() {
         assert.equal(uberUrl,
           element.$.usefulLinks.querySelector(".alert-link").href);
         done();

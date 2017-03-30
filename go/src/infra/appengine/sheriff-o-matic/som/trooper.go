@@ -85,10 +85,15 @@ func getTrooperAlerts(c context.Context, useMilo bool) ([]byte, error) {
 			result["revision_summaries"] = alertsSummary.RevisionSummaries
 
 			for _, a := range alertsSummary.Alerts {
-				if a.Type == messages.AlertInfraFailure ||
-					a.Type == messages.AlertOfflineBuilder {
+				switch a.Type {
+				case messages.AlertStaleMaster,
+					messages.AlertHungBuilder,
+					messages.AlertOfflineBuilder,
+					messages.AlertIdleBuilder,
+					messages.AlertInfraFailure:
 					newAlert := &TrooperAlert{a, t.Name}
 					alerts = append(alerts, newAlert)
+					break
 				}
 			}
 		}

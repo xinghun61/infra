@@ -17,6 +17,7 @@ import (
 	"time"
 
 	client "infra/monitoring/client/test"
+	"infra/monitoring/messages"
 	"infra/monorail"
 
 	"golang.org/x/net/context"
@@ -219,10 +220,22 @@ func TestMain(t *testing.T) {
 						datastore.Put(c, &Tree{
 							Name: "chromium",
 						})
+
+						alertsSummary := &messages.AlertsSummary{
+							Timestamp: 1,
+							Alerts: []messages.Alert{
+								{
+									Type: messages.AlertOfflineBuilder,
+								},
+							},
+						}
+						asBytes, err := json.Marshal(alertsSummary)
+						So(err, ShouldBeNil)
+
 						datastore.Put(c, &AlertsJSON{
 							ID:       1,
 							Tree:     datastore.MakeKey(c, "Tree", "chromium"),
-							Contents: []byte(`{"timestamp":1}`),
+							Contents: asBytes,
 						})
 						ta.CatchupIndexes()
 
@@ -237,7 +250,7 @@ func TestMain(t *testing.T) {
 						So(err, ShouldBeNil)
 						body := string(r)
 						So(w.Code, ShouldEqual, 200)
-						So(body, ShouldEqual, `{"alerts":[],"date":"0001-01-01T00:00:00Z","revision_summaries":null,"swarming":{"dead":null,"quarantined":null,"errors":["auth: the library is not properly configured"]},"timestamp":1}`)
+						So(body, ShouldEqual, `{"alerts":[{"key":"","title":"","body":"","severity":0,"time":0,"start_time":0,"links":null,"tags":null,"type":"offline-builder","extension":null,"tree":"chromium"}],"date":"0001-01-01T00:00:00Z","revision_summaries":null,"swarming":{"dead":null,"quarantined":null,"errors":["auth: the library is not properly configured"]},"timestamp":1}`)
 					})
 
 					Convey("getSwarmingAlerts", func() {

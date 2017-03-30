@@ -1,0 +1,68 @@
+<script>
+  'use strict';
+  const AlertTypes = {
+    // StaleMaster indicates that we have no recent updates from the master.
+    StaleMaster: 'stale-master',
+
+    // HungBuilder indicates that a builder has been executing a step for too long.
+    HungBuilder: 'hung-builder',
+
+    // OfflineBuilder indicates that we have no recent updates from the builder.
+    OfflineBuilder: 'offline-builder',
+
+    // IdleBuilder indicates that a builder has not executed any builds recently
+    // even though it has requests queued up.
+    IdleBuilder: 'idle-builder',
+
+    // InfraFailure indicates that a builder step failed due to infrastructure
+    // problems rather than errors in the code it tried to build or execute.
+    InfraFailure: 'infra-failure',
+
+    // BuildFailure indicates that one of the build steps failed, must likely
+    // due to the patch it's building/running with.
+    BuildFailure: 'build-failure',
+  };
+
+  const AlertSeverity = {
+    TreeCloser: 0,
+    // StaleMaster is an alert about stale master data.
+    StaleMaster: 1,
+    // HungBuilder is an alert about a builder being hung (stuck running a particular step)
+    HungBuilder: 2,
+    // InfraFailure is an infrastructure failure. It is higher severity than a reliable failure
+    // because if there is an infrastructure failure, the test code is not even run,
+    // and so we are losing data about if the tests pass or not.
+    InfraFailure: 3,
+    // ReliableFailure is a failure which has shown up multiple times.
+    ReliableFailure: 4,
+    // NewFailure is a failure which just started happening.
+    NewFailure: 5,
+    // IdleBuilder is a builder which is "idle" (buildbot term) and which has above
+    // a certain threshold of pending builds.
+    IdleBuilder: 6,
+    // OfflineBuilder is a builder which is offline.
+    OfflineBuilder: 7,
+    // NoSeverity is a placeholder Severity value which means nothing. Used by analysis
+    // to indicate that it doesn't have a particular Severity to assign to an alert.
+    NoSeverity: 8,
+  };
+
+  let AlertTypeBehavior = {
+    properties: {
+      // These alert types are to be handled by Troopers rather than Sheriffs.
+      trooperAlertTypes: {
+        type: Array,
+        value: [
+          AlertTypes.StaleMaster,
+          AlertTypes.OfflineBuilder,
+          AlertTypes.HungBuilder,
+          AlertTypes.IdleBuilder,
+        ],
+      },
+    },
+
+    isTrooperAlertType: function(alertType) {
+      return this.trooperAlertTypes.indexOf(alertType) != -1;
+    },
+  };
+</script>

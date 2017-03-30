@@ -6,7 +6,7 @@
 
   Polymer({
     is: 'som-alert-item',
-    behaviors: [LinkifyBehavior],
+    behaviors: [LinkifyBehavior, AlertTypeBehavior],
 
     /**
      * Fired when an alert requests that the link bug dialog be shown.
@@ -34,7 +34,7 @@
         type: Boolean,
         value: false,
       },
-      tree: String,
+      tree: {type: String, value: function() { return ''; }},
       annotation: Object,
       _commentsClass: {
         type: String,
@@ -163,6 +163,14 @@
 
     _haveLinks: function(alert) {
       return alert && alert.links && alert.links.length > 0;
+    },
+
+    _hideActions: function(alertType, tree) {
+      return tree != 'trooper' && this.isTrooperAlertType(alertType);
+    },
+
+    _hideExamine: function(alertType, examining, tree) {
+      return examining || this._hideActions(alertType, tree);
     },
 
     _removeBug: function(evt) {
