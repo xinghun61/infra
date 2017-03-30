@@ -13,7 +13,7 @@ from infra_api_clients.codereview import cl_info
 from libs import time_util
 
 
-class Gerrit(codereview.CodeReview):  # pragma: no cover
+class Gerrit(codereview.CodeReview):
   """Stub for implementing Gerrit support."""
   HTTP_CLIENT = HttpClientAppengine(follow_redirects=False)
 
@@ -55,7 +55,7 @@ class Gerrit(codereview.CodeReview):  # pragma: no cover
 
   def _Post(self, path_parts, body=None, headers=None):
     headers = headers or {}
-    if body:
+    if body:  # pragma: no branch
       headers['Content-Type'] = 'application/json'
       body = json.dumps(body)
     return self._HandleResponse(*self._AuthenticatedRequest(
@@ -64,14 +64,18 @@ class Gerrit(codereview.CodeReview):  # pragma: no cover
   def GetCodeReviewUrl(self, change_id):
     return 'https://%s/q/%s' % (self._server_hostname, change_id)
 
-  # TODO(crbug.com/702681): flesh out these methods.
   def PostMessage(self, change_id, message):
     parts = ['changes', change_id, 'revisions', 'current', 'review']
     result = self._Post(parts, body={'message': message})
     return result is not None  # A successful post will return an empty dict.
 
   def CreateRevert(self, reason, change_id, patchset_id=None):
-    raise NotImplementedError()
+    parts = ['changes', change_id, 'revert']
+    reverting_change = self._Post(parts, body={'message': reason})
+    try:
+      return reverting_change['change_id']
+    except (TypeError, KeyError):
+      return None
 
   def AddReviewers(self, change_id, reviewers, message=None):
     assert reviewers
@@ -108,7 +112,7 @@ class Gerrit(codereview.CodeReview):  # pragma: no cover
     return self._ParseClInfo(change_info, change_id)
 
   def _ParseClInfo(self, change_info, change_id):
-    if not change_info:
+    if not change_info:  # pragma: no cover
       return None
 
     result = cl_info.ClInfo(self._server_hostname, change_id)
@@ -120,7 +124,7 @@ class Gerrit(codereview.CodeReview):  # pragma: no cover
 
     # If the status is merged, look at the commit details for the current
     # commit.
-    if result.closed:
+    if result.closed:  # pragma: no branch
       current_revision = change_info['current_revision']
       revision_info = change_info['revisions'][current_revision]
       patchset_id = revision_info['_number']

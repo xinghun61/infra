@@ -106,7 +106,7 @@ class GerritTest(testing.AppengineTestCase):
 
   def testPostMessage(self):
     change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
-    response_str = ')]}\'\n{}'
+    response_str = '{}'
     self.http_client._SetPostMessageResponse(
       self.server_hostname, change_id, response_str)
     # This message should not change when being urlencoded or jsonized
@@ -371,3 +371,27 @@ class GerritTest(testing.AppengineTestCase):
       'commit_attempts': [{'patchset_id': 1,
                            'timestamp': '2017-02-27 18:47:15 UTC',
                            'committing_user_email': u'one@chromium.org'}]})
+
+  def testCreateRevertSuccessful(self):
+    change_id = 'I123456'
+    reverting_change_id = 'I987654'
+    response = self.http_client._MakeResponse(
+      {'change_id': reverting_change_id})
+    url = 'https://%s/a/changes/%s/revert' % (self.server_hostname, change_id)
+    self.http_client.SetResponse(url, (200, response))
+    self.assertEqual(reverting_change_id, self.gerrit.CreateRevert(
+      'Reason', change_id))
+
+  def testCreateRevertFailure(self):
+    change_id = 'I123456'
+    self.assertFalse(self.gerrit.CreateRevert('Reason', change_id))
+
+  def testRequestAddsAuthenticationPrefix(self):
+    self.gerrit._AuthenticatedRequest(['changes', '123'])
+    url, _payload, _headers = self.http_client.requests[0]
+    self.assertEqual('https://server.host.name/a/changes/123', url)
+
+  def testRequestKeepsAuthenticationPrefix(self):
+    self.gerrit._AuthenticatedRequest(['a', 'changes', '123'])
+    url, _payload, _headers = self.http_client.requests[0]
+    self.assertEqual('https://server.host.name/a/changes/123', url)
