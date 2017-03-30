@@ -1,0 +1,32 @@
+application: predator-for-me-staging
+module: backend-fracas
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+instance_class: B1
+automatic_scaling:
+  min_idle_instances: 1
+  max_concurrent_requests: 40
+
+handlers:
+- url: /.*
+  script: backend.main.backend_app
+  secure: always
+
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*_test\.py$
+- ^(.*/)?tests\.py$
+- ^(.*/)?\..*$
+- ^(.*/)?.*\.md$
+- __init__.py
+- frontend/.*
+
+libraries:
+- name: webapp2
+  version: latest
+- name: jinja2
+  version: latest
