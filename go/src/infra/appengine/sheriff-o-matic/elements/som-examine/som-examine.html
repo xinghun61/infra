@@ -67,7 +67,7 @@
         <div id$="[[builder.name]]" class="builder-page flex layout vertical">
           <div>Builds: [[builder.first_failure]]-[[builder.latest_failure]]</div>
           <div class="flex layout vertical">
-            <som-webkit-tests builder="[[builder]]" test-name="[[selectedTest]]" hidden$="[[hideWebKitTests]]">
+            <som-webkit-tests builder="[[builder]]" test-name="[[selectedTest]]" test-type="[[alert.extension.reason.step]]" hidden$="[[hideWebKitTests]]">
             </som-webkit-tests>
             <iframe
                 src$="[[_linkify(linkStyle, builder.url,builder.latest_failure,selectedStep)]]"

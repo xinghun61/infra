@@ -17,6 +17,7 @@
         value: '',
         observer: '_testNameChanged',
       },
+      testType: String,
       actualUrls: {
         type: Array,
         value: [],
@@ -26,6 +27,10 @@
         type: Array,
         value: [],
         observer: '_expectedUrlsChanged',
+      },
+      _flakinessDashboardUrl: {
+        type: String,
+        computed: '_computeFlakinessDashboardUrl(testName, testType)',
       },
       diffUrls: {
         type: Array,
@@ -84,6 +89,14 @@
       iframe.style.flexGrow = 1;
       iframe.src = url;
       el.appendChild(iframe);
+    },
+
+    _computeFlakinessDashboardUrl: function(testName, testType) {
+      testType = testType ? testType : 'webkit_tests';
+      return 'https://test-results.appspot.com/dashboards/' +
+          'flakiness_dashboard.html#' +
+          'tests=' + encodeURIComponent(testName) +
+          '&testType=' + encodeURIComponent(testType);
     },
 
     _testNameChanged: function(testName) {
