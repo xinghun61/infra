@@ -2633,7 +2633,7 @@ class IssueService(object):
     """
     rows = self.issuerelation_tbl.Select(
         cnxn, cols=ISSUERELATION_COLS, issue_id=issue.issue_id,
-        dst_issue_id=blocked_on_iids,
+        dst_issue_id=blocked_on_iids, kind='blockedon',
         order_by=[('rank DESC', []), ('dst_issue_id', [])])
     ids = [row[1] for row in rows]
     ids.extend([iid for iid in blocked_on_iids if iid not in ids])

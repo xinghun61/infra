@@ -1546,6 +1546,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.issuerelation_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUERELATION_COLS,
         issue_id=issue.issue_id, dst_issue_id=issue.blocked_on_iids,
+        kind='blockedon',
         order_by=[('rank DESC', []), ('dst_issue_id', [])]).AndReturn(
             blocked_on_rows)
     return issue
