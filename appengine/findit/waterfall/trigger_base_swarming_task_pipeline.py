@@ -198,7 +198,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
   def _ReferredBuildExceptionedOut(
       self, master_name, builder_name, build_number, http_client):
     """Checks if the build had exception, if so don't run the step."""
-    json_data = buildbot.buildbot.GetBuildDataFromBuildMaster(
+    json_data = buildbot.GetBuildDataFromBuildMaster(
       	master_name, builder_name, build_number, http_client)
     if not json_data:
       logging.error('Failed to get build data for %s, %s, %s' % (
