@@ -596,7 +596,8 @@ class FieldValueView(object):
       # TODO(jrobbins): also evaluate applicable_predicate
 
     self.display = ezt.boolean(   # or fd.show_empty
-        self.values or self.derived_values or self.applicable)
+        self.values or self.derived_values or
+        (self.applicable and not fd.is_niche))
 
 
 def MakeFieldValueView(
@@ -700,6 +701,13 @@ class FieldDefView(template_helpers.PBProxy):
     self.docstring_short = template_helpers.FitUnsafeText(
         field_def.docstring, 200)
     self.validate_help = None
+
+    if field_def.is_required:
+      self.importance = 'required'
+    elif field_def.is_niche:
+      self.importance = 'niche'
+    else:
+      self.importance = 'normal'
 
     if field_def.min_value is not None:
       self.min_value = field_def.min_value

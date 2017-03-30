@@ -65,7 +65,7 @@ class FieldCreateTest(unittest.TestCase):
         min_value=['1'],
         max_value=['99'],
         notify_on=['any_comment'],
-        is_required=['Yes'],
+        importance=['required'],
         is_multivalued=['Yes'],
         docstring=['It is just some field'],
         applicable_type=['Defect'],
@@ -82,6 +82,7 @@ class FieldCreateTest(unittest.TestCase):
     self.assertEqual(99, fd.max_value)
     self.assertEqual(tracker_pb2.NotifyTriggers.ANY_COMMENT, fd.notify_on)
     self.assertTrue(fd.is_required)
+    self.assertFalse(fd.is_niche)
     self.assertTrue(fd.is_multivalued)
     self.assertEqual('It is just some field', fd.docstring)
     self.assertEqual('Defect', fd.applicable_type)

@@ -63,8 +63,7 @@ class FieldHelpersTest(unittest.TestCase):
         needs_perm=['Commit'],
         grants_perm=['View'],
         notify_on=['any_comment'],
-        is_required=['Yes'],
-        is_niche=['Yes'],
+        importance=['required'],
         is_multivalued=['Yes'],
         docstring=['It is just some field'],
         choices=['Hot = Lots of activity\nCold = Not much activity'],
@@ -80,7 +79,7 @@ class FieldHelpersTest(unittest.TestCase):
     self.assertEqual('View', parsed.grants_perm)
     self.assertEqual(1, parsed.notify_on)
     self.assertTrue(parsed.is_required)
-    self.assertTrue(parsed.is_niche)
+    self.assertFalse(parsed.is_niche)
     self.assertTrue(parsed.is_multivalued)
     self.assertEqual('It is just some field', parsed.field_docstring)
     self.assertEqual('Hot = Lots of activity\nCold = Not much activity',

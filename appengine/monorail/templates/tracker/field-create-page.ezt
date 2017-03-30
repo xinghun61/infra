@@ -56,11 +56,13 @@
   </tr>
 
   <tr>
-    <th>Required:</th>
+    <th>Importance:</th>
     <td>
-        <input type="checkbox" id="is_required" name="is_required" class="acob"
-               [if-any initial_is_required]checked="checked"[end]>
-        <label for="is_required">Required when applicable</label>
+      <select id="importance" name="importance">
+        <option value="required" [is initial_importance "required"]selected[end]>Required when applicable</option>
+        <option value="normal" [is initial_importance "normal"]selected[end]>Offered when applicable</option>
+        <option value="niche" [is initial_importance "niche"]selected[end]>Under "Show all fields" when applicable</option>
+      </select>
     </td>
   </tr>
 

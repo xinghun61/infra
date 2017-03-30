@@ -54,7 +54,7 @@ class FieldCreate(servlet.Servlet):
         'admin_tab_mode': servlet.Servlet.PROCESS_TAB_LABELS,
         'initial_field_name': '',
         'initial_field_docstring': '',
-        'initial_is_required': ezt.boolean(False),
+        'initial_importance': 'normal',
         'initial_is_multivalued': ezt.boolean(False),
         'initial_choices': '',
         'initial_admins': '',
@@ -110,7 +110,7 @@ class FieldCreate(servlet.Servlet):
           initial_applicable_predicate=parsed.applicable_predicate,
           initial_needs_member=ezt.boolean(parsed.needs_member),
           initial_needs_perm=parsed.needs_perm,
-          initial_is_required=ezt.boolean(parsed.is_required),
+          initial_importance=parsed.importance,
           initial_is_multivalued=ezt.boolean(parsed.is_multivalued),
           initial_grants_perm=parsed.grants_perm,
           initial_notify_on=parsed.notify_on,
@@ -118,6 +118,7 @@ class FieldCreate(servlet.Servlet):
           initial_admins=admin_str)
       return
 
+    print 'parsed is %r' % (parsed,)
     self.services.config.CreateFieldDef(
         mr.cnxn, mr.project_id, parsed.field_name, parsed.field_type_str,
         parsed.applicable_type, parsed.applicable_predicate,

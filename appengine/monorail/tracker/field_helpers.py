@@ -26,8 +26,8 @@ ParsedFieldDef = collections.namedtuple(
     'ParsedFieldDef',
     'field_name, field_type_str, min_value, max_value, regex, '
     'needs_member, needs_perm, grants_perm, notify_on, is_required, '
-    'is_niche, is_multivalued, field_docstring, choices_text, applicable_type, '
-    'applicable_predicate, revised_labels')
+    'is_niche, importance, is_multivalued, field_docstring, choices_text, '
+    'applicable_type, applicable_predicate, revised_labels')
 
 
 def ParseFieldDefRequest(post_data, config):
@@ -54,8 +54,9 @@ def ParseFieldDefRequest(post_data, config):
     notify_on = config_svc.NOTIFY_ON_ENUM.index(notify_on_str)
   else:
     notify_on = 0
-  is_required = 'is_required' in post_data
-  is_niche = 'is_niche' in post_data
+  importance = post_data.get('importance')
+  is_required = (importance == 'required')
+  is_niche = (importance == 'niche')
   is_multivalued = 'is_multivalued' in post_data
   field_docstring = post_data.get('docstring', '')
   choices_text = post_data.get('choices', '')
@@ -66,9 +67,9 @@ def ParseFieldDefRequest(post_data, config):
 
   return ParsedFieldDef(
       field_name, field_type_str, min_value, max_value, regex,
-      needs_member, needs_perm, grants_perm, notify_on, is_required,
-      is_niche, is_multivalued, field_docstring, choices_text, applicable_type,
-      applicable_predicate, revised_labels)
+      needs_member, needs_perm, grants_perm, notify_on, is_required, is_niche,
+      importance, is_multivalued, field_docstring, choices_text,
+      applicable_type, applicable_predicate, revised_labels)
 
 
 def _ParseChoicesIntoWellKnownLabels(choices_text, field_name, config):

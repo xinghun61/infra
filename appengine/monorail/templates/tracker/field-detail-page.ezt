@@ -64,14 +64,18 @@
   [end]
 
   <tr>
-    <th>Required:</th>
+    <th>Importance:</th>
     <td>
       [if-any allow_edit]
-        <input type="checkbox" id="is_required" name="is_required" class="acob"
-               [if-any field_def.is_required_bool]checked="checked"[end]>
-        <label for="is_required">Required when applicable</label>
+        <select id="importance" name="importance">
+          <option value="required" [is field_def.importance "required"]selected[end]>Required when applicable</option>
+          <option value="normal" [is field_def.importance "normal"]selected[end]>Offered when applicable</option>
+          <option value="niche" [is field_def.importance "niche"]selected[end]>Under "Show all fields" when applicable</option>
+        </select>
       [else]
-        [if-any field_def.is_required_bool]Yes[else]No[end]
+        [is field_def.importance "required"]Required when applicable[end]
+        [is field_def.importance "normal"]Offered when applicable[end]
+        [is field_def.importance "niche"]Under "Show all fields" when applicable[end]
       [end]
     </td>
   </tr>
