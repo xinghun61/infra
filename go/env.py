@@ -70,6 +70,8 @@ def main():
            'overwriting it.')
   parser.add_argument('--toolset-root', action='store', metavar='PATH',
       help='Use this path for the toolset root instead of deafult.')
+  parser.add_argument('--deps-only', action='store_true',
+      help='If True, only download and install dependencies in "deps" files.')
 
   args, extras = parser.parse_known_args()
   if extras and extras[0] == '--':
@@ -77,7 +79,8 @@ def main():
 
   new = bootstrap.prepare_go_environ(
       preserve_gopath=args.preserve_gopath,
-      toolset_root=args.toolset_root)
+      toolset_root=args.toolset_root,
+      deps_only=args.deps_only)
   if not extras:
     for key, value in sorted(new.iteritems()):
       if old.get(key) != value:

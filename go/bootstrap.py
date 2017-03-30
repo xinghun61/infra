@@ -592,7 +592,8 @@ def bootstrap(layout, logging_level):
         os.environ[k] = v
 
 
-def prepare_go_environ(preserve_gopath=False, toolset_root=None):
+def prepare_go_environ(preserve_gopath=False, toolset_root=None,
+                       deps_only=False):
   """Returns dict with environment variables to set to use Go toolset.
 
   Installs or updates the toolset and vendored dependencies if necessary.
@@ -602,12 +603,17 @@ def prepare_go_environ(preserve_gopath=False, toolset_root=None):
         GOPATH instead of replace it.
     toolset_root (str or None): If not None, the path to the toolset root to
         use.
+    deps_only (bool): If True, don't install local repository tooling as part
+        of bootstrap setup.
   """
-  layout = LAYOUT
-  if preserve_gopath:
-    layout = layout._replace(preserve_gopath=preserve_gopath)
+  layout = LAYOUT._replace(
+      preserve_gopath=preserve_gopath)
   if toolset_root:
     layout = layout._replace(toolset_root=toolset_root)
+  if deps_only:
+    layout = layout._replace(
+        go_deps_paths=[],
+        go_install_tools=[])
   bootstrap(layout, logging.INFO)
   return get_go_environ(layout)
 
