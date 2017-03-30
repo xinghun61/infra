@@ -12,12 +12,44 @@ from infra_api_clients.codereview.gerrit import Gerrit
 from libs.http import retry_http_client
 
 
+class DummyHttpClient(retry_http_client.RetryHttpClient):
+
+  def __init__(self):
+    super(DummyHttpClient, self).__init__()
+    self.responses = {}
+    self.requests = []
+
+  def SetResponse(self, url, result):
+    self.responses[url] = result
+
+  def _SetPostMessageResponse(self, host, change_id, response_str):
+    url = 'https://%s/a/changes/%s/revisions/current/review' % (host, change_id)
+    self.SetResponse(url, (200, response_str))
+
+  def GetBackoff(self, *_):  # pragma: no cover
+    """Override to avoid sleep."""
+    return 0
+
+  def _Get(self, url, _, headers):  # pragma: no cover
+    self.requests.append((url, None, headers))
+    return self.responses.get(url, (404, 'Not Found'))
+
+  def _Post(self, url, data, _, headers):  # pragma: no cover
+    self.requests.append((url, data, headers))
+    return self.responses.get(url, (404, 'Not Found'))
+
+  def _Put(self, *_):  # pragma: no cover
+    pass
+
+
 class GerritTest(testing.AppengineTestCase):
 
   def setUp(self):
     super(GerritTest, self).setUp()
+    self.http_client = DummyHttpClient()
     self.server_hostname = 'server.host.name'
     self.gerrit = Gerrit(self.server_hostname)
+    self.gerrit.HTTP_CLIENT = self.http_client
     self.maxDiff = None
 
   def testGetCodeReviewUrl(self):
@@ -25,6 +57,17 @@ class GerritTest(testing.AppengineTestCase):
     self.assertEqual(
       'https://server.host.name/q/%s' % change_id,
       self.gerrit.GetCodeReviewUrl(change_id))
+
+  def testPostMessage(self):
+    change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
+    response_str = ')]}\'\n{}'
+    self.http_client._SetPostMessageResponse(
+      self.server_hostname, change_id, response_str)
+    # This message should not change when being urlencoded or jsonized
+    message = 'FinditWasHere'
+    self.assertTrue(self.gerrit.PostMessage(change_id, message))
+    _url, data, _headers = self.http_client.requests[0]
+    self.assertIn(message, data)
 
   def testGetClInfoCQCommit(self):
     change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'

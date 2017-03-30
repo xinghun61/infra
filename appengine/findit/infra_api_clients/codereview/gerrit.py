@@ -23,30 +23,52 @@ class Gerrit(codereview.CodeReview):  # pragma: no cover
     self.commit_bot_emails = settings.get('commit_bot_emails',
                                           ['commit-bot@chromium.org'])
 
-  def _Get(self, path_parts, params=None, headers=None):
-    """Makes a simple get to Gerrit's API and parses the json output."""
-    # Prepend /a/ to make the request authenticated.
-    path_parts = ['a'] + list(path_parts)
-    url = 'https://%s/%s' % (self._server_hostname, '/'.join(path_parts))
-    # This header tells gerrit to send compact (non-pretty) JSON which is
-    # more efficient and encouraged for automated tools.
-    headers = headers or {}
-    headers['Accept'] = 'application/json'
-    status_code, content = self.HTTP_CLIENT.Get(url, params=params,
-                                                headers=headers)
+  def _HandleResponse(self, status_code, content):
     if status_code != 200:
       return None
-    # Remove XSSI magic prefix.
+    # Remove XSSI magic prefix
     if content.startswith(')]}\''):
       content = content[4:]
     return json.loads(content)
+
+  def _AuthenticatedRequest(self, path_parts, payload=None, method='GET',
+                             headers=None):
+    # Prepend /a/ to make the request authenticated.
+    if path_parts[0] != 'a':
+      path_parts = ['a'] + list(path_parts)
+    url = 'https://%s/%s' % (self._server_hostname, '/'.join(path_parts))
+    headers = headers or {}
+    # This header tells gerrit to send compact (non-pretty) JSON which is
+    # more efficient and encouraged for automated tools.
+    headers['Accept'] = 'application/json'
+    headers.setdefault('Accept', 'application/json')
+    if method == 'GET':
+      return self.HTTP_CLIENT.Get(url, params=payload, headers=headers)
+    elif method == 'POST':
+      return self.HTTP_CLIENT.Post(url, data=payload, headers=headers)
+    raise NotImplementedError()  # pragma: no cover
+
+  def _Get(self, path_parts, params=None, headers=None):
+    """Makes a simple get to Gerrit's API and parses the json output."""
+    return self._HandleResponse(*self._AuthenticatedRequest(
+        path_parts, payload=params, headers=headers))
+
+  def _Post(self, path_parts, body=None, headers=None):
+    headers = headers or {}
+    if body:
+      headers['Content-Type'] = 'application/json'
+      body = json.dumps(body)
+    return self._HandleResponse(*self._AuthenticatedRequest(
+        path_parts, payload=body, method='POST', headers=headers))
 
   def GetCodeReviewUrl(self, change_id):
     return 'https://%s/q/%s' % (self._server_hostname, change_id)
 
   # TODO(crbug.com/702681): flesh out these methods.
   def PostMessage(self, change_id, message):
-    raise NotImplementedError()
+    parts = ['changes', change_id, 'revisions', 'current', 'review']
+    result = self._Post(parts, body={'message': message})
+    return result is not None  # A successful post will return an empty dict.
 
   def CreateRevert(self, reason, change_id, patchset_id=None):
     raise NotImplementedError()
