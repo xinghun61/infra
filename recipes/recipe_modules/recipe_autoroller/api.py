@@ -254,7 +254,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     disable_reason = autoroll_settings.get('disable_reason')
     if disable_reason:
       rslt = self.m.python.succeeding_step('disabled', disable_reason)
-      rslt.presentation.states = self.m.step.WARNING
+      rslt.presentation.status = self.m.step.WARNING
       return ROLL_SKIP
 
     # Use the recipes bootstrap to checkout coverage.

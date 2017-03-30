@@ -224,7 +224,8 @@
     "name": "build.disabled",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@I am a water buffalo.@@@"
+      "@@@STEP_TEXT@I am a water buffalo.@@@",
+      "@@@STEP_WARNINGS@@@"
     ]
   },
   {
