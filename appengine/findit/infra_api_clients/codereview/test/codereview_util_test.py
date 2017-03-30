@@ -13,23 +13,14 @@ from infra_api_clients.codereview.gerrit import Gerrit
 
 class CodeReviewUtilTest(testing.AppengineTestCase):
 
-  code_review_settings = {
-    'rietveld_hosts': ['test-rietveld.com'],
-    'gerrit_hosts': ['test-gerrit.com'],
-    'commit_bot_emails': ['bot@sourcecode.com'],
-  }
-
   def testGetCodeReviewForReviewOnRietveld(self):
-    review_url = 'https://test-rietveld.com/1234'
-    codereview = codereview_util.GetCodeReviewForReview(
-      review_url, self.code_review_settings)
+    review_host = 'codereview.chromium.org'
+    codereview = codereview_util.GetCodeReviewForReview(review_host)
     self.assertTrue(isinstance(codereview, Rietveld))
-    self.assertEqual('test-rietveld.com', codereview._server_hostname)
 
   def testGetCodeReviewForReviewOnGerrit(self):
-    review_url = 'https://test-gerrit.com/c/1234'
-    codereview = codereview_util.GetCodeReviewForReview(
-      review_url, self.code_review_settings)
+    review_host = 'chromium-review.googlesource.com'
+    codereview = codereview_util.GetCodeReviewForReview(review_host)
     self.assertIsInstance(codereview, Gerrit)
 
   def testGetCodeReviewForInvalidReviewUrl(self):

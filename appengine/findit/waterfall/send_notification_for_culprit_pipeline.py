@@ -63,11 +63,11 @@ def _UpdateNotificationStatus(repo_name, revision, new_status):
 
 
 def _SendNotificationForCulprit(
-    repo_name, revision, commit_position, code_review_url, revert_status,
-    change_id):
+    repo_name, revision, commit_position, review_server_host, change_id,
+    revert_status):
   code_review_settings = FinditConfig().Get().code_review_settings
   codereview = codereview_util.GetCodeReviewForReview(
-    code_review_url, code_review_settings)
+      review_server_host, code_review_settings)
   sent = False
   if codereview and change_id:
     # Occasionally, a commit was not uploaded for code-review.
@@ -118,8 +118,11 @@ class SendNotificationForCulpritPipeline(BasePipeline):
     latency_limit_minutes = action_settings.get(
         'cr_notification_latency_limit_minutes', 1)
 
-    commit_position, code_review_url, change_id = (
-        suspected_cl_util.GetCulpritInfo(repo_name, revision))
+    culprit_info = suspected_cl_util.GetCulpritInfo(
+        repo_name, revision)
+    commit_position = culprit_info['commit_position']
+    review_server_host = culprit_info['review_server_host']
+    review_change_id = culprit_info['review_change_id']
     build_end_time = build_util.GetBuildEndTime(
         master_name, builder_name, build_number)
     within_time_limit = _WithinNotificationTimeLimit(
@@ -138,5 +141,5 @@ class SendNotificationForCulpritPipeline(BasePipeline):
         send_notification_right_now):
       return False
     return _SendNotificationForCulprit(
-        repo_name, revision, commit_position, code_review_url, revert_status,
-        change_id)
+        repo_name, revision, commit_position, review_server_host,
+        review_change_id, revert_status)

@@ -40,29 +40,33 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
 
   repo = suspected_cl.repo_name
   revision = suspected_cl.revision
-  _, original_code_review_url, change_id = (
-    suspected_cl_util.GetCulpritInfo(repo, revision))
+  culprit_info = suspected_cl_util.GetCulpritInfo(repo, revision)
+  review_server_host = culprit_info.get('review_server_host')
+  change_id = culprit_info.get('review_change_id')
 
-  if not original_code_review_url or not change_id:  # pragma: no cover
+  if not review_server_host or not change_id:  # pragma: no cover
     # TODO(lijeffrey): Handle cases a patch was committed without review.
     return None
+
   code_review_settings = FinditConfig().Get().code_review_settings
   codereview = codereview_util.GetCodeReviewForReview(
-    original_code_review_url, code_review_settings)
+      review_server_host, code_review_settings)
   if not codereview:
-    logging.error('Could not get codereview for %s', original_code_review_url)
+    logging.error('Could not get codereview for %s/q/%s' % (
+        review_server_host, change_id))
     return None
 
   cl_info = codereview.GetClDetails(change_id)
 
   if not cl_info:
-    logging.error('Could not get CL details for %s', original_code_review_url)
+    logging.error('Could not get CL details for %s/q/%s' % (
+        review_server_host, change_id))
     return None
-
   reverts_to_check = cl_info.GetRevertCLsByRevision(revision)
 
   if not reverts_to_check:
-    logging.error('Could not get revert info for %s', original_code_review_url)
+    logging.error('Could not get revert info for %s/q/%s' % (
+        review_server_host, change_id))
     return None
 
   reverts_to_check.sort(key=lambda x: x.timestamp)

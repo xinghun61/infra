@@ -82,12 +82,14 @@ def _RevertCulprit(
     return CREATED_BY_FINDIT
 
   # 0. Gets information about this culprit.
-  culprit_commit_position, culprit_code_review_url, culprit_change_id = (
+  culprit_info = (
       suspected_cl_util.GetCulpritInfo(repo_name, revision))
 
-  code_review_settings = FinditConfig().Get().code_review_settings
-  codereview = codereview_util.GetCodeReviewForReview(
-    culprit_code_review_url, code_review_settings)
+  culprit_commit_position = culprit_info['commit_position']
+  culprit_change_id = culprit_info['review_change_id']
+  culprit_host = culprit_info['review_server_host']
+
+  codereview = codereview_util.GetCodeReviewForReview(culprit_host)
 
   if not codereview or not culprit_change_id:  # pragma: no cover
     logging.error('Failed to get change id for %s/%s' % (repo_name, revision))

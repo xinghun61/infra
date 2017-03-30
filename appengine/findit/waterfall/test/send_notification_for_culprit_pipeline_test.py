@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import urlparse
 
 from infra_api_clients.codereview.rietveld import Rietveld
 from libs.gitiles.gitiles_repository import GitilesRepository
@@ -35,6 +36,19 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         @property
         def code_review_url(self):
           return mocked_url
+
+        @property
+        def commit_position(self):
+          return 123
+
+        @property
+        def review_server_host(self):
+          return urlparse.urlparse(mocked_url).netloc if mocked_url else None
+
+        @property
+        def review_change_id(self):
+          return (urlparse.urlparse(mocked_url).path.split('/')[-1] if
+                  mocked_url else None)
 
       return MockedChangeLog()
     self.mock(GitilesRepository, 'GetChangeLog', Mocked_GetChangeLog)
