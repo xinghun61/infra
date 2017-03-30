@@ -230,12 +230,22 @@ def cron_update_buckets():
   config_map = config.get_project_configs(
     cfg_path(), project_config_pb2.BuildbucketCfg)
 
-  buckets_of_project = {
-    pid: set(b.name for b in pcfg.buckets)
-    for pid, (_, pcfg) in config_map.iteritems()
-  }
+  buckets_of_project = {}
+  for pid, (_, pcfg, _) in config_map.iteritems():
+    if pcfg is not None:
+      buckets_of_project[pid] = set(b.name for b in pcfg.buckets)
+    else:
+      logging.error('config of project %s is broken', pid)
+      # Find buckets that are currently reserved by the project.
+      # We don't expect many projects to be broken at the same time
+      # so fetching sequentially is fine.
+      bucket_keys = Bucket.query(Bucket.project_id==pid).fetch(keys_only=True)
+      # Make sure not to delete these buckets below.
+      buckets_of_project[pid] = set(k.id() for k in bucket_keys)
 
-  for project_id, (revision, project_cfg) in config_map.iteritems():
+  for project_id, (revision, project_cfg, _) in config_map.iteritems():
+    if project_cfg is None:
+      continue
     # revision is None in file-system mode. Use SHA1 of the config as revision.
     revision = revision or 'sha1:%s' % hashlib.sha1(
       project_cfg.SerializeToString()).hexdigest()

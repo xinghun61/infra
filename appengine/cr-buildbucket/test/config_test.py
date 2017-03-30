@@ -272,9 +272,9 @@ class ConfigTest(testing.AppengineTestCase):
       ''')
 
     get_project_configs.return_value = {
-      'chromium': ('deadbeef', chromium_buildbucket_cfg),
-      'v8': (None, v8_buildbucket_cfg),
-      'test': ('babe', test_buildbucket_cfg),
+      'chromium': ('deadbeef', chromium_buildbucket_cfg, None),
+      'v8': (None, v8_buildbucket_cfg, None),
+      'test': ('babe', test_buildbucket_cfg, None),
     }
 
     config.cron_update_buckets()
@@ -375,8 +375,8 @@ class ConfigTest(testing.AppengineTestCase):
       }
       ''')
     get_project_configs.return_value = {
-      'chromium': ('new!', chromium_buildbucket_cfg),
-      'v8': ('deadbeef', v8_buildbucket_cfg),
+      'chromium': ('new!', chromium_buildbucket_cfg, None),
+      'v8': ('deadbeef', v8_buildbucket_cfg, None),
     }
 
     config.Bucket(
@@ -444,10 +444,33 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertEqual(actual, expected)
 
   @mock.patch('components.config.get_project_configs', autospec=True)
+  def test_cron_update_buckets_with_broken_configs(self, get_project_configs):
+    bucket = config.Bucket(
+        id='master.tryserver.chromium.linux',
+        project_id='chromium',
+        revision='deadbeef',
+        config_content=MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT,
+        config_content_binary=text_to_binary(
+            MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT),
+    )
+    bucket.put()
+
+    get_project_configs.return_value = {
+      'chromium': ('new!', None, config_component.ConfigFormatError('broken!')),
+    }
+
+    config.cron_update_buckets()
+
+    # We must not delete buckets defined in a project that currently have a
+    # broken config.
+    actual = bucket.key.get()
+    self.assertEqual(bucket, actual)
+
+  @mock.patch('components.config.get_project_configs', autospec=True)
   def test_cron_update_buckets_change_reservation(self, get_project_configs):
     buildbucket_cfg = parse_cfg('''buckets{ name: "bucket" }''')
     get_project_configs.return_value = {
-      'bar': ('deadbeef', buildbucket_cfg),
+      'bar': ('deadbeef', buildbucket_cfg, None),
     }
 
     config.Bucket(
