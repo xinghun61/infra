@@ -53,15 +53,6 @@ var (
 		"Total bytes of network egress for the container.",
 		&tsmonTypes.MetricMetadata{Units: tsmonTypes.Bytes},
 		field.String("name"))
-
-	allMetrics = []tsmonTypes.Metric{
-		statusMetric,
-		uptimeMetric,
-		memUsedMetric,
-		memTotalMetric,
-		netDownMetric,
-		netUpMetric,
-	}
 )
 
 // The following is a subset of the fields contained in the json blob returned
@@ -168,9 +159,9 @@ func update(ctx context.Context) error {
 
 // Register adds tsmon callbacks to set docker metrics.
 func Register() {
-	tsmon.RegisterGlobalCallback(func(ctx context.Context) {
+	tsmon.RegisterCallback(func(ctx context.Context) {
 		if err := update(ctx); err != nil {
 			logging.Errorf(ctx, "Failed to update Docker metrics: %s", err)
 		}
-	}, allMetrics...)
+	})
 }
