@@ -378,7 +378,7 @@ def add_many_async(build_request_list):
     """
     index_entries = collections.defaultdict(list)
     for b in new_builds.itervalues():
-      for t in _indexed_tags(b.tags):
+      for t in set(_indexed_tags(b.tags)):
         index_entries[t].append(model.TagIndexEntry(
             build_id=b.key.id(), bucket=b.bucket))
     return [
@@ -741,7 +741,7 @@ def _tag_index_search(
   # Skip entries with build ids that are less or equal to the id in the cursor.
   if start_cursor:
     # The cursor is an minimum build id, exclusive. Such cursor is resilient
-    # to additions of index entries to beginning or end.
+    # to duplicates and additions of index entries to beginning or end.
     assert TAG_INDEX_SEARCH_CURSOR_RE.match(start_cursor)
     min_id_exclusive = int(start_cursor[len('id>'):])
     # TODO(nodir): optimization: use binary search.
@@ -776,7 +776,11 @@ def _tag_index_search(
     while entry_index >= 0:
       e = idx.entries[entry_index]
       entry_index -= 1
+      prev = last_considered_entry
       last_considered_entry = e
+      if prev and prev.build_id == e.build_id:
+        # Tolerate duplicates.
+        continue
       # If we filter by bucket, check it here without fetching the build.
       # This is not a security check.
       if buckets and e.bucket not in buckets:
@@ -821,7 +825,8 @@ def _check_tag_index_entry_order(idx):
   """Raises errors.InvalidIndexEntryOrder if the order is incorrect."""
   # The order must be descending.
   for i in xrange(len(idx.entries) - 1):
-    if idx.entries[i].build_id <= idx.entries[i+1].build_id:
+    # Tolerate duplicates.
+    if idx.entries[i].build_id < idx.entries[i+1].build_id:
       raise errors.InvalidIndexEntryOrder(
           'invalid entry order in TagIndex(%r)' % idx.key.id())
 
@@ -1400,10 +1405,15 @@ def longest_pending_time(bucket, builder):
 
 
 def _add_to_tag_index_async(tag, new_entries):
-  """Adds index entries to the tag index."""
+  """Adds index entries to the tag index.
+
+  new_entries must not have duplicates.
+  """
   if not new_entries:  # pragma: no cover
     return
   new_entries.sort(key=lambda e: e.build_id, reverse=True)
+  for i in xrange(len(new_entries) - 1):
+    assert new_entries[i].build_id != new_entries[i+1].build_id, 'Duplicate!'
 
   @ndb.transactional_tasklet
   def txn_async():

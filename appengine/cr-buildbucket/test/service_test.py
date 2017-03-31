@@ -783,6 +783,23 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
           buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG],
           start_cursor='id>0')
 
+  def test_search_with_dup_tag_entries(self):
+    self.test_build.tags = [self.INDEXED_TAG]
+    self.test_build.put()
+
+    entry = model.TagIndexEntry(
+        bucket=self.test_build.bucket,
+        build_id=self.test_build.key.id(),
+    )
+    model.TagIndex(
+        id=self.INDEXED_TAG,
+        entries=[entry, entry],
+    ).put()
+
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG])
+    self.assertEqual(builds, [self.test_build])
+
   def test_search_with_incomplete_index(self):
     self.test_build.tags = [self.INDEXED_TAG]
     self.test_build.put()
