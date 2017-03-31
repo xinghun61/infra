@@ -543,7 +543,7 @@ def search(
     buckets=None, tags=None,
     status=None, result=None, failure_reason=None, cancelation_reason=None,
     created_by=None, max_builds=None, start_cursor=None,
-    retry_of=None, dual_search=False):
+    retry_of=None):
   """Searches for builds.
 
   Args:
@@ -560,9 +560,6 @@ def search(
     start_cursor (string): a value of "next" cursor returned by previous
       search_by_tags call. If not None, return next builds in the query.
     retry_of (int): value of retry_of attribute.
-    dual_search (bool): if True, performs the search using both tag
-      index (if possible) and datastore query, and logs any inconsistencies.
-      TODO(nodir): remove this parameter.
 
   Returns:
     A tuple:
@@ -599,14 +596,14 @@ def search(
   assert can_use_tag_index or can_use_query_search
 
   # Try searching using tag index.
-  tag_index_results = None  # tuple (builds, next_cursor)
   if can_use_tag_index:
     try:
       search_start_time = utils.utcnow()
-      tag_index_results = _tag_index_search(*search_args)
+      results = _tag_index_search(*search_args)
       logging.info(
           'tag index search took %dms',
           (utils.utcnow() - search_start_time).total_seconds() * 1000)
+      return results
     except (errors.InvalidIndexEntryOrder, errors.TagIndexIncomplete) as ex:
       if isinstance(ex, errors.InvalidIndexEntryOrder):
         logging.exception('invalid index entry order')
@@ -614,29 +611,14 @@ def search(
         raise
       logging.info('falling back to querying')
 
-  # Try searching using datastore query if we don't have tag index results or
-  # if we were asked to search using both tag index and query.
-  query_results = None  # tuple (builds, next_cursor)
-  if can_use_query_search and (not tag_index_results or dual_search):
-    search_start_time = utils.utcnow()
-    query_results = _query_search(*search_args)
-    logging.info(
-        'query search took %dms',
-        (utils.utcnow() - search_start_time).total_seconds() * 1000)
-
-  # Compare results if we have both.
-  if tag_index_results and query_results:
-    ids = lambda bs: [b.key.id() for b in bs]
-    if ids(tag_index_results[0]) != ids(query_results[0]):  # pragma: no cover
-      _log_inconsistent_search_results(
-          ('inconsistent search results\n'
-           'search arguments: %r\n'
-           'query search results: %r\n'
-           'tag index search results: %r') %
-          (search_args, ids(query_results[0]), ids(tag_index_results[0])))
-
-  assert query_results or tag_index_results  # we have to have something.
-  return query_results or tag_index_results  # prefer query results.
+  # Searching using datastore query.
+  assert can_use_query_search
+  search_start_time = utils.utcnow()
+  results = _query_search(*search_args)
+  logging.info(
+      'query search took %dms',
+      (utils.utcnow() - search_start_time).total_seconds() * 1000)
+  return results
 
 
 def _query_search(
