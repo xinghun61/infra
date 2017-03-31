@@ -24,38 +24,25 @@ import swarming
 
 
 class BuildBucketServiceTest(testing.AppengineTestCase):
+  INDEXED_TAG = 'buildset:1'
+
   def __init__(self, *args, **kwargs):
     super(BuildBucketServiceTest, self).__init__(*args, **kwargs)
     self.test_build = None
 
-  def mock_cannot(self, action, bucket=None):
-    def can_async(requested_bucket, requested_action, _identity=None):
-      match = (
-        requested_action == action and
-        (bucket is None or requested_bucket == bucket))
-      return future(not match)
-
-    # acl.can_async is patched in setUp()
-    acl.can_async.side_effect = can_async
-
   def setUp(self):
     super(BuildBucketServiceTest, self).setUp()
-    self.test_build = model.Build(
-      bucket='chromium',
-      parameters={
-        'builder_name': 'infra',
-        'changes': [{
-          'author': 'nodir@google.com',
-          'message': 'buildbucket: initial commit'
-        }]
-      }
-    )
+    self.patch(
+        'service._log_inconsistent_search_results', side_effect=self.fail)
 
     self.current_identity = auth.Identity('service', 'unittest')
     self.patch(
         'components.auth.get_current_identity',
         side_effect=lambda: self.current_identity)
     self.patch('acl.can_async', return_value=future(True))
+    self.patch(
+        'acl.get_available_buckets', autospec=True,
+        return_value=['chromium'])
     self.now = datetime.datetime(2015, 1, 1)
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
 
@@ -79,10 +66,48 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.patch('swarming.create_task_async', return_value=future(None))
     self.patch('swarming.cancel_task_async', return_value=future(None))
 
-  def put_many_builds(self, count=100):
+    self.test_build = model.Build(
+        id=model.new_build_id(),
+        bucket='chromium',
+        tags=[self.INDEXED_TAG],
+        parameters={
+          'builder_name': 'infra',
+          'changes': [{
+            'author': 'nodir@google.com',
+            'message': 'buildbucket: initial commit'
+          }]
+        }
+    )
+
+  def mock_cannot(self, action, bucket=None):
+    def can_async(requested_bucket, requested_action, _identity=None):
+      match = (
+        requested_action == action and
+        (bucket is None or requested_bucket == bucket))
+      return future(not match)
+
+    # acl.can_async is patched in setUp()
+    acl.can_async.side_effect = can_async
+
+  def put_many_builds(self, count=100, tags=None):
+    tags = tags or []
+    builds = []
     for _ in xrange(count):
-      b = model.Build(bucket=self.test_build.bucket)
-      b.put()
+      b = model.Build(bucket=self.test_build.bucket, tags=tags)
+      self.put_build(b)
+      builds.append(b)
+    return builds
+
+  def put_build(self, build):
+    """Puts a build and updates tag index."""
+    build.put()
+
+    index_entry = model.TagIndexEntry(
+        bucket=build.bucket,
+        build_id=build.key.id(),
+    )
+    for t in service._indexed_tags(build.tags):
+      service._add_to_tag_index_async(t, [index_entry]).get_result()
 
   #################################### ADD #####################################
 
@@ -480,56 +505,68 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   #################################### SEARCH ##################################
 
+  def search(self, *args, **kwargs):
+    kwargs.setdefault('dual_search', True)
+    return service.search(*args, **kwargs)
+
   def test_search(self):
     build2 = model.Build(bucket=self.test_build.bucket)
-    build2.put()
+    self.put_build(build2)
 
     self.test_build.tags = ['important:true']
-    self.test_build.put()
-    builds, _ = service.search(
-      buckets=[self.test_build.bucket],
-      tags=self.test_build.tags,
+    self.put_build(self.test_build)
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket],
+        tags=self.test_build.tags,
     )
     self.assertEqual(builds, [self.test_build])
 
-  @mock.patch('acl.get_available_buckets', autospec=True)
-  def test_search_without_buckets(self, get_available_buckets):
-    self.test_build.put()
-    build2 = model.Build(bucket='other bucket')
-    build2.put()
+  def test_search_without_buckets(self):
+    self.mock_cannot(acl.Action.SEARCH_BUILDS, 'other bucket')
 
-    get_available_buckets.return_value = [self.test_build.bucket]
-    builds, _ = service.search()
+    build2 = model.Build(bucket='other bucket', tags=[self.INDEXED_TAG])
+    self.put_build(self.test_build)
+    self.put_build(build2)
+
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
+    self.assertEqual(builds, [self.test_build])
+    builds, _ = self.search()
     self.assertEqual(builds, [self.test_build])
 
     # All buckets are available.
-    get_available_buckets.return_value = None
-    builds, _ = service.search()
-    self.assertEqual(builds, [self.test_build, build2])
+    acl.get_available_buckets.return_value = None
+    acl.can_async.side_effect = None
+    builds, _ = self.search()
+    self.assertEqual(builds, [build2, self.test_build])
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
+    self.assertEqual(builds, [build2, self.test_build])
 
     # No buckets are available.
-    get_available_buckets.return_value = []
-    builds, _ = service.search()
+    acl.get_available_buckets.return_value = []
+    self.mock_cannot(acl.Action.SEARCH_BUILDS)
+    builds, _ = self.search()
+    self.assertEqual(builds, [])
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [])
 
   def test_search_with_auth_error(self):
     self.mock_cannot(acl.Action.SEARCH_BUILDS)
-    self.test_build.put()
+    self.put_build(self.test_build)
 
     with self.assertRaises(auth.AuthorizationError):
-      service.search(buckets=[self.test_build.bucket])
+      self.search(buckets=[self.test_build.bucket])
 
   def test_search_many_tags(self):
-    self.test_build.tags = ['important:true', 'author:ivan']
-    self.test_build.put()
+    self.test_build.tags = [self.INDEXED_TAG, 'important:true', 'author:ivan']
+    self.put_build(self.test_build)
     build2 = model.Build(
-      bucket=self.test_build.bucket,
-      tags=self.test_build.tags[:1],  # only one of two tags.
+        bucket=self.test_build.bucket,
+        tags=self.test_build.tags[:2],  # not authored by Ivan.
     )
-    build2.put()
+    self.put_build(build2)
 
     # Search by both tags.
-    builds, _ = service.search(
+    builds, _ = self.search(
         tags=self.test_build.tags,
         buckets=[self.test_build.bucket],
     )
@@ -539,123 +576,140 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_search_by_build_address(self, get_available_buckets):
     build_address = 'build_address:chromium/infra/1'
     self.test_build.tags = [build_address]
-    self.test_build.put()
+    self.put_build(self.test_build)
 
     get_available_buckets.return_value = [self.test_build.bucket]
     builds, _ = service.search(tags=[build_address])
     self.assertEqual(builds, [self.test_build])
 
-  @mock.patch('acl.get_available_buckets', autospec=True)
-  def test_search_by_buildset(self, get_available_buckets):
-    self.test_build.tags = ['buildset:x']
-    self.test_build.put()
-
-    build2 = model.Build(
-      bucket='secret.bucket',
-      tags=self.test_build.tags,  # only one of two tags.
-    )
-    build2.put()
-
-    get_available_buckets.return_value = [self.test_build.bucket]
-    builds, _ = service.search(tags=['buildset:x'])
-    self.assertEqual(builds, [self.test_build])
-
   def test_search_bucket(self):
-    self.test_build.put()
+    self.put_build(self.test_build)
     build2 = model.Build(
-      bucket='other bucket',
+        bucket='other bucket',
     )
-    build2.put()
+    self.put_build(build2)
 
-    builds, _ = service.search(buckets=[self.test_build.bucket])
+    builds, _ = self.search(buckets=[self.test_build.bucket])
     self.assertEqual(builds, [self.test_build])
 
   def test_search_by_status(self):
-    self.test_build.put()
+    self.put_build(self.test_build)
     build2 = model.Build(
-      bucket=self.test_build.bucket,
-      status=model.BuildStatus.COMPLETED,
-      result=model.BuildResult.SUCCESS,
+        bucket=self.test_build.bucket,
+        status=model.BuildStatus.COMPLETED,
+        result=model.BuildResult.SUCCESS,
     )
-    build2.put()
+    self.put_build(build2)
 
-    builds, _ = service.search(
-      buckets=[self.test_build.bucket],
-      status=model.BuildStatus.SCHEDULED)
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket],
+        status=model.BuildStatus.SCHEDULED,
+        tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
-    builds, _ = service.search(
-      buckets=[self.test_build.bucket],
-      status=model.BuildStatus.COMPLETED,
-      result=model.BuildResult.FAILURE)
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket],
+        status=model.BuildStatus.COMPLETED,
+        result=model.BuildResult.FAILURE,
+        tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [])
 
   def test_search_by_created_by(self):
-    self.test_build.put()
+    self.put_build(self.test_build)
     build2 = model.Build(
-      bucket=self.test_build.bucket,
-      created_by=auth.Identity.from_bytes('user:x@chromium.org')
+        bucket=self.test_build.bucket,
+        created_by=auth.Identity.from_bytes('user:x@chromium.org')
     )
-    build2.put()
+    self.put_build(build2)
 
-    builds, _ = service.search(
-      created_by='x@chromium.org', buckets=[self.test_build.bucket])
+    builds, _ = self.search(
+        created_by='x@chromium.org', buckets=[self.test_build.bucket])
     self.assertEqual(builds, [build2])
 
-  @mock.patch('acl.get_available_buckets', autospec=True)
-  def test_search_by_retry_of(self, get_available_buckets):
-    get_available_buckets.return_value = [self.test_build.bucket]
-    self.test_build.put()
+  def test_search_by_retry_of(self):
+    self.put_build(self.test_build)
     build2 = model.Build(
-      bucket=self.test_build.bucket,
-      retry_of=42,
+        bucket=self.test_build.bucket,
+        retry_of=42,
     )
-    build2.put()
+    self.put_build(build2)
 
-    builds, _ = service.search(retry_of=42)
+    builds, _ = self.search(retry_of=42)
     self.assertEqual(builds, [build2])
+
+  def test_search_by_retry_of_and_buckets(self):
+    self.test_build.retry_of = 42
+    self.put_build(self.test_build)
+    self.put_build(model.Build(bucket='other bucket', retry_of=42))
+
+    builds, _ = self.search(retry_of=42, buckets=[self.test_build.bucket])
+    self.assertEqual(builds, [self.test_build])
 
   def test_search_by_retry_of_with_auth_error(self):
     self.mock_cannot(acl.Action.SEARCH_BUILDS, bucket=self.test_build.bucket)
-    self.test_build.put()
+    self.put_build(self.test_build)
     build2 = model.Build(
         bucket=self.test_build.bucket,
         retry_of=self.test_build.key.id(),
     )
-    build2.put()
+    self.put_build(build2)
 
     with self.assertRaises(auth.AuthorizationError):
       # The build we are looking for was a retry of a build that is in a bucket
       # that we don't have access to.
-      service.search(retry_of=self.test_build.key.id())
+      self.search(retry_of=self.test_build.key.id())
 
   def test_search_by_created_by_with_bad_string(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.search(created_by='blah')
+      self.search(created_by='blah')
 
-  def test_search_with_paging(self):
+  def test_search_with_paging_using_datastore_query(self):
     self.put_many_builds()
 
-    first_page, next_cursor = service.search(
-      buckets=[self.test_build.bucket],
-      max_builds=10,
+    first_page, next_cursor = self.search(
+        buckets=[self.test_build.bucket],
+        max_builds=10,
     )
     self.assertEqual(len(first_page), 10)
     self.assertTrue(next_cursor)
 
-    second_page, _ = service.search(
-      buckets=[self.test_build.bucket],
-      max_builds=10,
-      start_cursor=next_cursor)
+    second_page, _ = self.search(
+        buckets=[self.test_build.bucket],
+        max_builds=10,
+        start_cursor=next_cursor)
     self.assertEqual(len(second_page), 10)
     # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
     self.assertTrue(
         any(new not in first_page for new in second_page))  # pragma: no cover
 
+  def test_search_with_paging_using_tag_index(self):
+    self.put_many_builds(20, tags=[self.INDEXED_TAG])
+
+    first_page, first_cursor = self.search(
+        tags=[self.INDEXED_TAG],
+        max_builds=10,
+        dual_search=False,
+    )
+    self.assertEqual(len(first_page), 10)
+    self.assertEqual(first_cursor, 'id>%d' % first_page[-1].key.id())
+
+    second_page, second_cursor = self.search(
+        tags=[self.INDEXED_TAG],
+        max_builds=10,
+        start_cursor=first_cursor)
+    self.assertEqual(len(second_page), 10)
+
+    third_page, third_cursor = self.search(
+        tags=[self.INDEXED_TAG],
+        max_builds=10,
+        start_cursor=second_cursor)
+    self.assertEqual(len(third_page), 0)
+    self.assertFalse(third_cursor)
+
   def test_search_with_bad_tags(self):
     def test_bad_tag(tags):
       with self.assertRaises(errors.InvalidInputError):
-        service.search(buckets=['bucket'], tags=tags)
+        self.search(buckets=['bucket'], tags=tags)
 
     test_bad_tag(['x'])
     test_bad_tag([1])
@@ -664,17 +718,120 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_search_with_bad_buckets(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.search(buckets={})
+      self.search(buckets={})
     with self.assertRaises(errors.InvalidInputError):
-      service.search(buckets=[1])
+      self.search(buckets=[1])
 
   def test_search_with_non_number_max_builds(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.search(buckets=['b'], tags=['a:b'], max_builds='a')
+      self.search(buckets=['b'], tags=['a:b'], max_builds='a')
 
   def test_search_with_negative_max_builds(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.search(buckets=['b'], tags=['a:b'], max_builds=-2)
+      self.search(buckets=['b'], tags=['a:b'], max_builds=-2)
+
+  def test_search_by_indexed_tag(self):
+    self.put_build(self.test_build)
+
+    secret_build = model.Build(
+        bucket='secret.bucket',
+        tags=[self.INDEXED_TAG],
+    )
+    self.put_build(secret_build)
+
+    different_buildset = model.Build(
+        bucket='secret.bucket',
+        tags=['buildset:2'],
+    )
+    self.put_build(different_buildset)
+
+    different_bucket = model.Build(
+        bucket='another bucket',
+        tags=[self.INDEXED_TAG],
+    )
+    self.put_build(different_bucket)
+
+    self.mock_cannot(acl.Action.SEARCH_BUILDS, 'secret.bucket')
+    builds, _ = self.search(
+        tags=[self.INDEXED_TAG], buckets=[self.test_build.bucket])
+    self.assertEqual(builds, [self.test_build])
+
+  def test_search_with_invalid_tag_entry_order(self):
+    self.test_build.tags = [self.INDEXED_TAG]
+    self.test_build.put()
+
+    model.TagIndex(
+        id=self.INDEXED_TAG,
+        entries=[
+          model.TagIndexEntry(
+              bucket=self.test_build.bucket,
+              build_id=1,
+          ),
+          model.TagIndexEntry(
+              bucket=self.test_build.bucket,
+              build_id=2,
+          ),
+        ]
+    ).put()
+
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG])
+    self.assertEqual(builds, [self.test_build])
+
+    with self.assertRaises(errors.InvalidIndexEntryOrder):
+      self.search(
+          buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG],
+          start_cursor='id>0')
+
+  def test_search_with_incomplete_index(self):
+    self.test_build.tags = [self.INDEXED_TAG]
+    self.test_build.put()
+
+    model.TagIndex(
+        id=self.INDEXED_TAG,
+        permanently_incomplete=True).put()
+
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG])
+    self.assertEqual(builds, [self.test_build])
+
+    with self.assertRaises(errors.TagIndexIncomplete):
+      self.search(
+          buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG],
+          start_cursor='id>0')
+
+  def test_search_with_no_tag_index(self):
+    builds, _ = self.search()
+    self.assertEqual(builds, [])
+
+  def test_search_with_inconsistent_entries(self):
+    self.put_build(self.test_build)
+
+    will_be_deleted = model.Build(
+        bucket=self.test_build.bucket, tags=[self.INDEXED_TAG])
+    self.put_build(will_be_deleted)  # updates index
+    will_be_deleted.key.delete()
+
+    buildset_will_change = model.Build(
+        bucket=self.test_build.bucket, tags=[self.INDEXED_TAG])
+    self.put_build(buildset_will_change)  # updates index
+    buildset_will_change.tags = []
+    buildset_will_change.put()
+
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
+    self.assertEqual(builds, [self.test_build])
+
+  def test_search_with_tag_index_cursor(self):
+    builds = self.put_many_builds(10)
+    builds, cursor = self.search(
+        tags=[self.INDEXED_TAG],
+        start_cursor='id>%d' % builds[-1].key.id())
+    self.assertEqual(builds, [])
+    self.assertIsNone(cursor)
+
+  def test_search_with_tag_index_cursor_but_no_inded_tag(self):
+    with self.assertRaises(errors.InvalidInputError):
+      self.search(start_cursor='id>1')
 
   #################################### PEEK ####################################
 
@@ -737,7 +894,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   #################################### LEASE ###################################
 
   def lease(self, lease_expiration_date=None):
-    if self.test_build.key is None:
+    if not (self.test_build.key and self.test_build.key.get()):
       self.test_build.put()
     success, self.test_build = service.lease(
       self.test_build.key.id(),

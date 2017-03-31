@@ -502,15 +502,10 @@ class BuildBucketApi(remote.Service):
         msg.lease_expiration_ts = utils.datetime_to_timestamp(
             build.lease_expiration_date)
       else:
-        if not isinstance(ex, errors.Error):
+        if type(ex) not in ERROR_REASON_MAP:
           logging.error(ex.message, exc_info=ex)
           raise endpoints.InternalServerErrorException(ex.message)
-
-        assert type(ex) in ERROR_REASON_MAP
-        msg.error = ErrorMessage(
-            reason=ERROR_REASON_MAP[type(ex)],
-            message=ex.message,
-        )
+        msg.error = exception_to_error_message(ex)
 
       return msg
 

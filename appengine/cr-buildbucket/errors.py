@@ -27,6 +27,14 @@ class LeaseExpiredError(Error):
   """Raised when provided lease_key does not match the current one."""
 
 
+class TagIndexIncomplete(Error):
+  """Raised when a tag index is permanently incomplete and cannot be used."""
+
+
+class InvalidIndexEntryOrder(Error):
+  """Raised when tag index entry order is incorrect."""
+
+
 def validate_bucket_name(bucket, project_id=None):
   """Raises InvalidInputError if bucket name is invalid."""
   if not bucket:

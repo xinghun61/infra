@@ -6,6 +6,7 @@ import collections
 import contextlib
 import datetime
 import logging
+import re
 import sys
 import urlparse
 
@@ -31,6 +32,7 @@ MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 MAX_BUILDSET_LENGTH = 1024
+TAG_INDEX_SEARCH_CURSOR_RE = re.compile('^id>\d+$')
 
 validate_bucket_name = errors.validate_bucket_name
 
@@ -533,11 +535,15 @@ def _check_search_acls(buckets):
       raise acl.current_identity_cannot('search builds in bucket %s', bucket)
 
 
+def _log_inconsistent_search_results(error_message):  # pragma: no cover
+  logging.error(error_message)
+
+
 def search(
     buckets=None, tags=None,
     status=None, result=None, failure_reason=None, cancelation_reason=None,
     created_by=None, max_builds=None, start_cursor=None,
-    retry_of=None):
+    retry_of=None, dual_search=True):
   """Searches for builds.
 
   Args:
@@ -554,6 +560,9 @@ def search(
     start_cursor (string): a value of "next" cursor returned by previous
       search_by_tags call. If not None, return next builds in the query.
     retry_of (int): value of retry_of attribute.
+    dual_search (bool): if True, performs the search using both tag
+      index (if possible) and datastore query, and logs any inconsistencies.
+      TODO(nodir): change the default to False.
 
   Returns:
     A tuple:
@@ -574,19 +583,81 @@ def search(
       buckets = [retry_of_build.bucket]
   if buckets:
     _check_search_acls(buckets)
-  else:
+    buckets = set(buckets)
+
+  search_args = (
+    buckets, tags, status, result, failure_reason, cancelation_reason,
+    created_by, max_builds, start_cursor, retry_of)
+
+  is_tag_index_cursor = (
+    start_cursor and TAG_INDEX_SEARCH_CURSOR_RE.match(start_cursor))
+  can_use_tag_index = (
+    _indexed_tags(tags) and (not start_cursor or is_tag_index_cursor))
+  if is_tag_index_cursor and not can_use_tag_index:
+    raise errors.InvalidInputError('invalid cursor')
+  can_use_query_search = not start_cursor or not is_tag_index_cursor
+  assert can_use_tag_index or can_use_query_search
+
+  # Try searching using tag index.
+  tag_index_results = None  # tuple (builds, next_cursor)
+  if can_use_tag_index:
+    try:
+      search_start_time = utils.utcnow()
+      tag_index_results = _tag_index_search(*search_args)
+      logging.info(
+          'tag index search took %dms',
+          (utils.utcnow() - search_start_time).total_seconds() * 1000)
+    except (errors.InvalidIndexEntryOrder, errors.TagIndexIncomplete) as ex:
+      if isinstance(ex, errors.InvalidIndexEntryOrder):
+        logging.exception('invalid index entry order')
+      if not can_use_query_search:
+        raise
+      logging.info('falling back to querying')
+
+  # Try searching using datastore query if we don't have tag index results or
+  # if we were asked to search using both tag index and query.
+  query_results = None  # tuple (builds, next_cursor)
+  if can_use_query_search and (not tag_index_results or dual_search):
+    search_start_time = utils.utcnow()
+    query_results = _query_search(*search_args)
+    logging.info(
+        'query search took %dms',
+        (utils.utcnow() - search_start_time).total_seconds() * 1000)
+
+  # Compare results if we have both.
+  if tag_index_results and query_results:
+    ids = lambda bs: [b.key.id() for b in bs]
+    if ids(tag_index_results[0]) != ids(query_results[0]):  # pragma: no cover
+      _log_inconsistent_search_results(
+          ('inconsistent search results\n'
+           'search arguments: %r\n'
+           'query search results: %r\n'
+           'tag index search results: %r') %
+          (search_args, query_results[0], tag_index_results[0]))
+
+  assert query_results or tag_index_results  # we have to have something.
+  return query_results or tag_index_results  # prefer query results.
+
+
+def _query_search(
+    buckets, tags, status, result, failure_reason, cancelation_reason,
+    created_by, max_builds, start_cursor, retry_of):
+  """Searches for builds using NDB query. For args doc, see search().
+
+  Assumes:
+  - arguments are valid
+  - if bool(buckets), permissions are checked.
+  """
+  if not buckets:
     buckets = acl.get_available_buckets()
     if buckets is not None and len(buckets) == 0:
       return [], None
-  if buckets:
-    buckets = set(buckets)
+  # (buckets is None) means the requester has access to all buckets.
   assert buckets is None or buckets
 
   check_buckets_locally = retry_of is not None
   q = model.Build.query()
   for t in tags:
-    if t.startswith('buildset:'):
-      check_buckets_locally = True
     q = q.filter(model.Build.tags == t)
   filter_if = lambda p, v: q if v is None else q.filter(p == v)
   q = filter_if(model.Build.status, status)
@@ -614,6 +685,145 @@ def search(
 
   return _fetch_page(
       q, max_builds, start_cursor, predicate=local_predicate)
+
+
+def _tag_index_search(
+    buckets, tags, status, result, failure_reason, cancelation_reason,
+    created_by, max_builds, start_cursor, retry_of):
+  """Searches for builds using TagIndex entities. For args doc, see search().
+
+  Assumes:
+  - arguments are valid
+  - if bool(buckets), permissions are checked.
+
+  Raises:
+    errors.TagIndexIncomplete if the tag index is complete and cannot be used.
+    errors.InvalidIndexEntryOrder if raised when the tag index entry order is
+      invalid.
+  """
+  assert tags
+  assert not buckets or isinstance(buckets, set)
+
+  # Choose a tag to search by.
+  all_indexed_tags = _indexed_tags(tags)
+  assert all_indexed_tags
+  indexed_tag = all_indexed_tags[0] # choose the most selective tag.
+  indexed_tag_key = indexed_tag.split(':', 1)[0]
+  # Exclude the indexed tag from the tag filter.
+  tags = tags[:]
+  tags.remove(indexed_tag)
+
+  idx = model.TagIndex.get_by_id(indexed_tag)
+  if not idx:
+    return [], None
+  if idx.permanently_incomplete:
+    raise errors.TagIndexIncomplete('TagIndex(%s) is incomplete' % indexed_tag)
+  logging.info('using TagIndex(%s)', indexed_tag)
+
+  _check_tag_index_entry_order(idx)
+
+  # If buckets were not specified explicitly, permissions were not checked
+  # earlier. In this case, check permissions for each build.
+  check_permissions = not buckets
+  has_access_cache = {}
+
+  def has_access(bucket):
+    has = has_access_cache.get(bucket)
+    if has is None:
+      has = acl.can_search_builds(bucket)
+      has_access_cache[bucket] = has
+    return has
+
+  # The order of index entries is descending, i.e. the newest builds are in the
+  # end. Start from the end.
+  entry_index = len(idx.entries) - 1
+
+  # Skip entries with build ids that are less or equal to the id in the cursor.
+  if start_cursor:
+    # The cursor is an minimum build id, exclusive. Such cursor is resilient
+    # to additions of index entries to beginning or end.
+    assert TAG_INDEX_SEARCH_CURSOR_RE.match(start_cursor)
+    min_id_exclusive = int(start_cursor[len('id>'):])
+    # TODO(nodir): optimization: use binary search.
+    while entry_index >= 0:
+      if idx.entries[entry_index].build_id > min_id_exclusive:
+        break
+      entry_index -= 1
+    if entry_index < 0:
+      # We've skipped everything.
+      return [], None
+
+  # scalar_filters maps a name of a model.Build attribute to a filter value.
+  # Applies only to non-repeated fields.
+  scalar_filters = [
+    ('status', status),
+    ('result', result),
+    ('failure_reason', failure_reason),
+    ('cancelation_reason', cancelation_reason),
+    ('created_by', created_by),
+    ('retry_of', retry_of),
+  ]
+  scalar_filters = [(a, v) for a, v in scalar_filters if v is not None]
+
+  # Find the builds.
+  result = [] # ordered by build id by ascending.
+  last_considered_entry = None
+  skipped_entries = 0
+  inconsistent_entries = 0
+  while len(result) < max_builds and entry_index >= 0:
+    fetch_count = max_builds - len(result)
+    entries_to_fetch = [] # ordered by build id by ascending.
+    while entry_index >= 0:
+      e = idx.entries[entry_index]
+      entry_index -= 1
+      last_considered_entry = e
+      # If we filter by bucket, check it here without fetching the build.
+      # This is not a security check.
+      if buckets and e.bucket not in buckets:
+        continue
+      if check_permissions and not has_access(e.bucket):
+        continue
+      entries_to_fetch.append(e)
+      if len(entries_to_fetch) >= fetch_count:
+        break
+
+    if not entries_to_fetch:
+      break # EOF
+
+    build_keys = [ndb.Key(model.Build, e.build_id) for e in entries_to_fetch]
+    for e, b in zip(entries_to_fetch, ndb.get_multi(build_keys)):
+      # Check for inconsistent entries.
+      if not (b and b.bucket == e.bucket and idx.key.id() in b.tags):
+        logging.warning('entry with build_id %d is inconsistent', e.build_id)
+        inconsistent_entries += 1
+        continue
+      # Check user-supplied filters.
+      if any(getattr(b, a) != v for a, v in scalar_filters):
+        skipped_entries += 1
+        continue
+      if any(t not in b.tags for t in tags):
+        skipped_entries += 1
+        continue
+      result.append(b)
+  metrics.TAG_INDEX_SEARCH_SKIPPED_BUILDS.add(
+      skipped_entries, fields={metrics.FIELD_TAG: indexed_tag_key})
+  metrics.TAG_INDEX_INCONSISTENT_ENTRIES.add(
+      inconsistent_entries, fields={metrics.FIELD_TAG: indexed_tag_key})
+
+  # Return the results.
+  next_cursor = None
+  if last_considered_entry:  # pragma: no branch
+    next_cursor = 'id>%d' % last_considered_entry.build_id
+  return result, next_cursor
+
+
+def _check_tag_index_entry_order(idx):
+  """Raises errors.InvalidIndexEntryOrder if the order is incorrect."""
+  # The order must be descending.
+  for i in xrange(len(idx.entries) - 1):
+    if idx.entries[i].build_id <= idx.entries[i+1].build_id:
+      raise errors.InvalidIndexEntryOrder(
+          'invalid entry order in TagIndex(%r)' % idx.key.id())
 
 
 def peek(buckets, max_builds=None, start_cursor=None):
@@ -1224,7 +1434,10 @@ def _add_to_tag_index_async(tag, new_entries):
 
 
 def _indexed_tags(tags):
-  """Returns a list of tags that must be indexed."""
+  """Returns a list of tags that must be indexed.
+
+  The order of returned tags is from more selective to less selective.
+  """
   if not tags:
     return []
   return sorted(set(
