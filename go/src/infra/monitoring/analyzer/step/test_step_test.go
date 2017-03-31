@@ -263,6 +263,36 @@ func TestTestStepFailureAlerts(t *testing.T) {
 					},
 				},
 				{
+					name: "test step failure with weird step name on perf",
+					failures: []*messages.BuildStep{
+						{
+							Master: &messages.MasterLocation{URL: url.URL{
+								Scheme: "https",
+								Host:   "build.chromium.org",
+								Path:   "/p/chromium.perf",
+							}},
+							Build: &messages.Build{
+								BuilderName: "fake_builder",
+							},
+							Step: &messages.Step{
+								Name: "something_tests on windows_7 on Intel GPU",
+								Logs: [][]interface{}{
+									{
+										"swarming.summary",
+										"foo",
+									},
+								},
+							},
+						},
+					},
+					wantResult: []messages.ReasonRaw{
+						&testFailure{
+							TestNames: []string{},
+							StepName:  "something_tests",
+						},
+					},
+				},
+				{
 					name: "flaky",
 					failures: []*messages.BuildStep{
 						{

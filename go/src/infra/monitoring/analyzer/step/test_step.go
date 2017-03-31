@@ -134,6 +134,7 @@ func GetTestSuite(bs *messages.BuildStep) string {
 		for _, b := range bs.Step.Logs {
 			if len(b) > 1 && b[0] == "swarming.summary" {
 				found = true
+				break
 			}
 		}
 
@@ -160,20 +161,26 @@ func GetTestSuite(bs *messages.BuildStep) string {
 func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string, error) {
 	name := GetTestSuite(f)
 	if name == "" {
-		return "", nil, nil
+		return name, nil, nil
 	}
 
 	failedTests := []string{}
 
 	testResults, err := client.TestResults(ctx, f.Master, f.Build.BuilderName, name, f.Build.Number)
-	if err != nil {
-		// Still want to keep on serving some data, even if test results is down. We can also do something
-		// in this analyzer, even if we have no test results.
-		logging.Warningf(ctx, "got error fetching test results (ignoring): %s", err)
-		return name, nil, nil
-	}
 
-	if testResults == nil || len(testResults.Tests) == 0 {
+	if testResults == nil || len(testResults.Tests) == 0 || err != nil {
+		if err != nil {
+			// Still want to keep on serving some data, even if test results is down. We can also do something
+			// in this analyzer, even if we have no test results.
+			logging.Warningf(ctx, "got error fetching test results (ignoring): %s", err)
+		}
+
+		if name != f.Step.Name {
+			// Signal that we still found something useful, even if we
+			// don't have test results.
+			return name, failedTests, nil
+		}
+
 		return name, nil, nil
 	}
 
