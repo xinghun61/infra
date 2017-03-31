@@ -78,11 +78,23 @@ def fix_max_builds(max_builds):
   return min(MAX_RETURN_BUILDS, max_builds)
 
 
-def validate_tags(tags):
+def validate_tags(tags, mode, builder=None):
+  """Validates build tags.
+
+  mode must be a string, one of:
+    'new': tags are for a new build.
+    'append': tags are to be appended to an existing build.
+    'search': tags to search by.
+
+  builder is the value of "builder_name" parameter. If specified, tags
+  "builder:<v>" must have v equal to the builder.
+  """
+  assert mode in ('new', 'append', 'search'), mode
   if tags is None:
     return
   if not isinstance(tags, list):
     raise errors.InvalidInputError('tags must be a list')
+  builder_tag = None
   for t in tags:
     if not isinstance(t, basestring):
       raise errors.InvalidInputError('Invalid tag "%s": must be a string')
@@ -90,10 +102,25 @@ def validate_tags(tags):
       raise errors.InvalidInputError('Invalid tag "%s": does not contain ":"')
     if t[0] == ':':
       raise errors.InvalidInputError('Invalid tag "%s": starts with ":"')
-    if t.startswith('buildset:') and len(t) > MAX_BUILDSET_LENGTH:
+    k, v = t.split(':', 1)
+    if k == 'buildset' and len(t) > MAX_BUILDSET_LENGTH:
       raise errors.InvalidInputError('Tag "buildset" is too long: %s', t)
-    if t.startswith('build_address:'):
+    if k == 'build_address' and mode != 'search':
       raise errors.InvalidInputError('Tag "build_address" is reserved')
+    if k == 'builder':
+      if mode == 'append':
+        raise errors.InvalidInputError(
+          'Tag "builder" cannot be added to an existing build')
+      if mode == 'new':  # pragma: no branch
+        if builder is not None and v != builder:
+          raise errors.InvalidInputError(
+              'Tag "%s" conflicts with builder_name parameter "%s"' %
+              (t, builder))
+        if builder_tag is None:
+          builder_tag = t
+        elif t != builder_tag:
+          raise errors.InvalidInputError(
+              'Tag "%s" conflicts with tag "%s"' % (t, builder_tag))
 
 
 _BuildRequestBase = collections.namedtuple('_BuildRequestBase', [
@@ -136,7 +163,10 @@ class BuildRequest(_BuildRequestBase):
     """
     # Validate.
     validate_bucket_name(self.bucket)
-    validate_tags(self.tags)
+    validate_tags(
+        self.tags, 'new',
+        builder=self.parameters.get('builder_name') if self.parameters else None
+    )
     if self.parameters is not None and not isinstance(self.parameters, dict):
       raise errors.InvalidInputError('parameters must be a dict or None')
     validate_lease_expiration_date(self.lease_expiration_date)
@@ -149,46 +179,11 @@ class BuildRequest(_BuildRequestBase):
             'client_operation_id must not contain /')
 
     # Normalize.
-    normalized_tags = self._add_builder_tag(self.tags, self.parameters)
-    normalized_tags = sorted(set(normalized_tags))
-
-    if normalized_tags == self.tags:
-      return self
+    normalized_tags = sorted(set(self.tags or []))
     return BuildRequest(
         self.bucket, normalized_tags, self.parameters,
         self.lease_expiration_date, self.client_operation_id,
         self.pubsub_callback, self.retry_of)
-
-  @staticmethod
-  def _add_builder_tag(tags, parameters):
-    """Returns the tags with an additional builder: tag if necessary.
-
-    If no builder_name parameter is specified, returns the tags unchanged.
-    If the tags contain a builder: tag which conflicts with other pre-specified
-    tags or the calculated tag, raises an error.
-    """
-    if tags is None:
-      tags = []
-
-    prefix = 'builder:'
-    values = list(set(t[len(prefix):] for t in tags if t.startswith(prefix)))
-    if len(values) > 1:
-      raise errors.InvalidInputError(
-          'Invalid builder tags %s: different values' % values)
-
-    if not parameters or 'builder_name' not in parameters:
-      return tags
-
-    builder = parameters.get('builder_name')
-    if len(values) == 0:
-      return tags + [prefix + builder]
-
-    if builder != values[0]:
-      raise errors.InvalidInputError(
-          'Invalid builder tag "%s": conflicts with builder_name parameter "%s"'
-          % (values[0], builder))
-
-    return tags
 
   def _client_op_memcache_key(self, identity=None):
     if self.client_operation_id is None:  # pragma: no cover
@@ -203,6 +198,7 @@ class BuildRequest(_BuildRequestBase):
     build = model.Build(
         id=build_id,
         bucket=self.bucket,
+        initial_tags=self.tags,
         tags=self.tags,
         parameters=self.parameters,
         status=model.BuildStatus.SCHEDULED,
@@ -343,7 +339,14 @@ def add_many_async(build_request_list):
         if build_id not in build_ids:  # pragma: no branch
           break
       build_ids.add(build_id)
-      new_builds[i] = r.create_build(build_id, identity)
+      b = r.create_build(build_id, identity)
+      builder = b.parameters.get('builder_name') if b.parameters else None
+      if builder:
+        builder_tag = 'builder:' + builder
+        if builder_tag not in b.tags:
+          b.tags.append(builder_tag)
+      new_builds[i] = b
+
 
   @ndb.tasklet
   def create_swarming_tasks_async():
@@ -384,6 +387,8 @@ def add_many_async(build_request_list):
   @ndb.tasklet
   def put_and_cache_builds_async():
     """Puts new builds, updates metrics and memcache."""
+    for b in new_builds.itervalues():
+      b.tags = sorted(set(b.tags))
     yield ndb.put_multi_async(new_builds.values())
     memcache_sets = []
     for i, b in new_builds.iteritems():
@@ -464,7 +469,7 @@ def retry(
     raise errors.BuildNotFoundError('Build %s not found' % build_id)
   return add(BuildRequest(
       build.bucket,
-      tags=build.tags,
+      tags=build.initial_tags if build.initial_tags is not None else build.tags,
       parameters=build.parameters,
       lease_expiration_date=lease_expiration_date,
       client_operation_id=client_operation_id,
@@ -558,7 +563,7 @@ def search(
   """
   if buckets is not None and not isinstance(buckets, list):
     raise errors.InvalidInputError('Buckets must be a list or None')
-  validate_tags(tags)
+  validate_tags(tags, 'search')
   tags = tags or []
   max_builds = fix_max_builds(max_builds)
   created_by = parse_identity(created_by)
@@ -883,7 +888,7 @@ def _complete(
   """Marks a build as completed. Used by succeed and fail methods."""
   validate_lease_key(lease_key)
   validate_url(url)
-  validate_tags(new_tags)
+  validate_tags(new_tags, 'append')
   assert result in (model.BuildResult.SUCCESS, model.BuildResult.FAILURE)
 
   @ndb.transactional

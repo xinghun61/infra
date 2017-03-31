@@ -187,63 +187,71 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertTrue('builder:linux_rel' in build.tags)
 
   def test_validate_tags_none(self):
-    self.assertIsNone(service.validate_tags(None))
+    self.assertIsNone(service.validate_tags(None, 'search'))
 
   def test_validate_tags_nonlist(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags('tag:value')
+      service.validate_tags('tag:value', 'search')
 
   def test_validate_tags_nonstring(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags(['tag:value', 123456])
+      service.validate_tags(['tag:value', 123456], 'search')
 
   def test_validate_tags_no_colon(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags(['tag,value'])
+      service.validate_tags(['tag,value'], 'search')
 
   def test_validate_tags_build_address(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags(['build_address:1'])
+      service.validate_tags(['build_address:1'], 'new')
+    with self.assertRaises(errors.InvalidInputError):
+      service.validate_tags(['build_address:1'], 'append')
 
-  def normalize_tags(self, tags, parameters):
-    req = service.BuildRequest(bucket='a', tags=tags, parameters=parameters)
-    return req.normalize().tags
+  def test_validate_tags_append_builder(self):
+    with self.assertRaises(errors.InvalidInputError):
+      service.validate_tags(['builder:1'], 'append')
 
   def test_validate_tags_no_key(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.validate_tags([':'])
+      service.validate_tags([':'], 'search')
 
   def test_add_builder_tag(self):
-    self.assertEqual(
-      self.normalize_tags([], {'builder_name': 'foo'}), ['builder:foo'])
-
-  def test_add_builder_tag_none(self):
-    self.assertEqual(self.normalize_tags(None, {}), [])
-
-  def test_add_builder_tag_no_params(self):
-    self.assertEqual(self.normalize_tags([], None), [])
-
-  def test_add_builder_tag_unspecified(self):
-    self.assertEqual(self.normalize_tags([], {'foo': 'bar'}), [])
+    build = service.add(service.BuildRequest(
+        bucket='chromium',
+        parameters={'builder_name': 'foo'}
+    ))
+    self.assertEqual(build.tags, ['builder:foo'])
 
   def test_add_builder_tag_multi(self):
-    self.assertEqual(
-      self.normalize_tags(['builder:foo', 'builder:foo'], {'foo': 'bar'}),
-      ['builder:foo'])
+    build = service.add(service.BuildRequest(
+        bucket='chromium',
+        parameters={'builder_name': 'foo'},
+        tags=['builder:foo', 'builder:foo'],
+    ))
+    self.assertEqual(build.tags, ['builder:foo'])
 
   def test_add_builder_tag_different(self):
-    tags = ['builder:foo', 'builder:bar']
     with self.assertRaises(errors.InvalidInputError):
-        self.normalize_tags(tags, {'foo': 'bar'})
+      service.add(service.BuildRequest(
+          bucket='chromium',
+          tags=['builder:foo', 'builder:bar'],
+      ))
 
   def test_add_builder_tag_coincide(self):
-    tags = ['builder:foo']
-    self.assertEqual(self.normalize_tags(tags, {'builder_name': 'foo'}), tags)
+    build = service.add(service.BuildRequest(
+        bucket='chromium',
+        parameters={'builder_name': 'foo'},
+        tags=['builder:foo'],
+    ))
+    self.assertEqual(build.tags, ['builder:foo'])
 
   def test_add_builder_tag_conflict(self):
-    tags = ['builder:foo']
     with self.assertRaises(errors.InvalidInputError):
-      self.normalize_tags(tags, {'builder_name': 'bar'})
+      service.add(service.BuildRequest(
+          bucket='chromium',
+          parameters={'builder_name': 'foo'},
+          tags=['builder:bar'],
+      ))
 
   def test_add_long_buildset(self):
     with self.assertRaises(errors.InvalidInputError):
@@ -376,6 +384,19 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   ################################### RETRY ####################################
 
   def test_retry(self):
+    self.test_build.initial_tags = ['x:x']
+    self.test_build.tags = self.test_build.initial_tags + ['y:y']
+    self.test_build.put()
+    build = service.retry(self.test_build.key.id())
+    self.assertIsNotNone(build)
+    self.assertIsNotNone(build.key)
+    self.assertNotEqual(build.key.id(), self.test_build.key.id())
+    self.assertEqual(build.bucket, self.test_build.bucket)
+    self.assertEqual(build.parameters, self.test_build.parameters)
+    self.assertEqual(build.retry_of, self.test_build.key.id())
+    self.assertEqual(build.tags, ['builder:infra', 'x:x'])
+
+  def test_retry_with_build_address(self):
     self.test_build.put()
     build = service.retry(self.test_build.key.id())
     self.assertIsNotNone(build)
@@ -509,9 +530,19 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     # Search by both tags.
     builds, _ = service.search(
-      tags=self.test_build.tags,
-      buckets=[self.test_build.bucket],
+        tags=self.test_build.tags,
+        buckets=[self.test_build.bucket],
     )
+    self.assertEqual(builds, [self.test_build])
+
+  @mock.patch('acl.get_available_buckets', autospec=True)
+  def test_search_by_build_address(self, get_available_buckets):
+    build_address = 'build_address:chromium/infra/1'
+    self.test_build.tags = [build_address]
+    self.test_build.put()
+
+    get_available_buckets.return_value = [self.test_build.bucket]
+    builds, _ = service.search(tags=[build_address])
     self.assertEqual(builds, [self.test_build])
 
   @mock.patch('acl.get_available_buckets', autospec=True)

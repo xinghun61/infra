@@ -96,8 +96,12 @@ class Build(ndb.Model):
     status (BuildStatus): status of the build.
     bucket (string): a generic way to distinguish builds. Different buckets have
       different permissions.
-    tags (list of string): a list of tags, where each tag is a string with ":"
-      symbol. The first occurance of ":" splits tag name and tag value.
+    initial_tags (list of string): a list of tags, where each tag is a string
+      with ":" symbol. The first occurrence of ":" splits tag name and tag
+      value. Contains only tags specified by the build request. Old Build
+      entities do not have this field.
+    tags (list of string): superset of initial_tags.
+      May contain auto-added tags.
     parameters (dict): immutable arbitrary build parameters.
     pubsub_callback (PubSubCallback): PubSub message parameters for build status
       change notifications.
@@ -123,6 +127,7 @@ class Build(ndb.Model):
   create_time = ndb.DateTimeProperty(auto_now_add=True)
   created_by = auth.IdentityProperty()
   bucket = ndb.StringProperty(required=True)
+  initial_tags = ndb.StringProperty(repeated=True, indexed=False)
   tags = ndb.StringProperty(repeated=True)
   parameters = ndb.JsonProperty()
   pubsub_callback = ndb.StructuredProperty(PubSubCallback, indexed=False)
