@@ -318,6 +318,9 @@ func main() {
 func loadConfigsAndRun(ctx context.Context) error {
 	authOptions := infraenv.DefaultAuthOptions()
 	authOptions.Method = auth.ServiceAccountMethod
+	if *login {
+		authOptions.Method = auth.UserCredentialsMethod
+	}
 	authOptions.ServiceAccountJSONPath = *serviceAccountJSON
 	authOptions.Scopes = []string{
 		auth.OAuthScopeEmail,
