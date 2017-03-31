@@ -714,11 +714,14 @@ def _tag_index_search(
   tags.remove(indexed_tag)
 
   idx = model.TagIndex.get_by_id(indexed_tag)
-  if not idx:
-    return [], None
-  if idx.permanently_incomplete:
+  if idx and idx.permanently_incomplete:
     raise errors.TagIndexIncomplete('TagIndex(%s) is incomplete' % indexed_tag)
-  logging.info('using TagIndex(%s)', indexed_tag)
+  if not idx or not idx.entries:
+    logging.info('no index/entries for tag %s', indexed_tag)
+    return [], None
+  logging.info(
+      'using TagIndex(%s); last build id = %s',
+      indexed_tag, idx.entries[-1].build_id)
 
   _check_tag_index_entry_order(idx)
 
