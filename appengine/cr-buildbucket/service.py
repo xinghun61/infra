@@ -543,7 +543,7 @@ def search(
     buckets=None, tags=None,
     status=None, result=None, failure_reason=None, cancelation_reason=None,
     created_by=None, max_builds=None, start_cursor=None,
-    retry_of=None, dual_search=True):
+    retry_of=None, dual_search=False):
   """Searches for builds.
 
   Args:
@@ -562,7 +562,7 @@ def search(
     retry_of (int): value of retry_of attribute.
     dual_search (bool): if True, performs the search using both tag
       index (if possible) and datastore query, and logs any inconsistencies.
-      TODO(nodir): change the default to False.
+      TODO(nodir): remove this parameter.
 
   Returns:
     A tuple:
