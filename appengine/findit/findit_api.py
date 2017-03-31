@@ -25,8 +25,10 @@ import gae_ts_mon
 from common import appengine_util
 from common import constants
 from common.waterfall import failure_type
+from gae_libs.caches import PickledMemCache
 from gae_libs.http import auth_util
 from libs import time_util
+from libs.cache_decorator import Cached
 from model import analysis_approach_type
 from model import analysis_status
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
@@ -47,6 +49,8 @@ from waterfall.flake import flake_analysis_service
 # class names in the discovery doc and client libraries.
 package = 'FindIt'
 
+# How many seconds to cache requests for repeat analyses.
+ANALYSIS_CACHE_TIME = 5 * 60
 
 # These subclasses of Message are basically definitions of Protocol RPC
 # messages. https://cloud.google.com/appengine/docs/python/tools/protorpc/
@@ -140,6 +144,8 @@ class _FlakeAnalysis(messages.Message):
   queued = messages.BooleanField(1, required=True)
 
 
+@Cached(PickledMemCache(),  # Since the return values are < 1MB.
+        expire_time=ANALYSIS_CACHE_TIME)
 def _AsyncProcessFailureAnalysisRequests(builds):
   """Pushes a task on the backend to process requests of failure analysis."""
   target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
@@ -148,6 +154,8 @@ def _AsyncProcessFailureAnalysisRequests(builds):
       url=constants.WATERFALL_PROCESS_FAILURE_ANALYSIS_REQUESTS_URL,
       payload=payload, target=target,
       queue_name=constants.WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE)
+  # Needed for @Cached to work, but ignored by caller.
+  return 'Only semantically None.'
 
 
 def _AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin):
@@ -518,7 +526,7 @@ class FindItApi(remote.Service):
           'master_name': master_name,
           'builder_name': build.builder_name,
           'build_number': build.build_number,
-          'failed_steps': build.failed_steps,
+          'failed_steps': sorted(build.failed_steps),
       })
 
       # If the build failure was already analyzed and a new analysis is
@@ -536,6 +544,7 @@ class FindItApi(remote.Service):
     logging.info('%d build failure(s), while %d are supported',
                  len(request.builds), len(supported_builds))
     try:
+      supported_builds.sort()
       _AsyncProcessFailureAnalysisRequests(supported_builds)
     except Exception:  # pragma: no cover.
       # If we fail to post a task to the task queue, we ignore and wait for next
