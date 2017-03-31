@@ -633,7 +633,7 @@ def search(
            'search arguments: %r\n'
            'query search results: %r\n'
            'tag index search results: %r') %
-          (search_args, query_results[0], tag_index_results[0]))
+          (search_args, ids(query_results[0]), ids(tag_index_results[0])))
 
   assert query_results or tag_index_results  # we have to have something.
   return query_results or tag_index_results  # prefer query results.
