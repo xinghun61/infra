@@ -477,11 +477,22 @@ func TestGetTestSuite(t *testing.T) {
 			s.Master = &messages.MasterLocation{
 				URL: *url,
 			}
+			s.Step.Logs = [][]interface{}{
+				{
+					"swarming.summary",
+					"foo",
+				},
+			}
 			Convey("with suffixes", func() {
 				s.Step.Name = "battor.power_cases on Intel GPU on Linux"
 				So(GetTestSuite(s), ShouldEqual, "battor.power_cases")
 			})
+			Convey("C++ test with suffixes", func() {
+				s.Step.Name = "performance_browser_tests on Intel GPU on Linux"
+				So(GetTestSuite(s), ShouldEqual, "performance_browser_tests")
+			})
 			Convey("not a test", func() {
+				s.Step.Logs = nil
 				s.Step.Name = "something_random"
 				So(GetTestSuite(s), ShouldEqual, "")
 			})

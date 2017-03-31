@@ -129,9 +129,15 @@ func GetTestSuite(bs *messages.BuildStep) string {
 	s := strings.Split(bs.Step.Name, " ")
 
 	if bs.Master.Name() == "chromium.perf" {
-		// Benchmarks on chromium.perf must have a period in the name. That's how we identify
-		// something to be a test (benchmark, but test is the general term) failure on that waterfall.
-		if !(strings.Contains(s[0], ".")) {
+		found := false
+		// If a step has a swarming.summary log, then we assume it's a test
+		for _, b := range bs.Step.Logs {
+			if len(b) > 1 && b[0] == "swarming.summary" {
+				found = true
+			}
+		}
+
+		if !found {
 			return ""
 		}
 	} else if !(strings.HasSuffix(s[0], "tests") || strings.HasSuffix(s[0], "test_apk")) {
@@ -163,8 +169,8 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 	if err != nil {
 		// Still want to keep on serving some data, even if test results is down. We can also do something
 		// in this analyzer, even if we have no test results.
-		logging.Debugf(ctx, "got error fetching test results (ignoring): %s", err)
-		return name, failedTests, nil
+		logging.Warningf(ctx, "got error fetching test results (ignoring): %s", err)
+		return name, nil, nil
 	}
 
 	if testResults == nil || len(testResults.Tests) == 0 {
