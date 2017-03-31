@@ -22,7 +22,7 @@ import libs.math.logarithms as lmath
 
 # N.B., this must not be infinity, else we'll start getting NaN values
 # from LinearMinDistanceFeature (and SquaredMinDistanceFeature).
-DEFAULT_MAX_LINE_DISTANCE = 50
+DEFAULT_MAX_LINE_DISTANCE = 100
 DEFAULT_MAX_FRAME_INDEX = 7
 
 

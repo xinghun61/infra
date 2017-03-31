@@ -46,7 +46,7 @@ class FinditForChromeCrash(Findit):  # pylint: disable=W0223
     super(FinditForChromeCrash, self).__init__(get_repository, config)
     meta_weight = MetaWeight({
         'TouchCrashedFileMeta': MetaWeight({
-            'MinDistance': Weight(1.),
+            'MinDistance': Weight(2.),
             'TopFrameIndex': Weight(1.),
             'TouchCrashedFile': Weight(1.),
         }),
