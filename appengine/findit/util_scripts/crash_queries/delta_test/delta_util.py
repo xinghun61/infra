@@ -18,7 +18,7 @@ import urllib2
 import dev_appserver
 dev_appserver.fix_sys_path()
 
-from common import appengine_util
+from gae_libs import appengine_util
 
 # TODO(katesonia): move host to predator host after migration.
 _FRACAS_FEEDBACK_URL_TEMPLATE = (

@@ -8,13 +8,13 @@ import logging
 
 from google.appengine.ext import ndb
 
-from common import appengine_util
 from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from common import constants
 from crash.component import Component
 from crash.component_classifier import ComponentClassifier
 from crash.project import Project
 from crash.project_classifier import ProjectClassifier
+from gae_libs import appengine_util
 from libs import time_util
 from model import analysis_status
 

@@ -9,8 +9,8 @@ import logging
 
 from google.appengine.ext import ndb
 
-from common import appengine_util
 from crash.crash_report import CrashReport
+from gae_libs import appengine_util
 from libs import time_util
 from model import analysis_status
 from model import triage_status

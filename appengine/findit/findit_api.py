@@ -22,9 +22,9 @@ from protorpc import remote
 
 import gae_ts_mon
 
-from common import appengine_util
 from common import constants
 from common.waterfall import failure_type
+from gae_libs import appengine_util
 from gae_libs.caches import PickledMemCache
 from gae_libs.http import auth_util
 from libs import time_util

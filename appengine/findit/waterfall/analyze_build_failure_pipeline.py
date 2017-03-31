@@ -2,9 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common import appengine_util
 from common.pipeline_wrapper import BasePipeline
 from common.pipeline_wrapper import pipeline
+from gae_libs import appengine_util
 from libs import time_util
 from model import analysis_status
 from model.wf_analysis import WfAnalysis

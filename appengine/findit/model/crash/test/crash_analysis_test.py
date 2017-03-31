@@ -165,7 +165,7 @@ class CrashAnalysisTest(PredatorTestCase):
     self.assertTupleEqual(analysis.ToCrashReport(), expected_crash_report)
 
   @mock.patch('google.appengine.ext.ndb.Key.urlsafe')
-  @mock.patch('common.appengine_util.GetDefaultVersionHostname')
+  @mock.patch('gae_libs.appengine_util.GetDefaultVersionHostname')
   def testFeedbackUrlProperty(self, mocked_get_default_host, mock_urlsafe):
     """Tests ``feedback_url`` property."""
     mock_host = 'https://host'

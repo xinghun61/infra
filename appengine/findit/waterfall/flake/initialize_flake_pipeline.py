@@ -4,8 +4,8 @@
 
 import logging
 
-from common import appengine_util
 from common import constants
+from gae_libs import appengine_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model import analysis_status

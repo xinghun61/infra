@@ -6,7 +6,6 @@ import logging
 
 from google.appengine.ext import ndb
 
-from common import appengine_util
 from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from crash import detect_regression_range
 from crash.chromecrash_parser import ChromeCrashParser
@@ -24,6 +23,7 @@ from crash.loglinear.weight import MetaWeight
 from crash.loglinear.weight import Weight
 from crash.predator import Predator
 from crash.type_enums import CrashClient
+from gae_libs import appengine_util
 from model.crash.cracas_crash_analysis import CracasCrashAnalysis
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 

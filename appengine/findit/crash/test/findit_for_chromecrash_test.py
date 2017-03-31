@@ -121,7 +121,7 @@ class FinditForFracasTest(PredatorTestCase):
     self.assertEqual(self._client.GetAnalysis(crash_identifiers), analysis)
 
   @mock.patch('google.appengine.ext.ndb.Key.urlsafe')
-  @mock.patch('common.appengine_util.GetDefaultVersionHostname')
+  @mock.patch('gae_libs.appengine_util.GetDefaultVersionHostname')
   def testProcessResultForPublishing(self, mocked_get_default_host,
                                      mocked_urlsafe):
     mocked_host = 'http://host'

@@ -8,8 +8,8 @@ import json
 import logging
 import time
 
+from gae_libs import appengine_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
-from common import appengine_util
 from common import constants
 from common.pipeline_wrapper import BasePipeline
 from model import analysis_status
