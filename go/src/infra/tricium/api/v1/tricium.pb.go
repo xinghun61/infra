@@ -217,8 +217,7 @@ type AnalyzerProgress struct {
 	State State `protobuf:"varint,3,opt,name=state,enum=tricium.State" json:"state,omitempty"`
 	// Number of result comments.
 	//
-	// For analyzers that are done which have produced result in the form of
-	// comments.
+	// For analyzers that are done and produce result comments.
 	NumResultComments int32 `protobuf:"varint,4,opt,name=num_result_comments,json=numResultComments" json:"num_result_comments,omitempty"`
 }
 
@@ -263,10 +262,14 @@ type ResultsRequest struct {
 	// If provided, only results for the provided analyzer are returned.
 	// If an analyzer is being run on more than one platform then the merged
 	// results of the analyzer can be returned by exclusion of a specific platform.
+	//
+	// NB! Currently not supported.
 	Analyzer string `protobuf:"bytes,2,opt,name=analyzer" json:"analyzer,omitempty"`
 	// Optional platform that can be provided together with an analyzer name.
 	//
 	// If provided, only results for the provided platform and analyzer are returned.
+	//
+	// NB! Currently not supported.
 	Platform Platform_Name `protobuf:"varint,3,opt,name=platform,enum=tricium.Platform_Name" json:"platform,omitempty"`
 }
 

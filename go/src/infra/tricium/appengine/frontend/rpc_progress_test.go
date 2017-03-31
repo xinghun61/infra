@@ -25,7 +25,7 @@ func TestProgress(t *testing.T) {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
 
-		// Add pending run entry.
+		// Add completed run entry.
 		run := &track.Run{
 			State: tricium.State_SUCCESS,
 		}

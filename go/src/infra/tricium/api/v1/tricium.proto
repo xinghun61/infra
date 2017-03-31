@@ -102,8 +102,7 @@ message AnalyzerProgress {
 
   // Number of result comments.
   //
-  // For analyzers that are done which have produced result in the form of
-  // comments.
+  // For analyzers that are done and produce result comments.
   int32 num_result_comments = 4;
 }
 
@@ -116,11 +115,15 @@ message ResultsRequest {
   // If provided, only results for the provided analyzer are returned.
   // If an analyzer is being run on more than one platform then the merged
   // results of the analyzer can be returned by exclusion of a specific platform.
+  //
+  // NB! Currently not supported.
   string analyzer = 2;
 
   // Optional platform that can be provided together with an analyzer name.
   //
   // If provided, only results for the provided platform and analyzer are returned.
+  //
+  // NB! Currently not supported.
   Platform.Name platform = 3;
 }
 

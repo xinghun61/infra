@@ -99,3 +99,31 @@ type WorkerResult struct {
 	// Tricium result encoded as JSON.
 	Result string `gae:",noindex"`
 }
+
+// ResultComment tracks a result comment from a worker.
+//
+// Stored with 'WorkerInvocation' as parent.
+type ResultComment struct {
+	// LUCI datastore fields.
+	ID     string  `gae:"$id"`
+	Parent *ds.Key `gae:"$parent"`
+	// Comment encoded as JSON.
+	// The comment should follow the tricium.Data_Comment format.
+	// TODO(emso): Consider storing structured comment data.
+	Comment string `gae:",noindex"`
+	// Comment category with subcategories, including the analyzer name,
+	// e.g., clang-tidy/llvm-header-guard.
+	Category string
+	// Platforms this comment applies to. This is a int64 bit map using
+	// the tricium.Platform_Name number values for platforms.
+	Platforms int64
+	// Whether this comments was included in the overall result of the enclosing run.
+	// All comments are included by default, but comments may need to be merged
+	// in the case when comments for a category are produced for multiple platforms.
+	Included bool
+	// Number of 'not useful' clicks.
+	NotUseful int
+	// Links to more information about why the comment was found not useful.
+	// This should typically be a link to a Monorail issue.
+	NotUsefulIssueURL []string
+}

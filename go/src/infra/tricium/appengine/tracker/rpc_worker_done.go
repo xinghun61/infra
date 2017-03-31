@@ -46,27 +46,37 @@ func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest
 func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.Isolator) error {
 	logging.Infof(c, "[tracker] Worker done (run ID: %d, worker: %s)", req.RunId, req.Worker)
 	runKey, analyzerKey, workerKey := createKeys(c, req.RunId, req.Worker)
-	// Prepare to update worker state and isolated output.
 	worker := &track.WorkerInvocation{
 		ID:     workerKey.StringID(),
 		Parent: workerKey.Parent(),
 	}
+	// Collect and process isolated output.
 	resultsStr, err := isolator.FetchIsolatedResults(c, req.IsolatedOutputHash)
 	if err != nil {
 		return fmt.Errorf("failed to fetch isolated worker resul: %v", err)
 	}
+	logging.Infof(c, "Fetched isolated result: %q", resultsStr)
 	results := tricium.Data_Results{}
 	if err := json.Unmarshal([]byte(resultsStr), &results); err != nil {
 		return fmt.Errorf("failed to unmarshal results data: %v", err)
 	}
-	workerResultKey := ds.NewKey(c, "WorkerResult", req.Worker, 0, workerKey)
-	// TODO(emso): Revisit storing of results.
-	// The current scheme assumes results of less than 1Mb per analyzer and is not very good for feedback tracking.
-	workerResult := &track.WorkerResult{
-		ID:     workerResultKey.StringID(),
-		Parent: workerResultKey.Parent(),
-		Result: resultsStr,
+	comments := []*track.ResultComment{}
+	for _, comment := range results.Comments {
+		json, err := json.Marshal(comment)
+		if err != nil {
+			return fmt.Errorf("failed to marshal comment data: %v", err)
+		}
+		key := ds.NewKey(c, "ResultComment", req.Worker, 0, workerKey)
+		comments = append(comments, &track.ResultComment{
+			ID:        key.StringID(),
+			Parent:    key.Parent(),
+			Comment:   string(json),
+			Category:  comment.Category,
+			Platforms: results.Platforms,
+			Included:  true, // excluded later if needed
+		})
 	}
+	// Update worker state.
 	workerState := tricium.State_SUCCESS
 	if req.ExitCode != 0 {
 		workerState = tricium.State_FAILURE
@@ -97,6 +107,13 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			analyzerState = tricium.State_RUNNING // reset to launched.
 			break
 		}
+	}
+	// If analyzer is done then we should merge results if needed.
+	if tricium.IsDone(analyzerState) {
+		// TODO(emso): merge results.
+		// Review comments in this invocation and stored comments from sibling workers.
+		// Comments are included by default. For conflicting comments, select which comments
+		// to include and set other comments include to false.
 	}
 	// Prepare to update run state.
 	run := &track.Run{ID: runKey.IntID()}
@@ -136,9 +153,9 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			}
 		}()
 		go func() {
-			// Add worker results.
-			if err := ds.Put(c, workerResult); err != nil {
-				done <- fmt.Errorf("failed to add worker results: %v", err)
+			// Add result comments.
+			if err := ds.Put(c, comments); err != nil {
+				done <- fmt.Errorf("failed to add result comments: %v", err)
 			}
 			done <- nil
 		}()

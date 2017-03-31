@@ -7,6 +7,7 @@ package tracker
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 
 	ds "github.com/luci/gae/service/datastore"
@@ -45,6 +46,7 @@ func (*mockIsolator) FetchIsolatedResults(c context.Context, isolatedOutput stri
 	if err != nil {
 		return "", errors.New("failed to marshall mock result")
 	}
+	fmt.Printf("marshalled mock: %q", res)
 	return string(res), nil
 }
 
