@@ -115,11 +115,6 @@ class InboundEmail(webapp2.RequestHandler):
     if is_alert:
       error_addr = settings.alert_escalation_email
       author_addr = settings.alert_service_account
-
-      # Don't allow issue creation emails that are replies to other emails.
-      if references:
-        logging.info('Rejected alert with references: %s', references)
-        return None
     else:
       local_id = emailfmt.IdentifyIssue(project_name, subject)
       if not local_id:
