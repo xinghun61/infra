@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/luci/luci-go/common/api/swarming/swarming/v1"
 	"github.com/luci/luci-go/common/isolatedclient"
@@ -53,12 +54,13 @@ func (s *SwarmingServer) Trigger(c context.Context, worker *admin.Worker, worker
 		}
 		dims = append(dims, &swarming.SwarmingRpcsStringPair{Key: dim[0], Value: dim[1]})
 	}
+	// Need to increase the timeout to get a response from the Swarming service.
+	c, _ = context.WithTimeout(c, 60*time.Second)
 	oauthClient, err := getOAuthClient(c)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to create oauth client: %v", err)
 		return "", fmt.Errorf("failed to create oauth client: %v", err)
 	}
-	// TODO(emso): extend the deadline in the http client transport.
 	swarmingService, err := swarming.New(oauthClient)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to create swarming client: %v", err)
@@ -96,6 +98,8 @@ func (s *SwarmingServer) Trigger(c context.Context, worker *admin.Worker, worker
 // task should have isolated output.
 // The isolated output and exit code of the task are returned.
 func (s *SwarmingServer) Collect(c context.Context, taskID string) (string, int64, error) {
+	// Need to increase the timeout to get a response from the Swarming service.
+	c, _ = context.WithTimeout(c, 60*time.Second)
 	oauthClient, err := getOAuthClient(c)
 	if err != nil {
 		return "", 0, fmt.Errorf("failed to create oauth client: %v", err)
