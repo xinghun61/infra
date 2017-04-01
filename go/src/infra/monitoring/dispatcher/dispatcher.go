@@ -387,7 +387,12 @@ func loadConfigsAndRun(ctx context.Context) error {
 		r = client.NewReplay(*replay)
 	case *miloHost != "":
 		ctx = urlfetch.Set(ctx, transport)
-		r = client.NewMiloReader(ctx, *miloHost)
+
+		var err error
+		r, err = client.NewMiloReader(ctx, *miloHost)
+		if err != nil {
+			return err
+		}
 	}
 	if *snapshot != "" {
 		r = client.NewSnapshot(r, *snapshot)

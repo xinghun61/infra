@@ -75,7 +75,11 @@ func getAnalyzeHandler(ctx *router.Context) {
 
 		c = urlfetch.Set(c, transport)
 
-		miloReader := client.NewMiloReader(c, "")
+		miloReader, err := client.NewMiloReader(c, "")
+		if err != nil {
+			errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error creating milo client: %v", err))
+			return
+		}
 		memcachingReader := client.NewMemcacheReader(miloReader)
 		c = client.WithReader(c, memcachingReader)
 	}

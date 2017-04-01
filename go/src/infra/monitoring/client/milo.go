@@ -39,20 +39,17 @@ type miloReader struct {
 }
 
 // NewMiloReader returns a new reader implementation, which will read data from Milo.
-func NewMiloReader(ctx context.Context, host string) readerType {
+func NewMiloReader(ctx context.Context, host string) (readerType, error) {
 	if host == "" {
 		host = miloHost
 	}
+	r, err := newReader(ctx, &http.Client{Transport: urlfetch.Get(ctx)})
+	if err != nil {
+		return nil, err
+	}
 	mr := &miloReader{
-		host: host,
-		reader: reader{
-			hc: &trackingHTTPClient{
-				// TODO: Somehow get this transport from ctx instead of hard-coding
-				// to urlfetch, which probably doesn't work outside of appengine.
-				c: &http.Client{Transport: urlfetch.Get(ctx)},
-			},
-			bCache: map[string]*messages.Build{},
-		},
+		host:   host,
+		reader: *r,
 	}
 
 	// According to https://cloud.google.com/appengine/docs/standard/python/tools/using-local-server
@@ -63,7 +60,7 @@ func NewMiloReader(ctx context.Context, host string) readerType {
 	if !(ok || strings.HasPrefix(k, "Google App Engine/")) {
 		mr.bCache = map[string]*messages.Build{}
 	}
-	return mr
+	return mr, nil
 }
 
 func (r *miloReader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {

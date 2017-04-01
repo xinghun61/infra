@@ -193,12 +193,14 @@ type Test struct {
 	Builders []string `json:"builders"`
 }
 
-// NewReader returns a new default reader implementation, which will read data from various chrome infra
-// data sources.
-func NewReader(ctx context.Context) (readerType, error) {
+func newReader(ctx context.Context, httpClient *http.Client) (*reader, error) {
+	if httpClient == nil {
+		httpClient = http.DefaultClient
+	}
+
 	r := &reader{
 		hc: &trackingHTTPClient{
-			c: http.DefaultClient,
+			c: httpClient,
 		},
 		bCache:  map[string]*messages.Build{},
 		trCache: map[string]map[string][]string{},
@@ -222,6 +224,12 @@ func NewReader(ctx context.Context) (readerType, error) {
 	}
 
 	return r, nil
+}
+
+// NewReader returns a new default reader implementation, which will read data from various chrome infra
+// data sources.
+func NewReader(ctx context.Context) (readerType, error) {
+	return newReader(ctx, http.DefaultClient)
 }
 
 func cacheKeyForBuild(master *messages.MasterLocation, builder string, number int64) string {
