@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-
-from common.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import BasePipeline
 from libs import time_util
 from model import analysis_approach_type
 from model import analysis_status

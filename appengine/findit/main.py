@@ -7,9 +7,9 @@ import webapp2
 
 import gae_ts_mon
 
-from common.pipeline_wrapper import pipeline_handlers
-from common.pipeline_wrapper import pipeline_status_ui
 from findit_api import FindItApi
+from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipeline_wrapper import pipeline_status_ui
 from handlers import auto_revert_metrics
 from handlers import build_failure
 from handlers import calculate_confidence_scores

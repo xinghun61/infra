@@ -8,10 +8,10 @@ import logging
 import random
 
 from common import constants
-from common.pipeline_wrapper import BasePipeline
-from common.pipeline_wrapper import pipeline
 from gae_libs import appengine_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import pipeline
 from libs import time_util
 from model import analysis_status
 from model import result_status

@@ -9,14 +9,14 @@ import time
 from google.appengine.ext import ndb
 
 from common import constants
-from common.pipeline_wrapper import BasePipeline
-from common.pipeline_wrapper import pipeline
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from common.waterfall import try_job_error
 from common.waterfall.buildbucket_client import BuildbucketBuild
 from gae_libs import appengine_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import pipeline
 from libs import time_util
 from model import analysis_status
 from model.flake.flake_try_job_data import FlakeTryJobData

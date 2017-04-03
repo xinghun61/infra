@@ -4,7 +4,7 @@
 
 import mock
 
-from common.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipeline_wrapper import pipeline_handlers
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall.flake import flake_analysis_service

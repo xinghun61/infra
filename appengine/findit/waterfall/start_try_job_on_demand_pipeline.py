@@ -4,8 +4,8 @@
 
 import logging
 
-from common.pipeline_wrapper import BasePipeline
 from common.waterfall import failure_type
+from gae_libs.pipeline_wrapper import BasePipeline
 from waterfall import try_job_util
 from waterfall.identify_try_job_culprit_pipeline import (
     IdentifyTryJobCulpritPipeline)

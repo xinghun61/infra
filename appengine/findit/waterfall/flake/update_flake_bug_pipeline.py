@@ -8,7 +8,7 @@ from google.appengine.ext import ndb
 
 from issue_tracker import IssueTrackerAPI
 
-from common.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import BasePipeline
 from waterfall import monitoring
 
 

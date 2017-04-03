@@ -7,10 +7,10 @@ import copy
 
 from google.appengine.ext import ndb
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
-from common.pipeline_wrapper import BasePipeline
 from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.http.http_client_appengine import HttpClientAppengine
+from gae_libs.pipeline_wrapper import BasePipeline
 from model import analysis_approach_type
 from model import analysis_status
 from model import result_status

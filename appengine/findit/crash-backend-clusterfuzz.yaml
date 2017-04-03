@@ -12,7 +12,7 @@ basic_scaling:
 handlers:
 # Pipeline handler.
 - url: /_ah/pipeline(/.*)?
-  script: "common.pipeline_wrapper.pipeline_handlers._APP"
+  script: "gae_libs.pipeline_wrapper.pipeline_handlers._APP"
   secure: always
 
 skip_files:

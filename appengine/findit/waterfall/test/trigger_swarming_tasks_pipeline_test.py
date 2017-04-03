@@ -2,9 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common.pipeline_wrapper import BasePipeline
-from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import failure_type
+from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import pipeline_handlers
 from model.wf_analysis import WfAnalysis
 from waterfall import build_util
 from waterfall import trigger_swarming_task_pipeline

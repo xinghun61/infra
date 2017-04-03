@@ -7,9 +7,9 @@ import json
 import logging
 import time
 
-from common.pipeline_wrapper import BasePipeline
 from common.waterfall.pubsub_callback import MakeSwarmingPubsubCallback
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from gae_libs.pipeline_wrapper import BasePipeline
 from libs import time_util
 from model import analysis_status
 from waterfall import buildbot

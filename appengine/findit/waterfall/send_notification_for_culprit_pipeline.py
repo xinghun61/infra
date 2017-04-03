@@ -7,7 +7,7 @@ import textwrap
 
 from google.appengine.ext import ndb
 
-from common.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import BasePipeline
 from infra_api_clients.codereview import codereview_util
 from libs import time_util
 from model import analysis_status as status

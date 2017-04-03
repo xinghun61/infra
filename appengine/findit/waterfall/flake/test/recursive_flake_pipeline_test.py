@@ -7,7 +7,7 @@ from datetime import datetime
 import mock
 
 from common import constants
-from common.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_swarming_task import FlakeSwarmingTask

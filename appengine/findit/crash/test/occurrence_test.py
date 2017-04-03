@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from common import constants
-from common.pipeline_wrapper import pipeline_handlers
 from crash.occurrence import Occurrence
 from crash.occurrence import DefaultOccurrenceRanking
 from crash.occurrence import RankByOccurrence
@@ -11,6 +10,7 @@ from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStack
 from crash.suspect import Suspect
 from crash.test.predator_testcase import PredatorTestCase
+from gae_libs.pipeline_wrapper import pipeline_handlers
 
 
 class DummyClassifier(object):

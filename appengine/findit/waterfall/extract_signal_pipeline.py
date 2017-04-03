@@ -9,10 +9,10 @@ import logging
 
 from google.appengine.api.urlfetch import ResponseTooLargeError
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
-from common.pipeline_wrapper import BasePipeline
-from common.pipeline_wrapper import pipeline
 from common.waterfall import failure_type
+from gae_libs.http.http_client_appengine import HttpClientAppengine
+from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import pipeline
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from waterfall import buildbot

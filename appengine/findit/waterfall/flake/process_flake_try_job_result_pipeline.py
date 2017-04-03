@@ -4,8 +4,8 @@
 
 from google.appengine.ext import ndb
 
-from common.pipeline_wrapper import BasePipeline
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from gae_libs.pipeline_wrapper import BasePipeline
 from model import analysis_status
 from model.flake.master_flake_analysis import DataPoint
 from waterfall import swarming_util

@@ -2,13 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common.pipeline_wrapper import pipeline_handlers
 from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStack
 from crash.component_classifier import Component
 from crash.component_classifier import ComponentClassifier
 from crash.suspect import Suspect
 from crash.test.predator_testcase import PredatorTestCase
+from gae_libs.pipeline_wrapper import pipeline_handlers
 from model.crash.crash_config import CrashConfig
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.change_log import FileChangeInfo

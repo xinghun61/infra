@@ -2,13 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common.pipeline_wrapper import pipeline_handlers
 from crash import crash_pipeline
 from crash.culprit import Culprit
 from crash.findit_for_chromecrash import FinditForFracas
 from crash.suspect import Suspect
 from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
+from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.change_log import Contributor
 from model import analysis_status

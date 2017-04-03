@@ -8,8 +8,8 @@ from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.change_log import ChangeLog
 
 from common import constants
-from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import failure_type
+from gae_libs.pipeline_wrapper import pipeline_handlers
 from model import analysis_status
 from model import result_status
 from model.flake.flake_culprit import FlakeCulprit

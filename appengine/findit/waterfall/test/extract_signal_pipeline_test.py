@@ -5,8 +5,8 @@
 import mock
 import os
 
-from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import failure_type
+from gae_libs.pipeline_wrapper import pipeline_handlers
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from waterfall import buildbot

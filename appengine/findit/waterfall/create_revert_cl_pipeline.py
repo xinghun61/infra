@@ -10,8 +10,8 @@ from google.appengine.ext import ndb
 
 from common import constants
 from common import rotations
-from common.pipeline_wrapper import BasePipeline
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from gae_libs.pipeline_wrapper import BasePipeline
 from infra_api_clients.codereview import codereview_util
 from libs import time_util
 from model import analysis_status as status

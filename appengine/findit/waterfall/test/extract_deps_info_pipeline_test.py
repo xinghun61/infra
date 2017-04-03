@@ -6,8 +6,8 @@ from testing_utils import testing
 
 from common import chrome_dependency_fetcher
 from common.dependency import Dependency
-from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import failure_type
+from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs.gitiles.diff import ChangeType
 from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
 

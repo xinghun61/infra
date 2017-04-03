@@ -6,8 +6,8 @@ from collections import defaultdict
 
 from google.appengine.ext import ndb
 
-from common.pipeline_wrapper import BasePipeline
 from common.waterfall import failure_type
+from gae_libs.pipeline_wrapper import BasePipeline
 from model.wf_analysis import WfAnalysis
 from waterfall.trigger_swarming_task_pipeline import TriggerSwarmingTaskPipeline
 

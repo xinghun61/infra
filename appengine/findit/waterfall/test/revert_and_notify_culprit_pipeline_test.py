@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 
 from common.constants import DEFAULT_QUEUE
-from common.pipeline_wrapper import pipeline_handlers
 from common.waterfall import failure_type
+from gae_libs.pipeline_wrapper import pipeline_handlers
 from waterfall import create_revert_cl_pipeline
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.revert_and_notify_culprit_pipeline import (

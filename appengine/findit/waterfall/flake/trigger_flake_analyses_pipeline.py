@@ -4,7 +4,7 @@
 
 import logging
 
-from common.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import BasePipeline
 from libs import time_util
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
