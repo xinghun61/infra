@@ -1,3 +1,26 @@
+# Release Notes sheriff-o-matic 2017-04-03
+
+- 6 commits, 1 bugs affected since 6a90299 ()
+- 5 Authors:
+  - seanmccullough@chromium.org
+  - martiniss@google.com
+  - zhangtiff@google.com
+  - chanli@chromium.org
+  - mcgreevy@chromium.org
+
+## Changes in this release
+
+- [[som] fix deploy](https://chromium-review.googlesource.com/466687) (seanmccullough@chromium.org)
+- [AD: Fix test results](https://chromium-review.googlesource.com/465513) (martiniss@google.com)
+- [SoM: Make test type in Flakiness Dashboard URL not hardcoded.](https://chromium-review.googlesource.com/464071) (zhangtiff@google.com)
+- [[som] Make un-sheriffable alerts more obviously so.](https://chromium-review.googlesource.com/462362) (seanmccullough@chromium.org)
+- [[SoM-Findit] Only display Findit result for chromium tree and add findit link to running analyses.](https://chromium-review.googlesource.com/462359) (chanli@chromium.org)
+- [When deciding whether to hide webkit tests, treat webkit_layout_tests as equivalent to webkit_tests](https://chromium-review.googlesource.com/461845) (mcgreevy@chromium.org)
+
+## Bugs updated, by author
+- mcgreevy@chromium.org:
+  -  [https://crbug.com/706192](https://crbug.com/706192)
+
 # Release Notes sheriff-o-matic 2017-03-28
 
 - 5 commits, 3 bugs affected since d6d192f (2017-03-21T23:16:56Z)
