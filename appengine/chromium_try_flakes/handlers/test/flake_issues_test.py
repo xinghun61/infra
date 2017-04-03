@@ -13,7 +13,8 @@ from google.appengine.ext import ndb
 
 from apiclient.errors import HttpError
 import gae_ts_mon
-from handlers.flake_issues import ProcessIssue, CreateFlakyRun
+from handlers.flake_issues import (
+    ProcessIssue, CreateFlakyRun, CTF_CAN_FILE_BUGS_FOR_TESTS)
 import main
 from model.flake import Flake, FlakyRun, FlakeOccurrence
 from model.build_run import PatchsetBuilderRuns, BuildRun
@@ -397,6 +398,21 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         'all_flake_occurrences?key=agx0ZXN0YmVkLXRlc3RyCwsSBUZsYWtlGAoM. This '
         'message was posted automatically by the chromium-try-flakes app.'
     )
+
+  def test_includes_can_file_bugs_for_tests_msg(self):
+    flake = self._create_flake()
+    flake.key = ndb.Key('Flake', 'test-flake-key')
+    flake.is_step = True
+    flake.put()
+
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
+      self.assertEqual(200, response.status_int)
+
+    self.assertEqual(len(self.mock_api.issues), 1)
+    self.assertIn(100000, self.mock_api.issues)
+    issue = self.mock_api.issues[100000]
+    self.assertIn(CTF_CAN_FILE_BUGS_FOR_TESTS, issue.description)
 
   def test_includes_message_about_moving_back_to_queue(self):
     issue = self.mock_api.create(MockIssue({}))

@@ -88,6 +88,12 @@ VERY_STALE_FLAKES_MESSAGE_MANY_TIMES = (
     'Reporting to stale-flakes-reports@google.com to investigate why this '
     'issue has been in the appropriate queue %d times or more.' %
     NUM_TIMES_IN_QUEUE_FOR_STALENESS)
+CTF_CAN_FILE_BUGS_FOR_TESTS = (
+    'The chromium-try-flakes app is able to file bugs for individual tests '
+    'when the test launcher is uploading results to the Test Results Server. '
+    'If recent flakes above are caused by failing tests and you would like to '
+    'have them filed as invidual bugs, please read more at '
+    'https://goo.gl/eB0GLj.')
 STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
 MAX_GAP_FOR_FLAKINESS_PERIOD = datetime.timedelta(days=3)
 KNOWN_TROOPER_FLAKE_NAMES = [
@@ -327,7 +333,8 @@ class ProcessIssue(webapp2.RequestHandler):
         'flakes_url': FLAKES_URL_TEMPLATE % flake.key.urlsafe(),
         'flakes_count': len(new_flakes),
         'other_queue_msg': other_queue_msg,
-        'footer': '' if flake.is_step else DESCRIPTION_TEST_FOOTER}
+        'footer': CTF_CAN_FILE_BUGS_FOR_TESTS if flake.is_step
+                                              else DESCRIPTION_TEST_FOOTER}
     if flake.old_issue_id:
       description = REOPENED_DESCRIPTION_TEMPLATE % {
           'description': description, 'old_issue': flake.old_issue_id}
