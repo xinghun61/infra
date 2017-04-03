@@ -189,7 +189,9 @@ class NotifyIssueChangeTask(NotifyTaskBase):
         omit_ids=omit_ids, send_email=send_email)
 
     logging.info('issue change params are %r', params)
-    issue = self.services.issue.GetIssue(mr.cnxn, issue_id)
+    # TODO(jrobbins): Re-enable the issue cache for notifications after
+    # the stale issue defect (monorail:2514) is 100% resolved.
+    issue = self.services.issue.GetIssue(mr.cnxn, issue_id, use_cache=False)
     project = self.services.project.GetProject(mr.cnxn, issue.project_id)
     config = self.services.config.GetProjectConfig(mr.cnxn, issue.project_id)
 

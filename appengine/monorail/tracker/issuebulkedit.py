@@ -273,8 +273,10 @@ class IssueBulkEdit(servlet.Servlet):
     new_starrers = set()
 
     if not mr.errors.AnyErrors():
+      # TODO(jrobbins): Re-enable the issue cache for bulk edit after
+      # the stale issue defect (monorail:2514) is 100% resolved.
       issue_list = self.services.issue.GetIssuesByLocalIDs(
-          mr.cnxn, mr.project_id, mr.local_id_list)
+          mr.cnxn, mr.project_id, mr.local_id_list, use_cache=False)
 
       # Skip any individual issues that the user is not allowed to edit.
       editable_issues = [

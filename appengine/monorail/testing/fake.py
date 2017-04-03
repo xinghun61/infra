@@ -1194,7 +1194,7 @@ class IssueService(object):
       return []
 
   def GetIssuesByLocalIDs(
-      self, _cnxn, project_id, local_id_list, shard_id=None):
+      self, _cnxn, project_id, local_id_list, use_cache=True, shard_id=None):
     results = []
     for local_id in local_id_list:
       if (project_id in self.issues_by_project
@@ -1203,7 +1203,7 @@ class IssueService(object):
 
     return results
 
-  def GetIssueByLocalID(self, _cnxn, project_id, local_id):
+  def GetIssueByLocalID(self, _cnxn, project_id, local_id, use_cache=True):
     try:
       return self.issues_by_project[project_id][local_id]
     except KeyError:
@@ -1212,7 +1212,7 @@ class IssueService(object):
   def GetAnyOnHandIssue(self, issue_ids, start=None, end=None):
     return None  # Treat them all like misses.
 
-  def GetIssue(self, _cnxn, issue_id):
+  def GetIssue(self, _cnxn, issue_id, use_cache=True):
     if issue_id in self.issues_by_iid:
       return self.issues_by_iid[issue_id]
     else:

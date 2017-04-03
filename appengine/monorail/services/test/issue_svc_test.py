@@ -811,8 +811,9 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.StubOutWithMock(self.services.issue, "CreateIssueComment")
     self.mox.StubOutWithMock(self.services.issue, "_UpdateIssuesModified")
 
-    self.services.issue.GetIssueByLocalID(self.cnxn, issue.project_id,
-        issue.local_id).AndReturn(issue)
+    self.services.issue.GetIssueByLocalID(
+        self.cnxn, issue.project_id, issue.local_id,
+        use_cache=False).AndReturn(issue)
     self.services.issue.CreateIssueComment(self.cnxn, issue.project_id,
         issue.local_id, issue.reporter_id, 'comment text',
         amendments=[], attachments=None, inbound_message=None,
@@ -850,7 +851,8 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.StubOutWithMock(self.services.issue, "SoftDeleteComment")
     self.mox.StubOutWithMock(self.services.issue, "_UpdateIssuesModified")
 
-    self.services.issue.GetIssueByLocalID(self.cnxn, 789, 1).AndReturn(issue)
+    self.services.issue.GetIssueByLocalID(
+        self.cnxn, 789, 1, use_cache=False).AndReturn(issue)
     self.services.issue.UpdateIssues(self.cnxn, [issue],
         just_derived=False, update_cols=None, commit=True, invalidate=True)
     self.services.issue.GetCommentsForIssue(self.cnxn,
@@ -903,7 +905,8 @@ class IssueServiceTest(unittest.TestCase):
     # Call to find removed blockedon issues.
     self.services.issue.GetIssues(self.cnxn, []).AndReturn([])
 
-    self.services.issue.GetIssueByLocalID(self.cnxn, 789, 1).AndReturn(issue)
+    self.services.issue.GetIssueByLocalID(
+        self.cnxn, 789, 1, use_cache=False).AndReturn(issue)
     self.services.issue.UpdateIssues(self.cnxn, [issue],
         just_derived=False, update_cols=None, commit=True, invalidate=True)
     self.services.spam.ClassifyComment(

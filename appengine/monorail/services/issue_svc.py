@@ -632,12 +632,13 @@ class IssueService(object):
 
     return issue_list
 
-  def GetIssue(self, cnxn, issue_id):
+  def GetIssue(self, cnxn, issue_id, use_cache=True):
     """Get one Issue PB from the DB.
 
     Args:
       cnxn: connection to SQL database.
       issue_id: integer global issue ID of the issue.
+      use_cache: optional boolean to turn off using the cache.
 
     Returns:
       The requested Issue protocol buffer.
@@ -645,20 +646,21 @@ class IssueService(object):
     Raises:
       NoSuchIssueException: the issue was not found.
     """
-    issues = self.GetIssues(cnxn, [issue_id])
+    issues = self.GetIssues(cnxn, [issue_id], use_cache=use_cache)
     try:
       return issues[0]
     except IndexError:
       raise NoSuchIssueException()
 
   def GetIssuesByLocalIDs(
-      self, cnxn, project_id, local_id_list, shard_id=None):
+      self, cnxn, project_id, local_id_list, use_cache=True, shard_id=None):
     """Get all the requested issues.
 
     Args:
       cnxn: connection to SQL database.
       project_id: int ID of the project to which the issues belong.
       local_id_list: list of integer local IDs for the requested issues.
+      use_cache: optional boolean to turn off using the cache.
       shard_id: optional int shard_id to choose a replica.
 
     Returns:
@@ -667,21 +669,24 @@ class IssueService(object):
     """
     issue_ids_to_fetch, _misses = self.LookupIssueIDs(
         cnxn, [(project_id, local_id) for local_id in local_id_list])
-    issues = self.GetIssues(cnxn, issue_ids_to_fetch, shard_id=shard_id)
+    issues = self.GetIssues(
+        cnxn, issue_ids_to_fetch, use_cache=use_cache, shard_id=shard_id)
     return issues
 
-  def GetIssueByLocalID(self, cnxn, project_id, local_id):
+  def GetIssueByLocalID(self, cnxn, project_id, local_id, use_cache=True):
     """Get one Issue PB from the DB.
 
     Args:
       cnxn: connection to SQL database.
       project_id: the ID of the project to which the issue belongs.
       local_id: integer local ID of the issue.
+      use_cache: optional boolean to turn off using the cache.
 
     Returns:
       The requested Issue protocol buffer.
     """
-    issues = self.GetIssuesByLocalIDs(cnxn, project_id, [local_id])
+    issues = self.GetIssuesByLocalIDs(
+        cnxn, project_id, [local_id], use_cache=use_cache)
     try:
       return issues[0]
     except IndexError:
@@ -1367,7 +1372,7 @@ class IssueService(object):
 
     # Get the issue and project configurations.
     config = self._config_service.GetProjectConfig(cnxn, project_id)
-    issue = self.GetIssueByLocalID(cnxn, project_id, local_id)
+    issue = self.GetIssueByLocalID(cnxn, project_id, local_id, use_cache=False)
 
     old_effective_owner = tracker_bizobj.GetOwnerId(issue)
     old_effective_status = tracker_bizobj.GetStatus(issue)

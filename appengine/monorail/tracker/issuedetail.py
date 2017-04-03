@@ -1087,7 +1087,7 @@ class SetStarForm(jsonfeed.JsonFeed):
       Dict of values used by EZT for rendering the page.
     """
     issue = self.services.issue.GetIssueByLocalID(
-        mr.cnxn, mr.project_id, mr.local_id)
+        mr.cnxn, mr.project_id, mr.local_id, use_cache=False)
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     self.services.issue_star.SetStar(
         mr.cnxn, self.services, config, issue.issue_id, mr.auth.user_id,

@@ -1359,7 +1359,8 @@ class ConfigService(object):
   def InvalidateMemcache(self, issues, key_prefix=''):
     """Delete the memcache entries for issues and their project-shard pairs."""
     memcache.delete_multi(
-        [str(issue.issue_id) for issue in issues], key_prefix='issue:')
+        [str(issue.issue_id) for issue in issues], key_prefix='issue:',
+        seconds=5)
     project_shards = set(
         (issue.project_id, issue.issue_id % settings.num_logical_shards)
         for issue in issues)

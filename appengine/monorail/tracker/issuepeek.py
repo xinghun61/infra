@@ -62,8 +62,11 @@ class IssuePeek(servlet.Servlet):
     """Retrieve the current issue."""
     if mr.local_id is None:
       return None  # GatherPageData will detect the same condition.
+
+    # TODO(jrobbins): Re-enable the issue cache on issue detail pages after
+    # the stale issue defect (monorail:2514) is 100% resolved.
     issue = self.services.issue.GetIssueByLocalID(
-        mr.cnxn, mr.project_id, mr.local_id)
+        mr.cnxn, mr.project_id, mr.local_id, use_cache=False)
     return issue
 
   def GatherPageData(self, mr):
