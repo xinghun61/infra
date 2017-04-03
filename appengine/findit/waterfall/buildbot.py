@@ -25,7 +25,7 @@ import google
 third_party = os.path.join(
     os.path.dirname(__file__), os.path.pardir, 'third_party')
 sys.path.insert(0, third_party)
-google.__path__.append(os.path.join(third_party, 'google'))
+google.__path__.insert(0, os.path.join(third_party, 'google'))
 from logdog import annotations_pb2
 
 _HOST_NAME_PATTERN = (
