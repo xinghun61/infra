@@ -249,6 +249,11 @@ func (c *cookRun) ensureAndRun(ctx context.Context, env environ.Env) (recipeExit
 
 	env.Set("PYTHONPATH", strings.Join(c.PythonPaths, string(os.PathListSeparator)))
 
+	// Tell subproceses to use Kitchen's temp dir.
+	env.Set("TEMPDIR", c.TempDir)
+	env.Set("TMPDIR", c.TempDir)
+	env.Set("MAC_CHROMIUM_TMPDIR", c.TempDir)
+
 	// Bootstrap through LogDog Butler?
 	if c.logdog.active() {
 		return c.runWithLogdogButler(ctx, &c.rr, env)
