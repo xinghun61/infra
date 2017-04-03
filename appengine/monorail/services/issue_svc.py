@@ -321,9 +321,11 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
       relation_rows = []
       dangling_relation_rows = []
 
-    return self._DeserializeIssues(
+    issue_dict = self._DeserializeIssues(
         cnxn, issue_rows, summary_rows, label_rows, component_rows, cc_rows,
         notify_rows, fieldvalue_rows, relation_rows, dangling_relation_rows)
+    logging.info('IssueTwoLevelCache.FetchItems returning: %r', issue_dict)
+    return issue_dict
 
 
 class IssueService(object):
