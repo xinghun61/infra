@@ -37,3 +37,17 @@ class VersionFinderTest(unittest.TestCase):
         'package_name': 'foo',
         'instance_id': 'bar',
     }}, version_finder.find_version(self.config))
+
+  def test_explicit_cipd_version_file_does_not_exist(self):
+    self.config['cipd_version_file'] = os.path.join(self.path, 'foo')
+    self.assertEqual({}, version_finder.find_version(self.config))
+
+  def test_explicit_cipd_version_file(self):
+    self.config['cipd_version_file'] = os.path.join(self.path, 'foo')
+    with open(self.config['cipd_version_file'], 'w') as fh:
+      fh.write('{"package_name": "foo", "instance_id": "bar"}')
+
+    self.assertEqual({'cipd_version_file': {
+        'package_name': 'foo',
+        'instance_id': 'bar',
+    }}, version_finder.find_version(self.config))

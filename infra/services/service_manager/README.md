@@ -50,6 +50,9 @@ The config file contains a JSON object with the following fields:
                                       creates.
                     "stack"         : The maximum size (in bytes) of the call
                                       stack.
+  * __cipd_version_file__ - Path to a CIPD version file to monitor for changes.
+                            The service will be restarted when a new version is
+                            detected.
 
 The below fields have been deprecated.
 
