@@ -3,8 +3,14 @@
 # found in the LICENSE file.
 
 from datetime import date
-from datetime import datetime
 from datetime import timedelta
+import os
+import sys
+
+_SCRIPT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
+                           os.path.pardir)
+sys.path.insert(1, _SCRIPT_DIR)
+import script_util
 
 from crash.type_enums import CrashClient
 import iterator
@@ -16,35 +22,14 @@ from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 _DEFAULT_BATCH_SIZE = 1000
 _TODAY = date.today().strftime('%Y-%m-%d')
 _A_YEAR_AGO = (date.today() - timedelta(days=365)).strftime('%Y-%m-%d')
-_CLIENT_TO_ANALYSIS_CLASS = {CrashClient.FRACAS: FracasCrashAnalysis,
-                             CrashClient.CRACAS: CracasCrashAnalysis}
-
-
-# TODO(crbug.com/662540): Add unittests.
-def GetQueryForClient(client_id, property_values, start_date, end_date,
-                      datetime_pattern='%Y-%m-%d'):  # pragma: no cover.
-  if property_values is None:
-    property_values = {}
-
-  start_date = datetime.strptime(start_date, datetime_pattern)
-  end_date = datetime.strptime(end_date, datetime_pattern)
-  cls = _CLIENT_TO_ANALYSIS_CLASS.get(client_id)
-  if not cls:
-    return None
-
-  query = cls.query()
-  for property_name, value in property_values.iteritems():
-    query = query.filter(getattr(cls, property_name) == value)
-
-  return query.filter(
-      cls.requested_time >= start_date).filter(
-      cls.requested_time < end_date)
+_CLIENT_ID_TO_CLASS = {CrashClient.FRACAS: FracasCrashAnalysis,
+                       CrashClient.CRACAS: CracasCrashAnalysis}
 
 
 # TODO(crbug.com/662540): Add unittests.
 def IterateCrashes(client_id,
                    app_id,
-                   fields=None,
+                   projection=None,
                    property_values=None,
                    start_date=_A_YEAR_AGO,
                    end_date=_TODAY,
@@ -53,12 +38,14 @@ def IterateCrashes(client_id,
   """Genrates query to query crashes and iterates crashes.
 
   Args:
-    client_id (CrashClient): One of CrashClient.FRACAS, CrashClient.CRACAS,
-      CrashClient.CLUSTERFUZZ.
+    client_id (CrashClient): One of the 3 supported clients -
+      CrashClient.FRACAS, CrashClient.CRACAS and CrashClient.CLUSTERFUZZ.
     app_id (str): App engine app id.
-    fields (list or None): Field names of CrashAnalysis entity to be projected
-      to a dict. If None provided, return the entities instead of a projected
-      dict.
+    projection (tuple or list): Operations return entities with only the
+      specified properties set. For example:
+      projection=[Article.title, Article.date] or
+      projection=['title', 'date'] fetches entities with just those two
+      fields set. Note, query can only project indexed properties.
     property_values (dict): Property values to filter.
     start_date (str): Only iterate testcases after this date including this
       date, format '%Y-%m-%d'.
@@ -70,22 +57,28 @@ def IterateCrashes(client_id,
 
     An example is available in crash_printer/print_crash.py.
   """
-  if property_values is None:
-    property_values = {}
+  cls = _CLIENT_ID_TO_CLASS.get(client_id)
+  if property_values:
+    property_values = {getattr(cls, property_name): value for
+                       property_name, value in property_values.iteritems()}
 
-  query = GetQueryForClient(client_id, property_values, start_date, end_date)
-  if not query:
-    return
+  query = script_util.GetFilterQuery(
+      cls.query(), cls.requested_time, start_date, end_date,
+      property_values=property_values)
 
-  for crash in iterator.Iterate(query, app_id, fields=fields,
-                                batch_size=batch_size,
-                                batch_run=batch_run):
+  # According to go/in-with-cursor-query-prob, the query must be sorted by key
+  # to make a query with both ``IN`` operation and cursor.
+  query = query.order(-cls.requested_time, cls.key)
+  for crash in iterator.ScriptIterate(query, app_id, projection=projection,
+                                      batch_size=batch_size,
+                                      batch_run=batch_run):
     yield crash
 
 
 @GeneratorCached(LocalCache(), namespace='Crash-iterator')  # pragma: no cover.
 def CachedCrashIterator(client_id, app_id,
-                        fields=None, property_values=None,
+                        projection=None,
+                        property_values=None,
                         start_date=_A_YEAR_AGO, end_date=_TODAY,
                         batch_size=_DEFAULT_BATCH_SIZE, batch_run=False):
   """Genrates query to query crashes and iterates crashes.
@@ -94,10 +87,14 @@ def CachedCrashIterator(client_id, app_id,
   values, else it will visit datastore of appengine app to yield data.
 
   Args:
-    client_id (CrashClient): One of CrashClient.FRACAS, CrashClient.CRACAS,
-      CrashClient.CLUSTERFUZZ.
+    client_id (CrashClient): One of the 3 supported clients -
+      CrashClient.FRACAS, CrashClient.CRACAS and CrashClient.CLUSTERFUZZ.
     app_id (str): App engine app id.
-    fields (list): Field names of CrashAnalysis entity to project.
+    projection (tuple or list): Operations return entities with only the
+      specified properties set. For example:
+      projection=[Article.title, Article.date] or
+      projection=['title', 'date'] fetches entities with just those two
+      fields set. Note, query can only project indexed properties.
     property_values (dict): Property values to filter.
     start_date (str): Only iterate testcases after this date including this
       date, format '%Y-%m-%d'.
@@ -109,7 +106,7 @@ def CachedCrashIterator(client_id, app_id,
 
     An example is available in crash_printer/print_crash.py.
   """
-  for crash in IterateCrashes(client_id, app_id, fields=fields,
+  for crash in IterateCrashes(client_id, app_id, projection=projection,
                               property_values=property_values,
                               start_date=start_date, end_date=end_date,
                               batch_size=batch_size, batch_run=batch_run):

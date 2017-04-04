@@ -11,55 +11,34 @@ import remote_api  # pylint: disable=W
 _DEFAULT_BATCH_SIZE = 1000
 
 
-# TODO(crbug.com/662540): Add unittests.
-def ProjectEntity(entity, fields):  # pragma: no cover.
-  """Projects fields from entity. Returns dict."""
-  entity_info = {}
-  for field in fields:
-    if hasattr(entity, field):
-      entity_info[field] = getattr(entity, field)
-    else:
-      entity_info[field] = None
-  entity_info['id'] = entity.key.urlsafe()
-  return entity_info
-
-
+# TODO(katesonia): Move this to gae_libs.
 # TODO(crbug.com/662540): Add unittests.
 def Iterate(query,
-            app_id,
-            fields=None,
-            filter_func=None,
+            projection=None,
             batch_size=_DEFAULT_BATCH_SIZE,
             batch_run=False):  # pragma: no cover.
   """Iterates entities queried by query.
 
   Args:
     query (ndb.Query): The query to fetch entities.
-    app_id (str): App engine app id.
-    fields (list or None): Field names of an datastore model entity to be
-      projected to a dict. If None provided, return the entities instead of
-      projected dict.
-    filter_func (function): A function that does in memory filtering.
+    projection (tuple or list): Operations return entities with only the
+      specified properties set. For example:
+      projection=[Article.title, Article.date] or
+      projection=['title', 'date'] fetches entities with just those two
+      fields set. Note, query can only project indexed properties.
     batch_size (int): The number of entities to query at one time.
     batch_run (bool): If True, iterate batches of entities, if
       False, iterate each entity.
 
     An exmaple is available in crash_printer/print_crash.py.
   """
-  remote_api.EnableRemoteApi(app_id)
-
   cursor = None
   while True:
     entities, next_cursor, more = query.fetch_page(batch_size,
+                                                   projection=projection,
                                                    start_cursor=cursor)
     if not more and not entities:
       break
-
-    if filter_func:
-      entities = filter_func(entities)
-
-    if fields:
-      entities = [ProjectEntity(entity, fields) for entity in entities]
 
     if batch_run:
       yield entities
@@ -71,3 +50,25 @@ def Iterate(query,
       break
 
     cursor = next_cursor
+
+
+def ScriptIterate(query,
+                  app_id,
+                  projection=None,
+                  batch_size=_DEFAULT_BATCH_SIZE,
+                  batch_run=False):  # pragma: no cover.
+  """Iterates entities queried by query.
+
+  Args:
+    query (ndb.Query): The query to fetch entities.
+    batch_size (int): The number of entities to query at one time.
+    batch_run (bool): If True, iterate batches of entities, if
+      False, iterate each entity.
+
+    An exmaple is available in crash_printer/print_crash.py.
+  """
+  remote_api.EnableRemoteApi(app_id)
+
+  for entity in Iterate(query, projection=projection, batch_size=batch_size,
+                        batch_run=batch_run):
+    yield entity

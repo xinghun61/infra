@@ -11,9 +11,9 @@ import sys
 _SCRIPT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
                            os.path.pardir)
 sys.path.insert(1, _SCRIPT_DIR)
-
 import script_util
 script_util.SetUpSystemPaths()
+
 from crash_queries.crash_printer import crash_printer
 
 _DATETIME_FORMAT = '%Y-%m-%d'

@@ -7,23 +7,20 @@ import sys
 
 from crash_queries import crash_iterator
 
-CRASH_INFO_FIELDS = ['signature', 'platform']
+PROPERTIES = ['signature', 'platform']
 
 
-def PrintCrashInfo(crash):
-  for crash_info_field in CRASH_INFO_FIELDS:
-    print '%s: %s' % (crash_info_field, crash[crash_info_field])
+def PrintCrash(crash):
+  for crash_property in PROPERTIES:
+    print getattr(crash, crash_property)
+  print '\n'
 
 
 def CrashPrinter(client_id, app_id,
-                 start_date, end_date,
-                 print_func=PrintCrashInfo,
-                 signature=None):
-
+                 start_date=None, end_date=None,
+                 print_func=PrintCrash, signature=None):
   property_values = {'signature': signature} if signature else None
-  for crash in crash_iterator.IterateCrashes(client_id, app_id,
-                                             fields=CRASH_INFO_FIELDS,
-                                             start_date=start_date,
-                                             end_date=end_date,
-                                             property_values=property_values):
+  for crash in crash_iterator.CachedCrashIterator(
+      client_id, app_id, start_date=start_date, end_date=end_date,
+      property_values=property_values):
     print_func(crash)

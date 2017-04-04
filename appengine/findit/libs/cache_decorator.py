@@ -211,24 +211,24 @@ class GeneratorCached(CacheDecorator):
       if cached_keys is not None:
         for cached_key in cached_keys:
           yield self.GetCache(cached_key, func, args, kwargs)
+      else:
+        result_iter = func(*args, **kwargs)
+        result_keys = []
 
-      result_iter = func(*args, **kwargs)
-      result_keys = []
+        cache_success = True
+        for index, result in enumerate(result_iter):
+          yield result
+          if not cache_success:
+            continue
 
-      cache_success = True
-      for index, result in enumerate(result_iter):
-        yield result
-        if not cache_success:
-          continue
+          result_key = '%s-%d' % (key, index)
+          if not self.SetCache(result_key, result, func, args, kwargs):
+            cache_success = False
+            continue
 
-        result_key = '%s-%d' % (key, index)
-        if not self.SetCache(result_key, result, func, args, kwargs):
-          cache_success = False
-          continue
+          result_keys.append(result_key)
 
-        result_keys.append(result_key)
-
-      if cache_success:
-        self.SetCache(key, result_keys, func, args, kwargs)
+        if cache_success:
+          self.SetCache(key, result_keys, func, args, kwargs)
 
     return Wrapped

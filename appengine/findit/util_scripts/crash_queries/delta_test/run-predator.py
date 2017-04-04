@@ -56,13 +56,27 @@ def StoreResults(crash, client_id, app_id, id_to_culprits, lock, config,
 
 
 def GetCulprits(crashes, client_id, app_id, verbose=False):
-  """Run predator analysis on crashes locally."""
+  """Run ``CrashAnalysis`` entities in parallel and returns culprits.
+
+  Args:
+    crashes (list): A list of ``CrashAnalysis`` entities to run Predator on and
+      get culprit results.
+    client_id (CrashClient): One of CrashClient.FRACAS, CrashClient.CRACAS and
+      CrashClient.CLUSTERFUZZ.
+    app_id (str): Project id of app engine app.
+    verbose (boolean): Whether to print every culprit results or not.
+
+  Returns:
+    A dict mapping crash id (urlsafe of entity key for Cracas/Fracas, testcase
+    id for Cluterfuzz) to culprit results (dict version of ``Culprit``.)
+  """
   # Enable remote access to app engine services.
   remote_api.EnableRemoteApi(app_id)
-  id_to_culprits = {}
+
   tasks = []
   lock = threading.Lock()
   config = CrashConfig.Get()
+  id_to_culprits = {}
   for crash in crashes:
     tasks.append({
         'function': StoreResults,
@@ -78,7 +92,8 @@ def RunPredator():
   """Runs delta testing between 2 different Findit versions."""
   argparser = argparse.ArgumentParser(
       description='Run Predator on a batch of crashes.')
-  argparser.add_argument('input_path', help='Path to read crash infos from')
+  argparser.add_argument('input_path', help='Path to read a list of '
+                         '``CrashAnalysis`` entities')
   argparser.add_argument('result_path', help='Path to store results')
   argparser.add_argument('client', help=('Possible values are: fracas, cracas, '
                                          'clusterfuzz. Right now, only fracas '
@@ -89,7 +104,7 @@ def RunPredator():
       '-v',
       action='store_true',
       default=False,
-      help='Print findit results.')
+      help='Print Predator results.')
   args = argparser.parse_args()
 
   with open(args.input_path) as f:

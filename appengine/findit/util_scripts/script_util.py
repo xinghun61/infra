@@ -5,6 +5,7 @@
 """This module contains util functions that local scripts can use."""
 
 import atexit
+from datetime import datetime
 import functools
 import os
 import Queue
@@ -154,3 +155,30 @@ def GetLockedMethod(cls, method_name, lock):  # pragma: no cover
       return method(*args, **kwargs)
 
   return functools.partial(LockedMethod, cls)
+
+
+# TODO(katesonia): Move this to gae_libs.
+# TODO(crbug.com/662540): Add unittests.
+def GetFilterQuery(query, time_property, start_date, end_date,
+                   property_values=None,
+                   datetime_pattern='%Y-%m-%d'):  # pragma: no cover.
+  """Gets query with filters.
+
+  There are 2 kinds for filters:
+    (1) The time range filter defined by ``time_property``, ``start_date`` and
+    ``end_date``. Note, the format of ``start_date`` and ``end_date`` should be
+    consistent with ``datetime_pattern``.
+    (2) The values of properties set by ``property_values``.
+  """
+  start_date = datetime.strptime(start_date, datetime_pattern)
+  end_date = datetime.strptime(end_date, datetime_pattern)
+
+  if property_values:
+    for cls_property, value in property_values.iteritems():
+      if isinstance(value, list):
+        query = query.filter(cls_property.IN(value))
+      else:
+        query = query.filter(cls_property == value)
+
+  return query.filter(time_property >= start_date).filter(
+      time_property < end_date)
