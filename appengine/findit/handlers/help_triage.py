@@ -2,9 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model.wf_analysis import WfAnalysis
 from waterfall import buildbot

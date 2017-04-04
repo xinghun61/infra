@@ -10,8 +10,8 @@ This handler will mark the suspected flake result as correct or incorrect.
 from google.appengine.ext import ndb
 from google.appengine.api import users
 
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from model import analysis_status
 
 

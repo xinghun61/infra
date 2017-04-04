@@ -14,7 +14,7 @@ from google.appengine.api import users
 from google.appengine.ext import ndb
 import pytz.gae
 
-from common.base_handler import BaseHandler, Permission
+from gae_libs.handlers.base_handler import BaseHandler, Permission
 from libs import time_util
 from model import result_status
 from model.wf_analysis import WfAnalysis

@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common.base_handler import BaseHandler, Permission
+from gae_libs.handlers.base_handler import BaseHandler, Permission
 from handlers import handlers_util
 from waterfall import buildbot
 

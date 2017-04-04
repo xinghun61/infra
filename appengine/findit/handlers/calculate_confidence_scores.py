@@ -7,9 +7,9 @@ from collections import defaultdict
 
 from google.appengine.ext import ndb
 
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
 from common.waterfall import failure_type
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from libs import time_util
 from model import analysis_approach_type
 from model import suspected_cl_status

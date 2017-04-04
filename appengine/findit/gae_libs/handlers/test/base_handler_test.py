@@ -13,8 +13,8 @@ from google.appengine.api import users
 
 from testing_utils import testing
 
-from common import base_handler
-from common.base_handler import BaseHandler, Permission
+from gae_libs.handlers import base_handler
+from gae_libs.handlers.base_handler import BaseHandler, Permission
 
 
 class PermissionLevelHandler(BaseHandler):

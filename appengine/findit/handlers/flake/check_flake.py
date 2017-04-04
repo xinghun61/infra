@@ -7,8 +7,8 @@ import logging
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from gae_libs.http import auth_util
 from libs import time_util
 from model import analysis_status

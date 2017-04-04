@@ -4,7 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from common.base_handler import BaseHandler, Permission
+from gae_libs.handlers.base_handler import BaseHandler, Permission
 from model import analysis_approach_type
 from model.wf_culprit import WfCulprit
 from waterfall import build_util

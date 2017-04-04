@@ -8,7 +8,7 @@ import json
 
 from google.appengine.api import users
 
-from common.base_handler import BaseHandler, Permission
+from gae_libs.handlers.base_handler import BaseHandler, Permission
 from model.crash.crash_config import CrashConfig as CrashConfigModel
 
 # TODO(katesonia): Have the validate function return error messages, and make

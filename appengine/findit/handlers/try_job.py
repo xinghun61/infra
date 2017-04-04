@@ -6,7 +6,7 @@ import json
 import logging
 
 from common.waterfall import buildbucket_client
-from common.base_handler import BaseHandler, Permission
+from gae_libs.handlers.base_handler import BaseHandler, Permission
 
 
 class TryJob(BaseHandler):

@@ -8,8 +8,8 @@ from google.appengine.api import users
 from google.appengine.ext import ndb
 
 from common import constants
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from libs import time_util
 
 

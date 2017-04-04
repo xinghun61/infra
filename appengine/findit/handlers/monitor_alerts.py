@@ -6,8 +6,8 @@ import json
 import logging
 
 from common import constants
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines

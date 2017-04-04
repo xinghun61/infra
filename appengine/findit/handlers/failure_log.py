@@ -5,7 +5,7 @@
 import base64
 import json
 
-from common.base_handler import BaseHandler, Permission
+from gae_libs.handlers.base_handler import BaseHandler, Permission
 from model.wf_step import WfStep
 from waterfall import buildbot
 

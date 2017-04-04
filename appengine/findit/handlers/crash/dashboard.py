@@ -8,8 +8,8 @@ from datetime import time
 from datetime import timedelta
 import json
 
-from common.base_handler import BaseHandler, Permission
 from gae_libs import dashboard_util
+from gae_libs.handlers.base_handler import BaseHandler, Permission
 from libs import time_util
 
 _PROPERTY_TO_VALUE_CONVERTER = OrderedDict([

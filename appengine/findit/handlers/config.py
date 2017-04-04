@@ -6,8 +6,8 @@
 
 import json
 
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from model import wf_config
 from waterfall import waterfall_config
 

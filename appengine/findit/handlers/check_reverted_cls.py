@@ -8,8 +8,8 @@ from datetime import timedelta
 import logging
 
 from common import constants
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from infra_api_clients.codereview import codereview_util
 from libs import time_util
 from model import revert_cl_status

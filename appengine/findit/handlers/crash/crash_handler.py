@@ -7,11 +7,11 @@ import json
 import logging
 
 from common import constants
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
 from crash import crash_pipeline
 from gae_libs import appengine_util
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model.crash.crash_config import CrashConfig
 

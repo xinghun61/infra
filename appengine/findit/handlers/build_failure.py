@@ -9,8 +9,8 @@ from datetime import datetime
 from google.appengine.api import users
 
 from common import constants
-from common.base_handler import BaseHandler, Permission
 from common.waterfall import failure_type
+from gae_libs.handlers.base_handler import BaseHandler, Permission
 from handlers import handlers_util
 from handlers import result_status
 from handlers.result_status import NO_TRY_JOB_REASON_MAP

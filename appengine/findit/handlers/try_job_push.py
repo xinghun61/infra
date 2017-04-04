@@ -11,10 +11,10 @@ from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
 from common import constants
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
 from common.waterfall.pubsub_callback import GetVerificationToken
 from gae_libs import appengine_util
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from model.base_try_job_data import BaseTryJobData
 
 

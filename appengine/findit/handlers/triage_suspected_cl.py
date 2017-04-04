@@ -10,8 +10,8 @@ This handler will flag the suspected cl as correct or incorrect.
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from libs import time_util
 from model import result_status
 from model import suspected_cl_status
@@ -20,6 +20,7 @@ from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_util
 from waterfall import buildbot
 from waterfall.suspected_cl_util import GetCLInfo
+
 
 @ndb.transactional
 def _UpdateSuspectedCL(

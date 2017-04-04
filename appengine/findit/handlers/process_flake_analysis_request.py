@@ -5,8 +5,8 @@
 import logging
 import pickle
 
-from common.base_handler import BaseHandler
-from common.base_handler import Permission
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
 
