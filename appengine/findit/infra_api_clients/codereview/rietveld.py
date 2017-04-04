@@ -24,6 +24,19 @@ from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 
 _RIETVELD_ISSUE_NUMBER_RE = re.compile('^/(\d+)/?.*')
+_PATCHSET_REVERTED_TO_ISSUE_REGEX = re.compile(
+    r'A revert of this CL \(patchset #\d+ id:\d+\) has been '
+    r'created in (?P<issueurl>.*) by .*'
+    r'.\n\nThe reason for reverting is: .*')
+_PATCHSET_TO_REVISION_REGEX = re.compile(
+    r'Committed patchset #\d+ \(id:\d+\) as '
+    r'https://.*/(?P<revision>[a-f\d]{40})')
+_PATCHSET_TO_REVISION_MANUAL_REGEX = re.compile(
+    r'Committed patchset #\d+ \(id:\d+\) manually as '
+    r'(?P<revision>[a-f\d]{40})(?:\.$| .*)')
+# NB: We capture the email as any non-space characters after 'by' to avoid
+# matching in case the email is followed by ` to run a CQ dry run`
+_COMMIT_ATTEMPT_REGEX = re.compile(r'^The CQ bit was checked by [^ ]+$')
 
 
 class Rietveld(codereview.CodeReview):
@@ -125,24 +138,9 @@ class Rietveld(codereview.CodeReview):
       return None
 
   def _ParseClInfo(self, data, cl):
-    patchset_reverted_to_issue_regex = re.compile(
-        r'A revert of this CL \(patchset #\d+ id:\d+\) has been '
-        r'created in (?P<issueurl>.*) by .*'
-        r'.\n\nThe reason for reverting is: .*')
-    patchset_to_revision_regex = re.compile(
-        r'Committed patchset #\d+ \(id:\d+\) as '
-        r'https://.*/(?P<revision>[a-f\d]{40})')
-    patchset_to_revision_manual_regex = re.compile(
-        r'Committed patchset #\d+ \(id:\d+\) manually as '
-        r'(?P<revision>[a-f\d]{40})\.')
-    # NB: We capture the email as any non-space characters after 'by' to avoid
-    # matching in case the email is followed by ` to run a CQ dry run`
-    commit_attempt_regex = re.compile(
-        r'^The CQ bit was checked by [^ ]+$')
-
     def patchset_to_revision_func(cl, message):
-      matches_cq = patchset_to_revision_regex.match(message['text'])
-      matches_manual = patchset_to_revision_manual_regex.match(message['text'])
+      matches_cq = _PATCHSET_TO_REVISION_REGEX.match(message['text'])
+      matches_manual = _PATCHSET_TO_REVISION_MANUAL_REGEX.match(message['text'])
       matches_any = matches_cq or matches_manual
       if not matches_any:
         return
@@ -159,7 +157,7 @@ class Rietveld(codereview.CodeReview):
         cl.AddCqAttempt(patchset_id, committer, timestamp)
 
     def patchset_reverted_to_issue_func(cl, message):
-      matches = patchset_reverted_to_issue_regex.match(message['text'])
+      matches = _PATCHSET_REVERTED_TO_ISSUE_REGEX.match(message['text'])
       if not matches:
         return
       patchset_id = str(message['patchset'])
@@ -174,7 +172,7 @@ class Rietveld(codereview.CodeReview):
       cl.reverts.append(revert)
 
     def commit_attempt_func(cl, message):
-      matches = commit_attempt_regex.match(message['text'])
+      matches = _COMMIT_ATTEMPT_REGEX.match(message['text'])
       if not matches:
         return
       timestamp = time_util.DatetimeFromString(message['date'])

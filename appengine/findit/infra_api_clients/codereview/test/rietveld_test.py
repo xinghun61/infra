@@ -10,6 +10,7 @@ import textwrap
 
 from testing_utils import testing
 
+from infra_api_clients.codereview import rietveld
 from infra_api_clients.codereview.rietveld import Rietveld
 from libs.http import retry_http_client
 
@@ -265,3 +266,12 @@ class RietveldTest(testing.AppengineTestCase):
     self.assertEqual(
       'https://server.host.name/%s/' % change_id,
       self.rietveld.GetCodeReviewUrl(change_id))
+
+  def testRegexForManualCommit(self):
+    message = (
+        'Committed patchset #5 (id:80001) manually as '
+        'b9f7581b93ae8096afed29d415791803caf2e2e3 (presubmit successful).')
+    match = rietveld._PATCHSET_TO_REVISION_MANUAL_REGEX.match(message)
+    self.assertIsNotNone(match)
+    self.assertEqual('b9f7581b93ae8096afed29d415791803caf2e2e3',
+                     match.group('revision'))

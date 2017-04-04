@@ -122,7 +122,7 @@ class UpdateFlakeBugPipeline(BasePipeline):
       return False
 
     comment = _GenerateComment(analysis)
-    issue.labels.append('AnalyzedByFindit')
+    issue.labels.append('Test-Findit-Analyzed')
 
     monitoring.issues.increment({'operation': 'update', 'category': 'flake'})
 
