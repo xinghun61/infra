@@ -7,23 +7,35 @@
   <template>
     <style>
     #error,
-    #treeClosed {
+    #treeStatus {
       box-sizing: border-box;
       width: 100%;
-      padding: 8px 10px;
-      margin: 5px auto;
-      border: 1px solid #dcdcdc;
-      color: #fff;
-      background-color: #E75D54;
+      padding: 0.5em 8px;
+      margin: 0.5em auto;
+      border: 1px solid #666;
+      color: #222;
       border-radius: 5px;
+    }
+    #error,
+    .closed {
+      background-color: #E98080;
+    }
+    .maintenance {
+      background-color: #FF80FF;
+    }
+    .open {
+      background-color: #8FDF5F;
+    }
+    .throttled {
+      background-color: #FFFC6C;
     }
     a, a:visited,
     som-marked-element /deep/ a, som-marked-element /deep/ a:visited {
-      color: #fff;
+      color: #222;
     }
     </style>
     <iron-ajax
-      id="treeStatus"
+      id="treeStatusAjax"
       url$="[[_statusUrl]]/current?format=json"
       handle-as="json"
       last-error="{{_statusErrorJson}}"
@@ -32,8 +44,8 @@
     <div id="error" hidden$="[[!_hasError]]">
       Error fetching tree status from <a href$="[[_statusUrl]]" target="_blank">[[_statusUrl]]</a>
     </div>
-    <div id="treeClosed" hidden$="[[_hideNotice]]">
-      <som-marked-element markdown="[[_message]]"></som-marked-element>
+    <div id="treeStatus" class$="[[_status]]" hidden$="[[_hideNotice]]">
+      Tree status: <som-marked-element markdown="[[_message]]"></som-marked-element>
       by <a href$="mailto:[[_email]]">[[_username]]</a> on [[_time]] (<a href$="[[_statusUrl]]" target="_blank">More</a>)
     </div>
   </template>

@@ -32,13 +32,13 @@
         assert.equal(false, element._hasError);
         assert.equal(true, element._hideNotice);
 
-        assert.equal(true, element.$.treeClosed.hidden);
+        assert.equal(true, element.$.treeStatus.hidden);
         assert.equal(true, element.$.error.hidden);
         done();
       });
     });
 
-    test('does not render if tree is open', function(done) {
+    test('renders if tree is open', function(done) {
       element.tree = 'chromium';
 
       server.respondWith(
@@ -55,11 +55,12 @@
       flush(function () {
         assert.equal(true, element._hasStatusApp);
         assert.equal(false, element._hasError);
-        assert.equal(true, element._hideNotice);
-        assert.equal(false, element._isClosed);
+        assert.equal(false, element._hideNotice);
 
-        assert.equal(true, element.$.treeClosed.hidden);
+        assert.equal(false, element.$.treeStatus.hidden);
         assert.equal(true, element.$.error.hidden);
+
+        assert.equal('open', element._status);
 
         done();
       });
@@ -82,13 +83,14 @@
       flush(function () {
         assert.equal(true, element._hasStatusApp);
         assert.equal(false, element._hideNotice);
-        assert.equal(true, element._isClosed);
 
-        assert.equal(false, element.$.treeClosed.hidden);
+        assert.equal(false, element.$.treeStatus.hidden);
         assert.equal(true, element.$.error.hidden);
 
         assert.equal('fake@email.com', element._email);
         assert.equal('test', element._message);
+
+        assert.equal('closed', element._status);
 
         done();
       });
@@ -112,7 +114,7 @@
         assert.equal(true, element._hasStatusApp);
         assert.equal(true, element._hideNotice);
 
-        assert.equal(true, element.$.treeClosed.hidden);
+        assert.equal(true, element.$.treeStatus.hidden);
         assert.equal(false, element.$.error.hidden);
 
         done();

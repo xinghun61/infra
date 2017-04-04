@@ -20,7 +20,7 @@
       },
       _hideNotice: {
         type: Boolean,
-        computed: '_computeHideNotice(_hasStatusApp, _isClosed, _hasError)',
+        computed: '_computeHideNotice(_hasStatusApp, _hasError)',
         value: true,
       },
       _statusApps: {
@@ -42,14 +42,13 @@
         type: String,
         computed: '_computeEmail(_statusJson)',
       },
-      _isClosed: {
-        type: Boolean,
-        value: false,
-        computed: '_computeIsClosed(_statusJson)',
-      },
       _message: {
         type: String,
         computed: '_computeMessage(_statusJson)',
+      },
+      _status: {
+        type: String,
+        computed: '_computeStatus(_statusJson)',
       },
       _time: {
         type: String,
@@ -65,7 +64,7 @@
       if (!this._hasStatusApp) {
         return;
       }
-      this.$.treeStatus.generateRequest();
+      this.$.treeStatusAjax.generateRequest();
     },
 
     _computeHasError: function(hasStatusApp, json) {
@@ -76,15 +75,14 @@
       return tree in statusApps;
     },
 
-    _computeHideNotice: function(hasStatusApp, isClosed, hasError) {
-      return !hasStatusApp || !isClosed || hasError;
+    _computeHideNotice: function(hasStatusApp, hasError) {
+      return !hasStatusApp || hasError;
     },
 
     _computeStatusUrl: function(tree, statusApps) {
       if (!this._hasStatusApp) {
         return '';
       }
-
       return statusApps[tree];
     },
 
@@ -96,11 +94,11 @@
       return json.username;
     },
 
-    _computeIsClosed(json) {
-      if (!json || !json.general_state) {
-        return false;
+    _computeStatus(json) {
+      if (!json) {
+        return '';
       }
-      return json.general_state === 'closed';
+      return json.general_state;
     },
 
     _computeMessage(json) {
