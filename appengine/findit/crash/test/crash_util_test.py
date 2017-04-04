@@ -4,7 +4,6 @@
 
 from collections import namedtuple
 
-from common.dependency import Dependency
 from crash import crash_util
 from crash.crash_match import CrashMatch
 from crash.crash_match import FrameInfo
@@ -13,6 +12,7 @@ from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
 from crash.suspect import Suspect
 from crash.test.predator_testcase import PredatorTestCase
+from libs.deps.dependency import Dependency
 from libs.gitiles.change_log import ChangeLog
 
 _CHANGELOG = ChangeLog.FromDict({

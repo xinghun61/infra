@@ -10,7 +10,7 @@ TODO: support strict mode, 'target_os', 'target_os_only', 'use_relative_paths',
       both forms of recursion, both forms of hooks, 'allowed_hosts', etc.
 """
 
-from common import dependency
+from libs.deps import dependency
 
 
 # All supported OSes in DEPS file.

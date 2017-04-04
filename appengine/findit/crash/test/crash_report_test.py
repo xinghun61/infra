@@ -4,9 +4,6 @@
 
 import copy
 
-from common.chrome_dependency_fetcher import ChromeDependencyFetcher
-from common.dependency import Dependency
-from common.dependency import DependencyRoll
 from crash.crash_report import CrashReport
 from crash.crash_report import _FrozenDict
 from crash.stacktrace import CallStack
@@ -15,6 +12,9 @@ from crash.stacktrace import Stacktrace
 from crash.test.crash_test_suite import CrashTestSuite
 from crash.type_enums import CallStackFormatType
 from crash.type_enums import LanguageType
+from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
+from libs.deps.dependency import Dependency
+from libs.deps.dependency import DependencyRoll
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.gitiles_repository import GitilesRepository
 

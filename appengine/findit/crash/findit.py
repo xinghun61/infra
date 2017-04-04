@@ -8,7 +8,6 @@ import logging
 
 from google.appengine.ext import ndb
 
-from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from common import constants
 from crash.component import Component
 from crash.component_classifier import ComponentClassifier

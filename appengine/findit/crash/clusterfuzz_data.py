@@ -5,14 +5,14 @@
 import logging
 from collections import namedtuple
 
-from common.dependency import Dependency
-from common.dependency import DependencyRoll
 from crash import detect_regression_range
 from crash.chromecrash_parser import ChromeCrashParser
 from crash.clusterfuzz_parser import ClusterfuzzParser
 from crash.crash_data import CrashData
 from crash.stacktrace import Stacktrace
 from crash.type_enums import SanitizerType
+from libs.deps.dependency import Dependency
+from libs.deps.dependency import DependencyRoll
 
 _SANITIZER_SHORT_NAME_TO_SANITIZER_TYPE = {
     'SYZYASAN': SanitizerType.SYZYASAN,

@@ -4,9 +4,9 @@
 
 import mock
 
-from common.chrome_dependency_fetcher import ChromeDependencyFetcher
-from common.dependency import Dependency
-from common.dependency import DependencyRoll
+from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
+from libs.deps.dependency import Dependency
+from libs.deps.dependency import DependencyRoll
 from crash.clusterfuzz_data import ClusterfuzzData
 from crash.clusterfuzz_parser import ClusterfuzzParser
 from crash.crash_report import CrashReport

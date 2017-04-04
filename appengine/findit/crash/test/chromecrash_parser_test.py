@@ -4,7 +4,6 @@
 
 import textwrap
 
-from common.dependency import Dependency
 from crash.chromecrash_parser import ChromeCrashParser
 from crash.stacktrace import StackFrame
 from crash.stacktrace import CallStack
@@ -12,6 +11,7 @@ from crash.stacktrace import Stacktrace
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
 from crash.type_enums import CallStackFormatType
 from crash.type_enums import LanguageType
+from libs.deps.dependency import Dependency
 
 
 class ChromeCrashParserTest(StacktraceTestSuite):

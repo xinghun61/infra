@@ -4,11 +4,11 @@
 
 import logging
 
-from common import chrome_dependency_fetcher
 from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
+from libs.deps import chrome_dependency_fetcher
 
 
 def _GetOSPlatformName(master_name, builder_name):  # pragma: no cover

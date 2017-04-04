@@ -2,9 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common.dependency import Dependency
 from crash import parse_util
 from crash.type_enums import CallStackFormatType
+from libs.deps.dependency import Dependency
 
 from testing_utils import testing
 

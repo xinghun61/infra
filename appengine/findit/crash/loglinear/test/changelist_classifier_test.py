@@ -6,8 +6,6 @@ import copy
 import logging
 import math
 
-from common.dependency import Dependency
-from common.dependency import DependencyRoll
 from crash.crash_report import CrashReport
 from crash.loglinear.changelist_classifier import LogLinearChangelistClassifier
 from crash.loglinear.changelist_features.touch_crashed_file_meta import (
@@ -23,6 +21,8 @@ from crash.stacktrace import Stacktrace
 from crash.test.crash_test_suite import CrashTestSuite
 from crash.type_enums import CallStackFormatType
 from crash.type_enums import LanguageType
+from libs.deps.dependency import Dependency
+from libs.deps.dependency import DependencyRoll
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.gitiles_repository import GitilesRepository
 from libs.math import logarithms as lmath

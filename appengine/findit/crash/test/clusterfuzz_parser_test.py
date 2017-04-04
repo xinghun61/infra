@@ -4,7 +4,6 @@
 
 import textwrap
 
-from common.dependency import Dependency
 from crash import callstack_detectors
 from crash.clusterfuzz_parser import ClusterfuzzParser
 from crash.clusterfuzz_parser import GetCallStackDetector
@@ -15,6 +14,7 @@ from crash.test.stacktrace_test_suite import StacktraceTestSuite
 from crash.type_enums import CallStackFormatType
 from crash.type_enums import LanguageType
 from crash.type_enums import SanitizerType
+from libs.deps.dependency import Dependency
 
 
 class ClusterfuzzParserTest(StacktraceTestSuite):

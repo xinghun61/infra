@@ -4,7 +4,7 @@
 
 import unittest
 
-from common.dependency import Dependency, DependencyRoll
+from libs.deps.dependency import Dependency, DependencyRoll
 
 
 class DependencyTest(unittest.TestCase):

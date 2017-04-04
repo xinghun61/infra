@@ -5,10 +5,10 @@
 from collections import defaultdict
 import logging
 
-from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from crash.suspect import Suspect
 from crash.crash_report import CrashReport
 from crash.loglinear.model import UnnormalizedLogLinearModel
+from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
 
 
 class LogLinearChangelistClassifier(object):

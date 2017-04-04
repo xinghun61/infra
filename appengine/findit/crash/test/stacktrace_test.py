@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common.dependency import Dependency
 from crash.callstack_detectors import StartOfCallStack
 from crash.stacktrace import CallStack
 from crash.stacktrace import CallStackBuffer
@@ -12,6 +11,7 @@ from crash.stacktrace import StacktraceBuffer
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
 from crash.type_enums import CallStackFormatType
 from crash.type_enums import LanguageType
+from libs.deps.dependency import Dependency
 
 
 class CallStackTest(StacktraceTestSuite):

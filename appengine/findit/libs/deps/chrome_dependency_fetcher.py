@@ -4,8 +4,8 @@
 
 import re
 
-from common import dependency
-from common import deps_parser
+from libs.deps import dependency
+from libs.deps import deps_parser
 
 _CHROMIUM_ROOT_DIR = 'src/'
 _CHROMIUM_REPO_MASTER = 'https://chromium.googlesource.com/chromium/src.git'

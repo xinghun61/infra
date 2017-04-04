@@ -4,8 +4,6 @@
 
 import unittest
 
-from common.dependency import Dependency
-from common.dependency import DependencyRoll
 from crash.component_classifier import Component
 from crash.component_classifier import ComponentClassifier
 from crash.crash_report import CrashReport
@@ -16,6 +14,8 @@ from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
 from crash.test.predator_testcase import PredatorTestCase
+from libs.deps.dependency import Dependency
+from libs.deps.dependency import DependencyRoll
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs.gitiles.change_log import ChangeLog

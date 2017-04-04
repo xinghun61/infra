@@ -12,7 +12,6 @@ from google.appengine.ext import ndb
 import webapp2
 from webtest.app import AppError
 
-from common import chrome_dependency_fetcher
 from crash import crash_pipeline
 from crash.crash_pipeline import CrashWrapperPipeline
 from crash.findit import Findit

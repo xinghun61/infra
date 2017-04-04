@@ -19,7 +19,6 @@ sys.path.insert(1, _SCRIPT_DIR)
 from local_cache import LocalCache
 import script_util
 
-from common.chrome_dependency_fetcher import ChromeDependencyFetcher
 from crash.crash_pipeline import FinditForClientID
 from crash.chromecrash_parser import ChromeCrashParser
 from crash.clusterfuzz_parser import ClusterfuzzParser
@@ -28,6 +27,7 @@ from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from git_checkout.local_git_repository import LocalGitRepository
 from libs.cache_decorator import Cached
+from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
 from model.crash import crash_analysis
 from model.crash.crash_config import CrashConfig
 import remote_api

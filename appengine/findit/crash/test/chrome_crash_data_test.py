@@ -4,9 +4,6 @@
 
 import mock
 
-from common.chrome_dependency_fetcher import ChromeDependencyFetcher
-from common.dependency import Dependency
-from common.dependency import DependencyRoll
 from crash.chromecrash_parser import ChromeCrashParser
 from crash.chrome_crash_data import ChromeCrashData
 from crash.crash_report import CrashReport
@@ -15,6 +12,9 @@ from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
 from crash.test.predator_testcase import PredatorTestCase
 from crash.test.stacktrace_test_suite import StacktraceTestSuite
+from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
+from libs.deps.dependency import Dependency
+from libs.deps.dependency import DependencyRoll
 
 
 class ChromeCrashDataTest(StacktraceTestSuite):

@@ -7,11 +7,11 @@ import collections
 
 from testing_utils import testing
 
-from common import chrome_dependency_fetcher
-from common import deps_parser
-from common.dependency import Dependency
-from common.dependency import DependencyRoll
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from libs.deps import deps_parser
+from libs.deps.dependency import Dependency
+from libs.deps.dependency import DependencyRoll
+from libs.deps import chrome_dependency_fetcher
 from libs.gitiles.git_repository import GitRepository
 from libs.gitiles import gitiles_repository
 from libs.http import retry_http_client
