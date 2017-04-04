@@ -175,7 +175,7 @@ def EvaluateDelta(git_hash1, git_hash2,
                   client_id, app_id,
                   start_date, end_date, batch_size, max_n,
                   property_values=None, verbose=False):  # pragma: no cover.
-  """Evaluates delta between git_hash1 and git_hash2 on a set of Testcases.
+  """Evaluates delta between git_hash1 and git_hash2 on query results.
 
   Args:
     git_hash1 (str): A git hash of findit repository.
@@ -192,9 +192,11 @@ def EvaluateDelta(git_hash1, git_hash2,
     property_values (dict): Property values to query.
     batch_size (int): The size of crashes that can be queried at one time.
     verbose (bool): If True, print all the findit results.
+
   Return:
-    (deltas, crash_count).
+    (deltas, triage_results, crash_count).
     deltas (dict): Mappings id to delta for each culprit value.
+    triage_results (dict): Dict mapping crash_id to its triaged results.
     crash_count (int): Total count of all the crashes.
   """
   deltas = {}
@@ -226,3 +228,33 @@ def EvaluateDelta(git_hash1, git_hash2,
       break
 
   return deltas, triage_results, crash_count
+
+
+def EvaluateDeltaOnTestSet(git_hash1, git_hash2,
+                           client_id, app_id,
+                           testset_path, verbose=False):  # pragma: no cover
+  """Evaluates delta between git_hash1 and git_hash2 on a set of Testcases.
+
+  Args:
+    git_hash1 (str): A git hash of findit repository.
+    git_hash2 (str): A git hash of findit repository.
+    testset_path (str): A local path to read testset from.
+    verbose (bool): If True, print all the findit results.
+
+  Return:
+    (deltas, triage_results, crash_count).
+    deltas (dict): Mappings id to delta for each culprit value.
+    triage_results (dict): Dict mapping crash_id to its triaged results.
+    crash_count (int): Total count of all the crashes.
+  """
+  with open(testset_path) as f:
+    crashes = pickle.loads(zlib.decompress(f.read()))
+
+  delta = GetDeltaForCrashes(crashes, git_hash1, git_hash2,
+                             client_id, app_id, verbose=verbose)
+
+  # Print delta of the current batch.
+  print '========= Delta of the test set ========='
+  delta_util.PrintDelta(delta, len(crashes), client_id, app_id)
+
+  return delta, GetTriageResultsFromCrashes(crashes), len(crashes)
