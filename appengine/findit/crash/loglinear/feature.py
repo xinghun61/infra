@@ -114,8 +114,7 @@ class FeatureValue(Element): # pragma: no cover
 
   @property
   def reason(self):
-    return ('%s:\n%s\n' % (self._name, self._reason)
-            if self._reason else None)
+    return self._reason if self._reason else None
 
   @property
   def changed_files(self):
@@ -195,13 +194,17 @@ class MetaFeatureValue(MetaDict):
     if self._reason:
       return self._reason
 
-    formatted_reasons = []
+    reasons = {}
     for feature in self.itervalues():
-      if feature.reason:
-        formatted_reasons.append(feature.reason)
+      if not feature.reason:
+        continue
 
-    formatted_reasons.sort()
-    self._reason = '\n'.join(formatted_reasons)
+      if feature.is_element:
+        reasons[feature.name] = feature.reason
+      else:
+        reasons.update(feature.reason)
+
+    self._reason = reasons
     return self._reason
 
   @property

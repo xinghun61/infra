@@ -43,3 +43,21 @@ class MetaDictTest(unittest.TestCase):
     self.assertListEqual(meta_dict.keys(), d.keys())
     self.assertListEqual(meta_dict.values(), d.values())
     self.assertEqual(MetaDict(d), MetaDict(d))
+
+  def testDictProperty(self):
+    """Tests ``dict`` property."""
+    meta_dict = MetaDict({'f1': 1})
+    self.assertEqual(meta_dict.dict, {'f1': 1})
+
+  def testFlatDictProperty(self):
+    """Tests ``flat_dict`` property."""
+    class MockElement(Element):
+      def __init__(self, value):
+        self.value = value
+
+      def __eq__(self, other):
+        return self.value == other.value
+
+    meta_dict = MetaDict({'f1': MetaDict({'f2': MockElement(1)})})
+    self.assertTrue(meta_dict.flat_dict == {'f2': MockElement(1)})
+

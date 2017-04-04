@@ -199,6 +199,18 @@ class UnnormalizedLogLinearModel(object):
     """
     return self._scores(x)
 
+  def FilterReasonWithWeight(self, reason):
+    """Filters reasons with zero weights."""
+    flat_weight = self._meta_weight.flat_dict
+
+    filtered_reasons = []
+    for feature_name in flat_weight:
+      if feature_name in reason:
+        filtered_reasons.append(reason[feature_name])
+
+    filtered_reasons.sort()
+    return '\n'.join(filtered_reasons)
+
 
 class LogLinearModel(UnnormalizedLogLinearModel):
   """A loglinear probability model.

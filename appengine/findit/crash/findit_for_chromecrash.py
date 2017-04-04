@@ -51,7 +51,7 @@ class FinditForChromeCrash(Findit):  # pylint: disable=W0223
             'TouchCrashedFile': Weight(1.),
         }),
         'TouchCrashedDirectory': Weight(1.),
-        'TouchCrashedComponent': Weight(1.)
+        'TouchCrashedComponent': Weight(0.)
     })
     meta_feature = WrapperMetaFeature(
         [TouchCrashedFileMetaFeature(get_repository),

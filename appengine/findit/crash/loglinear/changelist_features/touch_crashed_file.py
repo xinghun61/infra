@@ -4,6 +4,7 @@
 
 import logging
 import math
+import os
 
 from crash.loglinear.feature import Feature
 from crash.loglinear.feature import FeatureValue
@@ -52,8 +53,8 @@ class TouchCrashedFileFeature(Feature):
       return FeatureValue(
           name=self.name,
           value=1.0,
-          reason='Touched files - %s' % ', '.join([
-              touched_file.new_path
+          reason='Touched files in stacktrace - %s' % ', '.join([
+              os.path.basename(touched_file.new_path)
               for match in matches.itervalues()
               for touched_file in match.touched_files]),
           changed_files=None)

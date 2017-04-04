@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 import logging
+import os
+import re
 
 from crash.loglinear.feature import Feature
 from crash.loglinear.feature import FeatureValue
@@ -71,18 +73,21 @@ class TopFrameIndexFeature(Feature):
                             reason=None,
                             changed_files=None)
 
-      def TopFrameIndexForTouchedFile(frame_infos):
-        return min([frame_info.frame.index for frame_info in frame_infos])
+      def TopFrameInMatches(matches):
+        frames = [frame_info.frame for match in matches.itervalues()
+                  for frame_info in match.frame_infos]
+        frames.sort(key=lambda frame: frame.index)
+        return frames[0]
 
-      top_frame_index = min([TopFrameIndexForTouchedFile(match.frame_infos)
-                             for match in matches.itervalues()])
-
-      value = LinearlyScaled(float(top_frame_index),
+      top_frame = TopFrameInMatches(matches)
+      value = LinearlyScaled(float(top_frame.index),
                              float(self.max_frame_index))
       if value <= _MINIMUM_FEATURE_VALUE:
         reason = None
       else:
-        reason = 'Top frame is #%d' % top_frame_index
+        reason = 'Top touched frame is #%d %s(in %s)' % (
+            top_frame.index, re.sub('\(.*\)', '', top_frame.function),
+            os.path.basename(top_frame.file_path))
 
       return FeatureValue(name=self.name,
                           value=value,

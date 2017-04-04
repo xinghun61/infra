@@ -4,6 +4,7 @@
 
 import logging
 import math
+import os
 
 from crash.crash_match import FrameInfo
 from crash.loglinear.feature import ChangedFile
@@ -217,12 +218,16 @@ class MinDistanceFeature(Feature):
                         distance_per_file.frame)
 
       value = LinearlyScaled(float(distance.distance), float(self._maximum))
-      if value <= _MINIMUM_FEATURE_VALUE:
+      if distance.frame is not None:
+        reason = ('Minimum distance between changed lines and crashed lines '
+                  'in %s is %d' % (os.path.basename(distance.frame.file_path),
+                                   int(distance.distance)))
+      else:
         reason = None
+
+      if value <= _MINIMUM_FEATURE_VALUE:
         changed_files = None
       else:
-        reason = ('Distance between changed lines and crashed lines in %s is %d' 
-                  % (distance.frame.file_path, int(distance.distance)))
         changed_files = MinDistanceFeature.ChangedFiles(
               suspect, touched_file_to_distance,
               report.crashed_version)

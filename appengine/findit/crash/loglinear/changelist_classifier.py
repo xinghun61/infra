@@ -4,11 +4,18 @@
 
 from collections import defaultdict
 import logging
+import math
 
 from crash.suspect import Suspect
 from crash.crash_report import CrashReport
 from crash.loglinear.model import UnnormalizedLogLinearModel
 from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
+
+# The ratio of the probabilities of 2 suspects equal to
+# exp(suspect1.confidence)/exp(suspect2.confidence), so
+# suspect1.confidence - suspect2.confidence <= log(0.5) means the
+# suspect1 is half likely than suspect2.
+_THRESHOLD_RATIO = math.log(0.5)
 
 
 class LogLinearChangelistClassifier(object):
@@ -128,10 +135,34 @@ class LogLinearChangelistClassifier(object):
       suspect.confidence = score
       # features is ``MetaFeatureValue`` object containing all feature values.
       features = features_given_report(suspect)
-      suspect.reasons = features.reason
+      suspect.reasons = self._model.FilterReasonWithWeight(features.reason)
       suspect.changed_files = [changed_file.ToDict()
                                for changed_file in features.changed_files]
       scored_suspects.append(suspect)
 
-    scored_suspects.sort(key=lambda suspect: -suspect.confidence)
-    return scored_suspects[:self._top_n_suspects]
+    return self.SortAndFilterSuspects(scored_suspects)
+
+  def SortAndFilterSuspects(self, suspects):
+    """Sorts and Filter suspects by probability ratio."""
+    if not suspects or len(suspects) == 1:
+      return suspects
+
+    suspects.sort(key=lambda suspect: -suspect.confidence)
+    max_score = suspects[0].confidence
+    min_score = suspects[-1].confidence
+    if max_score == min_score:
+      return []
+
+    filtered_suspects = []
+    for suspect in suspects:  # pragma: no cover
+      # The ratio of the probabilities of 2 suspects equal to
+      # exp(suspect1.confidence)/exp(suspect2.confidence), so
+      # suspect1.confidence - suspect2.confidence <= log(0.5) means the
+      # suspect1 is half likely than suspect2.
+      if (suspect.confidence == min_score or
+          suspect.confidence - max_score <= _THRESHOLD_RATIO):
+        break
+
+      filtered_suspects.append(suspect)
+
+    return filtered_suspects

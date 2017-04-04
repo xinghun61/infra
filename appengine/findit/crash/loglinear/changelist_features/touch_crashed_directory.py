@@ -33,8 +33,9 @@ class TouchCrashedDirectoryFeature(Feature):
   def CrashedGroupFactory(self, frame):
     """Factory function to create ``CrashedDirectory``."""
     # Since files in root directory are files like OWNERS, DEPS. Skip it.
+    directory = os.path.dirname(frame.file_path)
     return CrashedDirectory(
-        os.path.dirname(frame.file_path)) if frame.file_path else None
+        directory) if frame.file_path and directory else None
 
   def Match(self, crashed_directory, touched_file):
     """Determines whether a touched_file matches this crashed directory or not.

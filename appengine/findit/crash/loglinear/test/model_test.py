@@ -11,8 +11,10 @@ from crash.loglinear.feature import FeatureValue
 from crash.loglinear.feature import WrapperMetaFeature
 from crash.loglinear.model import LogLinearModel
 from crash.loglinear.model import UnnormalizedLogLinearModel
+from crash.loglinear.weight import MetaWeight
 from crash.loglinear.weight import Weight
 from crash.loglinear.test.loglinear_testcase import LoglinearTestCase
+from libs.meta_object import MetaDict
 
 
 class UnnormalizedLogLinearModelTest(LoglinearTestCase):
@@ -26,6 +28,14 @@ class UnnormalizedLogLinearModelTest(LoglinearTestCase):
   def testLogZeroish(self):
     self.assertTrue(self.model.LogZeroish(-float('inf')))
     self.assertFalse(self.model.LogZeroish(2.))
+
+  def testFilterReasonWithWeight(self):
+    meta_weight = MetaWeight({'f1': Weight(2.), 'f2': Weight(0.),
+                              'f3': Weight(1.)})
+    reason = MetaDict({'f1': 'reason1', 'f2': 'reason2'})
+
+    model = UnnormalizedLogLinearModel(None, meta_weight)
+    self.assertEqual(model.FilterReasonWithWeight(reason), 'reason1')
 
 
 class LoglinearTest(LoglinearTestCase):

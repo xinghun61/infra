@@ -90,3 +90,19 @@ class MetaDict(MetaObject):
 
   def values(self):
     return self._value.values()
+
+  @property
+  def dict(self):
+    return self._value
+
+  @property
+  def flat_dict(self):
+    """Flattens meta dict to a flat dict."""
+    flat_dict = {}
+    for key, value in self.iteritems():
+      if value.is_element:
+        flat_dict[key] = value
+      else:
+        flat_dict.update(value.flat_dict)
+
+    return flat_dict

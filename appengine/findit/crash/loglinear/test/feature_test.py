@@ -15,6 +15,7 @@ from crash.loglinear.test.loglinear_testcase import Feature3
 from crash.loglinear.test.loglinear_testcase import Feature4
 from crash.loglinear.test.loglinear_testcase import LoglinearTestCase
 import libs.math.logarithms as lmath
+from libs.meta_object import MetaDict
 
 _MAXIMUM = 50.
 
@@ -70,10 +71,20 @@ class MetaFeatureValueTest(unittest.TestCase):
 
   def testFormatReasons(self):
     """Tests ``FormatReasons`` returnes a list of formated reasons."""
-    self.assertEqual(self.feature.reason,
-                     'Feature0:\nreason0\n\n'
-                     'Feature1:\nreason1\n')
-    self.assertEqual(self.feature.reason, self.feature._reason)
+    feature0 = Feature0()
+    feature1 = Feature1()
+    feature2 = Feature2()
+    meta_feature = MetaFeatureValue(
+        'dummy',
+        {feature0.name: feature0(1)(False),
+         'meta': MetaFeatureValue(
+             'meta',
+             {feature1.name: feature1(2)(True),
+              feature2.name: feature2(3)(True)})})
+    self.assertEqual(meta_feature.reason, {'Feature0': 'reason0',
+                                           'Feature1': 'reason1',
+                                           'Feature2': 'reason2'})
+    self.assertEqual(meta_feature.reason, meta_feature._reason)
 
   def testAggregateChangedFilesAggregates(self):
     """Test that ``AggregateChangedFiles`` does aggregate reasons per file.

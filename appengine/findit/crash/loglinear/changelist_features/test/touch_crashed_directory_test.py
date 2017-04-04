@@ -61,16 +61,22 @@ class TouchCrashedDirectoryFeatureTest(PredatorTestCase):
     self._feature = TouchCrashedDirectoryFeature()
 
   def testFeatureValueIsOneWhenThereIsMatchedDirectory(self):
-    """Test that feature value is 1 when there no matched directory."""
-    frame1 = StackFrame(0, 'src/', 'func', 'f.cc',
-                        'src/f.cc', [2, 3], 'h://repo')
+    """Test that feature value is 1 when there is matched directory."""
+    frame1 = StackFrame(0, 'src/', 'func', 'p/f.cc',
+                        'src/p/f.cc', [2, 3], 'h://repo')
     stack = CallStack(0, frame_list=[frame1])
     stack_trace = Stacktrace([stack], stack)
     deps = {'src/': Dependency('src/', 'h://repo', '8')}
     dep_rolls = {'src/': DependencyRoll('src/', 'h://repo', '2', '6')}
     report = CrashReport('8', 'sig', 'linux', stack_trace,
                          ('2', '6'), deps, dep_rolls)
-    suspect = Suspect(_DUMMY_CHANGELOG, 'src/')
+    changelog = _DUMMY_CHANGELOG._replace(
+        touched_files=[FileChangeInfo.FromDict({
+            'change_type': 'add',
+            'new_path': 'p/a.cc',
+            'old_path': None,
+        })])
+    suspect = Suspect(changelog, 'src/')
     feature_value = self._feature(report)(suspect)
     self.assertEqual(1.0, feature_value.value)
 

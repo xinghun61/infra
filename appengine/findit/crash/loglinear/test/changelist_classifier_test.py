@@ -192,3 +192,26 @@ class LogLinearChangelistClassifierTest(CrashTestSuite):
     suspects = self.changelist_classifier.RankSuspects(DUMMY_REPORT,
                                                        [suspect])
     self.assertEqual(suspects[0].ToDict(), suspect.ToDict())
+
+  def testSortAndFilterSuspects(self):
+    """Tests ``SortAndFilterSuspects`` method."""
+    suspect1 = Suspect(DUMMY_CHANGELOG1, 'src/')
+    suspect2 = Suspect(DUMMY_CHANGELOG1, 'src/')
+    suspect3 = Suspect(DUMMY_CHANGELOG1, 'src/')
+
+    suspect1.confidence = 2
+    self.assertListEqual(
+        self.changelist_classifier.SortAndFilterSuspects([suspect1]),
+        [suspect1])
+
+    suspect2.confidence = 2
+    self.assertListEqual(
+        self.changelist_classifier.SortAndFilterSuspects([suspect1, suspect2]),
+        [])
+
+    suspect2.confidence = 1.8
+    suspect3.confidence = 1.0
+    self.assertListEqual(
+        self.changelist_classifier.SortAndFilterSuspects([suspect1, suspect2,
+                                                          suspect3]),
+        [suspect1, suspect2])
