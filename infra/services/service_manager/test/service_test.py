@@ -109,9 +109,20 @@ class ProcessStateTest(TestBase):
     self.assertEqual(5678, state.starttime)
 
 
-class ServiceTest(TestBase):
+class ServiceTestBase(TestBase):
+
+  _CONFIG_JSON = """{
+      "name": "foo",
+      "root_directory": "/rootdir",
+      "cmd": ["bar", "one", "two", 42],
+      "stop_time": 86,
+      "working_directory": "/workingdir",
+      "environment": {"MY_ENV": "hello"},
+      "resources": {"num_files": [8192, 8192]}
+  }"""
+
   def setUp(self):
-    super(ServiceTest, self).setUp()
+    super(ServiceTestBase, self).setUp()
 
     self.mock_sleep = mock.Mock(time.sleep)
     self.mock_time = mock.Mock(time.time)
@@ -119,17 +130,7 @@ class ServiceTest(TestBase):
 
     self.s = service.Service(
         self.state_directory,
-        config_watcher.parse_config(
-          """
-          {
-              "name": "foo",
-              "root_directory": "/rootdir",
-              "cmd": ["bar", "one", "two", 42],
-              "stop_time": 86,
-              "working_directory": "/workingdir",
-              "environment": {"MY_ENV": "hello"},
-              "resources": {"num_files": [8192, 8192]}
-          }"""),
+        config_watcher.parse_config(self._CONFIG_JSON),
         cloudtail_factory.DummyCloudtailFactory(),
         _time_fn=self.mock_time,
         _sleep_fn=self.mock_sleep)
@@ -154,6 +155,26 @@ class ServiceTest(TestBase):
     self.mock_close_all_fds = mock.patch(
         'infra.libs.service_utils.daemon.close_all_fds', autospec=True).start()
     self.mock_chdir = mock.patch('os.chdir', autospec=True).start()
+
+  def _start_as_child(self):
+    self.mock_pipe.return_value = (42, 43)
+    self.mock_fork.return_value = 0
+
+    mock_pipe_object = mock.Mock(file)
+    self.mock_fdopen.return_value = mock_pipe_object
+    mock_pipe_object.fileno.return_value = 43
+
+    self.mock_getpid.return_value = 555
+
+    # Skip the end of Process.start that assumes it's still the parent process.
+    self.mock_exit.side_effect = SystemExit
+    with self.assertRaises(SystemExit):
+      self.s.start()
+
+    return mock_pipe_object
+
+
+class ServiceTest(ServiceTestBase):
 
   def test_start_already_running(self):
     self._write_state('foo', '{"pid": 1234, "starttime": 5678}')
@@ -241,25 +262,14 @@ class ServiceTest(TestBase):
 
   @unittest.skipIf(sys.platform == 'win32', 'windows')
   def test_start_child(self):
-    self.mock_pipe.return_value = (42, 43)
-    self.mock_fork.return_value = 0
-
-    mock_pipe_object = mock.Mock(file)
-    self.mock_fdopen.return_value = mock_pipe_object
-    mock_pipe_object.fileno.return_value = 43
-
-    self.mock_getpid.return_value = 555
-
-    # Skip the end of Process.start that assumes it's still the parent process.
-    self.mock_exit.side_effect = SystemExit
-    with self.assertRaises(SystemExit):
-      self.s.start()
+    mock_pipe_object = self._start_as_child()
 
     self.assertTrue(self.mock_fork.called)
     self.assertTrue(self.mock_pipe.called)
     self.assertEqual(mock.call(42), self.mock_close.call_args_list[0])
     self.mock_fdopen.assert_called_once_with(43, 'w')
     self.mock_become_daemon.assert_called_once_with(keep_fds=True)
+    self.mock_chdir.assert_called_once_with('/workingdir')
     self.mock_close_all_fds.assert_called_once_with(keep_fds={1, 2})
     self.assertEqual('{"pid": 555}', self._all_writes(mock_pipe_object))
     mock_pipe_object.close.assert_called_once_with()
@@ -391,6 +401,117 @@ class ServiceTest(TestBase):
   def test_has_cmd_changed_not_written(self):
     state = service.ProcessState(pid=1234, starttime=5678, version=1)
     self.assertFalse(self.s.has_cmd_changed(state))
+
+
+class ServiceTestEmptyWorkingDirectory(ServiceTestBase):
+  _CONFIG_JSON = """{
+      "name": "foo",
+      "root_directory": "/rootdir",
+      "cmd": ["bar", "one", "two", 42],
+      "stop_time": 86,
+      "environment": {"MY_ENV": "hello"},
+      "resources": {"num_files": [8192, 8192]}
+  }"""
+
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
+  def test_start_child(self):
+    self._start_as_child()
+    self.assertFalse(self.mock_chdir.called)
+
+
+class ServiceTestNullWorkingDirectory(ServiceTestBase):
+  _CONFIG_JSON = """{
+      "name": "foo",
+      "root_directory": "/rootdir",
+      "cmd": ["bar", "one", "two", 42],
+      "stop_time": 86,
+      "working_directory": null,
+      "environment": {"MY_ENV": "hello"},
+      "resources": {"num_files": [8192, 8192]}
+  }"""
+
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
+  def test_start_child(self):
+    self._start_as_child()
+    self.assertFalse(self.mock_chdir.called)
+
+
+class ServiceTestEmptyResources(ServiceTestBase):
+  _CONFIG_JSON = """{
+      "name": "foo",
+      "root_directory": "/rootdir",
+      "cmd": ["bar", "one", "two", 42],
+      "stop_time": 86,
+      "working_directory": "/workingdir",
+      "environment": {"MY_ENV": "hello"},
+      "resources": {}
+  }"""
+
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
+  def test_start_child(self):
+    self._start_as_child()
+    self.assertFalse(self.mock_setrlimit.called)
+
+
+class ServiceTestNullResources(ServiceTestBase):
+  _CONFIG_JSON = """{
+      "name": "foo",
+      "root_directory": "/rootdir",
+      "cmd": ["bar", "one", "two", 42],
+      "stop_time": 86,
+      "working_directory": "/workingdir",
+      "environment": {"MY_ENV": "hello"},
+      "resources": null
+  }"""
+
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
+  def test_start_child(self):
+    self._start_as_child()
+    self.assertFalse(self.mock_setrlimit.called)
+
+
+class ServiceTestEmptyEnvironment(ServiceTestBase):
+  _CONFIG_JSON = """{
+      "name": "foo",
+      "root_directory": "/rootdir",
+      "cmd": ["bar", "one", "two", 42],
+      "stop_time": 86,
+      "working_directory": "/workingdir",
+      "environment": {},
+      "resources": {"num_files": [8192, 8192]}
+  }"""
+
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
+  def test_start_child(self):
+    self._start_as_child()
+    self.mock_execve.assert_called_once_with('bar', [
+        'bar',
+        'one',
+        'two',
+        '42',
+    ], os.environ)
+
+
+class ServiceTestNullEnvironment(ServiceTestBase):
+  _CONFIG_JSON = """{
+      "name": "foo",
+      "root_directory": "/rootdir",
+      "cmd": ["bar", "one", "two", 42],
+      "stop_time": 86,
+      "working_directory": "/workingdir",
+      "environment": null,
+      "resources": {"num_files": [8192, 8192]}
+  }"""
+
+  @unittest.skipIf(sys.platform == 'win32', 'windows')
+  def test_start_child(self):
+    self._start_as_child()
+    self.mock_execve.assert_called_once_with('bar', [
+        'bar',
+        'one',
+        'two',
+        '42',
+    ], os.environ)
 
 
 class ProcessCreatorTest(unittest.TestCase):
