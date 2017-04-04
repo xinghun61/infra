@@ -46,6 +46,7 @@ def _GenerateMetrics(suspected_cls):
 
   for suspected_cl in suspected_cls:
     revert_cl = suspected_cl.revert_cl
+    sheriff_action_time = suspected_cl.sheriff_action_time
 
     if not revert_cl and not suspected_cl.should_be_reverted:
       continue
@@ -53,36 +54,35 @@ def _GenerateMetrics(suspected_cls):
     revert_cls_detected += 1
 
     if revert_cl:
-      # Findit proposed a reverting cl before sheriffs did.
+      # Findit proposed a reverting cl.
       revert_cls_created += 1
-      if revert_cl.status == revert_cl_status.COMMITTED:
-        # The sheriff committed findit's reverting cl.
-        revert_cls_committed += 1
-      elif revert_cl.status == revert_cl_status.DUPLICATE:
-        # Findit was correct, but the sheriff made their own revert CL.
-        duplicate_revert_cls += 1
 
-        if not suspected_cl.sheriff_action_time:  # pragma: no cover
+      if revert_cl.status == revert_cl_status.FALSE_POSITIVE:
+        false_positives += 1
+      else:
+        if revert_cl.status == revert_cl_status.COMMITTED:
+          # The sheriff committed Findit's reverting cl.
+          revert_cls_committed += 1
+        else:
+          # Duplicate: Findit was correct but the sheriff made their own revert
+          # CL.
+          duplicate_revert_cls += 1
+
+        if not sheriff_action_time:  # pragma: no cover
           logging.error(('Findit marked suspectedCL %s as needing revert with '
                          'sheriff reverting but sheriff_action_time not set'),
                         suspected_cl)
           continue
 
-        if revert_cl.created_time < suspected_cl.sheriff_action_time:
-          time_delta = (
-              suspected_cl.sheriff_action_time - revert_cl.created_time)
+        if revert_cl.created_time < sheriff_action_time:
+          time_delta = sheriff_action_time - revert_cl.created_time
           faster_than_sheriff_times.append(time_delta.total_seconds())
         else:
-          time_delta = (
-              revert_cl.created_time - suspected_cl.sheriff_action_time)
+          time_delta = revert_cl.created_time - sheriff_action_time
           slower_than_sheriff_times.append(time_delta.total_seconds())
-      else:
-        # False positive.
-        false_positives += 1
-    elif suspected_cl.should_be_reverted:  # pragma: no branch
-      # Findit would have created a revring cl, but the sheriff was faster.
-      sheriff_action_time = suspected_cl.sheriff_action_time
 
+    elif suspected_cl.should_be_reverted:  # pragma: no branch
+      # Findit would have created a reverting cl, but the sheriff was faster.
       if not sheriff_action_time:  # pragma: no cover
         logging.error(('Findit marked suspectedCL %s as needing revert with '
                        'sheriff being faster but sheriff_action_time not set'),
