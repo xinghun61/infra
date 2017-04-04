@@ -126,6 +126,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'step_name': 'test',
                 'first_failure': 3,
                 'last_pass': 1,
+                'supported': True,
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',
@@ -200,6 +201,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'step_name': 'a',
                 'first_failure': 23,
                 'last_pass': 22,
+                'supported': True,
                 'suspected_cls': [
                     {
                         'repo_name': 'chromium',
@@ -230,7 +232,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'try_job_status': 'FINISHED',
             'is_flaky_test': False,
             'has_findings': True,
-            'is_finished': True
+            'is_finished': True,
+            'is_supported': True,
         },
         {
             'master_url': master_url,
@@ -241,7 +244,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'analysis_approach': 'HEURISTIC',
             'is_flaky_test': False,
             'has_findings': False,
-            'is_finished': False
+            'is_finished': False,
+            'is_supported': True,
         },
     ]
 
@@ -280,6 +284,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'step_name': 'test',
                 'first_failure': 3,
                 'last_pass': 1,
+                'supported': True,
                 'suspected_cls': []
             }
         ]
@@ -298,7 +303,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'try_job_status': 'FINISHED',
             'is_flaky_test': False,
             'has_findings': False,
-            'is_finished': True
+            'is_finished': True,
+            'is_supported': True,
         }
     ]
 
@@ -332,6 +338,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'step_name': 'test',
                 'first_failure': 3,
                 'last_pass': 1,
+                'supported': True,
                 'suspected_cls': [
                     {
                         'build_number': 2,
@@ -387,7 +394,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'is_flaky_test': False,
             'try_job_status': 'FINISHED',
             'has_findings': True,
-            'is_finished': True
+            'is_finished': True,
+            'is_supported': True,
         }
     ]
 
@@ -442,6 +450,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'step_name': 'compile',
                 'first_failure': 3,
                 'last_pass': 1,
+                'supported': True,
                 'suspected_cls': [
                     {
                         'build_number': 3,
@@ -479,7 +488,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'is_flaky_test': False,
             'try_job_status': 'FINISHED',
             'has_findings': True,
-            'is_finished': True
+            'is_finished': True,
+            'is_supported': True,
         }
     ]
 
@@ -522,6 +532,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'step_name': 'compile',
                 'first_failure': 3,
                 'last_pass': 1,
+                'supported': True,
                 'suspected_cls': [
                     {
                         'build_number': 3,
@@ -559,7 +570,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'is_flaky_test': False,
             'try_job_status': 'RUNNING',
             'has_findings': True,
-            'is_finished': False
+            'is_finished': False,
+            'is_supported': True,
         }
     ]
 
@@ -615,6 +627,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'step_name': 'b on platform',
                 'first_failure': 3,
                 'last_pass': 2,
+                'supported': True,
                 'suspected_cls': [],
                 'tests': [
                     {
@@ -648,7 +661,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'is_flaky_test': True,
             'try_job_status': 'FINISHED',
             'has_findings': True,
-            'is_finished': True
+            'is_finished': True,
+            'is_supported': True,
         },
         {
             'master_url': master_url,
@@ -662,7 +676,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'is_flaky_test': True,
             'try_job_status': 'FINISHED',
             'has_findings': True,
-            'is_finished': True
+            'is_finished': True,
+            'is_supported': True,
         }
     ]
 
@@ -738,6 +753,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'step_name': 'a',
                 'first_failure': 4,
                 'last_pass': 3,
+                'supported': True,
                 'suspected_cls': [
                     {
                         'build_number': 4,
@@ -756,6 +772,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'step_name': 'b on platform',
                 'first_failure': 3,
                 'last_pass': 2,
+                'supported': True,
                 'suspected_cls': [
                     {
                         'build_number': 3,
@@ -824,6 +841,13 @@ class FinditApiTest(testing.EndpointsTestCase):
                         'suspected_cls': []
                     }
                 ]
+            },
+            {
+                'step_name': 'c',
+                'first_failure': 4,
+                'last_pass': 3,
+                'supported': False,
+                'suspected_cls': [],
             }
         ]
     }
@@ -904,7 +928,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'is_flaky_test': False,
             'try_job_status': 'FINISHED',
             'has_findings': True,
-            'is_finished': True
+            'is_finished': True,
+            'is_supported': True,
         },
         {
             'master_url': master_url,
@@ -926,7 +951,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'is_flaky_test': False,
             'try_job_status': 'FINISHED',
             'has_findings': True,
-            'is_finished': True
+            'is_finished': True,
+            'is_supported': True,
         },
         {
             'master_url': master_url,
@@ -948,7 +974,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'is_flaky_test': False,
             'try_job_status': 'FINISHED',
             'has_findings': True,
-            'is_finished': True
+            'is_finished': True,
+            'is_supported': True,
         },
         {
             'master_url': master_url,
@@ -972,7 +999,20 @@ class FinditApiTest(testing.EndpointsTestCase):
             'is_flaky_test': False,
             'try_job_status': 'FINISHED',
             'has_findings': True,
-            'is_finished': True
+            'is_finished': True,
+            'is_supported': True,
+        },
+        {
+          'master_url': master_url,
+          'builder_name': builder_name,
+          'build_number': build_number,
+          'step_name': 'c',
+          'is_sub_test': False,
+          'analysis_approach': 'HEURISTIC',
+          'is_flaky_test': False,
+          'has_findings': False,
+          'is_finished': True,
+          'is_supported': False,
         }
     ]
 
@@ -980,7 +1020,7 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
-    self.assertEqual(expected_results, response.json_body.get('results'))
+    self.assertItemsEqual(expected_results, response.json_body.get('results'))
 
   def testAnalysisRequestQueuedAsExpected(self):
     master_name = 'm'
@@ -1153,7 +1193,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'is_sub_test': False,
             'is_flaky_test': False,
             'has_findings': False,
-            'is_finished': False
+            'is_finished': False,
+            'is_supported': True,
         }
     ]
 

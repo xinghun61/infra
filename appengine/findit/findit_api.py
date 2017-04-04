@@ -110,6 +110,8 @@ class _BuildFailureAnalysisResult(messages.Message):
   has_findings = messages.BooleanField(12, variant=messages.Variant.BOOL)
   # If analysis is finished.
   is_finished = messages.BooleanField(13, variant=messages.Variant.BOOL)
+  # If the failure is supported.
+  is_supported = messages.BooleanField(14, variant=messages.Variant.BOOL)
 
 
 class _BuildFailureAnalysisResultCollection(messages.Message):
@@ -212,7 +214,8 @@ class FindItApi(remote.Service):
       self, build, step_name, suspected_cls_in_result=None, first_failure=None,
       test_name=None, analysis_approach=_AnalysisApproach.HEURISTIC,
       confidences=None, try_job_status=None, is_flaky_test=False,
-      reference_build_key=None, has_findings=True, is_finished=True):
+      reference_build_key=None, has_findings=True, is_finished=True,
+      is_supported=True):
 
     suspected_cls_in_result = suspected_cls_in_result or []
     suspected_cls = []
@@ -250,7 +253,8 @@ class FindItApi(remote.Service):
         try_job_status=try_job_status,
         is_flaky_test=is_flaky_test,
         has_findings=has_findings,
-        is_finished=is_finished)
+        is_finished=is_finished,
+        is_supported=is_supported)
 
   def _GetStatusAndCulpritFromTryJob(
       self, try_job, swarming_task, build_failure_type, step_name,
@@ -302,14 +306,15 @@ class FindItApi(remote.Service):
       self, results, build, step_name, build_failure_type=None,
       heuristic_result=None, confidences=None, reference_build_key=None,
       swarming_task=None, try_job=None, test_name=None, has_findings=True,
-      is_finished=True):
+      is_finished=True, is_supported=True):
     """Appends an analysis result for the given step or test.
 
     Try-job results are always given priority over heuristic results.
     """
     if not has_findings or not is_finished:
       results.append(self._GenerateBuildFailureAnalysisResult(
-          build, step_name, has_findings=has_findings, is_finished=is_finished))
+          build, step_name, has_findings=has_findings, is_finished=is_finished,
+          is_supported=is_supported))
       return
 
     # Default to heuristic analysis.
@@ -342,7 +347,8 @@ class FindItApi(remote.Service):
     results.append(self._GenerateBuildFailureAnalysisResult(
         build, step_name, suspected_cls, heuristic_result['first_failure'],
         test_name, analysis_approach, confidences, try_job_status,
-        is_flaky_test, reference_build_key, has_findings, is_finished))
+        is_flaky_test, reference_build_key, has_findings, is_finished,
+        is_supported=is_supported))
 
   def _GetAllSwarmingTasks(self, failure_result_map):
     """Returns all swarming tasks related to one build.
@@ -445,21 +451,19 @@ class FindItApi(remote.Service):
       self, build, heuristic_analysis, results, confidences):
 
     # Checks has_findings and is_finished for heuristic analysis.
-    has_findings = bool(heuristic_analysis.result
+    has_findings = bool(heuristic_analysis and heuristic_analysis.result
                         and not heuristic_analysis.failed)
     is_finished = heuristic_analysis.completed
 
     if not has_findings:
       # No result.
       for step_name in build.failed_steps:
+        is_supported = True  # The step may be analyzed now.
         self._PopulateResult(
             results, build, step_name,
-            has_findings=has_findings, is_finished=is_finished)
+            has_findings=has_findings, is_finished=is_finished,
+            is_supported=is_supported)
       return
-
-    swarming_tasks = self._GetAllSwarmingTasks(
-        heuristic_analysis.failure_result_map)
-    try_jobs = self._GetAllTryJobs(heuristic_analysis.failure_result_map)
 
     steps_with_result = [
         f.get('step_name') for f in heuristic_analysis.result['failures']]
@@ -469,12 +473,28 @@ class FindItApi(remote.Service):
 
     for step_name in steps_without_result:
       has_findings = False  # No findings for the step.
+      is_supported = True  # The step may be analyzed now.
       self._PopulateResult(
           results, build, step_name,
-          has_findings=has_findings, is_finished=is_finished)
+          has_findings=has_findings, is_finished=is_finished,
+          is_supported=is_supported)
+
+    swarming_tasks = self._GetAllSwarmingTasks(
+        heuristic_analysis.failure_result_map)
+    try_jobs = self._GetAllTryJobs(heuristic_analysis.failure_result_map)
 
     for failure in heuristic_analysis.result['failures']:
       step_name = failure.get('step_name')
+      is_supported = failure.get('supported', False)
+
+      if not is_supported:
+        has_findings = False
+        self._PopulateResult(
+          results, build, step_name,
+          has_findings=has_findings, is_finished=is_finished,
+          is_supported=is_supported)
+        continue
+
       if failure.get('tests'):  # Test-level analysis.
         for test in failure['tests']:
           test_name = test['test_name']
