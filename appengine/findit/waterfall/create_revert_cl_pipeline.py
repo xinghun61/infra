@@ -135,8 +135,8 @@ def _RevertCulprit(
   if not revert_change_id:
     _UpdateCulprit(repo_name, revision, status.RUNNING)
     revert_reason = textwrap.dedent("""
-        Findit identified CL at revision %s as the culprit for
-        failures in the build cycles as shown on:
+        Findit(https://goo.gl/kROfz5) identified CL at revision %s as the
+        culprit for failures in the build cycles as shown on:
         https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
             culprit_commit_position or revision, culprit.key.urlsafe())
 
@@ -165,8 +165,8 @@ def _RevertCulprit(
       Please confirm and "Quick L-G-T-M & CQ" this revert if it is correct.
       If it is a false positive, please close it.
 
-      The original CL was identified as the culprit for failures in the build
-      cycles as shown on:
+      Findit(https://goo.gl/kROfz5) identified the original CL as the culprit
+      for failures in the build cycles as shown on:
       https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
           culprit.key.urlsafe())
   success = codereview.AddReviewers(revert_change_id, sheriffs, message)

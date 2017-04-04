@@ -78,7 +78,7 @@ def _SendNotificationForCulprit(
       action = 'confirmed'
 
     message = textwrap.dedent("""
-    Findit %s this CL at revision %s as the culprit for
+    Findit(https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
     https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
         action, commit_position or revision, culprit.key.urlsafe())

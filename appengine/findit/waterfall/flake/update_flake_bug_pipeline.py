@@ -28,7 +28,7 @@ def _GetIssue(bug_id, issue_tracker):
 
 
 _COMMENT_FOOTER= """
-Automatically posted by the findit-for-me app (https://goo.gl/wcL6eP).
+Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
 Flake Analyzer is in alpha version.
 Feedback is welcome using component Tools>Test>FindIt>Flakiness !""".lstrip()
 
