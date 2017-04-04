@@ -4,98 +4,59 @@
 
 package dashboard
 
-import dashapi "infra/appengine/dashboard/api/dashboard"
-
 import (
-	"html/template"
 	"net/http"
 	"time"
 
-	"github.com/luci/luci-go/common/logging"
-	"google.golang.org/appengine"
+	"github.com/luci/gae/service/info"
+	"github.com/luci/luci-go/appengine/gaemiddleware"
+	"github.com/luci/luci-go/server/router"
+	"github.com/luci/luci-go/server/templates"
+
+	"infra/appengine/dashboard/backend"
 )
 
-const (
-	// alertRed represents paging alerts.
-	alertRed = 1
-	// alertYellow represents email alerts.
-	alertYellow = 2
-)
-
-// PageData contains information needed by the template.
-type PageData struct {
-	ChopsServices  []dashapi.ChopsService
-	NonSLAServices []dashapi.ChopsService
-	Dates          []string
+var templateBundle = &templates.Bundle{
+	Loader:    templates.FileSystemLoader("templates"),
+	DebugMode: info.IsDevAppServer,
 }
 
-var templates = template.Must(template.ParseGlob("templates/*"))
+func pageBase() router.MiddlewareChain {
+	return gaemiddleware.BaseProd().Extend(
+		templates.WithTemplates(templateBundle),
+	)
+}
 
 func init() {
-	http.HandleFunc("/", dashboard)
+	r := router.New()
+	gaemiddleware.InstallHandlers(r, pageBase())
+	r.GET("/", pageBase(), dashboard)
+	http.DefaultServeMux.Handle("/", r)
 }
 
-func dashboard(w http.ResponseWriter, r *http.Request) {
-	ctx := appengine.NewContext(r)
+func dashboard(ctx *router.Context) {
+	c, w := ctx.Context, ctx.Writer
+
 	dates := []string{}
 	for i := 0; i < 7; i++ {
 		dates = append(dates, time.Now().AddDate(0, 0, -i).Format("01-02-2006"))
 	}
-	services, nonSLAServices := makeFakeData()
-	pageData := PageData{
-		ChopsServices:  services,
-		NonSLAServices: nonSLAServices,
-		Dates:          dates,
-	}
 
-	if err := templates.ExecuteTemplate(w, "dash.tmpl", pageData); err != nil {
-		logging.Errorf(ctx, "while rendering dashboard: %s", err)
+	// TODO(jojwang): not using returned Service entity because
+	// the Start/EndTime fields must be converted to string
+	// before passing info to template.
+	_, err := backend.GetService(c, "monorail")
+	if err != nil {
+		http.Error(w, "Failed to query datastore, see logs", http.StatusInternalServerError)
 		return
 	}
-}
 
-func makeFakeData() ([]dashapi.ChopsService, []dashapi.ChopsService) {
-	incidents := []*dashapi.Incident{
-		{
-			Id:        "1",
-			Open:      false,
-			StartTime: "03-26-2017",
-			EndTime:   "03-26-2017",
-			Severity:  alertRed,
-		},
-		{
-			Id:        "2",
-			Open:      false,
-			StartTime: "03-25-2017",
-			EndTime:   "03-25-2017",
-			Severity:  alertYellow,
-		},
-		{
-			Id:        "3",
-			Open:      true,
-			StartTime: "03-28-2017",
-			EndTime:   "",
-			Severity:  alertRed,
-		},
-	}
+	services := []backend.Service{}
+	nonSLAServices := []backend.Service{}
 
-	services := []dashapi.ChopsService{
-		{
-			Name:      "Monorail",
-			Sla:       "http://www.google.com",
-			Incidents: incidents,
-		},
-		{
-			Name:      "Sheriff-O-Matic",
-			Sla:       "http://www.google.com",
-			Incidents: incidents,
-		},
-	}
-
-	nonSLAServices := []dashapi.ChopsService{
-		{Name: "CommitQueue", Incidents: incidents, Sla: ""},
-		{Name: "CodeSearch", Incidents: incidents, Sla: ""},
-	}
-
-	return services, nonSLAServices
+	templates.MustRender(c, w, "pages/dash.tmpl", templates.Args{
+		"ChopsServices":  services,
+		"NonSLAServices": nonSLAServices,
+		"Dates":          dates,
+	})
 }
