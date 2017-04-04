@@ -12,13 +12,13 @@ import os
 import pickle
 import sys
 
-_SCRIPT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
-                           os.path.pardir)
+_SCRIPT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                           os.path.pardir, os.path.pardir)
 sys.path.insert(1, _SCRIPT_DIR)
-
 import script_util
 script_util.SetUpSystemPaths()
 
+from crash.type_enums import CrashClient
 from crash_queries.delta_test import delta_test
 from crash_queries.delta_test import delta_util
 
@@ -32,13 +32,12 @@ _DEFAULT_MAX_N = 100
 
 DELTA_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
                                        'delta_results')
-CHROMIUM_REPO = 'https://chromium.googlesource.com/chromium/src'
 
 
-def GenerateDeltaResultPath(directory, git_hash1, git_hash2,
-                            since_date, until_date, max_n):
+def GenerateDeltaCSVPath(directory, git_hash1, git_hash2,
+                         since_date, until_date, max_n):
   """Returns the file path of delta result."""
-  delta_result_prefix = '%s_%s_%s..%s_max_%d.delta' % (
+  delta_result_prefix = '%s_%s_%s..%s_max_%d.delta.csv' % (
       git_hash1[:7], git_hash2[:7], since_date, until_date, max_n)
 
   return os.path.join(directory, delta_result_prefix)
@@ -71,7 +70,7 @@ def RunDeltaTest():
   argparser.add_argument(
       '--client',
       '-c',
-      default='fracas',
+      default=CrashClient.CRACAS,
       help=('Type of client data the delta test is running on, '
             'possible values are: fracas, cracas, clusterfuzz. '
             'Right now, only fracas data is available'))
@@ -81,7 +80,7 @@ def RunDeltaTest():
       '-a',
       default=os.getenv('APP_ID', 'predator-for-me-staging'),
       help=('App id of the App engine app that query needs to access. '
-            'Defualts to findit-for-me-dev. You can also set enviroment '
+            'Defualts to predator-for-me-staging. You can also set enviroment '
             'variable by \'export APP_ID=your-app-id\' to replace '
             'the default value.\nNOTE, only appspot app ids are supported, '
             'the app_id of googleplex app will have access issues '
@@ -151,39 +150,25 @@ def RunDeltaTest():
 
   git_hash1 = delta_util.ParseGitHash(args.revisions[0])
   git_hash2 = delta_util.ParseGitHash(args.revisions[1])
-  delta_path = GenerateDeltaResultPath(DELTA_RESULTS_DIRECTORY,
-                                       git_hash1, git_hash2,
-                                       args.since, args.until, args.max)
-  delta_csv_path = delta_path + '.csv'
-  # Check if delta results already existed.
-  # TODO: this code has race conditions for interacting with the file system.
-  if os.path.exists(delta_csv_path):
-    print 'Delta results existed in\n%s' % delta_csv_path
-    if not os.path.exists(delta_path):
-      print 'Cannot print out delta results, please open %s to see the results.'
-      return
 
-    with open(delta_path) as f:
-      deltas, crash_num = pickle.load(f)
-  else:
-    print 'Running delta test...'
-    print ('WARNING: Please commit any local change before running delta test, '
-           'and do not make any new changes while running the delta test.')
-    # Get delta of results between git_hash1 and git_hash2.
-    deltas, crash_num = delta_test.DeltaEvaluator(
-        git_hash1, git_hash2, args.client, args.app,
-        start_date=args.since, end_date=args.until, max_n=args.max,
-        batch_size=args.batch, verbose=args.verbose)
-    delta_util.FlushResult([deltas, crash_num], delta_path)
-    delta_util.WriteDeltaToCSV(deltas, crash_num, args.app,
-                               git_hash1, git_hash2, delta_csv_path)
+  # Compute delta.
+  deltas, triage_results, crash_num = delta_test.EvaluateDelta(
+      git_hash1, git_hash2, args.client, args.app,
+      args.since, args.until, args.batch, args.max,
+      verbose=args.verbose)
+
+  delta_csv_path = GenerateDeltaCSVPath(DELTA_RESULTS_DIRECTORY,
+                                        git_hash1, git_hash2,
+                                        args.since, args.until, args.max)
+  delta_util.WriteDeltaToCSV(deltas, crash_num, args.client, args.app,
+                             git_hash1, git_hash2, delta_csv_path,
+                             triage_results=triage_results)
 
   # Print delta results to users.
   print '\n========================= Summary ========================='
   if args.verbose:
-    delta_util.PrintDelta(deltas, crash_num, args.app)
+    delta_util.PrintDelta(deltas, crash_num, args.client, args.app)
 
-  print '\nFlushing results to', delta_path
   print 'Writing delta diff to %s\n' % delta_csv_path
 
 

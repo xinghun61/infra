@@ -7,45 +7,48 @@
 import atexit
 from datetime import datetime
 import functools
+import logging
 import os
+import pickle
 import Queue
+import re
 import subprocess
 import sys
 import threading
 import time
 import traceback
 
-MAX_THREAD_NUMBER = 15
+MAX_THREAD_NUMBER = 30
 TASK_QUEUE = None
+GIT_HASH_PATTERN = re.compile(r'^[0-9a-fA-F]{40}$')
 
 
 def SetUpSystemPaths():  # pragma: no cover
   """Sets system paths so as to import modules in findit, third_party and
   appengine."""
-  findit_root_dir = os.path.join(os.path.dirname(__file__), os.path.pardir)
+  findit_root_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                 os.path.pardir)
   first_party_dir = os.path.join(findit_root_dir, 'first_party')
   third_party_dir = os.path.join(findit_root_dir, 'third_party')
   appengine_sdk_dir = os.path.join(findit_root_dir, os.path.pardir,
                                    os.path.pardir, os.path.pardir,
                                    'google_appengine')
 
-  # Add App Engine SDK dir to sys.path.
-  sys.path.insert(1, third_party_dir)
-  sys.path.insert(1, first_party_dir)
   sys.path.insert(1, appengine_sdk_dir)
+
   import dev_appserver
   dev_appserver.fix_sys_path()
 
   # Add Findit root dir to sys.path so that modules in Findit is available.
   sys.path.insert(1, findit_root_dir)
+  # Add App Engine SDK dir to sys.path.
+  sys.path.insert(1, third_party_dir)
+  sys.path.insert(1, first_party_dir)
 
-
-SetUpSystemPaths()
-
-# The lib is in predator/ root dir, and can be imported only when sys.path gets
-# set up.
-from libs.cache_decorator import Cached
-from local_cache import LocalCache  # pylint: disable=W
+  import google
+  # protobuf and GAE have package name conflict on 'google'.
+  # Add this to solve the conflict.
+  google.__path__.insert(0, os.path.join(third_party_dir, 'google'))
 
 
 def SignalWorkerThreads():  # pragma: no cover
@@ -126,24 +129,26 @@ def RunTasks(tasks):  # pragma: no cover
     result_semaphore.acquire()
 
 
-@Cached(LocalCache(), namespace='Command-output')
-def GetCommandOutput(command):  # pragma: no cover
-  """Gets the output stream of executable command.
+def GetCommandOutput(command):
+  SetUpSystemPaths()
 
-  Args:
-    command (str): Command to execute to get output.
+  # The lib is in predator/ root dir, and can be imported only when sys.path
+  # gets set up.
+  from libs.cache_decorator import Cached
+  from local_cache import LocalCache  # pylint: disable=W
 
-  Return:
-    Output steam of the command.
-  """
-  p = subprocess.Popen(
-      command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-  stdoutdata, stderrdata = p.communicate()
+  @Cached(LocalCache(), namespace='Command-output')
+  def CachedGetCommandOutput(command):
+    p = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    stdoutdata, stderrdata = p.communicate()
 
-  if p.returncode != 0:
-    raise Exception('Error running command %s: %s' % (command, stderrdata))
+    if p.returncode != 0:
+      raise Exception('Error running command %s: %s' % (command, stderrdata))
 
-  return stdoutdata
+    return stdoutdata
+
+  return CachedGetCommandOutput(command)
 
 
 def GetLockedMethod(cls, method_name, lock):  # pragma: no cover
@@ -182,3 +187,47 @@ def GetFilterQuery(query, time_property, start_date, end_date,
 
   return query.filter(time_property >= start_date).filter(
       time_property < end_date)
+
+
+# TODO(crbug.com/662540): Add unittests.
+def EnsureDirExists(path):  # pragma: no cover
+  directory = os.path.dirname(path)
+  # TODO: this has a race condition. Should ``try: os.makedirs`` instead,
+  # discarding the error and returning if the directory already exists.
+  if os.path.exists(directory):
+    return
+
+  os.makedirs(directory)
+
+
+# TODO(crbug.com/662540): Add unittests.
+def FlushResult(result, result_path, serializer=pickle,
+                print_path=False):  # pragma: no cover
+  if print_path:
+    print '\nFlushing results to', result_path
+
+  EnsureDirExists(result_path)
+  with open(result_path, 'wb') as f:
+    serializer.dump(result, f)
+
+
+# TODO(crbug.com/662540): Add unittests.
+def IsGitHash(revision):  # pragma: no cover
+  return GIT_HASH_PATTERN.match(str(revision)) or revision.lower() == 'master'
+
+
+# TODO(crbug.com/662540): Add unittests.
+def ParseGitHash(revision, repo_path='.'):  # pragma: no cover
+  """Gets git hash of a revision."""
+  if IsGitHash(revision):
+    return revision
+
+  try:
+    # Can parse revision like 'HEAD', 'HEAD~3'.
+    return subprocess.check_output(
+        'cd %s; git rev-parse %s' % (
+            repo_path, revision), shell=True).replace('\n', '')
+  except: # pylint: disable=W
+    logging.error('Failed to parse git hash for %s\nStacktrace:\n%s',
+                  revision, traceback.format_exc())
+    return None

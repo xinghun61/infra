@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
+import hashlib
 import json
 import os
 import pickle
@@ -10,10 +12,9 @@ import zlib
 
 from crash_queries import crash_iterator
 from crash_queries.delta_test import delta_util
-
-PREDATOR_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
-                                          'predator_results')
-DELTA_TEST_DIRECTORY = os.path.dirname(__file__)
+from crash_queries.run_predator import GetCulpritsOnRevision
+from libs.cache_decorator import Cached
+from local_cache import LocalCache  # pylint: disable=W
 
 # TODO(crbug.com/662540): Add unittests.
 
@@ -61,37 +62,20 @@ class Delta(object):  # pragma: no cover.
           for cl in value:
             cl['confidence'] = round(cl['confidence'], 2)
 
-      if value1 != value2:
+        url_list1 = [suspect['url'] for suspect in value1 or []]
+        url_list2 = [suspect['url'] for suspect in value2 or []]
+        if url_list1 != url_list2:
+          self._delta_dict[key] = (value1, value2)
+      elif value1 != value2:
         self._delta_dict[key] = (value1, value2)
 
     return self._delta_dict
-
-  @property
-  def delta_dict_str(self):
-    """Converts delta of each field to a string."""
-    if self._delta_dict_str:
-      return self._delta_dict_str
-
-    self._delta_dict_str = {}
-    for key, (value1, value2) in self.delta_dict.iteritems():
-      value1_str = json.dumps(value1, indent=4, sort_keys=True)
-      value2_str = json.dumps(value2, indent=4, sort_keys=True)
-      if key == 'suspected_cls':
-        self._delta_dict_str['suspected_cl_1'] = ('suspected cls 1: %s' %
-                                                  value1_str)
-        self._delta_dict_str['suspected_cl_2'] = ('suspected cls 2: %s' %
-                                                  value2_str)
-      else:
-        self._delta_dict_str[key] = '%s 1: %s\n%s 2: %s\n' % (key, value1_str,
-                                                              key, value2_str)
-
-    return self._delta_dict_str
 
   def ToDict(self):
     return self.delta_dict
 
   def __str__(self):
-    return '\n'.join(self.delta_dict_str.values())
+    return json.dumps(self.delta_dict, indent=2, sort_keys=True)
 
   def __bool__(self):
     return bool(self.delta_dict)
@@ -100,13 +84,16 @@ class Delta(object):  # pragma: no cover.
     return self.__bool__()
 
 
-def GetDeltasFromTwoSetsOfResults(set1, set2):  # pragma: no cover.
+def GetDeltaForTwoSetsOfResults(set1, set2):  # pragma: no cover.
   """Gets delta from two sets of results.
 
   Set1 and set2 are dicts mapping id to result.
   Results are a list of (message, matches, component_name, cr_label)
   Returns a list of delta results (results1, results2).
   """
+  if set1 is None or set2 is None:
+    return {}
+
   deltas = {}
   for result_id, result1 in set1.iteritems():
     # Even when the command are exactly the same, it's possible that one set is
@@ -126,67 +113,68 @@ def GetDeltasFromTwoSetsOfResults(set1, set2):  # pragma: no cover.
   return deltas
 
 
-def GetResults(crashes, client_id, app_id, git_hash, result_path,
-               verbose=False):  # pragma: no cover.
-  """Returns an evaluator function to compute delta between 2 findit githashes.
+def GetDeltaForCrashes(crashes, git_hash1, git_hash2, client_id, app_id,
+                       verbose=False):  # pragma: no cover.
+  head_branch_name = subprocess.check_output(
+      ['git', 'rev-parse', '--abbrev-ref', 'HEAD']).replace('\n', '')
+  try:
+    results = []
+    for git_hash in [git_hash1, git_hash2]:
+      # Get the culprit results of this batch of crashes.
+      results.append(GetCulpritsOnRevision(crashes, git_hash, client_id,
+                                           app_id, verbose=verbose))
+  finally:
+    # Switch back to the original revision.
+    with open(os.devnull, 'w') as null_handle:
+      subprocess.check_call(['git', 'checkout', head_branch_name],
+                            stdout=null_handle, stderr=null_handle)
+
+  # Compute delta between 2 versions of culprit results for this batch.
+  return GetDeltaForTwoSetsOfResults(*results)
+
+
+def GetTriageResultsFromCrashes(crashes):  # pragma: no cover.
+  """Check those triaged crash in ``crashes`` and return the triaged culprits.
 
   Args:
-    crashes (list): A list of ``CrashAnalysis``.
-    client_id (str): Possible values - fracas/cracas/clustefuzz.
-    app_id (str): Appengine app id to query.
-    git_hash (str): A git hash of findit repository.
-    result_path (str): file path for subprocess to write results on.
-    verbose (bool): If True, print all the findit results.
+    crashes (dict): A dict mapping ``crash_id`` to ``CrashAnalysis`` entities.
 
-  Return:
-    A dict mapping crash id to culprit for every crashes analyzed by
-    git_hash version.
+  Returns:
+    A dict mapping from ``crash_id`` to its culprit results, like culprit_cls,
+    culprit_regression_range or culprit_components.
   """
-  if not crashes:
-    return {}
+  triage_results = {}
+  for crash_id, crash in crashes.iteritems():
+    triage_result = {}
+    if crash.culprit_cls:
+      triage_result['culprit_cls'] = crash.culprit_cls
+    if crash.culprit_regression_range:
+      triage_result[
+          'culprit_regression_range'] = crash.culprit_regression_range
+    if crash.culprit_components:
+      triage_result['culprit_components'] = crash.culprit_components
 
-  print '***************************'
-  print 'Switching to git %s' % git_hash
-  print '***************************'
-  with open(os.devnull, 'w') as null_handle:
-    subprocess.check_call(
-        'cd %s; git checkout %s' % (DELTA_TEST_DIRECTORY, git_hash),
-        stdout=null_handle,
-        stderr=null_handle,
-        shell=True)
+    triage_results[crash_id] = triage_result
 
-  if not os.path.exists(result_path):
-    # Pass the crashes information to sub-routine ``run-predator`` to compute
-    # culprit results and write results to ``result_path``.
-    input_path = os.path.join(PREDATOR_RESULTS_DIRECTORY, 'input')
-    with open(input_path, 'wb') as f:
-      f.write(zlib.compress(pickle.dumps(crashes)))
-
-    args = ['python', 'run-predator.py', input_path, result_path,
-            client_id, app_id]
-    if verbose:
-      args.append('--verbose')
-    p = subprocess.Popen(args, stdin=subprocess.PIPE)
-    p.communicate()
-  else:
-    print '\nLoading results from', result_path
-
-  if not os.path.exists(result_path):
-    print 'Failed to get predator results.'
-    return {}
-
-  # Read culprit results from ``result_path``, which is computed by sub-routine
-  # ``run-predator``.
-  with open(result_path) as f:
-    return pickle.load(f)
-
-  return {}
+  return triage_results
 
 
-def DeltaEvaluator(git_hash1, git_hash2,
-                   client_id, app_id,
-                   start_date, end_date, batch_size, max_n,
-                   property_values=None, verbose=False):  # pragma: no cover.
+def DeltaKeyGenerator(func, args, kwargs, namespace=None):  # pragma: no cover.
+  kwargs_copy = copy.deepcopy(kwargs)
+  if 'verbose' in kwargs_copy:
+    del kwargs_copy['verbose']
+
+  encoded_params = hashlib.md5(pickle.dumps([args, kwargs_copy])).hexdigest()
+  prefix = namespace or '%s.%s' % (func.__module__, func.__name__)
+  return '%s-%s' % (prefix, encoded_params)
+
+
+@Cached(LocalCache(), namespace='Delta-Results', expire_time=10*60*60*24,
+        key_generator=DeltaKeyGenerator)
+def EvaluateDelta(git_hash1, git_hash2,
+                  client_id, app_id,
+                  start_date, end_date, batch_size, max_n,
+                  property_values=None, verbose=False):  # pragma: no cover.
   """Evaluates delta between git_hash1 and git_hash2 on a set of Testcases.
 
   Args:
@@ -209,48 +197,32 @@ def DeltaEvaluator(git_hash1, git_hash2,
     deltas (dict): Mappings id to delta for each culprit value.
     crash_count (int): Total count of all the crashes.
   """
-  head_branch_name = subprocess.check_output(
-      ['git', 'rev-parse', '--abbrev-ref', 'HEAD']).replace('\n', '')
-  try:
-    deltas = {}
-    crash_count = 0
-    # Iterate batches of crash informations.
-    for index, crashes in enumerate(
-        crash_iterator.CachedCrashIterator(client_id, app_id,
-                                           property_values=property_values,
-                                           start_date=start_date,
-                                           end_date=end_date,
-                                           batch_size=batch_size,
-                                           batch_run=True)):
-      # Truncate crashes and make it contain at most max_n crashes.
-      if crash_count + len(crashes) > max_n:
-        crashes = crashes[:(max_n - crash_count)]
+  deltas = {}
+  triage_results = {}
 
-      results = []
-      for git_hash in [git_hash1, git_hash2]:
-        # Generate result path to store culprit results for this batch.
-        result_path = os.path.join(
-            PREDATOR_RESULTS_DIRECTORY, delta_util.GenerateFileName(
-                client_id, property_values, start_date, end_date,
-                batch_size, index, max_n, git_hash))
-        # Get the culprit results of this batch of crashes.
-        results.append(GetResults(crashes, client_id, app_id,
-                                  git_hash, result_path,
-                                  verbose=verbose))
+  batch_size = min(batch_size, max_n)
+  crash_count = 0
+  # Iterate batches of crash informations.
+  for crashes in crash_iterator.CachedCrashIterator(
+      client_id, app_id, property_values=property_values,
+      start_date=start_date, end_date=end_date,
+      batch_size=batch_size, batch_run=True):
+    # Truncate crashes and make it contain at most max_n crashes.
+    crashes = {crash.key.urlsafe(): crash for crash in crashes}
+    if crash_count + len(crashes) > max_n:
+      crashes = {crash_id: crashes[crash_id]
+                 for crash_id in crashes.keys()[:(max_n - crash_count)]}
 
-      crash_count += len(crashes)
-      # Compute delta between 2 versions of culprit results for this batch.
-      batch_deltas = GetDeltasFromTwoSetsOfResults(*results)
-      # Print the deltas of the current batch.
-      print '========= Delta of this batch ========='
-      delta_util.PrintDelta(batch_deltas, len(crashes), app_id)
-      deltas.update(batch_deltas)
-      if crash_count >= max_n:
-        break
+    crash_count += len(crashes)
+    batch_delta = GetDeltaForCrashes(crashes, git_hash1, git_hash2,
+                                     client_id, app_id, verbose=verbose)
+    # Print the deltas of the current batch.
+    print '========= Delta of this batch ========='
+    delta_util.PrintDelta(batch_delta, len(crashes), client_id, app_id)
+    deltas.update(batch_delta)
+    triage_results.update(GetTriageResultsFromCrashes(crashes))
 
-    return deltas, crash_count
-  finally:
-    with open(os.devnull, 'w') as null_handle:
-      subprocess.check_call(['git', 'checkout', head_branch_name],
-                            stdout=null_handle,
-                            stderr=null_handle)
+    if crash_count >= max_n:
+      break
+
+  return deltas, triage_results, crash_count

@@ -14,6 +14,7 @@ sys.path.insert(1, _SCRIPT_DIR)
 import script_util
 script_util.SetUpSystemPaths()
 
+from crash.type_enums import CrashClient
 from crash_queries.crash_printer import crash_printer
 
 _DATETIME_FORMAT = '%Y-%m-%d'
@@ -44,7 +45,7 @@ if __name__ == '__main__':
   argparser.add_argument(
       '--client',
       '-c',
-      default='cracas',
+      default=CrashClient.CRACAS,
       help=('Possible values are: fracas, cracas, clusterfuzz. Right now, only '
             'fracas is supported.'))
 

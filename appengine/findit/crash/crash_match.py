@@ -58,7 +58,8 @@ class CrashMatch(namedtuple('CrashMatch',
         for file_path, index in frame_file_path_to_index.iteritems()
     }
     return 'Changed files %s, with the same %s(%s) as %s' % (
-        ', '.join([os.path.basename(f.new_path) for f in self.touched_files]),
+        ', '.join([os.path.basename(f.new_path) for f in self.touched_files
+                   if f.new_path]),
         self.crashed_group.name, self.crashed_group.value,
         ', '.join(['%s (in %s)' % (os.path.basename(path), index)
                    for path, index in frame_file_path_to_index.iteritems()]))

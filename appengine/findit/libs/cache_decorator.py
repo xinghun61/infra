@@ -208,9 +208,11 @@ class GeneratorCached(CacheDecorator):
       key = self._key_generator(func, args, kwargs, namespace=self._namespace)
       cached_keys = self.GetCache(key, func, args, kwargs)
 
+      # If there is full cache for all items in a generator, use cached item.
       if cached_keys is not None:
         for cached_key in cached_keys:
           yield self.GetCache(cached_key, func, args, kwargs)
+      # Else run generator and cache missing items.
       else:
         result_iter = func(*args, **kwargs)
         result_keys = []
