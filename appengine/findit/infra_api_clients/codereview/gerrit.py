@@ -107,7 +107,7 @@ class Gerrit(codereview.CodeReview):
 
   def GetClDetails(self, change_id):
     # Create cl info based on the url.
-    params = {'o': ['CURRENT_REVISION', 'CURRENT_COMMIT']}
+    params = [('o', 'CURRENT_REVISION'), ('o', 'CURRENT_COMMIT')]
     change_info = self._Get(['changes', change_id, 'detail'], params=params)
     return self._ParseClInfo(change_info, change_id)
 

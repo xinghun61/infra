@@ -15,6 +15,8 @@ from libs.http.retry_http_client import RetryHttpClient
 _INTERNAL_HOSTS_TO_SCOPES = {
     'https://chrome-internal.googlesource.com/': (
         'https://www.googleapis.com/auth/gerritcodereview'),
+    'https://chromium-review.googlesource.com/': (
+        'https://www.googleapis.com/auth/gerritcodereview'),
     'https://codereview.chromium.org/': (
         'https://www.googleapis.com/auth/userinfo.email'),
 }
