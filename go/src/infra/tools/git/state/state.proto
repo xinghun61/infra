@@ -1,0 +1,21 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+package state;
+
+// State is the persistent wrapper state. It is exported by a Git wrapper
+// process as encoded JSON using the "gitWrapperENV" environment variable.
+message State {
+	// SelfPath is the absolute path to the current process.
+	string self_path = 1;
+	// GitPath is the absolute path of the Git executable that was identified.
+	string git_path = 2;
+
+	// Retrying, if true, means that we are running in the context of a previous
+	// wrapper that is, itself, applying retry criteria.
+	bool retrying = 3;
+}
+
