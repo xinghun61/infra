@@ -153,6 +153,7 @@ type BuildFailure struct {
 	FinditURL   string `json:"findit_url"`
 	HasFindings bool   `json:"has_findings"`
 	IsFinished  bool   `json:"is_finished"`
+	IsSupported bool   `json:"is_supported"`
 }
 
 // BuildStep is a step which was run in a particular build. Useful for analyzing

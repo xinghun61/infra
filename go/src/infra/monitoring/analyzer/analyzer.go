@@ -762,6 +762,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 			mergedBF.FinditStatus = result.TryJobStatus
 			mergedBF.HasFindings = result.HasFindings
 			mergedBF.IsFinished = result.IsFinished
+			mergedBF.IsSupported = result.IsSupported
 
 			buildNumberInURL := result.FirstKnownFailedBuildNumber
 			if buildNumberInURL == 0 {

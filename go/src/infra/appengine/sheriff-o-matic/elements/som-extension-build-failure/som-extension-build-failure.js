@@ -58,11 +58,23 @@
     },
 
     _finditIsRunning: function(extension) {
-      return extension && extension.findit_url && !extension.is_finished && !extension.has_findings;
+      return extension && !extension.suspected_cls && !extension.is_finished && !extension.has_findings && extension.is_supported;
     },
 
     _finditHasNoResult: function(extension) {
-      return extension && extension.is_finished && !extension.has_findings;
+      return extension && !extension.suspected_cls && extension.is_finished && !extension.has_findings;
+    },
+
+    _finditFoundNoResult: function(extension) {
+      return this._finditHasNoResult(extension) && extension.is_supported;
+    },
+
+    _finditNotSupport: function(extension) {
+      return this._finditHasNoResult(extension) && !extension.is_supported;
+    },
+
+    _finditHasUrl: function(extension) {
+      return extension && extension.findit_url;
     },
 
     _finditApproach: function(cl) {
