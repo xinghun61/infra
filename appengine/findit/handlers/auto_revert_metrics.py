@@ -89,8 +89,10 @@ def _GenerateMetrics(suspected_cls):
                       suspected_cl)
         continue
 
-      time_delta = (
-          suspected_cl.identified_time - suspected_cl.sheriff_action_time)
+      # Fallback to updated_time if cr_notification_time is not set.
+      findit_time = (
+          suspected_cl.cr_notification_time or suspected_cl.updated_time)
+      time_delta = findit_time - sheriff_action_time
       slower_than_sheriff_times.append(time_delta.total_seconds())
 
   return {

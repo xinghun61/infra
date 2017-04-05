@@ -56,7 +56,7 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
     false_positive_suspected_cl.revert_cl = false_positive_revert_cl
 
     slow_suspected_cl = WfSuspectedCL.Create('chromium', 'r5', 5)
-    slow_suspected_cl.identified_time = datetime(2017, 3, 15, 2)
+    slow_suspected_cl.cr_notification_time = datetime(2017, 3, 15, 2)
     slow_suspected_cl.should_be_reverted = True
     slow_suspected_cl.sheriff_action_time = datetime(2017, 3, 15, 1)
 
