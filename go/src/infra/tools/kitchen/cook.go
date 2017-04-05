@@ -23,6 +23,7 @@ import (
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/system/exitcode"
+	"github.com/luci/luci-go/common/system/filesystem"
 
 	"infra/tools/kitchen/migration"
 	"infra/tools/kitchen/proto"
@@ -50,54 +51,76 @@ var cmdCook = &subcommands.Command{
 		fs.Var(&c.mode,
 			"mode",
 			"Build environment mode for Kitchen. Options are ["+cookModeFlagEnum.Choices()+"].")
+
 		fs.StringVar(
 			&c.RepositoryURL,
 			"repository",
 			"",
-			"URL of a git repository with the recipe to run. Must have a recipe configuration at infra/config/recipes.cfg. If unspecified will look for bundled recipes at -checkout-dir.")
+			"URL of a git repository with the recipe to run. Must have a recipe configuration at infra/config/recipes.cfg. "+
+				"If unspecified will look for bundled recipes at -checkout-dir.")
+
 		fs.StringVar(
 			&c.Revision,
 			"revision",
 			"",
-			"Revison of the recipe to run (if -repository is specified). It can be HEAD, a commit hash or a fully-qualified ref. (defaults to HEAD)")
+			"Revison of the recipe to run (if -repository is specified). It can be HEAD, a commit hash or a fully-qualified "+
+				"ref. (defaults to HEAD)")
+
 		fs.StringVar(
 			&c.rr.recipeName,
 			"recipe",
 			"",
 			"Name of the recipe to run")
+
 		fs.Var(
 			&c.PythonPaths,
 			"python-path",
 			"Python path to include. Can be specified multiple times.")
+
+		fs.Var(
+			&c.PrefixPathENV,
+			"prefix-path-env",
+			"Add this forward-slash-delimited filesystem path to the beginning of the PATH "+
+				"environment. The path value will be made absolute relative to the current working directory. "+
+				"Can be specified multiple times, in which case values will appear at the beginning "+
+				"of PATH in the order that they are supplied.")
+
 		fs.StringVar(
 			&c.CheckoutDir,
 			"checkout-dir",
 			"kitchen-checkout",
-			"The directory to check out the repository to or to look for bundled recipes. It must either: not exist, be empty, be a valid Git repository, or be a recipe bundle.")
+			"The directory to check out the repository to or to look for bundled recipes. It must either: not exist, be empty, "+
+				"be a valid Git repository, or be a recipe bundle.")
+
 		fs.StringVar(
 			&c.rr.workDir,
 			"workdir",
 			"kitchen-workdir",
 			`The working directory for recipe execution. It must not exist or be empty. Defaults to "./kitchen-workdir."`)
+
 		fs.StringVar(
 			&c.Properties,
 			"properties", "",
 			"A JSON string containing the properties. Mutually exclusive with -properties-file.")
+
 		fs.StringVar(
 			&c.PropertiesFile,
 			"properties-file", "",
 			"A file containing a JSON string of properties. Mutually exclusive with -properties.")
+
 		fs.StringVar(
 			&c.rr.outputResultJSONFile,
 			"output-result-json",
 			"",
 			"The file to write the JSON serialized returned value of the recipe to")
+
 		fs.StringVar(
 			&c.CacheDir,
 			"cache-dir",
 			"",
 			"Directory with caches. If not empty, slashes will be converted to OS-native separators, "+
 				"it will be made absolute and passed to the recipe.")
+
 		fs.StringVar(
 			&c.TempDir,
 			"temp-dir",
@@ -137,6 +160,7 @@ type cookRun struct {
 	Properties     string
 	PropertiesFile string
 	PythonPaths    stringlistflag.Flag
+	PrefixPathENV  stringlistflag.Flag
 	CacheDir       string
 	TempDir        string
 
@@ -188,14 +212,40 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 		return err
 	}
 
-	// Normalize c.PythonPaths
-	for i, p := range c.PythonPaths {
-		p := filepath.FromSlash(p)
-		p, err := filepath.Abs(p)
-		if err != nil {
-			return userError("invalid -python-path %q: %s", p, err)
+	// normalizePathSlice normalizes a slice of forward-slash-delimited path
+	// strings.
+	//
+	// This operation is destructive, as the normalized result uses the same
+	// backing array as the initial path slice.
+	normalizePathSlice := func(flag string, sp *stringlistflag.Flag) error {
+		s := *sp
+		seen := make(map[string]struct{}, len(s))
+		normalized := s[:0]
+		for _, p := range s {
+			p := filepath.FromSlash(p)
+			if err := filesystem.AbsPath(&p); err != nil {
+				return userError("invalid %s %q: %s", flag, p, err)
+			}
+
+			if _, ok := seen[p]; ok {
+				continue
+			}
+			seen[p] = struct{}{}
+			normalized = append(normalized, p)
 		}
-		c.PythonPaths[i] = p
+
+		*sp = normalized
+		return nil
+	}
+
+	// Normalize c.PythonPaths
+	if err := normalizePathSlice("-python-path", &c.PythonPaths); err != nil {
+		return err
+	}
+
+	// Normalize c.PrefixPathENV
+	if err := normalizePathSlice("-prefix-path-env", &c.PrefixPathENV); err != nil {
+		return err
 	}
 
 	c.TempDir = filepath.FromSlash(c.TempDir)
@@ -206,6 +256,23 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 // ensureAndRun ensures that we have recipes (according to -repository,
 // -revision and -checkout-dir), and then runs them.
 func (c *cookRun) ensureAndRun(ctx context.Context, env environ.Env) (recipeExitCode int, err error) {
+	// Build both exported (env) PATH and local process PATH.
+	if len(c.PrefixPathENV) > 0 {
+		currentPATH, _ := env.Get("PATH")
+
+		allPATH := make([]string, 0, len(c.PrefixPathENV)+1)
+		allPATH = append(allPATH, c.PrefixPathENV...)
+		if len(currentPATH) > 0 {
+			allPATH = append(allPATH, currentPATH)
+		}
+
+		fullPATH := strings.Join(allPATH, string(os.PathListSeparator))
+		env.Set("PATH", fullPATH)
+		if err = os.Setenv("PATH", fullPATH); err != nil {
+			return 0, errors.Annotate(err).Reason("failed to update process PATH").Err()
+		}
+	}
+
 	if c.RepositoryURL == "" {
 		switch st, err := os.Stat(c.CheckoutDir); {
 		case os.IsNotExist(err):
