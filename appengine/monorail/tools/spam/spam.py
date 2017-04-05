@@ -292,6 +292,66 @@ def Prep(args):
   print 'Copying %s to The Cloud as %s' % (trainfile.name, args.train)
   subprocess.check_call(['gsutil', 'cp', trainfile.name, args.train])
 
+# The whole enchelada. Exports training data, preps it, uploads to GCS,
+# runs Cloud Prediction API call to train the model, runs ROC curve eval
+# on it. After it completes, you should have a queryable model running in
+# prod/staging.
+def Generate(args):
+    # Create a local scratch dir.
+    scratch_path = tempfile.mkdtemp()
+
+    print 'Created scratch dir: %s' % scratch_path
+
+    # Dump all exported training data to scratch dir.
+    gs_path = 'gs://%s.appspot.com/spam_training_data/*' % args.project
+    subprocess.check_call(['gsutil', 'cp', gs_path, ('%s/.' % scratch_path)])
+
+    # Also dump the original codesite exported training data.
+    subprocess.check_call(['gsutil', 'cp',
+        'gs://monorail-prod.appspot.com/spam-training-data/full-*',
+        ('%s/.' % scratch_path)])
+
+    raw_csv = os.path.join(scratch_path, 'all.csv')
+    os.system('cat %s/*.csv > %s/all.csv' % (scratch_path, scratch_path))
+
+    # Where to put the training data read by Cloud Prediction API.
+    train_csv = '%s.appspot.com/spam_training_data/%s-train.csv' % (
+        args.project, args.model)
+
+    # This is actaully *eval* data, but calling it test just to be consistent.
+    test_csv = '%s/test.csv' % scratch_path
+
+    # run Prep()
+    args.infile = raw_csv
+    args.train = 'gs://%s' % train_csv
+    args.test = test_csv
+    Prep(args)
+
+    # Run Train()
+    args.training_data = train_csv
+    out = Train(args)
+    print json.dumps(out, indent=2)
+
+    # Loop on Status() until it's done training.
+    status = Status(args)
+    while status['trainingStatus'] != 'DONE':
+      status = Status(args)
+      print json.dumps(status, indent=2)
+      time.sleep(30) # seconds
+
+    # Dump Analyze() results.
+    out = Analyze(args)
+    print json.dumps(out, indent=2)
+
+    # Generate the ROC curve data.
+    args.testing_data = test_csv
+    ROC(args)
+
+    if not args.keep_scratch:
+      os.system('rm -rf %s' % scratch_path)
+
+    return {"status": "ok"}
+
 
 def main():
   if 'GOOGLE_APPLICATION_CREDENTIALS' not in os.environ:
@@ -349,6 +409,18 @@ def main():
   parser_prep.add_argument('--api_key', '-k', required=False,
       help='Safe Browsing API key.')
 
+  parser_generate = subparsers.add_parser('generate',
+      help='Generate/update a model, end-to-end')
+  parser_generate.add_argument('--model', '-m', required=True)
+  parser_generate.add_argument('--ratio', default=0.75,
+      help='Test/train split ratio.')
+  parser_generate.add_argument('--hash_features', '-f', type=int,
+      help='Number of hash features to generate.', default=500)
+  parser_generate.add_argument('--sample_rate', '-r', type=float, default=0.05,
+      help='Sample rate for classifier ROC evaluation.', )
+  parser_generate.add_argument('--keep_scratch', '-k', type=bool, default=False,
+      help='Keep scratch dir after run.', )
+
   args = parser.parse_args()
 
   cmds = {
@@ -359,6 +431,7 @@ def main():
       "train": Train,
       "prep": Prep,
       'roc':  ROC,
+      'generate':  Generate,
   }
   res = cmds[args.command](args)
 
