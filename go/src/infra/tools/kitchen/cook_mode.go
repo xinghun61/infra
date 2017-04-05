@@ -47,7 +47,6 @@ const (
 type cookMode interface {
 	fillTemplateParams(env environ.Env, params *tasktemplate.Params) error
 	needsIOKeepAlive() bool
-	shouldEmitTimestamps() bool
 	alwaysForwardAnnotations() bool
 
 	// addProperties adds builtin properties. Must add PropertyBotId.
@@ -85,7 +84,6 @@ func (m swarmingCookMode) fillTemplateParams(env environ.Env, params *tasktempla
 }
 
 func (m swarmingCookMode) needsIOKeepAlive() bool         { return false }
-func (m swarmingCookMode) shouldEmitTimestamps() bool     { return true }
 func (m swarmingCookMode) alwaysForwardAnnotations() bool { return false }
 
 func (m swarmingCookMode) addProperties(props map[string]interface{}, env environ.Env) error {
@@ -126,7 +124,6 @@ func (m buildBotCookMode) fillTemplateParams(env environ.Env, params *tasktempla
 }
 
 func (m buildBotCookMode) needsIOKeepAlive() bool         { return true }
-func (m buildBotCookMode) shouldEmitTimestamps() bool     { return false }
 func (m buildBotCookMode) alwaysForwardAnnotations() bool { return true }
 
 func (m buildBotCookMode) addProperties(props map[string]interface{}, env environ.Env) error {

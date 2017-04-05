@@ -127,21 +127,6 @@ var cmdCook = &subcommands.Command{
 			"",
 			"Temporary directory to use. Forward slashes will be converted into OS-native separators.")
 
-		// TODO(dnj, nodir): Remove deprecated flags.
-		fs.BoolVar(
-			&c.rr.opArgs.AnnotationFlags.EmitTimestamp,
-			"timestamps",
-			false,
-			"If true, print CURRENT_TIMESTAMP annotations (DEPRECATED, use swarming mode).")
-		fs.String(
-			"recipe-engine-path",
-			"",
-			"(DEPRECATED, IGNORED) Path to a https://github.com/luci/recipes-py checkout")
-		fs.Bool(
-			"allow-gitiles",
-			false,
-			"(DEPRECATED, IGNORED) If true, kitchen will try to use Gitiles API to fetch a recipe.")
-
 		c.logdog.addFlags(fs)
 
 		return &c
@@ -179,7 +164,6 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	if c.mode.onlyLogDog() {
 		c.logdog.logDogOnly = true
 	}
-	c.rr.opArgs.AnnotationFlags.EmitTimestamp = c.mode.shouldEmitTimestamps() || c.rr.opArgs.AnnotationFlags.EmitTimestamp
 
 	if c.rr.workDir == "" {
 		return userError("-workdir is required")
