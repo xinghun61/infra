@@ -604,9 +604,12 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 	// NOTE: we only use the most recent build ID now, because currently the only
 	// time we would need to check multiple builds is for official builds, which
 	// right now are internal and not supported by findit.
-	finditResults, err := client.Findit(ctx, master, builderName, latestBuild, stepNames)
-	if err != nil {
-		logging.Errorf(ctx, "while getting findit results for build: %s", err)
+	finditResults := []*messages.FinditResult{}
+	if tree == "chromium" || tree == "milo.chromium" {
+		finditResults, err = client.Findit(ctx, master, builderName, latestBuild, stepNames)
+		if err != nil {
+			logging.Errorf(ctx, "while getting findit results for build: %s", err)
+		}
 	}
 
 	type r struct {
@@ -649,11 +652,13 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 						stepNames[i] = f.Step.Name
 					}
 
-					f, err := client.Findit(ctx, master, builderName, buildNum, stepNames)
-					if err != nil {
-						logging.Errorf(ctx, "while getting findit results for build: %s", err)
-					} else {
-						fResults = f
+					if tree == "chromium" || tree == "milo.chromium" {
+						f, err := client.Findit(ctx, master, builderName, buildNum, stepNames)
+						if err != nil {
+							logging.Errorf(ctx, "while getting findit results for build: %s", err)
+						} else {
+							fResults = f
+						}
 					}
 				}
 

@@ -402,6 +402,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 			name          string
 			master        string
 			builder       string
+			tree          string
 			recentBuilds  []int64
 			testData      *analyzertest.BuilderFaker
 			finditData    []*messages.FinditResult
@@ -418,6 +419,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				name:         "builders ok",
 				master:       "fake.master",
 				builder:      "fake.builder",
+				tree:         "tree",
 				recentBuilds: []int64{0},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(0).Times(0, 1).Step("fake_step").Results(0).BuilderFaker,
@@ -426,6 +428,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				name:         "one build failure",
 				master:       "fake.master",
 				builder:      "fake.builder",
+				tree:         "tree",
 				recentBuilds: []int64{0},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
@@ -465,6 +468,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				name:         "one build failure with findit running",
 				master:       "fake.master",
 				builder:      "fake.builder",
+				tree:         "chromium",
 				recentBuilds: []int64{123},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(123).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
@@ -519,6 +523,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				name:         "one build failure with findit",
 				master:       "fake.master",
 				builder:      "fake.builder",
+				tree:         "milo.chromium",
 				recentBuilds: []int64{0},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
@@ -597,9 +602,50 @@ func TestBuilderStepAlerts(t *testing.T) {
 				},
 			},
 			{
+				name:         "one build failure on non-chromium tree",
+				master:       "fake.master",
+				builder:      "fake.builder",
+				tree:         "tree",
+				recentBuilds: []int64{0},
+				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
+					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
+					Step("fake_step").Results(2).BuilderFaker,
+				buildsAtFault: []int{0},
+				stepsAtFault:  []string{"fake_step"},
+				wantAlerts: []messages.Alert{
+					{
+						Key:      "fake.master.fake.builder.fake_step.",
+						Title:    "fakeTitle",
+						Type:     messages.AlertBuildFailure,
+						Body:     "",
+						Severity: messages.NewFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{
+									Name: "fake.builder",
+									URL:  urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
+								},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo:      "test",
+									URL:       "http://test",
+									Revisions: []string{"291569"},
+									Positions: []string{"refs/heads/master@{#291569}"},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
 				name:         "two build failures with findit",
 				master:       "fake.master",
 				builder:      "fake.builder",
+				tree:         "chromium",
 				recentBuilds: []int64{0},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
@@ -706,6 +752,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				name:         "repeated build failure",
 				master:       "fake.master",
 				builder:      "fake.builder",
+				tree:         "tree",
 				recentBuilds: []int64{0, 1, 2, 3},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
@@ -758,6 +805,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				name:         "new double failures counted",
 				master:       "fake.master",
 				builder:      "fake.builder",
+				tree:         "tree",
 				recentBuilds: []int64{0, 1, 2},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
@@ -840,6 +888,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				name:         "old failures not counted",
 				master:       "fake.master",
 				builder:      "fake.builder",
+				tree:         "tree",
 				recentBuilds: []int64{0, 1, 2},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
@@ -891,6 +940,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				name:         "green history, failure recently",
 				master:       "fake.master",
 				builder:      "fake.builder",
+				tree:         "tree",
 				recentBuilds: []int64{0, 1, 2, 3, 4, 5},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").
@@ -977,7 +1027,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				}
 				test.wantAlerts = newAlerts
 
-				gotAlerts, gotErrs := a.builderStepAlerts(ctx, "tree", &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
+				gotAlerts, gotErrs := a.builderStepAlerts(ctx, test.tree, &messages.MasterLocation{URL: *urlParse("https://build.chromium.org/p/"+test.master, t)}, test.builder, test.recentBuilds)
 
 				sort.Sort(sortAlerts(gotAlerts))
 				sort.Sort(sortAlerts(test.wantAlerts))
