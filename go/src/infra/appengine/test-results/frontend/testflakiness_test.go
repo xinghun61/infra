@@ -87,16 +87,23 @@ func (h *fakeBQHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	errMsg := fmt.Sprintf(
-		"Unexpected request: %#v %#v %#v %#v\n", path, query, params, pageToken)
-	detailedMsg := errMsg + "Expected requests:\n"
+		"Unexpected request:\nPath: %v\nQuery: %v\nParams: %v\nPage Token: %v\n\n",
+		path, query, params, pageToken)
+	errMsg += "Expected requests:\n"
 	for _, er := range h.ExpectedRequests {
 		if !er.Processed {
-			detailedMsg += fmt.Sprintf(
-				" - %#v %#v %#v %#v\n", er.Path, er.Query, er.Params, er.PageToken)
+			errMsg += fmt.Sprintf(
+				" - Path: %v\n   Query: %v\n   Params: %v\n   Page Token: %v\n\n",
+				er.Path, er.Query, er.Params, er.PageToken)
 		}
 	}
-	h.C.Print(detailedMsg)
 	h.C.So(errMsg, ShouldBeEmpty)
+}
+
+func init() {
+	// Force tests to do no retries. If a test needs to be added that does need
+	// retries it must not be configured to run in parallel with others.
+	retryFactory = nil
 }
 
 func TestWriteErrorAndResponse(t *testing.T) {
@@ -194,6 +201,8 @@ func TestFlakinessGroups(t *testing.T) {
 }
 
 func TestFlakinessList(t *testing.T) {
+	t.Parallel()
+
 	Convey("getFlakinessList", t, func(c C) {
 		handler := fakeBQHandler{
 			C: c,
@@ -321,6 +330,92 @@ func TestFlakinessList(t *testing.T) {
 			_, err := getFlakinessList(
 				ctx, bq, Group{Name: AllKind, Kind: AllKind})
 			So(err, ShouldBeNil)
+		})
+	})
+}
+
+func TestFlakinessData(t *testing.T) {
+	t.Parallel()
+
+	Convey("getFlakinessData", t, func(c C) {
+		handler := fakeBQHandler{
+			C: c,
+			ExpectedRequests: []*expectedRequest{
+				{
+					Query: flakyBuildsQuery,
+					Params: `[{"name":"testname","parameterType":{"type":"STRING"},` +
+						`"parameterValue":{"value":"Foo.Bar"}}]`,
+					Path: "/projects/test-results-hrd/queries",
+					Response: `{"totalRows": "2",
+											"jobReference": {"jobId": "x"},
+											"jobComplete": true,
+											"rows": [
+												{"f": [{"v": "master.master1"},
+												       {"v": "builder1"},
+												       {"v": "1"},
+												       {"v": "step1"}]},
+												{"f": [{"v": "master2"},
+												       {"v": "builder2"},
+												       {"v": "2"},
+												       {"v": "step2"}]}
+											]}`,
+				},
+				{
+					Query: falseRejectionBuildsQuery,
+					Params: `[{"name":"testname","parameterType":{"type":"STRING"},` +
+						`"parameterValue":{"value":"Foo.Bar"}}]`,
+					Path: "/projects/test-results-hrd/queries",
+					Response: `{"totalRows": "2",
+											"jobReference": {"jobId": "x"},
+											"jobComplete": true,
+											"rows": [
+												{"f": [{"v": "master3"},
+												       {"v": "builder3"},
+												       {"v": "3"},
+												       {"v": "4"},
+												       {"v": "step3"}]},
+												{"f": [{"v": "master4"},
+												       {"v": "builder4"},
+												       {"v": "5"},
+												       {"v": "6"},
+												       {"v": "step4"}]}
+											]}`,
+				},
+			},
+		}
+
+		server := httptest.NewServer(&handler)
+		bq, err := bigquery.New(&http.Client{})
+		So(err, ShouldBeNil)
+		bq.BasePath = server.URL + "/"
+		ctx := memory.UseWithAppID(context.Background(), "test-results-hrd")
+
+		data, err := getFlakinessData(ctx, bq, "Foo.Bar")
+		So(err, ShouldBeNil)
+
+		So(data.FlakyBuilds, ShouldResemble, []FlakyBuild{
+			{
+				"https://build.chromium.org/p/master1/builders/builder1/builds/1",
+				"not-implemented",
+			},
+			{
+				"https://build.chromium.org/p/master2/builders/builder2/builds/2",
+				"not-implemented",
+			},
+		})
+		So(data.FalseRejectionBuilds, ShouldResemble, []FalseRejectionBuild{
+			{
+				"https://build.chromium.org/p/master3/builders/builder3/builds/3",
+				"not-implemented",
+				"https://build.chromium.org/p/master3/builders/builder3/builds/4",
+				"not-implemented",
+			},
+			{
+				"https://build.chromium.org/p/master4/builders/builder4/builds/5",
+				"not-implemented",
+				"https://build.chromium.org/p/master4/builders/builder4/builds/6",
+				"not-implemented",
+			},
 		})
 	})
 }
