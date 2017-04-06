@@ -118,6 +118,17 @@ class TestController(testing.AppengineTestCase):
 
     self.assertEquals(generated, expected)
 
+  def test_redirect_gerrit(self):
+    query = 'c'
+    generated = controller.calculate_redirect(query)
+
+    expected = models.Redirect(
+        redirect_type=models.RedirectType.GERRIT,
+        redirect_url='https://chromium-review.googlesource.com/c',
+    )
+
+    self.assertEquals(generated, expected)
+
   def test_redirect_svn_numbering(self):
     my_repo = model_helpers.create_repo()
     my_repo.put()

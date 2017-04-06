@@ -124,6 +124,7 @@ class RedirectType(messages.Enum):
   GIT_FROM_NUMBER = 3
   RIETVELD = 4
   GIT_LOG = 5
+  GERRIT = 6
 
 
 class Redirect(EndpointsModel):

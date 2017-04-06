@@ -539,6 +539,12 @@ FULL_GIT_SHA = re.compile(r'[a-fA-F0-9]{40}$')
 GIT_LOG_REGEX = re.compile(
   r'([a-fA-F0-9]{1,40})([~\^!@2-9]*[\.]{2,3})([a-fA-F0-9]{1,40})([~\^!@2-9]*)')
 
+GERRIT_HOST_MAP = {
+  'c': 'chromium',
+  'i': 'chrome-internal',
+}
+GERRIT_REGEX = re.compile(r'[%s]$' % ''.join(GERRIT_HOST_MAP.keys()))
+
 
 def fetch_default_number(number):
   """Fetch the 'default' number from chromium/src (or svn.chromium.org)."""
@@ -597,6 +603,13 @@ def calculate_redirect(arg):
         redirect_type=models.RedirectType.GIT_FULL,
         redirect_url='https://chromium.googlesource.com/chromium/src/+/%s' % (
           arg,))
+
+  if GERRIT_REGEX.match(arg):
+    return models.Redirect(
+      redirect_type=models.RedirectType.GERRIT,
+      redirect_url='https://%s-review.googlesource.com/c' % (
+        GERRIT_HOST_MAP[arg])
+    )
 
   if RIETVELD_REGEX.match(arg):
     return models.Redirect(
