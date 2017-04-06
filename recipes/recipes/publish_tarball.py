@@ -175,7 +175,8 @@ def RunSteps(api):
       api.trigger({'buildername': 'publish_tarball', 'version': version})
     return
 
-  version = api.properties['version']
+  # TODO(phajdan.jr): remove str conversion once crbug/709103 is fixed.
+  version = str(api.properties['version'])
 
   ls_result = api.gsutil(['ls', 'gs://chromium-browser-official/'],
                          stdout=api.raw_io.output()).stdout
