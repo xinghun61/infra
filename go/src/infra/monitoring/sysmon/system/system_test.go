@@ -30,21 +30,22 @@ func TestMetrics(t *testing.T) {
 		So(updateCPUMetrics(c), ShouldBeNil)
 
 		// Small fudge factor because sometimes this isn't exact.
+		const aBitLessThanZero = -0.001
 		const oneHundredAndABit = 100.001
 
 		v, err := cpuTime.Get(c, "user")
 		So(err, ShouldBeNil)
-		So(v, ShouldBeGreaterThanOrEqualTo, 0)
+		So(v, ShouldBeGreaterThanOrEqualTo, aBitLessThanZero)
 		So(v, ShouldBeLessThanOrEqualTo, oneHundredAndABit)
 
 		v, err = cpuTime.Get(c, "system")
 		So(err, ShouldBeNil)
-		So(v, ShouldBeGreaterThanOrEqualTo, 0)
+		So(v, ShouldBeGreaterThanOrEqualTo, aBitLessThanZero)
 		So(v, ShouldBeLessThanOrEqualTo, oneHundredAndABit)
 
 		v, err = cpuTime.Get(c, "idle")
 		So(err, ShouldBeNil)
-		So(v, ShouldBeGreaterThanOrEqualTo, 0)
+		So(v, ShouldBeGreaterThanOrEqualTo, aBitLessThanZero)
 		So(v, ShouldBeLessThanOrEqualTo, oneHundredAndABit)
 	})
 
