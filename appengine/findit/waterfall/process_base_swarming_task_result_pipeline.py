@@ -8,6 +8,8 @@ import json
 import logging
 import time
 
+from google.appengine.api import taskqueue
+
 from common import constants
 from gae_libs import appengine_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
@@ -81,12 +83,29 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         pass
     raise ValueError('Failed to parse %s' % time_string)  # pragma: no cover
 
-  def delay_callback(self, countdown, callback_params):
+  def delay_callback(self, countdown, callback_params, name=None):
     target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
     task = self.get_callback_task(
         countdown=countdown, target=target,
-        params={'callback_params': json.dumps(callback_params)})
+        params={'callback_params': json.dumps(callback_params)},
+        name=name)
     task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+
+  def finalized(self, *args, **kwargs):
+    try:
+      task_id = self.kwargs.get('task_id')
+      if not task_id and len(self.args) > 4:
+        task_id = self.args[4]
+      if task_id:
+        taskqueue.Queue(
+            constants.WATERFALL_ANALYSIS_QUEUE).delete_tasks_by_name([
+                task_id + '_cleanup_task'])
+      else:
+        logging.error('Did not receive a task_id at construction.')
+    except taskqueue.BadTaskStateError, e:  # pragma: no cover
+      logging.debug('Could not delete cleanup task: %s', e.message)
+    return super(ProcessBaseSwarmingTaskResultPipeline, self).finalized(
+        *args, **kwargs)
 
   def _GetPipelineResult(self, step_name, step_name_no_platform, task):
     # The sub-classes may use properties of the task as part of the result.
@@ -112,6 +131,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     _ = pipeline_id  # We don't do anything with this id.
     task_id = callback_params['task_id']
     assert task_id
+
     step_name = callback_params['step_name']
     call_args = callback_params['call_args']
     deadline = callback_params['deadline']
@@ -328,7 +348,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
 
     # Guarantee one callback 10 minutes after the deadline to clean up even if
     # Swarming fails to call us back.
-    self.delay_callback((timeout_hours * 60 + 10) * 60, self.last_params)
+    self.delay_callback((timeout_hours * 60 + 10) * 60, self.last_params,
+                        name=task_id + '_cleanup_task')
 
     # Run immediately in case the task already went from scheduled to started.
     self.callback(callback_params=self.last_params)

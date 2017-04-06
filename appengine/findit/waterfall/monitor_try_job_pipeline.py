@@ -6,6 +6,7 @@ import json
 import logging
 import time
 
+from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
 from common import constants
@@ -329,16 +330,35 @@ class MonitorTryJobPipeline(BasePipeline):
 
     # Guarantee one callback 10 minutes after the deadline to clean up even if
     # buildbucket fails to call us back.
-    self.delay_callback((timeout_hours * 60 + 10) * 60, self.last_params)
+    self.delay_callback(
+        (timeout_hours * 60 + 10) * 60,
+        self.last_params,
+        name=try_job_id + '_cleanup_task')
 
     # Run immediately in case the job already went from scheduled to started.
     self.callback(callback_params=self.last_params)
 
-  def delay_callback(self, countdown, callback_params):
+  def finalized(self):
+    try:
+      try_job_id = self.kwargs.get('try_job_id')
+      if not try_job_id and len(self.args) > 2:
+        try_job_id = self.args[2]
+      if try_job_id:
+        taskqueue.Queue(
+            constants.WATERFALL_ANALYSIS_QUEUE).delete_tasks_by_name([
+                try_job_id + '_cleanup_task'])
+      else:
+        logging.error('Did not receive a try_job_id at construction.')
+    except taskqueue.BadTaskStateError, e:  # pragma: no cover
+      logging.debug('Could not delete cleanup task: %s', e.message)
+    return super(MonitorTryJobPipeline, self).finalized()
+
+  def delay_callback(self, countdown, callback_params, name=None):
     target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
     task = self.get_callback_task(
         countdown=countdown, target=target,
-        params={'callback_params': json.dumps(callback_params)})
+        params={'callback_params': json.dumps(callback_params)},
+        name=name)
     task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
   # Arguments number differs from overridden method - pylint: disable=W0221

@@ -157,6 +157,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    pipeline.finalized()
     compile_result = pipeline.outputs.default.value
 
     expected_compile_result = {
@@ -236,6 +237,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    pipeline.finalized()
     compile_result = pipeline.outputs.default.value
 
     expected_compile_result = {
@@ -357,6 +359,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    pipeline.finalized()
     test_result = pipeline.outputs.default.value
 
     expected_test_result = {
@@ -485,6 +488,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    pipeline.finalized()
     test_result = pipeline.outputs.default.value
 
     expected_test_result = {
@@ -574,6 +578,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    pipeline.finalized()
     flake_result = pipeline.outputs.default.value
 
     expected_flake_result = {
@@ -796,6 +801,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    pipeline.finalized()
     test_result = pipeline.outputs.default.value
     self.assertIsNone(test_result)
 
@@ -847,13 +853,16 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         (None, buildbucket_client.BuildbucketBuild(build_response))]
     mock_report.return_value = json.dumps(report)
 
-    pipeline = MonitorTryJobPipeline()
+    pipeline = MonitorTryJobPipeline(
+        try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
     pipeline.start_test()
-    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
+    pipeline.run(
+        try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
     pipeline.callback(**pipeline.last_params)
 
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    pipeline.finalized()
     compile_result = pipeline.outputs.default.value
 
     expected_compile_result = {
