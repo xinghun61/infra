@@ -124,7 +124,7 @@ class IssueBulkEditTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.append(fd)
 
     page_data = self.servlet.GatherPageData(mr)
@@ -258,7 +258,7 @@ class IssueBulkEditTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         12345, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.append(fd)
 
     post_data = fake.PostData(

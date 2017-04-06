@@ -21,6 +21,7 @@ from proto import tracker_pb2
 from proto import user_pb2
 from proto import usergroup_pb2
 from services import caches
+from services import config_svc
 from services import features_svc
 from services import issue_svc
 from services import project_svc
@@ -958,7 +959,7 @@ class ConfigService(object):
       self, cnxn, project_id, field_name, field_type_str, applic_type,
       applic_pred, is_required, is_niche, is_multivalued,
       min_value, max_value, regex, needs_member, needs_perm,
-      grants_perm, notify_on, docstring, admin_ids):
+      grants_perm, notify_on, date_action_str, docstring, admin_ids):
     config = self.GetProjectConfig(cnxn, project_id)
     field_type = tracker_pb2.FieldTypes(field_type_str)
     field_id = self.next_field_id
@@ -966,7 +967,8 @@ class ConfigService(object):
     fd = tracker_bizobj.MakeFieldDef(
         field_id, project_id, field_name, field_type, applic_type, applic_pred,
         is_required, is_niche, is_multivalued, min_value, max_value, regex,
-        needs_member, needs_perm, grants_perm, notify_on, docstring, False)
+        needs_member, needs_perm, grants_perm, notify_on, date_action_str,
+        docstring, False)
     config.field_defs.append(fd)
     self.StoreConfig(cnxn, config)
 
@@ -981,7 +983,7 @@ class ConfigService(object):
       applicable_type=None, applicable_predicate=None, is_required=None,
       is_niche=None, is_multivalued=None, min_value=None, max_value=None,
       regex=None, needs_member=None, needs_perm=None, grants_perm=None,
-      notify_on=None, docstring=None, admin_ids=None):
+      notify_on=None, date_action=None, docstring=None, admin_ids=None):
     config = self.GetProjectConfig(cnxn, project_id)
     fd = tracker_bizobj.FindFieldDefByID(field_id, config)
     # pylint: disable=multiple-statements
@@ -995,6 +997,8 @@ class ConfigService(object):
     if min_value is not None: fd.min_value = min_value
     if max_value is not None: fd.max_value = max_value
     if regex is not None: fd.regex = regex
+    if date_action is not None:
+      fd.date_action = config_svc.DATE_ACTION_ENUM.index(date_action)
     if docstring is not None: fd.docstring = docstring
     if admin_ids is not None: fd.admin_ids = admin_ids
     self.StoreConfig(cnxn, config)

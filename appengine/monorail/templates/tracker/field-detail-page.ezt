@@ -180,6 +180,22 @@
     </tr>
   [end]
 
+  [is field_def.type_name "DATE_TYPE"]
+    <tr id="date_row">
+      <th>Action:</th>
+      <td>
+        <select name="date_action">
+          <option value="no_action" [is field_def.date_action_str "no_action"]selected="selected"[end]
+                  >No action</option>
+          <option value="ping_owner_only" [is field_def.date_action_str "ping_owner_only"]selected="selected"[end]
+                  >Post a "ping" comment and notify the issue owner</option>
+          <option value="ping_participants" [is field_def.date_action_str "ping_participants"]selected="selected"[end]
+                  >Post a "ping" comment and notify all issue participants</option>
+        </select>
+      </td>
+    </tr>
+  [end]
+
   <th>Admins:</th>
     <td>
       [if-any allow_edit]

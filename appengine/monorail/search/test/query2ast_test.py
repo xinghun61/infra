@@ -484,11 +484,11 @@ class QueryParsingUnitTest(unittest.TestCase):
     fd1 = tracker_bizobj.MakeFieldDef(
         1, self.project_id, 'Size', tracker_pb2.FieldTypes.ENUM_TYPE,
         'applic', 'applic', False, False, False, None, None, None, False, None,
-        None, None, 'doc', False)
+        None, None, 'no_action', 'doc', False)
     fd2 = tracker_bizobj.MakeFieldDef(
         1, self.project_id, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE,
         'applic', 'applic', False, False, False, None, None, None, False, None,
-        None, None, 'doc', False)
+        None, None, 'no_action', 'doc', False)
     self.default_config.field_defs.extend([fd1, fd2])
     ast = query2ast.ParseUserQuery(
         'Size:Small EstDays>3', '', BUILTIN_ISSUE_FIELDS, self.default_config)

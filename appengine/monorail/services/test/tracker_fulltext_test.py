@@ -101,20 +101,20 @@ class TrackerFulltextTest(unittest.TestCase):
     int_field = tracker_bizobj.MakeFieldDef(
         1, 123, 'CustomInt', tracker_pb2.FieldTypes.INT_TYPE, None, False,
         False, False, None, None, None, None, False, None, None, None,
-        'A custom int field', False)
+        'no_action', 'A custom int field', False)
     int_field_value = tracker_bizobj.MakeFieldValue(
         1, 42, None, None, False, None)
     str_field = tracker_bizobj.MakeFieldDef(
         2, 123, 'CustomStr', tracker_pb2.FieldTypes.STR_TYPE, None, False,
         False, False, None, None, None, None, False, None, None, None,
-        'A custom string field', False)
+        'no_action', 'A custom string field', False)
     str_field_value = tracker_bizobj.MakeFieldValue(
         2, None, 'Greetings', None, None, False)
     # TODO(jrobbins): user-type field 3
     date_field = tracker_bizobj.MakeFieldDef(
         4, 123, 'CustomDate', tracker_pb2.FieldTypes.DATE_TYPE, None, False,
         False, False, None, None, None, None, False, None, None, None,
-        'A custom date field', False)
+        'no_action', 'A custom date field', False)
     date_field_value = tracker_bizobj.MakeFieldValue(
         4, None, None, None, 1234567890, False)
     config.field_defs.extend([int_field, str_field, date_field])

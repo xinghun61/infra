@@ -153,13 +153,15 @@ class FieldHelpersTest(unittest.TestCase):
         tracker_bizobj.MakeFieldDef(
             123, 789, 'Component', tracker_pb2.FieldTypes.ENUM_TYPE, None,
             '', False, False, False, None, None, '', False, '', '',
-            tracker_pb2.NotifyTriggers.NEVER, 'What HW part is affected?',
+            tracker_pb2.NotifyTriggers.NEVER,
+            'no_action', 'What HW part is affected?',
             False))
     self.config.field_defs.append(
         tracker_bizobj.MakeFieldDef(
             234, 789, 'Size', tracker_pb2.FieldTypes.ENUM_TYPE, None,
             '', False, False, False, None, None, '', False, '', '',
-            tracker_pb2.NotifyTriggers.NEVER, 'How big is this work item?',
+            tracker_pb2.NotifyTriggers.NEVER,
+            'no_action', 'How big is this work item?',
             False))
     labels = ['Security', 'Performance', 'Pri-1', 'M-2']
     labels_remove = ['ReleaseBlock']
@@ -179,7 +181,7 @@ class FieldHelpersTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'Foo', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     fv = field_helpers._ParseOneFieldValue(
         self.mr.cnxn, self.services.user, fd, '8675309')
     self.assertEqual(fv.field_id, 123)
@@ -189,7 +191,7 @@ class FieldHelpersTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'Foo', tracker_pb2.FieldTypes.STR_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     fv = field_helpers._ParseOneFieldValue(
         self.mr.cnxn, self.services.user, fd, '8675309')
     self.assertEqual(fv.field_id, 123)
@@ -200,7 +202,7 @@ class FieldHelpersTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'Foo', tracker_pb2.FieldTypes.USER_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     fv = field_helpers._ParseOneFieldValue(
         self.mr.cnxn, self.services.user, fd, 'user@example.com')
     self.assertEqual(fv.field_id, 123)
@@ -210,7 +212,7 @@ class FieldHelpersTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'Deadline', tracker_pb2.FieldTypes.DATE_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     fv = field_helpers._ParseOneFieldValue(
         self.mr.cnxn, self.services.user, fd, '2009-02-13')
     self.assertEqual(fv.field_id, 123)
@@ -226,11 +228,11 @@ class FieldHelpersTest(unittest.TestCase):
     fd_int = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     fd_date = tracker_bizobj.MakeFieldDef(
         124, 789, 'Deadline', tracker_pb2.FieldTypes.DATE_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.extend([fd_int, fd_date])
     field_val_strs = {
         123: ['80386', '68040'],
@@ -247,7 +249,7 @@ class FieldHelpersTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     fv = tracker_bizobj.MakeFieldValue(123, 8086, None, None, None, False)
     msg = field_helpers._ValidateOneCustomField(
         self.mr, self.services, fd, fv)
@@ -268,7 +270,7 @@ class FieldHelpersTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.STR_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     fv = tracker_bizobj.MakeFieldValue(123, None, 'i386', None, None, False)
     msg = field_helpers._ValidateOneCustomField(
         self.mr, self.services, fd, fv)
@@ -295,7 +297,7 @@ class FieldHelpersTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'Deadline', tracker_pb2.FieldTypes.DATE_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     fv = tracker_bizobj.MakeFieldValue(
         123, None, None, None, 1234567890, False)
     msg = field_helpers._ValidateOneCustomField(
@@ -311,7 +313,7 @@ class FieldHelpersTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.append(fd)
     fv1 = tracker_bizobj.MakeFieldValue(123, 8086, None, None, None, False)
     fv2 = tracker_bizobj.MakeFieldValue(123, 486, None, None, None, False)
@@ -324,7 +326,7 @@ class FieldHelpersTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.append(fd)
     fv1 = tracker_bizobj.MakeFieldValue(123, 8086, None, None, None, False)
     fv2 = tracker_bizobj.MakeFieldValue(123, 486, None, None, None, False)

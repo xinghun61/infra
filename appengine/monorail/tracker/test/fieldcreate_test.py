@@ -69,6 +69,7 @@ class FieldCreateTest(unittest.TestCase):
         is_multivalued=['Yes'],
         docstring=['It is just some field'],
         applicable_type=['Defect'],
+        date_action=['no_action'],
         admin_names=[''])
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('/adminLabels?saved=1&' in url)
@@ -118,7 +119,7 @@ class CheckFieldNameJSONTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.append(fd)
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project, perms=permissions.OWNER_ACTIVE_PERMISSIONSET,
@@ -169,7 +170,7 @@ class FieldCreateMethodsTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'CPU', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.append(fd)
     self.assertEqual(
         'That name is already in use.',
@@ -179,7 +180,7 @@ class FieldCreateMethodsTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'sign-off', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.append(fd)
     self.assertEqual(
         'That name is a prefix of an existing field name.',
@@ -189,7 +190,7 @@ class FieldCreateMethodsTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         123, 789, 'opt', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
-        tracker_pb2.NotifyTriggers.NEVER, 'doc', False)
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
     self.config.field_defs.append(fd)
     self.assertEqual(
         'An existing field name is a prefix of that name.',

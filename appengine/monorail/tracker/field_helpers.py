@@ -27,7 +27,7 @@ ParsedFieldDef = collections.namedtuple(
     'field_name, field_type_str, min_value, max_value, regex, '
     'needs_member, needs_perm, grants_perm, notify_on, is_required, '
     'is_niche, importance, is_multivalued, field_docstring, choices_text, '
-    'applicable_type, applicable_predicate, revised_labels')
+    'applicable_type, applicable_predicate, revised_labels, date_action_str')
 
 
 def ParseFieldDefRequest(post_data, config):
@@ -64,12 +64,13 @@ def ParseFieldDefRequest(post_data, config):
   applicable_predicate = ''  # TODO(jrobbins): placeholder for future feature
   revised_labels = _ParseChoicesIntoWellKnownLabels(
       choices_text, field_name, config)
+  date_action_str = post_data.get('date_action')
 
   return ParsedFieldDef(
       field_name, field_type_str, min_value, max_value, regex,
       needs_member, needs_perm, grants_perm, notify_on, is_required, is_niche,
       importance, is_multivalued, field_docstring, choices_text,
-      applicable_type, applicable_predicate, revised_labels)
+      applicable_type, applicable_predicate, revised_labels, date_action_str)
 
 
 def _ParseChoicesIntoWellKnownLabels(choices_text, field_name, config):

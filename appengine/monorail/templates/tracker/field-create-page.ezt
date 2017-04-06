@@ -133,13 +133,22 @@
   </tr>
 
   <tr id="date_row" style="display:none">
-    [# TODO(jrobbins): date validation options, e.g., min, max, non-past. ]
-  </tr>
-  <tr id="date_row2" style="display:none">
-    [# TODO(jrobbins): date notification options, i.e., nagging. ]
+    <th>Action:</th>
+    <td>
+      When this date arrives:
+      <select name="date_action">
+        <option value="no_action" [is initial_date_action "no_action"]selected="selected"[end]
+                >No action</option>
+        <option value="ping_owner_only" [is initial_date_action "ping_owner_only"]selected="selected"[end]
+                >Post a "ping" comment and notify the issue owner</option>
+        <option value="ping_participants" [is initial_date_action "ping_participants"]selected="selected"[end]
+                >Post a "ping" comment and notify all issue participants</option>
+      </select>
+    </td>
   </tr>
 
-  <th>Admins:</th>
+  <tr>
+    <th>Admins:</th>
     <td>
       <input id="member_admins" name="admin_names" size="75" value="[initial_admins]"
              autocomplete="off" class="acob">
@@ -212,7 +221,6 @@ runOnLoad(function() {
 
     var date_row_display = (new_type == 'date_type') ? '' : 'none';
     document.getElementById('date_row').style.display = date_row_display;
-    document.getElementById('date_row2').style.display = date_row_display;
   }
 
   var type_select = document.getElementById('field_type');

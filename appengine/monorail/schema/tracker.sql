@@ -116,6 +116,8 @@ CREATE TABLE FieldDef (
   grants_perm VARCHAR(80),  -- User named in this field gains this perm in the issue
   -- notification options for user_type fields
   notify_on ENUM ('never', 'any_comment') DEFAULT 'never' NOT NULL,
+  -- notification options for date_type fields
+  date_action ENUM ('no_action', 'ping_owner_only', 'ping_participants'),
 
   -- TODO(jrobbins): default value
   -- TODO(jrobbins): deprecated boolean?

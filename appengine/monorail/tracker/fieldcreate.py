@@ -65,6 +65,7 @@ class FieldCreate(servlet.Servlet):
         'initial_needs_perm': '',
         'initial_grants_perm': '',
         'initial_notify_on': 0,
+        'initial_date_action': 'no_action',
         'well_known_issue_types': well_known_issue_types,
         }
 
@@ -114,6 +115,7 @@ class FieldCreate(servlet.Servlet):
           initial_is_multivalued=ezt.boolean(parsed.is_multivalued),
           initial_grants_perm=parsed.grants_perm,
           initial_notify_on=parsed.notify_on,
+          initial_date_action=parsed.date_action_str,
           initial_choices=parsed.choices_text,
           initial_admins=admin_str)
       return
@@ -125,7 +127,7 @@ class FieldCreate(servlet.Servlet):
         parsed.is_required, parsed.is_niche, parsed.is_multivalued,
         parsed.min_value, parsed.max_value, parsed.regex, parsed.needs_member,
         parsed.needs_perm, parsed.grants_perm, parsed.notify_on,
-        parsed.field_docstring, admin_ids)
+        parsed.date_action_str, parsed.field_docstring, admin_ids)
     if parsed.field_type_str == 'enum_type':
       self.services.config.UpdateConfig(
           mr.cnxn, mr.project, well_known_labels=parsed.revised_labels)

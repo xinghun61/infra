@@ -736,6 +736,8 @@ class FieldDefView(template_helpers.PBProxy):
           'Value must be a project member with permission %s' %
           field_def.needs_perm)
 
+    self.date_action_str = str(field_def.date_action or 'no_action').lower()
+
     self.admins = []
     if user_views:
       self.admins = [user_views.get(admin_id)

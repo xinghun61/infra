@@ -253,6 +253,13 @@ class FieldTypes(messages.Enum):
   # TODO(jrobbins): more types, see tracker.sql for all TODOs.
 
 
+class DateAction(messages.Enum):
+  """What to do when a date field value arrives."""
+  NO_ACTION = 0
+  PING_OWNER_ONLY = 1
+  PING_PARTICIPANTS = 2
+
+
 class FieldDef(messages.Message):
   """This PB stores info about one custom field definition."""
   field_id = messages.IntegerField(1, required=True)
@@ -280,6 +287,9 @@ class FieldDef(messages.Message):
   # semantics for user_type fields
   grants_perm = messages.StringField(17)
   notify_on = messages.EnumField(NotifyTriggers, 18)
+
+  # semantics for date_type fields
+  date_action = messages.EnumField(DateAction, 20)
 
 
 class ComponentDef(messages.Message):

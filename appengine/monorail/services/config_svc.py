@@ -64,7 +64,7 @@ FIELDDEF_COLS = [
     'id', 'project_id', 'rank', 'field_name', 'field_type', 'applicable_type',
     'applicable_predicate', 'is_required', 'is_niche', 'is_multivalued',
     'min_value', 'max_value', 'regex', 'needs_member', 'needs_perm',
-    'grants_perm', 'notify_on', 'docstring', 'is_deleted']
+    'grants_perm', 'notify_on', 'date_action', 'docstring', 'is_deleted']
 FIELDDEF2ADMIN_COLS = ['field_id', 'admin_id']
 COMPONENTDEF_COLS = ['id', 'project_id', 'path', 'docstring', 'deprecated',
                      'created', 'creator_id', 'modified', 'modifier_id']
@@ -73,6 +73,7 @@ COMPONENT2CC_COLS = ['component_id', 'cc_id']
 COMPONENT2LABEL_COLS = ['component_id', 'label_id']
 
 NOTIFY_ON_ENUM = ['never', 'any_comment']
+DATE_ACTION_ENUM = ['no_action', 'ping_owner_only', 'ping_participants']
 
 
 class LabelRowTwoLevelCache(caches.AbstractTwoLevelCache):
@@ -162,7 +163,8 @@ class FieldRowTwoLevelCache(caches.AbstractTwoLevelCache):
     for (field_id, project_id, rank, field_name, _field_type, _applicable_type,
          _applicable_predicate, _is_required, _is_niche, _is_multivalued,
          _min_value, _max_value, _regex, _needs_member, _needs_perm,
-         _grants_perm, _notify_on, docstring, _is_deleted) in field_def_rows:
+         _grants_perm, _notify_on, _date_action, docstring,
+         _is_deleted) in field_def_rows:
       result_dict[project_id].append(
           (field_id, project_id, rank, field_name, docstring))
 
@@ -237,18 +239,23 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
     (field_id, project_id, _rank, field_name, field_type,
      applic_type, applic_pred, is_required, is_niche, is_multivalued,
      min_value, max_value, regex, needs_member, needs_perm,
-     grants_perm, notify_on_str, docstring, is_deleted) = fielddef_row
+     grants_perm, notify_on_str, date_action_str, docstring,
+     is_deleted) = fielddef_row
     if notify_on_str == 'any_comment':
       notify_on = tracker_pb2.NotifyTriggers.ANY_COMMENT
     else:
       notify_on = tracker_pb2.NotifyTriggers.NEVER
+    try:
+      date_action = DATE_ACTION_ENUM.index(date_action_str)
+    except ValueError:
+      date_action = DATE_ACTION_ENUM.index('no_action')
 
     return tracker_bizobj.MakeFieldDef(
         field_id, project_id, field_name,
         tracker_pb2.FieldTypes(field_type.upper()), applic_type, applic_pred,
         is_required, is_niche, is_multivalued, min_value, max_value, regex,
-        needs_member, needs_perm, grants_perm, notify_on, docstring,
-        is_deleted)
+        needs_member, needs_perm, grants_perm, notify_on, date_action,
+        docstring, is_deleted)
 
   def _UnpackComponentDef(
       self, cd_row, component2admin_rows, component2cc_rows,
@@ -1056,7 +1063,7 @@ class ConfigService(object):
       self, cnxn, project_id, field_name, field_type_str, applic_type,
       applic_pred, is_required, is_niche, is_multivalued,
       min_value, max_value, regex, needs_member, needs_perm,
-      grants_perm, notify_on, docstring, admin_ids):
+      grants_perm, notify_on, date_action_str, docstring, admin_ids):
     """Create a new field definition with the given info.
 
     Args:
@@ -1077,6 +1084,7 @@ class ConfigService(object):
       needs_perm: optional validation for user_type fields.
       grants_perm: optional string for perm to grant any user named in field.
       notify_on: int enum of when to notify users named in field.
+      date_action_str: string saying who to notify when a date arrives.
       docstring: string describing this field.
       admin_ids: list of additional user IDs who can edit this field def.
 
@@ -1085,6 +1093,7 @@ class ConfigService(object):
     """
     assert not (is_required and is_niche), (
         'A field cannot be both requrired and niche')
+    assert date_action_str in DATE_ACTION_ENUM
     field_id = self.fielddef_tbl.InsertRow(
         cnxn, project_id=project_id,
         field_name=field_name, field_type=field_type_str,
@@ -1094,7 +1103,7 @@ class ConfigService(object):
         min_value=min_value, max_value=max_value, regex=regex,
         needs_member=needs_member, needs_perm=needs_perm,
         grants_perm=grants_perm, notify_on=NOTIFY_ON_ENUM[notify_on],
-        docstring=docstring, commit=False)
+        date_action=date_action_str, docstring=docstring, commit=False)
     self.fielddef2admin_tbl.InsertRows(
         cnxn, FIELDDEF2ADMIN_COLS,
         [(field_id, admin_id) for admin_id in admin_ids],
@@ -1173,7 +1182,7 @@ class ConfigService(object):
       applicable_type=None, applicable_predicate=None, is_required=None,
       is_niche=None, is_multivalued=None, min_value=None, max_value=None,
       regex=None, needs_member=None, needs_perm=None, grants_perm=None,
-      notify_on=None, docstring=None, admin_ids=None):
+      notify_on=None, date_action=None, docstring=None, admin_ids=None):
     """Update the specified field definition."""
     new_values = {}
     if field_name is not None:
@@ -1202,6 +1211,9 @@ class ConfigService(object):
       new_values['grants_perm'] = grants_perm
     if notify_on is not None:
       new_values['notify_on'] = NOTIFY_ON_ENUM[notify_on]
+    if date_action is not None:
+      assert date_action in DATE_ACTION_ENUM
+      new_values['date_action'] = date_action
     if docstring is not None:
       new_values['docstring'] = docstring
 

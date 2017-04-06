@@ -149,6 +149,7 @@ class FieldDetail(servlet.Servlet):
         regex=parsed.regex, needs_member=parsed.needs_member,
         needs_perm=parsed.needs_perm, grants_perm=parsed.grants_perm,
         notify_on=parsed.notify_on, is_multivalued=parsed.is_multivalued,
+        date_action=parsed.date_action_str,
         docstring=parsed.field_docstring, admin_ids=admin_ids)
     self.services.config.UpdateConfig(
         mr.cnxn, mr.project, well_known_labels=parsed.revised_labels)

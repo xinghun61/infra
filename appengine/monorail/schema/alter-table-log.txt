@@ -1086,3 +1086,10 @@ ALTER TABLE Hotlist2Issue ADD COLUMN note TEXT;
 2017-02-23: Add 'is_niche' column to FieldDef table.
 
 ALTER TABLE FieldDef ADD COLUMN is_niche BOOLEAN;
+
+
+================================================================
+2017-03-05: Add 'ping_who' column to FieldDef table.
+
+ALTER TABLE FieldDef
+  ADD COLUMN date_action ENUM ('no_action', 'ping_owner_only', 'ping_participants');

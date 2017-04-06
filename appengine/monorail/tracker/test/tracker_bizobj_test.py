@@ -174,21 +174,21 @@ class BizobjTest(unittest.TestCase):
     fd = tracker_bizobj.MakeFieldDef(
         1, 789, 'Size', tracker_pb2.FieldTypes.USER_TYPE, None, None,
         False, False, False, None, None, None, False,
-        None, None, None, 'Some field', False)
+        None, None, None, 'no_action', 'Some field', False)
     self.assertEqual(1, fd.field_id)
 
   def testMakeFieldDef_Full(self):
     fd = tracker_bizobj.MakeFieldDef(
         1, 789, 'Size', tracker_pb2.FieldTypes.INT_TYPE, None, None,
         False, False, False, 1, 100, None, False,
-        None, None, None, 'Some field', False)
+        None, None, None, 'no_action', 'Some field', False)
     self.assertEqual(1, fd.min_value)
     self.assertEqual(100, fd.max_value)
 
     fd = tracker_bizobj.MakeFieldDef(
         1, 789, 'Size', tracker_pb2.FieldTypes.STR_TYPE, None, None,
         False, False, False, None, None, 'A.*Z', False,
-        'EditIssue', None, None, 'Some field', False)
+        'EditIssue', None, None, 'no_action', 'Some field', False)
     self.assertEqual('A.*Z', fd.regex)
     self.assertEqual('EditIssue', fd.needs_perm)
 
