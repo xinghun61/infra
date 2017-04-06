@@ -201,16 +201,15 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	//
 	// This operation is destructive, as the normalized result uses the same
 	// backing array as the initial path slice.
-	normalizePathSlice := func(flag string, sp *stringlistflag.Flag) error {
+	normalizePathSlice := func(sp *stringlistflag.Flag) error {
 		s := *sp
 		seen := make(map[string]struct{}, len(s))
 		normalized := s[:0]
 		for _, p := range s {
 			p := filepath.FromSlash(p)
 			if err := filesystem.AbsPath(&p); err != nil {
-				return userError("invalid %s %q: %s", flag, p, err)
+				return err
 			}
-
 			if _, ok := seen[p]; ok {
 				continue
 			}
@@ -223,16 +222,21 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	}
 
 	// Normalize c.PythonPaths
-	if err := normalizePathSlice("-python-path", &c.PythonPaths); err != nil {
+	if err := normalizePathSlice(&c.PythonPaths); err != nil {
 		return err
 	}
 
 	// Normalize c.PrefixPathENV
-	if err := normalizePathSlice("-prefix-path-env", &c.PrefixPathENV); err != nil {
+	if err := normalizePathSlice(&c.PrefixPathENV); err != nil {
 		return err
 	}
 
-	c.TempDir = filepath.FromSlash(c.TempDir)
+	if c.TempDir != "" {
+		c.TempDir = filepath.FromSlash(c.TempDir)
+		if err := filesystem.AbsPath(&c.TempDir); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -345,11 +349,10 @@ func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 			continue
 		}
 		native := filepath.FromSlash(p.path)
-		abs, err := filepath.Abs(native)
-		if err != nil {
-			return nil, userError("invalid -python-path %q: cannot make it absolute: %s", native, err)
+		if err := filesystem.AbsPath(&native); err != nil {
+			return nil, err
 		}
-		props[p.name] = abs
+		props[p.name] = native
 	}
 
 	return props, nil
