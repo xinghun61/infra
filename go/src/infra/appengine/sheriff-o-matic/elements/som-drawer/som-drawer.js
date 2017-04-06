@@ -48,8 +48,13 @@
           return [];
         },
       },
-      _trooper: String,
-      trees: {
+      _trooperRotations: String,
+      _troopers: {
+        type: Array,
+        computed: '_computeTroopers(_trooperRotations)',
+        value: null,
+      },
+       trees: {
         type: Object,
         notify: true,
         computed: '_computeTrees(_treeList)',
@@ -173,6 +178,22 @@
         }
       }
       return trees;
+    },
+
+    _computeTroopers(trooperRotations) {
+      if (!trooperRotations) {
+        return [];
+      }
+
+      let troopers = trooperRotations.split(',');
+      troopers[0] = troopers[0]  + ' (primary)';
+      if (troopers.length == 1) {
+        return troopers;
+      }
+      troopers.slice(1).forEach(function(trooper, i) {
+        troopers[i+1] = trooper + ' (secondary)';
+      });
+      return troopers;
     },
 
     _formatDate(date) {

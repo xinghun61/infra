@@ -63,7 +63,7 @@
         auto
         url="https://build.chromium.org/p/chromium/current_trooper.txt"
         handle-as="text"
-        last-response="{{_trooper}}"
+        last-response="{{_trooperRotations}}"
     ></iron-ajax>
     <iron-ajax
         id="fetchSheriffs"
@@ -96,7 +96,9 @@
     <div class="vertical layout">
       <label>Trooper (<a href="http://go/bugatrooper" target="_blank">go/bugatrooper</a>)</label>
       <ul id="currentTroopers">
-        <li>[[_trooper]]</li>
+        <template is="dom-repeat" items="[[_troopers]]" as="trooper">
+          <li>[[trooper]]</li>
+        </template>
       </ul>
 
       <template is="dom-if" if="[[_sheriffs]]">

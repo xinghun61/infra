@@ -54,10 +54,21 @@
     });
 
     test('renders current trooper', function(done) {
-      element._trooper = 'faketrooper';
+      element._trooperRotations = 'faketrooper';
       flush(function () {
-        assert.equal('faketrooper',
+        assert.equal('faketrooper (primary)',
           element.$.currentTroopers.textContent.trim());
+        done();
+      });
+    });
+
+    test('renders primary/secondary troopers', function(done) {
+      element._trooperRotations = 'faketrooper,troopertoo';
+      flush(function () {
+        let troopers = element.$.currentTroopers.querySelectorAll('li');
+        assert.equal(2, troopers.length);
+        assert.equal('faketrooper (primary)', troopers[0].textContent.trim());
+        assert.equal('troopertoo (secondary)', troopers[1].textContent.trim());
         done();
       });
     });
@@ -68,7 +79,7 @@
       server.respond();
 
       flush(function () {
-        assert.equal('helloworld', element._trooper);
+        assert.equal('helloworld (primary)', element._troopers);
         done();
       });
     });
