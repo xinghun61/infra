@@ -7,8 +7,8 @@ import logging
 from common import constants
 from gae_libs import appengine_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from libs import analysis_status
 from libs import time_util
-from model import analysis_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import buildbot
 from waterfall import waterfall_config

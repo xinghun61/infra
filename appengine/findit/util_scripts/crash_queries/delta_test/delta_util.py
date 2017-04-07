@@ -23,8 +23,6 @@ script_util.SetUpSystemPaths()
 
 from gae_libs import appengine_util
 
-# TODO(crbug.com/662540): Add unittests.
-
 # TODO(katesonia): move host to predator host after migration.
 _FEEDBACK_URL_TEMPLATE = (
     'https://%s.appspot.com/crash/%s-result-feedback?key=%s')

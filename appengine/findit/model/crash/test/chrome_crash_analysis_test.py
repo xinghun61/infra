@@ -6,7 +6,7 @@ from datetime import datetime
 
 from crash.chrome_crash_data import ChromeCrashData
 from crash.test.predator_testcase import PredatorTestCase
-from model import analysis_status
+from libs import analysis_status
 from model import result_status
 from model.crash.chrome_crash_analysis import ChromeCrashAnalysis
 

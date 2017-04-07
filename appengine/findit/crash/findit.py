@@ -14,8 +14,8 @@ from crash.component_classifier import ComponentClassifier
 from crash.project import Project
 from crash.project_classifier import ProjectClassifier
 from gae_libs import appengine_util
+from libs import analysis_status
 from libs import time_util
-from model import analysis_status
 
 
 # TODO(http://crbug.com/659346): since most of our unit tests are

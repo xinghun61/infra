@@ -7,7 +7,7 @@ from datetime import timedelta
 import mock
 
 from common.waterfall import failure_type
-from model import analysis_status
+from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_failure_group import WfFailureGroup

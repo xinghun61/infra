@@ -12,7 +12,7 @@ from google.appengine.api import users
 
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
-from model import analysis_status
+from libs import analysis_status
 
 
 def _UpdateSuspectedFlakeAnalysis(key_urlsafe, triage_result, user_name):

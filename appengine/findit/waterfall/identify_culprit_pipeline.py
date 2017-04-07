@@ -3,9 +3,9 @@
 # found in the LICENSE file.
 
 from gae_libs.pipeline_wrapper import BasePipeline
+from libs import analysis_status
 from libs import time_util
 from model import analysis_approach_type
-from model import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from waterfall import build_failure_analysis

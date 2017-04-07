@@ -8,8 +8,8 @@ import webapp2
 from testing_utils import testing
 
 from handlers import list_analyses
+from libs import analysis_status
 from model.wf_analysis import WfAnalysis
-from model import analysis_status
 from model import result_status
 from waterfall import identify_culprit_pipeline
 

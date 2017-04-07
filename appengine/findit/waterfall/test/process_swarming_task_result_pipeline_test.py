@@ -4,7 +4,7 @@
 
 import datetime
 
-from model import analysis_status
+from libs import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util
 from waterfall.process_swarming_task_result_pipeline import (

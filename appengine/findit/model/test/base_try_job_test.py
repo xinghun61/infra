@@ -4,7 +4,7 @@
 
 import unittest
 
-from model import analysis_status
+from libs import analysis_status
 from model.wf_try_job import WfTryJob
 
 

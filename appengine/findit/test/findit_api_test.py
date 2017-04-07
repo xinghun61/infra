@@ -14,8 +14,8 @@ from testing_utils import testing
 
 from common.waterfall import failure_type
 import findit_api
+from libs import analysis_status
 from model import analysis_approach_type
-from model import analysis_status
 from model.base_suspected_cl import RevertCL
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL

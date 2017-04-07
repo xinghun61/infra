@@ -10,8 +10,8 @@ from google.appengine.ext import ndb
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from gae_libs.http import auth_util
+from libs import analysis_status
 from libs import time_util
-from model import analysis_status
 from model import triage_status
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.flake_try_job import FlakeTryJob

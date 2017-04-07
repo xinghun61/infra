@@ -7,7 +7,7 @@ from datetime import datetime
 from crash.clusterfuzz_data import ClusterfuzzData
 from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
-from model import analysis_status
+from libs import analysis_status
 from model import result_status
 from model.crash.clusterfuzz_analysis import ClusterfuzzAnalysis
 

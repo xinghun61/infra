@@ -6,7 +6,7 @@ import datetime
 import mock
 
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from model import analysis_status
+from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util

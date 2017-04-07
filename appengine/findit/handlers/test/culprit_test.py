@@ -9,8 +9,8 @@ import webapp2
 from testing_utils import testing
 
 from handlers import culprit
+from libs import analysis_status as status
 from model import analysis_approach_type
-from model import analysis_status as status
 from model.wf_culprit import WfCulprit
 from model.wf_suspected_cl import WfSuspectedCL
 

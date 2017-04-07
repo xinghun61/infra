@@ -4,7 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from model import analysis_status as status
+from libs import analysis_status as status
 from model.base_suspected_cl import BaseSuspectedCL
 
 

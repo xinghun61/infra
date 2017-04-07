@@ -6,8 +6,8 @@ import datetime
 import urlparse
 
 from infra_api_clients.codereview.rietveld import Rietveld
+from libs import analysis_status as status
 from libs.gitiles.gitiles_repository import GitilesRepository
-from model import analysis_status as status
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_util
 from waterfall import create_revert_cl_pipeline

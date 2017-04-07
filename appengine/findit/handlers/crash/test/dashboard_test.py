@@ -14,8 +14,8 @@ from testing_utils import testing
 
 from gae_libs import dashboard_util
 from handlers.crash import dashboard
+from libs import analysis_status
 from libs import time_util
-from model import analysis_status
 from model import result_status
 from model import triage_status
 from model.crash.chrome_crash_analysis import ChromeCrashAnalysis

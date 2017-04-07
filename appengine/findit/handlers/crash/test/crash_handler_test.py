@@ -19,8 +19,8 @@ from crash.findit_for_chromecrash import FinditForFracas
 from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
 from handlers.crash import crash_handler
+from libs import analysis_status
 from libs.gitiles import gitiles_repository
-from model import analysis_status
 from model.crash.crash_analysis import CrashAnalysis
 from model.crash.crash_config import CrashConfig
 

@@ -14,7 +14,7 @@ from gae_libs.handlers.base_handler import BaseHandler, Permission
 from handlers import handlers_util
 from handlers import result_status
 from handlers.result_status import NO_TRY_JOB_REASON_MAP
-from model import analysis_status
+from libs import analysis_status
 from model import result_status as analysis_result_status
 from model import suspected_cl_status
 from model.result_status import RESULT_STATUS_TO_DESCRIPTION

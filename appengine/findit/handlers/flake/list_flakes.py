@@ -11,8 +11,8 @@ from google.appengine.datastore.datastore_query import Cursor
 from gae_libs import dashboard_util
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
+from libs import analysis_status
 from libs import time_util
-from model import analysis_status
 from model import result_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 

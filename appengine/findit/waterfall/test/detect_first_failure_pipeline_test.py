@@ -12,7 +12,7 @@ import zlib
 from common.waterfall import failure_type
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import pipeline_handlers
-from model import analysis_status
+from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_step import WfStep

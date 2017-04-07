@@ -7,9 +7,9 @@ import mock
 from testing_utils import testing
 
 from common import constants
-from gae_libs.pipeline_wrapper import pipeline_handlers
-from model import analysis_status
+from libs import analysis_status
 from model.wf_analysis import WfAnalysis
+from gae_libs.pipeline_wrapper import pipeline_handlers
 from waterfall import build_failure_analysis_pipelines
 
 

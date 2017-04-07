@@ -4,7 +4,7 @@
 
 from gae_libs.testcase import TestCase
 
-from model import analysis_status
+from libs import analysis_status
 from model.flake.flake_culprit import FlakeCulprit
 
 

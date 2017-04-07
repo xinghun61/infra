@@ -9,7 +9,7 @@ from google.appengine.api import app_identity
 
 from crash.type_enums import CrashClient
 from crash.test.predator_testcase import PredatorTestCase
-from model import analysis_status
+from libs import analysis_status
 from model.crash.cracas_crash_analysis import CracasCrashAnalysis
 from model.crash.crash_analysis import CrashAnalysis
 

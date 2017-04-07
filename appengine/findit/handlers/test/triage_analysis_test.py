@@ -9,7 +9,7 @@ from testing_utils import testing
 import webapp2
 
 from handlers import triage_analysis
-from model import analysis_status
+from libs import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from waterfall import buildbot

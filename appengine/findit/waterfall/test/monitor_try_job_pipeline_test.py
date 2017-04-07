@@ -9,7 +9,7 @@ import mock
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from common.waterfall import try_job_error
-from model import analysis_status
+from libs import analysis_status
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job import WfTryJob

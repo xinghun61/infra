@@ -7,7 +7,7 @@ import os
 from common import constants
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
-from model import analysis_status
+from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from waterfall import analyze_build_failure_pipeline
 from waterfall import buildbot

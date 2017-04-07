@@ -4,7 +4,7 @@
 
 import time
 
-from model import analysis_status
+from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util

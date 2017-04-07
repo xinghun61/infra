@@ -15,7 +15,7 @@ sys.path.insert(1, _REMOTE_API_DIR)
 
 import remote_api
 
-from model import analysis_status
+from libs import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
 
 

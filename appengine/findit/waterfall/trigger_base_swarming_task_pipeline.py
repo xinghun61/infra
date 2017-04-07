@@ -10,8 +10,8 @@ import time
 from common.waterfall.pubsub_callback import MakeSwarmingPubsubCallback
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
+from libs import analysis_status
 from libs import time_util
-from model import analysis_status
 from waterfall import buildbot
 from waterfall import swarming_util
 from waterfall import waterfall_config

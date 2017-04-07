@@ -13,8 +13,8 @@ from google.appengine.api import users
 
 from handlers.flake import check_flake
 from handlers.flake.check_flake import CheckFlake
-from model import analysis_status
-from model.analysis_status import STATUS_TO_DESCRIPTION
+from libs import analysis_status
+from libs.analysis_status import STATUS_TO_DESCRIPTION
 from model.flake.flake_analysis_request import BuildStep
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.flake_culprit import FlakeCulprit

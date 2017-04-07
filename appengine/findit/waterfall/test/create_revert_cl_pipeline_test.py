@@ -12,7 +12,7 @@ from infra_api_clients.codereview.cl_info import ClInfo
 from infra_api_clients.codereview.cl_info import Commit
 from infra_api_clients.codereview.cl_info import Revert
 from infra_api_clients.codereview.rietveld import Rietveld
-from model import analysis_status as status
+from libs import analysis_status as status
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import buildbot

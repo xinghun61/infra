@@ -6,7 +6,7 @@ from collections import defaultdict
 import copy
 
 from handlers import result_status
-from model import analysis_status
+from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob

@@ -6,7 +6,7 @@ import datetime
 import json
 import mock
 
-from model import analysis_status
+from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask

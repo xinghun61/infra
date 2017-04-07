@@ -6,7 +6,7 @@ from google.appengine.ext import ndb
 
 from common import constants
 from common.waterfall import failure_type
-from model import analysis_status
+from libs import analysis_status
 from model import result_status
 from model.base_build_model import BaseBuildModel
 

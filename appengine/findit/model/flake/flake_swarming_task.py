@@ -6,7 +6,7 @@ import base64
 
 from google.appengine.ext import ndb
 
-from model import analysis_status
+from libs import analysis_status
 from model.base_build_model import BaseBuildModel
 from model.base_swarming_task import BaseSwarmingTask
 

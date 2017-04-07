@@ -18,8 +18,8 @@ from gae_libs import appengine_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
+from libs import analysis_status
 from libs import time_util
-from model import analysis_status
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job_data import WfTryJobData
 from waterfall import buildbot

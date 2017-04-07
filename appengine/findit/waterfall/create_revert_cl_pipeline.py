@@ -13,8 +13,8 @@ from common import rotations
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from infra_api_clients.codereview import codereview_util
+from libs import analysis_status as status
 from libs import time_util
-from model import analysis_status as status
 from model.base_suspected_cl import RevertCL
 from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL

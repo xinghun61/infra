@@ -5,7 +5,7 @@
 import mock
 
 from common import constants
-from model import analysis_status
+from libs import analysis_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import buildbot
 from waterfall.flake import initialize_flake_pipeline

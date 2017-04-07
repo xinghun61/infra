@@ -4,7 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from model import analysis_status
+from libs import analysis_status
 
 
 class BaseAnalysis(ndb.Model):

@@ -12,8 +12,8 @@ from crash.stacktrace import CallStack
 from crash.stacktrace import StackFrame
 from crash.stacktrace import Stacktrace
 from handlers.crash import result_feedback
+from libs import analysis_status
 from libs import time_util
-from model import analysis_status
 from model import triage_status
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 from testing_utils import testing

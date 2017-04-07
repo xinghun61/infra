@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from model import analysis_status
+from libs import analysis_status
 
 # Additional status for swarming tasks and try jobs.
 NO_SWARMING_TASK_FOUND = 110

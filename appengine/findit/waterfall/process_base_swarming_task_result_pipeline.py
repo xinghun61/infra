@@ -14,7 +14,7 @@ from common import constants
 from gae_libs import appengine_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
-from model import analysis_status
+from libs import analysis_status
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK

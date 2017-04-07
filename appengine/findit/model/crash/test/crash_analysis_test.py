@@ -9,7 +9,7 @@ import mock
 from crash.crash_report import CrashReport
 from crash.type_enums import CrashClient
 from crash.test.predator_testcase import PredatorTestCase
-from model import analysis_status
+from libs import analysis_status
 from model import result_status
 from model import triage_status
 from model.crash import crash_analysis

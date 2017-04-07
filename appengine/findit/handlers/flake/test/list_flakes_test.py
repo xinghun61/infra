@@ -11,8 +11,8 @@ from google.appengine.datastore.datastore_query import Cursor
 from gae_libs import dashboard_util
 from handlers.flake import list_flakes
 from handlers.flake.list_flakes import _GetFlakeAnalysisFilterQuery
+from libs import analysis_status
 from libs import time_util
-from model import analysis_status
 from model import result_status
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall.test import wf_testcase

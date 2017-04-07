@@ -11,8 +11,8 @@ from google.appengine.ext import ndb
 
 from crash.crash_report import CrashReport
 from gae_libs import appengine_util
+from libs import analysis_status
 from libs import time_util
-from model import analysis_status
 from model import triage_status
 
 _FEEDBACK_URL_TEMPLATE = 'https://%s/crash/%s-result-feedback?key=%s'

@@ -6,7 +6,7 @@ import mock
 
 from issue_tracker import Issue
 
-from model import analysis_status
+from libs import analysis_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis

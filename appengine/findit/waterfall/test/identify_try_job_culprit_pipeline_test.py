@@ -4,9 +4,9 @@
 
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
+from libs import analysis_status
 from libs.gitiles.gitiles_repository import GitilesRepository
 from model import analysis_approach_type
-from model import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL

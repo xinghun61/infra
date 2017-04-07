@@ -14,8 +14,8 @@ from common.waterfall import failure_type
 from handlers import build_failure
 from handlers import handlers_util
 from handlers import result_status
+from libs import analysis_status
 from model import analysis_approach_type
-from model import analysis_status
 from model import suspected_cl_status
 from model.suspected_cl_confidence import ConfidenceInformation
 from model.suspected_cl_confidence import SuspectedCLConfidence

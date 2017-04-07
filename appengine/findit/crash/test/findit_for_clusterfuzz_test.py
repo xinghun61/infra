@@ -19,9 +19,9 @@ from crash.stacktrace import Stacktrace
 from crash.test.predator_testcase import PredatorTestCase
 from crash.type_enums import CrashClient
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from libs import analysis_status
 from libs.deps import chrome_dependency_fetcher
 from libs.gitiles.gitiles_repository import GitilesRepository
-from model import analysis_status
 from model.crash.crash_analysis import CrashAnalysis
 from model.crash.crash_config import CrashConfig
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis

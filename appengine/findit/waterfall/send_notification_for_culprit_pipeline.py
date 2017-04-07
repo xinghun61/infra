@@ -9,8 +9,8 @@ from google.appengine.ext import ndb
 
 from gae_libs.pipeline_wrapper import BasePipeline
 from infra_api_clients.codereview import codereview_util
+from libs import analysis_status as status
 from libs import time_util
-from model import analysis_status as status
 from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_util

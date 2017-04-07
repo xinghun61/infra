@@ -4,7 +4,7 @@
 
 import unittest
 
-from model import analysis_status as status
+from libs import analysis_status as status
 from model.wf_culprit import WfCulprit
 
 
