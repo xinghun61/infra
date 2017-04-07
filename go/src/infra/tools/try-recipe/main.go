@@ -5,50 +5,20 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"os/signal"
 
 	"golang.org/x/net/context"
 
+	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/data/rand/mathrand"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
+	"github.com/luci/luci-go/hardcoded/chromeinfra"
 
 	"github.com/maruel/subcommands"
 )
-
-type globalConfig struct {
-	logConfig *log.Config
-}
-
-type wrappedCommandRun struct {
-	run func(a subcommands.Application, args []string, env subcommands.Env) int
-	fs  *flag.FlagSet
-}
-
-func (wr wrappedCommandRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	return wr.run(a, args, env)
-}
-
-func (wr wrappedCommandRun) GetFlags() *flag.FlagSet {
-	return wr.fs
-}
-
-func (g *globalConfig) wrapCommands(s ...*subcommands.Command) []*subcommands.Command {
-	for i, cmd := range s {
-		cr := cmd.CommandRun()
-		run := cr.Run
-		fs := cr.GetFlags()
-		g.logConfig.AddFlags(fs)
-
-		s[i].CommandRun = func() subcommands.CommandRun {
-			return wrappedCommandRun{run, fs}
-		}
-	}
-	return s
-}
 
 func handleInterruption(ctx context.Context) context.Context {
 	ctx, cancel := context.WithCancel(ctx)
@@ -70,9 +40,7 @@ func handleInterruption(ctx context.Context) context.Context {
 func main() {
 	mathrand.SeedRandomly()
 
-	cfg := globalConfig{
-		&log.Config{Level: log.Info},
-	}
+	authDefaults := chromeinfra.DefaultAuthOptions()
 
 	var application = cli.Application{
 		Name:  "try-recipe",
@@ -82,17 +50,20 @@ func main() {
 			goLoggerCfg := gologger.LoggerConfig{Out: os.Stderr}
 			goLoggerCfg.Format = "[%{level:.1s} %{time:2006-01-02 15:04:05}] %{message}"
 			ctx = goLoggerCfg.Use(ctx)
-			ctx = cfg.logConfig.Set(ctx)
+
+			ctx = (&log.Config{Level: log.Info}).Set(ctx)
 			return handleInterruption(ctx)
 		},
 
-		Commands: cfg.wrapCommands(
-			subcommandIsolate,
+		Commands: []*subcommands.Command{
+			isolateCmd(authDefaults),
 
-			// TODO(iannucci): add auth subcommands
+			authcli.SubcommandLogin(authDefaults, "auth-login", false),
+			authcli.SubcommandLogout(authDefaults, "auth-logout", false),
+			authcli.SubcommandInfo(authDefaults, "auth-info", false),
 
 			subcommands.CmdHelp,
-		),
+		},
 	}
 
 	os.Exit(subcommands.Run(&application, nil))

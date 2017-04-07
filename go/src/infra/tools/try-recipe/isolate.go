@@ -6,17 +6,26 @@ package main
 
 import (
 	"github.com/maruel/subcommands"
+
+	"github.com/luci/luci-go/client/authcli"
+	"github.com/luci/luci-go/common/auth"
 )
 
-var subcommandIsolate = &subcommands.Command{
-	// TODO(iannucci): implement
-	CommandRun: func() subcommands.CommandRun {
-		return &cmdIsolate{}
-	},
+func isolateCmd(authOpts auth.Options) *subcommands.Command {
+	return &subcommands.Command{
+		// TODO(iannucci): implement
+		CommandRun: func() subcommands.CommandRun {
+			ret := &cmdIsolate{}
+			ret.authFlags.Register(&ret.Flags, authOpts)
+			return ret
+		},
+	}
 }
 
 type cmdIsolate struct {
 	subcommands.CommandRunBase
+
+	authFlags authcli.Flags
 }
 
 func (c *cmdIsolate) Run(a subcommands.Application, args []string, env subcommands.Env) int {
