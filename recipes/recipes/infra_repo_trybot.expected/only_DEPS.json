@@ -166,6 +166,22 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/build/build.py"
+    ],
+    "name": "cipd - build packages"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/build/test_packages.py"
+    ],
+    "name": "cipd - test packages integrity"
+  },
+  {
+    "cmd": [
       "make",
       "-C",
       "appengine/chromium_rietveld",

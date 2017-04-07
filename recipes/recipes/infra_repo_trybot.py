@@ -44,6 +44,8 @@ def RunSteps(api):
   files = result.stdout.splitlines()
   result.presentation.logs['change list'] = files
 
+  is_deps_roll = 'DEPS' in files
+
   with api.step.defer_results():
     with api.step.context({'cwd': api.path['checkout']}):
       api.python('python tests', 'test.py', ['test', '--jobs', 1])
@@ -73,7 +75,18 @@ def RunSteps(api):
         'go tests', api.path['checkout'].join('go', 'env.py'),
         ['python', api.path['checkout'].join('go', 'test.py')])
 
-    if api.platform.is_linux and ('DEPS' in files or
+    # Do slow *.cipd packaging tests only when touching build/* or DEPS. This
+    # will build all registered packages (without uploading them), and run
+    # package tests from build/tests/.
+    if any(f.startswith('build/') for f in files) or is_deps_roll:
+      api.python(
+          'cipd - build packages',
+          api.path['checkout'].join('build', 'build.py'))
+      api.python(
+          'cipd - test packages integrity',
+          api.path['checkout'].join('build', 'test_packages.py'))
+
+    if api.platform.is_linux and (is_deps_roll or
         any(f.startswith('appengine/chromium_rietveld') for f in files)):
       with api.step.context({'cwd': api.path['checkout']}):
         api.step('rietveld tests',
@@ -131,15 +144,6 @@ def GenTests(api):
   )
 
   yield (
-    api.test('only_glyco_python') +
-    api.properties.tryserver(
-        mastername='tryserver.chromium.linux',
-        buildername='infra_tester',
-        patch_project='infra') +
-    diff('infra/glyco/stuff.py')
-  )
-
-  yield (
     api.test('infra_internal') +
     api.properties.tryserver(
         mastername='internal.infra',
@@ -184,4 +188,13 @@ def GenTests(api):
         buildername='infra_tester',
         patch_project='infra') +
     diff('DEPS')
+  )
+
+  yield (
+    api.test('only_cipd_build') +
+    api.properties.tryserver(
+        mastername='tryserver.chromium.linux',
+        buildername='infra_tester',
+        patch_project='infra') +
+    diff('build/build.py')
   )

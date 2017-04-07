@@ -100,7 +100,7 @@
     "name": "get change list",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_LOG_LINE@change list@infra/glyco/stuff.py@@@",
+      "@@@STEP_LOG_LINE@change list@build/build.py@@@",
       "@@@STEP_LOG_END@change list@@@"
     ]
   },
@@ -163,6 +163,22 @@
       "[START_DIR]/infra/go/test.py"
     ],
     "name": "go tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/build/build.py"
+    ],
+    "name": "cipd - build packages"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/build/test_packages.py"
+    ],
+    "name": "cipd - test packages integrity"
   },
   {
     "name": "$result",
