@@ -14,9 +14,8 @@ import "infra/tricium/api/v1/platform.proto";
 //
 // Workflow configurations are typically generated from a Tricium configuration.
 message Workflow {
-  string worker_topic = 1;
-  string service_account = 2;
-  repeated Worker workers = 3;
+  string service_account = 1;
+  repeated Worker workers = 2;
 }
 
 // A Tricium worker includes the details needed to execute an analyzer on a

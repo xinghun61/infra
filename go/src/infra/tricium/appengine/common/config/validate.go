@@ -19,9 +19,6 @@ func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.Pr
 	if pd.SwarmingServiceAccount == "" {
 		return nil, fmt.Errorf("missing swarming service account for project, project: %s", pc.Name)
 	}
-	if sc.SwarmingWorkerTopic == "" {
-		return nil, fmt.Errorf("missing swarming worker topic in service config")
-	}
 	res := &tricium.ProjectConfig{
 		Name:       pc.Name,
 		Acls:       pc.Acls,

@@ -30,7 +30,7 @@ const (
 
 // SwarmingAPI specifies the Swarming servic API.
 type SwarmingAPI interface {
-	Trigger(c context.Context, worker *admin.Worker, workerIsolate, pubsubUserdata, pubsubTopic string) (string, error)
+	Trigger(c context.Context, worker *admin.Worker, workerIsolate, pubsubUserdata string) (string, error)
 	Collect(c context.Context, taskID string) (string, int64, error)
 }
 
@@ -43,8 +43,9 @@ type SwarmingServer struct {
 // Trigger triggers a swarming task.
 //
 // The provided worker isolate is used for the task.
-// At completion, the swarming service will publish a message, including the provided user data, to the provided pubsub topic.
-func (s *SwarmingServer) Trigger(c context.Context, worker *admin.Worker, workerIsolate, pubsubUserdata, pubsubTopic string) (string, error) {
+// At completion, the swarming service will publish a message, including the provided user data, to the worker completion pubsub topic.
+func (s *SwarmingServer) Trigger(c context.Context, worker *admin.Worker, workerIsolate, pubsubUserdata string) (string, error) {
+	pubsubTopic := topic(c)
 	dims := []*swarming.SwarmingRpcsStringPair{}
 	for _, d := range worker.Dimensions {
 		// Extracting dimension key and value. Note that ':' may appear in the value but not the key.
@@ -137,7 +138,7 @@ type MockSwarmingAPI struct {
 // Trigger is a mock function for the MockSwarmingAPI.
 //
 // For any testing actually using the return value, create a new mock.
-func (*MockSwarmingAPI) Trigger(c context.Context, worker *admin.Worker, workerIsolate, pubsubUserdata, pubsubTopic string) (string, error) {
+func (*MockSwarmingAPI) Trigger(c context.Context, worker *admin.Worker, workerIsolate, pubsubUserdata string) (string, error) {
 	return "mockmockmock", nil
 }
 

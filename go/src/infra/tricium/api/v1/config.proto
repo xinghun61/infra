@@ -26,20 +26,17 @@ message ServiceConfig {
   // Details for connected projects.
   repeated ProjectDetails projects = 4;
 
-  // PubSub topic used to collect worker completion notifications from Swarming.
-  string swarming_worker_topic = 5;
-
   // Base recipe command used for workers implemented as recipes.
   //
   // Specific recipe details for the worker will be added as flags at the
   // end of the argument list.
-  Cmd recipe_cmd = 6;
+  Cmd recipe_cmd = 5;
 
   // Base recipe packages used for workers implemented as recipes.
   //
   // These packages will be adjusted for the platform in question, by appending
   // platform name details to the end of the package name.
-  repeated CipdPackage recipe_packages = 7;
+  repeated CipdPackage recipe_packages = 6;
 }
 
 message ProjectDetails {

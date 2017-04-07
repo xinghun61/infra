@@ -8,7 +8,6 @@ package driver
 import (
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -16,12 +15,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	tq "github.com/luci/gae/service/taskqueue"
 	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 
 	"golang.org/x/net/context"
 
-	"google.golang.org/api/googleapi"
 	"google.golang.org/api/pubsub/v1"
 	"google.golang.org/appengine"
 	"google.golang.org/grpc"
@@ -120,92 +117,33 @@ func pubsubPushHandler(ctx *router.Context) {
 
 func pubsubPullHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
-
+	// Only run pull on the dev server.
 	if !appengine.IsDevAppServer() {
 		logging.Errorf(c, "PubSub pull only supported on devserver")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	// TODO(emso): compose from info.AppID(c), always use tricium-dev for devserver.
-	topic := "projects/tricium-dev/topics/worker-completion"
-	sub := "projects/tricium-dev/subscriptions/workstation-subscriber"
-
-	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(pubsub.PubsubScope))
+	// Pull pubsub message.
+	msg, err := common.PubsubServer.Pull(c)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to create HTTP transport: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		logging.WithError(err).Errorf(c, "failed to pull pubsub message")
+		w.WriteHeader(http.StatusOK) // there may not be a message to pull yet so not an error
 		return
 	}
-	service, err := pubsub.New(&http.Client{Transport: transport})
-	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to create HTTP client: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Create the subscription to this topic. Ignore HTTP 409.
-	logging.Infof(c, "[driver] Ensuring subscription %q exists", sub)
-	_, err = service.Projects.Subscriptions.Create(sub, &pubsub.Subscription{
-		Topic:              topic,
-		AckDeadlineSeconds: 70, // GAE request timeout plus some spare time
-		PushConfig: &pubsub.PushConfig{
-			PushEndpoint: "", // if "", the subscription will be pull based
-		},
-	}).Context(c).Do()
-	if err != nil && !isHTTP409(err) {
-		logging.WithError(err).Errorf(c, "failed to check subscription: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Pull one message
-	resp, err := service.Projects.Subscriptions.Pull(sub, &pubsub.PullRequest{
-		ReturnImmediately: true,
-		MaxMessages:       1,
-	}).Context(c).Do()
-	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to pull PubSub message: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	var msg *pubsub.PubsubMessage
-	var ack func()
-	switch len(resp.ReceivedMessages) {
-	case 0:
-		logging.Infof(c, "found no PubSub messages")
+	if msg == nil {
+		logging.Infof(c, "[driver] Found no pubsub message")
 		w.WriteHeader(http.StatusOK)
 		return
-	case 1:
-		ackID := resp.ReceivedMessages[0].AckId
-		ack = func() {
-			_, err := service.Projects.Subscriptions.Acknowledge(sub, &pubsub.AcknowledgeRequest{
-				AckIds: []string{ackID},
-			}).Context(c).Do()
-			if err != nil {
-				logging.WithError(err).Errorf(c, "failed to acknowledge PubSub message: %v", err)
-			}
-		}
-		msg = resp.ReceivedMessages[0].Message
-		logging.Infof(c, "[driver] Pulled PubSub message")
-	default:
-		panic(errors.New("received more than one message from PubSub while asking for only one"))
 	}
-
-	// Process pubsub message
+	logging.Infof(c, "[driver] Pulled pubsub message")
+	// Process pubsub message.
 	if err := handlePubSubMessage(c, msg); err != nil {
 		logging.WithError(err).Errorf(c, "failed to handle PubSub messages: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	ack()
 	logging.Infof(c, "[driver] Successfully completed PubSub pull")
 	w.WriteHeader(http.StatusOK)
-}
-
-func isHTTP409(err error) bool {
-	apiErr, _ := err.(*googleapi.Error)
-	return apiErr != nil && apiErr.Code == 409
 }
 
 type payload struct {

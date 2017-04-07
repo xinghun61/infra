@@ -73,7 +73,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowPro
 	userdata := base64.StdEncoding.EncodeToString(b)
 	logging.Infof(c, "[driver] PubSub userdata for trigger: %q", userdata)
 	// Trigger worker.
-	taskID, err := sw.Trigger(c, worker, workerIsolate, userdata, workflow.WorkerTopic)
+	taskID, err := sw.Trigger(c, worker, workerIsolate, userdata)
 	if err != nil {
 		return fmt.Errorf("failed to call trigger on swarming API: %v", err)
 	}

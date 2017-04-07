@@ -52,7 +52,6 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, paths []stri
 		return nil, fmt.Errorf("workflow is not sane: %v", err)
 	}
 	return &admin.Workflow{
-		WorkerTopic:    sc.SwarmingWorkerTopic,
 		ServiceAccount: pd.SwarmingServiceAccount,
 		Workers:        workers,
 	}, nil

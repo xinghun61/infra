@@ -47,13 +47,14 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
 	if err := launch(c, req, config.LuciConfigProvider,
-		&common.IsolateServer{IsolateServerURL: common.IsolateDevServerURL}); err != nil {
+		&common.IsolateServer{IsolateServerURL: common.IsolateDevServerURL},
+		common.PubsubServer); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to launch workflow: %v", err)
 	}
 	return &admin.LaunchResponse{}, nil
 }
 
-func launch(c context.Context, req *admin.LaunchRequest, cp config.Provider, isolator common.Isolator) error {
+func launch(c context.Context, req *admin.LaunchRequest, cp config.Provider, isolator common.Isolator, pubsub common.PubSub) error {
 	// Guard checking if there is already a stored workflow for the run ID in the request, if so stop here.
 	w := &config.Workflow{ID: req.RunId}
 	if err := ds.Get(c, w); err != ds.ErrNoSuchEntity {
@@ -75,6 +76,11 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.Provider, iso
 	if err != nil {
 		return fmt.Errorf("failed to generate workflow config for project %s: %v", req.Project, err)
 	}
+	// Setup pubsub for worker completion notification.
+	err = pubsub.Setup(c)
+	if err != nil {
+		return fmt.Errorf("failed to setup pubsub for workflow: %v", err)
+	}
 	wfb, err := proto.Marshal(wf)
 	if err != nil {
 		return fmt.Errorf("failed to marshal workflow proto: %v", err)
@@ -91,7 +97,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.Provider, iso
 	}
 	wfTask := tq.NewPOSTTask("/tracker/internal/workflow-launched", nil)
 	wfTask.Payload = b
-	// Isolate initial intput.
+	// Isolate initial input.
 	inputHash, err := isolator.IsolateGitFileDetails(c, &tricium.Data_GitFileDetails{
 		Repository: req.GitRepo,
 		Ref:        req.GitRef,

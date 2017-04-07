@@ -19,7 +19,6 @@ func TestValidate(t *testing.T) {
 		platform := tricium.Platform_UBUNTU
 		config := "enable"
 		sd := &tricium.ServiceConfig{
-			SwarmingWorkerTopic: "worker/completion",
 			Platforms: []*tricium.Platform_Details{
 				{
 					Name:       platform,

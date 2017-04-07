@@ -24,7 +24,6 @@ const (
 
 var (
 	sc = &tricium.ServiceConfig{
-		SwarmingWorkerTopic: "worker/completion",
 		Projects: []*tricium.ProjectDetails{
 			{
 				Name: project,

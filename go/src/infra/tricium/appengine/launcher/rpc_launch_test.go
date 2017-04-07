@@ -34,7 +34,6 @@ type mockConfigProvider struct {
 
 func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.ServiceConfig, error) {
 	return &tricium.ServiceConfig{
-		SwarmingWorkerTopic: "worker/completion",
 		Projects: []*tricium.ProjectDetails{
 			{
 				Name: project,
@@ -156,7 +155,7 @@ func TestLaunchRequest(t *testing.T) {
 					"README.md",
 					"README2.md",
 				},
-			}, &mockConfigProvider{}, &common.MockIsolator{})
+			}, &mockConfigProvider{}, &common.MockIsolator{}, &common.MockPubSub{})
 			So(err, ShouldBeNil)
 
 			Convey("Enqueues track request", func() {
@@ -182,7 +181,7 @@ func TestLaunchRequest(t *testing.T) {
 					"README.md",
 					"README2.md",
 				},
-			}, config.MockProvider, &common.MockIsolator{})
+			}, config.MockProvider, &common.MockIsolator{}, &common.MockPubSub{})
 			So(err, ShouldBeNil)
 
 			Convey("Succeeding launch request for the same run enqueues no track request", func() {
