@@ -89,3 +89,24 @@ class DiffTest(unittest.TestCase):
     self.assertEqual('00:00:00', time_util.SecondsToHMS(0))
     self.assertEqual('00:00:01', time_util.SecondsToHMS(1))
     self.assertEqual('00:01:01', time_util.SecondsToHMS(61))
+
+  def testGetMostRecentUTCMidnight(self):
+    self.assertEqual(
+        datetime,
+        type(time_util.GetMostRecentUTCMidnight()))
+
+  @mock.patch.object(time_util, 'GetMostRecentUTCMidnight',
+                     return_value=datetime(2017, 3, 19, 0, 0, 0))
+  def testGetStartEndDates(self, _):
+    self.assertEqual(
+        (datetime(2017, 3, 18, 0, 0, 0), datetime(2017, 3, 20, 0, 0, 0)),
+        time_util.GetStartEndDates(None, None))
+    self.assertEqual(
+        (None, datetime(2017, 3, 20, 0, 0, 0)),
+        time_util.GetStartEndDates(None, '2017-03-19'))
+    self.assertEqual(
+        (datetime(2017, 3, 18, 0, 0, 0), datetime(2017, 3, 20, 0, 0, 0)),
+        time_util.GetStartEndDates('2017-03-18', None))
+    self.assertEqual(
+        (datetime(2017, 3, 15, 0, 0, 0), datetime(2017, 3, 16, 0, 0, 0)),
+        time_util.GetStartEndDates('2017-03-15', '2017-03-16'))

@@ -88,9 +88,19 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
        check_reverted_cls.CheckRevertedCLs),
   ], debug=True)
 
+  def testUpdateSuspectedCLBailOut(self):
+    suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
+    suspected_cl.sheriff_action_time = datetime(2017, 4, 6, 0, 0)
+    check_reverted_cls._UpdateSuspectedCL(suspected_cl,
+                                          datetime(2017, 4, 6, 0, 1))
+    self.assertEqual(
+        datetime(2017, 4, 6, 0, 0),
+        suspected_cl.sheriff_action_time)
+
   def testCheckRevertStatusOfSuspectedCLNoRevert(self):
     suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
-    self.assertFalse(
+    self.assertEqual(
+        (False, None, None),
         check_reverted_cls._CheckRevertStatusOfSuspectedCL(suspected_cl))
 
   @mock.patch.object(
@@ -107,7 +117,8 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
     suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
     suspected_cl.revert_cl = RevertCL()
 
-    self.assertFalse(
+    self.assertEqual(
+        (None, None, None),
         check_reverted_cls._CheckRevertStatusOfSuspectedCL(suspected_cl))
 
   @mock.patch.object(
@@ -125,7 +136,8 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
     suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
     suspected_cl.should_be_reverted = True
 
-    self.assertIsNone(
+    self.assertEqual(
+        (None, 'https://codereview.chromium.org/123/', None),
         check_reverted_cls._CheckRevertStatusOfSuspectedCL(suspected_cl))
 
   @mock.patch.object(
@@ -148,7 +160,8 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
     suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
     suspected_cl.should_be_reverted = True
 
-    self.assertIsNone(
+    self.assertEqual(
+        (None, 'https://codereview.chromium.org/123/', None),
         check_reverted_cls._CheckRevertStatusOfSuspectedCL(suspected_cl))
 
   @mock.patch.object(
@@ -168,14 +181,17 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
     suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
     suspected_cl.revert_cl = RevertCL()
 
-    check_reverted_cls._CheckRevertStatusOfSuspectedCL(suspected_cl)
+    result = check_reverted_cls._CheckRevertStatusOfSuspectedCL(suspected_cl)
 
+    self.assertTrue(result[0])
+    self.assertEqual(result[1], 'https://codereview.chromium.org/123/')
+    self.assertEqual(result[2], revert_cl_status.COMMITTED)
     self.assertEqual(
         revert_cl_status.COMMITTED, suspected_cl.revert_cl.status)
 
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=Rietveld(
-        'codereview.chromium.org'))
+          'codereview.chromium.org'))
   @mock.patch.object(Rietveld, 'GetClDetails',
                      return_value=_MOCKED_SHERIFF_REVERTED_CL_INFO)
   @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
@@ -237,3 +253,55 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         revert_cl_status.FALSE_POSITIVE,
         suspected_cl.revert_cl.status)
+
+  @mock.patch.object(check_reverted_cls, '_CheckRevertStatusOfSuspectedCL',
+                     return_value=(True, 'https://codereview.chromium.org/123/',
+                                   revert_cl_status.COMMITTED))
+  def testGetRevertCLData(self, _):
+    start_date = datetime(2017, 4, 4, 0, 0)
+    end_date = datetime(2017, 4, 6, 0, 0)
+
+    suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
+    suspected_cl.identified_time = start_date
+    suspected_cl.cr_notification_time = datetime(2017, 4, 5, 0, 0)
+    suspected_cl.put()
+
+    self.assertEqual(
+        {
+            'start_date': '2017-04-04 00:00:00 UTC',
+            'end_date': '2017-04-06 00:00:00 UTC',
+            'processed': [
+                {
+                    'cr_notification_time': '2017-04-05 00:00:00 UTC',
+                    'outcome': 'committed',
+                    'url': 'https://codereview.chromium.org/123/',
+                }],
+            'undetermined': []
+        },
+        check_reverted_cls._GetRevertCLData(start_date, end_date))
+
+  @mock.patch.object(check_reverted_cls, '_CheckRevertStatusOfSuspectedCL',
+                     return_value=(None, 'https://codereview.chromium.org/123/',
+                                   None))
+  def testGetRevertCLDataFailedToDetermine(self, _):
+    start_date = datetime(2017, 4, 4, 0, 0)
+    end_date = datetime(2017, 4, 6, 0, 0)
+
+    suspected_cl = WfSuspectedCL.Create('chromium', 'a1b2c3d4', 1)
+    suspected_cl.identified_time = start_date
+    suspected_cl.cr_notification_time = datetime(2017, 4, 5, 0, 0)
+    suspected_cl.put()
+
+    self.assertEqual(
+        {
+            'start_date': '2017-04-04 00:00:00 UTC',
+            'end_date': '2017-04-06 00:00:00 UTC',
+            'undetermined': [
+                {
+                    'cr_notification_time': '2017-04-05 00:00:00 UTC',
+                    'url': 'https://codereview.chromium.org/123/',
+                    'outcome': None,
+                }],
+            'processed': []
+        },
+        check_reverted_cls._GetRevertCLData(start_date, end_date))

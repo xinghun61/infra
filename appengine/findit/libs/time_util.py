@@ -4,6 +4,7 @@
 
 import calendar
 from datetime import datetime
+from datetime import time
 from datetime import timedelta
 
 import pytz
@@ -105,6 +106,31 @@ def SecondsToHMS(seconds):
   if seconds is not None:
     return FormatTimedelta(timedelta(seconds=seconds))
   return None
+
+
+def GetMostRecentUTCMidnight():
+  return datetime.combine(GetUTCNow(), time.min)
+
+
+def GetStartEndDates(start, end):
+  """Gets start and end dates for handlers that specify date ranges."""
+  midnight_today = GetMostRecentUTCMidnight()
+  midnight_yesterday = midnight_today - timedelta(days=1)
+  midnight_tomorrow = midnight_today + timedelta(days=1)
+
+  if not start and not end:
+    # If neither start nor end specified, range is everything since yesterday.
+    return midnight_yesterday, midnight_tomorrow
+  elif not start and end:
+    # If only end is specified, range is everything up until then.
+    return None, midnight_tomorrow
+  elif start and not end:
+    # If only start is specified, range is everything since then.
+    return datetime.strptime(start, '%Y-%m-%d'), midnight_tomorrow
+
+  # Both start and end are specified, range is everything in between.
+  return (datetime.strptime(start, '%Y-%m-%d'),
+          datetime.strptime(end, '%Y-%m-%d'))
 
 
 class TimeZoneInfo(object):
