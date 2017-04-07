@@ -7,9 +7,11 @@ builders:
   - infra-continuous-win-32
   - infra-continuous-win-64
 supports_cross_compilation: true
+go_generate_bat_shims: true
 go_packages:
   - github.com/luci/luci-go/cipd/client/cmd/cipd
 root: ../../go/bin
 data:
   - file: cipd${exe_suffix}
+  - file: cipd.bat
   - version_file: .versions/cipd${exe_suffix}.cipd_version

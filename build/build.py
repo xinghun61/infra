@@ -12,6 +12,7 @@ details.
 """
 
 import argparse
+import collections
 import contextlib
 import glob
 import hashlib
@@ -33,8 +34,11 @@ GCLIENT_ROOT = os.path.dirname(ROOT)
 # Where to upload packages to by default.
 PACKAGE_REPO_SERVICE = 'https://chrome-infra-packages.appspot.com'
 
+# True if running on Windows.
+IS_WINDOWS = sys.platform == 'win32'
+
 # .exe on Windows.
-EXE_SUFFIX = '.exe' if sys.platform == 'win32' else ''
+EXE_SUFFIX = '.exe' if IS_WINDOWS else ''
 
 
 class BuildException(Exception):
@@ -45,12 +49,9 @@ class UploadException(Exception):
   """Raised on errors during package upload step."""
 
 
-class PackageDef(object):
+class PackageDef(collections.namedtuple(
+    '_PackageDef', ('path', 'pkg_def'))):
   """Represents parsed package *.yaml file."""
-
-  def __init__(self, path, pkg_def):
-    self.path = path
-    self.pkg_def = pkg_def
 
   @property
   def name(self):
@@ -66,6 +67,10 @@ class PackageDef(object):
   def go_packages(self):
     """Returns a list of Go packages that must be installed for this package."""
     return self.pkg_def.get('go_packages') or []
+
+  @property
+  def go_generate_bat_shims(self):
+    return self.pkg_def.get('go_generate_bat_shims', False)
 
   def should_build(self, builder, host_vars):
     """Returns True if package should be built in the current environment.
@@ -194,7 +199,7 @@ def hacked_workspace(go_workspace, goos=None, goarch=None):
   """
   new_root = None
   new_workspace = go_workspace
-  if sys.platform != 'win32':
+  if not IS_WINDOWS:
     new_root = '/tmp/_chrome_infra_build'
     if os.path.exists(new_root):
       assert os.path.islink(new_root)
@@ -240,7 +245,7 @@ def hacked_workspace(go_workspace, goos=None, goarch=None):
   # (gobjdump is part of binutils package in Homebrew).
 
   prev_cwd = os.getcwd()
-  if sys.platform != 'win32':
+  if not IS_WINDOWS:
     os.chdir('/')
   try:
     yield new_workspace
@@ -376,14 +381,24 @@ def build_go_code(go_workspace, pkg_defs):
   """
   # Grab a set of all go packages we need to build and install into GOBIN.
   to_install = []
+  needs_bat_shim = set()
   for p in pkg_defs:
     to_install.extend(p.go_packages)
+    if p.go_generate_bat_shims:
+      needs_bat_shim.update(p.go_packages)
   to_install = sorted(set(to_install))
   if not to_install:
     return
 
   # Make sure there are no stale files in the workspace.
   run_go_clean(go_workspace, to_install)
+
+  go_bin = os.path.join(go_workspace, 'bin')
+  exe_suffix = get_package_vars()['exe_suffix']
+  def get_install_target(pkg):
+    name = pkg[pkg.rfind('/')+1:]
+    bin_name = name + exe_suffix
+    return name, bin_name
 
   if not is_cross_compiling():
     # If not cross-compiling, build all Go code in a single "go install" step,
@@ -400,11 +415,30 @@ def build_go_code(go_workspace, pkg_defs):
     # Build packages one by one and put the resulting binaries into GOBIN, as if
     # they were installed there. It's where the rest of the build.py code
     # expects them to be (see also 'root' property in package definition YAMLs).
-    go_bin = os.path.join(go_workspace, 'bin')
-    exe_suffix = get_target_package_vars()['exe_suffix']
     for pkg in to_install:
-      name = pkg[pkg.rfind('/')+1:]
-      run_go_build(go_workspace, pkg, os.path.join(go_bin, name + exe_suffix))
+      _, bin_name = get_install_target(pkg)
+      run_go_build(go_workspace, pkg, os.path.join(go_bin, bin_name))
+
+  for pkg in sorted(needs_bat_shim):
+    name, bin_name = get_install_target(pkg)
+    generate_bat_shim(os.path.join(go_bin, name + '.bat'), bin_name)
+
+
+def generate_bat_shim(path, target):
+  with open(path, 'w') as fd:
+    if not IS_WINDOWS:
+      # Our ".yaml" file still expects that this ".bat" file exist, but it is
+      # not needed or desired on this platform. Write a placeholder to clarify
+      # this.
+      fd.write('!!! Placeholder CIPD package file: Not active on this '
+               'platform. !!!\n')
+      return
+
+    fd.write('\n'.join([  # python turns \n into CRLF
+    '@set CIPD_EXE_SHIM="%%~dp0%s"' % (target,),
+    '@shift',
+    '@%CIPD_EXE_SHIM% %*'
+  ]))
 
 
 def enumerate_packages(py_venv, package_def_dir, package_def_files):
@@ -440,7 +474,7 @@ def read_yaml(py_venv, path):
   oneliner = (
       'import json, sys, yaml; '
       'json.dump(yaml.safe_load(sys.stdin), sys.stdout)')
-  if sys.platform == 'win32':
+  if IS_WINDOWS:
     python_venv_path = ('Scripts', 'python.exe')
   else:
     python_venv_path = ('bin', 'python')
@@ -547,7 +581,7 @@ def get_host_package_vars():
     # platform.linux_distribution() is ('Ubuntu', '14.04', ...).
     dist = platform.linux_distribution()
     os_ver = '%s%s' % (dist[0].lower(), dist[1].replace('.', '_'))
-  elif sys.platform == 'win32':
+  elif IS_WINDOWS:
     # platform.version() is '6.1.7601'.
     dist = platform.version().split('.')
     os_ver = 'win%s_%s' % (dist[0], dist[1])
