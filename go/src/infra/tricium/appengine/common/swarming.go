@@ -69,7 +69,7 @@ func (s *SwarmingServer) Trigger(c context.Context, worker *admin.Worker, worker
 	}
 	swarmingService.BasePath = fmt.Sprintf("%s%s", s.SwarmingServerURL, swarmingBasePath)
 	res, err := swarmingService.Tasks.New(&swarming.SwarmingRpcsNewTaskRequest{
-		Name:           worker.Name,
+		Name:           "tricium:" + worker.Name,
 		Priority:       100,
 		ExpirationSecs: 21600,
 		Properties: &swarming.SwarmingRpcsTaskProperties{
