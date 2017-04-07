@@ -24,21 +24,21 @@ class RevertAndNotifyCulpritPipeline(BasePipeline):
         repo_name = culprit['repo_name']
         revision = culprit['revision']
 
-        send_notification_right_now = [repo_name, revision] in heuristic_cls
+        force_notify = [repo_name, revision] in heuristic_cls
 
         revert_status = yield CreateRevertCLPipeline(
             master_name, builder_name, build_number, repo_name, revision)
         yield SendNotificationForCulpritPipeline(
             master_name, builder_name, build_number, culprit['repo_name'],
-            culprit['revision'], send_notification_right_now, revert_status)
+            culprit['revision'], force_notify, revert_status)
       else:
         # Checks if any of the culprits was also found by heuristic analysis.
         for culprit in culprits.itervalues():
-          send_notification_right_now = [
+          force_notify = [
               culprit['repo_name'], culprit['revision']] in heuristic_cls
           yield SendNotificationForCulpritPipeline(
               master_name, builder_name, build_number, culprit['repo_name'],
-              culprit['revision'], send_notification_right_now)
+              culprit['revision'], force_notify)
     elif compile_suspected_cl:  # pragma: no branch
       # A special case where try job didn't find any suspected cls, but
       # heuristic found a suspected_cl.

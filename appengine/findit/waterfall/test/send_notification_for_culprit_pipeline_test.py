@@ -18,7 +18,6 @@ from waterfall.test import wf_testcase
 
 
 _MOCKED_DATETIME_UTCNOW = datetime.datetime(2016, 06, 28, 12, 44, 00)
-_MOCKED_BUILD_END_TIME = datetime.datetime(2016, 06, 28, 12, 40, 00)
 
 class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
@@ -53,77 +52,50 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
       return MockedChangeLog()
     self.mock(GitilesRepository, 'GetChangeLog', Mocked_GetChangeLog)
 
-  def _MockBuildEndTime(self):
-    def Mocked_GetBuildEndTime(*_):
-      return _MOCKED_BUILD_END_TIME
-    self.mock(build_util, 'GetBuildEndTime', Mocked_GetBuildEndTime)
-
   def testShouldNotSendNotificationForSingleFailedBuild(self):
-    additional_criteria = {
-        'within_time_limit': True
-    }
-
     culprit = WfSuspectedCL.Create('chromium', 'r1', 1)
     culprit.builds['m/b1/1'] = {}
     culprit.put()
 
     self.assertFalse(
         send_notification_for_culprit_pipeline._ShouldSendNotification(
-            'chromium', 'r1', 2, additional_criteria, False))
+            'chromium', 'r1', 2, False))
     self.assertFalse(culprit.cr_notification_processed)
 
   def testShouldNotSendNotificationForSameFailedBuild(self):
-    additional_criteria = {
-        'within_time_limit': True
-    }
     culprit = WfSuspectedCL.Create('chromium', 'r2', 1)
     culprit.builds['m/b2/2'] = {}
     culprit.put()
     self.assertTrue(
         send_notification_for_culprit_pipeline._ShouldSendNotification(
-            'chromium', 'r2', 2, additional_criteria, True))
+            'chromium', 'r2', 2, True))
     self.assertFalse(
         send_notification_for_culprit_pipeline._ShouldSendNotification(
-            'chromium', 'r2', 2, additional_criteria, True))
+            'chromium', 'r2', 2, True))
     culprit = WfSuspectedCL.Get('chromium', 'r2')
     self.assertEqual(status.RUNNING, culprit.cr_notification_status)
 
   def testShouldSendNotificationForSecondFailedBuild(self):
-    additional_criteria = {
-      'within_time_limit': True
-    }
     culprit = WfSuspectedCL.Create('chromium', 'r3', 1)
     culprit.builds['m/b31/31'] = {}
     culprit.put()
     self.assertFalse(
         send_notification_for_culprit_pipeline._ShouldSendNotification(
-            'chromium', 'r3', 2, additional_criteria, False))
+            'chromium', 'r3', 2, False))
     culprit = WfSuspectedCL.Get('chromium', 'r3')
     culprit.builds['m/b32/32'] = {}
     culprit.put()
     self.assertTrue(
         send_notification_for_culprit_pipeline._ShouldSendNotification(
-            'chromium', 'r3', 2, additional_criteria, False))
+            'chromium', 'r3', 2, False))
     culprit = WfSuspectedCL.Get('chromium', 'r3')
     self.assertEqual(status.RUNNING, culprit.cr_notification_status)
-
-  def testShouldNotSendNotificationIfTimePassed(self):
-    additional_criteria = {
-        'within_time_limit': False
-    }
-    culprit = WfSuspectedCL.Create('chromium', 'r2', 123)
-    culprit.builds['m/b32/32'] = {}
-    culprit.put()
-    self.assertFalse(
-      send_notification_for_culprit_pipeline._ShouldSendNotification(
-          'chromium', 'r2', 2, additional_criteria, True))
 
   def testShouldNotSendNotificationIfNoCodeReview(self):
     rietveld_requests = []
     self._MockRietveld(rietveld_requests)
     self._MockGitRepository(None)
     self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
-    self._MockBuildEndTime()
     culprit = WfSuspectedCL.Create('chromium', 'r5', 123)
     culprit.builds['m/b51/51'] = {}
     culprit.builds['m/b52/52'] = {}
@@ -138,7 +110,6 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self._MockRietveld(rietveld_requests)
     self._MockGitRepository('https://unknown.codeReview.server/123')
     self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
-    self._MockBuildEndTime()
     culprit = WfSuspectedCL.Create('chromium', 'r5', 123)
     culprit.builds['m/b51/51'] = {}
     culprit.builds['m/b52/52'] = {}
@@ -153,7 +124,6 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self._MockRietveld(rietveld_requests)
     self._MockGitRepository('https://codereview.chromium.org/123')
     self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
-    self._MockBuildEndTime()
     culprit = WfSuspectedCL.Create('chromium', 'r6', 123)
     culprit.builds['m/b61/61'] = {}
     culprit.builds['m/b62/62'] = {}
@@ -168,7 +138,6 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self._MockRietveld(rietveld_requests)
     self._MockGitRepository('https://codeReview.chromium.org/123')
     self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
-    self._MockBuildEndTime()
     culprit = WfSuspectedCL.Create('chromium', 'r7', 123)
     culprit.builds['m/b71/71'] = {}
     culprit.put()
@@ -187,7 +156,6 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self._MockRietveld(rietveld_requests)
     self._MockGitRepository('https://codereview.chromium.org/123')
     self.MockUTCNow(_MOCKED_DATETIME_UTCNOW)
-    self._MockBuildEndTime()
     culprit = WfSuspectedCL.Create('chromium', 'r6', 123)
     culprit.builds['m/b61/61'] = {}
     culprit.builds['m/b62/62'] = {}
