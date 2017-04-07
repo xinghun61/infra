@@ -42,11 +42,13 @@ class EventMonUploader(webapp2.RequestHandler):
     builder = payload.get('builder')
     build_number = payload.get('build_number')
     test_type = payload.get('test_type')
-    if not master or not builder or build_number is None or not test_type:
+    step_name = payload.get('step_name')
+    if (not master or not builder or build_number is None or not test_type or
+        not step_name):
       logging.error(
           'Missing required parameters: (master=%s, builder=%s, '
-          'build_number=%s, test_type=%s)' %
-          (master, builder, build_number, test_type))
+          'build_number=%s, test_type=%s, step_name=%s)' %
+          (master, builder, build_number, test_type, step_name))
       self.response.set_status(400)
       return
 
@@ -67,6 +69,7 @@ class EventMonUploader(webapp2.RequestHandler):
     test_results.builder_name = builder
     test_results.build_number = int(build_number)
     test_results.test_type = test_type
+    test_results.step_name = step_name
     if 'interrupted' in file_json:
       test_results.interrupted = file_json['interrupted']
     if 'version' in file_json:
@@ -96,12 +99,3 @@ class EventMonUploader(webapp2.RequestHandler):
           convert_test_result_type(res) for res in test['expected'])
 
     event.send()
-
-  @classmethod
-  def upload(cls, master, builder, build_number, test_type):
-    taskqueue.add(url='/internal/monitoring/upload', params={
-      'master': master,
-      'builder': builder,
-      'build_number': build_number,
-      'test_type': test_type,
-    })

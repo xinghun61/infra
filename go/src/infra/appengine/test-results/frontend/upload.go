@@ -54,6 +54,7 @@ type UploadParams struct {
 	DeprecatedMaster string
 	Builder          string
 	TestType         string
+	StepName         string
 }
 
 type contextKey int
@@ -116,6 +117,7 @@ func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 
 	if v := r.MultipartForm.Value["testtype"]; len(v) > 0 {
 		u.TestType = cleanTestType(v[0])
+		u.StepName = v[0]
 	}
 
 	if _, ok := r.MultipartForm.File["file"]; !ok {
@@ -346,6 +348,7 @@ func updateFullResults(c context.Context, data io.Reader) error {
 			Builder     string       `json:"builder"`
 			BuildNumber model.Number `json:"build_number"`
 			TestType    string       `json:"test_type"`
+			StepName    string       `json:"step_name"`
 			//Interrupted  *bool        `json:"interrupted,omitempty"`
 			//Version      int          `json:"version"`
 			//SecondsEpoch float64      `json:"seconds_since_epoch"`
@@ -355,6 +358,7 @@ func updateFullResults(c context.Context, data io.Reader) error {
 			Builder:     p.Builder,
 			BuildNumber: f.BuildNumber,
 			TestType:    p.TestType,
+			StepName:    p.StepName,
 			//Interrupted:  f.Interrupted,
 			//Version:      f.Version,
 			//SecondsEpoch: f.SecondsEpoch,

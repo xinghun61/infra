@@ -37,6 +37,7 @@ REQ_PAYLOAD = json.dumps({
   'builder': 'builder',
   'build_number': '123',
   'test_type': 'ui_tests',
+  'step_name': 'ui_tests 12s pending',
 })
 
 class EventMonUploaderTest(testing.AppengineTestCase):
@@ -61,18 +62,6 @@ class EventMonUploaderTest(testing.AppengineTestCase):
     return [event_mon.ChromeInfraEvent.FromString(ev.source_extension)
             for ev in log_proto.log_event]
 
-  def test_creates_task_for_upload(self):
-    EventMonUploader.upload('master', 'builder', 123, 'ui_tests')
-
-    tasks = self.taskqueue_stub.get_filtered_tasks()
-    self.assertEqual(len(tasks), 1)
-    self.assertEqual(tasks[0].url, '/internal/monitoring/upload')
-    params = tasks[0].extract_params()
-    self.assertEqual(params['master'], 'master')
-    self.assertEqual(params['builder'], 'builder')
-    self.assertEqual(params['build_number'], '123')
-    self.assertEqual(params['test_type'], 'ui_tests')
-
   def test_creates_event_mon_event_correctly(self):
     TestFile.add_file(
         'master', 'builder', 'ui_tests', 123, 'full_results.json',
@@ -86,6 +75,7 @@ class EventMonUploaderTest(testing.AppengineTestCase):
     self.assertEqual(events[0].test_results.builder_name, 'builder')
     self.assertEqual(events[0].test_results.build_number, 123)
     self.assertEqual(events[0].test_results.test_type, 'ui_tests')
+    self.assertEqual(events[0].test_results.step_name, 'ui_tests 12s pending')
     self.assertEqual(events[0].test_results.interrupted, False)
     self.assertEqual(events[0].test_results.version, 3)
     self.assertEqual(events[0].test_results.usec_since_epoch, 1457612314123000)
