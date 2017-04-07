@@ -7,11 +7,10 @@ builders:
   - infra-continuous-win-32
   - infra-continuous-win-64
 supports_cross_compilation: true
-go_generate_bat_shims: true
 go_packages:
   - infra/tools/vpython
 root: ../../go/bin
 data:
   - file: vpython${exe_suffix}
-  - file: vpython.bat
+    generate_bat_shim: true
   - version_file: .versions/vpython${exe_suffix}.cipd_version

@@ -14,6 +14,7 @@ details.
 import argparse
 import collections
 import contextlib
+import copy
 import glob
 import hashlib
 import json
@@ -69,8 +70,12 @@ class PackageDef(collections.namedtuple(
     return self.pkg_def.get('go_packages') or []
 
   @property
-  def go_generate_bat_shims(self):
-    return self.pkg_def.get('go_generate_bat_shims', False)
+  def pkg_root(self):
+    """Absolute path to a package root directory."""
+    root = self.pkg_def['root'].replace('/', os.sep)
+    if os.path.isabs(root):
+      return root
+    return os.path.abspath(os.path.join(os.path.dirname(self.path), root))
 
   def should_build(self, builder, host_vars):
     """Returns True if package should be built in the current environment.
@@ -97,6 +102,65 @@ class PackageDef(collections.namedtuple(
       return target_platform in supported_platforms
 
     return True
+
+  def preprocess(self, pkg_vars):
+    """Parses the definition and filters/extends it before passing to CIPD.
+
+    This process may generate additional files that are put into the package.
+
+    Args:
+      pkg_vars: dict with variables passed to cipd as -pkg-var.
+
+    Returns:
+      (Path to filtered package definition YAML, list of generated files).
+    """
+    pkg_def = copy.deepcopy(self.pkg_def)
+    gen_files = []
+
+    # Generate *.bat shims when targeting Windows.
+    if is_targeting_windows(pkg_vars):
+      for d in pkg_def['data'][:]:
+        if d.get('generate_bat_shim'):
+          # Generate actual *.bat.
+          bat_abs = generate_bat_shim(
+              self.pkg_root, render_path(d.get('file'), pkg_vars))
+          # Make it part of the package definition (use slash paths there).
+          pkg_def['data'].append({
+            'file': os.path.relpath(bat_abs, self.pkg_root).replace(os.sep, '/')
+          })
+          # Stage it for cleanup.
+          gen_files.append(bat_abs)
+
+    # Keep generated yaml in the same directory to avoid rewriting paths.
+    out_path = os.path.join(
+        os.path.dirname(self.path), self.name + '.processed_yaml')
+    with open(out_path, 'w') as f:
+      json.dump(pkg_def, f)
+    return out_path, gen_files
+
+
+def render_path(p, pkg_vars):
+  """Renders ${...} substitutions in paths, converts them to native slash."""
+  for k, v in pkg_vars.iteritems():
+    assert '${' not in v  # just in case, to avoid recursive expansion
+    p = p.replace('${%s}' % k, v)
+  return p.replace('/', os.sep)
+
+
+def generate_bat_shim(pkg_root, target_rel):
+  """Writes a shim file side-by-side with target and returns abs path to it."""
+  target_name = os.path.basename(target_rel)
+  bat_name = os.path.splitext(target_name)[0] + '.bat'
+  base_dir = os.path.dirname(os.path.join(pkg_root, target_rel))
+  bat_path = os.path.join(base_dir, bat_name)
+  with open(bat_path, 'w') as fd:
+    fd.write('\n'.join([  # python turns \n into CRLF
+    '@set CIPD_EXE_SHIM="%%~dp0%s"' % (target_name,),
+    '@shift',
+    '@%CIPD_EXE_SHIM% %*',
+    ''
+  ]))
+  return bat_path
 
 
 def is_cross_compiling():
@@ -381,24 +445,14 @@ def build_go_code(go_workspace, pkg_defs):
   """
   # Grab a set of all go packages we need to build and install into GOBIN.
   to_install = []
-  needs_bat_shim = set()
   for p in pkg_defs:
     to_install.extend(p.go_packages)
-    if p.go_generate_bat_shims:
-      needs_bat_shim.update(p.go_packages)
   to_install = sorted(set(to_install))
   if not to_install:
     return
 
   # Make sure there are no stale files in the workspace.
   run_go_clean(go_workspace, to_install)
-
-  go_bin = os.path.join(go_workspace, 'bin')
-  exe_suffix = get_package_vars()['exe_suffix']
-  def get_install_target(pkg):
-    name = pkg[pkg.rfind('/')+1:]
-    bin_name = name + exe_suffix
-    return name, bin_name
 
   if not is_cross_compiling():
     # If not cross-compiling, build all Go code in a single "go install" step,
@@ -415,30 +469,11 @@ def build_go_code(go_workspace, pkg_defs):
     # Build packages one by one and put the resulting binaries into GOBIN, as if
     # they were installed there. It's where the rest of the build.py code
     # expects them to be (see also 'root' property in package definition YAMLs).
+    go_bin = os.path.join(go_workspace, 'bin')
+    exe_suffix = get_package_vars()['exe_suffix']
     for pkg in to_install:
-      _, bin_name = get_install_target(pkg)
+      bin_name = pkg[pkg.rfind('/')+1:] + exe_suffix
       run_go_build(go_workspace, pkg, os.path.join(go_bin, bin_name))
-
-  for pkg in sorted(needs_bat_shim):
-    name, bin_name = get_install_target(pkg)
-    generate_bat_shim(os.path.join(go_bin, name + '.bat'), bin_name)
-
-
-def generate_bat_shim(path, target):
-  with open(path, 'w') as fd:
-    if not IS_WINDOWS:
-      # Our ".yaml" file still expects that this ".bat" file exist, but it is
-      # not needed or desired on this platform. Write a placeholder to clarify
-      # this.
-      fd.write('!!! Placeholder CIPD package file: Not active on this '
-               'platform. !!!\n')
-      return
-
-    fd.write('\n'.join([  # python turns \n into CRLF
-    '@set CIPD_EXE_SHIM="%%~dp0%s"' % (target,),
-    '@shift',
-    '@%CIPD_EXE_SHIM% %*'
-  ]))
 
 
 def enumerate_packages(py_venv, package_def_dir, package_def_files):
@@ -621,6 +656,11 @@ def get_host_package_vars():
   }
 
 
+def is_targeting_windows(pkg_vars):
+  """Returns true if 'platform' in pkg_vars indicates Windows."""
+  return pkg_vars['platform'].startswith('windows-')
+
+
 def build_pkg(cipd_exe, pkg_def, out_file, package_vars):
   """Invokes CIPD client to build a package.
 
@@ -642,21 +682,30 @@ def build_pkg(cipd_exe, pkg_def, out_file, package_vars):
   if os.path.isfile(out_file):
     os.remove(out_file)
 
-  # Build the package.
-  args = ['-pkg-def', pkg_def.path]
-  for k, v in sorted(package_vars.items()):
-    args.extend(['-pkg-var', '%s:%s' % (k, v)])
-  args.extend(['-out', out_file])
-  exit_code, json_output = run_cipd(cipd_exe, 'pkg-build', args)
-  if exit_code:
-    print
-    print >> sys.stderr, 'FAILED! ' * 10
-    raise BuildException('Failed to build the CIPD package, see logs')
+  # Parse the definition and filter/extend it before passing to CIPD. This
+  # process may generate additional files that are put into the package. We
+  # delete them afterwards to avoid polluting GOBIN.
+  processed_yaml, tmp_files = pkg_def.preprocess(package_vars)
 
-  # Expected result is {'package': 'name', 'instance_id': 'sha1'}
-  info = json_output['result']
-  print '%s %s' % (info['package'], info['instance_id'])
-  return info
+  try:
+    # Build the package.
+    args = ['-pkg-def', processed_yaml]
+    for k, v in sorted(package_vars.items()):
+      args.extend(['-pkg-var', '%s:%s' % (k, v)])
+    args.extend(['-out', out_file])
+    exit_code, json_output = run_cipd(cipd_exe, 'pkg-build', args)
+    if exit_code:
+      print
+      print >> sys.stderr, 'FAILED! ' * 10
+      raise BuildException('Failed to build the CIPD package, see logs')
+
+    # Expected result is {'package': 'name', 'instance_id': 'sha1'}
+    info = json_output['result']
+    print '%s %s' % (info['package'], info['instance_id'])
+    return info
+  finally:
+    for f in [processed_yaml] + tmp_files:
+      os.remove(f)
 
 
 def upload_pkg(cipd_exe, pkg_file, service_url, tags, service_account):

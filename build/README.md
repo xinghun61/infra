@@ -14,7 +14,10 @@ There are two flavors of packages:
 Package definition
 ------------------
 
-A package is defined in a *.yaml file with the following structure:
+A package is defined in a *.yaml file that is parsed by `build.py` script before
+being passed to the CIPD client.
+
+The package file has the following structure:
 
 ```yaml
 # Name of the package in CIPD repository.
@@ -60,7 +63,26 @@ data:
 
   # 'file' section adds a single file to the package.
   - file: run.py
+
+  # Exe files can also be augmented with *.bat shims, residing in same dir.
+  # Kicks in only when the package is targeting Windows.
+  - file: cipd.exe
+    generate_bat_shim: true
 ```
+
+Following features of the package definition are implemented by `build.py`
+(basically anything related to the process of building the code and preparing
+all necessary files for packaging):
+
+* `builders`
+* `supports_cross_compilation`
+* `supported_platforms`
+* `go_packages`
+* `generate_bat_shim`
+
+
+Strings interpolation
+---------------------
 
 Any string in package definition can reference a variable via ${var_name}, for
 example:
