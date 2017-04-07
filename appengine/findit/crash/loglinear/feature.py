@@ -12,7 +12,7 @@ from libs.meta_object import Element
 from libs.meta_object import MetaDict
 
 
-def LinearlyScaled(value, maximum):
+def LinearlyScaled(value, maximum, minimum=0.0, offset=0.0):
   """Returns a value scaled linearly between 0 and 1.
 
   Args:
@@ -25,7 +25,8 @@ def LinearlyScaled(value, maximum):
     the value is greater than the maximum, we return 0. With intermediate
     values scaled linearly.
   """
-  return (maximum - min(maximum, value)) / maximum
+  delta = (maximum - max(minimum, min(maximum, value))) / (maximum - minimum)
+  return delta + offset
 
 
 def LogLinearlyScaled(value, maximum):

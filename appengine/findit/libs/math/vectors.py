@@ -38,7 +38,7 @@ def vsum(vs, shape=None):
   while not it.finished:
     try:
       it[0] = math.fsum(v[it.multi_index] for v in vs)
-    except TypeError: 
+    except TypeError:
       it[0] = sum(v[it.multi_index] for v in vs)
 
     it.iternext()

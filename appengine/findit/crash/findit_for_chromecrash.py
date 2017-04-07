@@ -11,6 +11,8 @@ from crash.chromecrash_parser import ChromeCrashParser
 from crash.chrome_crash_data import ChromeCrashData
 from crash.findit import Findit
 from crash.loglinear.changelist_classifier import LogLinearChangelistClassifier
+from crash.loglinear.changelist_features.number_of_touched_files import (
+    NumberOfTouchedFilesFeature)
 from crash.loglinear.changelist_features.touch_crashed_component import (
     TouchCrashedComponentFeature)
 from crash.loglinear.changelist_features.touch_crashed_directory import (
@@ -51,12 +53,14 @@ class FinditForChromeCrash(Findit):  # pylint: disable=W0223
             'TouchCrashedFile': Weight(1.),
         }),
         'TouchCrashedDirectory': Weight(1.),
-        'TouchCrashedComponent': Weight(0.)
+        'TouchCrashedComponent': Weight(0.),
+        'NumberOfTouchedFiles': Weight(0.5)
     })
     meta_feature = WrapperMetaFeature(
         [TouchCrashedFileMetaFeature(get_repository),
          TouchCrashedDirectoryFeature(),
-         TouchCrashedComponentFeature(self._component_classifier)])
+         TouchCrashedComponentFeature(self._component_classifier),
+         NumberOfTouchedFilesFeature()])
 
     self._predator = Predator(LogLinearChangelistClassifier(get_repository,
                                                             meta_feature,

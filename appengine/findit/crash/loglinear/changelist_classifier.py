@@ -149,7 +149,7 @@ class LogLinearChangelistClassifier(object):
 
     suspects.sort(key=lambda suspect: -suspect.confidence)
     max_score = suspects[0].confidence
-    min_score = suspects[-1].confidence
+    min_score = max(suspects[-1].confidence, 0.0)
     if max_score == min_score:
       return []
 
@@ -159,7 +159,7 @@ class LogLinearChangelistClassifier(object):
       # exp(suspect1.confidence)/exp(suspect2.confidence), so
       # suspect1.confidence - suspect2.confidence <= log(0.5) means the
       # suspect1 is half likely than suspect2.
-      if (suspect.confidence == min_score or
+      if (suspect.confidence <= min_score or
           suspect.confidence - max_score <= _THRESHOLD_RATIO):
         break
 
