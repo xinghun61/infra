@@ -1,12 +1,10 @@
 # web-component-tester support package
 
+# Use "make bower-cipd" in infra/go/src/infra/appengine/sheriff-o-matic to build
+# this package.
+
 package: infra/testing/sheriff-o-matic/bower_components/${platform}
 description: Bower component bundle for sheriff-o-matic WCT tests
-builders:
-  # Do not run this on a builder as it requires npm and bower. Use
-  # "make bower-cipd" in infra/go/src/infra/appengine/sheriff-o-matic.
-  - manual
-root: ../..
+root: ../../../../../../
 data:
   - dir: go/src/infra/appengine/sheriff-o-matic/bower_components
-

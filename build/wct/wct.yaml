@@ -2,10 +2,7 @@
 
 package: infra/testing/wct/${platform}
 description: Support for running web-component-tester.
-builders:
-  - manual # Do not run this on a builder. Run buid/buid-wct.sh manually.
 # TODO: Basic project that has nothing besides WCT, instead of using SoM.
 root: ../../go/src/infra/appengine/sheriff-o-matic
 data:
   - dir: node_modules
-

@@ -34,7 +34,8 @@ relnotes:
 
 # This is only used for testing on the continuous build system.
 bower-cipd: deps
-	cipd create -pkg-def ../../../../../build/packages/sheriff-o-matic.yaml -pkg-var platform:linux-amd64
+	cipd pkg-build -pkg-def ./cipd/sheriff-o-matic.yaml -pkg-var platform:linux-amd64 -out ./cipd/bower_components.cipd
+	cipd pkg-register ./cipd/bower_components.cipd
 
 # In the future we can add different commends for prod and staging.
 deploy-prod: build
