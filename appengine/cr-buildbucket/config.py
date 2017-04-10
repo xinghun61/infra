@@ -91,7 +91,7 @@ def validate_buildbucket_cfg(cfg, ctx):
       on_message=lambda msg: ctx.msg(msg.severity, '%s', msg.text))
   swarmingcfg.validate_builder_mixins(cfg.builder_mixins, mixin_ctx)
   mixins_are_valid = not mixin_ctx.result().has_errors
-  mixin_by_name = {m.name for m in cfg.builder_mixins}
+  mixin_by_name = {m.name: m for m in cfg.builder_mixins}
 
   is_sorted = True
   bucket_names = set()
