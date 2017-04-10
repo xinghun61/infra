@@ -53,16 +53,10 @@ def RunSteps(api):
     if not internal:
       # TODO(phajdan.jr): should we make recipe tests run on other platforms?
       if api.platform.is_linux and api.platform.bits == 64:
-        # Run both current simulation test logic (simulation_test),
-        # and experimental (test). Eventually the former will be removed.
         api.python(
             'recipe test',
             api.path['checkout'].join('recipes', 'recipes.py'),
             ['--use-bootstrap', 'test', 'run'])
-        api.python(
-            'recipe simulation_tests',
-            api.path['checkout'].join('recipes', 'recipes.py'),
-            ['simulation_test', 'test'])
         api.python(
             'recipe lint', api.path['checkout'].join('recipes', 'recipes.py'),
             ['lint'])

@@ -133,16 +133,6 @@
       "python",
       "-u",
       "[START_DIR]/infra/recipes/recipes.py",
-      "simulation_test",
-      "test"
-    ],
-    "name": "recipe simulation_tests"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[START_DIR]/infra/recipes/recipes.py",
       "lint"
     ],
     "name": "recipe lint"
