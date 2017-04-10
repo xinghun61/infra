@@ -175,9 +175,8 @@ class MetricFieldsValues(object):
     # Make a copy of the metric values in case another thread (or this
     # generator's consumer) modifies them while we're iterating.
     with self._thread_lock:
-      values = copy.copy(self._values)
-    for fields, value in values.iteritems():
-      yield fields, value
+      values = copy.deepcopy(self._values)
+    return values.iteritems()
 
 
 class TargetFieldsValues(object):

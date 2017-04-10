@@ -9,6 +9,7 @@ import unittest
 
 import mock
 
+from infra_libs.ts_mon.common import distribution
 from infra_libs.ts_mon.common import interface
 from infra_libs.ts_mon.common import errors
 from infra_libs.ts_mon.common import metric_store
@@ -186,6 +187,29 @@ class MetricStoreTestBase(object):
     all_metrics = list(self.store.get_all())
     self.assertEqual(1, len(all_metrics))
     self.assertEqual('foo', all_metrics[0][1].name)
+
+  def test_copies_distributions(self):
+    def modify_fn(dist, delta):
+      # This is the same as the modify_fn in _DistributionMetricBase's add().
+      if dist == 0:
+        dist = distribution.Distribution(distribution.GeometricBucketer())
+      dist.add(delta)
+      return dist
+
+    # Increment the metric once to create it in the store.
+    self.store.incr('foo', (), None, 42, modify_fn)
+
+    # Get its value from get_all.  We should get a copy of the distribution.
+    dist = list(list(self.store.get_all())[0][4].iteritems())[0][1]
+    self.assertEqual(1, dist.count)
+    self.assertEqual(42, dist.sum)
+
+    # Increment the metric again.
+    self.store.incr('foo', (), None, 42, modify_fn)
+
+    # The object we got should not change.
+    self.assertEqual(1, dist.count)
+    self.assertEqual(42, dist.sum)
 
 
 class InProcessMetricStoreTest(MetricStoreTestBase, unittest.TestCase):
