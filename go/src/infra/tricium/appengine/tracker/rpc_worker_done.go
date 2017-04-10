@@ -37,13 +37,13 @@ func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing output hash")
 	}
 	// TODO(emso): check exit code
-	if err := workerDone(c, req, &common.IsolateServer{IsolateServerURL: req.IsolateServerUrl}); err != nil {
+	if err := workerDone(c, req, common.IsolateServer); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to track worker completion: %v", err)
 	}
 	return &admin.WorkerDoneResponse{}, nil
 }
 
-func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.Isolator) error {
+func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.IsolateAPI) error {
 	logging.Infof(c, "[tracker] Worker done (run ID: %d, worker: %s)", req.RunId, req.Worker)
 	runKey, analyzerKey, workerKey := createKeys(c, req.RunId, req.Worker)
 	worker := &track.WorkerInvocation{
@@ -51,7 +51,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		Parent: workerKey.Parent(),
 	}
 	// Collect and process isolated output.
-	resultsStr, err := isolator.FetchIsolatedResults(c, req.IsolatedOutputHash)
+	resultsStr, err := isolator.FetchIsolatedResults(c, req.IsolateServerUrl, req.IsolatedOutputHash)
 	if err != nil {
 		return fmt.Errorf("failed to fetch isolated worker resul: %v", err)
 	}

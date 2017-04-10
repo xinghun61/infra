@@ -37,6 +37,16 @@ message ServiceConfig {
   // These packages will be adjusted for the platform in question, by appending
   // platform name details to the end of the package name.
   repeated CipdPackage recipe_packages = 6;
+
+  // Swarming server to use for this service instance.
+  //
+  // This should be a full URL with no trailing slash.
+  string swarming_server = 7;
+  
+  // Isolate server to use for this service instance.
+  //
+  // This should be a full URL with no trailing slash.
+  string isolate_server = 8;
 }
 
 message ProjectDetails {

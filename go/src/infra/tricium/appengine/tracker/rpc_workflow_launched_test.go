@@ -29,7 +29,7 @@ const (
 type mockWorkflowProvider struct {
 }
 
-func (mockWorkflowProvider) ReadWorkflowForRun(c context.Context, runID int64) (*admin.Workflow, error) {
+func (mockWorkflowProvider) GetWorkflow(c context.Context, runID int64) (*admin.Workflow, error) {
 	return &admin.Workflow{
 		Workers: []*admin.Worker{
 			{

@@ -38,18 +38,14 @@ func (*driverServer) Trigger(c context.Context, req *admin.TriggerRequest) (*adm
 	if req.IsolatedInputHash == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
 	}
-	if err := trigger(c, req, config.DatastoreWorkflowProvider,
-		&common.SwarmingServer{
-			SwarmingServerURL: req.SwarmingServerUrl,
-			IsolateServerURL:  req.IsolateServerUrl,
-		}, &common.IsolateServer{IsolateServerURL: req.IsolateServerUrl}); err != nil {
+	if err := trigger(c, req, config.WorkflowCache, common.SwarmingServer, common.IsolateServer); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to trigger worker: %v", err)
 	}
 	return &admin.TriggerResponse{}, nil
 }
 
-func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowProvider, sw common.SwarmingAPI, isolator common.Isolator) error {
-	workflow, err := wp.ReadWorkflowForRun(c, req.RunId)
+func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCacheAPI, sw common.SwarmingAPI, isolator common.IsolateAPI) error {
+	workflow, err := wp.GetWorkflow(c, req.RunId)
 	if err != nil {
 		return fmt.Errorf("failed to read workflow config: %v", err)
 	}
@@ -59,7 +55,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowPro
 	}
 	// TODO(emso): Auth check.
 	// TODO(emso): Runtime type check.
-	workerIsolate, err := isolator.IsolateWorker(c, worker, req.IsolatedInputHash)
+	workerIsolate, err := isolator.IsolateWorker(c, workflow.IsolateServer, worker, req.IsolatedInputHash)
 	if err != nil {
 		return fmt.Errorf("failed to isolate command for trigger: %v", err)
 	}
@@ -73,7 +69,7 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowPro
 	userdata := base64.StdEncoding.EncodeToString(b)
 	logging.Infof(c, "[driver] PubSub userdata for trigger: %q", userdata)
 	// Trigger worker.
-	taskID, err := sw.Trigger(c, worker, workerIsolate, userdata)
+	taskID, err := sw.Trigger(c, workflow.SwarmingServer, workflow.IsolateServer, worker, workerIsolate, userdata)
 	if err != nil {
 		return fmt.Errorf("failed to call trigger on swarming API: %v", err)
 	}
@@ -81,9 +77,9 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowPro
 	b, err = proto.Marshal(&admin.WorkerLaunchedRequest{
 		RunId:             req.RunId,
 		Worker:            req.Worker,
-		IsolateServerUrl:  req.IsolateServerUrl,
+		IsolateServerUrl:  workflow.IsolateServer,
 		IsolatedInputHash: req.IsolatedInputHash,
-		SwarmingServerUrl: req.SwarmingServerUrl,
+		SwarmingServerUrl: workflow.SwarmingServer,
 		TaskId:            taskID,
 	})
 	if err != nil {

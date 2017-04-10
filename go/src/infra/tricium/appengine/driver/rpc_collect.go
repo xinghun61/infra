@@ -33,24 +33,19 @@ func (*driverServer) Collect(c context.Context, req *admin.CollectRequest) (*adm
 	if req.IsolatedInputHash == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
 	}
-	if err := collect(c, req, config.DatastoreWorkflowProvider,
-		&common.SwarmingServer{
-			SwarmingServerURL: req.SwarmingServerUrl,
-			IsolateServerURL:  req.IsolateServerUrl,
-		},
-		&common.IsolateServer{IsolateServerURL: req.IsolateServerUrl}); err != nil {
+	if err := collect(c, req, config.WorkflowCache, common.SwarmingServer, common.IsolateServer); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to trigger worker: %v", err)
 	}
 	return &admin.CollectResponse{}, nil
 }
 
-func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowProvider, sw common.SwarmingAPI, isolator common.Isolator) error {
-	wf, err := wp.ReadWorkflowForRun(c, req.RunId)
+func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowCacheAPI, sw common.SwarmingAPI, isolator common.IsolateAPI) error {
+	wf, err := wp.GetWorkflow(c, req.RunId)
 	if err != nil {
 		return fmt.Errorf("failed to read workflow config: %v", err)
 	}
 
-	isolatedOutput, exitCode, err := sw.Collect(c, req.TaskId)
+	isolatedOutput, exitCode, err := sw.Collect(c, wf.SwarmingServer, req.TaskId)
 	if err != nil {
 		return fmt.Errorf("failed to collect swarming task result: %v", err)
 	}
@@ -59,7 +54,7 @@ func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowPro
 	b, err := proto.Marshal(&admin.WorkerDoneRequest{
 		RunId:              req.RunId,
 		Worker:             req.Worker,
-		IsolateServerUrl:   req.IsolateServerUrl,
+		IsolateServerUrl:   wf.IsolateServer,
 		IsolatedOutputHash: isolatedOutput,
 		ExitCode:           exitCode,
 	})
@@ -74,7 +69,7 @@ func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowPro
 
 	// Create layered isolated input, include the input in the collect request and
 	// massage the isolated output into new isolated input.
-	isolatedInput, err := isolator.LayerIsolates(c, req.IsolatedInputHash, isolatedOutput)
+	isolatedInput, err := isolator.LayerIsolates(c, wf.IsolateServer, req.IsolatedInputHash, isolatedOutput)
 	if err != nil {
 		return fmt.Errorf("failed layer isolates: %v", err)
 	}
@@ -83,9 +78,7 @@ func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowPro
 	for _, worker := range wf.GetNext(req.Worker) {
 		b, err := proto.Marshal(&admin.TriggerRequest{
 			RunId:             req.RunId,
-			IsolateServerUrl:  req.IsolateServerUrl,
 			IsolatedInputHash: isolatedInput,
-			SwarmingServerUrl: req.SwarmingServerUrl,
 			Worker:            worker,
 		})
 		if err != nil {

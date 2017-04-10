@@ -54,6 +54,8 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, paths []stri
 	return &admin.Workflow{
 		ServiceAccount: pd.SwarmingServiceAccount,
 		Workers:        workers,
+		SwarmingServer: sc.SwarmingServer,
+		IsolateServer:  sc.IsolateServer,
 	}, nil
 }
 

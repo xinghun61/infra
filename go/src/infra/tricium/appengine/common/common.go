@@ -25,8 +25,11 @@ import (
 )
 
 const (
-	// TriciumDevServer is the App ID of the tricium dev server.
+	// TriciumDevServer is the App ID of the Tricium dev server.
 	TriciumDevServer = "tricium-dev"
+
+	// TriciumProdServer is the App ID of the Tricium prod server.
+	TriciumProdServer = "tricium-prod"
 
 	// AnalyzeQueue specifies the name of the analyze task queue.
 	AnalyzeQueue = "analyze-queue"

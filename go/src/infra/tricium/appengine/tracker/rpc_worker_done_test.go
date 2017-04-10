@@ -7,7 +7,6 @@ package tracker
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"testing"
 
 	ds "github.com/luci/gae/service/datastore"
@@ -25,16 +24,16 @@ import (
 // MockIsolator mocks the Isolator interface for testing.
 type mockIsolator struct{}
 
-func (*mockIsolator) IsolateGitFileDetails(c context.Context, d *tricium.Data_GitFileDetails) (string, error) {
+func (*mockIsolator) IsolateGitFileDetails(c context.Context, serverURL string, d *tricium.Data_GitFileDetails) (string, error) {
 	return "mockmockmock", nil
 }
-func (*mockIsolator) IsolateWorker(c context.Context, worker *admin.Worker, inputIsolate string) (string, error) {
+func (*mockIsolator) IsolateWorker(c context.Context, serverURL string, worker *admin.Worker, inputIsolate string) (string, error) {
 	return "mockmockmock", nil
 }
-func (*mockIsolator) LayerIsolates(c context.Context, isolatedInput, isolatedOutput string) (string, error) {
+func (*mockIsolator) LayerIsolates(c context.Context, serverURL, isolatedInput, isolatedOutput string) (string, error) {
 	return "mockmockmock", nil
 }
-func (*mockIsolator) FetchIsolatedResults(c context.Context, isolatedOutput string) (string, error) {
+func (*mockIsolator) FetchIsolatedResults(c context.Context, serverURL, isolatedOutput string) (string, error) {
 	result := &tricium.Data_Results{
 		Comments: []*tricium.Data_Comment{
 			{
@@ -46,7 +45,6 @@ func (*mockIsolator) FetchIsolatedResults(c context.Context, isolatedOutput stri
 	if err != nil {
 		return "", errors.New("failed to marshall mock result")
 	}
-	fmt.Printf("marshalled mock: %q", res)
 	return string(res), nil
 }
 

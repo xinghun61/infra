@@ -161,10 +161,8 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 	// Enqueue collect request
 	b, err := proto.Marshal(&admin.CollectRequest{
 		RunId:             tr.RunId,
-		IsolateServerUrl:  tr.IsolateServerUrl,
 		IsolatedInputHash: tr.IsolatedInputHash,
 		Worker:            tr.Worker,
-		SwarmingServerUrl: tr.SwarmingServerUrl,
 		TaskId:            taskID,
 	})
 	if err != nil {

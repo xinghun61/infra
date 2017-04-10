@@ -20,12 +20,12 @@ func (*configServer) GenerateWorkflow(c context.Context, req *admin.GenerateWork
 	if req.Project == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing project name")
 	}
-	pc, err := config.LuciConfigProvider.GetProjectConfig(c, req.Project)
+	pc, err := config.LuciConfigServer.GetProjectConfig(c, req.Project)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to get project config: %v", err)
 		return nil, grpc.Errorf(codes.InvalidArgument, "failed to get project config")
 	}
-	sc, err := config.LuciConfigProvider.GetServiceConfig(c)
+	sc, err := config.LuciConfigServer.GetServiceConfig(c)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to get service config: %v", err)
 		return nil, grpc.Errorf(codes.InvalidArgument, "failed to get service config")

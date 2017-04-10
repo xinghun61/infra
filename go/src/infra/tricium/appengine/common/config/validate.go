@@ -12,6 +12,12 @@ import (
 
 // Validate validates the provided project config using the provided service config.
 func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.ProjectConfig, error) {
+	if sc.SwarmingServer == "" {
+		return nil, fmt.Errorf("missing swarming server URL in service config")
+	}
+	if sc.IsolateServer == "" {
+		return nil, fmt.Errorf("missing isolate server URL in service config")
+	}
 	pd := tricium.LookupProjectDetails(sc, pc.Name)
 	if pd == nil {
 		return nil, fmt.Errorf("unknown project, project: %s", pc.Name)

@@ -16,6 +16,8 @@ import "infra/tricium/api/v1/platform.proto";
 message Workflow {
   string service_account = 1;
   repeated Worker workers = 2;
+  string swarming_server = 3;
+  string isolate_server = 4;
 }
 
 // A Tricium worker includes the details needed to execute an analyzer on a

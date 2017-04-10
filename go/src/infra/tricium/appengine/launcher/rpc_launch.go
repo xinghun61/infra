@@ -46,15 +46,15 @@ func (r *launcherServer) Launch(c context.Context, req *admin.LaunchRequest) (*a
 	if len(req.Paths) == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
-	if err := launch(c, req, config.LuciConfigProvider,
-		&common.IsolateServer{IsolateServerURL: common.IsolateDevServerURL},
-		common.PubsubServer); err != nil {
+	if err := launch(c, req, config.LuciConfigServer, common.IsolateServer,
+		common.SwarmingServer, common.PubsubServer); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to launch workflow: %v", err)
 	}
 	return &admin.LaunchResponse{}, nil
 }
 
-func launch(c context.Context, req *admin.LaunchRequest, cp config.Provider, isolator common.Isolator, pubsub common.PubSub) error {
+func launch(c context.Context, req *admin.LaunchRequest, cp config.ProviderAPI, isolator common.IsolateAPI,
+	swarming common.SwarmingAPI, pubsub common.PubSubAPI) error {
 	// Guard checking if there is already a stored workflow for the run ID in the request, if so stop here.
 	w := &config.Workflow{ID: req.RunId}
 	if err := ds.Get(c, w); err != ds.ErrNoSuchEntity {
@@ -98,7 +98,7 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.Provider, iso
 	wfTask := tq.NewPOSTTask("/tracker/internal/workflow-launched", nil)
 	wfTask.Payload = b
 	// Isolate initial input.
-	inputHash, err := isolator.IsolateGitFileDetails(c, &tricium.Data_GitFileDetails{
+	inputHash, err := isolator.IsolateGitFileDetails(c, wf.IsolateServer, &tricium.Data_GitFileDetails{
 		Repository: req.GitRepo,
 		Ref:        req.GitRef,
 		Paths:      req.Paths,
@@ -113,10 +113,8 @@ func launch(c context.Context, req *admin.LaunchRequest, cp config.Provider, iso
 	for _, worker := range wf.RootWorkers() {
 		b, err := proto.Marshal(&admin.TriggerRequest{
 			RunId:             req.RunId,
-			IsolateServerUrl:  common.IsolateDevServerURL,
 			IsolatedInputHash: inputHash,
 			Worker:            worker,
-			SwarmingServerUrl: common.SwarmingDevServerURL,
 		})
 		if err != nil {
 			return fmt.Errorf("failed to encode driver request: %v", err)

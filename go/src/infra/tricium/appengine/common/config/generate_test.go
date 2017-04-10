@@ -24,6 +24,8 @@ const (
 
 var (
 	sc = &tricium.ServiceConfig{
+		SwarmingServer: "chromium-swarm-dev",
+		IsolateServer:  "isolatedserver-dev",
 		Projects: []*tricium.ProjectDetails{
 			{
 				Name: project,

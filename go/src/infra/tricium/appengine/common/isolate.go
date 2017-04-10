@@ -28,16 +28,14 @@ import (
 )
 
 const (
-	// IsolateDevServerURL specifies the URL to the Isolate dev server.
-	IsolateDevServerURL = "https://isolateserver-dev.appspot.com"
-	// IsolateProdServerURL specifies the URL to the Isolate production server.
-	IsolateProdServerURL = "https://isolateserver.appspot.com"
+	isolateDevServerURL  = "https://isolateserver-dev.appspot.com"
+	isolateProdServerURL = "https://isolateserver.appspot.com"
 )
 
-// Isolator defines the interface to the isolate server.
+// IsolateAPI defines the interface to the isolate server.
 //
 // The interface is tuned to the needs of Tricium and Tricium data.
-type Isolator interface {
+type IsolateAPI interface {
 	// IsolateGitFileDetails isolates Git file details based on the corresponding Tricium data type definition.
 	//
 	// The Git file details data type should be isolated with the following path tricium/data/git_file_details.json
@@ -51,34 +49,36 @@ type Isolator interface {
 	//   ...
 	// }
 	// Note that this isolate has not command and includes no other isolates.
-	IsolateGitFileDetails(c context.Context, d *tricium.Data_GitFileDetails) (string, error)
+	IsolateGitFileDetails(c context.Context, serverURL string, d *tricium.Data_GitFileDetails) (string, error)
 
 	// IsolateWorker isolates the provided worker.
 	//
 	// The provided isolated input hash is included in the worker isolate.
 	// The command of the worker is used as the command of the worker isolate.
-	IsolateWorker(c context.Context, worker *admin.Worker, isolatedInput string) (string, error)
+	IsolateWorker(c context.Context, serverURL string, worker *admin.Worker, isolatedInput string) (string, error)
 
 	// LayerIsolates creates isolates files from the provided isolates input and output.
 	//
+	// Layered isolates are used to communicate data from one worker to its successor workers.
 	// The content of the isolates output is copied and the provided isolated input is
 	// added as an include.
-	LayerIsolates(c context.Context, isolatedInput, isolatedOutput string) (string, error)
+	LayerIsolates(c context.Context, serverURL, isolatedInput, isolatedOutput string) (string, error)
 
 	// FetchIsolatedResult fetches isolated Tricium result output as a JSON string.
 	//
 	// The output is assumed to be on the form of a Tricium result and located in
 	// tricium/data/results.json in the isolated output.
-	FetchIsolatedResults(c context.Context, isolatedOutput string) (string, error)
+	FetchIsolatedResults(c context.Context, serverURL, solatedOutput string) (string, error)
 }
 
-// IsolateServer represents an Isolateserver server instance.
-type IsolateServer struct {
-	IsolateServerURL string
+// IsolateServer implements the IsolateAPI interface.
+var IsolateServer isolateServer
+
+type isolateServer struct {
 }
 
-// IsolateGitFileDetails isolates git file details, see the Isolator interface.
-func (s *IsolateServer) IsolateGitFileDetails(c context.Context, d *tricium.Data_GitFileDetails) (string, error) {
+// IsolateGitFileDetails implements the IsolateAPI interface.
+func (s isolateServer) IsolateGitFileDetails(c context.Context, serverURL string, d *tricium.Data_GitFileDetails) (string, error) {
 	chunks := make([]*isoChunk, 2)
 	mode := 0444
 
@@ -121,7 +121,7 @@ func (s *IsolateServer) IsolateGitFileDetails(c context.Context, d *tricium.Data
 	}
 
 	// Isolate chunks.
-	if err := s.isolateChunks(c, chunks); err != nil {
+	if err := s.isolateChunks(c, serverURL, chunks); err != nil {
 		return "", fmt.Errorf("failed to isolate chunks: %v", err)
 	}
 
@@ -129,8 +129,8 @@ func (s *IsolateServer) IsolateGitFileDetails(c context.Context, d *tricium.Data
 	return string(chunks[1].file.Digest), nil
 }
 
-// IsolateWorker isolates the command of the provided worker and includes the provided isolated input.
-func (s *IsolateServer) IsolateWorker(c context.Context, worker *admin.Worker, isolatedInput string) (string, error) {
+// IsolateWorker implements the IsolateAPI interface.
+func (s isolateServer) IsolateWorker(c context.Context, serverURL string, worker *admin.Worker, isolatedInput string) (string, error) {
 	mode := 0444
 	iso := isolated.New()
 	iso.Command = append([]string{worker.Cmd.Exec}, worker.Cmd.Args...)
@@ -149,18 +149,16 @@ func (s *IsolateServer) IsolateWorker(c context.Context, worker *admin.Worker, i
 		Mode:   &mode,
 		Size:   &isoSize,
 	}
-	if err := s.isolateChunks(c, []*isoChunk{chunk}); err != nil {
+	if err := s.isolateChunks(c, serverURL, []*isoChunk{chunk}); err != nil {
 		return "", fmt.Errorf("failed to isolate chunk: %v", err)
 	}
 	return string(chunk.file.Digest), nil
 }
 
-// LayerIsolates copies the provided output isolate to a new isolate that includes the provided input isolate.
-//
-// Layered isolates are used to communicate data from one worker to its successor workers.
-func (s *IsolateServer) LayerIsolates(c context.Context, isolatedInput, isolatedOutput string) (string, error) {
+// LayerIsolates implements the IsolateAPI interface.
+func (s isolateServer) LayerIsolates(c context.Context, serverURL, isolatedInput, isolatedOutput string) (string, error) {
 	mode := 0444
-	outIso, err := s.fetchIsolated(c, isolatedOutput)
+	outIso, err := s.fetchIsolated(c, serverURL, isolatedOutput)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch output isolate: %v", err)
 	}
@@ -181,17 +179,15 @@ func (s *IsolateServer) LayerIsolates(c context.Context, isolatedInput, isolated
 		Mode:   &mode,
 		Size:   &isoSize,
 	}
-	if err := s.isolateChunks(c, []*isoChunk{chunk}); err != nil {
+	if err := s.isolateChunks(c, serverURL, []*isoChunk{chunk}); err != nil {
 		return "", fmt.Errorf("failed to isolate chunk for layered isolate: %v", err)
 	}
 	return string(chunk.file.Digest), nil
 }
 
-// FetchIsolatedResults fetches the result file in the provided isolated output.
-//
-// The isolated output is assumed to include a Tricium result file.
-func (s *IsolateServer) FetchIsolatedResults(c context.Context, isolatedOutput string) (string, error) {
-	outIso, err := s.fetchIsolated(c, isolatedOutput)
+// FetchIsolatedResults implements the IsolateAPI interface.
+func (s isolateServer) FetchIsolatedResults(c context.Context, serverURL, isolatedOutput string) (string, error) {
+	outIso, err := s.fetchIsolated(c, serverURL, isolatedOutput)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch output isolate: %v", err)
 	}
@@ -200,14 +196,14 @@ func (s *IsolateServer) FetchIsolatedResults(c context.Context, isolatedOutput s
 		return "", fmt.Errorf("missing results file in isolated output, digest: %s", resultsFile.Digest)
 	}
 	buf := &buffer{}
-	if err := s.fetch(c, string(resultsFile.Digest), buf); err != nil {
+	if err := s.fetch(c, serverURL, string(resultsFile.Digest), buf); err != nil {
 		return "", fmt.Errorf("failed to fetch result file: %v", err)
 	}
 	// TODO(emso): Switch to io.Reader to avoid keeping the whole buffer in memory.
 	return string(buf.Bytes()), nil
 }
 
-func (s *IsolateServer) isolateChunks(c context.Context, chunks []*isoChunk) error {
+func (s isolateServer) isolateChunks(c context.Context, serverURL string, chunks []*isoChunk) error {
 	// Check presence of isolated files.
 	dgsts := make([]*isolateservice.HandlersEndpointsV1Digest, len(chunks))
 	for i, chnk := range chunks {
@@ -217,7 +213,7 @@ func (s *IsolateServer) isolateChunks(c context.Context, chunks []*isoChunk) err
 			IsIsolated: chnk.isIso,
 		}
 	}
-	client, err := s.createIsolateClient(c)
+	client, err := s.createIsolateClient(c, serverURL)
 	if err != nil {
 		return err
 	}
@@ -238,8 +234,8 @@ func (s *IsolateServer) isolateChunks(c context.Context, chunks []*isoChunk) err
 	})
 }
 
-func (s *IsolateServer) fetch(c context.Context, digest string, buf *buffer) error {
-	client, err := s.createIsolateClient(c)
+func (s isolateServer) fetch(c context.Context, serverURL, digest string, buf *buffer) error {
+	client, err := s.createIsolateClient(c, serverURL)
 	if err != nil {
 		return err
 	}
@@ -250,9 +246,9 @@ func (s *IsolateServer) fetch(c context.Context, digest string, buf *buffer) err
 	return nil
 }
 
-func (s *IsolateServer) fetchIsolated(c context.Context, digest string) (*isolated.Isolated, error) {
+func (s isolateServer) fetchIsolated(c context.Context, serverURL, digest string) (*isolated.Isolated, error) {
 	buf := &buffer{}
-	if err := s.fetch(c, digest, buf); err != nil {
+	if err := s.fetch(c, serverURL, digest, buf); err != nil {
 		return nil, fmt.Errorf("failed to fetch isolate: %v", err)
 	}
 	iso := &isolated.Isolated{}
@@ -261,7 +257,7 @@ func (s *IsolateServer) fetchIsolated(c context.Context, digest string) (*isolat
 	return iso, nil
 }
 
-func (s *IsolateServer) createIsolateClient(c context.Context) (*isolatedclient.Client, error) {
+func (s isolateServer) createIsolateClient(c context.Context, serverURL string) (*isolatedclient.Client, error) {
 	authTransport, err := auth.GetRPCTransport(c, auth.AsSelf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup auth transport for isolate client: %v", err)
@@ -272,7 +268,7 @@ func (s *IsolateServer) createIsolateClient(c context.Context) (*isolatedclient.
 	}
 	// TODO(emso): Add check of devserver/dev instance or prod and select isolate server accordingly.
 	return isolatedclient.New(&http.Client{Transport: anonTransport}, &http.Client{Transport: authTransport},
-		s.IsolateServerURL, isolatedclient.DefaultNamespace, nil, nil), nil
+		serverURL, isolatedclient.DefaultNamespace, nil, nil), nil
 }
 
 type isoChunk struct {
@@ -293,33 +289,35 @@ func (f *buffer) Seek(a int64, b int) (int64, error) {
 	return 0, nil
 }
 
-// MockIsolator mocks the Isolator interface for testing.
-type MockIsolator struct{}
+// MockIsolator mocks the IsolateAPI interface for testing.
+var MockIsolator mockIsolator
+
+type mockIsolator struct{}
 
 // IsolateGitFileDetails is a mock function for MockIsolator.
 //
 // For any testing actually using the return values, create a new mock.
-func (*MockIsolator) IsolateGitFileDetails(c context.Context, d *tricium.Data_GitFileDetails) (string, error) {
+func (mockIsolator) IsolateGitFileDetails(c context.Context, serverURL string, d *tricium.Data_GitFileDetails) (string, error) {
 	return "mockmockmock", nil
 }
 
 // IsolateWorker is a mock function for MockIsolator.
 //
 // For any testing actually using the return values, create a new mock.
-func (*MockIsolator) IsolateWorker(c context.Context, worker *admin.Worker, inputIsolate string) (string, error) {
+func (mockIsolator) IsolateWorker(c context.Context, serverURL string, worker *admin.Worker, inputIsolate string) (string, error) {
 	return "mockmockmock", nil
 }
 
 // LayerIsolates is a mock function for MockIsolator.
 //
 // For any testing actually using the return values, create a new mock.
-func (*MockIsolator) LayerIsolates(c context.Context, isolatedInput, isolatedOutput string) (string, error) {
+func (mockIsolator) LayerIsolates(c context.Context, serverURL, isolatedInput, isolatedOutput string) (string, error) {
 	return "mockmockmock", nil
 }
 
 // FetchIsolatedResults is mock function for MockIsolator.
 //
 // For any testing using the return value, create a new mock.
-func (*MockIsolator) FetchIsolatedResults(c context.Context, isolatedOutput string) (string, error) {
+func (mockIsolator) FetchIsolatedResults(c context.Context, serverURL, isolatedOutput string) (string, error) {
 	return "mockmockmock", nil
 }

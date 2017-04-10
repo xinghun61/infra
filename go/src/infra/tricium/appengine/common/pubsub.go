@@ -26,10 +26,10 @@ const (
 	pushURLFormat      = "%s.appspot.com/_ah/push-handlers/notify"
 )
 
-// PubSub defines the interface to the pubsub server.
+// PubSubAPI defines the interface to the pubsub server.
 //
 // The interface is tuned to the needs of Tricium.
-type PubSub interface {
+type PubSubAPI interface {
 	// Setup sets up pubsub subscription.
 	//
 	// The subscription will be connected to a topic derived from the instance context.
@@ -174,19 +174,21 @@ func subscription(c context.Context) (string, string) {
 }
 
 // MockPubSub mocks the PubSub interface for testing.
-type MockPubSub struct {
+var MockPubSub mockPubSub
+
+type mockPubSub struct {
 }
 
 // Setup is a mock function for the PubSub interface.
 //
 // For any testing actually using the return value, create a new mock.
-func (*MockPubSub) Setup(c context.Context) error {
+func (mockPubSub) Setup(c context.Context) error {
 	return nil
 }
 
 // Pull is a mock function for the PubSub interface.
 //
 // For any testing actually using the return value, create a new mock.
-func (*MockPubSub) Pull(c context.Context) (*pubsub.PubsubMessage, error) {
+func (mockPubSub) Pull(c context.Context) (*pubsub.PubsubMessage, error) {
 	return nil, nil
 }

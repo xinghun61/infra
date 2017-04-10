@@ -20,10 +20,8 @@ service Driver {
 // Tricium worker.
 message TriggerRequest {
   int64 run_id = 1;
-  string isolate_server_url = 2;
-  string isolated_input_hash = 3;
-  string worker = 4;
-  string swarming_server_url = 5;
+  string isolated_input_hash = 2;
+  string worker = 3;
 }
 
 message TriggerResponse {
@@ -34,22 +32,18 @@ message TriggerResponse {
 message CollectRequest {
   int64 run_id = 1;
 
-  string isolate_server_url = 2;
-
   // The isolated input of this worker is imported in the input hash of any successor
   // workers of this worker. Passing it along here to make sure it is available.
-  string isolated_input_hash = 3;
+  string isolated_input_hash = 2;
 
   // Points out which worker to collect results for. This worker name is used to
   // mangle the ID of the swarming task running the worker.
-  string worker = 4;
-
-  string swarming_server_url = 5;
+  string worker = 3;
 
   // The Swarming task ID.
   //
   // Used to collect results from the completed swarming worker task.
-  string task_id = 6;
+  string task_id = 4;
 }
 
 message CollectResponse {

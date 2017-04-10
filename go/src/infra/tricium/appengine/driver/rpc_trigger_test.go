@@ -22,7 +22,7 @@ import (
 type mockWorkflowProvider struct {
 }
 
-func (mockWorkflowProvider) ReadWorkflowForRun(c context.Context, runID int64) (*admin.Workflow, error) {
+func (mockWorkflowProvider) GetWorkflow(c context.Context, runID int64) (*admin.Workflow, error) {
 	return &admin.Workflow{
 		Workers: []*admin.Worker{
 			{
@@ -53,7 +53,7 @@ func TestTriggerRequest(t *testing.T) {
 			err := trigger(ctx, &admin.TriggerRequest{
 				RunId:  runID,
 				Worker: "Hello",
-			}, mockWorkflowProvider{}, &common.MockSwarmingAPI{}, &common.MockIsolator{})
+			}, mockWorkflowProvider{}, common.MockSwarmingAPI, common.MockIsolator)
 			So(err, ShouldBeNil)
 			Convey("Enqueues track request", func() {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.TrackerQueue]), ShouldEqual, 1)
