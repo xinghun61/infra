@@ -146,3 +146,4 @@ crash_frontend_web_pages_handler_mappings = [
 ]
 crash_frontend_web_application = webapp2.WSGIApplication(
     crash_frontend_web_pages_handler_mappings, debug=False)
+gae_ts_mon.initialize(crash_frontend_web_application)
