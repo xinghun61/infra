@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import logging
 
 from components import utils
@@ -16,7 +17,9 @@ from google import protobuf
 import mock
 
 from proto import project_config_pb2
+from swarming import swarmingcfg
 import config
+
 
 LUCI_CHROMIUM_TRY_CONFIG_TEXT = (
 '''name: "luci.chromium.try"
@@ -531,6 +534,65 @@ class ConfigTest(testing.AppengineTestCase):
         }
       }
       '''), [])
+
+  def test_validate_buildbucket_cfg_swarming(self):
+    flatten_builder_mock_with_cloned_args = mock.Mock()
+    orig_flatten_builder = swarmingcfg.flatten_builder
+
+    def flatten_builder(builder, defaults, mixin):
+      flatten_builder_mock_with_cloned_args(
+          copy.deepcopy(builder),
+          copy.deepcopy(defaults),
+          copy.deepcopy(mixin),
+      )
+      orig_flatten_builder(builder, defaults, mixin)
+
+    self.patch(
+        'swarming.swarmingcfg.flatten_builder',
+        autospec=True,
+        side_effect=flatten_builder)
+
+    cfg = parse_cfg('''
+      acl_sets {
+        name: "public"
+        acls {
+          role: READER
+          group: "all"
+        }
+      }
+      builder_mixins {
+        name: "m"
+        recipe {
+          repository: "https://chromium.googlesource.com/infra/infra"
+        }
+      }
+      buckets {
+        name: "luci.chromium.continuous"
+        acl_sets: "public"
+        swarming {
+          hostname: "swarming.example.com"
+          builder_defaults {
+            dimensions: "pool:P"
+          }
+          builders {
+            name: "builder"
+            mixins: "m"
+            recipe {
+              name: "r"
+            }
+          }
+        }
+      }
+      ''')
+    self.cfg_validation_test(copy.deepcopy(cfg), [])
+
+    flatten_builder_mock_with_cloned_args.assert_any_call(
+        cfg.buckets[0].swarming.builders[0],
+        cfg.buckets[0].swarming.builder_defaults,
+        {
+          'm': cfg.builder_mixins[0],
+        },
+    )
 
   def test_validate_buildbucket_cfg_fail(self):
     self.cfg_validation_test(parse_cfg('''
