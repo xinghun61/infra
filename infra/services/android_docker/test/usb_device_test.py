@@ -164,6 +164,22 @@ class TestGetDevices(TestDevice):
     self.assertEquals(devices[0].serial, 'serial2')
     self.assertEquals(devices[1].serial, 'serial3')
 
+  @mock.patch('usb1.USBContext')
+  def test_get_devices_repeated_serials(self, mock_usb_context):
+    d1_copy1 = self.libusb_device
+    d1_copy2 = copy.copy(self.libusb_device)
+    d1_copy3 = copy.copy(self.libusb_device)
+    d2 = copy.copy(self.libusb_device)
+    d2.serial = 'serial2'
+    d3 = copy.copy(self.libusb_device)
+    d3.serial = 'serial3'
+    self.usb_context = FakeUSBContext([d1_copy1, d1_copy2, d1_copy3, d2, d3])
+    mock_usb_context.return_value = self.usb_context
+    devices = usb_device.get_android_devices(None)
+    self.assertEquals(len(devices), 2)
+    self.assertEquals(devices[0].serial, 'serial2')
+    self.assertEquals(devices[1].serial, 'serial3')
+
 
 class TestGetPhysicalPorts(TestDevice):
   def setUp(self):

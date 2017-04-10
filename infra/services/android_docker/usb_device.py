@@ -8,6 +8,7 @@ Wraps python-libusb1 to provide config/descriptions for a device. Does not
 provide any low-level IO support over the bus.
 """
 
+import collections
 import os
 import sys
 import libusb1
@@ -41,11 +42,23 @@ def get_android_devices(filter_devices):
 
   if not android_devices:
     logging.error('Unable to find devices: %s', filter_devices or 'all')
+    return []
 
   # Determine the order in which the devices are physically plugged in. Can
   # only be done once all devices have been discovered.
-  if android_devices:
-    assign_physical_ports(android_devices)
+  assign_physical_ports(android_devices)
+
+  # Remove devices with duplicate serials. This can wreak havoc in container
+  # management logic since each device's container is identified by its device's
+  # presumed-to-be-unique serial.
+  device_count = collections.defaultdict(int)
+  for d in android_devices:
+    device_count[d.serial] += 1
+  for serial, count in device_count.iteritems():
+    if count > 1:
+      logging.error(
+          'Ignoring device %s due to it appearing %d times.', serial, count)
+  android_devices = [d for d in android_devices if device_count[d.serial] == 1]
 
   # Filter out the requested devices only after the physical ports have been
   # assigned.
