@@ -501,7 +501,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       recursive_flake_pipeline.confidence, 'SteppinessForBuild',
       return_value=0.4)
-  def testNextBuildPipelineForSuspectedBuildRerunFirstBuild(self, *_):
+  def testNextBuildPipelineForSuspectedBuildRerunStableBuild(self, *_):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -519,10 +519,14 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
 
-    data_point = DataPoint()
-    data_point.pass_rate = 1.0
-    data_point.build_number = 100
-    analysis.data_points.append(data_point)
+    data_point1 = DataPoint()
+    data_point1.pass_rate = 0.8
+    data_point1.build_number = 101
+    analysis.data_points.append(data_point1)
+    data_point2 = DataPoint()
+    data_point2.pass_rate = 1.0
+    data_point2.build_number = 100
+    analysis.data_points.append(data_point2)
     analysis.put()
 
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakePipeline,
@@ -547,7 +551,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name, test_name)
     self.assertEqual(200, analysis.algorithm_parameters['swarming_rerun'][
         'iterations_to_rerun'])
-    self.assertEqual([], analysis.data_points)
+    self.assertEqual([data_point1], analysis.data_points)
     self.assertEqual(analysis_status.RUNNING, analysis.status)
 
   @mock.patch.object(
@@ -943,20 +947,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     recursive_flake_pipeline._UpdateIterationsToRerun(analysis, None)
     self.assertEqual(analysis.algorithm_parameters,
                      DEFAULT_CONFIG_DATA['check_flake_settings'])
-
-  def testRemoveRerunedBuildDataPointEmpty(self):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    step_name = 's'
-    test_name = 't'
-
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.Save()
-
-    recursive_flake_pipeline._RemoveRerunBuildDataPoint(analysis)
-    self.assertEqual(analysis.data_points, [])
 
   @mock.patch.object(RecursiveFlakePipeline, 'was_aborted', return_value=True)
   def testRecursiveFlakePipelineAborted(self, _):

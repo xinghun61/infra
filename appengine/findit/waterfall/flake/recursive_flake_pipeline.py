@@ -424,11 +424,14 @@ def _UpdateIterationsToRerun(analysis, iterations_to_rerun):
       'iterations_to_rerun'] = iterations_to_rerun
 
 
-def _RemoveRerunBuildDataPoint(analysis):
-  if len(analysis.data_points) < 1 or analysis.data_points[-1].try_job_url:
-    return
+def _RemoveRerunBuildDataPoint(analysis, build_number):
+  new_data_points = []
+  for data_point in analysis.data_points:
+    if data_point.build_number == build_number:
+      continue
+    new_data_points.append(data_point)
 
-  analysis.data_points.pop()
+  analysis.data_points = new_data_points
 
 
 def _GetFullBlamedCLsAndLowerBound(suspected_build_point, data_points):
@@ -504,7 +507,7 @@ class NextBuildNumberPipeline(BasePipeline):
     if iterations_to_rerun:
       # Need to rerun the first build with more iterations.
       _UpdateIterationsToRerun(analysis, iterations_to_rerun)
-      _RemoveRerunBuildDataPoint(analysis)
+      _RemoveRerunBuildDataPoint(analysis, next_build_number)
       analysis.put()
 
     max_build_numbers_to_look_back = algorithm_settings.get(
