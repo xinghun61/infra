@@ -154,8 +154,8 @@ class InboundEmailTest(unittest.TestCase):
         mox.IgnoreArg()).AndReturn(True)
     self.mox.StubOutWithMock(monorailrequest.AuthData, 'FromEmail')
     monorailrequest.AuthData.FromEmail(
-        mox.IgnoreArg(), 'user@example.com', self.services).AndReturn(
-            mock_auth_data)
+        mox.IgnoreArg(), 'user@example.com', self.services,
+        autocreate=False).AndReturn(mock_auth_data)
     self.mox.ReplayAll()
 
     email_tasks = self.inbound.ProcessMail(self.msg, self.project_addr)
@@ -182,8 +182,8 @@ class InboundEmailTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(monorailrequest.AuthData, 'FromEmail')
     monorailrequest.AuthData.FromEmail(
-        mox.IgnoreArg(), 'user@example.com', self.services).AndReturn(
-            mock_auth_data)
+        mox.IgnoreArg(), 'user@example.com', self.services,
+        autocreate=False).AndReturn(mock_auth_data)
 
     self.mox.StubOutWithMock(permissions, 'GetPermissions')
     permissions.GetPermissions(

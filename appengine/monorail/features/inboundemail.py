@@ -107,7 +107,7 @@ class InboundEmail(webapp2.RequestHandler):
 
     project_name, verb = emailfmt.IdentifyProjectAndVerb(project_addr)
 
-    is_alert = verb and verb.lower() == 'alert'
+    is_alert = bool(verb and verb.lower() == 'alert')
     error_addr = from_addr
     local_id = None
     author_addr = from_addr
@@ -154,7 +154,7 @@ class InboundEmail(webapp2.RequestHandler):
     # line hash will not match, which seems reasonable.
     try:
       auth = monorailrequest.AuthData.FromEmail(
-          cnxn, author_addr, self.services)
+          cnxn, author_addr, self.services, autocreate=is_alert)
       author_id = auth.user_id
     except user_svc.NoSuchUserException:
       author_id = None
