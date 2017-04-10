@@ -70,6 +70,7 @@ var (
 	replayTime          = flag.String("replay-time", "", "Specify a simulated starting time for the replay in RFC3339 format, used with --replay-snapshot.")
 	serviceAccountJSON  = flag.String("service-account", "", "Service account JSON file.")
 	miloHost            = flag.String("milo-host", "", "Hostname of milo service to use instead of buildbot/CBE")
+	runOnce             = flag.Bool("runOnce", false, "If the dispatcher should run once, and then exit. Useful for local testing.")
 
 	duration, cycle time.Duration
 
@@ -457,6 +458,10 @@ func run(ctx context.Context, transport http.RoundTripper, cycle, duration time.
 		if _, ok := gkts[tree]; !ok {
 			return fmt.Errorf("Unrecognized tree name: %s", tree)
 		}
+	}
+
+	if *runOnce {
+		return mainLoop(ctx, a, trees, transport, writeAlerts)
 	}
 
 	// This is the polling/analysis/alert posting function, which will run in a loop until
