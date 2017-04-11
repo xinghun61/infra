@@ -1,8 +1,6 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-from datetime import datetime
-from datetime import time
 from datetime import timedelta
 import logging
 import numpy
@@ -15,6 +13,7 @@ from model.wf_suspected_cl import WfSuspectedCL
 
 
 _NOT_AVAILABLE = 'N/A'
+_DEFAULT_PAGE_SIZE = 1000
 
 
 def _CalculateMetrics(numbers):
@@ -110,23 +109,41 @@ def _GenerateMetrics(suspected_cls):
   }
 
 
+def _GetAnalysesWithinDateRange(
+    start_date, end_date, page_size=_DEFAULT_PAGE_SIZE):
+  all_suspected_cls = []
+  more = True
+  cursor = None
+
+  while more:
+    suspected_cls, cursor, more = WfSuspectedCL.query(
+        WfSuspectedCL.identified_time >= start_date,
+        WfSuspectedCL.identified_time < end_date).fetch_page(
+            page_size, start_cursor=cursor)
+    all_suspected_cls.extend(suspected_cls)
+
+  return all_suspected_cls
+
+
 class AutoRevertMetrics(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):  # pragma: no cover
     """Shows the metrics of revert CLs created."""
-    # Only consider results in the past 7-day window beginning 24 hours ago.
-    midnight_today = datetime.combine(time_util.GetUTCNow(), time.min)
-    start_date = midnight_today - timedelta(days=8)
-    end_date = midnight_today - timedelta(days=1)
+    start = self.request.get('start_date')
+    end = self.request.get('end_date')
 
-    suspected_cls = WfSuspectedCL.query(
-        WfSuspectedCL.identified_time >= start_date,
-        WfSuspectedCL.identified_time < end_date).fetch()
+    if not start and not end:
+      # Default to 1 week of data, starting from 1 day before the most previous
+      # midnight.
+      previous_utc_midnight = time_util.GetMostRecentUTCMidnight()
+      start_date = previous_utc_midnight - timedelta(days=8)
+      end_date = previous_utc_midnight - timedelta(days=1)
+    else:
+      start_date, end_date = time_util.GetStartEndDates(start, end)
 
+    suspected_cls = _GetAnalysesWithinDateRange(start_date, end_date)
     data = _GenerateMetrics(suspected_cls)
-
-    # TODO(lijeffrey): Add date picker UI.
     data['start_date'] = time_util.FormatDatetime(start_date)
     data['end_date'] = time_util.FormatDatetime(end_date)
 

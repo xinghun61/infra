@@ -30,6 +30,26 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
     self.assertEqual(
         expected_stats, auto_revert_metrics._CalculateMetrics([1, 2]))
 
+  def testGetAnalysesWithinDateRange(self):
+    start_date = datetime(2017, 4, 8, 0, 0)
+    end_date = datetime(2017, 4, 9, 0, 0)
+
+    suspected_cl_1 = WfSuspectedCL.Create('chromium', 'r1', 1)
+    suspected_cl_1.identified_time = datetime(2017, 4, 8, 0, 1)
+    suspected_cl_1.put()
+
+    suspected_cl_2 = WfSuspectedCL.Create('chromium', 'r2', 2)
+    suspected_cl_2.identified_time = datetime(2017, 4, 8, 0, 2)
+    suspected_cl_2.put()
+
+    suspected_cl_3 = WfSuspectedCL.Create('chromium', 'r3', 3)
+    suspected_cl_3.identified_time = datetime(2017, 4, 9, 0, 2)
+    suspected_cl_3.put()
+
+    self.assertEqual([suspected_cl_1, suspected_cl_2],
+                     auto_revert_metrics._GetAnalysesWithinDateRange(
+                         start_date, end_date, 1))
+
   def testGenerateMetrics(self):
     reverted_suspected_cl = WfSuspectedCL.Create('chromium', 'r1', 1)
     reverted_revert_cl = RevertCL()
