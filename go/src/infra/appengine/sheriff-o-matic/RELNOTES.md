@@ -1,3 +1,23 @@
+# Release Notes sheriff-o-matic 2017-04-11
+
+- 6 commits, 0 bugs affected since 6c97eaf (2017-04-03T21:36:11Z)
+- 5 Authors:
+  - martiniss@google.com
+  - vadimsh@chromium.org
+  - seanmccullough@chromium.org
+  - chanli@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [AD: Count number of failures](https://chromium-review.googlesource.com/474168) (martiniss@google.com)
+- [Move wct.yaml and sheriff-o-matic.yaml outside of build/packages/*.](https://chromium-review.googlesource.com/472146) (vadimsh@chromium.org)
+- [[som] Clearly lable primary and secondary troopers.](https://chromium-review.googlesource.com/470327) (seanmccullough@chromium.org)
+- [[SoM-Findit] Explicitly show 'Not supported by Findit' for not supported failures.](https://chromium-review.googlesource.com/466547) (chanli@chromium.org)
+- [SoM: Make tree status show when tree is open as well.](https://chromium-review.googlesource.com/467911) (zhangtiff@google.com)
+- [[som] update RELNOTEs.md for latest push](https://chromium-review.googlesource.com/466690) (seanmccullough@chromium.org)
+
+
 # Release Notes sheriff-o-matic 2017-04-03
 
 - 6 commits, 1 bugs affected since 6a90299 ()
