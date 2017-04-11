@@ -166,6 +166,9 @@
 
     _computeTrees(treeList) {
       let trees = {};
+      if (!treeList) {
+        return trees;
+      }
       treeList.forEach(function(tree) {
         trees[tree.name] = tree;
       });

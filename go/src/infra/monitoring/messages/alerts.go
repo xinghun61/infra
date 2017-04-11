@@ -209,6 +209,7 @@ type AlertedBuilder struct {
 	FirstFailure int64 `json:"first_failure"`
 	// LatestFailure is the build number of latest failure.
 	LatestFailure int64 `json:"latest_failure"`
+	Count         int   `json:"count"`
 }
 
 // RegressionRange identifies the bounds of the location of a regression.

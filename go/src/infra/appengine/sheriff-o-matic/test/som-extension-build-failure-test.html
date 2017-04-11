@@ -36,6 +36,39 @@
       });
     });
 
+    test('failureCountText', function() {
+      assert.equal(element._failureCountText({
+        latest_failure:1, first_failure:0}), '[2 since first detection]');
+
+      assert.equal(element._failureCountText({
+        latest_failure:4, first_failure:0}), '[5 since first detection]');
+
+      assert.equal(element._failureCountText({
+        latest_failure:4, first_failure:0, count: 2}),
+        '[2 out of the last 5 builds have failed]');
+    });
+
+    test('renders count of successive failures', function(done) {
+      element.extension = {
+        builders: [
+          {name: 'dummy builder 1', first_failure:0, latest_failure:3},
+          {name: 'dummy builder 2', first_failure:0, latest_failure:4, count:2},
+          {name: 'dummy builder 3', first_failure:0, latest_failure:4, count:4},
+        ],
+        reason: {},
+        regression_ranges: []
+      };
+      element._uberify = (url) => { return url; };
+      flush( () => {
+        let items = element.getElementsByClassName('builder');
+        assert.equal(items.length, 3);
+        assert.include(items[0].textContent.trim(), '4 since first detection');
+        assert.include(items[1].textContent.trim(), '2 out of the last 5 builds have failed');
+        assert.include(items[2].textContent.trim(), '4 out of the last 5 builds have failed');
+        done();
+      });
+    });
+
     test('renders links for test results', function(done) {
       element.extension = {
         reason: {

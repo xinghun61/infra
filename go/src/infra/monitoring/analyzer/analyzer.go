@@ -478,6 +478,7 @@ func (a *Analyzer) mergeAlertsByReason(ctx context.Context, alerts []messages.Al
 				if ab.StartTime < builder.StartTime || builder.StartTime == 0 {
 					builder.StartTime = ab.StartTime
 				}
+				builder.Count += ab.Count
 			}
 			builders[builder.Name] = builder
 			regressionRanges[builder.Name] = bf.RegressionRanges
@@ -743,6 +744,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 			if firstBuilder.StartTime < mergedBuilder.StartTime || mergedBuilder.StartTime == 0 {
 				mergedBuilder.StartTime = firstBuilder.StartTime
 			}
+			mergedBuilder.Count += firstBuilder.Count
 			mergedBF.Builders[0] = mergedBuilder
 		}
 
@@ -1021,6 +1023,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 						StartTime:     f.Build.Times[0],
 						FirstFailure:  f.Build.Number,
 						LatestFailure: f.Build.Number,
+						Count:         1,
 					},
 				},
 				TreeCloser:       a.Gatekeeper.WouldCloseTree(ctx, f.Master, f.Build.BuilderName, f.Step.Name),

@@ -27,7 +27,15 @@
 
     _failureCount: function(builder) {
       // The build number range is inclusive.
-      let numBuilds = builder.latest_failure - builder.first_failure + 1;
+      return builder.latest_failure - builder.first_failure + 1;
+    },
+
+    _failureCountText: function(builder) {
+      let numBuilds = this._failureCount(builder);
+      if (builder.count) {
+        return `[${builder.count} out of the last ${numBuilds} builds have failed]`;
+      }
+
       if (numBuilds > 1) {
         return `[${numBuilds} since first detection]`;
       }
