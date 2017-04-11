@@ -194,7 +194,8 @@ class AttemptJobTracker(object):
         self.jobs.setdefault(master, {})
         self.jobs[master].setdefault(builder, {})
         job_info = job_info or {}
-        timestamp = parse_rietveld_timestamp(job_info.get('timestamp'))
+        timestamp = parse_rietveld_timestamp(
+            job_info.get('created_ts') or job_info.get('timestamp'))
         # Ignore jobs from past attempts.
         if (not timestamp or  # pragma: no branch
             timestamp < self.cutoff_timestamp):
