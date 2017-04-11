@@ -230,7 +230,7 @@ import:
 - package: github.com/VividCortex/godaemon
   repo: https://chromium.googlesource.com/external/github.com/VividCortex/godaemon.git
 - package: golang.org/x/build
-  version: master
+  version: 1cf306ea29af714ae6f446eda4fc3ac8abb37e6d  # next commit has sort.Slice, not support on GAE yet
   repo: https://go.googlesource.com/build.git
   subpackages:
   - gerrit
