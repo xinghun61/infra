@@ -10,10 +10,18 @@ DEPOT_TOOLS_URL="https://chromium.googlesource.com/chromium/tools/depot_tools.gi
 DEPOT_TOOLS_REV="da3a29e13e816459234b0b08ed1059300bae46dd"
 
 # Wait until this container has access to a device before starting the bot.
+START=$(/bin/date +%s)
+TIMEOUT=$((60*5))
 while [ ! -d /dev/bus/usb ]
 do
-  echo "Waiting for an available usb device..."
-  sleep 10
+  now=$(/bin/date +%s)
+  if [[ $((now-START)) -gt $TIMEOUT ]]; then
+    echo "Timed out while waiting for an available device. Quitting early." 1>&2
+    exit 1
+  else
+    echo "Waiting for an available usb device..."
+    sleep 10
+  fi
 done
 
 # Some chromium tests need depot tools.
