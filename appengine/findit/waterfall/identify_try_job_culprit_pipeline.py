@@ -84,31 +84,6 @@ def _GetSuspectedCLs(analysis, try_job_type, result, culprits):
   return suspected_cls
 
 
-def _GetFailedRevisionFromResultsDict(results_dict):
-  """Finds the failed revision from the given dict of revisions.
-
-  Args:
-    results_dict: (dict) A dict that maps revisions to their results. For
-    example:
-
-    {
-        'rev1': 'passed',
-        'rev2': 'passed',
-        'rev3': 'failed',
-    }
-
-    Note results_dict is expected only to have one failed revision which
-    will be the one to be returned.
-
-  Returns:
-    The revision corresponding to a failed result, if any.
-  """
-  for revision, result in results_dict.iteritems():
-    if result.lower() == 'failed':
-      return revision
-  return None
-
-
 def _GetFailedRevisionFromCompileResult(compile_result):
   """Determines the failed revision given compile_result.
 
@@ -119,18 +94,9 @@ def _GetFailedRevisionFromCompileResult(compile_result):
   Returns:
     The failed revision from compile_results, or None if not found.
   """
-  if not compile_result:
-    return None
-
-  report = compile_result.get('report')
-
-  if not report:
-    return None
-
-  if report.get('culprit'):
-    return report.get('culprit')
-
-  return _GetFailedRevisionFromResultsDict(report.get('result', {}))
+  return (
+      compile_result.get('report', {}).get('culprit') if compile_result
+      else None)
 
 
 def _GetCulpritsForTestsFromResultsDict(blame_list, test_results):

@@ -42,22 +42,6 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.mock(GitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
 
-  def testGetFailedRevisionFromResultsDict(self):
-    self.assertIsNone(
-        identify_try_job_culprit_pipeline._GetFailedRevisionFromResultsDict({}))
-    self.assertEqual(
-        None,
-        identify_try_job_culprit_pipeline._GetFailedRevisionFromResultsDict(
-            {'rev1': 'passed'}))
-    self.assertEqual(
-        'rev1',
-        identify_try_job_culprit_pipeline._GetFailedRevisionFromResultsDict(
-            {'rev1': 'failed'}))
-    self.assertEqual(
-        'rev2',
-        identify_try_job_culprit_pipeline._GetFailedRevisionFromResultsDict(
-            {'rev1': 'passed', 'rev2': 'failed'}))
-
   def testGetFailedRevisionFromCompileResult(self):
     self.assertIsNone(
         identify_try_job_culprit_pipeline._GetFailedRevisionFromCompileResult(
@@ -74,8 +58,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                     }
                 }
             }))
-    self.assertEqual(
-        'rev2',
+    self.assertIsNone(
         identify_try_job_culprit_pipeline._GetFailedRevisionFromCompileResult(
             {
                 'report': {
@@ -475,6 +458,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 'rev1': 'passed',
                 'rev2': 'failed'
             },
+            'culprit': 'rev2'
         },
     }
 
@@ -491,6 +475,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 'rev1': 'passed',
                 'rev2': 'failed'
             },
+            'culprit': 'rev2'
         },
         'try_job_id': try_job_id,
     }]
@@ -510,7 +495,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             'result': {
                 'rev1': 'passed',
                 'rev2': 'failed'
-            }
+            },
+            'culprit': 'rev2'
         },
         'try_job_id': try_job_id,
         'culprit': {
@@ -1004,6 +990,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             'result': {
                 revision: 'failed',
             },
+            'culprit': revision
         },
     }
 
@@ -1014,6 +1001,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             'result': {
                 revision: 'failed',
             },
+            'culprit': revision
         },
         'try_job_id': try_job_id,
     }]
