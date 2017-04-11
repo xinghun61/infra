@@ -93,7 +93,7 @@ CTF_CAN_FILE_BUGS_FOR_TESTS = (
     'when the test launcher is uploading results to the Test Results Server. '
     'If recent flakes above are caused by failing tests and you would like to '
     'have them filed as invidual bugs, please read more at '
-    'https://goo.gl/eB0GLj.')
+    'https://goo.gl/QJKXV4.')
 STALE_FLAKES_ML = 'stale-flakes-reports@google.com'
 MAX_GAP_FOR_FLAKINESS_PERIOD = datetime.timedelta(days=3)
 KNOWN_TROOPER_FLAKE_NAMES = [
