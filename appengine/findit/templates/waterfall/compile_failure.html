@@ -15,16 +15,16 @@
 
 {% block failure_info %}
     {% if build_number != first_failure %}
-      Current Failure: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}">{{build_number}}</a><br>
-      First Failure: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{first_failure}}">{{first_failure}}</a><br>
+      Current Failure: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}" target="_blank">{{build_number}}</a><br>
+      First Failure: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{first_failure}}" target="_blank">{{first_failure}}</a><br>
     {% else %}
-      First Failure: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}">{{build_number}}</a><br>
+      First Failure: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}" target="_blank">{{build_number}}</a><br>
     {% endif %}
     {% if infra_exception %}
       <div class="warning">This build failed due to an infra exception. Analysis skipped.</div>
     {% else %}
       {% if last_pass %}
-        Last Pass: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{last_pass}}">{{last_pass}}</a><br>
+        Last Pass: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{last_pass}}" target="_blank">{{last_pass}}</a><br>
         {% if last_pass + 1 != first_failure %}
         <div class="warning">Be careful, compile was not run or purple in builds before first failure!</div>
         {% endif %}
@@ -33,9 +33,9 @@
       {% endif %}
     {% endif %}
     {%if show_debug_info %}
-      <a href="/waterfall/failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/compile/logs/stdio">compile stdio</a>
+      <a href="/waterfall/failure-log?url=https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/compile/logs/stdio" target="_blank">compile stdio</a>
     {% else %}
-      <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/compile/logs/stdio">compile stdio</a>
+      <a href="https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/compile/logs/stdio" target="_blank">compile stdio</a>
     {% endif %}
 {% endblock failure_info %}
 
@@ -54,7 +54,7 @@
           <span class="error">Try job ran into error!</span>
         {% elif try_job.culprit %}
         {% set show_heuristic = False %}
-        Culprit: {{try_job.culprit.repo_name or 'chromium'}} <a href="{{try_job.culprit.url or try_job.culprit.review_url or ('https://chromium.googlesource.com/chromium/src.git/+/' + try_job.culprit.revision)}}">{{try_job.culprit.commit_position or try_job.culprit.revision}}</a>
+        Culprit: {{try_job.culprit.repo_name or 'chromium'}} <a href="{{try_job.culprit.url or try_job.culprit.review_url or ('https://chromium.googlesource.com/chromium/src.git/+/' + try_job.culprit.revision)}}" target="_blank">{{try_job.culprit.commit_position or try_job.culprit.revision}}</a>
         {% else %}
           <div>No culprit found!</div>
         {% endif%}
@@ -83,9 +83,9 @@
           <tbody>
             {% for suspected_cl in suspected_cls_by_heuristic %}
             <tr>
-              <td><a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{suspected_cl.build_number}}">{{suspected_cl.build_number}}</a></td>
+              <td><a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{suspected_cl.build_number}}" target="_blank">{{suspected_cl.build_number}}</a></td>
               <td>
-                {{suspected_cl.repo_name}} <a href="{{suspected_cl.url}}">{{suspected_cl.commit_position or suspected_cl.revision}}</a>
+                {{suspected_cl.repo_name}} <a href="{{suspected_cl.url}}" target="_blank">{{suspected_cl.commit_position or suspected_cl.revision}}</a>
               </td>
               <td>{{suspected_cl.score}}</td>
               <td>

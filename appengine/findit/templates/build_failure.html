@@ -124,10 +124,10 @@
           tableString += '<th width="150">Fix Build Number</th><th width="150">Possible Fixing CL</th><th width="100">Action</th></tr>';
           $.each(data, function(key, value) {
             tableString += '<tr>';
-            tableString += '<td><a href="' + value.fixed_build_url + '">' + value.fixed_build_number +'</a></td>';
-            tableString += '<td><a href="' + value.fixed_cl_review_url + '">' + value.fixed_cl_commit_position +'</a></td>';
-            tableString += '<td><a href="' + value.fixing_build_url + '">' + value.fixing_build_number +'</a></td>';
-            tableString += '<td><a href="' + value.fixing_cl_review_url + '">' + value.fixing_cl_commit_position +'</a></td>';
+            tableString += '<td><a href="' + value.fixed_build_url + '" target="_blank">' + value.fixed_build_number +'</a></td>';
+            tableString += '<td><a href="' + value.fixed_cl_review_url + '" target="_blank">' + value.fixed_cl_commit_position +'</a></td>';
+            tableString += '<td><a href="' + value.fixing_build_url + '" target="_blank">' + value.fixing_build_number +'</a></td>';
+            tableString += '<td><a href="' + value.fixing_cl_review_url + '" target="_blank">' + value.fixing_cl_commit_position +'</a></td>';
             tableString += '<td>' + value.action + '</td>';
             tableString += '</tr>';
           });
@@ -199,14 +199,14 @@
   </script>
 </head>
 <body>
-  Findit now provides results from both heuristics and try-jobs. (<a href="https://code.google.com/p/chromium/issues/entry?status=Unconfirmed&labels=Pri-2,findit&summary=Findit%20bug%20or%20reature%20request&comment=Url%20to%20the%20build%20Failure:%0Ahttps://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}%0A%0AWhat%20is%20the%20bug%20or%20feature:%0A">File a Findit bug</a>)
+  Findit now provides results from both heuristics and try-jobs. (<a href="https://code.google.com/p/chromium/issues/entry?status=Unconfirmed&labels=Pri-2,findit&summary=Findit%20bug%20or%20reature%20request&comment=Url%20to%20the%20build%20Failure:%0Ahttps://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}%0A%0AWhat%20is%20the%20bug%20or%20feature:%0A" target="_blank">File a Findit bug</a>)
   <br>
   <br>
 
   <b>{% block heading %}{% endblock heading %}</b>
   <div>
     Master: {{master_name}}<br>
-    Builder: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}">{{builder_name}}</a><br>
+    Builder: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}" target="_blank">{{builder_name}}</a><br>
     {% block failure_info %}{% endblock failure_info %}
   </div>
   <br>
@@ -216,7 +216,7 @@
     status: <span id="status_message"></span>
     {% if show_debug_info %}
       {% if pipeline_status_path %}
-        <a href="{{pipeline_status_path}}">pipeline</a>
+        <a href="{{pipeline_status_path}}" target="_blank">pipeline</a>
       {% endif %}
       <br>
       Requested: {{analysis_request_time | default('N/A', true)}}<br>
@@ -247,7 +247,7 @@
           <tr><th>CL</th><th>Confidence</th><th>Feedback</th></tr>
           {% for suspected_cl in suspected_cls %}
             <tr>
-              <td>{{ suspected_cl.repo_name }}&nbsp;<a href="{{ suspected_cl.url }}">{{ suspected_cl.commit_position or suspected_cl.revision }}</a></td>
+              <td>{{ suspected_cl.repo_name }}&nbsp;<a href="{{ suspected_cl.url }}" target="_blank">{{ suspected_cl.commit_position or suspected_cl.revision }}</a></td>
               <td>{{ suspected_cl.confidence }}</td>
               <td>
                 {% set cl_info = suspected_cl.repo_name + '/' + suspected_cl.revision %}
@@ -296,7 +296,7 @@
             <tr>
               <td>{{triage_record.triage_time}}</td>
               <td>{{triage_record.user_name}}</td>
-              <td>{{triage_record.triaged_cl.repo_name}} <a href="{{triage_record.triaged_cl.url}}">{{triage_record.triaged_cl.commit_position or triage_record.triaged_cl.revision}}</a></td>
+              <td>{{triage_record.triaged_cl.repo_name}} <a href="{{triage_record.triaged_cl.url}}" target="_blank">{{triage_record.triaged_cl.commit_position or triage_record.triaged_cl.revision}}</a></td>
               <td>{{triage_record.result_status}}</td>
               <td>{{triage_record.version | default('N/A', true)}}</td>
             </tr>

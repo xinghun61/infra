@@ -41,7 +41,7 @@
       if (findit.showDebugInfo) {
         stepLogUrl = '/waterfall/failure-log?url=' + stepUrl;
       }
-      var rowString = '<td rowspan="' + rowspan + '"><a href="' + stepLogUrl + '">' + step_name + '</a></td>';
+      var rowString = '<td rowspan="' + rowspan + '"><a href="' + stepLogUrl + '" target="_blank">' + step_name + '</a></td>';
 
       rowString += '<td rowspan="' + rowspan + '">';
       var j = 0;
@@ -57,9 +57,9 @@
       }
       rowString += '</td>';
 
-      rowString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + first_failure + '">' + first_failure + '</a></td>';
+      rowString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + first_failure + '" target="_blank">' + first_failure + '</a></td>';
       if (last_pass) {
-        rowString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + last_pass + '">' + last_pass + '</a></td>';
+        rowString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + last_pass + '" target="_blank">' + last_pass + '</a></td>';
       } else {
         rowString += '<td rowspan="' + rowspan + '">N/A</td>';
       }
@@ -68,8 +68,8 @@
     }
 
     function generateStringForSingleCL(cl) {
-      var clString = '<td><a href="' + findit.builderUrl + '/' + cl.build_number + '">' + cl.build_number + '</a></td>';
-      clString += '<td><a href="' + cl.url + '">' + cl.commit_position || cl.revision + '</a></td>';
+      var clString = '<td><a href="' + findit.builderUrl + '/' + cl.build_number + '" target="_blank">' + cl.build_number + '</a></td>';
+      clString += '<td><a href="' + cl.url + '" target="_blank">' + cl.commit_position || cl.revision + '</a></td>';
       clString += '<td>' + cl.score + '</td>';
       clString += '<td>';
 
@@ -115,18 +115,18 @@
           var tryJobCulprit = tryJob.culprit;
           if (! jQuery.isEmptyObject(tryJobCulprit)) {
             var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '">' + build_number + '</a></td>';
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '" target="_blank">' + build_number + '</a></td>';
             var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '" target="_blank">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
 
           } else {
             tableString += '<td colspan="2" rowspan="' + rowspan + '">' + findit.tryjobStatusMessageMap[tryJob.status] + '</td>';
           }
 
           tableString += '<td rowspan="' + rowspan + '">';
-          tableString += '<li>Reliable failure: <a href="' + tryJob.task_url+ '">' + tryJob.task_id + '</a></li>';
+          tableString += '<li>Reliable failure: <a href="' + tryJob.task_url+ '" target="_blank">' + tryJob.task_id + '</a></li>';
           if (tryJob.try_job_url) {
-            tableString += '<li>For try job details: <a href="' + tryJob.try_job_url+ '">' + tryJob.try_job_build_number + '</a></li>';
+            tableString += '<li>For try job details: <a href="' + tryJob.try_job_url+ '" target="_blank">' + tryJob.try_job_build_number + '</a></li>';
           }
           tableString += '</td>';
 
@@ -157,15 +157,15 @@
           if (! jQuery.isEmptyObject(tryJobCulprit)) {
             tableString += '<td rowspan="' + rowspan + '">Try Job</td>';
             var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '">' + build_number + '</a></td>';
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '" target="_blank">' + build_number + '</a></td>';
             var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '" target="_blank">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
             // Right now this cell is only for scores of heuristic results, placeholder for confidence in the future.
             tableString += '<td rowspan="' + rowspan + '">N/A</td>';
             tableString += '<td rowspan="' + rowspan + '">';
-            tableString += '<li>Reliable failure: <a href="' + tryJob.task_url+ '">' + tryJob.task_id + '</a></li>';
+            tableString += '<li>Reliable failure: <a href="' + tryJob.task_url+ '" target="_blank">' + tryJob.task_id + '</a></li>';
             if (tryJob.try_job_url) {
-              tableString += '<li>For try job details: <a href="' + tryJob.try_job_url+ '">' + tryJob.try_job_build_number + '</a></li>';
+              tableString += '<li>For try job details: <a href="' + tryJob.try_job_url+ '" target="_blank">' + tryJob.try_job_build_number + '</a></li>';
             }
             tableString += '</td>';
             tableString += '<td rowspan="' + rowspan + '">Try job completed successfully.</td>';
@@ -200,7 +200,7 @@
           var rowspan = result.heuristic_analysis.suspected_cls.length > 0 ? result.heuristic_analysis.suspected_cls.length : 1;
           tableString += generateCommonCellsForAllCategories(step_name, 'flaky', index, result.tests, result.first_failure, result.last_pass, rowspan);
 
-          tableString += '<td rowspan="' + rowspan + '"><a href="' + result.try_job.task_url + '">' + result.try_job.task_id + '</a></td>';
+          tableString += '<td rowspan="' + rowspan + '"><a href="' + result.try_job.task_url + '" target="_blank">' + result.try_job.task_id + '</a></td>';
 
           tableString += generateHeuristicCulpritCls(result.heuristic_analysis.suspected_cls, result.supported);
 
@@ -243,9 +243,9 @@
 
           if (! jQuery.isEmptyObject(tryJobCulprit)) {
             var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '">' + build_number + '</a></td>';
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '" target="_blank">' + build_number + '</a></td>';
             var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
+            tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '" target="_blank">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
 
           } else {
             tableString += '<td colspan="2" rowspan="' + rowspan + '">' + findit.tryjobStatusMessageMap[tryJob.status] + '</td>';
@@ -254,7 +254,7 @@
           tableString += '<td rowspan="' + rowspan + '">';
           tableString += '<li>Note: swarming tasks are skipped for forced reruns by admins.</li>';
           if (tryJob.try_job_url) {
-            tableString += '<li>For try job details: <a href="' + tryJob.try_job_url+ '">' + tryJob.try_job_build_number + '</a></li>';
+            tableString += '<li>For try job details: <a href="' + tryJob.try_job_url+ '" target="_blank">' + tryJob.try_job_build_number + '</a></li>';
           }
           tableString += '</td>';
 
@@ -307,7 +307,7 @@ Test Failure:
 {% endblock heading %}
 
 {% block failure_info %}
-    Build Number: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}">{{build_number}}</a>
+    Build Number: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}" target="_blank">{{build_number}}</a>
 {% endblock failure_info %}
 
 

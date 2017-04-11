@@ -87,9 +87,9 @@
                   {% set review_url = 'https://chromium.googlesource.com/chromium/src.git/+/' + suspected_cl.revision %}
                 {% endif %}
                 {% if suspected_cl.commit_position %}
-                  <a href="{{review_url}}">{{suspected_cl.commit_position}}</a>
+                  <a href="{{review_url}}" target="_blank">{{suspected_cl.commit_position}}</a>
                 {% else %}
-                  <a href="{{review_url}}">{{suspected_cl.revision}}</a>
+                  <a href="{{review_url}}" target="_blank">{{suspected_cl.revision}}</a>
                 {% endif %}
               </li>
             {% endfor %}
