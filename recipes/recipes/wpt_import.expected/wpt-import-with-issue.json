@@ -163,8 +163,7 @@
       "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-import",
       "--auto-update",
       "--auth-refresh-token-json",
-      "/creds/refresh_tokens/blink-w3c-test-autoroller",
-      "wpt"
+      "/creds/refresh_tokens/blink-w3c-test-autoroller"
     ],
     "cwd": "[START_DIR]/src/third_party/WebKit",
     "name": "update wpt"

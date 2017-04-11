@@ -49,13 +49,12 @@ def RunSteps(api):
       '--auto-update',
       '--auth-refresh-token-json',
       '/creds/refresh_tokens/blink-w3c-test-autoroller',
-      'wpt',
     ]
-    with api.step.context({'cwd': blink_dir}):
-      api.python('update wpt', script, args)
-    # TODO(qyearsley): Still add git cl issue link even when a
-    # StepFailure is raised in the above step.
-    git_cl_issue_link(api)
+    try:
+      with api.step.context({'cwd': blink_dir}):
+        api.python('update wpt', script, args)
+    finally:
+      git_cl_issue_link(api)
 
 
 def git_cl_issue_link(api):
@@ -75,7 +74,7 @@ def GenTests(api):
       api.test('wpt-import-with-issue') +
       api.properties(
           mastername='chromium.infra.cron',
-          buildername='w3c-test-autoroller',
+          buildername='wpt-importer',
           slavename='fake-slave') +
       api.step_data(
           'git cl issue',
@@ -88,7 +87,7 @@ def GenTests(api):
       api.test('wpt-import-without-issue') +
       api.properties(
           mastername='chromium.infra.cron',
-          buildername='w3c-test-autoroller',
+          buildername='wpt-importer',
           slavename='fake-slave') +
       api.step_data(
           'git cl issue',
