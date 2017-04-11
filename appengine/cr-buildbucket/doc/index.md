@@ -122,13 +122,6 @@ for that. Known chrome-infra build requesters:
 *   `"rietveld"`
 *   `"git_cl_try"`
 
-## Buildbot integration
-
-Buildbot is integrated with buildbucket, with two-way sync. Using buildbucket
-you can schedule, cancel, search and read build results (but no logs).
-Read more in
-[buildbot-buildbucket README.md](https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/master/buildbucket/README.md).
-
 ## Configuration
 
 Buckets are registered in `<buildbucket-app-id>.cfg` files in `infra/config`
@@ -141,6 +134,17 @@ for file format.
 
 Each bucket has its own ACLs. By default a bucket is accessible only by admins.
 If a bucket does not exist, its ACL is considered default.
+
+## Buildbot integration
+
+Buildbot is integrated with buildbucket, with two-way sync. Using buildbucket
+you can schedule, cancel, search and read build results (but no logs).
+Read more in
+[buildbot-buildbucket README.md](https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/master/buildbucket/README.md).
+
+## Swarming integration (Swarmbucket)
+
+See [go/swarmbucket](swarming.md)
 
 [cr-buildbucket]: https://cr-buildbucket.appspot.com
 [go/buildbucket-design]: https://goto.google.com/buildbucket-design
