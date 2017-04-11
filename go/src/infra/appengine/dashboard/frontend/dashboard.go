@@ -42,29 +42,36 @@ func init() {
 	api.InstallHandlers(r, gaemiddleware.BaseProd())
 }
 
+// TemplateService bundles a backend.Service with its backend.ServiceIncident children.
+type TemplateService struct {
+	Service   *backend.Service
+	Incidents *[]backend.ServiceIncident
+}
+
 func dashboard(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
 	dates := []string{}
 	for i := 0; i < 7; i++ {
-		dates = append(dates, time.Now().AddDate(0, 0, -i).Format("01-02-2006"))
+		dates = append(dates, time.Now().AddDate(0, 0, -i).Format("1-2-2006"))
 	}
 
-	// TODO(jojwang): not using returned Service entity because
-	// the Start/EndTime fields must be converted to string
-	// before passing info to template.
-	_, err := backend.GetService(c, "monorail")
+	monorail, err := backend.GetService(c, "monorail")
 	if err != nil {
 		http.Error(w, "Failed to query datastore, see logs", http.StatusInternalServerError)
 		return
 	}
 
-	services := []backend.Service{}
-	nonSLAServices := []backend.Service{}
+	// TODO(jojwang): Once backend.GetServiceIncidents is added, use it
+	// to get incidents.
+	Services := []TemplateService{
+		{Service: monorail},
+	}
+	NonSLAServices := []TemplateService{}
 
 	templates.MustRender(c, w, "pages/dash.tmpl", templates.Args{
-		"ChopsServices":  services,
-		"NonSLAServices": nonSLAServices,
+		"ChopsServices":  &Services,
+		"NonSLAServices": &NonSLAServices,
 		"Dates":          dates,
 	})
 }

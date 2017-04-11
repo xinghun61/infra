@@ -17,22 +17,29 @@
   function renderIncidents(services) {
     for (let i = 0; i < services.length; i++) {
       let service = services[i];
-      let serviceName = service['name'];
-      for (let j = 0; j < service['incidents'].length; j++) {
-	let incident = service['incidents'][j];
-	let tdClass = '.js-' + serviceName + '-' + incident['start_time'];
+      let serviceName = service['Service']['Name'];
+      for (let j = 0; j < service['Incidents'].length; j++) {
+	let incident = service['Incidents'][j];
+	let prettyDate = fmtDate(incident['StartTime']);
+	let tdClass = '.js-' + serviceName + '-' + prettyDate;
 	let dateCell = document.querySelector(tdClass);
 	let img = document.createElement('img');
 	img.className = 'light';
-	if (incident['severity'] == Alert.RED) {
-          img.src = '../static/red.png';
+	if (incident['Severity'] == Alert.RED) {
+          img.src = 'static/red.png';
 	}
-	if (incident['severity'] == Alert.YELLOW) {
-          img.src = '../static/yellow.png';
+	if (incident['Severity'] == Alert.YELLOW) {
+          img.src = 'static/yellow.png';
 	}
 	dateCell.appendChild(img);
       }
     }
+  }
+
+  function fmtDate(rawDate) {
+    let date = new Date(rawDate);
+    return (date.getMonth()+1) + '-' +
+	date.getDate() + '-' + date.getFullYear();
   }
 
   window.__addIncidents = window.__addIncidents || addIncidents;
