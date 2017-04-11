@@ -10,14 +10,15 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/maruel/subcommands"
+
+	"github.com/luci/luci-go/cipd/version"
 	"github.com/luci/luci-go/client/authcli"
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/data/rand/mathrand"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/hardcoded/chromeinfra"
-
-	"github.com/maruel/subcommands"
 )
 
 func handleInterruption(ctx context.Context) context.Context {
@@ -63,6 +64,7 @@ func main() {
 			authcli.SubcommandInfo(authDefaults, "auth-info", false),
 
 			subcommands.CmdHelp,
+			version.SubcommandVersion,
 		},
 	}
 
