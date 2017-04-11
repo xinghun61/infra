@@ -38,6 +38,9 @@
 
     test('failureCountText', function() {
       assert.equal(element._failureCountText({
+        latest_failure:0, first_failure:0}), '');
+
+      assert.equal(element._failureCountText({
         latest_failure:1, first_failure:0}), '[2 since first detection]');
 
       assert.equal(element._failureCountText({

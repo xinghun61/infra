@@ -32,6 +32,10 @@
 
     _failureCountText: function(builder) {
       let numBuilds = this._failureCount(builder);
+      if (numBuilds == 1) {
+        return '';
+      }
+
       if (builder.count) {
         return `[${builder.count} out of the last ${numBuilds} builds have failed]`;
       }
