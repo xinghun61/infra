@@ -204,7 +204,7 @@ class CheckRevertedCLs(BaseHandler):
     end = self.request.get('end_date')
 
     if not start and not end:
-      midnight_today = time_util.GetMidnightToday()
+      midnight_today = time_util.GetMostRecentUTCMidnight()
       end_date = midnight_today - timedelta(days=1)
       start_date = end_date - timedelta(days=_DAYS_TO_CHECK)
     else:
