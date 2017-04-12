@@ -246,12 +246,6 @@ def parse_cq_data(json_data):
       #  continue
 
       for job in job_states[state]:
-        build_properties = job.get('build_properties')
-        if not build_properties:
-          logging.warning('Missing field build_properties in job details')
-          parsing_errors.increment_by(1)
-          continue
-
         try:
           master = job['master']
           builder = job['builder']
@@ -265,6 +259,15 @@ def parse_cq_data(json_data):
           parsing_errors.increment_by(1)
           continue
 
+        if build_result.isResultPending(result):
+          continue
+
+        build_properties = job.get('build_properties')
+        if not build_properties:
+          logging.warning('Missing field build_properties in job details')
+          parsing_errors.increment_by(1)
+          continue
+
         try:
           buildnumber = get_int_value(build_properties, 'buildnumber')
           issue = get_int_value(build_properties, 'issue')
@@ -275,9 +278,6 @@ def parse_cq_data(json_data):
         except ValueError:
           logging.warning('Failed to parse build properties')
           parsing_errors.increment_by(1)
-          continue
-
-        if build_result.isResultPending(result):
           continue
 
         # At this point, only success or failure.

@@ -95,11 +95,9 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             },
           ],
           'JOB_SUCCEEDED': [
-            # Ignored because build_properties is missing.
-            {
-            },
             # Ignored because master, builder, result and timestamp are missing.
             {
+              'result': 0,  # SUCCESS
               'build_properties': {
                 'buildnumber': 101,
                 'issue': 123456789,
@@ -107,10 +105,21 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
                 'attempt_start_ts': 1446221292000000,
               },
             },
+            # Ignored because build_properties is missing.
+            {
+              'result': 0,  # SUCCESS
+              'master': 'tryserver.test',
+              'builder': 'test-builder',
+              'timestamp': '2015-10-30 17:30:12.123456',
+            },
             # Ignored because issue, patchset and buildnumber in
             # build_properties are missing.
             {
               'build_properties': {},
+              'master': 'tryserver.test',
+              'builder': 'test-builder',
+              'result': 0,  # SUCCESS
+              'timestamp': '2015-10-30 17:30:12.123456',
             },
             # This is a valid success report.
             {
