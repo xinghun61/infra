@@ -54,6 +54,14 @@
         computed: '_computeTroopers(_trooperRotations)',
         value: null,
       },
+      _treeOpen: {
+        type: Boolean,
+        value: true,
+      },
+      _treeIcon: {
+        type: String,
+        value: 'icons:unfold-less'
+      },
        trees: {
         type: Object,
         notify: true,
@@ -214,6 +222,16 @@
       if (tree && tree in this.trees) {
         this.defaultTree = tree;
       }
+    },
+
+    toggleTree: function() {
+      this._treeOpen = !this._treeOpen;
+      this._treeIcon = this._treeOpen ? 'icons:unfold-less' : 'icons:unfold-more';
+      // FIXME: There's a bug where toggling the tree list focuses the next item
+      // in the help menu. I can't figure out how to non-hackily make that
+      // happen. You could do something like
+      // this.$.menu.children[0].children[2].removeAttribute('focused')
+      // but that seems hacky to me :/
     },
   });
 })();
