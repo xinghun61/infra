@@ -75,11 +75,10 @@ class Metric(object):
   set() or increment() methods to modify a particular value, or passed to the
   constructor in which case they will be used as the defaults for this Metric.
 
-  The unit of measurement for Metric data can be specified with MetricsDataUnits
-  when a Metric object is created:
+  The unit of measurement for Metric data should be specified with
+  MetricsDataUnits when a Metric object is created:
   e.g., MetricsDataUnits.SECONDS, MetricsDataUnits.BYTES, and etc..,
-  A full list of supported units can be found in the following protobuf file
-  : infra_libs/ts_mon/protos/metrics.proto
+  See `MetricsDataUnits` class for a full list of units.
 
   Do not directly instantiate an object of this class.
   Use the concrete child classes instead:
