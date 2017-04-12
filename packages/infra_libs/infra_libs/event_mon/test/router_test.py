@@ -29,21 +29,6 @@ class HttpRouterTests(unittest.TestCase):
     r = router._HttpRouter({}, 'https://any.where', dry_run=True)
     self.assertIsInstance(r._http, infra_libs.InstrumentedHttp)
 
-  def test_with_credentials_smoke(self):
-    cache = {'service_account_creds':
-              os.path.join(DATA_DIR, 'valid_creds.json'),
-             'service_accounts_creds_root': 'whatever.the/other/is/absolute'}
-    r = router._HttpRouter(cache, 'https://any.where', dry_run=True)
-    self.assertIsInstance(r._http, infra_libs.InstrumentedHttp)
-
-  def test_with_nonexisting_credentials(self):
-    cache = {'service_account_creds':
-             os.path.join(DATA_DIR, 'no-such-file-8531.json'),
-             'service_accounts_creds_root': 'whatever.the/other/is/absolute'}
-    # things should work.
-    r = router._HttpRouter(cache, 'https://any.where', dry_run=True)
-    self.assertIsInstance(r._http, infra_libs.InstrumentedHttp)
-
   def test_push_smoke(self):
     r = router._HttpRouter({}, 'https://any.where', dry_run=True)
 
