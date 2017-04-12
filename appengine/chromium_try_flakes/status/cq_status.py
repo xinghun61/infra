@@ -248,7 +248,8 @@ def parse_cq_data(json_data):
           master = job['master']
           builder = job['builder']
           result = job['result']
-          timestamp_tz = dateutil.parser.parse(job['timestamp'])
+          timestamp_tz = dateutil.parser.parse(
+              job.get('created_ts') or job['timestamp'])
           # We assume timestamps from chromium-cq-status are already in UTC.
           timestamp = timestamp_tz.replace(tzinfo=None)
         except KeyError:
