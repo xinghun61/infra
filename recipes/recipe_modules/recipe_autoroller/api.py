@@ -270,8 +270,13 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
           autoroll_settings)
       return ROLL_SUCCESS
     else:
-      if (not roll_result['roll_details'] and
-          not roll_result['rejected_candidates_details']):
+      # TODO(iannucci): remove this once all repos are emitting
+      # rejected_candidates_count.
+      num_rejected = roll_result.get('rejected_candidates_count', None)
+      if num_rejected is None:
+        num_rejected = len(roll_result['rejected_candidates_details'])
+
+      if not roll_result['roll_details'] and num_rejected == 0:
         roll_step.presentation.step_text += ' (already at latest revisions)'
         return ROLL_EMPTY
       else:

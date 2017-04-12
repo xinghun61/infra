@@ -112,6 +112,14 @@ def GenTests(api):
   )
 
   yield (
+      api.test('failure_count') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data(
+        'build', success=False, rejected_count=True)
+  )
+
+  yield (
       api.test('failed_upload') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
