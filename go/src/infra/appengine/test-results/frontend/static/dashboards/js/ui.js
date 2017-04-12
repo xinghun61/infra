@@ -214,8 +214,13 @@ ui.Errors = function() {
 ui.Errors.prototype = {
     isWarningOnlyBuilder: function(builder) {
         // FYI builders are best-effort. chromium.swarm is the canary master.
-        return (builder.indexOf('.fyi') != -1 ||
-                builder.indexOf('chromium.swarm') != -1);
+        // Tryservers do not upload results regularly (especially on weekends),
+        // therefore we shouldn't show errors for them.
+        return (
+          builder.indexOf('.fyi') != -1 ||
+          builder.indexOf('chromium.swarm') != -1 ||
+          builder.indexOf('tryserver') != -1
+        );
     },
     show: function() {
         if (!this._containerElement) {
