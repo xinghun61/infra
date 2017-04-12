@@ -110,7 +110,7 @@ func (c *cmdIsolate) Run(a subcommands.Application, args []string, env subcomman
 		return 1
 	}
 
-	if err := bundleAndIsolate(ctx, c.isolatedFlags, authOpts); err != nil {
+	if err := bundleAndIsolate(ctx, c.overrides, c.isolatedFlags, authOpts); err != nil {
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1
 	}

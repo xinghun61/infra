@@ -6,6 +6,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -71,7 +72,7 @@ func findRecipesPy(ctx context.Context) (string, error) {
 		repoRoot, filepath.FromSlash(rj.RecipesPath), "recipes.py"), nil
 }
 
-func prepBundle(ctx context.Context, recipesPy string) (string, error) {
+func prepBundle(ctx context.Context, recipesPy string, overrides map[string]string) (string, error) {
 	retDir, err := ioutil.TempDir("", "try-recipe-bundle")
 	if err != nil {
 		return "", errors.Annotate(err).Reason("generating bundle tempdir").Err()
@@ -82,6 +83,9 @@ func prepBundle(ctx context.Context, recipesPy string) (string, error) {
 	}
 	if logging.GetLevel(ctx) < logging.Info {
 		args = append(args, "-v")
+	}
+	for projID, path := range overrides {
+		args = append(args, "-O", fmt.Sprintf("%s=%s", projID, path))
 	}
 	args = append(args, "bundle", "--destination", retDir)
 	cmd := logCmd(ctx, "python", args...)
@@ -150,7 +154,7 @@ func isolateDirectory(ctx context.Context, arc *archiver.Archiver, dir string) (
 	return promise.Digest(), arc.Close()
 }
 
-func bundleAndIsolate(ctx context.Context, isolatedFlags isolatedclient.Flags, authOpts auth.Options) error {
+func bundleAndIsolate(ctx context.Context, overrides map[string]string, isolatedFlags isolatedclient.Flags, authOpts auth.Options) error {
 	repoRecipesPy, err := findRecipesPy(ctx)
 	if err != nil {
 		return err
@@ -158,7 +162,7 @@ func bundleAndIsolate(ctx context.Context, isolatedFlags isolatedclient.Flags, a
 
 	logging.Infof(ctx, "using recipes.py: %q", repoRecipesPy)
 
-	bundlePath, err := prepBundle(ctx, repoRecipesPy)
+	bundlePath, err := prepBundle(ctx, repoRecipesPy, overrides)
 	if err != nil {
 		return err
 	}
