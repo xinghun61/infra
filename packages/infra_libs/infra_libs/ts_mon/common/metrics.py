@@ -131,12 +131,20 @@ class Metric(object):
     interface.register(self)
 
   @property
+  def field_spec(self):
+    return list(self._field_spec)
+
+  @property
   def name(self):
     return self._name
 
   @property
   def start_time(self):
     return self._start_time
+
+  @property
+  def units(self):
+    return self._units
 
   def is_cumulative(self):
     raise NotImplementedError()

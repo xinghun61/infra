@@ -59,9 +59,12 @@ class TestBase(unittest.TestCase):
 
 class MetricTest(TestBase):
 
-  def test_name_property(self):
-    m1 = metrics.Metric('/foo', 'foo', None)
+  def test_properties(self):
+    field_spec = [metrics.StringField('string')]
+    m1 = metrics.Metric('/foo', 'foo', field_spec, 'us')
     self.assertEquals(m1.name, 'foo')
+    self.assertEquals(m1.field_spec, field_spec)
+    self.assertEquals(m1.units, 'us')
 
   def test_init_too_many_fields(self):
     fields = [metrics.StringField('field%d' % i) for i in xrange(8)]
