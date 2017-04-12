@@ -16,7 +16,7 @@ import (
 
 func logCmd(ctx context.Context, arg0 string, args ...string) *exec.Cmd {
 	ret := exec.CommandContext(ctx, arg0, args...)
-	logging.Infof(ctx, "Running - %s %v", arg0, args)
+	logging.Debugf(ctx, "Running - %s %v", arg0, args)
 	return ret
 }
 

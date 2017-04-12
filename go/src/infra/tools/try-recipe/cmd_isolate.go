@@ -33,9 +33,11 @@ func isolateCmd(authOpts auth.Options) *subcommands.Command {
 
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdIsolate{}
+			ret.logCfg.Level = logging.Info
 
+			ret.logCfg.AddFlags(&ret.Flags)
 			ret.authFlags.Register(&ret.Flags, authOpts)
-			ret.isolateFlags.Init(&ret.Flags)
+			ret.isolatedFlags.Init(&ret.Flags)
 
 			ret.Flags.Var(&ret.overrides, "O",
 				"override a repo dependency. Must be in the form of project_id=/path/to/local/repo. May be specified multiple times.")
@@ -47,58 +49,68 @@ func isolateCmd(authOpts auth.Options) *subcommands.Command {
 type cmdIsolate struct {
 	subcommands.CommandRunBase
 
-	authFlags    authcli.Flags
-	isolateFlags isolatedclient.Flags
+	logCfg        logging.Config
+	authFlags     authcli.Flags
+	isolatedFlags isolatedclient.Flags
 
 	overrides stringmapflag.Value
 }
 
-func (c *cmdIsolate) validateFlags(ctx context.Context, args []string) error {
+func (c *cmdIsolate) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
 	if len(args) > 0 {
-		return errors.Reason("unexpected positional arguments: %(args)q").D("args", args).Err()
+		err = errors.Reason("unexpected positional arguments: %(args)q").D("args", args).Err()
+		return
 	}
 
 	for k, v := range c.overrides {
 		if k == "" {
-			return errors.New("override has empty project_id")
+			err = errors.New("override has empty project_id")
+			return
 		}
 		if v == "" {
-			return errors.Reason("override %(key)q has empty repo path").D("key", k).Err()
+			err = errors.Reason("override %(key)q has empty repo path").D("key", k).Err()
+			return
 		}
-		v, err := filepath.Abs(v)
+		v, err = filepath.Abs(v)
 		if err != nil {
-			return errors.Annotate(err).Reason("override %(key)q").D("key", k).Err()
+			err = errors.Annotate(err).Reason("override %(key)q").D("key", k).Err()
+			return
 		}
 		c.overrides[k] = v
 
-		switch fi, err := os.Stat(v); {
+		var fi os.FileInfo
+		switch fi, err = os.Stat(v); {
 		case err != nil:
-			return errors.Annotate(err).Reason("override %(key)q").D("key", k).Err()
+			err = errors.Annotate(err).Reason("override %(key)q").D("key", k).Err()
+			return
 		case !fi.IsDir():
-			return errors.Reason("override %(key)q: not a directory").D("key", k).Err()
+			err = errors.Reason("override %(key)q: not a directory").D("key", k).Err()
+			return
 		}
 	}
 
-	if c.isolateFlags.ServerURL == "" {
-		c.isolateFlags.ServerURL = defaultIsolateServer
+	if c.isolatedFlags.ServerURL == "" {
+		c.isolatedFlags.ServerURL = defaultIsolateServer
 	}
-	if err := c.isolateFlags.Parse(); err != nil {
-		return errors.Annotate(err).Reason("bad isolate flags").Err()
+	if err = c.isolatedFlags.Parse(); err != nil {
+		err = errors.Annotate(err).Reason("bad isolate flags").Err()
+		return
 	}
 
-	return nil
+	return c.authFlags.Options()
 }
 
 func (c *cmdIsolate) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	ctx := cli.GetContext(a, c, env)
-	if err := c.validateFlags(ctx, args); err != nil {
+	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
+	authOpts, err := c.validateFlags(ctx, args)
+	if err != nil {
 		logging.Errorf(ctx, "bad arguments: %s", err)
 		fmt.Fprintln(os.Stderr)
 		subcommands.CmdHelp.CommandRun().Run(a, args, env)
 		return 1
 	}
 
-	if err := bundleAndIsolate(ctx); err != nil {
+	if err := bundleAndIsolate(ctx, c.isolatedFlags, authOpts); err != nil {
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1
 	}

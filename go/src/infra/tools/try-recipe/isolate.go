@@ -6,6 +6,7 @@ package main
 
 import (
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,8 +14,13 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/luci/luci-go/client/archiver"
+	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/isolated"
+	"github.com/luci/luci-go/common/isolatedclient"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/retry"
 )
 
 // findRecipesPy locates the current repo's `recipes.py`. It does this by:
@@ -71,7 +77,14 @@ func prepBundle(ctx context.Context, recipesPy string) (string, error) {
 		return "", errors.Annotate(err).Reason("generating bundle tempdir").Err()
 	}
 
-	cmd := logCmd(ctx, "python", recipesPy, "-v", "bundle", "--destination", retDir)
+	args := []string{
+		recipesPy,
+	}
+	if logging.GetLevel(ctx) < logging.Info {
+		args = append(args, "-v")
+	}
+	args = append(args, "bundle", "--destination", retDir)
+	cmd := logCmd(ctx, "python", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	if err := cmdErr(cmd.Run(), "creating bundle"); err != nil {
@@ -82,7 +95,62 @@ func prepBundle(ctx context.Context, recipesPy string) (string, error) {
 	return retDir, nil
 }
 
-func bundleAndIsolate(ctx context.Context) error {
+func isolateDirectory(ctx context.Context, arc *archiver.Archiver, dir string) (isolated.HexDigest, error) {
+	// TODO(iannucci): Replace this entire function with exparchvive library when
+	// it's available.
+
+	iso := isolated.New()
+	type datum struct {
+		path    string
+		promise *archiver.Item
+	}
+	isoData := []datum{}
+	i := int64(0)
+	err := filepath.Walk(dir, func(fullPath string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if fi.IsDir() {
+			return nil
+		}
+
+		if fi.Mode().IsRegular() {
+			relPath, err := filepath.Rel(dir, fullPath)
+			if err != nil {
+				return errors.Annotate(err).Reason("relpath of %(full)q").D("full", fullPath).Err()
+			}
+			isoData = append(isoData, datum{
+				relPath, arc.PushFile(relPath, fullPath, i)})
+			iso.Files[relPath] = isolated.BasicFile("", int(fi.Mode()), fi.Size())
+			i++
+			return nil
+		}
+
+		return errors.Reason("don't know how to process: %(fi)v").D("fi", fi).Err()
+	})
+	if err != nil {
+		return "", err
+	}
+
+	for _, d := range isoData {
+		itm := iso.Files[d.path]
+		d.promise.WaitForHashed()
+		itm.Digest = d.promise.Digest()
+		iso.Files[d.path] = itm
+	}
+
+	isolated, err := json.Marshal(iso)
+	if err != nil {
+		return "", errors.Annotate(err).Reason("encoding ISOLATED.json").Err()
+	}
+
+	promise := arc.Push("ISOLATED.json", isolatedclient.NewBytesSource(isolated), 0)
+	promise.WaitForHashed()
+
+	return promise.Digest(), arc.Close()
+}
+
+func bundleAndIsolate(ctx context.Context, isolatedFlags isolatedclient.Flags, authOpts auth.Options) error {
 	repoRecipesPy, err := findRecipesPy(ctx)
 	if err != nil {
 		return err
@@ -94,9 +162,36 @@ func bundleAndIsolate(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	//defer os.RemoveAll(bundlePath)
+	defer os.RemoveAll(bundlePath)
 
-	logging.Infof(ctx, "bundle created at: %q", bundlePath)
+	logging.Debugf(ctx, "bundle created at: %q", bundlePath)
+	logging.Infof(ctx, "isolating")
 
-	panic("not implemented")
+	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
+	authClient, err := authenticator.Client()
+	if err != nil {
+		return err
+	}
+	isoClient := isolatedclient.New(
+		nil, authClient,
+		isolatedFlags.ServerURL, isolatedFlags.Namespace,
+		retry.Default,
+		nil,
+	)
+
+	var w io.Writer
+	if logging.GetLevel(ctx) < logging.Info {
+		w = os.Stdout
+	}
+	arc := archiver.New(isoClient, w)
+	hash, err := isolateDirectory(ctx, arc, bundlePath)
+	if err != nil {
+		return err
+	}
+
+	logging.Infof(ctx, "isolated: %q", hash)
+	logging.Infof(ctx, "URL: %s/browse?namespace=%s&hash=%s",
+		isolatedFlags.ServerURL, isolatedFlags.Namespace, hash)
+
+	return nil
 }
