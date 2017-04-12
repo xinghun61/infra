@@ -26,12 +26,6 @@ func TransformProperties(props map[string]interface{}) error {
 	return nil
 }
 
-// chromiumBuilderToOldMasterName maps chromium tryserver builder names to
-// buildbot master names.
-var chromiumBuilderToOldMasterName = map[string]string{
-	"linux_chromium_rel_ng": "tryserver.chromium.linux",
-}
-
 func transformChromiumTryserverMasterBuilder(master, builder string) (string, string) {
 	const prefix = "LUCI "
 	if !strings.HasPrefix(builder, prefix) {
@@ -39,8 +33,15 @@ func transformChromiumTryserverMasterBuilder(master, builder string) (string, st
 	}
 
 	oldBuilder := strings.TrimPrefix(builder, prefix)
-	oldMaster := chromiumBuilderToOldMasterName[oldBuilder]
-	if oldMaster == "" {
+	var oldMaster string
+	switch {
+	case strings.HasPrefix(oldBuilder, "linux_"):
+		oldMaster = "tryserver.chromium.linux"
+	case strings.HasPrefix(oldBuilder, "mac_"):
+		oldMaster = "tryserver.chromium.mac"
+	case strings.HasPrefix(oldBuilder, "win_"):
+		oldMaster = "tryserver.chromium.win"
+	default:
 		return master, builder
 	}
 	return oldMaster, oldBuilder
