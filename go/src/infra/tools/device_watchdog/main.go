@@ -22,19 +22,49 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 	"unsafe"
 
 	"github.com/VividCortex/godaemon"
 	"github.com/luci/luci-go/common/runtime/paniccatcher"
+	"github.com/luci/luci-go/common/sync/parallel"
+	"golang.org/x/net/context"
 )
 
 var (
-	logHeader  = C.CString("CIT_DeviceWatchdog")
-	errTimeout = errors.New("timeout")
+	stateDumpDir = "/data/watchdog/"
+	logHeader    = C.CString("CIT_DeviceWatchdog")
+	errTimeout   = errors.New("timeout")
 )
+
+type state struct {
+	USB       string
+	Battery   string
+	DiskStats string
+	DiskUsage string
+	Processes string
+}
+
+var stateBody = `USB state:
+{{.USB}}
+
+Battery state:
+{{.Battery}}
+
+Disk state:
+{{.DiskStats}}
+
+Disk usage:
+{{.DiskUsage}}
+
+Process dump:
+{{.Processes}}
+`
 
 const (
 	stdInFd  = 0
@@ -67,6 +97,83 @@ func logcatLog(level logLevel, format string, args ...interface{}) {
 	cmsg := C.CString(fmt.Sprintf(format, args...))
 	defer C.free(unsafe.Pointer(cmsg))
 	C.__android_log_write(level.getLogLevel(), logHeader, cmsg)
+}
+
+func runWithContext(c context.Context, cmd string, args ...string) string {
+	out, err := exec.CommandContext(c, cmd, args...).Output()
+	if err != nil {
+		return fmt.Sprintf("Error: %s", err)
+	}
+	return string(out)
+}
+
+func getState(c context.Context) state {
+	s := state{}
+	_ = parallel.FanOutIn(func(workC chan<- func() error) {
+		workC <- func() error {
+			s.USB = runWithContext(c, "/system/bin/dumpsys", "usb")
+			return nil
+		}
+		workC <- func() error {
+			s.Battery = runWithContext(c, "/system/bin/dumpsys", "battery")
+			return nil
+		}
+		workC <- func() error {
+			s.DiskStats = runWithContext(c, "/system/bin/dumpsys", "diskstats")
+			return nil
+		}
+		workC <- func() error {
+			s.DiskUsage = runWithContext(c, "/system/bin/df")
+			return nil
+		}
+		workC <- func() error {
+			s.Processes = runWithContext(c, "/system/bin/ps")
+			return nil
+		}
+	})
+	return s
+}
+
+func dumpState(c context.Context) error {
+	if err := os.MkdirAll(stateDumpDir, 0755); err != nil {
+		return err
+	}
+
+	fileName := time.Now().Format("20060102_150405") + ".log"
+	f, err := os.Create(filepath.Join(stateDumpDir, fileName))
+	if err != nil {
+		return err
+	}
+
+	s := getState(c)
+	t := template.Must(template.New("").Parse(stateBody))
+	if err := t.Execute(f, s); err != nil {
+		return err
+	}
+	// Explicitly flush the changes to disk here to avoid the subsequent
+	// reboot from occuring before the system automatically flushes.
+	if err := f.Sync(); err != nil {
+		return err
+	}
+	return f.Close()
+}
+
+func dumpStateWithTimeout(timeout time.Duration) error {
+	c := make(chan error)
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
+	defer cancelFunc()
+
+	go func() {
+		c <- dumpState(ctx)
+	}()
+
+	select {
+	case err := <-c:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 type uptimeResult struct {
@@ -128,7 +235,7 @@ func rebootDevice() error {
 	if err != nil {
 		return fmt.Errorf("Can't reboot: %s", err.Error())
 	}
-	return fmt.Errorf("I just rebooted. How am I still alive?!?\n")
+	return errors.New("I just rebooted. How am I still alive?!?")
 }
 
 func realMain() int {
@@ -178,6 +285,11 @@ func realMain() int {
 		// Add an additional second to the sleep to ensure it doesn't
 		// sleep several times in less than a second.
 		time.Sleep(maxUptime - uptime + time.Second)
+	}
+	// Try to dump state of the device to a file before rebooting for later
+	// investigation. Do so within a timeout to avoid blocking the reboot.
+	if err := dumpStateWithTimeout(10 * time.Second); err != nil {
+		logcatLog(logError, "Unable to dump state to filesystem: %s", err.Error())
 	}
 	if err := rebootDevice(); err != nil {
 		logcatLog(logError, "Failed to reboot device: %s", err.Error())
