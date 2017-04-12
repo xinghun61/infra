@@ -333,18 +333,17 @@ func (c *cookRun) ensureAndRun(ctx context.Context, env environ.Env) (recipeExit
 }
 
 // pathModuleProperties returns properties for the "recipe_engine/path" module.
-func (c *cookRun) pathModuleProperties() (map[string]interface{}, error) {
+func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 	recipeTempDir := filepath.Join(c.TempDir, "rt")
 	if err := ensureDir(recipeTempDir); err != nil {
 		return nil, err
 	}
-
 	paths := []struct{ name, path string }{
 		{"cache_dir", c.CacheDir},
 		{"temp_dir", recipeTempDir},
 	}
 
-	props := make(map[string]interface{}, len(paths))
+	props := make(map[string]string, len(paths))
 	for _, p := range paths {
 		if p.path == "" {
 			continue
@@ -355,8 +354,6 @@ func (c *cookRun) pathModuleProperties() (map[string]interface{}, error) {
 		}
 		props[p.name] = native
 	}
-
-	props["volatile"] = []string{"tmp_base"}
 
 	return props, nil
 }
