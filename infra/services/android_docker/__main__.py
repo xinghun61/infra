@@ -56,7 +56,7 @@ def add_device(docker_client, android_devices, args):
 
 
 def launch(docker_client, android_devices, args):
-  draining = os.path.exits(_SHUTDOWN_FILE)
+  draining = os.path.exists(_SHUTDOWN_FILE)
   if draining:
     logging.info(
         'In draining state due to existence of %s. No new containers will be '
