@@ -27,7 +27,7 @@ A Build JSON object may have the following keys:
 *   `parameters_json`: an immutable JSON blob passed by a build requester,
     represents build parameters. The format is specific to a build-system.
     Not reqiured by buildbucket, but may be required by a particular
-    build-system, such as [Buildbot](buildbot.md).
+    build-system, such as [Buildbot](#Buildbot-integration).
 *   `url`: a URL to a build-system-specific human-viewable page that displays
     build status. Set by a build-system when the build is started.
 *   `lease_expiration_ts`: when current lease will expire, if any.
