@@ -3,3 +3,7 @@ cron:
   url: /gerrit-poller/poll
   schedule: every 1 mins
   target: gerrit-poller
+- description: "Config cache refresh"
+  url: /admin/config/cache/manager
+  schedule: every 10 mins
+  target: default
