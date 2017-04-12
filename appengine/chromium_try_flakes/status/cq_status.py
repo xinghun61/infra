@@ -39,6 +39,10 @@ flakes_metric = gae_ts_mon.CounterMetric(
     'flakiness_pipeline/flake_occurrences_detected',
     'Detected flake occurrences',
     None)
+parsing_errors = gae_ts_mon.CounterMetric(
+    'flakiness_pipeline/cq_status_parsing_errors',
+    'Number of errors when parsing records returned by chromium-cq-status',
+    None)
 occurrences_per_flake_day = gae_ts_mon.NonCumulativeDistributionMetric(
     'flakiness_pipeline/occurrences_per_flake/day',
     'Distribution of flake occurrence counts, calculated over all flakes in '
@@ -219,6 +223,8 @@ def parse_cq_data(json_data):
   for result in json_data.get('results', {}):
     fields = result.get('fields', [])
     if not 'action' in fields:
+      logging.warning('Missing field action in status record')
+      parsing_errors.increment_by(1)
       continue
 
     action = fields.get('action')
@@ -242,6 +248,8 @@ def parse_cq_data(json_data):
       for job in job_states[state]:
         build_properties = job.get('build_properties')
         if not build_properties:
+          logging.warning('Missing field build_properties in job details')
+          parsing_errors.increment_by(1)
           continue
 
         try:
@@ -253,6 +261,8 @@ def parse_cq_data(json_data):
           # We assume timestamps from chromium-cq-status are already in UTC.
           timestamp = timestamp_tz.replace(tzinfo=None)
         except KeyError:
+          logging.warning('Failed to parse job details')
+          parsing_errors.increment_by(1)
           continue
 
         try:
@@ -263,6 +273,8 @@ def parse_cq_data(json_data):
           time_started = datetime.datetime.utcfromtimestamp(
               attempt_start_ts / 1000000)
         except ValueError:
+          logging.warning('Failed to parse build properties')
+          parsing_errors.increment_by(1)
           continue
 
         if build_result.isResultPending(result):
