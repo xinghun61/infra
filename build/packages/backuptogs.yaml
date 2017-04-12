@@ -1,0 +1,14 @@
+package: infra/tools/backuptogs/${platform}
+description: backuptogs backs up directories to Google Cloud Storage.
+builders:
+  - infra-continuous-mac-10.9-64
+  - infra-continuous-precise-32
+  - infra-continuous-precise-64
+  - infra-continuous-win-32
+  - infra-continuous-win-64
+go_packages:
+  - infra/tools/backuptogs
+root: ../../go/bin
+data:
+  - file: backuptogs${exe_suffix}
+  - version_file: .versions/backuptogs${exe_suffix}.cipd_version
