@@ -91,7 +91,7 @@ def export_lite_tarball(api, version):
       'third_party/android_platform',
       'third_party/chromite',
       'third_party/closure_compiler',
-      'third_party/freetype2',
+      'third_party/freetype',
       'third_party/icu',
       'third_party/libjpeg_turbo',
       'third_party/libxml/src',

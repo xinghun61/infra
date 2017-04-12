@@ -595,7 +595,7 @@
   {
     "cmd": [
       "find",
-      "[TMP_BASE]/tmp_tmp_3/src/third_party/freetype2",
+      "[TMP_BASE]/tmp_tmp_3/src/third_party/freetype",
       "-type",
       "f",
       "!",
@@ -612,7 +612,7 @@
       "*.grd*",
       "-delete"
     ],
-    "name": "prune third_party/freetype2"
+    "name": "prune third_party/freetype"
   },
   {
     "cmd": [
