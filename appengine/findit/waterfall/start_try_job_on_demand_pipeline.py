@@ -87,7 +87,6 @@ class StartTryJobOnDemandPipeline(BasePipeline):
                       build_number)
       return
 
-    blame_list = failure_info['builds'][str(build_number)]['blame_list']
     good_revision = failure_info['builds'][str(last_pass)]['chromium_revision']
     bad_revision = failure_info['builds'][str(build_number)][
         'chromium_revision']
@@ -122,5 +121,5 @@ class StartTryJobOnDemandPipeline(BasePipeline):
         try_job_key.urlsafe(), try_job_type, try_job_id)
 
     yield IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, blame_list, try_job_type,
+        master_name, builder_name, build_number, try_job_type,
         try_job_id, try_job_result)

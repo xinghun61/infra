@@ -433,7 +433,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                       expected_args=[master_name, builder_name, build_number,
                                      None, [], None, failure_type.COMPILE])
     pipeline = IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, ['rev1'],
+        master_name, builder_name, build_number,
         failure_type.COMPILE, '1', None)
     pipeline.start()
     self.execute_queued_tasks()
@@ -518,7 +518,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                                      {expected_culprit: expected_suspected_cl},
                                      [], None, failure_type.COMPILE])
     pipeline = IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, ['rev1'],
+        master_name, builder_name, build_number,
         failure_type.COMPILE, '1', compile_result)
     pipeline.start()
     self.execute_queued_tasks()
@@ -566,7 +566,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                       expected_args=[master_name, builder_name, build_number,
                                      {}, [], None, failure_type.COMPILE])
     pipeline = IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, ['rev1'],
+        master_name, builder_name, build_number,
         failure_type.COMPILE, '1', compile_result)
     pipeline.start()
     self.execute_queued_tasks()
@@ -603,7 +603,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                       expected_args=[master_name, builder_name, build_number,
                                      None, [], None, failure_type.TEST])
     pipeline = IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, ['rev1', 'rev2'],
+        master_name, builder_name, build_number,
         failure_type.TEST, '1', None)
     pipeline.start()
     self.execute_queued_tasks()
@@ -646,7 +646,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                                      None, [['chromium', 'rev1']], None,
                                      failure_type.TEST])
     pipeline = IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, ['rev1', 'rev2'],
+        master_name, builder_name, build_number,
         failure_type.TEST, '1', None)
     pipeline.start()
     self.execute_queued_tasks()
@@ -697,7 +697,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                                      {}, [], None,
                                      failure_type.TEST])
     pipeline = IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, [], failure_type.TEST, '1',
+        master_name, builder_name, build_number, failure_type.TEST, '1',
         test_result)
     pipeline.start()
     self.execute_queued_tasks()
@@ -723,6 +723,11 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                         'valid': True,
                         'failures': ['a_test1']
                     }
+                }
+            },
+            'culprits': {
+                'a_test': {
+                    'a_test1': 'rev3'
                 }
             }
         },
@@ -761,7 +766,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                                      {'rev3': expected_suspected_cl}, [], None,
                                      failure_type.TEST])
     pipeline = IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, ['rev3'], failure_type.TEST,
+        master_name, builder_name, build_number, failure_type.TEST,
         '1', test_result)
     pipeline.start()
     self.execute_queued_tasks()
@@ -809,6 +814,15 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                         'status': 'passed',
                         'valid': True
                     }
+                }
+            },
+            'culprits': {
+                'a_test': {
+                    'a_test1': 'rev1',
+                    'a_test2': 'rev2'
+                },
+                'b_test': {
+                    'b_test1': 'rev1'
                 }
             }
         },
@@ -869,6 +883,15 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                         'valid': True
                     }
                 }
+            },
+            'culprits': {
+                'a_test': {
+                    'a_test1': 'rev1',
+                    'a_test2': 'rev2'
+                },
+                'b_test': {
+                    'b_test1': 'rev1'
+                }
             }
         },
         'url': 'url',
@@ -899,7 +922,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                                      expected_culprits, [], None,
                                      failure_type.TEST])
     pipeline = IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, ['rev1', 'rev2'],
+        master_name, builder_name, build_number,
         failure_type.TEST, '1', test_result)
     pipeline.start()
     self.execute_queued_tasks()
@@ -1018,7 +1041,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                                      [[repo_name, revision]], None,
                                      failure_type.COMPILE])
     pipeline = IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, [revision],
+        master_name, builder_name, build_number,
         failure_type.COMPILE, '1', compile_result)
     pipeline.start()
     self.execute_queued_tasks()
@@ -1044,7 +1067,6 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_builds, suspected_cl.builds)
 
   def testFindCulpritForEachTestFailureRevisionNotRun(self):
-    blame_list = ['rev1']
     result = {
         'report': {
             'result': {
@@ -1055,12 +1077,11 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit_map, failed_revisions = pipeline._FindCulpritForEachTestFailure(
-        blame_list, result)
+        result)
     self.assertEqual(culprit_map, {})
     self.assertEqual(failed_revisions, [])
 
   def testFindCulpritForEachTestFailureCulpritsReturned(self):
-    blame_list = ['rev1']
     result = {
         'report': {
             'culprits': {
@@ -1073,7 +1094,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = IdentifyTryJobCulpritPipeline()
     culprit_map, failed_revisions = pipeline._FindCulpritForEachTestFailure(
-        blame_list, result)
+        result)
 
     expected_culprit_map = {
         'a_tests': {
@@ -1100,7 +1121,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                       expected_args=[master_name, builder_name, build_number,
                                      None, [], None, failure_type.TEST])
     pipeline = IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, ['rev1'],
+        master_name, builder_name, build_number,
         failure_type.TEST, None, None)
     pipeline.start()
     self.execute_queued_tasks()

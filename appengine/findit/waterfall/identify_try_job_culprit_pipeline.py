@@ -99,35 +99,6 @@ def _GetFailedRevisionFromCompileResult(compile_result):
       else None)
 
 
-def _GetCulpritsForTestsFromResultsDict(blame_list, test_results):
-  culprit_map = {}
-  failed_revisions = set()
-
-  for revision in blame_list:
-    if not test_results.get(revision):
-      continue
-
-    for step, test_result in test_results[revision].iteritems():
-      if (not test_result['valid'] or
-          test_result['status'] != 'failed'):  # pragma: no cover
-        continue
-
-      failed_revisions.add(revision)
-
-      if step not in culprit_map:
-        culprit_map[step] = {
-            'tests': {}
-        }
-      for failed_test in test_result['failures']:
-        # Swarming tests, gets first failed revision for each test.
-        if failed_test not in culprit_map[step]['tests']:
-          culprit_map[step]['tests'][failed_test] = {
-              'revision': revision
-          }
-
-  return culprit_map, list(failed_revisions)
-
-
 def _GetSuspectedCLFoundByHeuristicForCompile(analysis):
   """For compile failure, gets the suspected revision found by heuristic."""
   if not analysis or not analysis.result:
@@ -185,10 +156,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
 
     return culprits
 
-  def _FindCulpritForEachTestFailure(self, blame_list, result):
-    # For test failures, we need to traverse the result dict in chronological
-    # order to identify the culprits for each failed step or test.
-    # The earliest revision that a test failed is the culprit.
+  def _FindCulpritForEachTestFailure(self, result):
     culprit_map = defaultdict(dict)
     failed_revisions = set()
 
@@ -209,10 +177,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
               'revision': revision
           }
           failed_revisions.add(revision)
-      return culprit_map, list(failed_revisions)
-
-    return _GetCulpritsForTestsFromResultsDict(
-        blame_list, result['report'].get('result'))
+    return culprit_map, list(failed_revisions)
 
   def _UpdateCulpritMapWithCulpritInfo(self, culprit_map, culprits):
     """Fills in commit_position and review url for each failed rev in map."""
@@ -232,7 +197,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(
-      self, master_name, builder_name, build_number, blame_list, try_job_type,
+      self, master_name, builder_name, build_number, try_job_type,
       try_job_id, result):
     """Identifies the information for failed revisions.
 
@@ -254,7 +219,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
           try_job_data.culprits = {'compile': failed_revision}
       else:  # try_job_type is 'test'.
         culprit_map, failed_revisions = self._FindCulpritForEachTestFailure(
-            blame_list, result)
+            result)
         culprits = self._GetCulpritInfo(failed_revisions)
         if culprits:
           self._UpdateCulpritMapWithCulpritInfo(culprit_map, culprits)
