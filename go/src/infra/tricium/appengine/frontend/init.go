@@ -22,7 +22,7 @@ func init() {
 	baseInternal := common.MiddlewareForInternal()
 
 	// LUCI frameworks needs a bunch of routes exposed via default module.
-	gaemiddleware.InstallHandlers(r, gaemiddleware.BaseProd())
+	gaemiddleware.InstallHandlers(r)
 
 	// This is the URL called from the analyze form, expose to end-users.
 	// TODO(emso): Should this be internal?

@@ -29,7 +29,7 @@ func pageBase() router.MiddlewareChain {
 
 func init() {
 	r := router.New()
-	gaemiddleware.InstallHandlers(r, pageBase())
+	gaemiddleware.InstallHandlers(r)
 	r.GET("/", pageBase(), dashboard)
 	http.DefaultServeMux.Handle("/", r)
 }

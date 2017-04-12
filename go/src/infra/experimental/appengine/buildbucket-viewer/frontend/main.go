@@ -24,10 +24,9 @@ import (
 
 func init() {
 	r := router.New()
-	baseMW := gaemiddleware.BaseProd()
-	gaemiddleware.InstallHandlers(r, baseMW)
+	gaemiddleware.InstallHandlers(r)
 
-	viewMW := baseMW.Extend(
+	viewMW := gaemiddleware.BaseProd().Extend(
 		auth.Use(auth.Authenticator{
 			&authServer.OAuth2Method{Scopes: []string{authServer.EmailScope}},
 			authServer.CookieAuth,

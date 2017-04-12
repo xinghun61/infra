@@ -159,7 +159,7 @@ func init() {
 	}
 
 	r := router.New()
-	gaemiddleware.InstallHandlers(r, base())
+	gaemiddleware.InstallHandlers(r)
 	r.GET("/", webBase(), indexPage)
 
 	var api prpc.Server

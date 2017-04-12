@@ -47,7 +47,7 @@ func init() {
 		auth.Authenticate,
 	)
 
-	gaemiddleware.InstallHandlers(r, baseMW)
+	gaemiddleware.InstallHandlers(r)
 
 	// Endpoints used by end users.
 	r.GET("/", getMW, polymerHandler)

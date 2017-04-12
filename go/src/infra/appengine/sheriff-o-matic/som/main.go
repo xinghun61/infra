@@ -393,7 +393,7 @@ func init() {
 
 	protected := basemw.Extend(requireGoogler)
 
-	gaemiddleware.InstallHandlers(r, gaemiddleware.BaseProd())
+	gaemiddleware.InstallHandlers(r)
 	r.GET("/api/v1/trees/", protected, getTreesHandler)
 	r.GET("/api/v1/alerts/:tree", protected, getAlertsHandler)
 	r.GET("/api/v1/pubsubalerts/:tree", protected, getPubSubAlertsHandler)
