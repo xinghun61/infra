@@ -32,7 +32,8 @@
       "--revision",
       "src@refs/tags/38.0.2125.122",
       "--output_manifest",
-      "--with_branch_heads"
+      "--with_branch_heads",
+      "--with_tags"
     ],
     "env": {
       "GIT_HTTP_LOW_SPEED_LIMIT": "1000",

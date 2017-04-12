@@ -186,7 +186,8 @@ def RunSteps(api):
   api.gclient.set_config('chromium')
   solution = api.gclient.c.solutions[0]
   solution.revision = 'refs/tags/%s' % version
-  api.bot_update.ensure_checkout(with_branch_heads=True, suffix=version)
+  api.bot_update.ensure_checkout(
+      with_branch_heads=True, with_tags=True, suffix=version)
 
   api.git('clean', '-dffx')
   with api.step.context({'cwd': api.path['checkout']}):
