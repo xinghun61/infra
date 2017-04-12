@@ -177,6 +177,10 @@ class Container(object):
     self._container = container
     self.name = container.name
 
+  @property
+  def state(self):
+    return self._container.attrs.get('State', {}).get('Status', 'unknown')
+
   def get_container_uptime(self, now):
     """Returns the containers uptime in minutes."""
     # Docker returns start time in format "%Y-%m-%dT%H:%M:%S.%f\d\d\dZ", so chop

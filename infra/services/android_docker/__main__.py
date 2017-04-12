@@ -49,7 +49,7 @@ def add_device(docker_client, android_devices, args):
         'modifications may fail.', user_id)
   for device in android_devices:
     container = docker_client.get_container(device)
-    if container is not None:
+    if container is not None and container.state == 'running':
       container.add_device(device)
     else:
       logging.error('Unable to add device %s: no running container.', device)
