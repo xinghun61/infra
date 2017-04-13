@@ -10,6 +10,7 @@ import logging
 import re
 
 from django.utils.html import urlize
+from third_party import ezt
 
 from features import filterrules_helpers
 from features import savedqueries_helpers
@@ -17,8 +18,10 @@ from framework import emailfmt
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
+from framework import jsonfeed
 from framework import monorailrequest
 from framework import permissions
+from framework import template_helpers
 from framework import urls
 from proto import tracker_pb2
 from search import query2ast
@@ -73,6 +76,26 @@ HTML_BODY_WITHOUT_GMAIL_ACTION_TEMPLATE = """
 </body>
 </html>
 """
+
+
+class NotifyTaskBase(jsonfeed.InternalTask):
+  """Abstract base class for notification task handler."""
+
+  _EMAIL_TEMPLATE = None  # Subclasses must override this.
+
+  CHECK_SECURITY_TOKEN = False
+
+  def __init__(self, *args, **kwargs):
+    super(NotifyTaskBase, self).__init__(*args, **kwargs)
+
+    if not self._EMAIL_TEMPLATE:
+      raise Exception('Subclasses must override _EMAIL_TEMPLATE.'
+                      ' This class must not be called directly.')
+    # We use FORMAT_RAW for emails because they are plain text, not HTML.
+    # TODO(jrobbins): consider sending HTML formatted emails someday.
+    self.email_template = template_helpers.MonorailTemplate(
+        framework_constants.TEMPLATE_PATH + self._EMAIL_TEMPLATE,
+        compress_whitespace=False, base_format=ezt.FORMAT_RAW)
 
 
 def ComputeIssueChangeAddressPermList(

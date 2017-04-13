@@ -12,6 +12,7 @@ import webapp2
 import settings
 
 from features import autolink
+from features import dateaction
 from features import banspammer
 from features import hotlistcreate
 from features import hotlistdetails
@@ -206,6 +207,8 @@ class ServletRegistry(object):
         urls.NOTIFY_BULK_CHANGE_TASK: notify.NotifyBulkChangeTask,
         urls.OUTBOUND_EMAIL_TASK: notify.OutboundEmailTask,
         urls.SPAM_DATA_EXPORT_TASK: spammodel.TrainingDataExportTask,
+        urls.DATE_ACTION_CRON: dateaction.DateActionCron,
+        urls.ISSUE_DATE_ACTION_TASK: dateaction.IssueDateActionTask,
         })
 
     self._SetupProjectServlets({

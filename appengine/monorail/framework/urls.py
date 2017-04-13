@@ -62,6 +62,7 @@ NOTIFY_BULK_CHANGE_TASK = '/_task/notifyBulkEdit'
 OUTBOUND_EMAIL_TASK = '/_task/outboundEmail'
 SPAM_DATA_EXPORT_TASK = '/_task/spamDataExport'
 BAN_SPAMMER_TASK = '/_task/banSpammer'
+ISSUE_DATE_ACTION_TASK = '/_task/issueDateAction'
 
 # URLs of cron job request handlers.  Called from GAE via cron.yaml.
 REINDEX_QUEUE_CRON = '/_cron/reindexQueue'
@@ -70,6 +71,7 @@ REAP_CRON = '/_cron/reap'
 SPAM_DATA_EXPORT_CRON = '/_cron/spamDataExport'
 LOAD_API_CLIENT_CONFIGS_CRON = '/_cron/loadApiClientConfigs'
 TRIM_VISITED_PAGES_CRON = '/_cron/trimVisitedPages'
+DATE_ACTION_CRON = '/_cron/dateAction'
 
 # URLs of User pages
 SAVED_QUERIES = '/queries'

@@ -29,3 +29,7 @@ cron:
 - description: deletes old visited hotlists
   url: /_cron/trimVisitedPages
   schedule: every monday 01:00
+- description: ping all issues with date fields that arrived
+  url: /_cron/dateAction
+  timezone: US/Pacific
+  schedule: every day 04:00

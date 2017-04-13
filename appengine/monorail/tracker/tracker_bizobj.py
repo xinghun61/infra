@@ -156,7 +156,7 @@ def MakeFieldDef(
     needs_member, needs_perm, grants_perm, notify_on, date_action, docstring,
     is_deleted):
   """Make a FieldDef PB for the given FieldDef table row tuple."""
-  if date_action:
+  if isinstance(date_action, basestring):
     date_action = date_action.upper()
   fd = tracker_pb2.FieldDef(
       field_id=field_id, project_id=project_id, field_name=field_name,

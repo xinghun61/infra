@@ -44,9 +44,6 @@ from tracker import tracker_helpers
 from tracker import tracker_views
 
 
-TEMPLATE_PATH = framework_constants.TEMPLATE_PATH
-
-
 def PrepareAndSendIssueChangeNotification(
     issue_id, hostport, commenter_id, seq_num,
     send_email=True, old_owner_id=framework_constants.NO_USER_SPECIFIED):
@@ -135,27 +132,7 @@ def AddAllEmailTasks(tasks):
   return notified
 
 
-class NotifyTaskBase(jsonfeed.InternalTask):
-  """Abstract base class for notification task handler."""
-
-  _EMAIL_TEMPLATE = None  # Subclasses must override this.
-
-  CHECK_SECURITY_TOKEN = False
-
-  def __init__(self, *args, **kwargs):
-    super(NotifyTaskBase, self).__init__(*args, **kwargs)
-
-    if not self._EMAIL_TEMPLATE:
-      raise Exception('Subclasses must override _EMAIL_TEMPLATE.'
-                      ' This class must not be called directly.')
-    # We use FORMAT_RAW for emails because they are plain text, not HTML.
-    # TODO(jrobbins): consider sending HTML formatted emails someday.
-    self.email_template = template_helpers.MonorailTemplate(
-        TEMPLATE_PATH + self._EMAIL_TEMPLATE,
-        compress_whitespace=False, base_format=ezt.FORMAT_RAW)
-
-
-class NotifyIssueChangeTask(NotifyTaskBase):
+class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
   """JSON servlet that notifies appropriate users after an issue change."""
 
   _EMAIL_TEMPLATE = 'tracker/issue-change-notification-email.ezt'
@@ -392,7 +369,7 @@ class NotifyIssueChangeTask(NotifyTaskBase):
     return email_tasks
 
 
-class NotifyBlockingChangeTask(NotifyTaskBase):
+class NotifyBlockingChangeTask(notify_helpers.NotifyTaskBase):
   """JSON servlet that notifies appropriate users after a blocking change."""
 
   _EMAIL_TEMPLATE = 'tracker/issue-blocking-change-notification-email.ezt'
@@ -567,7 +544,7 @@ class NotifyBlockingChangeTask(NotifyTaskBase):
     return one_issue_email_tasks
 
 
-class NotifyBulkChangeTask(NotifyTaskBase):
+class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
   """JSON servlet that notifies appropriate users after a bulk edit."""
 
   _EMAIL_TEMPLATE = 'tracker/issue-bulk-change-notification-email.ezt'
