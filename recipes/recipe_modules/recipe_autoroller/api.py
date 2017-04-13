@@ -10,27 +10,13 @@ import re
 from recipe_engine import recipe_api
 
 
-def get_author_email(commit_info):
-  email = commit_info.get('author_email')
-  if email is None:
-    email = commit_info['author']
-  return email
-
-
-def get_message_lines(commit_info):
-  message = commit_info.get('message_lines')
-  if message is None:
-    message = commit_info['message'].splitlines()
-  return message
-
-
 def get_reviewers(commit_infos):
   """Get a set of authors and reviewers from 'recipes.py autoroll' commit infos.
   """
   reviewers = set()
   for commits in commit_infos.values():
     for commit in commits:
-      reviewers.add(get_author_email(commit))
+      reviewers.add(commit['author_email'])
   return reviewers
 
 
@@ -39,11 +25,11 @@ def get_blame(commit_infos):
   for project, commits in commit_infos.iteritems():
     blame.append('%s:' % project)
     for commit in commits:
-      message = get_message_lines(commit)
+      message = commit['message_lines']
       # TODO(phajdan.jr): truncate long messages.
       message = message[0] if message else 'n/a'
       blame.append('  https://crrev.com/%s %s (%s)' % (
-          commit['revision'], message, get_author_email(commit)))
+          commit['revision'], message, commit['author_email']))
   return blame
 
 
