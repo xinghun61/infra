@@ -255,7 +255,7 @@
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    \"spec\": \"api_version: 1\\netc: \\\"etc\\\"\\n\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"rejected_candidates_details\": [], @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"rejected_candidates_count\": 0, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"roll_details\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"commit_infos\": {@@@",

@@ -227,7 +227,7 @@
       "@@@STEP_TEXT@ (already at latest revisions)@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"picked_roll_details\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"rejected_candidates_details\": [], @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"rejected_candidates_count\": 0, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"roll_details\": [], @@@",
       "@@@STEP_LOG_LINE@json.output@  \"success\": false, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"trivial\": null@@@",

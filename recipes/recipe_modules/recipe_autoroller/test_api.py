@@ -8,8 +8,7 @@ from recipe_engine import recipe_test_api
 
 
 class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
-  def roll_data(self, project, success=True, trivial=True, empty=False,
-                rejected_count=False):
+  def roll_data(self, project, success=True, trivial=True, empty=False):
     """Returns mock roll data for |project|."""
     if empty:
       success = False
@@ -46,25 +45,13 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
       'trivial': trivial if success else None,
       'picked_roll_details': picked_roll_details if success else None,
     }
-    # TODO(iannucci): remove this once all repos are emitting
-    # rejected_candidates_count.
-    if rejected_count:
-      roll_result['rejected_candidates_count'] = 0
-    else:
-      roll_result['rejected_candidates_details'] = []
+    roll_result['rejected_candidates_count'] = 0
     if empty:
       roll_result['roll_details'] = []
     else:
       roll_result['roll_details'] = [picked_roll_details]
       if not success:
-        if rejected_count:
-          roll_result['rejected_candidates_count'] = 1
-        else:
-          roll_result['rejected_candidates_details'].append({
-            'spec': 'some_spec',
-            'commit_infos': {
-            },
-          })
+        roll_result['rejected_candidates_count'] = 1
 
     ret += self.step_data('%s.roll' % project, self.m.json.output(roll_result))
     return ret
