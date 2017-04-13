@@ -56,9 +56,11 @@ class HotlistPeopleList(servlet.Servlet):
     # TODO(jojwang): implement FindUntrustedGroups()
 
     with self.profiler.Phase('making member views'):
-      owner_views = self._MakeMemberViews(mr, mr.hotlist.owner_ids)
-      editor_views = self._MakeMemberViews(mr, mr.hotlist.editor_ids)
-      follower_views = self._MakeMemberViews(mr, mr.hotlist.follower_ids)
+      owner_views = self._MakeMemberViews(mr, mr.hotlist.owner_ids, users_by_id)
+      editor_views = self._MakeMemberViews(mr, mr.hotlist.editor_ids,
+                                           users_by_id)
+      follower_views = self._MakeMemberViews(mr, mr.hotlist.follower_ids,
+                                             users_by_id)
       all_member_views = owner_views + editor_views + follower_views
 
     pagination = paginate.ArtifactPagination(
@@ -104,11 +106,10 @@ class HotlistPeopleList(servlet.Servlet):
     elif 'changeowners' in post_data:
       return self.ProcessChangeOwnership(mr, post_data)
 
-  def _MakeMemberViews(self, mr, member_ids):
+  def _MakeMemberViews(self, mr, member_ids, users_by_id):
     """Return a sorted list of MemberViews for display by EZT."""
     member_views = [hotlist_views.MemberView(
-        mr.auth.user_id, member_id, framework_views.MakeUserView(
-            mr.cnxn, self.services.user, member_id),
+        mr.auth.user_id, member_id, users_by_id[member_id],
         mr.hotlist) for member_id in member_ids]
     member_views.sort(key=lambda mv: mv.user.email)
     return member_views
