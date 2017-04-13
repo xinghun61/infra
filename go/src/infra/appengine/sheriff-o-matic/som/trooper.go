@@ -115,7 +115,9 @@ func getTrooperAlerts(c context.Context, useMilo bool) ([]byte, error) {
 func getSwarmingAlerts(c context.Context) *swarmingAlerts {
 	// TODO(seanmmccullough): Cache these responses for a few minutes.
 	ret := &swarmingAlerts{}
-	c, _ = context.WithTimeout(c, 60*time.Second)
+	c, cancel := context.WithTimeout(c, 60*time.Second)
+	defer cancel()
+
 	oauthClient, err := getOAuthClient(c)
 	if err != nil {
 		logging.Errorf(c, "getting oauth client: %v", err)

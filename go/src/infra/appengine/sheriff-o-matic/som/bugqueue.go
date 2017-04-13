@@ -33,7 +33,8 @@ var (
 var getBugsFromMonorail = func(c context.Context, q string,
 	can monorail.IssuesListRequest_CannedQuery) (*monorail.IssuesListResponse, error) {
 	// Get authenticated monorail client.
-	ctx, _ := context.WithDeadline(c, clock.Now(c).Add(time.Second*30))
+	ctx, cancel := context.WithDeadline(c, clock.Now(c).Add(time.Second*30))
+	defer cancel()
 
 	client, err := getOAuthClient(ctx)
 
