@@ -338,12 +338,14 @@ class DetectFirstFailurePipeline(BasePipeline):
 
     unfinished_tests = failed_step['tests'].keys()
     for build_number in range(
-        current_build_number - 1, farthest_first_failure - 1, -1):
+        current_build_number - 1, max(farthest_first_failure - 1, 0), -1):
+      # Checks back until farthest_first_failure or build 1, don't use build 0
+      # since there might be some abnormalities in build 0.
       step = self._GetSameStepFromBuild(
           master_name, builder_name, build_number, step_name,
           http_client)
 
-      if not step:  # pragma: no cover
+      if not step or not step.log_data:  # pragma: no cover
         raise pipeline.Retry(
             'Failed to get swarming test results for a previous build.')
 
