@@ -74,8 +74,6 @@ def run_py_main(args, runpy_path, env_path, package):
 
   import argcomplete
 
-  os.chdir(os.path.dirname(runpy_path))
-
   # Impersonate the argcomplete 'protocol'
   completing = os.getenv('_ARGCOMPLETE') == '1'
   if completing:
