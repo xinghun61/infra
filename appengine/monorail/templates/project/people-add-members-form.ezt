@@ -28,7 +28,7 @@
 	   [is arg0 "hotlist"]hotlist.
 	   <strong>You can also add group lists to give every member of the group permission to edit this hotlist</strong>
 	   [else]group[end][end].<br><br>
-           Each email address must correspond to an existing Google Account.
+           Each email address must correspond to a Google Account when in use.
        </div>
     </td>
    </tr>
