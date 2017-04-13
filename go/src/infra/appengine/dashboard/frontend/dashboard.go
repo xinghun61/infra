@@ -10,9 +10,12 @@ import (
 
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
+	"github.com/luci/luci-go/grpc/discovery"
+	"github.com/luci/luci-go/grpc/prpc"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 
+	dashpb "infra/appengine/dashboard/api/dashboard"
 	"infra/appengine/dashboard/backend"
 )
 
@@ -32,6 +35,11 @@ func init() {
 	gaemiddleware.InstallHandlers(r)
 	r.GET("/", pageBase(), dashboard)
 	http.DefaultServeMux.Handle("/", r)
+
+	var api prpc.Server
+	dashpb.RegisterChopsServiceStatusServer(&api, &dashboardService{})
+	discovery.Enable(&api)
+	api.InstallHandlers(r, gaemiddleware.BaseProd())
 }
 
 func dashboard(ctx *router.Context) {

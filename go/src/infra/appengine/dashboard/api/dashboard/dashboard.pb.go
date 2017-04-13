@@ -9,16 +9,8 @@ It is generated from these files:
 	infra/appengine/dashboard/api/dashboard/dashboard.proto
 
 It has these top-level messages:
-	ListServicesRequest
-	ListServicesResponse
-	GetServiceRequest
-	GetServiceStatusRequest
-	GetServiceStatusResponse
-	ListIncidentsRequest
-	ListIncidentsResponse
-	GetIncidentRequest
-	CreateIncidentRequest
-	UpdateIncidentRequest
+	UpdateOpenIncidentsRequest
+	UpdateOpenIncidentsResponse
 	Incident
 	ChopsService
 */
@@ -46,252 +38,71 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
-type ListServicesRequest struct {
-	// The maximum number of items to return.
-	PageSize int32 `protobuf:"varint,1,opt,name=page_size,json=pageSize" json:"page_size,omitempty"`
-	// The next_page_token value returned from a previous List request, if any.
-	PageToken string `protobuf:"bytes,2,opt,name=page_token,json=pageToken" json:"page_token,omitempty"`
+type Severity int32
+
+const (
+	Severity_RED    Severity = 0
+	Severity_YELLOW Severity = 1
+)
+
+var Severity_name = map[int32]string{
+	0: "RED",
+	1: "YELLOW",
+}
+var Severity_value = map[string]int32{
+	"RED":    0,
+	"YELLOW": 1,
 }
 
-func (m *ListServicesRequest) Reset()                    { *m = ListServicesRequest{} }
-func (m *ListServicesRequest) String() string            { return proto.CompactTextString(m) }
-func (*ListServicesRequest) ProtoMessage()               {}
-func (*ListServicesRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+func (x Severity) String() string {
+	return proto.EnumName(Severity_name, int32(x))
+}
+func (Severity) EnumDescriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
 
-func (m *ListServicesRequest) GetPageSize() int32 {
+type UpdateOpenIncidentsRequest struct {
+	ChopsService *ChopsService `protobuf:"bytes,1,opt,name=chops_service,json=chopsService" json:"chops_service,omitempty"`
+}
+
+func (m *UpdateOpenIncidentsRequest) Reset()                    { *m = UpdateOpenIncidentsRequest{} }
+func (m *UpdateOpenIncidentsRequest) String() string            { return proto.CompactTextString(m) }
+func (*UpdateOpenIncidentsRequest) ProtoMessage()               {}
+func (*UpdateOpenIncidentsRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{0} }
+
+func (m *UpdateOpenIncidentsRequest) GetChopsService() *ChopsService {
 	if m != nil {
-		return m.PageSize
-	}
-	return 0
-}
-
-func (m *ListServicesRequest) GetPageToken() string {
-	if m != nil {
-		return m.PageToken
-	}
-	return ""
-}
-
-type ListServicesResponse struct {
-	Services      []*ChopsService `protobuf:"bytes,1,rep,name=services" json:"services,omitempty"`
-	NextPageToken string          `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken" json:"next_page_token,omitempty"`
-}
-
-func (m *ListServicesResponse) Reset()                    { *m = ListServicesResponse{} }
-func (m *ListServicesResponse) String() string            { return proto.CompactTextString(m) }
-func (*ListServicesResponse) ProtoMessage()               {}
-func (*ListServicesResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
-
-func (m *ListServicesResponse) GetServices() []*ChopsService {
-	if m != nil {
-		return m.Services
+		return m.ChopsService
 	}
 	return nil
 }
 
-func (m *ListServicesResponse) GetNextPageToken() string {
+type UpdateOpenIncidentsResponse struct {
+	OpenIncidents []*Incident `protobuf:"bytes,1,rep,name=open_incidents,json=openIncidents" json:"open_incidents,omitempty"`
+}
+
+func (m *UpdateOpenIncidentsResponse) Reset()                    { *m = UpdateOpenIncidentsResponse{} }
+func (m *UpdateOpenIncidentsResponse) String() string            { return proto.CompactTextString(m) }
+func (*UpdateOpenIncidentsResponse) ProtoMessage()               {}
+func (*UpdateOpenIncidentsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{1} }
+
+func (m *UpdateOpenIncidentsResponse) GetOpenIncidents() []*Incident {
 	if m != nil {
-		return m.NextPageToken
-	}
-	return ""
-}
-
-type GetServiceRequest struct {
-	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName" json:"service_name,omitempty"`
-}
-
-func (m *GetServiceRequest) Reset()                    { *m = GetServiceRequest{} }
-func (m *GetServiceRequest) String() string            { return proto.CompactTextString(m) }
-func (*GetServiceRequest) ProtoMessage()               {}
-func (*GetServiceRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
-
-func (m *GetServiceRequest) GetServiceName() string {
-	if m != nil {
-		return m.ServiceName
-	}
-	return ""
-}
-
-type GetServiceStatusRequest struct {
-	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName" json:"service_name,omitempty"`
-}
-
-func (m *GetServiceStatusRequest) Reset()                    { *m = GetServiceStatusRequest{} }
-func (m *GetServiceStatusRequest) String() string            { return proto.CompactTextString(m) }
-func (*GetServiceStatusRequest) ProtoMessage()               {}
-func (*GetServiceStatusRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
-
-func (m *GetServiceStatusRequest) GetServiceName() string {
-	if m != nil {
-		return m.ServiceName
-	}
-	return ""
-}
-
-type GetServiceStatusResponse struct {
-	ServiceStatus int32 `protobuf:"varint,1,opt,name=service_status,json=serviceStatus" json:"service_status,omitempty"`
-}
-
-func (m *GetServiceStatusResponse) Reset()                    { *m = GetServiceStatusResponse{} }
-func (m *GetServiceStatusResponse) String() string            { return proto.CompactTextString(m) }
-func (*GetServiceStatusResponse) ProtoMessage()               {}
-func (*GetServiceStatusResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{4} }
-
-func (m *GetServiceStatusResponse) GetServiceStatus() int32 {
-	if m != nil {
-		return m.ServiceStatus
-	}
-	return 0
-}
-
-type ListIncidentsRequest struct {
-	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName" json:"service_name,omitempty"`
-	PageSize    int32  `protobuf:"varint,2,opt,name=page_size,json=pageSize" json:"page_size,omitempty"`
-	PageToken   string `protobuf:"bytes,3,opt,name=page_token,json=pageToken" json:"page_token,omitempty"`
-}
-
-func (m *ListIncidentsRequest) Reset()                    { *m = ListIncidentsRequest{} }
-func (m *ListIncidentsRequest) String() string            { return proto.CompactTextString(m) }
-func (*ListIncidentsRequest) ProtoMessage()               {}
-func (*ListIncidentsRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{5} }
-
-func (m *ListIncidentsRequest) GetServiceName() string {
-	if m != nil {
-		return m.ServiceName
-	}
-	return ""
-}
-
-func (m *ListIncidentsRequest) GetPageSize() int32 {
-	if m != nil {
-		return m.PageSize
-	}
-	return 0
-}
-
-func (m *ListIncidentsRequest) GetPageToken() string {
-	if m != nil {
-		return m.PageToken
-	}
-	return ""
-}
-
-type ListIncidentsResponse struct {
-	Incidents     []*Incident `protobuf:"bytes,1,rep,name=incidents" json:"incidents,omitempty"`
-	NextPageToken string      `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken" json:"next_page_token,omitempty"`
-}
-
-func (m *ListIncidentsResponse) Reset()                    { *m = ListIncidentsResponse{} }
-func (m *ListIncidentsResponse) String() string            { return proto.CompactTextString(m) }
-func (*ListIncidentsResponse) ProtoMessage()               {}
-func (*ListIncidentsResponse) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{6} }
-
-func (m *ListIncidentsResponse) GetIncidents() []*Incident {
-	if m != nil {
-		return m.Incidents
+		return m.OpenIncidents
 	}
 	return nil
-}
-
-func (m *ListIncidentsResponse) GetNextPageToken() string {
-	if m != nil {
-		return m.NextPageToken
-	}
-	return ""
-}
-
-type GetIncidentRequest struct {
-	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName" json:"service_name,omitempty"`
-	IncidentId  string `protobuf:"bytes,2,opt,name=incident_id,json=incidentId" json:"incident_id,omitempty"`
-}
-
-func (m *GetIncidentRequest) Reset()                    { *m = GetIncidentRequest{} }
-func (m *GetIncidentRequest) String() string            { return proto.CompactTextString(m) }
-func (*GetIncidentRequest) ProtoMessage()               {}
-func (*GetIncidentRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{7} }
-
-func (m *GetIncidentRequest) GetServiceName() string {
-	if m != nil {
-		return m.ServiceName
-	}
-	return ""
-}
-
-func (m *GetIncidentRequest) GetIncidentId() string {
-	if m != nil {
-		return m.IncidentId
-	}
-	return ""
-}
-
-type CreateIncidentRequest struct {
-	ServiceName string    `protobuf:"bytes,1,opt,name=service_name,json=serviceName" json:"service_name,omitempty"`
-	Incident    *Incident `protobuf:"bytes,2,opt,name=incident" json:"incident,omitempty"`
-}
-
-func (m *CreateIncidentRequest) Reset()                    { *m = CreateIncidentRequest{} }
-func (m *CreateIncidentRequest) String() string            { return proto.CompactTextString(m) }
-func (*CreateIncidentRequest) ProtoMessage()               {}
-func (*CreateIncidentRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{8} }
-
-func (m *CreateIncidentRequest) GetServiceName() string {
-	if m != nil {
-		return m.ServiceName
-	}
-	return ""
-}
-
-func (m *CreateIncidentRequest) GetIncident() *Incident {
-	if m != nil {
-		return m.Incident
-	}
-	return nil
-}
-
-type UpdateIncidentRequest struct {
-	Incident    *Incident `protobuf:"bytes,1,opt,name=incident" json:"incident,omitempty"`
-	ServiceName string    `protobuf:"bytes,2,opt,name=service_name,json=serviceName" json:"service_name,omitempty"`
-	IncidentId  string    `protobuf:"bytes,3,opt,name=incident_id,json=incidentId" json:"incident_id,omitempty"`
-}
-
-func (m *UpdateIncidentRequest) Reset()                    { *m = UpdateIncidentRequest{} }
-func (m *UpdateIncidentRequest) String() string            { return proto.CompactTextString(m) }
-func (*UpdateIncidentRequest) ProtoMessage()               {}
-func (*UpdateIncidentRequest) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{9} }
-
-func (m *UpdateIncidentRequest) GetIncident() *Incident {
-	if m != nil {
-		return m.Incident
-	}
-	return nil
-}
-
-func (m *UpdateIncidentRequest) GetServiceName() string {
-	if m != nil {
-		return m.ServiceName
-	}
-	return ""
-}
-
-func (m *UpdateIncidentRequest) GetIncidentId() string {
-	if m != nil {
-		return m.IncidentId
-	}
-	return ""
 }
 
 type Incident struct {
-	Id        string `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	Open      bool   `protobuf:"varint,2,opt,name=open" json:"open,omitempty"`
-	StartTime string `protobuf:"bytes,3,opt,name=start_time,json=startTime" json:"start_time,omitempty"`
-	EndTime   string `protobuf:"bytes,4,opt,name=end_time,json=endTime" json:"end_time,omitempty"`
-	Severity  int32  `protobuf:"varint,5,opt,name=severity" json:"severity,omitempty"`
+	Id        string   `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
+	Open      bool     `protobuf:"varint,2,opt,name=open" json:"open,omitempty"`
+	StartTime int64    `protobuf:"varint,3,opt,name=start_time,json=startTime" json:"start_time,omitempty"`
+	EndTime   int64    `protobuf:"varint,4,opt,name=end_time,json=endTime" json:"end_time,omitempty"`
+	Severity  Severity `protobuf:"varint,5,opt,name=severity,enum=dashboard.Severity" json:"severity,omitempty"`
 }
 
 func (m *Incident) Reset()                    { *m = Incident{} }
 func (m *Incident) String() string            { return proto.CompactTextString(m) }
 func (*Incident) ProtoMessage()               {}
-func (*Incident) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{10} }
+func (*Incident) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{2} }
 
 func (m *Incident) GetId() string {
 	if m != nil {
@@ -307,25 +118,25 @@ func (m *Incident) GetOpen() bool {
 	return false
 }
 
-func (m *Incident) GetStartTime() string {
+func (m *Incident) GetStartTime() int64 {
 	if m != nil {
 		return m.StartTime
 	}
-	return ""
+	return 0
 }
 
-func (m *Incident) GetEndTime() string {
+func (m *Incident) GetEndTime() int64 {
 	if m != nil {
 		return m.EndTime
 	}
-	return ""
+	return 0
 }
 
-func (m *Incident) GetSeverity() int32 {
+func (m *Incident) GetSeverity() Severity {
 	if m != nil {
 		return m.Severity
 	}
-	return 0
+	return Severity_RED
 }
 
 type ChopsService struct {
@@ -337,7 +148,7 @@ type ChopsService struct {
 func (m *ChopsService) Reset()                    { *m = ChopsService{} }
 func (m *ChopsService) String() string            { return proto.CompactTextString(m) }
 func (*ChopsService) ProtoMessage()               {}
-func (*ChopsService) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{11} }
+func (*ChopsService) Descriptor() ([]byte, []int) { return fileDescriptor0, []int{3} }
 
 func (m *ChopsService) GetName() string {
 	if m != nil {
@@ -361,18 +172,11 @@ func (m *ChopsService) GetSla() string {
 }
 
 func init() {
-	proto.RegisterType((*ListServicesRequest)(nil), "dashboard.ListServicesRequest")
-	proto.RegisterType((*ListServicesResponse)(nil), "dashboard.ListServicesResponse")
-	proto.RegisterType((*GetServiceRequest)(nil), "dashboard.GetServiceRequest")
-	proto.RegisterType((*GetServiceStatusRequest)(nil), "dashboard.GetServiceStatusRequest")
-	proto.RegisterType((*GetServiceStatusResponse)(nil), "dashboard.GetServiceStatusResponse")
-	proto.RegisterType((*ListIncidentsRequest)(nil), "dashboard.ListIncidentsRequest")
-	proto.RegisterType((*ListIncidentsResponse)(nil), "dashboard.ListIncidentsResponse")
-	proto.RegisterType((*GetIncidentRequest)(nil), "dashboard.GetIncidentRequest")
-	proto.RegisterType((*CreateIncidentRequest)(nil), "dashboard.CreateIncidentRequest")
-	proto.RegisterType((*UpdateIncidentRequest)(nil), "dashboard.UpdateIncidentRequest")
+	proto.RegisterType((*UpdateOpenIncidentsRequest)(nil), "dashboard.UpdateOpenIncidentsRequest")
+	proto.RegisterType((*UpdateOpenIncidentsResponse)(nil), "dashboard.UpdateOpenIncidentsResponse")
 	proto.RegisterType((*Incident)(nil), "dashboard.Incident")
 	proto.RegisterType((*ChopsService)(nil), "dashboard.ChopsService")
+	proto.RegisterEnum("dashboard.Severity", Severity_name, Severity_value)
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -386,13 +190,7 @@ const _ = grpc.SupportPackageIsVersion4
 // Client API for ChopsServiceStatus service
 
 type ChopsServiceStatusClient interface {
-	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
-	GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*ChopsService, error)
-	GetServiceStatus(ctx context.Context, in *GetServiceStatusRequest, opts ...grpc.CallOption) (*GetServiceStatusResponse, error)
-	ListIncidents(ctx context.Context, in *ListIncidentsRequest, opts ...grpc.CallOption) (*ListIncidentsResponse, error)
-	GetIncident(ctx context.Context, in *GetIncidentRequest, opts ...grpc.CallOption) (*Incident, error)
-	CreateIncident(ctx context.Context, in *CreateIncidentRequest, opts ...grpc.CallOption) (*Incident, error)
-	UpdateIncident(ctx context.Context, in *UpdateIncidentRequest, opts ...grpc.CallOption) (*Incident, error)
+	UpdateOpenIncidents(ctx context.Context, in *UpdateOpenIncidentsRequest, opts ...grpc.CallOption) (*UpdateOpenIncidentsResponse, error)
 }
 type chopsServiceStatusPRPCClient struct {
 	client *prpc.Client
@@ -402,63 +200,9 @@ func NewChopsServiceStatusPRPCClient(client *prpc.Client) ChopsServiceStatusClie
 	return &chopsServiceStatusPRPCClient{client}
 }
 
-func (c *chopsServiceStatusPRPCClient) ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error) {
-	out := new(ListServicesResponse)
-	err := c.client.Call(ctx, "dashboard.ChopsServiceStatus", "ListServices", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusPRPCClient) GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*ChopsService, error) {
-	out := new(ChopsService)
-	err := c.client.Call(ctx, "dashboard.ChopsServiceStatus", "GetService", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusPRPCClient) GetServiceStatus(ctx context.Context, in *GetServiceStatusRequest, opts ...grpc.CallOption) (*GetServiceStatusResponse, error) {
-	out := new(GetServiceStatusResponse)
-	err := c.client.Call(ctx, "dashboard.ChopsServiceStatus", "GetServiceStatus", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusPRPCClient) ListIncidents(ctx context.Context, in *ListIncidentsRequest, opts ...grpc.CallOption) (*ListIncidentsResponse, error) {
-	out := new(ListIncidentsResponse)
-	err := c.client.Call(ctx, "dashboard.ChopsServiceStatus", "ListIncidents", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusPRPCClient) GetIncident(ctx context.Context, in *GetIncidentRequest, opts ...grpc.CallOption) (*Incident, error) {
-	out := new(Incident)
-	err := c.client.Call(ctx, "dashboard.ChopsServiceStatus", "GetIncident", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusPRPCClient) CreateIncident(ctx context.Context, in *CreateIncidentRequest, opts ...grpc.CallOption) (*Incident, error) {
-	out := new(Incident)
-	err := c.client.Call(ctx, "dashboard.ChopsServiceStatus", "CreateIncident", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusPRPCClient) UpdateIncident(ctx context.Context, in *UpdateIncidentRequest, opts ...grpc.CallOption) (*Incident, error) {
-	out := new(Incident)
-	err := c.client.Call(ctx, "dashboard.ChopsServiceStatus", "UpdateIncident", in, out, opts...)
+func (c *chopsServiceStatusPRPCClient) UpdateOpenIncidents(ctx context.Context, in *UpdateOpenIncidentsRequest, opts ...grpc.CallOption) (*UpdateOpenIncidentsResponse, error) {
+	out := new(UpdateOpenIncidentsResponse)
+	err := c.client.Call(ctx, "dashboard.ChopsServiceStatus", "UpdateOpenIncidents", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -473,63 +217,9 @@ func NewChopsServiceStatusClient(cc *grpc.ClientConn) ChopsServiceStatusClient {
 	return &chopsServiceStatusClient{cc}
 }
 
-func (c *chopsServiceStatusClient) ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error) {
-	out := new(ListServicesResponse)
-	err := grpc.Invoke(ctx, "/dashboard.ChopsServiceStatus/ListServices", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusClient) GetService(ctx context.Context, in *GetServiceRequest, opts ...grpc.CallOption) (*ChopsService, error) {
-	out := new(ChopsService)
-	err := grpc.Invoke(ctx, "/dashboard.ChopsServiceStatus/GetService", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusClient) GetServiceStatus(ctx context.Context, in *GetServiceStatusRequest, opts ...grpc.CallOption) (*GetServiceStatusResponse, error) {
-	out := new(GetServiceStatusResponse)
-	err := grpc.Invoke(ctx, "/dashboard.ChopsServiceStatus/GetServiceStatus", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusClient) ListIncidents(ctx context.Context, in *ListIncidentsRequest, opts ...grpc.CallOption) (*ListIncidentsResponse, error) {
-	out := new(ListIncidentsResponse)
-	err := grpc.Invoke(ctx, "/dashboard.ChopsServiceStatus/ListIncidents", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusClient) GetIncident(ctx context.Context, in *GetIncidentRequest, opts ...grpc.CallOption) (*Incident, error) {
-	out := new(Incident)
-	err := grpc.Invoke(ctx, "/dashboard.ChopsServiceStatus/GetIncident", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusClient) CreateIncident(ctx context.Context, in *CreateIncidentRequest, opts ...grpc.CallOption) (*Incident, error) {
-	out := new(Incident)
-	err := grpc.Invoke(ctx, "/dashboard.ChopsServiceStatus/CreateIncident", in, out, c.cc, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *chopsServiceStatusClient) UpdateIncident(ctx context.Context, in *UpdateIncidentRequest, opts ...grpc.CallOption) (*Incident, error) {
-	out := new(Incident)
-	err := grpc.Invoke(ctx, "/dashboard.ChopsServiceStatus/UpdateIncident", in, out, c.cc, opts...)
+func (c *chopsServiceStatusClient) UpdateOpenIncidents(ctx context.Context, in *UpdateOpenIncidentsRequest, opts ...grpc.CallOption) (*UpdateOpenIncidentsResponse, error) {
+	out := new(UpdateOpenIncidentsResponse)
+	err := grpc.Invoke(ctx, "/dashboard.ChopsServiceStatus/UpdateOpenIncidents", in, out, c.cc, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -539,141 +229,27 @@ func (c *chopsServiceStatusClient) UpdateIncident(ctx context.Context, in *Updat
 // Server API for ChopsServiceStatus service
 
 type ChopsServiceStatusServer interface {
-	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
-	GetService(context.Context, *GetServiceRequest) (*ChopsService, error)
-	GetServiceStatus(context.Context, *GetServiceStatusRequest) (*GetServiceStatusResponse, error)
-	ListIncidents(context.Context, *ListIncidentsRequest) (*ListIncidentsResponse, error)
-	GetIncident(context.Context, *GetIncidentRequest) (*Incident, error)
-	CreateIncident(context.Context, *CreateIncidentRequest) (*Incident, error)
-	UpdateIncident(context.Context, *UpdateIncidentRequest) (*Incident, error)
+	UpdateOpenIncidents(context.Context, *UpdateOpenIncidentsRequest) (*UpdateOpenIncidentsResponse, error)
 }
 
 func RegisterChopsServiceStatusServer(s prpc.Registrar, srv ChopsServiceStatusServer) {
 	s.RegisterService(&_ChopsServiceStatus_serviceDesc, srv)
 }
 
-func _ChopsServiceStatus_ListServices_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListServicesRequest)
+func _ChopsServiceStatus_UpdateOpenIncidents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateOpenIncidentsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ChopsServiceStatusServer).ListServices(ctx, in)
+		return srv.(ChopsServiceStatusServer).UpdateOpenIncidents(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/dashboard.ChopsServiceStatus/ListServices",
+		FullMethod: "/dashboard.ChopsServiceStatus/UpdateOpenIncidents",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChopsServiceStatusServer).ListServices(ctx, req.(*ListServicesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ChopsServiceStatus_GetService_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetServiceRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ChopsServiceStatusServer).GetService(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/dashboard.ChopsServiceStatus/GetService",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChopsServiceStatusServer).GetService(ctx, req.(*GetServiceRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ChopsServiceStatus_GetServiceStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetServiceStatusRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ChopsServiceStatusServer).GetServiceStatus(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/dashboard.ChopsServiceStatus/GetServiceStatus",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChopsServiceStatusServer).GetServiceStatus(ctx, req.(*GetServiceStatusRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ChopsServiceStatus_ListIncidents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListIncidentsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ChopsServiceStatusServer).ListIncidents(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/dashboard.ChopsServiceStatus/ListIncidents",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChopsServiceStatusServer).ListIncidents(ctx, req.(*ListIncidentsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ChopsServiceStatus_GetIncident_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetIncidentRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ChopsServiceStatusServer).GetIncident(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/dashboard.ChopsServiceStatus/GetIncident",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChopsServiceStatusServer).GetIncident(ctx, req.(*GetIncidentRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ChopsServiceStatus_CreateIncident_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateIncidentRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ChopsServiceStatusServer).CreateIncident(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/dashboard.ChopsServiceStatus/CreateIncident",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChopsServiceStatusServer).CreateIncident(ctx, req.(*CreateIncidentRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ChopsServiceStatus_UpdateIncident_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateIncidentRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ChopsServiceStatusServer).UpdateIncident(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/dashboard.ChopsServiceStatus/UpdateIncident",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ChopsServiceStatusServer).UpdateIncident(ctx, req.(*UpdateIncidentRequest))
+		return srv.(ChopsServiceStatusServer).UpdateOpenIncidents(ctx, req.(*UpdateOpenIncidentsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -683,32 +259,8 @@ var _ChopsServiceStatus_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*ChopsServiceStatusServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ListServices",
-			Handler:    _ChopsServiceStatus_ListServices_Handler,
-		},
-		{
-			MethodName: "GetService",
-			Handler:    _ChopsServiceStatus_GetService_Handler,
-		},
-		{
-			MethodName: "GetServiceStatus",
-			Handler:    _ChopsServiceStatus_GetServiceStatus_Handler,
-		},
-		{
-			MethodName: "ListIncidents",
-			Handler:    _ChopsServiceStatus_ListIncidents_Handler,
-		},
-		{
-			MethodName: "GetIncident",
-			Handler:    _ChopsServiceStatus_GetIncident_Handler,
-		},
-		{
-			MethodName: "CreateIncident",
-			Handler:    _ChopsServiceStatus_CreateIncident_Handler,
-		},
-		{
-			MethodName: "UpdateIncident",
-			Handler:    _ChopsServiceStatus_UpdateIncident_Handler,
+			MethodName: "UpdateOpenIncidents",
+			Handler:    _ChopsServiceStatus_UpdateOpenIncidents_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -720,43 +272,29 @@ func init() {
 }
 
 var fileDescriptor0 = []byte{
-	// 597 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x55, 0x4d, 0x6f, 0xd3, 0x40,
-	0x10, 0xad, 0x9d, 0x14, 0x9c, 0xc9, 0x07, 0x65, 0x4b, 0xd4, 0x60, 0x28, 0x0d, 0x46, 0xa0, 0x9c,
-	0x1a, 0xd1, 0x4a, 0x70, 0xe1, 0x82, 0x22, 0x54, 0x45, 0x42, 0x88, 0x3a, 0x41, 0xe2, 0x82, 0xa2,
-	0x6d, 0x3d, 0xa4, 0xab, 0x12, 0xdb, 0x78, 0x37, 0x15, 0xf4, 0xcc, 0x91, 0xdf, 0xc4, 0x6f, 0x43,
-	0xb6, 0x77, 0x9d, 0xb5, 0xe3, 0x84, 0x84, 0xdb, 0x66, 0x3e, 0xde, 0x9b, 0xf1, 0xcc, 0x9b, 0xc0,
-	0x6b, 0xe6, 0x7f, 0x8d, 0x68, 0x9f, 0x86, 0x21, 0xfa, 0x53, 0xe6, 0x63, 0xdf, 0xa3, 0xfc, 0xea,
-	0x22, 0xa0, 0x91, 0xd7, 0xa7, 0x21, 0xd3, 0x7e, 0x65, 0xaf, 0xe3, 0x30, 0x0a, 0x44, 0x40, 0x6a,
-	0x99, 0xc1, 0x39, 0x87, 0xfd, 0xf7, 0x8c, 0x8b, 0x11, 0x46, 0x37, 0xec, 0x12, 0xb9, 0x8b, 0xdf,
-	0xe7, 0xc8, 0x05, 0x79, 0x04, 0xb5, 0x90, 0x4e, 0x71, 0xc2, 0xd9, 0x2d, 0x76, 0x8c, 0xae, 0xd1,
-	0xdb, 0x75, 0xad, 0xd8, 0x30, 0x62, 0xb7, 0x48, 0x0e, 0x01, 0x12, 0xa7, 0x08, 0xae, 0xd1, 0xef,
-	0x98, 0x5d, 0xa3, 0x57, 0x73, 0x93, 0xf0, 0x71, 0x6c, 0x70, 0x38, 0x3c, 0xc8, 0x43, 0xf2, 0x30,
-	0xf0, 0x39, 0x92, 0x53, 0xb0, 0xb8, 0xb4, 0x75, 0x8c, 0x6e, 0xa5, 0x57, 0x3f, 0x39, 0x38, 0x5e,
-	0x54, 0x36, 0xb8, 0x0a, 0x42, 0x2e, 0x73, 0xdc, 0x2c, 0x90, 0xbc, 0x80, 0x7b, 0x3e, 0xfe, 0x10,
-	0x93, 0x25, 0xc2, 0x66, 0x6c, 0xfe, 0x98, 0x91, 0xbe, 0x82, 0xfb, 0x67, 0xa8, 0x38, 0x55, 0x17,
-	0x4f, 0xa1, 0x21, 0x81, 0x26, 0x3e, 0x9d, 0xa5, 0x8d, 0xd4, 0xdc, 0xba, 0xb4, 0x7d, 0xa0, 0x33,
-	0x74, 0xde, 0xc0, 0xc1, 0x22, 0x6f, 0x24, 0xa8, 0x98, 0xf3, 0x2d, 0xb2, 0xdf, 0x42, 0x67, 0x39,
-	0x5b, 0xb6, 0xfb, 0x1c, 0x5a, 0x2a, 0x9d, 0x27, 0x1e, 0xf9, 0x1d, 0x9b, 0x5c, 0x0f, 0x77, 0xe6,
-	0xe9, 0xd7, 0x1a, 0xfa, 0x97, 0xcc, 0x43, 0x5f, 0x6c, 0xc1, 0x9e, 0x1f, 0x92, 0xb9, 0x76, 0x48,
-	0x95, 0xe2, 0x90, 0x22, 0x68, 0x17, 0x68, 0x65, 0xd9, 0x2f, 0xa1, 0xc6, 0x94, 0x51, 0x8e, 0x69,
-	0x5f, 0x1b, 0x93, 0x4a, 0x70, 0x17, 0x51, 0x1b, 0xcf, 0xe8, 0x33, 0x90, 0x33, 0xcc, 0x28, 0xb7,
-	0x68, 0xf4, 0x08, 0xea, 0x8a, 0x6d, 0xc2, 0x3c, 0x09, 0x0e, 0xca, 0x34, 0xf4, 0x9c, 0x6b, 0x68,
-	0x0f, 0x22, 0xa4, 0x02, 0xff, 0x03, 0xbc, 0x0f, 0x96, 0x42, 0x4a, 0x90, 0x57, 0xf4, 0x9b, 0x05,
-	0x39, 0xbf, 0x0d, 0x68, 0x7f, 0x0a, 0xbd, 0x12, 0x36, 0x1d, 0xca, 0xd8, 0x00, 0x6a, 0xa9, 0x3c,
-	0xf3, 0x9f, 0xbd, 0x57, 0x96, 0x7a, 0xff, 0x65, 0x80, 0xa5, 0xa0, 0x49, 0x0b, 0x4c, 0xe6, 0xc9,
-	0x2e, 0x4d, 0xe6, 0x11, 0x02, 0xd5, 0x20, 0x94, 0xf3, 0xb0, 0xdc, 0xe4, 0x1d, 0x6f, 0x06, 0x17,
-	0x34, 0x12, 0x13, 0xc1, 0x66, 0xa8, 0x36, 0x23, 0xb1, 0x8c, 0xd9, 0x0c, 0xc9, 0x43, 0xb0, 0xd0,
-	0xf7, 0x52, 0x67, 0x35, 0x71, 0xde, 0x45, 0xdf, 0x4b, 0x5c, 0x76, 0xac, 0xe0, 0x1b, 0x8c, 0x98,
-	0xf8, 0xd9, 0xd9, 0x4d, 0xf7, 0x4d, 0xfd, 0x76, 0xa6, 0xd0, 0xd0, 0x25, 0x1c, 0x33, 0x6b, 0x5f,
-	0x3c, 0x79, 0xe7, 0x77, 0xcb, 0xdc, 0x68, 0xb7, 0xf6, 0xa0, 0xc2, 0xbf, 0x51, 0x59, 0x65, 0xfc,
-	0x3c, 0xf9, 0x53, 0x05, 0xa2, 0x33, 0xa5, 0x3a, 0x22, 0xe7, 0xd0, 0xd0, 0xaf, 0x0e, 0x79, 0xa2,
-	0x01, 0x97, 0x5c, 0x38, 0xfb, 0x68, 0xa5, 0x3f, 0x15, 0x82, 0xb3, 0x43, 0xde, 0x01, 0x2c, 0xd4,
-	0x4d, 0x1e, 0x6b, 0x09, 0x4b, 0xa7, 0xc6, 0x5e, 0x75, 0xca, 0x9c, 0x1d, 0xf2, 0x05, 0xf6, 0x8a,
-	0x47, 0x82, 0x38, 0xa5, 0x60, 0xb9, 0xfb, 0x63, 0x3f, 0x5b, 0x1b, 0x93, 0x55, 0x39, 0x86, 0x66,
-	0x4e, 0xc9, 0xa4, 0xd8, 0x59, 0xf1, 0xb4, 0xd8, 0xdd, 0xd5, 0x01, 0x19, 0xea, 0x00, 0xea, 0x9a,
-	0x56, 0xc9, 0x61, 0xbe, 0x96, 0xc2, 0xe2, 0xdb, 0x65, 0x53, 0x74, 0x76, 0xc8, 0x10, 0x5a, 0x79,
-	0x59, 0x12, 0x9d, 0xba, 0x54, 0xb1, 0x6b, 0xa0, 0xf2, 0x9a, 0xcb, 0x41, 0x95, 0xca, 0x71, 0x05,
-	0xd4, 0xc5, 0x9d, 0xe4, 0x4f, 0xf0, 0xf4, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x87, 0xff, 0xa2,
-	0x6a, 0x3f, 0x07, 0x00, 0x00,
+	// 371 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x52, 0xcf, 0xcb, 0xd3, 0x40,
+	0x10, 0xfd, 0x36, 0xf9, 0xfc, 0x9a, 0x4c, 0x7f, 0x50, 0xb6, 0x07, 0x63, 0x45, 0x0c, 0x01, 0x25,
+	0x78, 0x68, 0xb0, 0x1e, 0x04, 0xf1, 0xa6, 0x3d, 0x08, 0x85, 0xc2, 0x56, 0x91, 0x7a, 0x29, 0xdb,
+	0xec, 0xb4, 0x5d, 0xb0, 0x9b, 0x35, 0xbb, 0x2d, 0x08, 0xfe, 0x23, 0xfe, 0xb7, 0x92, 0x6d, 0xd3,
+	0x46, 0x68, 0xf9, 0x6e, 0x6f, 0xf6, 0xbd, 0xbc, 0x79, 0x93, 0x19, 0x78, 0x2f, 0xd5, 0xba, 0xe4,
+	0x19, 0xd7, 0x1a, 0xd5, 0x46, 0x2a, 0xcc, 0x04, 0x37, 0xdb, 0x55, 0xc1, 0x4b, 0x91, 0x71, 0x2d,
+	0x1b, 0xd5, 0x19, 0x8d, 0x74, 0x59, 0xd8, 0x82, 0x86, 0xe7, 0x87, 0xe4, 0x07, 0x0c, 0xbf, 0x69,
+	0xc1, 0x2d, 0xce, 0x34, 0xaa, 0x2f, 0x2a, 0x97, 0x02, 0x95, 0x35, 0x0c, 0x7f, 0xed, 0xd1, 0x58,
+	0xfa, 0x11, 0xba, 0xf9, 0xb6, 0xd0, 0x66, 0x69, 0xb0, 0x3c, 0xc8, 0x1c, 0x23, 0x12, 0x93, 0xb4,
+	0x3d, 0x7e, 0x3a, 0xba, 0x38, 0x7e, 0xaa, 0xf8, 0xf9, 0x91, 0x66, 0x9d, 0xbc, 0x51, 0x25, 0x0b,
+	0x78, 0x7e, 0xd5, 0xdb, 0xe8, 0x42, 0x19, 0xa4, 0x1f, 0xa0, 0x57, 0x68, 0x54, 0x4b, 0x59, 0x33,
+	0x11, 0x89, 0xfd, 0xb4, 0x3d, 0x1e, 0x34, 0xdc, 0xeb, 0xaf, 0x58, 0xb7, 0x68, 0x7a, 0x24, 0x7f,
+	0x09, 0x04, 0x75, 0x45, 0x7b, 0xe0, 0x49, 0xe1, 0xa2, 0x85, 0xcc, 0x93, 0x82, 0x52, 0xb8, 0xaf,
+	0xd4, 0x91, 0x17, 0x93, 0x34, 0x60, 0x0e, 0xd3, 0x17, 0x00, 0xc6, 0xf2, 0xd2, 0x2e, 0xad, 0xdc,
+	0x61, 0xe4, 0xc7, 0x24, 0xf5, 0x59, 0xe8, 0x5e, 0xbe, 0xca, 0x1d, 0xd2, 0x67, 0x10, 0xa0, 0x12,
+	0x47, 0xf2, 0xde, 0x91, 0x2d, 0x54, 0xc2, 0x51, 0x19, 0x04, 0x06, 0x0f, 0x58, 0x4a, 0xfb, 0x3b,
+	0x7a, 0x12, 0x93, 0xb4, 0xf7, 0x5f, 0xc0, 0xf9, 0x89, 0x62, 0x67, 0x51, 0xb2, 0x81, 0x4e, 0xf3,
+	0xa7, 0x54, 0x71, 0x14, 0xdf, 0xe1, 0x29, 0xa0, 0xc3, 0xf4, 0x2d, 0x84, 0x97, 0xb1, 0xbd, 0xdb,
+	0x63, 0x5f, 0x54, 0xb4, 0x0f, 0xbe, 0xf9, 0xc9, 0x5d, 0xf4, 0x90, 0x55, 0xf0, 0xcd, 0x4b, 0x08,
+	0xea, 0xf6, 0xb4, 0x05, 0x3e, 0x9b, 0x7c, 0xee, 0xdf, 0x51, 0x80, 0x87, 0xc5, 0x64, 0x3a, 0x9d,
+	0x7d, 0xef, 0x93, 0xf1, 0x1f, 0xa0, 0xcd, 0x24, 0x73, 0xcb, 0xed, 0xde, 0xd0, 0x35, 0x0c, 0xae,
+	0xac, 0x85, 0xbe, 0x6a, 0xf4, 0xbf, 0x7d, 0x12, 0xc3, 0xd7, 0x8f, 0xc9, 0x8e, 0xdb, 0x4d, 0xee,
+	0x56, 0x0f, 0xee, 0xd8, 0xde, 0xfd, 0x0b, 0x00, 0x00, 0xff, 0xff, 0x92, 0x39, 0xe1, 0x16, 0xa7,
+	0x02, 0x00, 0x00,
 }

@@ -8,73 +8,28 @@ package dashboard;
 
 // The ChromeOps statuses service definition.
 service ChopsServiceStatus {
-  rpc ListServices (ListServicesRequest) returns (ListServicesResponse) {}
-  rpc GetService (GetServiceRequest) returns (ChopsService) {}
-  rpc GetServiceStatus (GetServiceStatusRequest) returns (GetServiceStatusResponse) {}
-  rpc ListIncidents (ListIncidentsRequest) returns (ListIncidentsResponse) {}
-  rpc GetIncident (GetIncidentRequest) returns (Incident) {}
-  rpc CreateIncident (CreateIncidentRequest) returns (Incident) {}
-  rpc UpdateIncident (UpdateIncidentRequest) returns (Incident) {}
+  rpc UpdateOpenIncidents (UpdateOpenIncidentsRequest) returns (UpdateOpenIncidentsResponse) {}
 }
 
-message ListServicesRequest {
-  // The maximum number of items to return.
-  int32 page_size = 1;
-
-  // The next_page_token value returned from a previous List request, if any.
-  string page_token = 2;
+enum Severity {
+    RED = 0;
+    YELLOW = 1;
 }
 
-message ListServicesResponse {
-  repeated ChopsService services = 1;
-  string next_page_token = 2;
+message UpdateOpenIncidentsRequest {
+  ChopsService chops_service = 1;
 }
 
-message GetServiceRequest {
-  string service_name = 1;
-}
-
-message GetServiceStatusRequest {
-  string service_name = 1;
-}
-
-message GetServiceStatusResponse {
-  int32 service_status = 1;
-}
-
-message ListIncidentsRequest {
-  string service_name = 1;
-  int32 page_size = 2;
-  string page_token = 3;
-}
-
-message ListIncidentsResponse {
-  repeated Incident incidents = 1;
-  string next_page_token = 2;
-}
-
-message GetIncidentRequest {
-  string service_name = 1;
-  string incident_id = 2;
-}
-
-message CreateIncidentRequest {
-  string service_name = 1;
-  Incident incident = 2;
-}
-
-message UpdateIncidentRequest {
-  Incident incident = 1;
-  string service_name = 2;
-  string incident_id = 3;
+message UpdateOpenIncidentsResponse {
+  repeated Incident open_incidents = 1;
 }
 
 message Incident {
   string id = 1;
   bool open = 2;
-  string start_time = 3;
-  string end_time = 4;
-  int32 severity = 5;
+  int64 start_time = 3;
+  int64 end_time = 4;
+  Severity severity = 5;
 }
 
 message ChopsService {
