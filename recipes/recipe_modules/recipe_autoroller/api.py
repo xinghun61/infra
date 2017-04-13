@@ -10,13 +10,27 @@ import re
 from recipe_engine import recipe_api
 
 
+def get_author_email(commit_info):
+  email = commit_info.get('author_email')
+  if email is None:
+    email = commit_info['author']
+  return email
+
+
+def get_message_lines(commit_info):
+  message = commit_info.get('message_lines')
+  if message is None:
+    message = commit_info['message'].splitlines()
+  return message
+
+
 def get_reviewers(commit_infos):
   """Get a set of authors and reviewers from 'recipes.py autoroll' commit infos.
   """
   reviewers = set()
   for commits in commit_infos.values():
     for commit in commits:
-      reviewers.add(commit['author'])
+      reviewers.add(get_author_email(commit))
   return reviewers
 
 
@@ -25,11 +39,11 @@ def get_blame(commit_infos):
   for project, commits in commit_infos.iteritems():
     blame.append('%s:' % project)
     for commit in commits:
-      message = commit['message'].splitlines()
+      message = get_message_lines(commit)
       # TODO(phajdan.jr): truncate long messages.
       message = message[0] if message else 'n/a'
       blame.append('  https://crrev.com/%s %s (%s)' % (
-          commit['revision'], message, commit['author']))
+          commit['revision'], message, get_author_email(commit)))
   return blame
 
 
@@ -44,17 +58,14 @@ changes from upstream projects (e.g. depot_tools) into downstream projects
 NON_TRIVIAL_MESSAGE = (
 """
 
-Please review the expectation changes, and LGTM as normal. The recipe roller
-will *NOT* CQ the change itself, so you must CQ the change manually.
+Please review the expectation changes, and LGTM+CQ.
 """
 )
 
 COMMIT_MESSAGE_INFO = (
 """
 
-More info is at https://goo.gl/zkKdpD. Use https://goo.gl/noib3a to file a bug
-(or complain)
-
+More info is at https://goo.gl/zkKdpD. Use https://goo.gl/noib3a to file a bug.
 """)
 
 COMMIT_MESSAGE_FOOTER = (
@@ -266,7 +277,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
     if roll_result['success']:
       self._process_successful_roll(
-          project_data['repo_url'], repo_data, roll_step, roll_result, workdir,
+          project_data['repo_url'], repo_data, roll_step, workdir,
           autoroll_settings)
       return ROLL_SUCCESS
     else:
@@ -299,13 +310,16 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         return ROLL_FAILURE
 
   def _process_successful_roll(
-      self, repo_url, original_repo_data, roll_step, roll_result, workdir,
+      self, repo_url, original_repo_data, roll_step, workdir,
       autoroll_settings):
     """
     Args:
+      roll_step - The StepResult of the actual roll command. This is used to
+        adjust presentation and obtain the json output.
       autoroll_settings - a AutorollRecipeOptions message from the recipe
         engine, in jsonish form (i.e. a python dict).
     """
+    roll_result = roll_step.json.output
     original_repo_data = original_repo_data or {}
 
     roll_step.presentation.logs['blame'] = get_blame(

@@ -84,6 +84,13 @@ def GenTests(api):
   )
 
   yield (
+      api.test('basic_new_keys') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.roll_data('build', new_keys=True)
+  )
+
+  yield (
       api.test('with_auth') +
       api.properties(projects=['build'], service_account='recipe-roller') +
       api.luci_config.get_projects(['build']) +

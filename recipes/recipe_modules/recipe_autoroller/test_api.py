@@ -8,25 +8,39 @@ from recipe_engine import recipe_test_api
 
 
 class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
-  def roll_data(self, project, success=True, trivial=True, empty=False):
+  def roll_data(self, project, success=True, trivial=True, empty=False,
+                new_keys=False):
     """Returns mock roll data for |project|."""
     if empty:
       success = False
 
     ret = self.empty_test_data()
 
+    commit_info = {
+      'author': 'foo@chromium.org',
+      'message': '\n'.join([
+        'some commit message',
+        'R=bar@chromium.org,baz@chromium.org,invalid1,invalid2@chromium',
+        'BUG=123,456',
+      ]),
+      'revision': '123abc',
+    }
+    if new_keys:
+      commit_info = {
+        'author_email': 'foo@chromium.org',
+        'message_lines': [
+          'some commit message',
+          'R=bar@chromium.org,baz@chromium.org,invalid1,invalid2@chromium',
+          'BUG=123,456',
+        ],
+        'revision': '123abc',
+      }
+
+
     picked_roll_details = {
       'commit_infos': {
         'recipe_engine': [
-          {
-            'author': 'foo@chromium.org',
-            'message': '\n'.join([
-              'some commit message',
-              'R=bar@chromium.org,baz@chromium.org,invalid1,invalid2@chromium',
-              'BUG=123,456',
-            ]),
-            'revision': '123abc',
-          },
+          commit_info,
         ],
       },
       'recipes_simulation_test': {
