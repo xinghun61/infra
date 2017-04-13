@@ -40,11 +40,11 @@ from handlers.crash import cracas_dashboard
 from handlers.crash import cracas_result_feedback
 from handlers.crash import fracas_dashboard
 from handlers.crash import fracas_result_feedback
+from handlers.crash import update_component_config
 from handlers.flake import check_flake
 from handlers.flake import list_flakes
 from handlers.crash import triage_analysis
 from handlers.flake import triage_flake_analysis
-
 
 # Default module.
 default_web_pages_handler_mappings = [
@@ -132,6 +132,7 @@ gae_ts_mon.initialize(waterfall_backend_web_application)
 # "crash-frontend" module.
 crash_frontend_web_pages_handler_mappings = [
     ('/crash/config', crash_config.CrashConfig),
+    ('/crash/update-config', update_component_config.UpdateComponentConfig),
     ('/crash/cracas-dashboard', cracas_dashboard.CracasDashBoard),
     ('/crash/cracas-result-feedback',
      cracas_result_feedback.CracasResultFeedback),
