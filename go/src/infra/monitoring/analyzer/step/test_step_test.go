@@ -74,8 +74,9 @@ func TestTestStepFailureAlerts(t *testing.T) {
 					testResults: &messages.TestResults{
 						Tests: map[string]interface{}{
 							"test_a": map[string]interface{}{
-								"expected": "PASS",
-								"actual":   "FAIL",
+								"expected":      "PASS",
+								"actual":        "FAIL",
+								"is_unexpected": true,
 							},
 						},
 					},
@@ -132,16 +133,19 @@ func TestTestStepFailureAlerts(t *testing.T) {
 					testResults: &messages.TestResults{
 						Tests: map[string]interface{}{
 							"test_a": map[string]interface{}{
-								"expected": "PASS",
-								"actual":   "FAIL",
+								"expected":      "PASS",
+								"actual":        "FAIL",
+								"is_unexpected": true,
 							},
 							"test_b": map[string]interface{}{
-								"expected": "PASS",
-								"actual":   "FAIL",
+								"expected":      "PASS",
+								"actual":        "FAIL",
+								"is_unexpected": true,
 							},
 							"test_c": map[string]interface{}{
-								"expected": "PASS",
-								"actual":   "FAIL",
+								"expected":      "PASS",
+								"actual":        "FAIL",
+								"is_unexpected": true,
 							},
 						},
 					},
@@ -224,8 +228,9 @@ func TestTestStepFailureAlerts(t *testing.T) {
 					testResults: &messages.TestResults{
 						Tests: map[string]interface{}{
 							"test_a": map[string]interface{}{
-								"expected": "PASS",
-								"actual":   "FAIL",
+								"expected":      "PASS",
+								"actual":        "FAIL",
+								"is_unexpected": true,
 							},
 						},
 					},
@@ -312,8 +317,9 @@ func TestTestStepFailureAlerts(t *testing.T) {
 					testResults: &messages.TestResults{
 						Tests: map[string]interface{}{
 							"test_a": map[string]interface{}{
-								"expected": "PASS",
-								"actual":   "FAIL PASS",
+								"expected":      "PASS",
+								"actual":        "FAIL PASS",
+								"is_unexpected": false,
 							},
 						},
 					},
@@ -344,8 +350,9 @@ func TestTestStepFailureAlerts(t *testing.T) {
 					testResults: &messages.TestResults{
 						Tests: map[string]interface{}{
 							"test_a": map[string]interface{}{
-								"expected": "PASS",
-								"actual":   "FAIL",
+								"expected":      "PASS",
+								"actual":        "FAIL",
+								"is_unexpected": true,
 							},
 						},
 					},
@@ -403,7 +410,7 @@ func TestUnexpected(t *testing.T) {
 				name:     "extra FAIL",
 				expected: []string{"PASS"},
 				actual:   []string{"FAIL"},
-				want:     []string{"PASS", "FAIL"},
+				want:     []string{"FAIL"},
 			},
 			{
 				name:     "FAIL FAIL",
@@ -416,6 +423,18 @@ func TestUnexpected(t *testing.T) {
 				expected: []string{"PASS"},
 				actual:   []string{"PASS"},
 				want:     []string{},
+			},
+			{
+				name:     "Flaky PASS",
+				expected: []string{"PASS", "FAIL"},
+				actual:   []string{"PASS"},
+				want:     []string{},
+			},
+			{
+				name:     "Flaky CRASH",
+				expected: []string{"PASS", "FAIL"},
+				actual:   []string{"CRASH"},
+				want:     []string{"CRASH"},
 			},
 		}
 

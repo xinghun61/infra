@@ -196,12 +196,11 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 			actual := strings.Split(res["actual"].(string), " ")
 			ue := unexpected(expected, actual)
 
-			// Could still be a flaky test, so check if last of actual is PASS
-			// expected: PASS
-			// actual: FAIL PASS
-			if len(ue) > 0 && res["bugs"] == nil && actual[len(actual)-1] != "PASS" {
+			isUnexpected, ok := res["is_unexpected"]
+			if len(ue) > 0 && res["bugs"] == nil && ok && isUnexpected.(bool) {
 				failedTests = append(failedTests, testName)
 			}
+
 			continue
 		}
 
@@ -276,12 +275,8 @@ func unexpected(expected, actual []string) []string {
 	}
 
 	ret := []string{}
-	for k := range e {
-		if !a[k] {
-			ret = append(ret, k)
-		}
-	}
 
+	// Any value in the expected set is a valid test result.
 	for k := range a {
 		if !e[k] {
 			ret = append(ret, k)
@@ -305,11 +300,11 @@ func traverseResults(parent string, testResults map[string]interface{}) ([]strin
 		// Uuuuugly.
 		if res["expected"] == nil || res["actual"] == nil {
 			// Assume it's a branch.
-			res, err := traverseResults(fmt.Sprintf("%s/%s", parent, testName), res)
+			childRes, err := traverseResults(fmt.Sprintf("%s/%s", parent, testName), res)
 			if err != nil {
 				return ret, err
 			}
-			ret = append(ret, res...)
+			ret = append(ret, childRes...)
 			continue
 		}
 
