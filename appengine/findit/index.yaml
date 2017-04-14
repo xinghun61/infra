@@ -109,6 +109,14 @@ indexes:
   - name: request_time
     direction: desc
 
+# For query on tree closures.
+- kind: TreeClosure
+  properties:
+  - name: tree_name
+    direction: asc
+  - name: closed_time
+    direction: desc
+
 # For fracas crash dashboard.
 - kind: FracasCrashAnalysis
   properties:

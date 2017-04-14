@@ -25,9 +25,14 @@ def GetUTCNowWithTimezone():  # pragma: no cover.
   return datetime.now(pytz.utc)
 
 
+def ConvertToTimestamp(date_time):
+  """Returns the given data time as a time stamp."""
+  return calendar.timegm(date_time.timetuple())
+
+
 def GetUTCNowTimestamp():  # pragma: no cover.
   """Returns the timestamp for datetime.utcnow. This is to mock for testing."""
-  return calendar.timegm(GetUTCNow().timetuple())
+  return ConvertToTimestamp(GetUTCNow())
 
 
 def RemoveMicrosecondsFromDelta(delta):
@@ -53,7 +58,7 @@ def FormatDatetime(date):
 
 
 def DatetimeFromString(date):
-  """Parses a datetime from a string as serialized for callback."""
+  """Parses a datetime from a serialized string."""
   if date == 'None':
     return None
   if not date or isinstance(date, datetime):
@@ -61,9 +66,10 @@ def DatetimeFromString(date):
   valid_formats = [
       '%Y-%m-%d %H:%M:%S.%f000',
       '%Y-%m-%d %H:%M:%S.%f',
-      '%Y-%m-%dT%H:%M:%S.%f',
       '%Y-%m-%d %H:%M:%S',
+      '%Y-%m-%dT%H:%M:%S.%f',
       '%Y-%m-%dT%H:%M:%S',
+      '%Y-%m-%d',
   ]
   for format_str in valid_formats:
     try:
@@ -126,11 +132,10 @@ def GetStartEndDates(start, end):
     return None, midnight_tomorrow
   elif start and not end:
     # If only start is specified, range is everything since then.
-    return datetime.strptime(start, '%Y-%m-%d'), midnight_tomorrow
+    return DatetimeFromString(start), midnight_tomorrow
 
   # Both start and end are specified, range is everything in between.
-  return (datetime.strptime(start, '%Y-%m-%d'),
-          datetime.strptime(end, '%Y-%m-%d'))
+  return (DatetimeFromString(start), DatetimeFromString(end))
 
 
 class TimeZoneInfo(object):

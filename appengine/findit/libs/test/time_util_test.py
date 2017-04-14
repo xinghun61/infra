@@ -10,7 +10,12 @@ from datetime import datetime
 from datetime import timedelta
 
 
-class DiffTest(unittest.TestCase):
+class TimeUtilTest(unittest.TestCase):
+
+  def testConvertToTimestamp(self):
+    self.assertEqual(
+        1490918400,
+        time_util.ConvertToTimestamp(datetime(2017, 03, 31, 0, 0, 0)))
 
   def testRemoveMicrosecondsFromDelta(self):
     date1 = datetime(2016, 5, 1, 1, 1, 1, 1)

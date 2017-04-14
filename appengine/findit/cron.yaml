@@ -1,12 +1,16 @@
 cron:
-- description: Sunday morning calculate confidence
-  url: /waterfall/calculate-confidence-scores
-  schedule: every sunday 09:00
-
 - description: Send ts_mon metrics
   url: /internal/cron/ts_mon/send
   schedule: every 1 minutes
 
+- description: Sunday morning calculate confidence
+  url: /waterfall/calculate-confidence-scores
+  schedule: every sunday 09:00
+
 - description: Every day check reverted cls
   url: /waterfall/check-reverted-cls
+  schedule: every day 00:00
+
+- description: Every day collect tree closures
+  url/waterfall/collect-tree-closures
   schedule: every day 00:00
