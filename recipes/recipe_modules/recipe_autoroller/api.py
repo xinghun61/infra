@@ -261,7 +261,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
          recipes_cfg_path, 'autoroll', '--output-json', self.m.json.output()])
     roll_result = roll_step.json.output
 
-    if roll_result['success']:
+    if roll_result['success'] and roll_result['picked_roll_details']:
       self._process_successful_roll(
           project_data['repo_url'], repo_data, roll_step, workdir,
           autoroll_settings)
