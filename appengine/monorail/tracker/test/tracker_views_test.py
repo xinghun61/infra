@@ -356,13 +356,13 @@ class IsViewableImageTest(unittest.TestCase):
     self.assertTrue(tracker_views.IsViewableImage(
         'image/jpeg; charset=binary', 123))
     self.assertTrue(tracker_views.IsViewableImage(
-        'image/jpeg', 3 * 1024 * 1024))
+        'image/jpeg', 14 * 1024 * 1024))
 
     self.assertFalse(tracker_views.IsViewableImage('junk/bits', 123))
     self.assertFalse(tracker_views.IsViewableImage(
         'junk/bits; charset=binary', 123))
     self.assertFalse(tracker_views.IsViewableImage(
-        'image/jpeg', 13 * 1024 * 1024))
+        'image/jpeg', 16 * 1024 * 1024))
 
 
 class IsViewableVideoTest(unittest.TestCase):
@@ -381,13 +381,13 @@ class IsViewableVideoTest(unittest.TestCase):
     self.assertTrue(tracker_views.IsViewableVideo(
         'video/mpeg; charset=binary', 123))
     self.assertTrue(tracker_views.IsViewableVideo(
-        'video/mpeg', 3 * 1024 * 1024))
+        'video/mpeg', 14 * 1024 * 1024))
 
     self.assertFalse(tracker_views.IsViewableVideo('junk/bits', 123))
     self.assertFalse(tracker_views.IsViewableVideo(
         'junk/bits; charset=binary', 123))
     self.assertFalse(tracker_views.IsViewableVideo(
-        'video/mp4', 13 * 1024 * 1024))
+        'video/mp4', 16 * 1024 * 1024))
 
 
 class IsViewableTextTest(unittest.TestCase):

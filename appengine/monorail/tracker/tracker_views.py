@@ -391,7 +391,7 @@ VIEWABLE_IMAGE_TYPES = [
 VIEWABLE_VIDEO_TYPES = [
     'video/ogg', 'video/mp4', 'video/mpg', 'video/mpeg', 'video/webm',
     ]
-MAX_PREVIEW_FILESIZE = 4 * 1024 * 1024  # 4MB
+MAX_PREVIEW_FILESIZE = 15 * 1024 * 1024  # 15 MB
 
 
 class LogoView(template_helpers.PBProxy):
