@@ -117,6 +117,15 @@ indexes:
   - name: closed_time
     direction: desc
 
+- kind: TreeClosure
+  properties:
+  - name: tree_name
+    direction: asc
+  - name: step_name
+    direction: asc
+  - name: closed_time
+    direction: asc
+
 # For fracas crash dashboard.
 - kind: FracasCrashAnalysis
   properties:

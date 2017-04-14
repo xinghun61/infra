@@ -4,11 +4,13 @@
 
 from datetime import datetime
 
+from google.appengine.ext import ndb
 import webapp2
 
 from handlers import auto_revert_metrics
 from model import revert_cl_status
 from model.base_suspected_cl import RevertCL
+from model.tree_closure import TreeClosure
 from model.wf_suspected_cl import WfSuspectedCL
 
 from testing_utils import testing
@@ -50,7 +52,7 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
                      auto_revert_metrics._GetAnalysesWithinDateRange(
                          start_date, end_date, 1))
 
-  def testGenerateMetrics(self):
+  def testGenerateFinditMetrics(self):
     reverted_suspected_cl = WfSuspectedCL.Create('chromium', 'r1', 1)
     reverted_revert_cl = RevertCL()
     reverted_revert_cl.status = revert_cl_status.COMMITTED
@@ -107,9 +109,87 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
         }
     }
 
-    metrics = auto_revert_metrics._GenerateMetrics(
+    metrics = auto_revert_metrics._GenerateFinditMetrics(
         [reverted_suspected_cl, duplicate_fast_suspected_cl,
          duplicate_slow_suspected_cl, false_positive_suspected_cl,
          slow_suspected_cl, false_positive_suspected_cl_no_revert])
 
+    self.assertEqual(expected_metrics, metrics)
+
+  def testGenerateTreeClosureMetrics(self):
+    ndb.put_multi([
+        TreeClosure(
+            tree_name='skia',
+            closed_time=datetime(2017, 03, 15),
+            auto_closed=True,
+            auto_opened=False,
+            possible_flake=True,
+            has_revert=False,
+            step_name='compile',
+        ),
+        TreeClosure(
+            tree_name='chromium',
+            closed_time=datetime(2017, 03, 15),
+            auto_closed=True,
+            auto_opened=False,
+            possible_flake=True,
+            has_revert=False,
+            step_name='bot_update',
+        ),
+        TreeClosure(
+            tree_name='chromium',
+            closed_time=datetime(2017, 03, 15, 10, 10, 10),
+            auto_closed=True,
+            auto_opened=True,
+            possible_flake=False,
+            has_revert=False,
+            step_name='compile',
+        ),
+        TreeClosure(
+            tree_name='chromium',
+            closed_time=datetime(2017, 03, 15, 17, 10, 10),
+            auto_closed=True,
+            auto_opened=False,
+            possible_flake=False,
+            has_revert=False,
+            step_name='compile',
+        ),
+        TreeClosure(
+            tree_name='chromium',
+            closed_time=datetime(2017, 03, 15, 19, 10, 10),
+            auto_closed=True,
+            auto_opened=False,
+            possible_flake=True,
+            has_revert=False,
+            step_name='compile',
+        ),
+        TreeClosure(
+            tree_name='chromium',
+            closed_time=datetime(2017, 03, 16, 21, 10, 10),
+            auto_closed=True,
+            auto_opened=False,
+            possible_flake=False,
+            has_revert=True,
+            step_name='compile',
+        ),
+        TreeClosure(
+            tree_name='chromium',
+            closed_time=datetime(2017, 04, 15, 17, 10, 10),
+            auto_closed=True,
+            auto_opened=False,
+            possible_flake=False,
+            has_revert=False,
+            step_name='compile',
+        ),
+    ])
+
+    metrics = auto_revert_metrics._GenerateTreeClosureMetrics(
+        'chromium', 'compile', datetime(2017, 03, 13), datetime(2017, 04, 01))
+    expected_metrics = {
+        'total': 4,
+        'manually_closed_or_auto_opened': 1,
+        'flakes': 1,
+        'reverts': 1,
+        'others': 1,
+    }
     self.assertEqual(expected_metrics, metrics)

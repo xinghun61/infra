@@ -47,8 +47,34 @@
   <br>
   <b>Auto-revert metrics:</b><br>
   <table>
-    <th>Metric</th>
-    <th>Result</th>
+    <tr>
+      <th>Metric</th>
+      <th>Result</th>
+    </tr>
+    <tr>
+      <td title="Tree closures due to compile failures">
+        # of tree closures due to compile failures
+      </td>
+      <td>
+        <table>
+          <tr>
+            <td title="All compile failures">Total</td><td>{{ tree_closures.total }}</td>
+          </tr>
+          <tr>
+            <td>Manually-closed or auto-opened</td><td>{{ tree_closures.manually_closed_or_auto_opened}}</td>
+          </tr>
+          <tr>
+            <td title="Status messages include 'flake', 'flaky' or 'bot failure'">Flakes</td><td>{{ tree_closures.flakes }}</td>
+          </tr>
+          <tr>
+            <td title="Status messages include 'revert'">Reverts</td><td>{{ tree_closures.reverts }}</td>
+          </tr>
+          <tr>
+            <td title="Unclear whether reliable or flaky failures">Others</td><td>{{ tree_closures.others }}</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
     <tr>
       <td title="Total number of culprits Findit found that needed reverting">
         # of culprits
