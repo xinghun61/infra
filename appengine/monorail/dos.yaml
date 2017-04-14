@@ -55,3 +55,5 @@ blacklist:
     description: scans all project-zero issues
   - subnet: 175.141.191.44
     description: attempted SQL injection
+  - subnet: 192.198.146.166
+    description: requesting all issue IDs in sequence
