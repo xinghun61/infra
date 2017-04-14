@@ -116,5 +116,11 @@
 </div>
 <script src="/static/add-incidents.js"></script>
 <script>
-  window.__addIncidents({{.}});
+  (function() {
+    const RELOAD_TIME_MS = 5*60*1000;
+    window.__addIncidents({{.}});
+    window.setTimeout(() => {
+      window.location.reload();
+    }, RELOAD_TIME_MS);
+  })();
 </script>
