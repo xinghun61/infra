@@ -55,7 +55,7 @@ def RunSteps(api, project_under_test, auth_with_account):
   api.step(
       'recipe simulation test', [
           root_dir.join(*([project_under_test] + path + ['recipes.py'])),
-          '--use-bootstrap', 'simulation_test'
+          '--use-bootstrap', 'test', 'run',
       ])
 
 def GenTests(api):

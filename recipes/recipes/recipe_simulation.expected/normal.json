@@ -73,7 +73,8 @@
     "cmd": [
       "[START_DIR]/build/foobar/recipes.py",
       "--use-bootstrap",
-      "simulation_test"
+      "test",
+      "run"
     ],
     "name": "recipe simulation test"
   },

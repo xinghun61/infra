@@ -9,7 +9,8 @@
       "recipe_engine=[START_DIR]/recipe_engine/recipe_engine",
       "--package",
       "[START_DIR]/build/build/infra/config/recipes.cfg",
-      "simulation_test"
+      "test",
+      "run"
     ],
     "name": "build tests",
     "~followup_annotations": [

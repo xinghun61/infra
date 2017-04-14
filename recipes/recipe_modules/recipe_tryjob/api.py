@@ -259,7 +259,7 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
       args += ['-O', '%s=%s' % (dep_name, location)]
     args += ['--package', repo_path.join('infra', 'config', 'recipes.cfg')]
 
-    args += ['simulation_test']
+    args += ['test', 'run']
 
     return self.m.python('%s tests' % proj, recipes_py_loc, args)
 
