@@ -278,5 +278,28 @@
       });
     });
   });
+
+  suite('hidden alerts', function() {
+    var refreshStub;
+
+    setup(function() {
+      refreshStub = sinon.stub(element, 'computeAnnotation');
+    });
+
+    test('computeHiddenAlerts', function() {
+      refreshStub.onCall(0).returns({});
+      refreshStub.onCall(1).returns({bugs: [0]});
+      let result = element._computeNumberHiddenAlerts({
+        base: {
+          foo: [
+            {},
+            {},
+          ],
+        },
+      }, {}, "foo");
+      assert.equal(result, 1);
+    });
+
+  });
 })();
 </script>

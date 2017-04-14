@@ -11,6 +11,12 @@
         computed: '_computeIsTrooperPage(tree)',
         value: false,
       },
+      hideAlertsWithBugs: {
+        type: Boolean,
+        notify: true,
+        value: false,
+      },
+      numberHiddenAlerts: Number,
       path: {
         type: String,
         notify: true,

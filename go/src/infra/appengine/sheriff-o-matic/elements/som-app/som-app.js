@@ -18,7 +18,7 @@
           return [];
         },
         computed:
-            '_computeAlerts(_alertsData.*, annotations, showInfraFailures, _isTrooperPage)',
+            '_computeAlerts(_alertsData.*, annotations, showInfraFailures, _isTrooperPage, hideAlertsWithBugs)',
       },
       // Map of stream to data, timestamp of latest updated data.
       _alertsData: {
@@ -150,8 +150,39 @@
       },
       user: String,
       useCompactView: Boolean,
+      numberHiddenAlerts: {
+        type: Number,
+        computed: '_computeNumberHiddenAlerts(_alertsData.*, annotations)',
+      },
+      hideAlertsWithBugs: {
+        type: Boolean,
+        value: false,
+      },
       linkStyle: String,
       xsrfToken: String,
+    },
+
+    _computeNumberHiddenAlerts: function(alertsData, annotations, alertsGroups) {
+      if (!alertsData || !alertsData.base) {
+        return [];
+      }
+      alertsData = alertsData.base;
+
+      let numHidden = 0;
+      for (let tree in alertsData) {
+        let treeData = alertsData[tree];
+        if (!treeData) {
+          return;
+        }
+
+        treeData.forEach((alert) => {
+            let ann = this.computeAnnotation(annotations, alert);
+            if (ann.bugs && ann.bugs.length > 0) {
+              numHidden ++;
+            }
+        });
+      }
+      return numHidden;
     },
 
     created: function() {
@@ -404,7 +435,7 @@
     },
 
     _computeAlerts: function(
-        alertsData, annotations, showInfraFailures, isTrooperPage) {
+        alertsData, annotations, showInfraFailures, isTrooperPage, hideAlertsWithBugs) {
       if (!alertsData || !alertsData.base) {
         return [];
       }
@@ -416,9 +447,17 @@
         if (!alerts) {
           continue;
         }
+
         if (!isTrooperPage && !showInfraFailures) {
           alerts = alerts.filter(function(alert) {
             return alert.type !== 'infra-failure';
+          });
+        }
+
+        if (hideAlertsWithBugs) {
+          alerts = alerts.filter((alert) => {
+            let ann = this.computeAnnotation(annotations, alert);
+            return !(ann.bugs && ann.bugs.length > 0);
           });
         }
         allAlerts = allAlerts.concat(alerts);

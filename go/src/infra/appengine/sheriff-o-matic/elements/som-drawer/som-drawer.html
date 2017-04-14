@@ -125,6 +125,10 @@
     <div class="vertical layout">
       <paper-checkbox checked="{{showInfraFailures}}" hidden$=[[_isTrooperPage]]>Show infra step failures</paper-checkbox>
       <paper-checkbox checked="{{useCompactView}}">Use compact alerts view</paper-checkbox>
+      <paper-checkbox checked="{{hideAlertsWithBugs}}">
+        <div>Hide alerts with bugs</div>
+        <div>([[numberHiddenAlerts]] affected)</div>
+      </paper-checkbox>
       <label id="linkStyleLabel">Builder links:</label>
       <paper-radio-group selected="{{linkStyle}}" aria-labeled-by="linkStyleLabel" selectedAttribute="name">
         <paper-radio-button name="uber">Link to uberchromegw</paper-radio-button>
