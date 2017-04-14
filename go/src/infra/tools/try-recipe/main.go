@@ -58,6 +58,7 @@ func main() {
 
 		Commands: []*subcommands.Command{
 			isolateCmd(authDefaults),
+			builderDefinitionCmd(authDefaults),
 
 			authcli.SubcommandLogin(authDefaults, "auth-login", false),
 			authcli.SubcommandLogout(authDefaults, "auth-logout", false),

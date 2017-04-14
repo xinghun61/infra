@@ -26,7 +26,7 @@ const defaultIsolateServer = "https://isolateserver.appspot.com"
 
 func isolateCmd(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
-		UsageLine: "isolate [-O project_id=/path/to/local/repo]* [-I isolate_server]",
+		UsageLine: "isolate [-O project_id=/path/to/local/repo]*",
 		ShortDesc: "Isolates a bundle of recipes from the current working directory.",
 		LongDesc: `Takes recipes from the current repo (based on cwd), along with
 		any supplied overrides, and pushes them to the isolate service.`,
