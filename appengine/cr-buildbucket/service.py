@@ -205,6 +205,7 @@ class BuildRequest(_BuildRequestBase):
         parameters=self.parameters,
         status=model.BuildStatus.SCHEDULED,
         created_by=created_by,
+        create_time=utils.utcnow(),
         never_leased=self.lease_expiration_date is None,
         pubsub_callback=self.pubsub_callback,
         retry_of=self.retry_of,

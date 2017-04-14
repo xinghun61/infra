@@ -143,7 +143,6 @@ class SwarmingTest(testing.AppengineTestCase):
                       'swarming_task_template_canary.json'):  # pragma: no cover
         self.fail()
 
-      template = None
       if path == 'swarming_task_template.json':
         template = self.task_template
       else:
@@ -212,6 +211,8 @@ class SwarmingTest(testing.AppengineTestCase):
     build = model.Build(
         id=1,
         bucket='bucket',
+        create_time=utils.utcnow(),
+        created_by=auth.Identity('user', 'john@example.com'),
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
           'swarming': {
@@ -287,6 +288,15 @@ class SwarmingTest(testing.AppengineTestCase):
           '-properties', json.dumps({
             'a': 'b',
             'blamelist': ['bob@example.com'],
+            'buildbucket': {
+              'build': {
+                'bucket': 'bucket',
+                'created_by': 'user:john@example.com',
+                'created_ts': utils.datetime_to_timestamp(build.create_time),
+                'id': '1',
+                'tags': [],
+              },
+            },
             'buildername': 'linux_chromium_rel_ng',
             'buildnumber': 1,
             'predefined-property': 'x',
@@ -396,6 +406,8 @@ class SwarmingTest(testing.AppengineTestCase):
     build = model.Build(
         id=1,
         bucket='bucket',
+        create_time=utils.utcnow(),
+        created_by=auth.Identity('user', 'john@example.com'),
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
           'swarming': {
@@ -461,6 +473,15 @@ class SwarmingTest(testing.AppengineTestCase):
           '-revision', 'HEAD',
           '-recipe', 'recipe',
           '-properties', json.dumps({
+            'buildbucket': {
+              'build': {
+                'bucket': 'bucket',
+                'created_by': 'user:john@example.com',
+                'created_ts': utils.datetime_to_timestamp(build.create_time),
+                'id': '1',
+                'tags': [],
+              },
+            },
             'buildername': 'linux_chromium_rel_ng',
             'buildnumber': 1,
             'predefined-property': 'x',
@@ -528,6 +549,8 @@ class SwarmingTest(testing.AppengineTestCase):
     build = model.Build(
         id=1,
         bucket='bucket',
+        create_time=utils.utcnow(),
+        created_by=auth.Identity('user', 'john@example.com'),
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
           'swarming': {
@@ -574,6 +597,8 @@ class SwarmingTest(testing.AppengineTestCase):
     build = model.Build(
         id=1,
         bucket='bucket',
+        create_time=utils.utcnow(),
+        created_by=auth.Identity('user', 'john@example.com'),
         parameters={'builder_name': 'linux_chromium_rel_ng'},
     )
     swarming.create_task_async(build).get_result()
@@ -586,6 +611,8 @@ class SwarmingTest(testing.AppengineTestCase):
     build = model.Build(
         id=1,
         bucket='bucket',
+        create_time=utils.utcnow(),
+        created_by=auth.Identity('user', 'john@example.com'),
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
           'swarming': {
@@ -633,6 +660,8 @@ class SwarmingTest(testing.AppengineTestCase):
     build = model.Build(
         id=1,
         bucket='bucket',
+        create_time=utils.utcnow(),
+        created_by=auth.Identity('user', 'john@example.com'),
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
           'swarming': {

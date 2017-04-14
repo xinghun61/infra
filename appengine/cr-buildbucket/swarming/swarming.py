@@ -229,6 +229,33 @@ def _prepare_builder_config(builder_cfg, swarming_param):
   return result
 
 
+def _buildbucket_property(build):
+  """Returns value for 'buildbucket' build property.
+
+  The format of the returned value corresponds the one used in
+  buildbot-buildbucket integration [1], with two exceptions:
+  - it is not encoded in JSON
+  - the list of tags are initial tags only.
+    Does not include auto-generated tags.
+
+  [1]:
+  https://chromium.googlesource.com/chromium/tools/build/+/82373bb503dca5f91cd0988d49df38394fdf8b0b/scripts/master/buildbucket/integration.py#329
+  """
+  return {
+    'build': {
+      'bucket': build.bucket,
+      'created_by': build.created_by.to_bytes(),
+      'created_ts': utils.datetime_to_timestamp(build.create_time),
+      'id': str(build.key.id()),
+      # Note: this includes only user-specified tags.
+      # It does not include auto-generated tags, such as "swarming_tag".
+      # This is a bit different from Buildbot-Buildbucket integration.
+      # In practice, however, only "buildset" tag is read from this list.
+      'tags': build.initial_tags,
+    },
+  }
+
+
 @ndb.tasklet
 def create_task_def_async(
     project_id, swarming_cfg, builder_cfg, build, build_number):
@@ -281,7 +308,10 @@ def create_task_def_async(
     build_properties = swarmingcfg_module.read_properties(builder_cfg.recipe)
     recipe_revision = builder_cfg.recipe.revision or 'HEAD'
 
-    build_properties['buildername'] = builder_cfg.name
+    build_properties.update(
+        buildername=builder_cfg.name,
+        buildbucket=_buildbucket_property(build),
+    )
     if build_number is not None:  # pragma: no branch
       build_properties['buildnumber'] = build_number
 
