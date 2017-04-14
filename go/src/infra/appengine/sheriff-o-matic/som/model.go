@@ -101,18 +101,21 @@ func validBug(bug string) (string, error) {
 	return "", fmt.Errorf("Invalid bug '%s'", bug)
 }
 
-func (a *Annotation) add(c context.Context, r io.Reader) error {
+// Adds some data to an annotation. Returns true if a refresh of annotation
+// metadata (currently monorail data) is required, and any errors encountered.
+func (a *Annotation) add(c context.Context, r io.Reader) (bool, error) {
 	change := &annotationAdd{}
+	needRefresh := false
 
 	err := json.NewDecoder(r).Decode(change)
 	if err != nil {
-		return err
+		return needRefresh, err
 	}
 
 	for i, bug := range change.Bugs {
 		newBug, err := validBug(bug)
 		if err != nil {
-			return err
+			return needRefresh, err
 		}
 		change.Bugs[i] = newBug
 	}
@@ -125,9 +128,13 @@ func (a *Annotation) add(c context.Context, r io.Reader) error {
 	}
 
 	if change.Bugs != nil {
-		a.Bugs = stringset.NewFromSlice(
-			append(a.Bugs, change.Bugs...)...).ToSlice()
-		modified = true
+		oldBugs := stringset.NewFromSlice(a.Bugs...)
+		newBugs := stringset.NewFromSlice(append(a.Bugs, change.Bugs...)...)
+		if newBugs.Difference(oldBugs).Len() != 0 {
+			a.Bugs = newBugs.ToSlice()
+			needRefresh = true
+			modified = true
+		}
 	}
 
 	if change.Comments != nil {
@@ -148,15 +155,17 @@ func (a *Annotation) add(c context.Context, r io.Reader) error {
 		a.ModificationTime = clock.Now(c)
 	}
 
-	return nil
+	return needRefresh, nil
 }
 
-func (a *Annotation) remove(c context.Context, r io.Reader) error {
+// Removes some data to an annotation. Returns if a refreshe of annotation
+// metadata (currently monorail data) is required, and any errors encountered.
+func (a *Annotation) remove(c context.Context, r io.Reader) (bool, error) {
 	change := &annotationRemove{}
 
 	err := json.NewDecoder(r).Decode(change)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	modified := false
@@ -178,7 +187,7 @@ func (a *Annotation) remove(c context.Context, r io.Reader) error {
 	// Client passes in a list of comment indices to delete.
 	for _, i := range change.Comments {
 		if i < 0 || i >= len(a.Comments) {
-			return errors.New("Invalid comment index")
+			return false, errors.New("Invalid comment index")
 		}
 		a.Comments = append(a.Comments[:i], a.Comments[i+1:]...)
 		modified = true
@@ -188,5 +197,5 @@ func (a *Annotation) remove(c context.Context, r io.Reader) error {
 		a.ModificationTime = clock.Now(c)
 	}
 
-	return nil
+	return false, nil
 }

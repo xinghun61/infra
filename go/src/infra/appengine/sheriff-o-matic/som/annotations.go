@@ -76,7 +76,7 @@ func getAnnotationsMetaData(c context.Context) (map[string]monorail.Issue, error
 	val := make(map[string]monorail.Issue)
 
 	if err == memcache.ErrCacheMiss {
-		logging.Debugf(c, "No annotation metadata in memcache, refreshing...")
+		logging.Warningf(c, "No annotation metadata in memcache, refreshing...")
 		val, err = refreshAnnotations(c, nil)
 
 		if err != nil {
@@ -205,12 +205,13 @@ func postAnnotationsHandler(ctx *router.Context) {
 		return
 	}
 
+	needRefresh := false
 	// The annotation probably doesn't exist if we're adding something.
 	data := bytes.NewReader([]byte(*req.Data))
 	if action == "add" {
-		err = annotation.add(c, data)
+		needRefresh, err = annotation.add(c, data)
 	} else if action == "remove" {
-		err = annotation.remove(c, data)
+		needRefresh, err = annotation.remove(c, data)
 	}
 
 	if err != nil {
@@ -230,11 +231,21 @@ func postAnnotationsHandler(ctx *router.Context) {
 		return
 	}
 
+	var m map[string]monorail.Issue
 	// Refresh the annotation cache on a write. Note that we want the rest of the
 	// code to still run even if this fails.
-	m, err := refreshAnnotations(c, annotation)
-	if err != nil {
-		logging.Errorf(c, "while refreshing annotation cache on post: %s", err)
+	if needRefresh {
+		logging.Infof(c, "Refreshing annotation metadata, due to a stateful modification.")
+		m, err = refreshAnnotations(c, annotation)
+		if err != nil {
+			logging.Errorf(c, "while refreshing annotation cache on post: %s", err)
+		}
+	} else {
+		m, err = getAnnotationsMetaData(c)
+		if err != nil {
+			logging.Errorf(c, "while getting annotation metadata: %s", err)
+		}
+
 	}
 
 	resp, err := json.Marshal(makeAnnotationResponse(annotation, m))

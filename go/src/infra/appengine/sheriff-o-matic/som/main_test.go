@@ -434,36 +434,57 @@ func TestMain(t *testing.T) {
 					})
 
 					Convey("add", func() {
-						postAnnotationsHandler(&router.Context{
-							Context: c,
-							Writer:  w,
-							Request: makePostRequest(makeChange(map[string]interface{}{
-								"snoozeTime": 123123,
-							}, tok)),
-							Params: makeParams("annKey", "foobar", "action", "add"),
-						})
-
-						So(w.Code, ShouldEqual, 200)
-
-						So(datastore.Get(c, ann), ShouldBeNil)
-						So(ann.SnoozeTime, ShouldEqual, 123123)
-
-						Convey("bad change", func() {
-							w = httptest.NewRecorder()
+						ann := &Annotation{
+							Key:              "foobar",
+							KeyDigest:        fmt.Sprintf("%x", sha1.Sum([]byte("foobar"))),
+							ModificationTime: datastore.RoundTime(clock.Now(c)),
+						}
+						change := map[string]interface{}{}
+						Convey("snoozeTime", func() {
+							change["snoozeTime"] = 123123
 							postAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(map[string]interface{}{
-									"bugs": []string{"ooooops"},
+									"snoozeTime": 123123,
 								}, tok)),
 								Params: makeParams("annKey", "foobar", "action", "add"),
 							})
 
-							So(w.Code, ShouldEqual, 400)
+							So(w.Code, ShouldEqual, 200)
 
 							So(datastore.Get(c, ann), ShouldBeNil)
 							So(ann.SnoozeTime, ShouldEqual, 123123)
-							So(ann.Bugs, ShouldBeNil)
+						})
+
+						Convey("bugs", func() {
+							change["bugs"] = []string{"123123"}
+							postAnnotationsHandler(&router.Context{
+								Context: c,
+								Writer:  w,
+								Request: makePostRequest(makeChange(change, tok)),
+								Params:  makeParams("annKey", "foobar", "action", "add"),
+							})
+
+							So(w.Code, ShouldEqual, 200)
+
+							So(datastore.Get(c, ann), ShouldBeNil)
+							So(ann.Bugs, ShouldResemble, []string{"123123"})
+						})
+
+						Convey("bad change", func() {
+							change["bugs"] = []string{"ooops"}
+							w = httptest.NewRecorder()
+							postAnnotationsHandler(&router.Context{
+								Context: c,
+								Writer:  w,
+								Request: makePostRequest(makeChange(change, tok)),
+								Params:  makeParams("annKey", "foobar", "action", "add"),
+							})
+
+							So(w.Code, ShouldEqual, 400)
+
+							So(datastore.Get(c, ann), ShouldNotBeNil)
 						})
 					})
 
