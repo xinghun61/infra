@@ -5,6 +5,7 @@
 package dashboard
 
 import (
+	"html/template"
 	"net/http"
 	"time"
 
@@ -22,6 +23,11 @@ import (
 var templateBundle = &templates.Bundle{
 	Loader:    templates.FileSystemLoader("templates"),
 	DebugMode: info.IsDevAppServer,
+	FuncMap: template.FuncMap{
+		"fmtDate": func(date time.Time) string {
+			return date.Format("01-02-2006")
+		},
+	},
 }
 
 func pageBase() router.MiddlewareChain {
@@ -51,9 +57,9 @@ type TemplateService struct {
 func dashboard(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
-	dates := []string{}
+	dates := []time.Time{}
 	for i := 0; i < 7; i++ {
-		dates = append(dates, time.Now().AddDate(0, 0, -i).Format("1-2-2006"))
+		dates = append(dates, time.Now().AddDate(0, 0, -i))
 	}
 
 	monorail, err := backend.GetService(c, "monorail")

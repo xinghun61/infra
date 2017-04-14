@@ -66,7 +66,7 @@
         <tr>
           <th>Current Status</th>
           {{range $dates}}
-            <th class="date-header">{{.}}</th>
+            <th class="date-header">{{ . | fmtDate}}</th>
           {{end}}
         </tr>
         {{range .ChopsServices}}
@@ -76,7 +76,7 @@
             </td>
             {{$name := .Service.Name}}
             {{range $dates}}
-              <td class="js-{{$name}}-{{.}}"></td>
+              <td class="js-{{$name}}-{{ . | fmtDate}}"></td>
             {{end}}
           </tr>
         {{end}}
@@ -99,7 +99,7 @@
             </td>
             {{$name := .Service.Name}}
             {{range $dates}}
-              <td class="js-{{$name}}-{{.}}"></td>
+              <td class="js-{{$name}}-{{ . | fmtDate}}"></td>
             {{end}}
           </tr>
         {{end}}
