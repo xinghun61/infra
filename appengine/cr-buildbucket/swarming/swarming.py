@@ -527,6 +527,8 @@ def _update_build(build, result):
     # Completed builds are immutable.
     return False
 
+  now = utils.utcnow()
+
   old_status = build.status
   build.status = None
   build.result = None
@@ -542,6 +544,7 @@ def _update_build(build, result):
     'COMPLETED'
   )
   if state in ('PENDING', 'RUNNING'):
+    build.start_time = now
     build.status = model.BuildStatus.STARTED
   elif state in terminal_states:
     build.status = model.BuildStatus.COMPLETED
@@ -572,7 +575,6 @@ def _update_build(build, result):
     return False
   logging.info(
       'Build %s status: %s -> %s', build.key.id(), old_status, build.status)
-  now = utils.utcnow()
   build.status_changed_time = now
   if build.status == model.BuildStatus.COMPLETED:
     logging.info('Build %s result: %s', build.key.id(), build.result)

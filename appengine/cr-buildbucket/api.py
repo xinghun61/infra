@@ -95,6 +95,7 @@ class BuildMessage(messages.Message):
   lease_key = messages.IntegerField(11)
   url = messages.StringField(12)
   created_ts = messages.IntegerField(13)
+  started_ts = messages.IntegerField(20)
   updated_ts = messages.IntegerField(14)
   completed_ts = messages.IntegerField(15)
   created_by = messages.StringField(16)
@@ -135,6 +136,7 @@ def build_to_message(build, include_lease_key=False):
       lease_key=build.lease_key if include_lease_key else None,
       url=build.url,
       created_ts=datetime_to_timestamp_safe(build.create_time),
+      started_ts=datetime_to_timestamp_safe(build.start_time),
       updated_ts=datetime_to_timestamp_safe(build.update_time),
       completed_ts=datetime_to_timestamp_safe(build.complete_time),
       created_by=build.created_by.to_bytes() if build.created_by else None,

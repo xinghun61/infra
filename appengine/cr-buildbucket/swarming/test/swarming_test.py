@@ -40,9 +40,10 @@ class SwarmingTest(testing.AppengineTestCase):
 
   def setUp(self):
     super(SwarmingTest, self).setUp()
+    self.now = datetime.datetime(2015, 11, 30)
     self.patch(
         'components.utils.utcnow', autospec=True,
-        return_value=datetime.datetime(2015, 11, 30))
+        return_value=self.now)
 
     self.json_response = None
     def json_request_async(*_, **__):
@@ -834,6 +835,8 @@ class SwarmingTest(testing.AppengineTestCase):
       self.assertEqual(build.result, case.get('result'))
       self.assertEqual(build.failure_reason, case.get('failure_reason'))
       self.assertEqual(build.cancelation_reason, case.get('cancelation_reason'))
+      if build.status == model.BuildStatus.STARTED:
+        self.assertEqual(build.start_time, self.now)
 
 
 class SubNotifyTest(testing.AppengineTestCase):

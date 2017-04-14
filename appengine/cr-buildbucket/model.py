@@ -91,32 +91,6 @@ class Build(ndb.Model):
 
     The idea is taken from Swarming TaskRequest entity:
     https://code.google.com/p/swarming/source/browse/appengine/swarming/server/task_request.py#329
-
-  Attributes:
-    status (BuildStatus): status of the build.
-    bucket (string): a generic way to distinguish builds. Different buckets have
-      different permissions.
-    initial_tags (list of string): a list of tags, where each tag is a string
-      with ":" symbol. The first occurrence of ":" splits tag name and tag
-      value. Contains only tags specified by the build request. Old Build
-      entities do not have this field.
-    tags (list of string): superset of initial_tags.
-      May contain auto-added tags.
-    parameters (dict): immutable arbitrary build parameters.
-    pubsub_callback (PubSubCallback): PubSub message parameters for build status
-      change notifications.
-    retry_of (int): id of the original build that this build was derived from.
-    lease_expiration_date (datetime): current lease expiration date.
-      The moment the build is leased, |lease_expiration_date| is set to
-      (utcnow + lease_duration).
-    lease_key (int): None if build is not leased, otherwise a random value.
-      Changes every time a build is leased. Can be used to verify that a client
-      is the leaseholder.
-    is_leased (bool): True if the build is currently leased. Otherwise False
-    never_leased (bool): True if the build was never leased before.
-    url (str): a URL to a build-system-specific build, viewable by a human.
-    result (BuildResult): build result.
-    cancelation_reason (CancelationReason): why the build was canceled.
   """
 
   status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
@@ -124,26 +98,50 @@ class Build(ndb.Model):
   update_time = ndb.DateTimeProperty(auto_now=True)
 
   # Creation time attributes.
+
   create_time = ndb.DateTimeProperty(auto_now_add=True)
   created_by = auth.IdentityProperty()
+  # a generic way to distinguish builds.
+  # Different buckets have different permissions.
   bucket = ndb.StringProperty(required=True)
+  # a list of tags, where each tag is a string
+  # with ":" symbol. The first occurrence of ":" splits tag name and tag
+  # value. Contains only tags specified by the build request. Old Build
+  # entities do not have this field.
   initial_tags = ndb.StringProperty(repeated=True, indexed=False)
+  # superset of initial_tags. May contain auto-added tags.
   tags = ndb.StringProperty(repeated=True)
+  # immutable arbitrary build parameters.
   parameters = ndb.JsonProperty()
+  # PubSub message parameters for build status change notifications.
   pubsub_callback = ndb.StructuredProperty(PubSubCallback, indexed=False)
+  # id of the original build that this build was derived from.
   retry_of = ndb.IntegerProperty()
 
   # Lease-time attributes.
+
+  # current lease expiration date.
+  # The moment the build is leased, |lease_expiration_date| is set to
+  # (utcnow + lease_duration).
   lease_expiration_date = ndb.DateTimeProperty()
+  # None if build is not leased, otherwise a random value.
+  # Changes every time a build is leased. Can be used to verify that a client
+  # is the leaseholder.
   lease_key = ndb.IntegerProperty(indexed=False)
+  # True if the build is currently leased. Otherwise False
   is_leased = ndb.ComputedProperty(lambda self: self.lease_key is not None)
   leasee = auth.IdentityProperty()
   never_leased = ndb.BooleanProperty()
 
   # Start time attributes.
+
+  # a URL to a build-system-specific build, viewable by a human.
   url = ndb.StringProperty(indexed=False)
+  # when the build started. Unknown for old builds.
+  start_time = ndb.DateTimeProperty()
 
   # Completion time attributes.
+
   complete_time = ndb.DateTimeProperty()
   result = msgprop.EnumProperty(BuildResult)
   result_details = ndb.JsonProperty()
@@ -151,6 +149,7 @@ class Build(ndb.Model):
   failure_reason = msgprop.EnumProperty(FailureReason)
 
   # Swarming integration
+
   swarming_hostname = ndb.StringProperty()
   swarming_task_id = ndb.StringProperty()
 

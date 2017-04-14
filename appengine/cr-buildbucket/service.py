@@ -981,8 +981,9 @@ def start(build_id, lease_key, url=None):
     assert build.status == model.BuildStatus.SCHEDULED
     _check_lease(build, lease_key)
 
+    build.start_time = utils.utcnow()
     build.status = model.BuildStatus.STARTED
-    build.status_changed_time = utils.utcnow()
+    build.status_changed_time = build.start_time
     build.url = url
     build.put()
     notifications.enqueue_callback_task_if_needed(build)

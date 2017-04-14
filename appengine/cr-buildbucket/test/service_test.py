@@ -1065,6 +1065,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.start(url='http://localhost')
     self.assertEqual(self.test_build.status, model.BuildStatus.STARTED)
     self.assertEqual(self.test_build.url, 'http://localhost')
+    self.assertEqual(self.test_build.start_time, self.now)
 
   def test_start_started_build(self):
     self.lease()
