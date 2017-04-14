@@ -52,8 +52,8 @@ def roll_prod(_args):
     kitchen_changes = 'kitchen version is the same'
   else:
     kitchen_changes = 'kitchen version %s -> %s\n\n%s\n' % (
-        prod_kitchen_ver[:9],
-        canary_kitchen_ver[:9],
+        prod_kitchen_ver,
+        canary_kitchen_ver,
         get_infra_changes(prod_kitchen_ver, canary_kitchen_ver))
 
   # Talk to user.
@@ -121,7 +121,7 @@ def roll_canary_kitchen(args):
   assert kitchen_changes
 
   # Talk to the user.
-  print('rolling canary kitchen version %s -> %s' % (cur_ver[:9], new_ver[:9]))
+  print('rolling canary kitchen version %s -> %s' % (cur_ver, new_ver))
   print
   print kitchen_changes
   print
