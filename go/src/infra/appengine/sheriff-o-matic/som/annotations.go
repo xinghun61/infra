@@ -11,6 +11,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
+	"strings"
 
 	"infra/monorail"
 
@@ -19,6 +21,7 @@ import (
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/memcache"
 	"github.com/luci/luci-go/common/clock"
+	"github.com/luci/luci-go/common/data/stringset"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
@@ -121,11 +124,17 @@ func refreshAnnotations(c context.Context, a *Annotation) (map[string]monorail.I
 		results = append(results, a)
 	}
 
+	allBugs := stringset.New(len(results))
 	for _, ann := range results {
 		for _, b := range ann.Bugs {
-			mq = fmt.Sprintf("%s%s,", mq, b)
+			allBugs.Add(b)
 		}
 	}
+
+	bugsSlice := allBugs.ToSlice()
+	// Sort so that tests are consistent.
+	sort.Strings(bugsSlice)
+	mq = fmt.Sprintf("%s%s", mq, strings.Join(bugsSlice, ","))
 
 	issues, err := getBugsFromMonorail(c, mq, monorail.IssuesListRequest_ALL)
 	if err != nil {

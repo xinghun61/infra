@@ -738,16 +738,63 @@ func TestMain(t *testing.T) {
 			})
 
 			Convey("refreshAnnotations", func() {
-				refreshAnnotationsHandler(&router.Context{
-					Context: c,
-					Writer:  w,
-					Request: makeGetRequest(),
+				Convey("handler", func() {
+					refreshAnnotationsHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makeGetRequest(),
+					})
+
+					b, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					So(w.Code, ShouldEqual, 200)
+					So(string(b), ShouldEqual, "{}")
 				})
 
-				b, err := ioutil.ReadAll(w.Body)
-				So(err, ShouldBeNil)
-				So(w.Code, ShouldEqual, 200)
-				So(string(b), ShouldEqual, "{}")
+				Convey("inner function", func() {
+					oldGetBugs := getBugsFromMonorail
+					mrResp := &monorail.IssuesListResponse{
+						Items:        []*monorail.Issue{},
+						TotalResults: 0,
+					}
+
+					var mrErr error
+					var query string
+					getBugsFromMonorail = func(c context.Context, q string,
+						can monorail.IssuesListRequest_CannedQuery) (*monorail.IssuesListResponse, error) {
+						query = q
+						return mrResp, mrErr
+					}
+
+					ann := &Annotation{
+						Bugs: []string{"111111"},
+					}
+					So(datastore.Put(c, ann), ShouldBeNil)
+					datastore.GetTestable(c).CatchupIndexes()
+
+					Convey("one bug", func() {
+						// Don't care about the return value for now.
+						_, err := refreshAnnotations(c, nil)
+
+						So(err, ShouldBeNil)
+						So(query, ShouldEqual, "id:111111")
+					})
+
+					ann = &Annotation{
+						Bugs: []string{"111111", "222222"},
+					}
+					So(datastore.Put(c, ann), ShouldBeNil)
+					datastore.GetTestable(c).CatchupIndexes()
+
+					Convey("de-dup", func() {
+						// Don't care about the return value for now.
+						_, err := refreshAnnotations(c, nil)
+
+						So(err, ShouldBeNil)
+						So(query, ShouldEqual, "id:111111,222222")
+					})
+					getBugsFromMonorail = oldGetBugs
+				})
 			})
 		})
 
