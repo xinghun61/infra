@@ -46,23 +46,30 @@
  <tr>
   <td colspan="40" class="id">
    <div style="padding: 3em; text-align: center">
-    [if-any project_has_any_issues]
-     Your search did not generate any results.  <br>
-     [is can "1"]
-      You may want to remove some terms from your query.<br>
-     [else]
-      You may want to try your search over <a href="list?can=1&amp;q=[query]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;mode=grid">all issues</a>.<br>
+    [if-any is_hotlist]
+     This hotlist currently has no issues.<br>
+     [if-any owner_permissions editor_permissions]
+      Select 'Add issues...' in the above 'Actions...' dropdown menu to add some.
      [end]
     [else]
-     This project currently has no issues.<br>
-     [if-any page_perms.CreateIssue]
-      [if-any read_only][else]
-       You may want to enter a <a class="id" href="entry">new issue</a>.
+     [if-any project_has_any_issues]
+      Your search did not generate any results.  <br>
+      [is can "1"]
+       You may want to remove some terms from your query.<br>
+      [else]
+       You may want to try your search over <a href="list?can=1&amp;q=[query]&amp;x=[grid_x_attr]&amp;y=[grid_y_attr]&amp;mode=grid">all issues</a>.<br>
+      [end]
+     [else]
+      This project currently has no issues.<br>
+      [if-any page_perms.CreateIssue]
+       [if-any read_only][else]
+        You may want to enter a <a class="id" href="entry">new issue</a>.
+       [end]
       [end]
      [end]
     [end]
-    </div>
-   </td>
-  </tr>
+   </div>
+  </td>
+ </tr>
 
 [end]
