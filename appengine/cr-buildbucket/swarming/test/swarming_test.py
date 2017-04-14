@@ -170,7 +170,6 @@ class SwarmingTest(testing.AppengineTestCase):
       {'changes': [{'author': {'email': 0}}]},
       {'changes': [{'author': {'email': ''}}]},
       {'changes': [{'author': {'email': 'a@example.com'}, 'repo_url': 0}]},
-      {'bad key': 1},
       {'swarming': []},
       {'swarming': {'junk': 1}},
       {'swarming': {'recipe': []}},

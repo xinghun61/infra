@@ -198,9 +198,6 @@ def validate_build_parameters(builder_name, params):
       if not email:
         bad('change author email not specified')
 
-  if params:
-    bad('unrecognized params: %r', params.keys())
-
 
 # Mocked in tests.
 def should_use_canary_template(percentage):  # pragma: no cover
