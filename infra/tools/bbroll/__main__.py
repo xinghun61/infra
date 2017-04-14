@@ -54,7 +54,7 @@ def roll_prod(_args):
     kitchen_changes = 'kitchen version %s -> %s\n\n%s\n' % (
         prod_kitchen_ver,
         canary_kitchen_ver,
-        get_infra_changes(prod_kitchen_ver, canary_kitchen_ver))
+        get_kitchen_changes(prod_kitchen_ver, canary_kitchen_ver))
 
   # Talk to user.
   print('rolling canary to prod')
@@ -117,7 +117,7 @@ def roll_canary_kitchen(args):
     return 1
 
   # Read changes.
-  kitchen_changes = get_infra_changes(cur_ver, new_ver)
+  kitchen_changes = get_kitchen_changes(cur_ver, new_ver)
   assert kitchen_changes
 
   # Talk to the user.
@@ -191,7 +191,7 @@ def get_latest_kitchen_package_git_revision():
   return None
 
 
-def get_infra_changes(ver1, ver2):
+def get_kitchen_changes(ver1, ver2):
   """Returns a description of changes between two versions.
 
   If there were no changes, returns None.
@@ -209,6 +209,12 @@ def get_infra_changes(ver1, ver2):
     '--no-merges',
     '--format=%ad %ae %s',
     '%s..%s' % (rev1, rev2),
+    # Here we assume that kitchen binary contents changes when files in these
+    # directories changes.
+    # This avoids most of unrelated changes in the change log.
+    'DEPS',
+    'go/deps.lock',
+    'go/src/infra/tools/kitchen',
   ]
   changes = git('-C', INFRA_REPO_ROOT, *args)
   if not changes:
