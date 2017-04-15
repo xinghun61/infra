@@ -80,11 +80,6 @@ Bugdroid-Send-Email: False
 """)
 
 
-TRIVIAL_ROLL_TBR_EMAILS = (
-    'iannucci@chromium.org',
-)
-
-
 # These are different results of a roll attempt:
 #   - success means we have a working non-empty roll
 #   - empty means the repo is using latest revision of its dependencies
@@ -246,18 +241,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       'read recipes.cfg',
       recipes_cfg_path, step_test_data=lambda: self.m.json.test_api.output({}))
 
-    autoroll_settings = current_cfg.json.output.get(
-      'autoroll_recipe_options', {})
-    # TODO(iannucci): remove these implied defaults.
-    autoroll_settings.setdefault('trivial', {
-      "tbr_emails": list(TRIVIAL_ROLL_TBR_EMAILS),
-      "automatic_commit": True,
-    })
-    autoroll_settings.setdefault('nontrivial',{
-      "automatic_commit_dry_run": True,
-    })
-
-    return autoroll_settings
+    return current_cfg.json.output['autoroll_recipe_options']
 
   def _roll_project(self, project_data, recipes_dir):
     """

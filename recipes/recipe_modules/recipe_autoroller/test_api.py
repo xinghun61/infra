@@ -52,15 +52,41 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
     return ret
 
   def repo_data(self, project, trivial, status, timestamp):
-    return (self.override_step_data('%s.gsutil repo_state' % project,
-          self.m.raw_io.stream_output(json.dumps(
-              {
-                'issue': '123456789',
-                'issue_url': 'https://codereview.chromium.org/123456789',
-                'trivial': trivial,
-                'last_roll_ts_utc': timestamp,
-              }),
-              stream='stdout'),
-          self.m.raw_io.stream_output('', stream='stderr')) +
-        self.step_data('%s.git cl status' % project,
-            self.m.raw_io.stream_output(status)))
+    return (
+      self.override_step_data(
+        '%s.gsutil repo_state' % project,
+        self.m.raw_io.stream_output(
+          json.dumps({
+            'issue': '123456789',
+            'issue_url': 'https://codereview.chromium.org/123456789',
+            'trivial': trivial,
+            'last_roll_ts_utc': timestamp,
+          }),
+          stream='stdout'),
+        self.m.raw_io.stream_output('', stream='stderr')) +
+      self.step_data('%s.git cl status' % project,
+                     self.m.raw_io.stream_output(status)))
+
+  _TBR_EMAILS = ('foo@bar.example.com', 'meep@example.com')
+  _EXTRA_REVIEWERS = ('foo@chromium.org', 'foo@bar.example.com',
+                      'meep@example.com')
+
+  def recipe_cfg(self, project, tbr_emails=_TBR_EMAILS,
+                 extra_reviewers=_EXTRA_REVIEWERS, disable_reason='',
+                 trivial_commit=True, nontrivial_dryrun=True):
+    return self.override_step_data(
+      '%s.read recipes.cfg' % project,
+      self.m.json.output({
+        'autoroll_recipe_options': {
+          'disable_reason': disable_reason,
+          'trivial': {
+            'tbr_emails': list(tbr_emails),
+            'automatic_commit': trivial_commit,
+          },
+          'nontrivial': {
+            'extra_reviewers': list(extra_reviewers),
+            'automatic_commit_dry_run': nontrivial_dryrun,
+          },
+        },
+      })
+    )

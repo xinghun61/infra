@@ -78,6 +78,7 @@ def GenTests(api):
       api.test('basic') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build')
   )
 
@@ -85,6 +86,7 @@ def GenTests(api):
       api.test('with_auth') +
       api.properties(projects=['build'], service_account='recipe-roller') +
       api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build')
   )
 
@@ -92,6 +94,7 @@ def GenTests(api):
       api.test('nontrivial') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build', trivial=False)
   )
 
@@ -99,6 +102,7 @@ def GenTests(api):
       api.test('empty') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build', empty=True)
   )
 
@@ -106,6 +110,7 @@ def GenTests(api):
       api.test('failure') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build', success=False)
   )
 
@@ -113,6 +118,7 @@ def GenTests(api):
       api.test('failed_upload') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build') +
       api.override_step_data(
           'build.git cl issue',
@@ -143,6 +149,7 @@ def GenTests(api):
       api.test('repo_data_trivial_closed') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.repo_data(
           'build', trivial=True, status='closed',
           timestamp='2016-02-01T01:23:45') +
@@ -175,46 +182,13 @@ def GenTests(api):
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data('build') +
-      api.override_step_data(
-        'build.read recipes.cfg',
-        api.json.output({
-          'autoroll_recipe_options': {
-            'trivial': {
-              'tbr_emails': ['foo@bar.example.com', 'meep@example.com'],
-            }
-          }
-        }),
-      )
-  )
-
-  yield (
-      api.test('nontrivial_extra_reviewers') +
-      api.properties(projects=['build']) +
-      api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.roll_data('build', trivial=False) +
-      api.override_step_data(
-        'build.read recipes.cfg',
-        api.json.output({
-          'autoroll_recipe_options': {
-            'nontrivial': {
-              'extra_reviewers': ['foo@chromium.org', 'foo@bar.example.com',
-                                  'meep@example.com'],
-            }
-          }
-        }),
-      )
+      api.recipe_autoroller.recipe_cfg('build', trivial_commit=False)
   )
 
   yield (
       api.test('repo_disabled') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.override_step_data(
-        'build.read recipes.cfg',
-        api.json.output({
-          'autoroll_recipe_options': {
-            'disable_reason': 'I am a water buffalo.',
-          },
-        }),
-      )
+      api.recipe_autoroller.recipe_cfg(
+        'build', disable_reason='I am a water buffalo.')
   )
