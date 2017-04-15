@@ -257,14 +257,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     # like chromium/src.
     workdir = self._prepare_checkout(project_data)
 
-    status = self._check_previous_roll(project_data, workdir)
-    if status is not None:
-      # This means that the previous roll is still going, or similar. In this
-      # situation we're done with this repo, for now.
-      return status
-
     recipes_cfg_path = workdir.join('infra', 'config', 'recipes.cfg')
-
     autoroll_settings = self._read_autoroller_settings(recipes_cfg_path)
 
     disable_reason = autoroll_settings.get('disable_reason')
@@ -272,6 +265,12 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       rslt = self.m.python.succeeding_step('disabled', disable_reason)
       rslt.presentation.status = self.m.step.WARNING
       return ROLL_SKIP
+
+    status = self._check_previous_roll(project_data, workdir)
+    if status is not None:
+      # This means that the previous roll is still going, or similar. In this
+      # situation we're done with this repo, for now.
+      return status
 
     # Use the recipes bootstrap to checkout coverage.
     roll_step = self.m.step(

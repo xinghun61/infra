@@ -129,6 +129,7 @@ def GenTests(api):
       api.test('repo_data_trivial_cq') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.repo_data(
           'build', trivial=True, status='commit',
           timestamp='2016-02-01T01:23:45') +
@@ -139,6 +140,7 @@ def GenTests(api):
       api.test('repo_data_trivial_cq_stale') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.repo_data(
           'build', trivial=True, status='commit',
           timestamp='2016-02-01T01:23:45') +
@@ -161,6 +163,7 @@ def GenTests(api):
       api.test('repo_data_nontrivial_open') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.repo_data(
           'build', trivial=False, status='waiting',
           timestamp='2016-02-01T01:23:45') +
@@ -171,6 +174,7 @@ def GenTests(api):
       api.test('repo_data_nontrivial_open_stale') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.repo_data(
           'build', trivial=False, status='waiting',
           timestamp='2016-02-01T01:23:45') +
