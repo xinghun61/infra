@@ -62,8 +62,6 @@ PROPERTIES = {
 
 
 def RunSteps(api, projects, auth_token, service_account):
-  api.recipe_autoroller.prepare_checkout()
-
   api.luci_config.set_config('basic')
   if not auth_token and service_account:
     auth_token = get_auth_token(api, service_account)
@@ -169,6 +167,16 @@ def GenTests(api):
       api.recipe_autoroller.repo_data(
           'build', trivial=False, status='waiting',
           timestamp='2016-02-01T01:23:45') +
+      api.time.seed(1454371200)
+  )
+
+  yield (
+      api.test('repo_data_nontrivial_open_stale_new_ts') +
+      api.properties(projects=['build']) +
+      api.luci_config.get_projects(['build']) +
+      api.recipe_autoroller.repo_data(
+          'build', trivial=False, status='waiting',
+          timestamp='2016-02-01T01:23:45', new_ts=True) +
       api.time.seed(1454371200)
   )
 

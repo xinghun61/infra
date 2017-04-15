@@ -192,68 +192,27 @@
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@stderr@No URLs matched@@@",
-      "@@@STEP_LOG_END@stderr@@@"
+      "@@@STEP_LINK@Issue 123456789@https://codereview.chromium.org/123456789@@@"
     ]
   },
   {
     "cmd": [
-      "python",
-      "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[CACHE]/recipe_autoroller/build/infra/config/recipes.cfg",
-      "/path/to/tmp/json"
+      "git",
+      "cl",
+      "status",
+      "--issue",
+      "123456789",
+      "--gerrit",
+      "--field",
+      "status",
+      "--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller"
     ],
-    "name": "build.read recipes.cfg",
+    "cwd": "[CACHE]/recipe_autoroller/build",
+    "infra_step": true,
+    "name": "build.git cl status",
+    "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "[TMP_BASE]/recipes_tmp_1/recipes.py",
-      "--use-bootstrap",
-      "--package",
-      "[CACHE]/recipe_autoroller/build/infra/config/recipes.cfg",
-      "autoroll",
-      "--output-json",
-      "/path/to/tmp/json"
-    ],
-    "name": "build.roll",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"picked_roll_details\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"rejected_candidates_count\": 1, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"roll_details\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"commit_infos\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"recipe_engine\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@          {@@@",
-      "@@@STEP_LOG_LINE@json.output@            \"author_email\": \"foo@chromium.org\", @@@",
-      "@@@STEP_LOG_LINE@json.output@            \"message_lines\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@              \"some commit message\", @@@",
-      "@@@STEP_LOG_LINE@json.output@              \"R=bar@chromium.org,baz@chromium.org,invalid1,invalid2@chromium\", @@@",
-      "@@@STEP_LOG_LINE@json.output@              \"BUG=123,456\"@@@",
-      "@@@STEP_LOG_LINE@json.output@            ], @@@",
-      "@@@STEP_LOG_LINE@json.output@            \"revision\": \"123abc\"@@@",
-      "@@@STEP_LOG_LINE@json.output@          }@@@",
-      "@@@STEP_LOG_LINE@json.output@        ]@@@",
-      "@@@STEP_LOG_LINE@json.output@      }, @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"spec\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@        \"api_version\": 2, @@@",
-      "@@@STEP_LOG_LINE@json.output@        \"deps\": {}@@@",
-      "@@@STEP_LOG_LINE@json.output@      }@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ], @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"success\": false, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"trivial\": null@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_LOG_LINE@candidate #1@{\"api_version\": 2, \"deps\": {}}@@@",
-      "@@@STEP_LOG_END@candidate #1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -262,10 +221,11 @@
       "-u",
       "import sys; sys.exit(1)"
     ],
-    "name": "roll result",
+    "name": "build.stale roll",
     "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
       "step returned non-zero exit code: 1",
-      "@@@STEP_TEXT@manual intervention needed: automated roll attempt failed@@@",
+      "@@@STEP_TEXT@manual intervention needed: automated roll attempt is stale@@@",
       "@@@STEP_FAILURE@@@"
     ]
   },
@@ -281,7 +241,7 @@
   },
   {
     "name": "$result",
-    "reason": "Step('roll result') failed with return_code 1",
+    "reason": "1 out of 2 aggregated steps failed. Failures: Step('build.stale roll') failed with return_code 1",
     "recipe_result": null,
     "status_code": 1
   }

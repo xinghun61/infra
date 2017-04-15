@@ -112,13 +112,6 @@ def get_commit_message(roll_result, tbrs=(), extra_reviewers=()):
 
 
 class RecipeAutorollerApi(recipe_api.RecipeApi):
-  def prepare_checkout(self): #pragma: no cover
-    """Creates a default checkout for the recipe autoroller."""
-    # Removed, but keep it here so roll succeeds
-    # TODO(martiniss): Delete once safe
-    pass
-
-
   def roll_projects(self, projects):
     """Attempts to roll each project from the provided list.
 
@@ -184,7 +177,10 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         project_data['repo_url'], workdir)
     if repo_data:
       last_roll_elapsed = None
-      timestamp_str = repo_data.get('last_roll', {}).get('utc_timestamp')
+      # TODO(iannucci): remove when last_roll_ts_utc is everywhere
+      timestamp_str = repo_data.get('last_roll_ts_utc')
+      if timestamp_str is None:
+        timestamp_str = repo_data.get('last_roll', {}).get('utc_timestamp')
       if timestamp_str:
         last_roll_timestamp = datetime.datetime.strptime(
             timestamp_str, _TIME_FORMAT)
@@ -198,7 +194,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
               'stale roll',
               'manual intervention needed: automated roll attempt is stale')
 
-        return repo_data, ROLL_SUCCESS
+        return ROLL_SUCCESS
 
       # Allow non-trivial rolls to wait for review comments.
       if not repo_data['trivial'] and cl_status != 'closed':
@@ -208,7 +204,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
               'stale roll',
               'manual intervention needed: automated roll attempt is stale')
 
-        return repo_data, ROLL_SUCCESS
+        return ROLL_SUCCESS
 
       # TODO(phajdan.jr): detect staleness by creating CLs in a loop.
       # It's possible that the roller keeps creating new CLs (especially
@@ -223,7 +219,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
                    _AUTH_REFRESH_TOKEN_FLAG,
                    # TODO(phajdan.jr): make set-close fatal after Gerrit switch.
                    ok_ret='any')
-    return repo_data, None
+    return None
 
   def _read_autoroller_settings(self, recipes_cfg_path):
     current_cfg = self.m.json.read(
@@ -257,8 +253,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     # like chromium/src.
     workdir = self._prepare_checkout(project_data)
 
-    # Get the previous repo_data.
-    repo_data, status = self._check_previous_roll(project_data, workdir)
+    status = self._check_previous_roll(project_data, workdir)
     if status is not None:
       # This means that the previous roll is still going, or similar. In this
       # situation we're done with this repo, for now.
@@ -283,8 +278,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
     if roll_result['success'] and roll_result['picked_roll_details']:
       self._process_successful_roll(
-          project_data['repo_url'], repo_data, roll_step, workdir,
-          autoroll_settings)
+          project_data['repo_url'], roll_step, workdir, autoroll_settings)
       return ROLL_SUCCESS
 
     num_rejected = roll_result['rejected_candidates_count']
@@ -292,31 +286,14 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       roll_step.presentation.step_text += ' (already at latest revisions)'
       return ROLL_EMPTY
 
-    candidate_number = 0
-    for roll_candidate in roll_result['roll_details']:
-      candidate_number += 1
+    for i, roll_candidate in enumerate(roll_result['roll_details']):
+      roll_step.presentation.logs['candidate #%d' % (i+1)] = (
+        self.m.json.dumps(roll_candidate['spec']).splitlines())
 
-      logs = []
-      if 'recipes_simulation_test' in roll_candidate:
-        logs.append('recipes_simulation_test (rc=%d):' %
-            roll_candidate['recipes_simulation_test']['rc'])
-        output = roll_candidate['recipes_simulation_test']['output']
-        logs.extend(['  %s' % line for line in output.splitlines()])
-      if 'recipes_simulation_test_train' in roll_candidate:
-        logs.append('recipes_simulation_test_train (rc=%d):' %
-            roll_candidate['recipes_simulation_test_train']['rc'])
-        output = roll_candidate['recipes_simulation_test_train']['output']
-        logs.extend(['  %s' % line for line in output.splitlines()])
-
-      logs.append('blame:')
-      logs.extend(['  %s' % line for line in
-                  get_blame(roll_candidate['commit_infos'])])
-      roll_step.presentation.logs['candidate #%d' % candidate_number] = logs
     return ROLL_FAILURE
 
-  def _process_successful_roll(
-      self, repo_url, original_repo_data, roll_step, workdir,
-      autoroll_settings):
+  def _process_successful_roll(self, repo_url, roll_step, workdir,
+                               autoroll_settings):
     """
     Args:
       roll_step - The StepResult of the actual roll command. This is used to
@@ -325,7 +302,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         engine, in jsonish form (i.e. a python dict).
     """
     roll_result = roll_step.json.output
-    original_repo_data = original_repo_data or {}
 
     roll_step.presentation.logs['blame'] = get_blame(
         roll_result['picked_roll_details']['commit_infos'])
@@ -373,23 +349,18 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       self.m.python.failing_step(
           'git cl upload failed', 'no issue metadata returned')
 
-    roll_data = {
-      'spec': roll_result['picked_roll_details']['spec'],
-      'trivial': roll_result['trivial'],
-      'issue': str(issue_result['issue']),
-      'issue_url': issue_result['issue_url'],
-      'utc_timestamp': self.m.time.utcnow().strftime(_TIME_FORMAT),
-    }
+    last_roll_ts_utc = self.m.time.utcnow().strftime(_TIME_FORMAT)
 
     repo_data = {
       'issue': str(issue_result['issue']),
       'issue_url': issue_result['issue_url'],
       'trivial': roll_result['trivial'],
-      'last_roll': roll_data,
-      'last_trivial': roll_data if roll_result['trivial']
-                      else original_repo_data.get('last_trivial'),
-      'last_nontrivial': roll_data if not roll_result['trivial']
-                         else original_repo_data.get('last_nontrivial'),
+      'last_roll_ts_utc': last_roll_ts_utc,
+
+      # TODO(iannucci): remove when last_roll_ts_utc is everywhere
+      'last_roll': {
+        'utc_timestamp': last_roll_ts_utc,
+      },
     }
 
     issue_step.presentation.links['Issue %s' % repo_data['issue']] = (
