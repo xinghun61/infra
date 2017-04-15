@@ -351,7 +351,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
       "----",
       "cp",
-      "{\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"last_roll\": {\"utc_timestamp\": \"2012-05-14T12:53:21\"}, \"last_roll_ts_utc\": \"2012-05-14T12:53:21\", \"trivial\": true}",
+      "{\"issue\": \"123456789\", \"issue_url\": \"https://codereview.chromium.org/123456789\", \"last_roll_ts_utc\": \"2012-05-14T12:53:21\", \"trivial\": true}",
       "gs://recipe-roller-cl-uploads/repo_metadata/aHR0cHM6Ly9yZXBvLnJlcG8vYnVpbGQ="
     ],
     "infra_step": true,

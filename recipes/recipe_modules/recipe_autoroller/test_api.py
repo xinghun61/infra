@@ -51,21 +51,16 @@ class RecipeAutorollerTestApi(recipe_test_api.RecipeTestApi):
     ret += self.step_data('%s.roll' % project, self.m.json.output(roll_result))
     return ret
 
-  def repo_data(self, project, trivial, status, timestamp, new_ts=False):
-    data = {
-      'issue': '123456789',
-      'issue_url': 'https://codereview.chromium.org/123456789',
-      'trivial': trivial,
-    }
-    if new_ts:
-      data['last_roll_ts_utc'] = timestamp
-    else:
-      data['last_roll'] = {
-        'utc_timestamp': timestamp,
-      }
-
+  def repo_data(self, project, trivial, status, timestamp):
     return (self.override_step_data('%s.gsutil repo_state' % project,
-          self.m.raw_io.stream_output(json.dumps(data), stream='stdout'),
+          self.m.raw_io.stream_output(json.dumps(
+              {
+                'issue': '123456789',
+                'issue_url': 'https://codereview.chromium.org/123456789',
+                'trivial': trivial,
+                'last_roll_ts_utc': timestamp,
+              }),
+              stream='stdout'),
           self.m.raw_io.stream_output('', stream='stderr')) +
         self.step_data('%s.git cl status' % project,
             self.m.raw_io.stream_output(status)))

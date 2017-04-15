@@ -171,16 +171,6 @@ def GenTests(api):
   )
 
   yield (
-      api.test('repo_data_nontrivial_open_stale_new_ts') +
-      api.properties(projects=['build']) +
-      api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.repo_data(
-          'build', trivial=False, status='waiting',
-          timestamp='2016-02-01T01:23:45', new_ts=True) +
-      api.time.seed(1454371200)
-  )
-
-  yield (
       api.test('trivial_custom_tbr_no_dryrun') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +

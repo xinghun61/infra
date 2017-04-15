@@ -10,6 +10,38 @@ import re
 from recipe_engine import recipe_api
 
 
+class RepoData(object):
+  _TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
+
+  def __init__(self, issue, issue_url, trivial, last_roll_ts_utc):
+    assert isinstance(issue, str)
+    assert isinstance(issue_url, str)
+    assert isinstance(trivial, bool)
+    assert isinstance(last_roll_ts_utc, datetime.datetime)
+
+    self.issue = issue
+    self.issue_url = issue_url
+    self.trivial = trivial
+    self.last_roll_ts_utc = last_roll_ts_utc
+
+  @classmethod
+  def from_json(cls, obj):
+    return cls(
+      obj['issue'],
+      obj['issue_url'],
+      obj['trivial'],
+      datetime.datetime.strptime(obj['last_roll_ts_utc'], cls._TIME_FORMAT),
+    )
+
+  def to_json(self):
+    return {
+      'issue': self.issue,
+      'issue_url': self.issue_url,
+      'trivial': self.trivial,
+      'last_roll_ts_utc': self.last_roll_ts_utc.strftime(self._TIME_FORMAT),
+    }
+
+
 def get_reviewers(commit_infos):
   """Get a set of authors and reviewers from 'recipes.py autoroll' commit infos.
   """
@@ -78,9 +110,6 @@ ROLL_SUCCESS, ROLL_EMPTY, ROLL_FAILURE, ROLL_SKIP = range(4)
 
 _AUTH_REFRESH_TOKEN_FLAG = (
     '--auth-refresh-token-json=/creds/refresh_tokens/recipe-roller')
-
-
-_TIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 
 _ROLL_STALE_THRESHOLD = datetime.timedelta(hours=2)
@@ -176,18 +205,10 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     repo_data, cl_status = self._get_pending_cl_status(
         project_data['repo_url'], workdir)
     if repo_data:
-      last_roll_elapsed = None
-      # TODO(iannucci): remove when last_roll_ts_utc is everywhere
-      timestamp_str = repo_data.get('last_roll_ts_utc')
-      if timestamp_str is None:
-        timestamp_str = repo_data.get('last_roll', {}).get('utc_timestamp')
-      if timestamp_str:
-        last_roll_timestamp = datetime.datetime.strptime(
-            timestamp_str, _TIME_FORMAT)
-        last_roll_elapsed = self.m.time.utcnow() - last_roll_timestamp
+      last_roll_elapsed = self.m.time.utcnow() - repo_data.last_roll_ts_utc
 
       # Allow trivial rolls in CQ to finish.
-      if repo_data['trivial'] and cl_status == 'commit':
+      if repo_data.trivial and cl_status == 'commit':
         if (last_roll_elapsed and
             last_roll_elapsed > _ROLL_STALE_THRESHOLD):
           self.m.python.failing_step(
@@ -197,7 +218,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         return ROLL_SUCCESS
 
       # Allow non-trivial rolls to wait for review comments.
-      if not repo_data['trivial'] and cl_status != 'closed':
+      if not repo_data.trivial and cl_status != 'closed':
         if (last_roll_elapsed and
             last_roll_elapsed > _ROLL_STALE_THRESHOLD):
           self.m.python.failing_step(
@@ -214,7 +235,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       # Pass --gerrit flag to match upload args below.
       with self.m.step.context({'cwd': workdir}):
         self.m.git('cl', 'set-close',
-                   '--issue', repo_data['issue'],
+                   '--issue', repo_data.issue,
                    '--gerrit',
                    _AUTH_REFRESH_TOKEN_FLAG,
                    # TODO(phajdan.jr): make set-close fatal after Gerrit switch.
@@ -349,25 +370,18 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       self.m.python.failing_step(
           'git cl upload failed', 'no issue metadata returned')
 
-    last_roll_ts_utc = self.m.time.utcnow().strftime(_TIME_FORMAT)
+    repo_data = RepoData(
+      str(issue_result['issue']),
+      issue_result['issue_url'],
+      roll_result['trivial'],
+      self.m.time.utcnow(),
+    )
 
-    repo_data = {
-      'issue': str(issue_result['issue']),
-      'issue_url': issue_result['issue_url'],
-      'trivial': roll_result['trivial'],
-      'last_roll_ts_utc': last_roll_ts_utc,
-
-      # TODO(iannucci): remove when last_roll_ts_utc is everywhere
-      'last_roll': {
-        'utc_timestamp': last_roll_ts_utc,
-      },
-    }
-
-    issue_step.presentation.links['Issue %s' % repo_data['issue']] = (
-        repo_data['issue_url'])
+    issue_step.presentation.links['Issue %s' % repo_data.issue] = (
+        repo_data.issue_url)
 
     self.m.gsutil.upload(
-        self.m.json.input(repo_data),
+        self.m.json.input(repo_data.to_json()),
         'recipe-roller-cl-uploads',
         'repo_metadata/%s' % base64.urlsafe_b64encode(repo_url))
 
@@ -394,10 +408,10 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         raise Exception('gsutil failed in an unexpected way; see stderr log')
       return None, None
 
-    repo_data = self.m.json.loads(cat_result.stdout)
-    cat_result.presentation.links['Issue %s' % repo_data['issue']] = (
-        repo_data['issue_url'])
-    if repo_data['trivial']:
+    repo_data = RepoData.from_json(self.m.json.loads(cat_result.stdout))
+    cat_result.presentation.links['Issue %s' % repo_data.issue] = (
+        repo_data.issue_url)
+    if repo_data.trivial:
       cat_result.presentation.step_text += ' (trivial)'
 
     with self.m.step.context({'cwd': workdir}):
@@ -406,7 +420,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       # git cl calls in the autoroller.
       status_result = self.m.git(
           'cl', 'status',
-          '--issue', repo_data['issue'],
+          '--issue', repo_data.issue,
           '--gerrit',
           '--field', 'status',
           _AUTH_REFRESH_TOKEN_FLAG,
