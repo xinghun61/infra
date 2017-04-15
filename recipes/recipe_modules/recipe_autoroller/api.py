@@ -155,17 +155,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
             'roll result',
             'manual intervention needed: automated roll attempt failed')
 
-  def _roll_project(self, project_data, recipes_dir):
-    """
-    Args:
-      project_data - The JSON form of a project_config, e.g. {
-          "repo_type": "GITILES",
-          "id": "foof",
-          "repo_url": "https://chromium.googlesource.com/foof",
-          "name": "Foof"
-        }
-    """
-
+  def _prepare_checkout(self, project_data):
     # Keep persistent checkout. Speeds up the roller for large repos
     # like chromium/src.
     workdir = self.m.path['cache'].join(
@@ -185,6 +175,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       # git cl upload cannot work with detached HEAD, it requires a branch.
       self.m.git('checkout', '-t', '-b', 'roll', 'origin/master')
 
+    return workdir
+
+  def _check_previous_roll(self, project_data, workdir):
     # Check status of last known CL for this repo. Ensure there's always
     # at most one roll CL in flight.
     repo_data, cl_status = self._get_pending_cl_status(
@@ -205,7 +198,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
               'stale roll',
               'manual intervention needed: automated roll attempt is stale')
 
-        return ROLL_SUCCESS
+        return repo_data, ROLL_SUCCESS
 
       # Allow non-trivial rolls to wait for review comments.
       if not repo_data['trivial'] and cl_status != 'closed':
@@ -215,7 +208,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
               'stale roll',
               'manual intervention needed: automated roll attempt is stale')
 
-        return ROLL_SUCCESS
+        return repo_data, ROLL_SUCCESS
 
       # TODO(phajdan.jr): detect staleness by creating CLs in a loop.
       # It's possible that the roller keeps creating new CLs (especially
@@ -230,11 +223,11 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
                    _AUTH_REFRESH_TOKEN_FLAG,
                    # TODO(phajdan.jr): make set-close fatal after Gerrit switch.
                    ok_ret='any')
+    return repo_data, None
 
-    recipes_cfg_path = workdir.join('infra', 'config', 'recipes.cfg')
-
+  def _read_autoroller_settings(self, recipes_cfg_path):
     current_cfg = self.m.json.read(
-      'read %s recipes.cfg' % project_data['id'],
+      'read recipes.cfg',
       recipes_cfg_path, step_test_data=lambda: self.m.json.test_api.output({}))
 
     autoroll_settings = current_cfg.json.output.get(
@@ -247,6 +240,33 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     autoroll_settings.setdefault('nontrivial',{
       "automatic_commit_dry_run": True,
     })
+
+    return autoroll_settings
+
+  def _roll_project(self, project_data, recipes_dir):
+    """
+    Args:
+      project_data - The JSON form of a project_config, e.g. {
+          "repo_type": "GITILES",
+          "id": "foof",
+          "repo_url": "https://chromium.googlesource.com/foof",
+          "name": "Foof"
+        }
+    """
+    # Keep persistent checkout. Speeds up the roller for large repos
+    # like chromium/src.
+    workdir = self._prepare_checkout(project_data)
+
+    # Get the previous repo_data.
+    repo_data, status = self._check_previous_roll(project_data, workdir)
+    if status is not None:
+      # This means that the previous roll is still going, or similar. In this
+      # situation we're done with this repo, for now.
+      return status
+
+    recipes_cfg_path = workdir.join('infra', 'config', 'recipes.cfg')
+
+    autoroll_settings = self._read_autoroller_settings(recipes_cfg_path)
 
     disable_reason = autoroll_settings.get('disable_reason')
     if disable_reason:
@@ -266,34 +286,33 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
           project_data['repo_url'], repo_data, roll_step, workdir,
           autoroll_settings)
       return ROLL_SUCCESS
-    else:
-      num_rejected = roll_result['rejected_candidates_count']
 
-      if not roll_result['roll_details'] and num_rejected == 0:
-        roll_step.presentation.step_text += ' (already at latest revisions)'
-        return ROLL_EMPTY
-      else:
-        candidate_number = 0
-        for roll_candidate in roll_result['roll_details']:
-          candidate_number += 1
+    num_rejected = roll_result['rejected_candidates_count']
+    if not roll_result['roll_details'] and num_rejected == 0:
+      roll_step.presentation.step_text += ' (already at latest revisions)'
+      return ROLL_EMPTY
 
-          logs = []
-          if 'recipes_simulation_test' in roll_candidate:
-            logs.append('recipes_simulation_test (rc=%d):' %
-                roll_candidate['recipes_simulation_test']['rc'])
-            output = roll_candidate['recipes_simulation_test']['output']
-            logs.extend(['  %s' % line for line in output.splitlines()])
-          if 'recipes_simulation_test_train' in roll_candidate:
-            logs.append('recipes_simulation_test_train (rc=%d):' %
-                roll_candidate['recipes_simulation_test_train']['rc'])
-            output = roll_candidate['recipes_simulation_test_train']['output']
-            logs.extend(['  %s' % line for line in output.splitlines()])
+    candidate_number = 0
+    for roll_candidate in roll_result['roll_details']:
+      candidate_number += 1
 
-          logs.append('blame:')
-          logs.extend(['  %s' % line for line in
-                      get_blame(roll_candidate['commit_infos'])])
-          roll_step.presentation.logs['candidate #%d' % candidate_number] = logs
-        return ROLL_FAILURE
+      logs = []
+      if 'recipes_simulation_test' in roll_candidate:
+        logs.append('recipes_simulation_test (rc=%d):' %
+            roll_candidate['recipes_simulation_test']['rc'])
+        output = roll_candidate['recipes_simulation_test']['output']
+        logs.extend(['  %s' % line for line in output.splitlines()])
+      if 'recipes_simulation_test_train' in roll_candidate:
+        logs.append('recipes_simulation_test_train (rc=%d):' %
+            roll_candidate['recipes_simulation_test_train']['rc'])
+        output = roll_candidate['recipes_simulation_test_train']['output']
+        logs.extend(['  %s' % line for line in output.splitlines()])
+
+      logs.append('blame:')
+      logs.extend(['  %s' % line for line in
+                  get_blame(roll_candidate['commit_infos'])])
+      roll_step.presentation.logs['candidate #%d' % candidate_number] = logs
+    return ROLL_FAILURE
 
   def _process_successful_roll(
       self, repo_url, original_repo_data, roll_step, workdir,
@@ -405,10 +424,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       return None, None
 
     repo_data = self.m.json.loads(cat_result.stdout)
-    # TODO(phajdan.jr): remove when all repos have this key.
-    if 'issue_url' in repo_data:
-      cat_result.presentation.links['Issue %s' % repo_data['issue']] = (
-          repo_data['issue_url'])
+    cat_result.presentation.links['Issue %s' % repo_data['issue']] = (
+        repo_data['issue_url'])
     if repo_data['trivial']:
       cat_result.presentation.step_text += ' (trivial)'
 

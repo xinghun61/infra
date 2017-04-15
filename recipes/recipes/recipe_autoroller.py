@@ -178,7 +178,7 @@ def GenTests(api):
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data('build') +
       api.override_step_data(
-        'build.read build recipes.cfg',
+        'build.read recipes.cfg',
         api.json.output({
           'autoroll_recipe_options': {
             'trivial': {
@@ -195,7 +195,7 @@ def GenTests(api):
       api.luci_config.get_projects(['build']) +
       api.recipe_autoroller.roll_data('build', trivial=False) +
       api.override_step_data(
-        'build.read build recipes.cfg',
+        'build.read recipes.cfg',
         api.json.output({
           'autoroll_recipe_options': {
             'nontrivial': {
@@ -212,7 +212,7 @@ def GenTests(api):
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
       api.override_step_data(
-        'build.read build recipes.cfg',
+        'build.read recipes.cfg',
         api.json.output({
           'autoroll_recipe_options': {
             'disable_reason': 'I am a water buffalo.',

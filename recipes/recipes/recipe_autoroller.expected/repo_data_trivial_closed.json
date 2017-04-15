@@ -241,7 +241,7 @@
       "[CACHE]/recipe_autoroller/build/infra/config/recipes.cfg",
       "/path/to/tmp/json"
     ],
-    "name": "build.read build recipes.cfg",
+    "name": "build.read recipes.cfg",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{}@@@",
