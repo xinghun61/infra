@@ -28,6 +28,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	appengine "google.golang.org/api/appengine/v1"
+
+	"github.com/luci/luci-go/common/data/stringset"
 )
 
 const monorailURL = "https://bugs.chromium.org/p/%s/issues/detail?id=%s"
@@ -42,6 +44,7 @@ var (
 	authorRE   = regexp.MustCompile("\nAuthor:.+<(.+)>")
 	hashRE     = regexp.MustCompile("commit (.*)\n")
 	reviewRE   = regexp.MustCompile("\n    (Review-Url|Reviewed-on): (.*)\n")
+	extraPaths = flag.String("extra-paths", "", "Comma-separated list of extra paths to check.")
 
 	markdownTxt = `
 # Release Notes {{.AppName}} {{.Date}}
@@ -76,7 +79,7 @@ type tmplData struct {
 	Since   string
 	Authors []string
 	Commits []*commit
-	Bugs    map[string]map[string]bool
+	Bugs    map[string]stringset.Set
 }
 
 type commit struct {
@@ -171,7 +174,7 @@ func getDeployedApp(service, module string) (string, string, error) {
 	}
 
 	if deployedVers == nil {
-		return "", "", fmt.Errorf("Could not determine currently deployed version.\n")
+		return "", "", fmt.Errorf("could not determine currently deployed version")
 	}
 
 	versRE := regexp.MustCompile("([0-9]+)-([0-9a-f]+)")
@@ -203,36 +206,7 @@ func getAppNameFromYAML() (string, error) {
 	return app.Application, nil
 }
 
-func main() {
-	flag.Usage = usage
-	flag.Parse()
-	args := flag.Args()
-	path := "."
-	if len(args) > 0 {
-		path = args[0]
-	}
-
-	if *appName == "" {
-		s, err := getAppNameFromYAML()
-		if err != nil {
-			fmt.Printf("Error getting app name from app.yaml: %v", err)
-			os.Exit(1)
-		}
-		appName = &s
-		fmt.Printf("Got app name from app.yaml: %s\n", *appName)
-	}
-
-	if *sinceHash == "" && *sinceDate == "" {
-		hash, date, err := getDeployedApp(*appName, "default")
-		if err != nil {
-			fmt.Printf("Error trying to get currently deployed app hash: %v\n", err)
-			fmt.Printf("Please specify either --since-hash or --since-date\n")
-			os.Exit(1)
-		}
-		sinceHash = &hash
-		sinceDate = &date
-	}
-
+func getUpdates(path string) (stringset.Set, []*commit, stringset.Set, map[string]stringset.Set) {
 	var cmd *exec.Cmd
 	switch {
 	case *sinceHash != "":
@@ -263,9 +237,9 @@ func main() {
 
 	commitsByBug := map[string][]*commit{}
 	commitsByAuthor := map[string][]*commit{}
-	authors := map[string]bool{}
-	bugs := map[string]bool{}
-	bugsByAuthor := map[string]map[string]bool{}
+	authors := stringset.New(5)
+	bugs := stringset.New(5)
+	bugsByAuthor := map[string]stringset.Set{}
 	summaries := []string{}
 	commits := []*commit{}
 
@@ -278,24 +252,60 @@ func main() {
 		summaries = append(summaries, c.Summary)
 		for _, b := range c.bugs {
 			commitsByBug[b] = append(commitsByBug[b], c)
-			bugs[b] = true
+			bugs.Add(b)
 			if _, ok := bugsByAuthor[c.Author]; !ok {
-				bugsByAuthor[c.Author] = map[string]bool{}
+				bugsByAuthor[c.Author] = stringset.New(5)
 			}
-			bugsByAuthor[c.Author][b] = true
+			bugsByAuthor[c.Author].Add(b)
 		}
 		commitsByAuthor[c.Author] = append(commitsByAuthor[c.Author], c)
-		authors[c.Author] = true
+		authors.Add(c.Author)
 	}
 
-	fixed := []string{}
-	for b := range bugs {
-		fixed = append(fixed, b)
+	return authors, commits, bugs, bugsByAuthor
+}
+
+func main() {
+	flag.Usage = usage
+	flag.Parse()
+	paths := flag.Args()
+	if len(paths) == 0 {
+		paths = []string{"."}
 	}
 
-	toNotify := []string{}
-	for a := range authors {
-		toNotify = append(toNotify, a)
+	if *appName == "" {
+		s, err := getAppNameFromYAML()
+		if err != nil {
+			fmt.Printf("Error getting app name from app.yaml: %v", err)
+			os.Exit(1)
+		}
+		appName = &s
+		fmt.Printf("Got app name from app.yaml: %s\n", *appName)
+	}
+
+	if *sinceHash == "" && *sinceDate == "" {
+		hash, date, err := getDeployedApp(*appName, "default")
+		if err != nil {
+			fmt.Printf("Error trying to get currently deployed app hash: %v\n", err)
+			fmt.Printf("Please specify either --since-hash or --since-date\n")
+			os.Exit(1)
+		}
+		sinceHash = &hash
+		sinceDate = &date
+	}
+
+	authors, commits, bugs, bugsByAuthor := stringset.New(5), []*commit{}, stringset.New(5), map[string]stringset.Set{}
+	for _, path := range paths {
+		a, c, b, bba := getUpdates(path)
+		authors = authors.Union(a)
+		commits = append(commits, c...)
+		bugs = bugs.Union(b)
+		for author, bugs := range bba {
+			if _, ok := bugsByAuthor[author]; !ok {
+				bugsByAuthor[author] = stringset.New(5)
+			}
+			bugsByAuthor[author] = bugsByAuthor[author].Union(bugs)
+		}
 	}
 
 	if *date == "" {
@@ -306,9 +316,9 @@ func main() {
 	data := tmplData{
 		AppName: *appName,
 		Date:    *date,
-		NumBugs: len(fixed),
+		NumBugs: bugs.Len(),
 		Since:   fmt.Sprintf("%s (%s)", *sinceHash, *sinceDate),
-		Authors: toNotify,
+		Authors: authors.ToSlice(),
 		Commits: commits,
 		Bugs:    bugsByAuthor,
 	}

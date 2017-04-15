@@ -30,7 +30,7 @@ test: deps
 	xvfb-run -a $(WCT_PATH)
 
 relnotes:
-	go run ../../tools/relnotes/relnotes.go -app sheriff-o-matic
+	go run ../../tools/relnotes/relnotes.go -app sheriff-o-matic . ../../monitoring/analyzer ../../monitoring/client ../../monitoring/messages
 
 # This is only used for testing on the continuous build system.
 bower-cipd: deps
