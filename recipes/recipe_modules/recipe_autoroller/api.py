@@ -52,19 +52,6 @@ def get_reviewers(commit_infos):
   return reviewers
 
 
-def get_blame(commit_infos):
-  blame = []
-  for project, commits in commit_infos.iteritems():
-    blame.append('%s:' % project)
-    for commit in commits:
-      message = commit['message_lines']
-      # TODO(phajdan.jr): truncate long messages.
-      message = message[0] if message else 'n/a'
-      blame.append('  https://crrev.com/%s %s (%s)' % (
-          commit['revision'], message, commit['author_email']))
-  return blame
-
-
 COMMIT_MESSAGE_HEADER = (
 """
 This is an automated CL created by the recipe roller. This CL rolls recipe
@@ -127,6 +114,18 @@ def get_commit_message(roll_result, tbrs=(), extra_reviewers=()):
   message += COMMIT_MESSAGE_INFO
 
   commit_infos = roll_result['picked_roll_details']['commit_infos']
+
+  def get_blame(commit_infos):
+    blame = []
+    for project, commits in commit_infos.iteritems():
+      blame.append('%s:' % project)
+      for commit in commits:
+        message = commit['message_lines']
+        # TODO(phajdan.jr): truncate long messages.
+        message = message[0] if message else 'n/a'
+        blame.append('  https://crrev.com/%s %s (%s)' % (
+            commit['revision'], message, commit['author_email']))
+    return blame
 
   message += '%s\n' % '\n'.join(get_blame(commit_infos))
   message += '\n'
@@ -324,17 +323,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     """
     roll_result = roll_step.json.output
 
-    roll_step.presentation.logs['blame'] = get_blame(
-        roll_result['picked_roll_details']['commit_infos'])
-
-    if roll_result['trivial']:
-      roll_step.presentation.step_text += ' (trivial)'
-    else:
-      roll_step.presentation.status = self.m.step.FAILURE
-
-    with self.m.step.context({'cwd': workdir}):
-      self.m.git('commit', '-a', '-m', 'roll recipes.cfg')
-
     tbrs = []
     extra_reviewers = []
     upload_args =  []
@@ -350,11 +338,21 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       if s.get('automatic_commit_dry_run'):
         upload_args.append('--cq-dry-run')
 
+    commit_message = get_commit_message(
+      roll_result, tbrs=tbrs, extra_reviewers=extra_reviewers)
+
+    roll_step.presentation.logs['commit_message'] = commit_message.splitlines()
+    if roll_result['trivial']:
+      roll_step.presentation.step_text += ' (trivial)'
+    else:
+      roll_step.presentation.status = self.m.step.FAILURE
+
+    with self.m.step.context({'cwd': workdir}):
+      self.m.git('commit', '-a', '-m', 'roll recipes.cfg')
+
     upload_args.extend(['--bypass-hooks', '-f'])
     upload_args.extend(['--gerrit'])
     upload_args.extend([_AUTH_REFRESH_TOKEN_FLAG])
-    commit_message = get_commit_message(
-      roll_result, tbrs=tbrs, extra_reviewers=extra_reviewers)
     with self.m.step.context({'cwd': workdir}):
       self.m.git_cl.upload(
           commit_message, upload_args, name='git cl upload')

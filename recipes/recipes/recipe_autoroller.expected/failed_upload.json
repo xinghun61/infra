@@ -271,9 +271,22 @@
       "@@@STEP_LOG_LINE@json.output@  \"trivial\": true@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_LOG_LINE@blame@recipe_engine:@@@",
-      "@@@STEP_LOG_LINE@blame@  https://crrev.com/123abc some commit message (foo@chromium.org)@@@",
-      "@@@STEP_LOG_END@blame@@@"
+      "@@@STEP_LOG_LINE@commit_message@Roll recipe dependencies (trivial).@@@",
+      "@@@STEP_LOG_LINE@commit_message@@@@",
+      "@@@STEP_LOG_LINE@commit_message@This is an automated CL created by the recipe roller. This CL rolls recipe@@@",
+      "@@@STEP_LOG_LINE@commit_message@changes from upstream projects (e.g. depot_tools) into downstream projects@@@",
+      "@@@STEP_LOG_LINE@commit_message@(e.g. tools/build).@@@",
+      "@@@STEP_LOG_LINE@commit_message@@@@",
+      "@@@STEP_LOG_LINE@commit_message@@@@",
+      "@@@STEP_LOG_LINE@commit_message@More info is at https://goo.gl/zkKdpD. Use https://goo.gl/noib3a to file a bug.@@@",
+      "@@@STEP_LOG_LINE@commit_message@recipe_engine:@@@",
+      "@@@STEP_LOG_LINE@commit_message@  https://crrev.com/123abc some commit message (foo@chromium.org)@@@",
+      "@@@STEP_LOG_LINE@commit_message@@@@",
+      "@@@STEP_LOG_LINE@commit_message@TBR=iannucci@chromium.org@@@",
+      "@@@STEP_LOG_LINE@commit_message@@@@",
+      "@@@STEP_LOG_LINE@commit_message@Recipe-Tryjob-Bypass-Reason: Autoroller@@@",
+      "@@@STEP_LOG_LINE@commit_message@Bugdroid-Send-Email: False@@@",
+      "@@@STEP_LOG_END@commit_message@@@"
     ]
   },
   {
