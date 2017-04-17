@@ -89,7 +89,6 @@ class FinditTest(PredatorTestCase):
     processed_analysis_result = copy.deepcopy(analysis_result)
     for cl in processed_analysis_result['suspected_cls']:
       cl['confidence'] = round(cl['confidence'], 2)
-      cl.pop('reasons', None)
 
     crash_identifiers = {'signature': 'sig'}
     expected_processed_result = {
