@@ -119,7 +119,7 @@ type GitArgs interface {
 // It can be generated from a generic command-line interface using ParseGitArgs.
 type BaseGitArgs struct {
 	// GitFlags is the set of top-level flags passed to the Git command.
-	GitFlags []string
+	GitFlags map[string]string
 
 	// Subcommand, if not empty, is the Git subcommand that is being executed.
 	Subcommand string
@@ -139,7 +139,8 @@ func ParseGitArgs(args ...string) GitArgs {
 	var ga BaseGitArgs
 
 	var pos []string
-	ga.GitFlags, pos, ga.Unknown = GitFlagSplitter.Split(args, true)
+	pf := GitFlagSplitter.Split(args, true)
+	ga.GitFlags, pos, ga.Unknown = pf.Flags, pf.Pos, pf.Extra
 
 	if len(pos) > 0 {
 		ga.Subcommand, ga.SubcommandArgs = pos[0], pos[1:]
@@ -163,10 +164,8 @@ func (ga *BaseGitArgs) IsVersion() bool {
 	if ga.Subcommand == "version" {
 		return true
 	}
-	for _, f := range ga.GitFlags {
-		if f == "--version" {
-			return true
-		}
+	if _, ok := ga.GitFlags["--version"]; ok {
+		return true
 	}
 	return false
 }
@@ -181,6 +180,14 @@ func (ga *BaseGitArgs) MayBeRemote() bool {
 	default:
 		return false
 	}
+}
+
+// WorkDir returns the Git working directory.
+func (ga *BaseGitArgs) WorkDir(cwd string) string {
+	if d := ga.GitFlags["-C"]; d != "" {
+		return d
+	}
+	return cwd
 }
 
 // GitCloneArgs is a specialized version of GitArgs that holds additional
@@ -200,15 +207,15 @@ func parseGitCloneArgs(ga *BaseGitArgs) GitArgs {
 		BaseGitArgs: ga,
 	}
 
-	_, pos, _ := GitCloneFlagSplitter.Split(ga.SubcommandArgs, false)
-	switch len(pos) {
+	pf := GitCloneFlagSplitter.Split(ga.SubcommandArgs, false)
+	switch len(pf.Pos) {
 	case 2:
 		// Destination is explicit.
-		gca.Directory = pos[1]
+		gca.Directory = pf.Pos[1]
 		fallthrough
 	case 1:
 		// Destination is determined by the source repository.
-		gca.Repository = pos[0]
+		gca.Repository = pf.Pos[0]
 	}
 
 	return &gca

@@ -86,7 +86,7 @@ type testAgent struct {
 func TestGitCommand(t *testing.T) {
 	// Special testing bootstrap case.
 	const runTestAgentENV = "INFRA_TOOLS_GIT__GIT_TEST__TESTING_AGENT"
-	testRunnerArgs := []string{"-test.run", "^TestGitCommand$"}
+	testRunnerArgs := []string{"-test.run", "^TestGitCommand$", "--"}
 	if tb := os.Getenv(runTestAgentENV); tb != "" {
 		if err := os.Unsetenv(runTestAgentENV); err != nil {
 			log.Printf("Failed to clear %q: %s", runTestAgentENV, err)
@@ -116,7 +116,10 @@ func TestGitCommand(t *testing.T) {
 			State: state.State{
 				GitPath: executable,
 			},
-			testParseSkipArgs: 2, // Skip arguments added in "runAgent".
+			WorkDir: tdir,
+
+			// Skip arguments added in "runAgent".
+			testParseSkipArgs: len(testRunnerArgs),
 		}
 		var env environ.Env
 
@@ -464,14 +467,33 @@ func TestGitCommand(t *testing.T) {
 			Convey(`If the command fails, will recreate and retry, deleting the directory in between.`, func() {
 				in.ReturnCode = 1
 
-				rc, err := runAgent(c)
-				So(err, ShouldBeNil)
-				So(rc, ShouldEqual, in.ReturnCode)
-				So(out.Args, ShouldResemble, args)
-				So(counter, ShouldEqual, numRetries+1)
+				Convey(`Relative directory`, func() {
+					rc, err := runAgent(c)
+					So(err, ShouldBeNil)
+					So(rc, ShouldEqual, in.ReturnCode)
+					So(out.Args, ShouldResemble, args)
+					So(counter, ShouldEqual, numRetries+1)
 
-				// After all of the retries, the path should still exist.
-				So(pathExists(dest), ShouldBeTrue)
+					// After all of the retries, the path should still exist.
+					So(pathExists(dest), ShouldBeTrue)
+				})
+
+				Convey(`Honors the "-C" Git flag`, func() {
+					// Using "dest", so no need to update agent arguments.
+					args = []string{
+						"-C", filepath.Dir(dest),
+						"clone", "https://foo.example.com/something.git", filepath.Base(dest),
+					}
+
+					rc, err := runAgent(c)
+					So(err, ShouldBeNil)
+					So(rc, ShouldEqual, in.ReturnCode)
+					So(out.Args, ShouldResemble, args)
+					So(counter, ShouldEqual, numRetries+1)
+
+					// After all of the retries, the path should still exist.
+					So(pathExists(dest), ShouldBeTrue)
+				})
 			})
 
 			Convey(`If the command permanently fails, the diectory will remain.`, func() {

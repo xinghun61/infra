@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"sync"
@@ -57,6 +58,10 @@ type GitCommand struct {
 	// considered transient, and it will re-execute on non-zero return code.
 	RetryList []*regexp.Regexp
 
+	// WorkDir is the working directory to use for Git. If this is the empty
+	// string, the application's working directory will be used.
+	WorkDir string
+
 	// Stdin will be used as the STDIN pipe for the Git process. If nil, os.Stdin
 	// will be used.
 	Stdin io.Reader
@@ -89,11 +94,30 @@ type GitCommand struct {
 func (gc *GitCommand) Run(c context.Context, args []string, env environ.Env) (int, error) {
 	gitArgs := ParseGitArgs(args[gc.testParseSkipArgs:]...)
 
+	// Determine our working directory. If we find it, resolve it to an absolute
+	// path. Otherwise, store it as an empty string.
+	effectiveWorkDir := gitArgs.Base().WorkDir(gc.WorkDir)
+	if effectiveWorkDir == "" {
+		// Use system working directory.
+		var err error
+		if effectiveWorkDir, err = os.Getwd(); err != nil {
+			log.Printf("WARNING: Couldn't determine effective working directory: %s", err)
+		}
+	}
+	if effectiveWorkDir != "" {
+		// Make working directory absolute, if possible.
+		if err := filesystem.AbsPath(&effectiveWorkDir); err != nil {
+			log.Printf("WARNING: Couldn't get absolute path of effective working directory [%s]: %s",
+				effectiveWorkDir, err)
+		}
+	}
+
 	// Clone our environment, so we can modify it.
 	gr := gitRunner{
 		GitCommand: gc,
 		Args:       args,
 		Env:        env.Clone(),
+		WorkDir:    gc.WorkDir,
 	}
 
 	if l := gc.LowSpeedLimit; l > 0 {
@@ -135,7 +159,10 @@ func (gc *GitCommand) Run(c context.Context, args []string, env environ.Env) (in
 		// To mitigate this, we will identify the "clone" target directory. If it
 		// doesn't exist, we'll delete it in between retries.
 		if gca, ok := gitArgs.(*GitCloneArgs); ok {
-			if tdir := gca.TargetDir(); tdir != "" {
+			if tdir := gca.TargetDir(); tdir != "" && effectiveWorkDir != "" {
+				if !filepath.IsAbs(tdir) {
+					tdir = filepath.Join(effectiveWorkDir, tdir)
+				}
 				if _, err := os.Stat(tdir); os.IsNotExist(err) {
 					// We're doing a clone, and the target directory does not exist. If
 					// it is created during operation, we assume ownership of it in
@@ -159,6 +186,7 @@ func (gc *GitCommand) Run(c context.Context, args []string, env environ.Env) (in
 func removeCloneDirBetweenRetries(cloneDir string) betweenRetryFunc {
 	return func(c context.Context) error {
 		if st, err := os.Stat(cloneDir); err == nil && st.IsDir() {
+			log.Printf("INFO: Cleaning up `clone` target directory for retry: %s", cloneDir)
 			if err := filesystem.RemoveAll(cloneDir); err != nil {
 				return errors.Annotate(err).Reason("failed to remove 'clone' directory in between retries").
 					D("cloneDir", cloneDir).
@@ -182,6 +210,9 @@ type gitRunner struct {
 	// Env is the environemnt to use for the Git subcommand. Env may be modified
 	// during execution.
 	Env environ.Env
+
+	// WorkDir is the working directory to use.
+	WorkDir string
 
 	// BetweenRetryFunc, if not nil, is an optional function that gets executed in
 	// between retries. If it returns an error, subsequent retry attempts will be
@@ -287,6 +318,7 @@ func (gr *gitRunner) setupCommand(c context.Context) *exec.Cmd {
 	cmd := exec.CommandContext(c, gr.State.GitPath, gr.Args...)
 	cmd.Env = gr.Env.Sorted()
 	cmd.Stdin = gr.getStdin()
+	cmd.Dir = gr.WorkDir
 
 	return cmd
 }

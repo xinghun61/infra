@@ -42,7 +42,9 @@ func TestGitFlags(t *testing.T) {
 			{
 				[]string{"-C", "path", "status"},
 				&BaseGitArgs{
-					GitFlags:       []string{"-C", "path"},
+					GitFlags: map[string]string{
+						"-C": "path",
+					},
 					Subcommand:     "status",
 					SubcommandArgs: []string{},
 				},
@@ -66,7 +68,7 @@ func TestGitFlags(t *testing.T) {
 				[]string{"--no-pager", "clone", "--foo"},
 				&GitCloneArgs{
 					BaseGitArgs: &BaseGitArgs{
-						GitFlags:       []string{"--no-pager"},
+						GitFlags:       map[string]string{"--no-pager": ""},
 						Subcommand:     "clone",
 						SubcommandArgs: []string{"--foo"},
 					},
@@ -77,7 +79,12 @@ func TestGitFlags(t *testing.T) {
 				[]string{"--no-pager", "-C", "path", "--exec-path=foo", "--git-dir", "bar",
 					"fetch", "--depth=1", "-j", "12"},
 				&BaseGitArgs{
-					GitFlags:       []string{"--no-pager", "-C", "path", "--exec-path=foo", "--git-dir", "bar"},
+					GitFlags: map[string]string{
+						"--no-pager":  "",
+						"-C":          "path",
+						"--exec-path": "foo",
+						"--git-dir":   "bar",
+					},
 					Subcommand:     "fetch",
 					SubcommandArgs: []string{"--depth=1", "-j", "12"},
 				},
@@ -86,7 +93,9 @@ func TestGitFlags(t *testing.T) {
 			{
 				[]string{"-c", "user.email=bob@the.frog", "checkout", "foo", "bar"},
 				&BaseGitArgs{
-					GitFlags:       []string{"-c", "user.email=bob@the.frog"},
+					GitFlags: map[string]string{
+						"-c": "user.email=bob@the.frog",
+					},
 					Subcommand:     "checkout",
 					SubcommandArgs: []string{"foo", "bar"},
 				},
