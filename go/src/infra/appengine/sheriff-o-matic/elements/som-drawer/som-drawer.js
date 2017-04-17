@@ -59,10 +59,6 @@
         computed: '_computeTroopers(_trooperRotations)',
         value: null,
       },
-      _treeOpen: {
-        type: Boolean,
-        value: true,
-      },
       _treeIcon: {
         type: String,
         value: 'icons:unfold-less'
@@ -230,13 +226,11 @@
     },
 
     toggleTree: function() {
-      this._treeOpen = !this._treeOpen;
-      this._treeIcon = this._treeOpen ? 'icons:unfold-less' : 'icons:unfold-more';
-      // FIXME: There's a bug where toggling the tree list focuses the next item
-      // in the help menu. I can't figure out how to non-hackily make that
-      // happen. You could do something like
-      // this.$.menu.children[0].children[2].removeAttribute('focused')
-      // but that seems hacky to me :/
+      // Unfortunately, there's a Polymer bug that makes toggling the menu take 
+      // two clicks the first time:
+      // https://github.com/PolymerElements/paper-menu/issues/88
+      let opened = this.$.treeMenu.opened;
+      this._treeIcon = opened ? 'icons:unfold-more' : 'icons:unfold-less';
     },
   });
 })();

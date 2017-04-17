@@ -1,11 +1,11 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
-<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
 <link rel="import" href="../../bower_components/paper-item/paper-item.html">
 <link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
 <link rel="import" href="../../bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="../../bower_components/paper-menu/paper-submenu.html">
 <link rel="import" href="../../bower_components/paper-radio-button/paper-radio-button.html">
 <link rel="import" href="../../bower_components/paper-radio-group/paper-radio-group.html">
 
@@ -15,9 +15,6 @@
 <dom-module id="som-drawer">
   <template>
     <style>
-      .toggler :hover {
-       cursor: pointer;
-      }
       h2 {
         box-sizing: border-box;
         font-size: 18px;
@@ -54,6 +51,9 @@
         cursor: pointer;
         background-color: #eee;
       }
+      .menu-trigger {
+        cursor: pointer;
+      }
     </style>
     <iron-ajax
         auto
@@ -84,21 +84,28 @@
     ></som-settings>
 
       <paper-menu attr-for-selected="value" selected="[[tree]]" selectable="paper-item" id="menu">
-        <div class="toggler layout horizontal" on-tap="toggleTree">
-          <h2><iron-icon icon="folder"></iron-icon>Trees
+        <paper-submenu id="treeMenu" opened>
+          <h2 class="menu-trigger" on-tap="toggleTree">
+            <iron-icon icon="folder"></iron-icon>Trees
             <iron-icon icon="[[_treeIcon]]"></iron-icon>
           </h2>
-        </div>
-        <iron-collapse opened="[[_treeOpen]]">
-          <template is="dom-repeat" items="[[_treeList]]" as="tree">
-            <paper-item value="[[tree.name]]" on-tap="_onSelected">[[tree.display_name]]</paper-item>
-          </template>
-        </iron-collapse>
+          <div class="menu-content">
+            <template is="dom-repeat" items="[[_treeList]]" as="tree">
+              <paper-item value="[[tree.name]]" on-tap="_onSelected">[[tree.display_name]]</paper-item>
+            </template>
+          </div>
+        </paper-submenu>
 
-        <h2><iron-icon icon="help"></iron-icon>Help</h2>
-        <template is="dom-repeat" items="[[_staticPageList]]" as="page">
-          <paper-item value="[[page.name]]" on-tap="_onSelected">[[page.displayText]]</paper-item>
-        </template>
+        <paper-submenu id="helpMenu" opened>
+          <h2 class="menu-trigger">
+            <iron-icon icon="help"></iron-icon>Help
+          </h2>
+          <div class="menu-content">
+            <template is="dom-repeat" items="[[_staticPageList]]" as="page">
+              <paper-item value="[[page.name]]" on-tap="_onSelected">[[page.displayText]]</paper-item>
+            </template>
+          </div>
+        </paper-submenu>
       </paper-menu>
 
     <h2><iron-icon icon="perm-phone-msg"></iron-icon>Current On Calls</h2>
