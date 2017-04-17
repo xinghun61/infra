@@ -19,11 +19,12 @@ import (
 )
 
 const (
-	// TODO(seanmccullough): Add corp trees and configs too.
 	gkConfigURL         = "https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper.json?format=text"
 	gkTreesURL          = "https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/gatekeeper_trees.json?format=text"
-	gkTreesInternalURL  = "https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/+/master/gatekeeper_trees_internal.json?format=text"
+	gkConfigCorpURL     = "https://chrome-internal.googlesource.com/chrome/tools/build/+/master/scripts/slave-internal/gatekeeper_corp.json?format=text"
+	gkTreesCorpURL      = "https://chrome-internal.googlesource.com/chrome/tools/build/+/master/scripts/slave-internal/gatekeeper_trees_corp.json?format=text"
 	gkConfigInternalURL = "https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/+/master/gatekeeper_internal.json?format=text"
+	gkTreesInternalURL  = "https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/+/master/gatekeeper_trees_internal.json?format=text"
 )
 
 // This is what we get from the Data field of the pubsub push request body.
@@ -160,7 +161,7 @@ func getGatekeeperRules(c context.Context) (*analyzer.GatekeeperRules, error) {
 
 func getGatekeeperConfigs(c context.Context) ([]*messages.GatekeeperConfig, error) {
 	ret := []*messages.GatekeeperConfig{}
-	for _, URL := range []string{gkConfigURL, gkConfigInternalURL} {
+	for _, URL := range []string{gkConfigURL, gkConfigInternalURL, gkConfigCorpURL} {
 		b, err := client.GetGitilesCached(c, URL)
 		if err != nil {
 			return nil, err
@@ -179,14 +180,18 @@ func getGatekeeperConfigs(c context.Context) ([]*messages.GatekeeperConfig, erro
 // TODO(seanmccullough): Replace this urlfetch/memcache code with a luci-config reader.
 // Blocked on https://bugs.chromium.org/p/chromium/issues/detail?id=658270
 var getGatekeeperTrees = func(c context.Context) (map[string]*messages.TreeMasterConfig, error) {
-	gkBytes, err := client.GetGitilesCached(c, gkTreesURL)
-	if err != nil {
-		return nil, err
-	}
+	ret := map[string]*messages.TreeMasterConfig{}
 
-	ret := make(map[string]*messages.TreeMasterConfig)
-	if err := json.Unmarshal(gkBytes, &ret); err != nil {
-		return nil, err
+	for _, URL := range []string{gkTreesURL, gkTreesInternalURL, gkTreesCorpURL} {
+		gkBytes, err := client.GetGitilesCached(c, URL)
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO: make sure this doesn't blow away map values from previous iterations.
+		if err := json.Unmarshal(gkBytes, &ret); err != nil {
+			return nil, err
+		}
 	}
 
 	return ret, nil

@@ -64,7 +64,6 @@ func getAnalyzeHandler(ctx *router.Context) {
 
 	a := analyzer.New(5, 100)
 	a.Gatekeeper = gkRules
-	// TODO(seanmccullough): Set a.MasterOnly, BuilderOnly, Build etc based on Params.
 
 	if client.GetReader(c) == nil {
 		transport, err := auth.GetRPCTransport(c, auth.AsSelf)
