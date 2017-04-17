@@ -1,3 +1,30 @@
+# Release Notes sheriff-o-matic 2017-04-17
+
+- 11 commits, 0 bugs affected since fa87fb4 (2017-04-11T22:38:25Z)
+- 4 Authors:
+  - vadimsh@chromium.org
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+  - martiniss@google.com
+
+## Changes in this release
+
+- [[som] Add corp trees to gatekeeper configs checked by /analyze.](https://chromium-review.googlesource.com/479567) (seanmccullough@chromium.org)
+- [SOM: Add option to hide alerts with bugs](https://chromium-review.googlesource.com/476076) (martiniss@google.com)
+- [[relnotes] check logs of multiple git dirs](https://chromium-review.googlesource.com/478811) (seanmccullough@chromium.org)
+- [SOM: Refresh annotations less often](https://chromium-review.googlesource.com/477114) (martiniss@google.com)
+- [SOM: De-dup ids we request from monorail.](https://chromium-review.googlesource.com/477503) (martiniss@google.com)
+- [SOM: Cancel new contexts](https://chromium-review.googlesource.com/477119) (martiniss@google.com)
+- [SOM: Add ability to collapse tree list](https://chromium-review.googlesource.com/476113) (martiniss@google.com)
+- [SOM: Make single builder failure not have any text](https://chromium-review.googlesource.com/475125) (martiniss@google.com)
+- [Roll luci/luci-go and luci/gae DEPS.](https://chromium-review.googlesource.com/475048) (vadimsh@chromium.org)
+- [SoM: Update release notes.](https://chromium-review.googlesource.com/475088) (zhangtiff@google.com)
+- [[som] Trust is_unexpected in test result logs.](https://chromium-review.googlesource.com/478056) (seanmccullough@chromium.org)
+
+## Bugs update, by author
+- seanmccullough@chromium.org
+  -  [https://crbug.com/711733](https://crbug.com/711733)
+
 # Release Notes sheriff-o-matic 2017-04-11
 
 - 6 commits, 0 bugs affected since 6c97eaf (2017-04-03T21:36:11Z)
