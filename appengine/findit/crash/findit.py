@@ -56,9 +56,9 @@ class Findit(object):
 
     # The top_n is the number of frames we want to check to get component
     # classifications.
-    components = [Component(component_name, path_regex, function_regex)
-                  for path_regex, function_regex, component_name
-                  in config.component_classifier['path_function_component']]
+    components = [Component(info['component'], info['dirs'],
+                            info.get('function'), info.get('team'))
+                  for info in config.component_classifier['component_info']]
     self._component_classifier = ComponentClassifier(
         components, config.component_classifier['top_n'])
 

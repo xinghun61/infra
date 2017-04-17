@@ -21,9 +21,9 @@ class ComponentClassifierTest(PredatorTestCase):
   def setUp(self):
     super(ComponentClassifierTest, self).setUp()
     config = CrashConfig.Get().component_classifier
-    components = [Component(component_name, path_regex, function_regex)
-                  for path_regex, function_regex, component_name
-                  in config['path_function_component']]
+    components = [Component(info['component'], info['dirs'],
+                            info.get('function'), info.get('team'))
+                  for info in config['component_info']]
     # Only construct the classifier once, rather than making a new one every
     # time we call a method on it.
     self.classifier = ComponentClassifier(components, config['top_n'])
@@ -31,19 +31,19 @@ class ComponentClassifierTest(PredatorTestCase):
   def testClassifyCallStack(self):
     """Tests ``ClassifyCallStack`` method."""
     callstack = CallStack(
-        0, [StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2])])
+        0, [StackFrame(0, 'src/', 'func', 'comp1/a.cc', 'src/comp1/a.cc', [2])])
     self.assertEqual(self.classifier.ClassifyCallStack(callstack),
                      ['Comp1>Dummy'])
 
     callstack = CallStack(
-        0, [StackFrame(0, 'dummy/', 'no_func', 'comp2.cc',
+        0, [StackFrame(0, 'dummy/', 'no_func', 'comp2/a.cc',
                        'dummy/comp2.cc', [32])])
     self.assertEqual(self.classifier.ClassifyCallStack(callstack), [])
 
     crash_stack = CallStack(0, frame_list=[
-        StackFrame(0, 'src/', 'func', 'comp1.cc', 'src/comp1.cc', [2]),
-        StackFrame(1, 'src/', 'ff', 'comp1.cc', 'src/comp1.cc', [21]),
-        StackFrame(2, 'src/', 'func2', 'comp2.cc', 'src/comp2.cc', [8])])
+        StackFrame(0, 'src/', 'func', 'comp1/a.cc', 'src/comp1/a.cc', [2]),
+        StackFrame(1, 'src/', 'ff', 'comp1/a.cc', 'src/comp1/a.cc', [21]),
+        StackFrame(2, 'src/', 'func2', 'comp2/b.cc', 'src/comp2/b.cc', [8])])
 
     self.assertEqual(self.classifier.ClassifyCallStack(crash_stack),
                      ['Comp1>Dummy', 'Comp2>Dummy'])
@@ -53,7 +53,7 @@ class ComponentClassifierTest(PredatorTestCase):
     suspect = Suspect(self.GetDummyChangeLog(), 'src/')
     suspect.changelog = suspect.changelog._replace(
         touched_files = [FileChangeInfo(ChangeType.MODIFY,
-                                        'comp1.cc', 'comp1.cc')])
+                                        'comp1/a.cc', 'comp1/b.cc')])
     self.assertEqual(self.classifier.ClassifySuspect(suspect), ['Comp1>Dummy'])
 
   def testClassifyEmptySuspect(self):
@@ -73,11 +73,11 @@ class ComponentClassifierTest(PredatorTestCase):
     suspect1 = Suspect(self.GetDummyChangeLog(), 'src/')
     suspect1.changelog = suspect1.changelog._replace(
         touched_files = [FileChangeInfo(ChangeType.MODIFY,
-                                        'comp1.cc', 'comp1.cc')])
+                                        'comp1/a.cc', 'comp1/b.cc')])
     suspect2 = Suspect(self.GetDummyChangeLog(), 'src/')
     suspect2.changelog = suspect2.changelog._replace(
         touched_files = [FileChangeInfo(ChangeType.MODIFY,
-                                        'comp2.cc', 'comp2.cc')])
+                                        'comp2/a.cc', 'comp2/b.cc')])
 
     self.assertEqual(self.classifier.ClassifySuspects([suspect1, suspect2]),
                      ['Comp1>Dummy', 'Comp2>Dummy'])

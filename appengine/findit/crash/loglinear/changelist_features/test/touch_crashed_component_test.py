@@ -58,9 +58,9 @@ class TouchCrashedComponentFeatureTest(PredatorTestCase):
   def setUp(self):
     super(TouchCrashedComponentFeatureTest, self).setUp()
     config = CrashConfig.Get().component_classifier
-    components = [Component(component_name, path_regex, function_regex)
-                  for path_regex, function_regex, component_name
-                  in config['path_function_component']]
+    components = [Component(info['component'], info['dirs'],
+                            info.get('function'), info.get('team'))
+                  for info in config['component_info']]
     # Only construct the classifier once, rather than making a new one every
     # time we call a method on it.
     self.classifier = ComponentClassifier(components, config['top_n'])

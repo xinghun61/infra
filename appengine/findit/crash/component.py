@@ -11,32 +11,35 @@ from libs.gitiles.diff import ChangeType
 
 # TODO(http://crbug.com/659346): write the coverage tests.
 class Component(namedtuple('Component',
-    ['component_name', 'path_regex', 'function_regex'])): # pragma: no cover
+    ['component_name', 'dirs', 'function', 'team'])): # pragma: no cover
   """A representation of a "component" in Chromium.
 
   For example: 'Blink>DOM' or 'Blink>HTML'. Notably, a component knows
   how to identify itself. Hence, given a stack frame or change list
   or whatever, we ask the Component whether it matches that frame,
-  CL, etc."""
+  CL, etc.
+  """
   __slots__ = ()
 
-  def __new__(cls, component_name, path_regex, function_regex=None):
-    return super(cls, Component).__new__(cls,
-      component_name,
-      re.compile(path_regex),
-      re.compile(function_regex) if function_regex else None)
+  def __new__(cls, component_name, dirs, function=None, team=None):
+    directories = []
+    for directory in dirs:
+      directories.append(directory if directory.endswith('/') else
+                         directory + '/')
+
+    return super(cls, Component).__new__(
+        cls, component_name, tuple(directories),
+        re.compile(function) if function else None, team)
 
   def MatchesStackFrame(self, frame):
     """Returns true if this component matches the frame."""
-    if not self.path_regex.match(os.path.join(frame.dep_path, frame.file_path)):
+    if self.function and not self.function.match(frame.function):
       return False
 
-    # We interpret function_regex=None to mean the regex that matches
-    # everything.
-    if not self.function_regex:
-      return True
-    return self.function_regex.match(frame.function)
+    file_path = os.path.join(frame.dep_path, frame.file_path)
+    return any(file_path.startswith(directory) for directory in self.dirs)
 
   def MatchesTouchedFile(self, dep_path, file_path):
     """Returns true if the touched file belongs to this component."""
-    return self.path_regex.match(os.path.join(dep_path, file_path))
+    file_path = os.path.join(dep_path, file_path)
+    return any(file_path.startswith(directory) for directory in self.dirs)

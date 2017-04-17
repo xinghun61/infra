@@ -40,17 +40,17 @@ DEFAULT_CONFIG_DATA = {
         'top_n': 7
     },
     'component_classifier': {
-        'path_function_component': [
-            [
-                'src/comp1.*',
-                '',
-                'Comp1>Dummy'
-            ],
-            [
-                'src/comp2.*',
-                'func2.*',
-                'Comp2>Dummy'
-            ],
+        'component_info': [
+            {
+                'dirs': ['src/comp1'],
+                'component': 'Comp1>Dummy'
+            },
+            {
+                'dirs': ['src/comp2'],
+                'function': 'func2.*',
+                'component': 'Comp2>Dummy',
+                'team': 'comp2-team'
+            }
         ],
         'top_n': 4
     },
