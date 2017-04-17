@@ -78,7 +78,6 @@ def GenTests(api):
       api.test('basic') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build')
   )
 
@@ -86,7 +85,6 @@ def GenTests(api):
       api.test('with_auth') +
       api.properties(projects=['build'], service_account='recipe-roller') +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build')
   )
 
@@ -94,7 +92,6 @@ def GenTests(api):
       api.test('nontrivial') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build', trivial=False)
   )
 
@@ -102,7 +99,6 @@ def GenTests(api):
       api.test('empty') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build', empty=True)
   )
 
@@ -110,7 +106,6 @@ def GenTests(api):
       api.test('failure') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build', success=False)
   )
 
@@ -118,7 +113,6 @@ def GenTests(api):
       api.test('failed_upload') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.roll_data('build') +
       api.override_step_data(
           'build.git cl issue',
@@ -151,7 +145,6 @@ def GenTests(api):
       api.test('repo_data_trivial_closed') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.recipe_cfg('build') +
       api.recipe_autoroller.repo_data(
           'build', trivial=True, status='closed',
           timestamp='2016-02-01T01:23:45') +
@@ -185,14 +178,13 @@ def GenTests(api):
       api.test('trivial_custom_tbr_no_dryrun') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.roll_data('build') +
-      api.recipe_autoroller.recipe_cfg('build', trivial_commit=False)
+      api.recipe_autoroller.roll_data('build', trivial_commit=False)
   )
 
   yield (
       api.test('repo_disabled') +
       api.properties(projects=['build']) +
       api.luci_config.get_projects(['build']) +
-      api.recipe_autoroller.recipe_cfg(
+      api.recipe_autoroller.roll_data(
         'build', disable_reason='I am a water buffalo.')
   )

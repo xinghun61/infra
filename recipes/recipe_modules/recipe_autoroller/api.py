@@ -97,9 +97,13 @@ _AUTH_REFRESH_TOKEN_FLAG = (
 _ROLL_STALE_THRESHOLD = datetime.timedelta(hours=2)
 
 
-def get_commit_message(roll_result, tbrs=(), extra_reviewers=()):
+def get_commit_message(roll_result):
   """Construct a roll commit message from 'recipes.py autoroll' result.
   """
+  picked = roll_result['picked_roll_details']
+  spec = picked['spec']
+  autoroll_opts = spec['autoroll_recipe_options']
+
   trivial = roll_result['trivial']
   message = 'Roll recipe dependencies (%s).\n' % (
       'trivial' if trivial else 'nontrivial')
@@ -108,7 +112,7 @@ def get_commit_message(roll_result, tbrs=(), extra_reviewers=()):
     message += NON_TRIVIAL_MESSAGE
   message += COMMIT_MESSAGE_INFO
 
-  commit_infos = roll_result['picked_roll_details']['commit_infos']
+  commit_infos = picked['commit_infos']
 
   def get_blame(commit_infos):
     blame = []
@@ -125,10 +129,12 @@ def get_commit_message(roll_result, tbrs=(), extra_reviewers=()):
   message += '%s\n' % '\n'.join(get_blame(commit_infos))
   message += '\n'
   if not trivial:
+    extra_reviewers = autoroll_opts['nontrivial'].get('extra_reviewers', ())
     message += 'R=%s\n' % ','.join(sorted(
       get_reviewers(commit_infos) | set(extra_reviewers)
     ))
-  if tbrs:
+  else:
+    tbrs = autoroll_opts['trivial'].get('tbr_emails', ())
     message += 'TBR=%s\n' % ','.join(sorted(tbrs))
   message += COMMIT_MESSAGE_FOOTER
   return message
@@ -306,23 +312,16 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     """
     roll_result = roll_step.json.output
 
-    tbrs = []
-    extra_reviewers = []
     upload_args =  []
     if roll_result['trivial']:
-      s = autoroll_settings['trivial']
-      tbrs = s.get('tbr_emails', [])
-      if s.get('automatic_commit'):
+      if autoroll_settings['trivial'].get('automatic_commit'):
         upload_args.append('--use-commit-queue')
     else:
-      s = autoroll_settings['nontrivial']
       upload_args.append('--send-mail')
-      extra_reviewers = s.get('extra_reviewers', [])
-      if s.get('automatic_commit_dry_run'):
+      if autoroll_settings['nontrivial'].get('automatic_commit_dry_run'):
         upload_args.append('--cq-dry-run')
 
-    commit_message = get_commit_message(
-      roll_result, tbrs=tbrs, extra_reviewers=extra_reviewers)
+    commit_message = get_commit_message(roll_result)
 
     roll_step.presentation.logs['commit_message'] = commit_message.splitlines()
     if roll_result['trivial']:
