@@ -15,11 +15,15 @@ import time
 
 from google.appengine.api import taskqueue
 
+import settings
+
 from features import notify_helpers
 from framework import framework_constants
 from framework import framework_helpers
 from framework import jsonfeed
+from framework import timestr
 from framework import urls
+from proto import tracker_pb2
 
 
 TEMPLATE_PATH = framework_constants.TEMPLATE_PATH
@@ -33,10 +37,7 @@ class DateActionCron(jsonfeed.InternalTask):
     """Find issues with date-type-fields that arrived and spawn tasks."""
     highest_iid_so_far = 0
     capped = True
-    now = int(time.time())
-    timestamp_min = (now / framework_constants.SECS_PER_DAY *
-                     framework_constants.SECS_PER_DAY)
-    timestamp_max = timestamp_min + framework_constants.SECS_PER_DAY
+    timestamp_min, timestamp_max = _GetTimestampRange(int(time.time()))
     left_joins = [
         ('Issue2FieldValue ON Issue.id = Issue2FieldValue.issue_id', []),
         ('FieldDef ON Issue2FieldValue.field_id = FieldDef.id', []),
@@ -75,6 +76,13 @@ class DateActionCron(jsonfeed.InternalTask):
       taskqueue.add(url=urls.ISSUE_DATE_ACTION_TASK + '.do', params=params)
 
 
+def _GetTimestampRange(now):
+    timestamp_min = (now / framework_constants.SECS_PER_DAY *
+                     framework_constants.SECS_PER_DAY)
+    timestamp_max = timestamp_min + framework_constants.SECS_PER_DAY
+    return timestamp_min, timestamp_max
+
+
 class IssueDateActionTask(notify_helpers.NotifyTaskBase):
   """JSON servlet that notifies appropriate users after an issue change."""
 
@@ -93,5 +101,40 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
     issue_id = mr.GetPositiveIntParam('issue_id')
     hostport = framework_helpers.GetHostPort()
     issue = self.services.issue.GetIssue(mr.cnxn, issue_id)
-    logging.info('TODO(jrobbins): process date action for %r %r',
-                 hostport, issue)
+    pings = self._CalculateIssuePings(mr.cnxn, issue)
+    if not pings:
+      logging.warning('Issue %r has no dates to ping afterall?', issue_id)
+      return
+    content = '\n'.join(self._FormatPingLine(ping) for ping in pings)
+    author_email_addr = '%s@%s' % (settings.date_action_ping_author, hostport)
+    date_action_user_id = self.services.user.LookupUserID(
+        mr.cnxn, author_email_addr, autocreate=True)
+    self.services.issue.CreateIssueComment(
+        mr.cnxn, issue.project_id, issue.local_id, date_action_user_id, content)
+    # TODO(jrobbins): generate emails.
+
+  def _CalculateIssuePings(self, cnxn, issue):
+    """Return a list of (field, timestamp) pairs for dates that should ping."""
+    project_id = issue.project_id
+    timestamp_min, timestamp_max = _GetTimestampRange(int(time.time()))
+    arrived_dates_by_field_id = {
+        fv.field_id: fv.date_value
+        for fv in issue.field_values
+        if timestamp_min <= fv.date_value < timestamp_max}
+    logging.info('arrived_dates_by_field_id = %r', arrived_dates_by_field_id)
+    # TODO(jrobbins): Lookup field defs regardless of project_id to better
+    # handle foreign fields in issues that have been moved between projects.
+    config = self.services.config.GetProjectConfig(cnxn, project_id)
+    pings = [
+      (field, arrived_dates_by_field_id[field.field_id])
+      for field in config.field_defs
+      if (field.field_id in arrived_dates_by_field_id and
+          field.date_action in (tracker_pb2.DateAction.PING_OWNER_ONLY,
+                                tracker_pb2.DateAction.PING_PARTICIPANTS))]
+    pings = sorted(pings, key=lambda (field, timestamp): field.field_name)
+    return pings
+
+  def _FormatPingLine(self, ping):
+    field, timestamp = ping
+    date_str = timestr.TimestampToDateWidgetStr(timestamp)
+    return 'The %s date has arrived: %s' % (field.field_name, date_str)

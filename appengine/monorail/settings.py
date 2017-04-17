@@ -337,3 +337,7 @@ api_ratelimiting_cost_thresh_ms = 5000
 # API requests that hit ratelimiting_cost_thresh_sec get this
 # extra amount added to their bucket at the end of the request.
 api_ratelimiting_cost_penalty = 1
+
+# When we post an auto-ping comment, it is posted by this user @ the preferred
+# domain name.  E.g., 'monorail@bugs.chromium.org'.
+date_action_ping_author = 'monorail'

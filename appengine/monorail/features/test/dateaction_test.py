@@ -14,10 +14,13 @@ from google.appengine.api import taskqueue
 
 from features import dateaction
 from framework import framework_constants
+from framework import timestr
 from framework import urls
+from proto import tracker_pb2
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
+from tracker import tracker_bizobj
 
 
 class DateActionCronTest(unittest.TestCase):
@@ -96,19 +99,85 @@ class IssueDateActionTaskTest(unittest.TestCase):
   def setUp(self):
     self.services = service_manager.Services(
         user=fake.UserService(),
-        issue=fake.IssueService())
+        issue=fake.IssueService(),
+        config=fake.ConfigService())
     self.servlet = dateaction.IssueDateActionTask(
         'req', 'res', services=self.services)
     self.mox = mox.Mox()
+
+    self.config = self.services.config.GetProjectConfig('cnxn', 789)
+    self.config.field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            123, 789, 'NextAction', tracker_pb2.FieldTypes.DATE_TYPE,
+            '', '', False, False, False, None, None, None, False, '',
+            None, None, tracker_pb2.DateAction.PING_OWNER_ONLY, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            124, 789, 'EoL', tracker_pb2.FieldTypes.DATE_TYPE,
+            '', '', False, False, False, None, None, None, False, '',
+            None, None, tracker_pb2.DateAction.PING_OWNER_ONLY, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            125, 789, 'TLsBirthday', tracker_pb2.FieldTypes.DATE_TYPE,
+            '', '', False, False, False, None, None, None, False, '',
+            None, None, tracker_pb2.DateAction.NO_ACTION, 'doc', False),
+        ]
+    self.services.config.StoreConfig('cnxn', self.config)
 
   def tearDown(self):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
-  def testHandleRequest(self):
-    self.services.issue.TestAddIssue(fake.MakeTestIssue(
-        789, 1, 'summary', 'New', 111L, issue_id=78901))
+  def testHandleRequest_IssueHasNoArrivedDates(self):
     _request, mr = testing_helpers.GetRequestObjects(
         path=urls.ISSUE_DATE_ACTION_TASK + '.do?issue_id=78901')
+    self.services.issue.TestAddIssue(fake.MakeTestIssue(
+        789, 1, 'summary', 'New', 111L, issue_id=78901))
+    self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
+        mr.cnxn, 78901)))
+
     self.servlet.HandleRequest(mr)
-    # TODO(jrobbins): verify something after the method body is impemented
+    self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
+        mr.cnxn, 78901)))
+
+  def testHandleRequest_IssueHasOneArriveDate(self):
+    _request, mr = testing_helpers.GetRequestObjects(
+        path=urls.ISSUE_DATE_ACTION_TASK + '.do?issue_id=78901')
+
+    now = int(time.time())
+    date_str = timestr.TimestampToDateWidgetStr(now)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    issue.field_values = [
+        tracker_bizobj.MakeFieldValue(123, None, None, None, now, False)]
+    self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
+        mr.cnxn, 78901)))
+
+    self.servlet.HandleRequest(mr)
+    comments = self.services.issue.GetCommentsForIssue(mr.cnxn, 78901)
+    self.assertEqual(2, len(comments))
+    self.assertEqual(
+      'The NextAction date has arrived: %s' % date_str,
+      comments[1].content)
+
+  def testHandleRequest_IssueHasTwoArriveDates(self):
+    _request, mr = testing_helpers.GetRequestObjects(
+        path=urls.ISSUE_DATE_ACTION_TASK + '.do?issue_id=78901')
+
+    now = int(time.time())
+    date_str = timestr.TimestampToDateWidgetStr(now)
+    issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    issue.field_values = [
+        tracker_bizobj.MakeFieldValue(123, None, None, None, now, False),
+        tracker_bizobj.MakeFieldValue(124, None, None, None, now, False),
+        tracker_bizobj.MakeFieldValue(125, None, None, None, now, False),
+        ]
+    self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
+        mr.cnxn, 78901)))
+
+    self.servlet.HandleRequest(mr)
+    comments = self.services.issue.GetCommentsForIssue(mr.cnxn, 78901)
+    self.assertEqual(2, len(comments))
+    self.assertEqual(
+      'The EoL date has arrived: %s\n'
+      'The NextAction date has arrived: %s' % (date_str, date_str),
+      comments[1].content)
