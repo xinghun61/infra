@@ -9,8 +9,11 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
+	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/grpc/discovery"
 	"github.com/luci/luci-go/grpc/prpc"
 	"github.com/luci/luci-go/server/router"
@@ -25,7 +28,7 @@ var templateBundle = &templates.Bundle{
 	DebugMode: info.IsDevAppServer,
 	FuncMap: template.FuncMap{
 		"fmtDate": func(date time.Time) string {
-			return date.Format("01-02-2006")
+			return date.Format("1-02-2006")
 		},
 	},
 }
@@ -50,8 +53,32 @@ func init() {
 
 // TemplateService bundles a backend.Service with its backend.ServiceIncident children.
 type TemplateService struct {
-	Service   *backend.Service
-	Incidents *[]backend.ServiceIncident
+	Service   backend.Service
+	Incidents []backend.ServiceIncident
+}
+
+func createServicesPageData(c context.Context) (sla []TemplateService, nonSLA []TemplateService, err error) {
+	services, e := backend.GetAllServices(c)
+	if e != nil {
+		logging.Errorf(c, "Error getting Service entities %v", e)
+		return nil, nil, e
+	}
+
+	for _, service := range services {
+		incidents, e := backend.GetServiceIncidents(c, service.ID)
+		if err != nil {
+			logging.Errorf(c, "Error getting ServiceIncident entities %v", e)
+			return nil, nil, e
+		}
+		templateService := TemplateService{service, incidents}
+		if service.SLA == "" {
+			nonSLA = append(nonSLA, templateService)
+		} else {
+			sla = append(sla, templateService)
+		}
+	}
+	return
+
 }
 
 func dashboard(ctx *router.Context) {
@@ -62,22 +89,16 @@ func dashboard(ctx *router.Context) {
 		dates = append(dates, time.Now().AddDate(0, 0, -i))
 	}
 
-	monorail, err := backend.GetService(c, "monorail")
+	sla, nonSLA, err := createServicesPageData(c)
 	if err != nil {
-		http.Error(w, "Failed to query datastore, see logs", http.StatusInternalServerError)
+		http.Error(w, "Failed to create Services page data, see logs",
+			http.StatusInternalServerError)
 		return
 	}
 
-	// TODO(jojwang): Once backend.GetServiceIncidents is added, use it
-	// to get incidents.
-	Services := []TemplateService{
-		{Service: monorail},
-	}
-	NonSLAServices := []TemplateService{}
-
 	templates.MustRender(c, w, "pages/dash.tmpl", templates.Args{
-		"ChopsServices":  &Services,
-		"NonSLAServices": &NonSLAServices,
+		"ChopsServices":  sla,
+		"NonSLAServices": nonSLA,
 		"Dates":          dates,
 	})
 }

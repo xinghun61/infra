@@ -47,13 +47,13 @@ type getServiceTest struct {
 	expError   error
 }
 
-var testService = &Service{
+var testService = Service{
 	ID:   "testservice",
 	Name: "Test Service",
 	SLA:  "www.google.com",
 }
 
-var testServiceAnother = &Service{
+var testServiceAnother = Service{
 	ID:   "testserviceanother",
 	Name: "Test Service another",
 	SLA:  "www.another.com",
@@ -88,7 +88,7 @@ func newTestContext() context.Context {
 
 func TestGetIncident(t *testing.T) {
 	ctx := newTestContext()
-	datastore.Put(ctx, testService)
+	datastore.Put(ctx, &testService)
 	testInc := &testIncs[0]
 	// Set testService as testInc's ancestor.
 	testInc.ServiceKey = datastore.NewKey(ctx, "Service", testService.ID, 0, nil)
@@ -116,7 +116,7 @@ func TestGetIncident(t *testing.T) {
 
 func TestGetServiceIncidents(t *testing.T) {
 	ctx := newTestContext()
-	datastore.Put(ctx, testService)
+	datastore.Put(ctx, &testService)
 
 	testIncOne := &testIncs[0]
 	testIncOne.ServiceKey = datastore.NewKey(ctx, "Service", testService.ID, 0, nil)
@@ -132,7 +132,7 @@ func TestGetServiceIncidents(t *testing.T) {
 	testIncFour := &testIncs[3]
 	datastore.Put(ctx, testIncFour)
 
-	datastore.Put(ctx, testServiceAnother)
+	datastore.Put(ctx, &testServiceAnother)
 
 	// Test with Service that has ServiceIncidents children.
 	want := []ServiceIncident{*testIncOne, *testIncTwo}
@@ -158,16 +158,16 @@ func TestGetServiceIncidents(t *testing.T) {
 
 func TestGetService(t *testing.T) {
 	ctx := newTestContext()
-	datastore.Put(ctx, testService)
+	datastore.Put(ctx, &testService)
 
 	// Test GetService with a service that exists.
 	service, err := GetService(ctx, testService.ID)
 	if err != nil {
 		t.Errorf("Expect no errors. Found: %v", err)
 	}
-	if !reflect.DeepEqual(testService, service) {
+	if !reflect.DeepEqual(&testService, service) {
 		t.Errorf("Expected service: %v. Found service: %v",
-			testService, service)
+			&testService, service)
 	}
 
 	// Test GetService with a nonexistent service.
@@ -180,9 +180,35 @@ func TestGetService(t *testing.T) {
 	}
 }
 
+func TestGetAllServices(t *testing.T) {
+	ctx := newTestContext()
+
+	// Test GetAllServices with no Service entities stored.
+	want := []Service{}
+	services, err := GetAllServices(ctx)
+	if err != nil {
+		t.Errorf("Expect no errors. Found: %v", err)
+	}
+	if !reflect.DeepEqual(services, want) {
+		t.Errorf("Want %v, found %v", services, want)
+	}
+
+	// Test GetAllServices
+	datastore.Put(ctx, &testService)
+	datastore.Put(ctx, &testServiceAnother)
+	want = []Service{testService, testServiceAnother}
+	services, err = GetAllServices(ctx)
+	if err != nil {
+		t.Errorf("Expect no errors. Found: %v", err)
+	}
+	if !reflect.DeepEqual(services, want) {
+		t.Errorf("Want %v, found %v", services, want)
+	}
+}
+
 func TestAddIncident(t *testing.T) {
 	ctx := newTestContext()
-	datastore.Put(ctx, testService)
+	datastore.Put(ctx, &testService)
 	testIncident := &testIncs[0]
 	// Set testService as testIncident's ancestor.
 	testServiceKey := datastore.NewKey(ctx, "Service", testService.ID, 0, nil)
@@ -212,7 +238,7 @@ func TestAddIncident(t *testing.T) {
 }
 func TestCloseIncident(t *testing.T) {
 	ctx := newTestContext()
-	datastore.Put(ctx, testService)
+	datastore.Put(ctx, &testService)
 	testIncident := &testIncs[0]
 	// Set testService as testIncident's ancestor.
 	testServiceKey := datastore.NewKey(ctx, "Service", testService.ID, 0, nil)

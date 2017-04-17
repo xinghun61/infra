@@ -89,7 +89,7 @@
         <tr>
           <th>Current Status</th>
           {{range .Dates}}
-            <th class="date-header">{{.}}</th>
+            <th class="date-header">{{ . | fmtDate}}</th>
           {{end}}
         </tr>
         {{range .NonSLAServices}}
