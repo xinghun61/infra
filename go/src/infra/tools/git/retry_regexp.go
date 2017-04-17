@@ -12,8 +12,8 @@ import (
 // defaultGitRetry is the set of RE2-formatted Regular Expressions to add
 // to the DefaultGitRetryRegexp.
 //
-// defaultGitRetryPOSIX was originally translated from "depot_tools":
-// https://chromium.googlesource.com/chromium/tools/depot_tools/+/14db1dfd88b987c9119f59f75f1f27b8e7c49602/git_common.py
+// defaultGitRetryPOSIX was originally translated from "chromite":
+// https://chromium.googlesource.com/chromiumos/chromite/+/07d4626c40a501866d7c01954f8cabef7b50f482/lib/git.py#29
 var defaultGitRetryRegexpSource = []string{
 	// crbug.com/285832
 	`!.*\[remote rejected\].*\(error in hook\)`,
@@ -48,9 +48,16 @@ var defaultGitRetryRegexpSource = []string{
 	// crbug.com/388876
 	`Connection timed out`,
 
-	// crbug.com/430343
-	// TODO(dnj): Resync with Chromite.
+	// crbug.com/451458, b/19202011
+	`repository cannot accept new pushes; contact support`,
 
+	// crbug.com/535306
+	`Service Temporarily Unavailable`,
+
+	// crbug.com/675262
+	`Connection refused`,
+
+	// crbug.com/430343
 	`The requested URL returned error: 5\d+`,
 	`Connection reset by peer`,
 
@@ -77,5 +84,5 @@ func mergeRegex(regexps []string) string {
 	for i, re := range regexps {
 		allRE[i] = "(?:" + re + ")"
 	}
-	return "(?:" + strings.Join(allRE, "|") + ")"
+	return "(?i)(?:" + strings.Join(allRE, "|") + ")"
 }

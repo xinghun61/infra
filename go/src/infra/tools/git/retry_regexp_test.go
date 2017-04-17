@@ -29,6 +29,10 @@ func TestDefaultGitRetryRegexps(t *testing.T) {
 			`TLS packet with unexpected length was received`,
 			`RPC failed; result=12345, HTTP code = 500`,
 			`Connection timed out`,
+			`repository cannot accept new pushes; contact support`,
+			`Service Temporarily Unavailable`,
+			`Connection refused`,
+			`connection refused`, // Ignore case.
 			`The requested URL returned error: 598`,
 			`Connection reset by peer`,
 			`Unable to look up $TRAILING_CONTENT`,

@@ -17,6 +17,14 @@ type FlagSplitterDef struct {
 	// --flag value
 	Solitary []string
 
+	// SolitaryAllowConjoined is the list of strings that identify as flags with
+	// either no additional arguments or one conjoined argument.
+	//
+	// For example:
+	// --flag
+	// --flag=value
+	SolitaryAllowConjoined []string
+
 	// WithArg is the list of strings that identify as flags and always have an
 	// additional argument.
 	//
@@ -39,6 +47,7 @@ func (d FlagSplitterDef) Compile() FlagSplitter {
 	// Compile our total flag set into a quick lookup map.
 	fs := make(FlagSplitter, len(d.Solitary)+len(d.WithArg)+len(d.WithArgAllowConjoined))
 	fs.registerFlags(d.Solitary, flagSplitterFlag{NumArgs: 0, AllowConjoined: false})
+	fs.registerFlags(d.SolitaryAllowConjoined, flagSplitterFlag{NumArgs: 0, AllowConjoined: true})
 	fs.registerFlags(d.WithArg, flagSplitterFlag{NumArgs: 1, AllowConjoined: false})
 	fs.registerFlags(d.WithArgAllowConjoined, flagSplitterFlag{NumArgs: 1, AllowConjoined: true})
 	return fs
@@ -63,58 +72,69 @@ func (fs FlagSplitter) registerFlags(flags []string, fsf flagSplitterFlag) {
 
 // Split parses a set of command-line arguments into recognized flags and an
 // unrecognized remainder, extra.
-func (fs FlagSplitter) Split(args []string) (flags, extra []string) {
-	pos := fs.findFirstNonFlag(args)
-	flags, extra = args[:pos], args[pos:]
-	return
-}
+func (fs FlagSplitter) Split(args []string, stopAtFirstPositional bool) (flags, pos, extra []string) {
+	// Like "append", but allocates capacity of "args" on first addition to
+	// minimize reallocations during parsing.
+	augment := func(v []string, values ...string) []string {
+		if v == nil {
+			v = make([]string, 0, len(args))
+		}
+		return append(v, values...)
+	}
 
-func (fs FlagSplitter) findFirstNonFlag(args []string) (pos int) {
-	// Iterate through args and classify.
-	for pos < len(args) {
-		flag := args[pos]
-		if !strings.HasPrefix(flag, "-") {
-			// Not a flag. Everything is "extra".
+	for len(args) > 0 {
+		arg := args[0]
+		if !strings.HasPrefix(arg, "-") {
+			// Not a flag.
+			if stopAtFirstPositional {
+				pos = augment(pos, args...)
+				return
+			}
+
+			// Single unknown positional argument, consume and resume parsing.
+			pos = augment(pos, arg)
+			args = args[1:]
+			continue
+		}
+
+		// Hard separator.
+		if arg == "--" {
+			pos = augment(pos, args[1:]...)
 			return
 		}
 
-		// If there is an "=" in the flag, then this is a joint two-argument flag.
+		// If there is an "=" in the arg, then this is a joint two-argument flag.
 		conjoinedArg := false
-		if idx := strings.IndexRune(flag, '='); idx > 0 {
-			flag, conjoinedArg = flag[:idx], true
+		if idx := strings.IndexRune(arg, '='); idx > 0 {
+			arg, conjoinedArg = arg[:idx], true
 		}
-		fsf, ok := fs[flag]
+		fsf, ok := fs[arg]
 		switch {
 		case !ok:
-			// Unrecognized flag.
+			// Not a known flag, so consider it (and everything following it) an
+			// extra argument.
+			extra = args
 			return
 
 		case conjoinedArg && !fsf.AllowConjoined:
 			// If this flag has an argument, but does not allow "=", then treat it as
-			// an unrecognized flag.
+			// an unrecognized flag and return it (and remainder) as extra.
+			extra = args
 			return
 		}
 
-		switch count := fsf.NumArgs; count {
-		case 0:
-			pos++
-
-		case 1:
-			if !conjoinedArg {
-				pos++
-			}
-			pos++
-
-		default:
-			panic("don't support more than two arguments")
+		consume := fsf.NumArgs + 1
+		if consume > 1 && conjoinedArg {
+			consume--
 		}
-
-		if pos > len(args) {
+		if consume > len(args) {
 			// This can happen with a multi-part flag that is missing its additional
 			// parts.
-			pos = len(args)
+			extra = args
 			return
 		}
+		flags = augment(flags, args[:consume]...)
+		args = args[consume:]
 	}
 
 	return

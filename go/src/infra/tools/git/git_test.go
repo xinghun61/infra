@@ -24,6 +24,7 @@ import (
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/retry"
 	"github.com/luci/luci-go/common/system/environ"
+	"github.com/luci/luci-go/common/system/filesystem"
 	"github.com/luci/luci-go/common/testing/testfs"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -47,6 +48,13 @@ type testAgentRequest struct {
 
 	// BlockIndefinitely, if true, instructs the process to block indefinitely.
 	BlockIndefinitely bool
+
+	// CreateDirectory instructs the agent to create a new directory during
+	// execution.
+	CreateDirectory string
+	// CreateDirectoryExistsReturnCode is the return code that will be returned
+	// if CreateDirectory already exists. Otherwise, ReturnCode will be returned.
+	CreateDirectoryExistsReturnCode int
 }
 
 type testAgentResponse struct {
@@ -420,6 +428,90 @@ func TestGitCommand(t *testing.T) {
 				So(stdout.Bytes(), ShouldResemble, in.Stdout)
 			})
 		})
+
+		Convey(`Testing "clone" subcommand directory deletion`, func() {
+			dest := filepath.Join(tdir, "destination")
+			args = []string{"clone", "https://foo.example.com/something.git", dest}
+
+			// Configure semantics of "clone", which is to create a new directory
+			// on execution and fail if the destination directory already exists.
+			in.CreateDirectory = dest
+			in.CreateDirectoryExistsReturnCode = 2
+
+			// Configure the process to transiently retry indefinitely. By default, if
+			// the return code is 0, this won't actually result in any retries. We can
+			// trigger this behavior by setting the return code to non-zero.
+			const numRetries = 10
+			counter := 0
+			var onNext func()
+			gc.RetryList = []*regexp.Regexp{
+				regexp.MustCompile("transient"),
+			}
+			gc.Retry = func() retry.Iterator { return &countingRetryIterator{&counter, numRetries, &onNext} }
+			in.Stdout = []byte("transient")
+
+			Convey(`Can successfully execute the command.`, func() {
+				rc, err := runAgent(c)
+				So(err, ShouldBeNil)
+				So(rc, ShouldEqual, 0)
+				So(out.Args, ShouldResemble, args)
+				So(counter, ShouldEqual, 0)
+
+				// After all of the retries, the path should exist.
+				So(pathExists(dest), ShouldBeTrue)
+			})
+
+			Convey(`If the command fails, will recreate and retry, deleting the directory in between.`, func() {
+				in.ReturnCode = 1
+
+				rc, err := runAgent(c)
+				So(err, ShouldBeNil)
+				So(rc, ShouldEqual, in.ReturnCode)
+				So(out.Args, ShouldResemble, args)
+				So(counter, ShouldEqual, numRetries+1)
+
+				// After all of the retries, the path should still exist.
+				So(pathExists(dest), ShouldBeTrue)
+			})
+
+			Convey(`If the command permanently fails, the diectory will remain.`, func() {
+				in.ReturnCode = 1
+
+				onNext = func() {
+					if counter == numRetries-1 {
+						// The next time we run, we will return 0.
+						in.ReturnCode = 2
+						in.Stdout = nil
+						writeRequest()
+					}
+				}
+
+				rc, err := runAgent(c)
+				So(err, ShouldBeNil)
+				So(rc, ShouldEqual, 2)
+				So(out.Args, ShouldResemble, args)
+				So(counter, ShouldEqual, numRetries-1)
+
+				// After all of the retries, the path should still exist.
+				So(pathExists(dest), ShouldBeTrue)
+			})
+
+			Convey(`If the directory already existed, we won't delete it on transient failure.`, func() {
+				in.ReturnCode = 1
+				if err := filesystem.MakeDirs(dest); err != nil {
+					t.Fatalf("failed to create directory: %s", err)
+				}
+
+				rc, err := runAgent(c)
+				So(err, ShouldBeNil)
+				So(rc, ShouldEqual, in.CreateDirectoryExistsReturnCode)
+				So(out.Args, ShouldResemble, args)
+				So(counter, ShouldEqual, numRetries+1)
+
+				// After all of the retries, the path should still exist.
+				So(pathExists(dest), ShouldBeTrue)
+			})
+		})
 	}))
 }
 
@@ -473,7 +565,8 @@ func (ta *testAgent) run(args []string) int {
 	}
 
 	// Process our request, update our response.
-	if err := ta.processRequest(args); err != nil {
+	rc := ta.in.ReturnCode
+	if err := ta.processRequest(args, &rc); err != nil {
 		log.Printf("Failed to process request: %s", err)
 		return testAgentFailedReturnCode
 	}
@@ -485,11 +578,11 @@ func (ta *testAgent) run(args []string) int {
 		return testAgentFailedReturnCode
 	}
 
-	return ta.in.ReturnCode
+	return rc
 }
 
 // testGitCommandAgent is the TestGitCommand testing agent entry point.
-func (ta *testAgent) processRequest(args []string) error {
+func (ta *testAgent) processRequest(args []string, rc *int) error {
 	if ta.in.ReadStdin {
 		var err error
 		if ta.out.Stdin, err = ioutil.ReadAll(os.Stdin); err != nil {
@@ -503,6 +596,17 @@ func (ta *testAgent) processRequest(args []string) error {
 	}
 	if _, err := os.Stderr.Write(ta.in.Stderr); err != nil {
 		return errors.Annotate(err).Reason("failed to write STDERR").Err()
+	}
+
+	if d := ta.in.CreateDirectory; d != "" {
+		if pathExists(d) {
+			*rc = ta.in.CreateDirectoryExistsReturnCode
+			return nil
+		}
+
+		if err := filesystem.MakeDirs(d); err != nil {
+			return errors.Annotate(err).Reason("failed to create directory").Err()
+		}
 	}
 
 	if ta.in.BlockIndefinitely {
@@ -555,4 +659,9 @@ func atomicWriteJSON(obj interface{}, path string) (err error) {
 	}
 
 	return nil
+}
+
+func pathExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }

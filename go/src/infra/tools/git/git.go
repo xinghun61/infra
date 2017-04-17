@@ -26,89 +26,11 @@ import (
 	"github.com/luci/luci-go/common/retry"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/system/exitcode"
+	"github.com/luci/luci-go/common/system/filesystem"
 )
-
-// GitFlagSplitter is a FlagSplitter configured to split against Git's top-level
-// command-line flags.
-//
-//	$ git version
-//	git version 2.12.2.564.g063fe858b8
-//
-//	$ git --help
-//	usage: git [--version] [--help] [-C <path>] [-c name=value]
-//	        [--exec-path[=<path>]] [--html-path] [--man-path] [--info-path]
-//	        [-p | --paginate | --no-pager] [--no-replace-objects] [--bare]
-//	        [--git-dir=<path>] [--work-tree=<path>] [--namespace=<name>]
-//	        <command> [<args>]
-var GitFlagSplitter = FlagSplitterDef{
-	Solitary: []string{
-		"--version",
-		"--help",
-		"--html-path",
-		"--man-path",
-		"--info-path",
-		"-p",
-		"--paginate",
-		"--no-pager",
-		"--no-replace-objects",
-		"--bare",
-	},
-	WithArg: []string{
-		"-C",
-		"-c",
-	},
-	WithArgAllowConjoined: []string{
-		"--exec-path",
-		"--git-dir",
-		"--work-tree",
-		"--namespace",
-	},
-}.Compile()
 
 // GitRunnerMode determines how a GitRunner should be run.
 type GitRunnerMode int
-
-// GitArgs represents parsed Git arguments.
-//
-// It can be generated from a generic command-line interface using parseGitArgs.
-type GitArgs struct {
-	// GitFlags is the set of top-level flags passed to the Git command.
-	GitFlags []string
-
-	// Subcommand, if not empty, is the Git subcommand that is being executed.
-	Subcommand string
-
-	// SubcommandArgs is the set of arguments that are passed to the subcommand.
-	//
-	// If Subcommand is empty, this will be empty, too.
-	SubcommandArgs []string
-}
-
-// parseGitArgs parses command-line arguments (including the Git invocation)
-// into a GitArgs.
-func parseGitArgs(args ...string) (ga GitArgs) {
-	var extras []string
-	ga.GitFlags, extras = GitFlagSplitter.Split(args)
-
-	if len(extras) > 0 {
-		ga.Subcommand, ga.SubcommandArgs = extras[0], extras[1:]
-	}
-
-	return
-}
-
-// IsVersion returns true if ga describes a Git version request.
-func (ga *GitArgs) IsVersion() bool {
-	if ga.Subcommand == "version" {
-		return true
-	}
-	for _, f := range ga.GitFlags {
-		if f == "--version" {
-			return true
-		}
-	}
-	return false
-}
 
 // GitCommand describes an exec.Cmd-like interface to a Git command.
 type GitCommand struct {
@@ -165,7 +87,7 @@ type GitCommand struct {
 // return code from Git and a nil error. On failure, it will return an error
 // describing that failure.
 func (gc *GitCommand) Run(c context.Context, args []string, env environ.Env) (int, error) {
-	gitArgs := parseGitArgs(args[gc.testParseSkipArgs:]...)
+	gitArgs := ParseGitArgs(args[gc.testParseSkipArgs:]...)
 
 	// Clone our environment, so we can modify it.
 	gr := gitRunner{
@@ -188,11 +110,10 @@ func (gc *GitCommand) Run(c context.Context, args []string, env environ.Env) (in
 
 	// Determine if we are running a retry-able subcommand.
 	st := proto.Clone(&gc.State).(*state.State)
-	switch gitArgs.Subcommand {
-	case "clone", "fetch", "ls-remote", "pull", "push", "fetch-pack", "http-fetch",
-		"http-push", "send-pack", "upload-archive", "upload-pack":
+	if gitArgs.MayBeRemote() {
 		// If we're already running through a retry wrapper, always run the Git
-		// command directly, rather than wrapping it multiple times.
+		// command directly, rather than wrapping it multiple times. Otherwise,
+		// configure our runner for retries.
 		st.Retrying = !st.Retrying
 	}
 
@@ -206,12 +127,50 @@ func (gc *GitCommand) Run(c context.Context, args []string, env environ.Env) (in
 		return gr.runGitVersion(c)
 
 	case st.Retrying:
+		// If we're retrying the "clone" subcommand, we may need to do some
+		// directory management. If "clone" starts, then transiently fails, it will
+		// have created its destination directory. This will prevent future "clone"
+		// calls from succeeding, since the directory now already exists.
+		//
+		// To mitigate this, we will identify the "clone" target directory. If it
+		// doesn't exist, we'll delete it in between retries.
+		if gca, ok := gitArgs.(*GitCloneArgs); ok {
+			if tdir := gca.TargetDir(); tdir != "" {
+				if _, err := os.Stat(tdir); os.IsNotExist(err) {
+					// We're doing a clone, and the target directory does not exist. If
+					// it is created during operation, we assume ownership of it in
+					// between retries.
+					gr.BetweenRetryFunc = removeCloneDirBetweenRetries(tdir)
+				}
+			}
+		}
+
 		return gr.runWithRetries(c)
 
 	default:
 		return gr.runDirect(c)
 	}
 }
+
+// removeCloneDirBetweenRetries returns a betweenRetryFunc that is bound to
+// the clone directory. It will recursively remove the directory if it exists
+// in between retries so that a half-failed clone doesn't break subsequent
+// clone attempts.
+func removeCloneDirBetweenRetries(cloneDir string) betweenRetryFunc {
+	return func(c context.Context) error {
+		if st, err := os.Stat(cloneDir); err == nil && st.IsDir() {
+			if err := filesystem.RemoveAll(cloneDir); err != nil {
+				return errors.Annotate(err).Reason("failed to remove 'clone' directory in between retries").
+					D("cloneDir", cloneDir).
+					Err()
+			}
+		}
+		return nil
+	}
+}
+
+// betweenRetryFunc is a callback that is invoked in between Git retries.
+type betweenRetryFunc func(context.Context) error
 
 // gitRunner is a configured Git execution.
 type gitRunner struct {
@@ -223,6 +182,11 @@ type gitRunner struct {
 	// Env is the environemnt to use for the Git subcommand. Env may be modified
 	// during execution.
 	Env environ.Env
+
+	// BetweenRetryFunc, if not nil, is an optional function that gets executed in
+	// between retries. If it returns an error, subsequent retry attempts will be
+	// abandoned.
+	BetweenRetryFunc betweenRetryFunc
 }
 
 func (gr *gitRunner) getStdin() io.Reader {
@@ -249,6 +213,11 @@ func (gr *gitRunner) getStderr() io.Writer {
 func (gr *gitRunner) runWithRetries(c context.Context) (int, error) {
 	var rc int
 	transientFailures := 0
+
+	c, cancelFunc := context.WithCancel(c)
+	defer cancelFunc()
+
+	var brfErr error
 	err := retry.Retry(c, retry.TransientOnly(gr.Retry), func() (err error) {
 		var trigger Trigger
 
@@ -287,17 +256,31 @@ func (gr *gitRunner) runWithRetries(c context.Context) (int, error) {
 	}, func(err error, delay time.Duration) {
 		log.Printf("WARNING: Retrying after %s (rc=%d): %s", delay, rc, err)
 		transientFailures++
+
+		if brf := gr.BetweenRetryFunc; brf != nil {
+			if brfErr = brf(c); brfErr != nil {
+				// Prevent future retries.
+				log.Printf("ERROR: Failed to recover in between retries: %s", err)
+				cancelFunc()
+			}
+		}
 	})
-	if err != nil && !errors.IsTransient(err) {
+
+	switch {
+	case err != nil && !errors.IsTransient(err):
 		// Hard failure.
 		return 0, err
-	}
 
-	// Success or transient failure; propagate the last return code.
-	if transientFailures > 0 {
-		log.Printf("WARNING: Command completed with %d transient failure(s).", transientFailures)
+	case brfErr != nil:
+		return 0, brfErr
+
+	default:
+		// Success or transient failure; propagate the last return code.
+		if transientFailures > 0 {
+			log.Printf("WARNING: Command completed with rc %d after %d transient failure(s).", rc, transientFailures)
+		}
+		return rc, nil
 	}
-	return rc, nil
 }
 
 func (gr *gitRunner) setupCommand(c context.Context) *exec.Cmd {

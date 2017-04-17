@@ -106,7 +106,7 @@ func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader
 		LowSpeedLimit: 1000,
 		LowSpeedTime:  5 * time.Minute,
 		RetryList:     []*regexp.Regexp{DefaultGitRetryRegexp},
-		Retry:         retry.Default,
+		Retry:         gitTransientRetry,
 		Stdin:         stdin,
 		Stdout:        stdout,
 		Stderr:        stderr,
@@ -129,6 +129,22 @@ func logError(err error, reason string) {
 	rs := errors.RenderStack(err)
 	if _, renderErr := rs.DumpTo(os.Stderr); renderErr != nil {
 		log.Printf("ERROR: Failed to render error stack: %s", renderErr)
+	}
+}
+
+// gitTransientRetry returns the retry.Iterator to use when retrying Git
+// transient failures.
+//
+// We want the retry to be fastish, but not so fast that it overwhelms or
+// exacerbates the remote problem. Google Git engineers have requested a
+// longer initial backoff (rather than a few milliseconds).
+func gitTransientRetry() retry.Iterator {
+	return &retry.ExponentialBackoff{
+		Limited: retry.Limited{
+			Delay:   3 * time.Second,
+			Retries: 10,
+		},
+		Multiplier: 1.5,
 	}
 }
 
