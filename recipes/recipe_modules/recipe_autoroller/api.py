@@ -242,12 +242,13 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
                    ok_ret='any')
     return None
 
-  def _read_autoroller_settings(self, recipes_cfg_path):
+  def _get_disable_reason(self, recipes_cfg_path):
     current_cfg = self.m.json.read(
       'read recipes.cfg',
       recipes_cfg_path, step_test_data=lambda: self.m.json.test_api.output({}))
 
-    return current_cfg.json.output['autoroll_recipe_options']
+    return (
+      current_cfg.json.output['autoroll_recipe_options'].get('disable_reason'))
 
   def _roll_project(self, project_data, recipes_dir):
     """
@@ -264,9 +265,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     workdir = self._prepare_checkout(project_data)
 
     recipes_cfg_path = workdir.join('infra', 'config', 'recipes.cfg')
-    autoroll_settings = self._read_autoroller_settings(recipes_cfg_path)
 
-    disable_reason = autoroll_settings.get('disable_reason')
+    disable_reason = self._get_disable_reason(recipes_cfg_path)
     if disable_reason:
       rslt = self.m.python.succeeding_step('disabled', disable_reason)
       rslt.presentation.status = self.m.step.WARNING
@@ -287,7 +287,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
     if roll_result['success'] and roll_result['picked_roll_details']:
       self._process_successful_roll(
-          project_data['repo_url'], roll_step, workdir, autoroll_settings)
+          project_data['repo_url'], roll_step, workdir)
       return ROLL_SUCCESS
 
     num_rejected = roll_result['rejected_candidates_count']
@@ -301,16 +301,16 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
     return ROLL_FAILURE
 
-  def _process_successful_roll(self, repo_url, roll_step, workdir,
-                               autoroll_settings):
+  def _process_successful_roll(self, repo_url, roll_step, workdir):
     """
     Args:
       roll_step - The StepResult of the actual roll command. This is used to
         adjust presentation and obtain the json output.
-      autoroll_settings - a AutorollRecipeOptions message from the recipe
-        engine, in jsonish form (i.e. a python dict).
     """
     roll_result = roll_step.json.output
+
+    autoroll_settings = (
+      roll_result['picked_roll_details']['spec']['autoroll_recipe_options'])
 
     upload_args =  []
     if roll_result['trivial']:
