@@ -50,19 +50,17 @@ func main() {
 	os.Exit(subcommands.Run(&application, flag.Args()))
 }
 
+// handleInterruption cancels the context on first SIGTERM and
+// exits the process on a second SIGTERM.
 func handleInterruption(ctx context.Context) context.Context {
 	ctx, cancel := context.WithCancel(ctx)
 	signalC := make(chan os.Signal)
 	signal.Notify(signalC, os.Interrupt)
 	go func() {
-		interrupted := false
-		for range signalC {
-			if interrupted {
-				os.Exit(1)
-			}
-			interrupted = true
-			cancel()
-		}
+		<-signalC
+		cancel()
+		<-signalC
+		os.Exit(1)
 	}()
 	return ctx
 }
