@@ -87,22 +87,22 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
   codereview = codereview_util.GetCodeReviewForReview(
       review_server_host, code_review_settings)
   if not codereview:
-    logging.error('Could not get codereview for %s/q/%s' % (
-        review_server_host, change_id))
+    logging.error('Could not get codereview for %s/q/%s', review_server_host,
+                  change_id)
     return None, None, None
 
   cl_info = codereview.GetClDetails(change_id)
   code_review_url = codereview.GetCodeReviewUrl(change_id)
 
   if not cl_info:
-    logging.error('Could not get CL details for %s/q/%s' % (
-        review_server_host, change_id))
+    logging.error('Could not get CL details for %s/q/%s', review_server_host,
+                  change_id)
     return None, code_review_url, None
   reverts_to_check = cl_info.GetRevertCLsByRevision(revision)
 
   if not reverts_to_check:
-    logging.error('Could not get revert info for %s/q/%s' % (
-        review_server_host, change_id))
+    logging.error('Could not get revert info for %s/q/%s', review_server_host,
+                  change_id)
     return None, code_review_url, None
 
   reverts_to_check.sort(key=lambda x: x.timestamp)
@@ -173,7 +173,6 @@ def _GetRevertCLData(start_date, end_date):
         _DEFAULT_PAGE_SIZE, start_cursor=cursor)
     all_suspected_cls.extend(suspected_cls)
 
-
   for suspected_cl in all_suspected_cls:
     processed, review_url, outcome = _CheckRevertStatusOfSuspectedCL(
         suspected_cl)
@@ -198,8 +197,7 @@ class CheckRevertedCLs(BaseHandler):
 
   PERMISSION_LEVEL = Permission.ADMIN
 
-  def HandleGet(self):  # pragma: no cover
-
+  def HandleGet(self):
     start = self.request.get('start_date')
     end = self.request.get('end_date')
 

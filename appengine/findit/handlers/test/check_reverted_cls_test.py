@@ -12,6 +12,7 @@ from handlers import check_reverted_cls
 from infra_api_clients.codereview import cl_info
 from infra_api_clients.codereview import codereview_util
 from infra_api_clients.codereview.rietveld import Rietveld
+from libs import time_util
 from model import revert_cl_status
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
@@ -305,3 +306,52 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
             'processed': []
         },
         check_reverted_cls._GetRevertCLData(start_date, end_date))
+
+  @mock.patch.object(time_util, 'GetMostRecentUTCMidnight',
+                     return_value=datetime(2017, 4, 16, 0, 0, 0))
+  def testGetNoStartEndDates(self, _):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+    response = self.test_app.get(
+        '/check-reverted-cls', params={'format': 'json'})
+    self.assertEquals(response.status_int, 200)
+
+    expected_response = {
+        'start_date': '2017-04-14 00:00:00 UTC',
+        'end_date': '2017-04-15 00:00:00 UTC',
+        'processed': [],
+        'undetermined': []
+    }
+
+    self.assertEquals(expected_response, response.json_body)
+
+  @mock.patch.object(time_util, 'GetMostRecentUTCMidnight',
+                     return_value=datetime(2017, 4, 16, 0, 0, 0))
+  @mock.patch.object(
+      check_reverted_cls, '_GetRevertCLData',
+      return_value={'start_date': '2017-04-08 00:00:00 UTC',
+                    'end_date': '2017-04-16 00:00:00 UTC',
+                    'processed': [{
+                        'cr_notification_time': '2017-04-15 00:00:01 UTC',
+                        'outcome': 'reverted',
+                        'url': 'url'
+                    }],
+                    'undetermined': []})
+  def testGet(self, *_):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+    response = self.test_app.get(
+        '/check-reverted-cls?start_date=2017-04-08&end_date=2017-04-16',
+        params={'format': 'json'})
+    self.assertEquals(response.status_int, 200)
+
+    expected_response = {
+        'start_date': '2017-04-08 00:00:00 UTC',
+        'end_date': '2017-04-16 00:00:00 UTC',
+        'processed': [{
+            'cr_notification_time': '2017-04-15 00:00:01 UTC',
+            'outcome': 'reverted',
+            'url': 'url'
+        }],
+        'undetermined': []
+    }
+
+    self.assertEquals(expected_response, response.json_body)
