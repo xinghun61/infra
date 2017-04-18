@@ -244,6 +244,8 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
       "[TMP_BASE]/recipes_tmp_1/recipes.py",
       "--use-bootstrap",
       "--package",
