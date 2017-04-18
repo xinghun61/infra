@@ -13,6 +13,7 @@ from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util
 from waterfall.flake import lookback_algorithm
 from waterfall.flake import recursive_flake_pipeline
@@ -127,7 +128,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_pipeline.TriggerFlakeSwarmingTaskPipeline,
         'task_id',
         expected_args=[master_name, builder_name,
-                       run_build_number, step_name, [test_name], 100],
+                       run_build_number, step_name, [test_name], 100,
+                       3 * 60 * 60],
         expected_kwargs={})
 
     self.MockPipeline(
@@ -902,7 +904,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_pipeline.TriggerFlakeSwarmingTaskPipeline,
         'task_id',
         expected_args=[master_name, builder_name,
-                       run_build_number, step_name, [test_name], 100],
+                       run_build_number, step_name, [test_name], 100,
+                       3 * 60 * 60],
         expected_kwargs={})
 
     self.MockPipeline(
@@ -1129,3 +1132,41 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(98, analysis.suspected_flake_build_number)
     self.assertEqual(0.7, analysis.confidence_in_suspected_build)
     self.assertIsNone(analysis.culprit)
+
+  @mock.patch.object(recursive_flake_pipeline,
+                     '_CanEstimateExecutionTimeFromReferenceSwarmingTask',
+                     return_value=False)
+  def testGetHardTimeoutSecondsDefault(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+
+    self.UpdateUnitTestConfigSettings(
+        config_property='check_flake_settings',
+        override_data={'swarming_rerun': {
+            'per_iteration_timeout_seconds': 60}})
+    self.assertEqual(
+        3 * 60 * 60,
+        recursive_flake_pipeline._GetHardTimeoutSeconds(
+            master_name, builder_name, build_number, step_name, 100))
+
+  def testGetHardTimeoutSeconds(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    reference_swarming_task = WfSwarmingTask.Create(
+        master_name, builder_name, build_number, step_name)
+    reference_swarming_task.completed_time = datetime(2017, 4, 16, 0, 0, 40)
+    reference_swarming_task.started_time = datetime(2017, 4, 16, 0, 0, 0)
+    reference_swarming_task.tests_statuses = {'1': 1, '2': 1}
+    reference_swarming_task.parameters = {'iterations_to_rerun': 2}
+    reference_swarming_task.put()
+    self.UpdateUnitTestConfigSettings(
+        config_property='check_flake_settings',
+        override_data={'swarming_rerun': {'per_iteration_timeout_seconds': 1}})
+    self.assertEqual(
+        60 * 60,
+        recursive_flake_pipeline._GetHardTimeoutSeconds(
+            master_name, builder_name, build_number, step_name, 10))

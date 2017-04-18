@@ -32,15 +32,18 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     return 'findit/ref_task_id/%s/%s' % (
         ref_task_id, time_util.GetUTCNow().strftime('%Y-%m-%d %H:%M:%S %f'))
 
-  def _CreateNewSwarmingTaskRequest(self, ref_task_id, ref_request, master_name,
-                                    builder_name, build_number, step_name,
-                                    tests, iterations):
+  def _CreateNewSwarmingTaskRequest(
+      self, ref_task_id, ref_request, master_name, builder_name, build_number,
+      step_name, tests, iterations, hard_timeout_seconds=None):
     """Returns a SwarmingTaskRequest instance to run the given tests only."""
     # Make a copy of the referred request and drop or overwrite some fields.
     new_request = copy.deepcopy(ref_request)
     new_request.name = self._GetSwarmingTaskName(ref_task_id)
     new_request.parent_task_id = ''
     new_request.user = ''
+
+    if hard_timeout_seconds:
+      new_request.execution_timeout_secs = hard_timeout_seconds
 
     _pubsub_callback = MakeSwarmingPubsubCallback()
     new_request.pubsub_topic = _pubsub_callback.get('topic')
@@ -199,7 +202,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
       self, master_name, builder_name, build_number, http_client):
     """Checks if the build had exception, if so don't run the step."""
     json_data = buildbot.GetBuildDataFromBuildMaster(
-      	master_name, builder_name, build_number, http_client)
+        master_name, builder_name, build_number, http_client)
     if not json_data:
       logging.error('Failed to get build data for %s, %s, %s' % (
           master_name, builder_name, build_number))
@@ -218,7 +221,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number, step_name, tests,
-          iterations_to_rerun=None):
+          iterations_to_rerun=None, hard_timeout_seconds=None):
     """Triggers a new Swarming task to run the given tests.
 
     Args:
@@ -228,6 +231,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
       step_name (str): The failed test step name.
       tests (list): A list of test cases, eg: ['suite1.test1', 'suite2.testw2']
       iterations_to_rerun (int): Number of iterations to run a test.
+      hard_timeout_seconds (int): How many seconds the overall task has to run.
 
     Returns:
       task_id (str): The new Swarming task that re-run the given tests.
@@ -262,7 +266,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
 
     new_request = self._CreateNewSwarmingTaskRequest(
         ref_task_id, ref_request, master_name, builder_name, build_number,
-        step_name, tests, iterations_to_rerun)
+        step_name, tests, iterations_to_rerun, hard_timeout_seconds)
 
     # 3. Trigger a new Swarming task to re-run the failed tests.
     task_id, error = swarming_util.TriggerSwarmingTask(new_request, http_client)

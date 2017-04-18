@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import copy
 from datetime import timedelta
 import logging
 import random
@@ -17,6 +16,7 @@ from libs import time_util
 from model import result_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
@@ -44,6 +44,12 @@ _MAX_RETRY_TIMES = 5
 
 _MINIMUM_NUMBER_BOT = 5
 _MINIMUM_PERCENT_BOT = 0.1
+
+
+# In order not to hog resources on the swarming server, set the timeout to a
+# non-configurable 3 hours.
+_ONE_HOUR_IN_SECONDS = 60 * 60
+_MAX_TIMEOUT_SECONDS = 3 * _ONE_HOUR_IN_SECONDS
 
 
 def _UpdateAnalysisStatusUponCompletion(
@@ -217,6 +223,45 @@ def _GetListOfNearbyBuildNumbers(preferred_run_build_number, maximum_threshold):
   return nearby_build_numbers
 
 
+def _CanEstimateExecutionTimeFromReferenceSwarmingTask(swarming_task):
+  return (swarming_task and
+          not swarming_task.error and
+          swarming_task.started_time and
+          swarming_task.completed_time and
+          swarming_task.tests_statuses and
+          swarming_task.parameters and
+          swarming_task.parameters.get('iterations_to_rerun'))
+
+
+def _GetHardTimeoutSeconds(master_name, builder_name, reference_build_number,
+                           step_name, iterations_to_rerun):
+  flake_settings = waterfall_config.GetCheckFlakeSettings()
+  flake_swarming_settings = flake_settings.get('swarming_rerun', {})
+  reference_task = WfSwarmingTask.Get(
+      master_name, builder_name, reference_build_number, step_name)
+
+  if _CanEstimateExecutionTimeFromReferenceSwarmingTask(reference_task):
+    delta = reference_task.completed_time - reference_task.started_time
+    execution_time = delta.total_seconds()
+    number_of_tests = len(reference_task.tests_statuses)
+    number_of_iterations = reference_task.parameters['iterations_to_rerun']
+    time_per_test_per_iteration = (
+        execution_time / (number_of_iterations * number_of_tests))
+    estimated_execution_time = (
+        time_per_test_per_iteration * iterations_to_rerun)
+  else:
+    # Use default settings if the reference task is unavailable or malformed.
+    estimated_execution_time = flake_swarming_settings.get(
+        'default_per_iteration_timeout_seconds', 60) * iterations_to_rerun
+
+  # To account for variance and pending time, use a factor of 2x estimated
+  # execution time.
+  estimated_time_needed = estimated_execution_time * 2
+
+  return min(max(estimated_time_needed, _ONE_HOUR_IN_SECONDS),
+             _MAX_TIMEOUT_SECONDS)
+
+
 class RecursiveFlakePipeline(BasePipeline):
 
   def __init__(
@@ -383,6 +428,9 @@ class RecursiveFlakePipeline(BasePipeline):
       # TODO(lijeffrey): Allow custom parameters supplied by user.
       iterations = flake_analysis.algorithm_parameters.get(
           'swarming_rerun', {}).get('iterations_to_rerun', 100)
+      hard_timeout_seconds = _GetHardTimeoutSeconds(
+          master_name, builder_name, triggering_build_number, step_name,
+          iterations)
       actual_run_build_number = _GetBestBuildNumberToRun(
           master_name, builder_name, preferred_run_build_number, step_name,
           test_name, step_size, iterations) if use_nearby_neighbor else (
@@ -390,7 +438,7 @@ class RecursiveFlakePipeline(BasePipeline):
       # Call trigger pipeline (flake style).
       task_id = yield TriggerFlakeSwarmingTaskPipeline(
           master_name, builder_name, actual_run_build_number, step_name,
-          [test_name], iterations)
+          [test_name], iterations, hard_timeout_seconds)
 
       with pipeline.InOrder():
         yield ProcessFlakeSwarmingTaskResultPipeline(

@@ -64,7 +64,7 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     self.UpdateUnitTestConfigSettings(
         config_property='check_flake_settings',
         override_data={'swarming_rerun': {
-                           'iterations_to_rerun': expected_iterations}})
+            'iterations_to_rerun': expected_iterations}})
     self.assertEqual(
         expected_iterations,
         TriggerFlakeSwarmingTaskPipeline()._GetIterationsToRerun())
@@ -93,36 +93,36 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     mock_fn.return_value = SwarmingTaskRequest.Deserialize({
-          'expiration_secs': 3600,
-          'name': 'ref_task_request',
-          'parent_task_id': 'pti',
-          'priority': 25,
-          'properties': {
-              'command': 'cmd',
-              'dimensions': [{'key': 'k', 'value': 'v'}],
-              'env': [
-                  {'key': 'a', 'value': '1'},
-                  {'key': 'GTEST_SHARD_INDEX', 'value': '1'},
-                  {'key': 'GTEST_TOTAL_SHARDS', 'value': '5'},
-              ],
-              'execution_timeout_secs': 3600,
-              'extra_args': [
-                  '--flag=value',
-                  '--gtest_filter=d.f',
-                  '--test-launcher-filter-file=path/to/filter/file',
-              ],
-              'grace_period_secs': 30,
-              'idempotent': True,
-              'inputs_ref': {'a': 1},
-              'io_timeout_secs': 1200,
-          },
-          'tags': ['master:m', 'buildername:b', 'name:s'],
-          'user': 'user',
-      })
+        'expiration_secs': 60 * 60,
+        'name': 'ref_task_request',
+        'parent_task_id': 'pti',
+        'priority': 25,
+        'properties': {
+            'command': 'cmd',
+            'dimensions': [{'key': 'k', 'value': 'v'}],
+            'env': [
+                {'key': 'a', 'value': '1'},
+                {'key': 'GTEST_SHARD_INDEX', 'value': '1'},
+                {'key': 'GTEST_TOTAL_SHARDS', 'value': '5'},
+            ],
+            'execution_timeout_secs': 60 * 60,
+            'extra_args': [
+                '--flag=value',
+                '--gtest_filter=d.f',
+                '--test-launcher-filter-file=path/to/filter/file',
+            ],
+            'grace_period_secs': 30,
+            'idempotent': True,
+            'inputs_ref': {'a': 1},
+            'io_timeout_secs': 1200,
+        },
+        'tags': ['master:m', 'buildername:b', 'name:s'],
+        'user': 'user',
+    })
 
-
-    new_task_id = flake_pipeline.run(master_name, builder_name, build_number,
-                                     step_name, [test_name], iterations)
+    new_task_id = flake_pipeline.run(
+        master_name, builder_name, build_number, step_name, [test_name],
+        iterations_to_rerun=iterations, hard_timeout_seconds=None)
 
     self.assertEqual('new_task_id', new_task_id)
 

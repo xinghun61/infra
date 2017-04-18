@@ -184,7 +184,8 @@ def _ValidateSwarmingSettings(settings):
           isinstance(settings.get('should_retry_server'), bool) and
           isinstance(settings.get('minimum_number_of_available_bots'), int) and
           isinstance(settings.get('minimum_percentage_of_available_bots'),
-                     float))
+                     float) and
+          isinstance(settings.get('per_iteration_timeout_seconds'), int))
 
 
 def _ValidateDownloadBuildDataSettings(settings):
@@ -214,7 +215,8 @@ def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):
           isinstance(settings.get('use_nearby_neighbor'), bool) and
           isinstance(settings.get('max_dive_in_a_row'), int) and
           isinstance(settings.get('dive_rate_threshold'), float) and
-          isinstance(settings.get('max_iterations_to_rerun'), int))
+          isinstance(settings.get('max_iterations_to_rerun'), int) and
+          isinstance(settings.get('per_iteration_timeout_seconds'), int))
 
 
 def _ValidateFlakeAnalyzerTryJobRerunSettings(settings):
@@ -235,6 +237,7 @@ def _ValidateCheckFlakeSettings(settings):
           isinstance(settings.get('minimum_confidence_score_to_run_tryjobs'),
                      float) and
           isinstance(settings.get('update_monorail_bug'), bool))
+
 
 def _ValidateCodeReviewSettings(settings):
   return (isinstance(settings, dict) and
