@@ -42,14 +42,6 @@ class RepoData(object):
     }
 
 
-def get_reviewers(commit_infos):
-  """Get a set of authors and reviewers from 'recipes.py autoroll' commit infos.
-  """
-  reviewers = set()
-  for commits in commit_infos.values():
-    for commit in commits:
-      reviewers.add(commit['author_email'])
-  return reviewers
 
 
 COMMIT_MESSAGE_HEADER = (
@@ -101,8 +93,6 @@ def get_commit_message(roll_result):
   """Construct a roll commit message from 'recipes.py autoroll' result.
   """
   picked = roll_result['picked_roll_details']
-  spec = picked['spec']
-  autoroll_opts = spec['autoroll_recipe_options']
 
   trivial = roll_result['trivial']
   message = 'Roll recipe dependencies (%s).\n' % (
@@ -128,14 +118,6 @@ def get_commit_message(roll_result):
 
   message += '%s\n' % '\n'.join(get_blame(commit_infos))
   message += '\n'
-  if not trivial:
-    extra_reviewers = autoroll_opts['nontrivial'].get('extra_reviewers', ())
-    message += 'R=%s\n' % ','.join(sorted(
-      get_reviewers(commit_infos) | set(extra_reviewers)
-    ))
-  else:
-    tbrs = autoroll_opts['trivial'].get('tbr_emails', ())
-    message += 'TBR=%s\n' % ','.join(sorted(tbrs))
   message += COMMIT_MESSAGE_FOOTER
   return message
 
@@ -311,18 +293,38 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
         adjust presentation and obtain the json output.
     """
     roll_result = roll_step.json.output
+    picked_details = roll_result['picked_roll_details']
 
-    autoroll_settings = (
-      roll_result['picked_roll_details']['spec']['autoroll_recipe_options'])
+    autoroll_settings = picked_details['spec']['autoroll_recipe_options']
 
     upload_args =  []
     if roll_result['trivial']:
-      if autoroll_settings['trivial'].get('automatic_commit'):
+      s = autoroll_settings['trivial']
+      extra_tbr = s.get('tbr_emails')
+      if extra_tbr:
+        upload_args.append('--tbrs=%s' % (','.join(extra_tbr)))
+
+      upload_args.append('--tbr-owners')
+
+      if s.get('automatic_commit'):
         upload_args.append('--use-commit-queue')
     else:
+      s = autoroll_settings['nontrivial']
+      extra_r = s.get('extra_reviewers')
+      if extra_r:
+        upload_args.append('--reviewers=%s' % (','.join(extra_r)))
+
+      upload_args.append('--r-owners')
+
       upload_args.append('--send-mail')
-      if autoroll_settings['nontrivial'].get('automatic_commit_dry_run'):
+      if s.get('automatic_commit_dry_run'):
         upload_args.append('--cq-dry-run')
+
+    cc_list = set()
+    for commits in picked_details['commit_infos'].itervalues():
+      for commit in commits:
+        cc_list.add(commit['author_email'])
+    upload_args.append('--cc=%s' % ','.join(sorted(cc_list)))
 
     commit_message = get_commit_message(roll_result)
 
