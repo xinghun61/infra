@@ -19,9 +19,9 @@ type Severity int
 
 const (
 	// SeverityRed represents paging alerts.
-	SeverityRed Severity = 1
+	SeverityRed Severity = 0
 	// SeverityYellow represents email alerts.
-	SeverityYellow Severity = 2
+	SeverityYellow Severity = 1
 )
 
 var (
@@ -69,12 +69,17 @@ func GetIncident(c context.Context, id string, serviceID string) (*ServiceIncide
 }
 
 // GetServiceIncidents gets all the incidents of the given service.
+// If onlyOpen is true, this will only return open Incidents. If it is false
+// it will return all Incidents, open and closed.
 //
 // It returns (incidents, nil) on success or (nil, err) on datastore errors.
 // If no incidents for the service were found, incidents will be empty.
-func GetServiceIncidents(c context.Context, serviceID string) ([]ServiceIncident, error) {
+func GetServiceIncidents(c context.Context, serviceID string, onlyOpen bool) ([]ServiceIncident, error) {
 	serviceKey := datastore.NewKey(c, "Service", serviceID, 0, nil)
 	query := datastore.NewQuery("ServiceIncident").Ancestor(serviceKey)
+	if onlyOpen {
+		query = query.Eq("Open", true)
+	}
 	incidents := []ServiceIncident{}
 	if err := datastore.GetAll(c, query, &incidents); err != nil {
 		logging.Errorf(c, "Error getting ServiceIncident entities: %v", err)
@@ -142,6 +147,7 @@ func AddIncident(c context.Context, id string, serviceID string, severity Severi
 		incident := ServiceIncident{
 			ID:         id,
 			ServiceKey: serviceKey,
+			Open:       true,
 			StartTime:  time.Now().UTC(),
 			Severity:   severity,
 		}
@@ -170,6 +176,7 @@ func CloseIncident(c context.Context, id string, serviceID string) error {
 			return err
 		}
 		incident.EndTime = time.Now().UTC()
+		incident.Open = false
 		if err := datastore.Put(c, incident); err != nil {
 			logging.Errorf(c, "error writing updated incident to datastore: %v", err)
 			return err

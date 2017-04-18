@@ -65,7 +65,7 @@ func createServicesPageData(c context.Context) (sla []TemplateService, nonSLA []
 	}
 
 	for _, service := range services {
-		incidents, e := backend.GetServiceIncidents(c, service.ID)
+		incidents, e := backend.GetServiceIncidents(c, service.ID, false)
 		if err != nil {
 			logging.Errorf(c, "Error getting ServiceIncident entities %v", e)
 			return nil, nil, e

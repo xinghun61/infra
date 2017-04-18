@@ -5,8 +5,11 @@
 package dashboard
 
 import (
-	"fmt"
 	dashpb "infra/appengine/dashboard/api/dashboard"
+	"infra/appengine/dashboard/backend"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	"golang.org/x/net/context"
 )
@@ -15,19 +18,40 @@ type dashboardService struct{}
 
 func (s *dashboardService) UpdateOpenIncidents(ctx context.Context, req *dashpb.UpdateOpenIncidentsRequest) (*dashpb.UpdateOpenIncidentsResponse, error) {
 	if req.ChopsService == nil {
-		return nil, fmt.Errorf("ChopsService field in request %v was empty", req)
+		return nil, grpc.Errorf(codes.InvalidArgument, "chopsService field was empty")
 	}
 	serviceName := req.ChopsService.Name
 	if serviceName == "" {
-		return nil, fmt.Errorf("Name field in ChopsService %v was empty", req.ChopsService)
+		return nil, grpc.Errorf(codes.InvalidArgument, "name field in ChopsService was empty")
 	}
 
-	// TODO(jojwang): Update dsIncidents = backend.GetServiceIncidents to have optional argument to specify we only want open Incidents.
-	// for each dsIncident: if dsIncident not in chopsService.Incidents: CloseIncident(dsIncident)
-	// for each chopsService.Incidents: if chopsService.Incidents not in dsIncidents: backend.AddIncident(chopsService.Incident)
+	incidentsByID := make(map[string]dashpb.Incident, len(req.ChopsService.Incidents))
+	for _, incident := range req.ChopsService.Incidents {
+		incidentsByID[incident.Id] = *incident
+	}
+
+	dsIncidents, err := backend.GetServiceIncidents(ctx, serviceName, true)
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "error getting ServiceIncidents from datastore - %s", err)
+	}
+	for _, dsIncident := range dsIncidents {
+		id := dsIncident.ID
+		if _, exists := incidentsByID[id]; !exists { // Incident no longer open
+			backend.CloseIncident(ctx, id, serviceName)
+		} else {
+			delete(incidentsByID, id)
+		}
+	}
+
+	// Add remaining new incidents to datastore
+	for id, inc := range incidentsByID {
+		err := backend.AddIncident(ctx, id, serviceName, backend.Severity(int(inc.Severity)))
+		if err != nil {
+			return nil, grpc.Errorf(codes.Internal, "error storing new Incident to datastore - %s", err)
+		}
+	}
 
 	return &dashpb.UpdateOpenIncidentsResponse{
 		OpenIncidents: req.ChopsService.Incidents,
 	}, nil
-
 }

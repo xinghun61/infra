@@ -59,22 +59,30 @@ var testServiceAnother = Service{
 	SLA:  "www.another.com",
 }
 
+var now = time.Now().UTC().Truncate(time.Minute)
+
 var testIncs = []ServiceIncident{
 	{
 		ID:       "cqRedAlert",
 		Severity: SeverityRed,
+		Open:     true,
 	},
 	{
 		ID:       "cqYellowAlert",
 		Severity: SeverityYellow,
+		EndTime:  now,
+		Open:     false,
 	},
 	{
 		ID:       "monorailRedAlert",
 		Severity: SeverityRed,
+		Open:     true,
 	},
 	{
 		ID:       "monorailYellowAlert",
 		Severity: SeverityYellow,
+		EndTime:  now,
+		Open:     false,
 	},
 }
 
@@ -134,26 +142,27 @@ func TestGetServiceIncidents(t *testing.T) {
 
 	datastore.Put(ctx, &testServiceAnother)
 
-	// Test with Service that has ServiceIncidents children.
-	want := []ServiceIncident{*testIncOne, *testIncTwo}
-	incidents, err := GetServiceIncidents(ctx, testService.ID)
-	if err != nil {
-		t.Errorf("Expect no errors. Found: %v", err)
+	testCases := []struct {
+		want      []ServiceIncident
+		serviceID string
+		openOnly  bool
+	}{
+		// Test with Service that has ServiceIncidents children.
+		{[]ServiceIncident{*testIncOne, *testIncTwo}, testService.ID, false},
+		// Test with Service that has no ServiceIncidents children.
+		{[]ServiceIncident{}, testServiceAnother.ID, false},
+		// Test with Service for only open ServiceIncidents.
+		{[]ServiceIncident{*testIncOne}, testService.ID, true},
 	}
-	if !reflect.DeepEqual(incidents, want) {
-		t.Errorf("Expected incidents:%v. Found: %v", want, incidents)
+	for i, tc := range testCases {
+		incidents, err := GetServiceIncidents(ctx, tc.serviceID, tc.openOnly)
+		if err != nil {
+			t.Errorf("%d: Expect no errors. Found: %v", i, err)
+		}
+		if !reflect.DeepEqual(incidents, tc.want) {
+			t.Errorf("%d: Expected incidents:%v. Found: %v", i, tc.want, incidents)
+		}
 	}
-
-	// Test with Service that has no ServiceIncidents children.
-	want = []ServiceIncident{}
-	incidents, err = GetServiceIncidents(ctx, testServiceAnother.ID)
-	if err != nil {
-		t.Errorf("Expect no errors. Found: %v", err)
-	}
-	if !reflect.DeepEqual(incidents, want) {
-		t.Errorf("Expected incidents:%v. Found: %v", want, incidents)
-	}
-
 }
 
 func TestGetService(t *testing.T) {
@@ -253,8 +262,11 @@ func TestCloseIncident(t *testing.T) {
 	if err := datastore.Get(ctx, newIncident); err != nil {
 		t.Errorf("expected no error. found: %v", err)
 	}
-	if (newIncident.EndTime == time.Time{}) {
-		t.Error("Incident was not closed, EndTime is not set")
+	if newIncident.EndTime == (time.Time{}) {
+		t.Error("Incident was not fully closed, EndTime is not set")
+	}
+	if newIncident.Open {
+		t.Error("Incident was not fully closed, Open was not set to false")
 	}
 
 	// Test that passing a nonexistent ServiceIncident throws an error.
