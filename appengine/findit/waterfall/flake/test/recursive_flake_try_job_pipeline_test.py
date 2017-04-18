@@ -94,7 +94,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_try_job_pipeline.ScheduleFlakeTryJobPipeline,
         try_job_id,
         expected_args=[master_name, builder_name, step_name, test_name,
-                       revision, iterations_to_rerun])
+                       revision, analysis.key.urlsafe(), iterations_to_rerun])
     self.MockPipeline(
         recursive_flake_try_job_pipeline.MonitorTryJobPipeline,
         try_job_result,

@@ -172,8 +172,8 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
           'try_job_rerun', {}).get('iterations_to_rerun')
       try_job_id = yield ScheduleFlakeTryJobPipeline(
           analysis.master_name, analysis.builder_name,
-          analysis.canonical_step_name, analysis.test_name, revision,
-          iterations_to_rerun)
+          analysis.canonical_step_name, analysis.test_name,
+          revision, analysis.key.urlsafe(), iterations_to_rerun)
 
       try_job_result = yield MonitorTryJobPipeline(
           try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)

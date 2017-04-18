@@ -68,6 +68,8 @@ def _FormatDisplayData(try_job_data):
   if isinstance(try_job_data, FlakeTryJobData):
     # Flake try job data does not include try_job_type.
     display_data['try_job_type'] = 'flake'
+    display_data['analysis_key'] = (try_job_data.analysis_key.urlsafe() if
+                                    try_job_data.analysis_key else None)
 
   # Do not include the try job key in the response.
   display_data.pop('try_job_key', None)

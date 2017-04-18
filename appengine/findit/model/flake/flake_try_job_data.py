@@ -12,6 +12,9 @@ class FlakeTryJobData(BaseTryJobData):
 
   """Represents a flake try job's metadata."""
 
+  # The key of the original analysis that triggered this flake try job.
+  analysis_key = ndb.KeyProperty(indexed=False)
+
   @ndb.ComputedProperty
   def master_name(self):
     return FlakeTryJob.GetMasterName(self.try_job_key)

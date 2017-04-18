@@ -39,14 +39,15 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
     return waterfall_config.GetFlakeTrybot(master_name, builder_name)
 
   @ndb.transactional
-  def _CreateTryJobData(self, build_id, try_job_key):
+  def _CreateTryJobData(self, build_id, try_job_key, urlsafe_analysis_key):
     try_job_data = FlakeTryJobData.Create(build_id)
     try_job_data.try_job_key = try_job_key
+    try_job_data.analysis_key = ndb.Key(urlsafe=urlsafe_analysis_key)
     try_job_data.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, canonical_step_name, test_name,
-          git_hash, iterations_to_rerun=None):
+          git_hash, urlsafe_analysis_key, iterations_to_rerun=None):
     """Triggers a flake try job.
 
     Args:
@@ -56,6 +57,8 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
           occurred on.
       test_name (str): The name of the flaky test.
       git_hash (str): The git hash of the revision to run the try job against.
+      urlsafe_analysis_key (str): The urlsafe key of the original
+          MasterFlakeAnalysis that triggered this try job.
       iterations_to_rerun (int): The number of iterations to rerun.
 
     Returns:
@@ -76,6 +79,6 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
 
     # Create a corresponding Flake entity to capture as much metadata as early
     # as possible.
-    self._CreateTryJobData(build_id, try_job.key)
+    self._CreateTryJobData(build_id, try_job.key, urlsafe_analysis_key)
 
     return build_id

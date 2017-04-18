@@ -4,6 +4,8 @@
 
 import mock
 
+from google.appengine.ext import ndb
+
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from model.flake.flake_try_job import FlakeTryJob
@@ -51,10 +53,12 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     git_hash = 'a1b2c3d4'
     build_id = 'build_id'
+    analysis_key = ndb.Key('key', 1)
 
     try_job = FlakeTryJob.Create(
         master_name, builder_name, step_name, test_name, git_hash)
-    ScheduleFlakeTryJobPipeline()._CreateTryJobData(build_id, try_job.key)
+    ScheduleFlakeTryJobPipeline()._CreateTryJobData(
+        build_id, try_job.key, analysis_key.urlsafe())
 
     try_job_data = FlakeTryJobData.Get(build_id)
 
@@ -69,6 +73,7 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     git_hash = 'a1b2c3d4'
     build_id = '1'
     url = 'url'
+    analysis_key = ndb.Key('key', 1)
 
     response = {
         'build': {
@@ -85,7 +90,8 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     try_job_pipeline = ScheduleFlakeTryJobPipeline()
     try_job_id = try_job_pipeline.run(
-        master_name, builder_name, step_name, test_name, git_hash)
+        master_name, builder_name, step_name, test_name, git_hash,
+        analysis_key.urlsafe())
 
     try_job = FlakeTryJob.Get(
         master_name, builder_name, step_name, test_name, git_hash)
@@ -95,6 +101,7 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(build_id, try_job.flake_results[-1]['try_job_id'])
     self.assertTrue(build_id in try_job.try_job_ids)
     self.assertEqual(try_job_data.try_job_key, try_job.key)
+    self.assertEqual(analysis_key, try_job_data.analysis_key)
 
   @mock.patch.object(schedule_try_job_pipeline, 'buildbucket_client')
   def testTriggerTryJob(self, mock_module):

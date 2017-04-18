@@ -196,6 +196,8 @@
                    <a href="/waterfall/build-failure?url=https://luci-milo.appspot.com/buildbot/{{try_job_display_data.master_name}}/{{try_job_display_data.builder_name}}
 /{{try_job_display_data.build_number}}" target="_blank">{{try_job_display_data.build_number}}
                     </a>
+                {% elif try_job_display_data.analysis_key %}
+                   <a href="/waterfall/flake?key={{ try_job_display_data.analysis_key }}" target="_blank">link</a>
                 {% endif %}
               </td>
               <td>{{ try_job_display_data.try_job_type }}</td>

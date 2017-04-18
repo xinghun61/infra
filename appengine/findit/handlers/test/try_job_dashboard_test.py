@@ -8,6 +8,8 @@ import mock
 
 import webapp2
 
+from google.appengine.ext import ndb
+
 from handlers import try_job_dashboard
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
@@ -152,6 +154,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     flake_try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
     flake_try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
     flake_try_job_completed.try_job_url = 'url4'
+    flake_try_job_completed.analysis_key = ndb.Key('key', 1)
     flake_try_job_completed.last_buildbucket_response = {
         'status': 'COMPLETED'
     }
@@ -228,6 +231,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     flake_try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
     flake_try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
     flake_try_job_completed.try_job_url = 'url4'
+    flake_try_job_completed.analysis_key = ndb.Key('key', 1)
     flake_try_job_completed.last_buildbucket_response = {
         'status': 'COMPLETED'
     }
