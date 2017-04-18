@@ -93,7 +93,7 @@ class DummyHttpClient(HttpClientAppengine):
 class UpdateComponentConfigTest(TestCase):
   """Tests utility functions and ``CrashConfig`` handler."""
   app_module = webapp2.WSGIApplication([
-      ('/crash/update-config', UpdateComponentConfig),
+      ('/crash/update-component-config', UpdateComponentConfig),
   ], debug=True)
 
   def setUp(self):
@@ -121,5 +121,6 @@ class UpdateComponentConfigTest(TestCase):
   def testHandleGet(self, mocked_get_component_classifier_config):
     mocked_get_component_classifier_config.return_value = _MOCK_CONFIG
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    self.test_app.get('/crash/update-config')
+    response = self.test_app.get('/crash/update-component-config')
+    self.assertEqual(response.status_int, 200)
     self.assertDictEqual(_MOCK_CONFIG, CrashConfig.Get().component_classifier)

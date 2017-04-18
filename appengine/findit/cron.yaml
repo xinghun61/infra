@@ -12,5 +12,9 @@ cron:
   schedule: every day 00:00
 
 - description: Every day collect tree closures
-  url/waterfall/collect-tree-closures
+  url: /waterfall/collect-tree-closures
   schedule: every day 00:00
+
+- description: Sunday evening to update directory mapping of components
+  url: /crash/update-component-config
+  schedule: every sunday 21:00

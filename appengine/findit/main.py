@@ -133,7 +133,8 @@ gae_ts_mon.initialize(waterfall_backend_web_application)
 # "crash-frontend" module.
 crash_frontend_web_pages_handler_mappings = [
     ('/crash/config', crash_config.CrashConfig),
-    ('/crash/update-config', update_component_config.UpdateComponentConfig),
+    ('/crash/update-component-config',
+     update_component_config.UpdateComponentConfig),
     ('/crash/cracas-dashboard', cracas_dashboard.CracasDashBoard),
     ('/crash/cracas-result-feedback',
      cracas_result_feedback.CracasResultFeedback),
