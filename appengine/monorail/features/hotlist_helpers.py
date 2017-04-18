@@ -131,7 +131,8 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
         sorted_issues, mr.col_spec.split(), harmonized_config,
         features_constants.OTHER_BUILT_IN_COLS)
     pagination = paginate.ArtifactPagination(
-        mr, sorted_issues, mr.num, 'hotlist', len(sorted_issues))
+        mr, sorted_issues, mr.num,
+        GetURLOfHotlist(mr.cnxn, mr.hotlist, services.user), len(sorted_issues))
 
     sort_spec = '%s %s %s' % (
         mr.group_by_spec, mr.sort_spec, harmonized_config.default_sort_spec)

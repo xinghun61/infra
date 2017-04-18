@@ -75,7 +75,8 @@ class PaginateTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(path='/hotlists/17?num=5&start=4')
     mr.hotlist_id = 17
     mr.auth.user_id = 112
-    vp = paginate.VirtualPagination(mr, 12, 5, list_page_url='hotlist')
+    vp = paginate.VirtualPagination(mr, 12, 5,
+                                    list_page_url='/u/112/hotlists/17')
     self.assertEquals(vp.num, 5)
     self.assertEquals(vp.start, 5)
     self.assertEquals(vp.last, 9)

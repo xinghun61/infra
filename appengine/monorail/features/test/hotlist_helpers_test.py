@@ -56,7 +56,7 @@ class HotlistTableDataTest(unittest.TestCase):
             date_added=date, note=note) for (
                 issue_id, rank, adder_id, date, note) in hotlist_items]
     self.test_hotlist = self.services.features.TestAddHotlist(
-        'hotlist', hotlist_id=123,
+        'hotlist', hotlist_id=123, owner_ids=[111L],
         hotlist_item_fields=hotlist_items)
     sorting.InitializeArtValues(self.services)
     self.mr = None
@@ -68,7 +68,7 @@ class HotlistTableDataTest(unittest.TestCase):
     self.mr.col_spec = 'ID Summary Modified'
 
   def testCreateHotlistTableData(self):
-    self.setUpCreateHotlistTableDataTestMR()
+    self.setUpCreateHotlistTableDataTestMR(hotlist=self.test_hotlist)
     table_data, table_related_dict = hotlist_helpers.CreateHotlistTableData(
         self.mr, self.hotlist_items_list, profiler.Profiler(), self.services)
     self.assertEqual(len(table_data), 3)
