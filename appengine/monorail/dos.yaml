@@ -57,3 +57,52 @@ blacklist:
     description: attempted SQL injection
   - subnet: 192.198.146.166
     description: requesting all issue IDs in sequence
+
+  - subnet: 103.17.131.175
+    description: someone trying to fuzz our server
+  - subnet: 125.164.230.28
+    description: someone trying to fuzz our server
+  - subnet: 156.210.117.20
+    description: someone trying to fuzz our server
+  - subnet: 31.38.229.26
+    description: someone trying to fuzz our server
+  - subnet: 41.102.220.215
+    description: someone trying to fuzz our server
+  - subnet: 78.175.182.167
+    description: someone trying to fuzz our server
+  - subnet: 78.210.82.177
+    description: someone trying to fuzz our server
+  - subnet: 79.56.108.42
+    description: someone trying to fuzz our server
+  - subnet: 93.38.40.215
+    description: someone trying to fuzz our server
+  - subnet: 93.3.219.55
+    description: someone trying to fuzz our server
+  - subnet: 52.178.119.169
+    description: someone trying to fuzz our server
+  - subnet: 62.102.148.160
+    description: someone trying to fuzz our server
+  - subnet: 163.172.74.125
+    description: someone trying to fuzz our server
+  - subnet: 212.237.19.49
+    description: someone trying to fuzz our server
+  - subnet: 95.225.64.2
+    description: someone trying to fuzz our server
+  - subnet: 148.160.18.231
+    description: someone trying to fuzz our server
+  - subnet: 80.15.111.204
+    description: someone trying to fuzz our server
+  - subnet: 23.251.135.231
+    description: someone trying to fuzz our server
+  - subnet: 93.38.248.219
+    description: someone trying to fuzz our server
+  - subnet: 108.175.2.193
+    description: someone trying to fuzz our server
+  - subnet: 186.71.114.124
+    description: someone trying to fuzz our server
+  - subnet: 85.48.135.217
+    description: someone trying to fuzz our server
+  - subnet: 37.212.48.119
+    description: someone trying to fuzz our server
+  - subnet: 172.56.7.191
+    description: endlessly requesting favicon.ico
