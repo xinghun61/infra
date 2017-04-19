@@ -291,4 +291,4 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     # Call the hook function after the task is triggered.
     self._OnTaskTriggered()
 
-    return task_id
+    return task_id or NO_TASK_EXCEPTION
