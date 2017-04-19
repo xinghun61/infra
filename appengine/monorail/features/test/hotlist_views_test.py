@@ -49,13 +49,28 @@ class HotlistViewTest(unittest.TestCase):
     self.user2_view = framework_views.UserView(self.user2)
     self.user3 = self.services.user.TestAddUser('user3', 333L)
     self.user3_view = framework_views.UserView(self.user3)
+    self.user4 = self.services.user.TestAddUser('user4', 444L, banned=True)
+    self.user4_view = framework_views.UserView(self.user4)
 
     self.user_auth = monorailrequest.AuthData.FromEmail(
         None, 'user3', self.services)
     self.user_auth.effective_ids = {3}
     self.user_auth.user_id = 3
-    self.users_by_id = {1: self.user1_view, 2: self.user2_view, 3:
-                        self.user3_view}
+    self.users_by_id = {1: self.user1_view, 2: self.user2_view,
+        3: self.user3_view, 4: self.user4_view}
+
+  def testBanned(self):
+    # With a banned user
+    hotlist = fake.Hotlist('userBanned', 423, owner_ids=[4])
+    hotlist_view = hotlist_views.HotlistView(hotlist, self.user_auth, 1,
+                                             self.users_by_id)
+    self.assertFalse(hotlist_view.visible)
+
+    # With a user not banned
+    hotlist = fake.Hotlist('userNotBanned', 453, owner_ids=[1])
+    hotlist_view = hotlist_views.HotlistView(hotlist, self.user_auth, 1,
+                                             self.users_by_id)
+    self.assertTrue(hotlist_view.visible)
 
   def testNoPermissions(self):
     hotlist = fake.Hotlist(
