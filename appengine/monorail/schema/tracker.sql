@@ -331,8 +331,7 @@ CREATE TABLE CommentContent (
   content MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
   inbound_message MEDIUMTEXT COLLATE utf8mb4_unicode_ci,
 
-  PRIMARY KEY (id),
-  UNIQUE KEY (comment_id)  -- TODO: drop this too.
+  PRIMARY KEY (id)
 ) ENGINE=INNODB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
