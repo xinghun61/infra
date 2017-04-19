@@ -58,9 +58,13 @@ func (luciConfigServer) GetServiceConfig(c context.Context) (*tricium.ServiceCon
 
 // GetProjectConfig implements the ProviderAPI.
 func (luciConfigServer) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
+	service := common.TriciumDevServer
+	if !appengine.IsDevAppServer() {
+		service = appengine.AppID(c)
+	}
 	ret := &tricium.ProjectConfig{}
 	if err := cfgclient.Get(c, cfgclient.AsService, cfgtypes.ConfigSet(fmt.Sprintf("projects/%s", p)),
-		"tricium-dev.cfg", textproto.Message(ret), nil); err != nil {
+		fmt.Sprintf("%s.cfg", service), textproto.Message(ret), nil); err != nil {
 		return nil, fmt.Errorf("failed to get project config: %v", err)
 	}
 	return ret, nil
