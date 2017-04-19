@@ -117,8 +117,8 @@
 
       flush(function() {
         assert.equal(
-            element.$$('.category-title').textContent.trim(),
-            element._getCategoryTitle(2) + ' (1):');
+            element.$$('.category-title-text').textContent.trim(),
+            element._getCategoryTitle(2) + ' (1 total)');
         done();
       });
     });
@@ -136,7 +136,8 @@
 
       flush(function() {
         assert.equal(
-            element.$$('.category-title').textContent.trim(), 'test (1):');
+            element.$$('.category-title-text').textContent.trim(),
+              'test infra failures (1 total)');
         done();
       });
     });

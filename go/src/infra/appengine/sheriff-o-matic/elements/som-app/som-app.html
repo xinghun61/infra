@@ -4,7 +4,6 @@
 <link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="../../bower_components/iron-location/iron-location.html">
 <link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
-<link rel="import" href="../../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../../bower_components/paper-drawer-panel/paper-drawer-panel.html">
 <link rel="import" href="../../bower_components/paper-header-panel/paper-header-panel.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
@@ -35,10 +34,6 @@
         @apply(--layout-vertical);
         min-height: 100%;
       }
-      paper-button {
-        font-size: 0.85em;
-        padding: 0.5em;
-      }
       paper-toolbar {
         --paper-toolbar-background: black;
       }
@@ -53,20 +48,14 @@
       span.line {
         display: inline-block;
       }
-      h2, h3 {
+      h2 {
         font-weight: bold;
         background-color: #eee;
         border-bottom: 1px solid #ddd;
         margin: 0.5em 16px 1em;
-      }
-      h2 {
-        font-size: 22px;
+        font-size: 18px;
+        line-height: 180%;
         padding: 0.5em 8px 0.25em;
-      }
-      h3 {
-        padding: 0.25em 8px 0.1em;
-        height: 45px;
-        align-items: center;
       }
       #fetchAlertsError {
         color: #f00;
@@ -99,6 +88,18 @@
         float: left;
         width: 100%;
         padding: 0.5em 16px;
+      }
+      .collapse-button {
+        cursor: pointer;
+        font-size: 0.85em;
+        padding: 0.25em 8px;
+        margin: 0 4px;
+        border-radius: 8px;
+        -webkit-transition: background .3s ease;
+        transition: background .3s ease;
+      }
+      .collapse-button:hover {
+        background: #ddd;
       }
       .error {
         color: #c00;
@@ -242,7 +243,6 @@
               </template>
             </div>
             <div id="alertsList" class="page-section">
-              <h2>[[_treeDisplayName]] Failure Alerts (<a href="/help-som">Help?</a>)</h2>
               <div id="fetchAlertsError" hidden$=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
               <template is="dom-if" if="[[!_hideJulie]]">
                 <div id="noAlerts">
@@ -252,19 +252,25 @@
                 </div>
               </template>
               <template is="dom-repeat" items="[[_computeCategories(_alerts, _isTrooperPage)]]" as="cat">
-                <h3 class="category-title layout horizontal justified">
-                  [[_getCategoryTitle(cat, _isTrooperPage)]] ([[_getCategoryCount(_alerts, cat, _isTrooperPage)]]):
+                <h2 class="category-title layout horizontal justified">
+                  <span>
+                    <span class="category-title-text">
+                      [[_getCategoryTitle(cat, _isTrooperPage)]] ([[_getCategoryCount(_alerts, cat, _isTrooperPage)]] total)
+                    </span>
+                    (<a href="/help-som" target="_blank">Help?</a>)
+                  </span>
                   <template is="dom-if" if="[[useCompactView]]">
                     <div class="self-center end section-buttons">
-                      <paper-button raised on-tap="collapseAll">
+                      <span class="collapse-button" on-tap="collapseAll">
                         Collapse all
-                      </paper-button>
-                      <paper-button raised on-tap="expandAll">
+                      </span>
+                      /
+                      <span class="collapse-button" on-tap="expandAll">
                         Expand all
-                      </paper-button>
+                      </span>
                     </div>
                   </template>
-                </h3>
+                </h2>
                 <template is="dom-repeat" items="[[_alertsWithCategory(_alerts, cat, _isTrooperPage)]]" as="alert">
                   <som-alert-item
                       class="alert-item"

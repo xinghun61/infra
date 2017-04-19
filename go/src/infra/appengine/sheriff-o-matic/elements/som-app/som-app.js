@@ -563,7 +563,8 @@
 
     _getCategoryTitle: function(category, isTrooperPage) {
       if (isTrooperPage) {
-        return this._computeTreeDisplayName(category, this._trees);
+        return this._computeTreeDisplayName(category, this._trees)
+          + ' infra failures';
       }
       return {
         0: 'Tree closers',
