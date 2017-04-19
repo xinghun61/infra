@@ -20,44 +20,6 @@
       background-color: #e98080;
       border-color: #a77272;
     }
-    .thumbs-up-down {
-      border-radius: 7px;
-      display: inline-block;
-    }
-    .triage, .triaged {
-      display: block;
-      float: left;
-      vertical-align: middle;
-    }
-    .triage {
-      background-color: #e5e5e5;
-      cursor: pointer;
-    }
-    .triaged {
-      cursor: default;
-    }
-    .thumb-up {
-      border-top: solid 1px;
-      border-bottom: solid 1px;
-      border-left: solid 1px;
-      border-top-left-radius: 7px;
-      border-bottom-left-radius: 7px;
-      padding-left: 10px;
-      padding-right: 10px;
-    }
-    .thumb-down {
-      border: solid 1px;
-      border-top-right-radius: 7px;
-      border-bottom-right-radius: 7px;
-      padding-left: 10px;
-      padding-right: 10px;
-    }
-    .thumb-up:hover, .thumb-up.triaged {
-      background-color: #8fdf5f;
-    }
-    .thumb-down:hover, .thumb-down.triaged {
-      background-color: #e98080;
-    }
     {% block style %}{% endblock style %}
   </style>
   <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
@@ -88,31 +50,6 @@
         // Replace the whole page with errors from server side.
         document.body.outerHTML = xhr.responseText;
       });
-    }
-
-    function triageAnalysisResult(e) {
-      var target = $(this);
-      if (target.hasClass('triaged'))
-        return;
-
-      var correct = target.hasClass('thumb-up');
-      $.getJSON('/waterfall/triage-analysis?correct=' + correct + '&url=' + findit.buildUrl, function(data) {
-        if (data['success']) {
-          $('.triaged').addClass('triage').removeClass('triaged');
-          target.addClass('triaged').removeClass('triage');
-        } else {
-          alert('Failed to update datastore. Please refresh and try again.');
-        }
-        {% if show_debug_info %}
-          $('#duplicates_marked').html('Number of matching build analyses that were also triaged: ' + data['num_duplicate_analyses']);
-          $('#duplicate_reference').html('');
-        {% endif %}
-      }).error(function(xhr) {
-        // Replace the whole page with errors from server side.
-        document.body.outerHTML = xhr.responseText;
-      });
-
-      e.preventDefault();
     }
 
     function triageHelp(e) {
@@ -166,8 +103,6 @@
           // TODO: use another style when no culprit CL is found.
           $('#status_message').text('completed');
           $('#status_message').attr('class', 'completed');
-
-          $('.triage').click(triageAnalysisResult);
 
           {% block failure_classification %}{% endblock failure_classification %}
 
