@@ -313,10 +313,10 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       extra_r = s.get('extra_reviewers')
       if extra_r:
         upload_args.append('--reviewers=%s' % (','.join(extra_r)))
+        upload_args.append('--send-mail')
 
       upload_args.append('--r-owners')
 
-      upload_args.append('--send-mail')
       if s.get('automatic_commit_dry_run'):
         upload_args.append('--cq-dry-run')
 
