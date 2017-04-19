@@ -21,7 +21,6 @@ from handlers import culprit
 from handlers import failure_log
 from handlers import help_triage
 from handlers import list_analyses
-from handlers import monitor_alerts
 from handlers import pipeline_errors_dashboard
 from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
@@ -102,7 +101,6 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/list-flakes', list_flakes.ListFlakes),
     ('/waterfall/help-triage', help_triage.HelpTriage),
     ('/waterfall/list-analyses', list_analyses.ListAnalyses),
-    ('/waterfall/monitor-alerts', monitor_alerts.MonitorAlerts),
     ('/waterfall/pipeline-errors-dashboard',
      pipeline_errors_dashboard.PipelineErrorsDashboard),
     ('/waterfall/swarming-task', swarming_task.SwarmingTask),
