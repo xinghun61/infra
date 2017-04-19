@@ -122,7 +122,12 @@ def get_task_template_async(canary, canary_required=True):
   if not text:
     revision, text = yield component_config.get_self_config_async(
         'swarming_task_template.json', store_last_good=True)
-  raise ndb.Return(revision, json.loads(text) if text else None, canary)
+
+  template = None
+  if text:
+    template = json.loads(text)
+    template.pop('__comment__', None)
+  raise ndb.Return(revision, template, canary)
 
 
 def validate_build_parameters(builder_name, params):
