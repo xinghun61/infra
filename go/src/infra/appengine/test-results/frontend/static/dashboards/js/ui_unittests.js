@@ -69,5 +69,5 @@ test('chromiumRevisionLinkRevisionRange', 1, function() {
     var testResults = {};
     testResults[results.CHROME_REVISIONS] = [5, 2];
     var html = ui.html.chromiumRevisionLink(testResults, 0);
-    equal(html, '<a href="../../data/revision_range?start=3&end=5">r3 to r5</a>');
+    equal(html, '<a href="../../revision_range?start=3&end=5">r3 to r5</a>');
 });

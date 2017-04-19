@@ -191,7 +191,7 @@ ui.html._revisionLink = function(resultsKey, testResults, index)
     var rangeUrl;
     // Intentionally do not increment previous revision. This rev works the
     // way gitiles does (exclude the start of the range).
-    rangeUrl = '../../data/revision_range?start=' + (previousRevision + 1) + '&end=' + currentRevision;
+    rangeUrl = '../../revision_range?start=' + (previousRevision + 1) + '&end=' + currentRevision;
 
     return '<a href="' + rangeUrl + '">r' + (previousRevision + 1) + ' to r' + currentRevision + '</a>';
 }

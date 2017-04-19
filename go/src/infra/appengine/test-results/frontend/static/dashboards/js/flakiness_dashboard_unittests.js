@@ -638,7 +638,7 @@ test('htmlForPopupForBuild', 2, function() {
                     'Build log' +
                 '</a>' +
             '</li>' +
-            '<li>Chromium: <a href="../../data/revision_range?start=1234&end=1235">r1234 to r1235</a></li>' +
+            '<li>Chromium: <a href="../../revision_range?start=1234&end=1235">r1234 to r1235</a></li>' +
             '<li>' +
                 '<a href="https://storage.googleapis.com/chromium-layout-test-archives/WebKit_Linux__dbg_/4/layout-test-results.zip">' +
                     'layout-test-results.zip' +
