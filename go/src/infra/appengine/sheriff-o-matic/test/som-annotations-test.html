@@ -12,6 +12,7 @@
 <script>
 (function() {
   'use strict';
+  var clock;
   var element;
   var responseHeaders = {
       json: {'Content-Type': 'application/json'},
@@ -22,6 +23,7 @@
   // https://www.polymer-project.org/1.0/docs/tools/tests#create-stub-elements
   setup(function() {
     element = fixture('basic');
+    clock = sinon.useFakeTimers();
     sinon.stub(window, 'fetch');
   });
   teardown(function() {
@@ -157,12 +159,6 @@
   });
 
   suite('compute annotations', function() {
-    var clock;
-
-    setup(function() {
-      clock = sinon.useFakeTimers();
-    });
-
     test('compute annotations object correctly', function() {
       let annotations = [{key: 'foo', bugs: ['bar']}];
       assert.deepEqual({
@@ -283,6 +279,7 @@
       });
 
       element.$.bug.value = 'bar';
+      element.$.autosnooze.checked = false;
       element._bugModel = {key: 'foo'};
 
       element._saveBug();
@@ -291,6 +288,29 @@
       sendStub.calledWith('foo', [{
         add: {
           bugs: ['bar']
+        }
+      }]);
+    });
+
+    test('autosnooze bug', function() {
+      let sendStub = sinon.stub(element, 'sendAnnotation');
+      sendStub.onCall(0).returns({
+          then: (f) => {
+            f({key: 'foo'});
+          }
+      });
+
+      element.$.bug.value = 'bar';
+      element.$.autosnooze.checked = true;
+      element._bugModel = {key: 'foo'};
+
+      element._saveBug();
+
+      sinon.assert.calledOnce(sendStub);
+      sendStub.calledWith('foo', [{
+        add: {
+          bugs: ['bar'],
+          snoozeTime: element._defaultSnoozeTime * 60 * 1000
         }
       }]);
     });

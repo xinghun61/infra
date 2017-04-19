@@ -16,7 +16,6 @@
         notify: true,
         value: false,
       },
-      numberHiddenAlerts: Number,
       path: {
         type: String,
         notify: true,

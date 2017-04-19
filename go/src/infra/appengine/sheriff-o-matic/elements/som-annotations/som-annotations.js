@@ -57,6 +57,11 @@
           return this.$.commentText;
         }
       },
+      // TODO(zhangtiff): Change snooze time per tree.
+      _defaultSnoozeTime: {
+        type: Number,
+        value: DEFAULT_SNOOZE_TIME_MIN,
+      },
       _filedBug: {
         type: Boolean,
         value: false,
@@ -237,7 +242,7 @@
 
     handleSnooze: function(evt) {
       this._snoozeModel = evt.target.alert;
-      this.$.snoozeTime.value = DEFAULT_SNOOZE_TIME_MIN;
+      this.$.snoozeTime.value = this._defaultSnoozeTime;
       this._snoozeErrorMessage = '';
       this.$.snoozeDialog.open();
     },
@@ -282,7 +287,11 @@
 
     _saveBug: function() {
       // TODO(add proper error handling)
-      this.sendAnnotation(this._bugModel.key, 'add', {bugs: [this.$.bug.value]})
+      let data = {bugs: [this.$.bug.value]};
+      if (this.$.autosnooze.checked) {
+        data.snoozeTime = Date.now() + ONE_MIN_MS * this._defaultSnoozeTime;
+      }
+      this.sendAnnotation(this._bugModel.key, 'add', data)
           .then(
               (response) => {
                 this._bugErrorMessage = '';
