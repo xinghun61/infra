@@ -17,10 +17,10 @@ from waterfall.trigger_swarming_tasks_pipeline import (
 class TriggerSwarmingTasksPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  def test_GetStepsThatNeedToTriggerSwarmingTasksNoAnalysis(self):
+  def testGetStepsThatNeedToTriggerSwarmingTasksNoAnalysis(self):
     result = (
         trigger_swarming_tasks_pipeline._GetStepsThatNeedToTriggerSwarmingTasks(
-            'm', 'b', 1, {}))
+            'm', 'b', 1, {}, False))
     self.assertEqual(result, {})
 
   def test_GetStepsThatNeedToTriggerSwarmingTasksNoFailureResultMap(self):
@@ -84,13 +84,13 @@ class TriggerSwarmingTasksPipelineTest(wf_testcase.WaterfallTestCase):
 
     result = (
         trigger_swarming_tasks_pipeline._GetStepsThatNeedToTriggerSwarmingTasks(
-            master_name, builder_name, build_number, failure_info))
+            master_name, builder_name, build_number, failure_info, False))
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
     self.assertEqual(result, expected_result)
     self.assertEqual(analysis.failure_result_map, expected_failure_result_map)
 
-  def test_GetStepsThatNeedToTriggerSwarmingTasks(self):
+  def testGetStepsThatNeedToTriggerSwarmingTasks(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 2
@@ -156,7 +156,77 @@ class TriggerSwarmingTasksPipelineTest(wf_testcase.WaterfallTestCase):
     }
     result = (
         trigger_swarming_tasks_pipeline._GetStepsThatNeedToTriggerSwarmingTasks(
-            master_name, builder_name, build_number, failure_info))
+            master_name, builder_name, build_number, failure_info, False))
+    self.assertEqual(result, expected_result)
+
+  def testGetStepsThatNeedToTriggerSwarmingTasksForRerun(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 2
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_result_map = {
+        'a_tests': {
+            'Unittest1.Subtest1': 'm/b/2'
+        }
+    }
+    analysis.put()
+
+    failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 2,
+        'chromium_revision': None,
+        'builds': {
+            2: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
+        },
+        'failed_steps': {
+            'abc_test': {
+                'current_failure': 2,
+                'first_failure': 1,
+                'last_pass': 0,
+                'tests': {
+                    'Unittest2.Subtest1': {
+                        'current_failure': 2,
+                        'first_failure': 2,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest2.Subtest1'
+                    },
+                    'Unittest3.Subtest2': {
+                        'current_failure': 2,
+                        'first_failure': 1,
+                        'last_pass': 0,
+                        'base_test_name': 'Unittest3.Subtest2'
+                    }
+                }
+            },
+            'a_tests': {
+                'current_failure': 2,
+                'first_failure': 1,
+                'last_pass': 0,
+                'tests': {
+                    'Unittest1.Subtest1': {
+                        'current_failure': 2,
+                        'first_failure': 2,
+                        'last_pass': 1,
+                        'base_test_name': 'Unittest1.Subtest1'
+                    }
+                }
+            }
+        },
+        'failure_type': failure_type.TEST
+    }
+
+    expected_result = {
+        'a_tests': ['Unittest1.Subtest1'],
+        'abc_test': ['Unittest2.Subtest1']
+    }
+    result = (
+        trigger_swarming_tasks_pipeline._GetStepsThatNeedToTriggerSwarmingTasks(
+            master_name, builder_name, build_number, failure_info, True))
     self.assertEqual(result, expected_result)
 
   def testTriggerSwarmingTasksPipelineNoFailureInfo(self):
@@ -272,7 +342,7 @@ class TriggerSwarmingTasksPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock(trigger_swarming_task_pipeline, 'TriggerSwarmingTaskPipeline',
               _MockedTriggerSwarmingTaskPipeline)
     pipeline = TriggerSwarmingTasksPipeline(
-        master_name, builder_name, build_number, failure_info)
+        master_name, builder_name, build_number, failure_info, True)
     pipeline.start()
     self.execute_queued_tasks()
     self.assertEqual(_MockedTriggerSwarmingTaskPipeline.count, 1)

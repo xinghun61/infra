@@ -14,9 +14,12 @@ from waterfall.trigger_swarming_task_pipeline import TriggerSwarmingTaskPipeline
 
 @ndb.transactional
 def _GetStepsThatNeedToTriggerSwarmingTasks(
-    master_name, builder_name, build_number, failure_info):
-  """Gets first time failed steps and tests which haven't triggered
-     swarming tasks.
+    master_name, builder_name, build_number, failure_info, force):
+  """Gets first time failed steps and tests.
+
+   Gets first time failed steps and tests which haven't triggered swarming tasks
+   for first time runs.
+   Gets all first time failed steps and tests for reruns.
   """
   result_steps = defaultdict(list)
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -28,23 +31,30 @@ def _GetStepsThatNeedToTriggerSwarmingTasks(
   # A dict to store all the first time failed steps and/ or tests which
   # have not triggered a swarming task yet.
   for failed_step, step_failure in failure_info['failed_steps'].iteritems():
-    if failure_result_map.get(failed_step):
-      # The step has been processed.
-      continue
-
     if not step_failure.get('tests'):  # Not a swarming gtest.
       continue
 
-    failure_result_map[failed_step] = {}
+    if not force:
+      if failure_result_map.get(failed_step):
+        # The step has been processed.
+        continue
+      else:
+        failure_result_map[failed_step] = {}
+
     for failed_test, test_failure in step_failure['tests'].iteritems():
-      task_key = '%s/%s/%s' % (
-        master_name, builder_name, test_failure['first_failure'])
-      failure_result_map[failed_step][failed_test] = task_key
+      if not force:
+        # Updates analysis.failure_result_map only when the analysis runs at the
+        # first time.
+        task_key = '%s/%s/%s' % (
+          master_name, builder_name, test_failure['first_failure'])
+        failure_result_map[failed_step][failed_test] = task_key
 
       if test_failure['first_failure'] == test_failure['current_failure']:
         # First time failure, add to result_steps.
         result_steps[failed_step].append(test_failure['base_test_name'])
-  analysis.put()
+
+  if not force:
+    analysis.put()
   return result_steps
 
 
@@ -52,13 +62,14 @@ class TriggerSwarmingTasksPipeline(BasePipeline):
   """Root Pipeline to trigger swarming tasks."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, failure_info):
+  def run(self, master_name, builder_name, build_number, failure_info,
+          force=False):
     if (not failure_info or not failure_info['failed_steps'] or
         not failure_info['failure_type'] == failure_type.TEST):
       return
 
     steps = _GetStepsThatNeedToTriggerSwarmingTasks(
-        master_name, builder_name, build_number, failure_info)
+        master_name, builder_name, build_number, failure_info, force)
     for step_name, base_tests in steps.iteritems():
       yield TriggerSwarmingTaskPipeline(
-          master_name, builder_name, build_number, step_name, base_tests)
+          master_name, builder_name, build_number, step_name, base_tests, force)

@@ -88,7 +88,8 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
       # Triggers swarming tasks when first time test failure happens.
       # This pipeline will run before build completes.
       yield TriggerSwarmingTasksPipeline(
-          master_name, builder_name, build_number, failure_info)
+          master_name, builder_name, build_number, failure_info,
+          force_rerun_try_job)
 
       # Checks if first time failures happen and starts a try job if yes.
       yield StartTryJobOnDemandPipeline(

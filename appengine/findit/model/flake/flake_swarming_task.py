@@ -82,13 +82,6 @@ class FlakeSwarmingTask(BaseSwarmingTask, BaseBuildModel):
 
   def Reset(self):
     """Resets the task as if it's a new task."""
-    self.task_id = None
-    self.tests_statuses = None
-    self.status = analysis_status.PENDING
-    self.error = None
-    self.created_time = None
-    self.started_time = None
-    self.completed_time = None
-    self.parameters = {}
+    super(FlakeSwarmingTask, self).Reset()
     self.successes = None
     self.tries = None

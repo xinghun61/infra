@@ -152,15 +152,16 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
   def _NeedANewSwarmingTask(self, *args, **kwargs):
     swarming_task = self._GetSwarmingTask(*args)
     iterations_to_rerun = kwargs.get('iterations_to_rerun') if kwargs else None
+    force = kwargs.get('force') if kwargs else False
     if not swarming_task:
       swarming_task = self._CreateSwarmingTask(*args)
       swarming_task.status = analysis_status.PENDING
       swarming_task.put()
       return True
     else:
-      if (swarming_task.parameters and iterations_to_rerun and
+      if (force or (swarming_task.parameters and iterations_to_rerun and
           swarming_task.parameters.get('iterations_to_rerun') !=
-          iterations_to_rerun):
+          iterations_to_rerun)):
         # Triggering a new swarming task on the same build for flaky analysis.
         # Resets the existing swarming task.
         swarming_task.Reset()
@@ -221,7 +222,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number, step_name, tests,
-          iterations_to_rerun=None, hard_timeout_seconds=None):
+          iterations_to_rerun=None, hard_timeout_seconds=None, force=False):
     """Triggers a new Swarming task to run the given tests.
 
     Args:
@@ -232,6 +233,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
       tests (list): A list of test cases, eg: ['suite1.test1', 'suite2.testw2']
       iterations_to_rerun (int): Number of iterations to run a test.
       hard_timeout_seconds (int): How many seconds the overall task has to run.
+      force (bool): If this is a forced rerun.
 
     Returns:
       task_id (str): The new Swarming task that re-run the given tests.
@@ -240,7 +242,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
                               build_number, step_name, tests)
     # Check if a new Swarming Task is really needed.
     if not self._NeedANewSwarmingTask(
-        *call_args, iterations_to_rerun=iterations_to_rerun):
+        *call_args, iterations_to_rerun=iterations_to_rerun, force=force):
       return self._GetSwarmingTaskId(*call_args)
     assert tests
     http_client = HttpClientAppengine()

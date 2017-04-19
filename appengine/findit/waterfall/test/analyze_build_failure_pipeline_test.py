@@ -58,7 +58,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
         analyze_build_failure_pipeline.TriggerSwarmingTasksPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number, 'failure_info'],
+            master_name, builder_name, build_number, 'failure_info', False],
         expected_kwargs={})
     self.MockPipeline(
         analyze_build_failure_pipeline.StartTryJobOnDemandPipeline,
