@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/luci/gae/service/info"
+
 	"golang.org/x/net/context"
 
 	"google.golang.org/api/googleapi"
@@ -153,7 +155,7 @@ func topic(c context.Context) string {
 	if appengine.IsDevAppServer() {
 		return fmt.Sprintf(topicFormat, TriciumDevServer, "-"+hostname())
 	}
-	return fmt.Sprintf(topicFormat, appengine.AppID(c), "")
+	return fmt.Sprintf(topicFormat, info.AppID(c), "")
 }
 
 // subscription returns the pubsub subscription name and the push URL to use.
@@ -168,7 +170,7 @@ func subscription(c context.Context) (string, string) {
 		}
 		return fmt.Sprintf(subscriptionFormat, TriciumDevServer, "-"+hostname), ""
 	}
-	server := appengine.AppID(c)
+	server := info.AppID(c)
 	return fmt.Sprintf(subscriptionFormat, server, ""),
 		fmt.Sprintf(pushURLFormat, server)
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	ds "github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/luci_config/common/cfgtypes"
 	"github.com/luci/luci-go/luci_config/server/cfgclient"
 	"github.com/luci/luci-go/luci_config/server/cfgclient/textproto"
@@ -47,7 +48,7 @@ func (luciConfigServer) GetServiceConfig(c context.Context) (*tricium.ServiceCon
 	ret := &tricium.ServiceConfig{}
 	service := common.TriciumDevServer
 	if !appengine.IsDevAppServer() {
-		service = appengine.AppID(c)
+		service = info.AppID(c)
 	}
 	if err := cfgclient.Get(c, cfgclient.AsService, cfgtypes.ConfigSet(fmt.Sprintf("services/%s", service)),
 		"service.cfg", textproto.Message(ret), nil); err != nil {
@@ -60,7 +61,7 @@ func (luciConfigServer) GetServiceConfig(c context.Context) (*tricium.ServiceCon
 func (luciConfigServer) GetProjectConfig(c context.Context, p string) (*tricium.ProjectConfig, error) {
 	service := common.TriciumDevServer
 	if !appengine.IsDevAppServer() {
-		service = appengine.AppID(c)
+		service = info.AppID(c)
 	}
 	ret := &tricium.ProjectConfig{}
 	if err := cfgclient.Get(c, cfgclient.AsService, cfgtypes.ConfigSet(fmt.Sprintf("projects/%s", p)),
