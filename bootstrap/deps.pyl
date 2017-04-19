@@ -7,6 +7,12 @@
     'gs': 'c02262299489646af253067e8136c060a93572e3.tar.gz',
   },
 
+  'aenum': {
+    'version': '2.0.6',
+    'build': '0',
+    'repo': 'external/bitbucket.org/stoneleaf/aenum',
+    'rev': '7b45559677564c3e193c4e8a3ff8511637e15cd0',
+  },
   'argcomplete': {
     'version': '0.8.0',
     'build': '0',
