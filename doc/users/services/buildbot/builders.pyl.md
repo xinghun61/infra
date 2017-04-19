@@ -89,7 +89,7 @@ Here's a simple file containing all of the required fields:
         "os": "linux",
         "version": "precise",
       },
-      "bots": ["vm46-m1"],
+      "bots": ["vm{1..50}-m1"],
     },
   },
 }
@@ -379,8 +379,11 @@ configuration of every bot in the pool, as described below.
 
 ### bots
 
-This is a *required* field that contains list of individual hostnames,
-one for each VM (do not specify the domain, just the basename).
+This is a *required* field that contains list of either individual hostnames,
+one for each VM (do not specify the domain, just the basename), or a
+string that can specify a range of hostnames, expanded as the bash shell
+would expand them. So, for example, `vm{1..3}-m1` would expand to `vm1-m1`,
+`vm2-m1`, `vm3-m1`.
 
 ## Per-bot configurations
 
