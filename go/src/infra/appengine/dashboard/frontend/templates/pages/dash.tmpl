@@ -70,11 +70,11 @@
           {{end}}
         </tr>
         {{range .ChopsServices}}
+        {{$name := .Service.Name}}
           <tr>
-            <td>
+            <td class="js-{{$name}}">
               <a href={{.Service.SLA}}>{{.Service.Name}}</a>
             </td>
-            {{$name := .Service.Name}}
             {{range $dates}}
               <td class="js-{{$name}}-{{ . | fmtDate}}"></td>
             {{end}}
@@ -93,11 +93,11 @@
           {{end}}
         </tr>
         {{range .NonSLAServices}}
+        {{$name := .Service.Name}}
           <tr>
-            <td>
+            <td class="js-{{$name}}">
               {{.Service.Name}}
             </td>
-            {{$name := .Service.Name}}
             {{range $dates}}
               <td class="js-{{$name}}-{{ . | fmtDate}}"></td>
             {{end}}
