@@ -149,16 +149,12 @@
         <div id="findit-results" class="section">
           <template is="dom-if" if="[[_finditNotSupport(extension)]]">
             <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-            <strong class="suspect-cl-results">
-              Not supported by Findit.
-            </strong>
+            Not supported by Findit.
             <br>
           </template>
           <template is="dom-if" if="[[_finditIsRunning(extension)]]">
             <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-            <strong class="suspect-cl-results">
-              Findit is Analyzing...
-            </strong>
+            Findit is Analyzing...
             <template is="dom-if" if="[[_finditHasUrl(extension)]]">
               <a target="_blank" href$=[[extension.findit_url]]>
                 Details
@@ -168,9 +164,7 @@
           </template>
           <template is="dom-if" if="[[_finditFoundNoResult(extension)]]">
             <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-            <strong class="suspect-cl-results">
-              Findit found no culprit.
-            </strong>
+            Findit found no culprit.
             <br>
           </template>
           <template is="dom-if" if="[[_haveSuspectCLs(extension)]]">
