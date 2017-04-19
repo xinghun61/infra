@@ -214,6 +214,15 @@ class BuildRequest(_BuildRequestBase):
       build.lease_expiration_date = self.lease_expiration_date
       build.leasee = created_by
       build.regenerate_lease_key()
+
+    # Auto-add builder tag.
+    # Note that we leave build.initial_tags intact.
+    builder = (build.parameters or {}).get('builder_name')
+    if builder:
+      builder_tag = 'builder:' + builder
+      if builder_tag not in build.tags:
+        build.tags.append(builder_tag)
+
     return build
 
 
@@ -257,6 +266,8 @@ def add_many_async(build_request_list):
       No builds will be created in this case.
     Any exception that datastore operations can raise.
   """
+  # When changing this code, make corresponding changes to
+  # swarmbucket_api.SwarmbucketApi.get_task_def.
 
   # Preliminary preparations.
   assert all(isinstance(r, BuildRequest) for r in build_request_list)
@@ -342,14 +353,7 @@ def add_many_async(build_request_list):
         if build_id not in build_ids:  # pragma: no branch
           break
       build_ids.add(build_id)
-      b = r.create_build(build_id, identity)
-      builder = b.parameters.get('builder_name') if b.parameters else None
-      if builder:
-        builder_tag = 'builder:' + builder
-        if builder_tag not in b.tags:
-          b.tags.append(builder_tag)
-      new_builds[i] = b
-
+      new_builds[i] = r.create_build(build_id, identity)
 
   @ndb.tasklet
   def create_swarming_tasks_async():

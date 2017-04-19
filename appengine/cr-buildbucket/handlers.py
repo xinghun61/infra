@@ -23,7 +23,7 @@ import config
 import model
 import notifications
 import service
-import swarming
+from swarming import swarmbucket_api
 
 
 README_MD = (
@@ -332,7 +332,7 @@ def get_frontend_routes():  # pragma: no cover
     endpoints_webapp2.discovery_service_route(),
   ]
   routes += endpoints_webapp2.api_routes(api.BuildBucketApi)
-  routes += endpoints_webapp2.api_routes(swarming.SwarmbucketApi)
+  routes += endpoints_webapp2.api_routes(swarmbucket_api.SwarmbucketApi)
   return routes
 
 

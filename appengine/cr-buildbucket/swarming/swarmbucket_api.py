@@ -2,6 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
+import urllib
+
 from google.appengine.ext import ndb
 from protorpc import messages
 from protorpc import message_types
@@ -10,9 +13,14 @@ from protorpc import remote
 from components import auth
 from components import utils
 import gae_ts_mon
+import endpoints
 
+from . import swarming
 import acl
+import api
 import config
+import errors
+import model
 
 
 def swarmbucket_api_method(
@@ -47,6 +55,23 @@ class BucketMessage(messages.Message):
 
 class GetBuildersResponseMessage(messages.Message):
   buckets = messages.MessageField(BucketMessage, 1, repeated=True)
+
+
+class GetTaskDefinitionRequestMessage(messages.Message):
+  # A build creation request. Buildbucket will not create the build and won't
+  # allocate a build number, but will return a definition of the swarming task
+  # that would be created for the build. Build id will be 1 and build number (if
+  # configured) will be 0.
+  build_request = messages.MessageField(api.PutRequestMessage, 1, required=True)
+
+
+class GetTaskDefinitionResponseMessage(messages.Message):
+  # A definition of the swarming task that would be created for the specified
+  # build.
+  task_definition = messages.StringField(1)
+  # An API Explorer link to Swarming's tasks.new API
+  # with the pre-filled request body.
+  api_explorer_link = messages.StringField(3)
 
 
 @auth.endpoints_api(
@@ -85,3 +110,34 @@ class SwarmbucketApi(remote.Service):
         ],
       ))
     return res
+
+  @swarmbucket_api_method(
+      GetTaskDefinitionRequestMessage,
+      GetTaskDefinitionResponseMessage)
+  def get_task_def(self, request):
+    """Returns a swarming task definition for a build request."""
+    build_request = api.put_request_message_to_build_request(
+        request.build_request)
+    try:
+      build_request = build_request.normalize()
+    except errors.InvalidInputError as ex:
+      raise endpoints.BadRequestException(
+          'invalid build request: %s' % ex.message)
+
+    identity = auth.get_current_identity()
+    if not acl.can_add_build(build_request.bucket):
+      raise endpoints.ForbiddenException(
+          '%s cannot schedule builds in bucket %s' %
+          (identity, build_request.bucket))
+
+    build = build_request.create_build(1, identity)
+    bucket_cfg, _, task_def = (
+        swarming.prepare_task_def_async(build, fake_build=True).get_result())
+    task_def_json = json.dumps(task_def)
+    return GetTaskDefinitionResponseMessage(
+        task_definition=task_def_json,
+        api_explorer_link=(
+            ('https://%s/_ah/api/explorer'
+             '#p/swarming/v1/swarming.tasks.new?resource=%s') %
+            (bucket_cfg.swarming.hostname, urllib.quote(task_def_json))),
+    )

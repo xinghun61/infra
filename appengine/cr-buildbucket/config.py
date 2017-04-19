@@ -25,7 +25,6 @@ from components import gitiles
 from components.config import validation
 
 from proto import project_config_pb2
-from swarming import swarmingcfg
 import errors
 
 CURRENT_BUCKET_SCHEMA_VERSION = 2
@@ -72,6 +71,8 @@ def validate_access_list(acl_list, ctx):
 
 @validation.project_config_rule(cfg_path(), project_config_pb2.BuildbucketCfg)
 def validate_buildbucket_cfg(cfg, ctx):
+  from swarming import swarmingcfg
+
   acl_set_names = set()
   for i, acl_set in enumerate(cfg.acl_sets):
     with ctx.prefix('ACL set #%d (%s): ', i+1, acl_set.name):
@@ -227,6 +228,8 @@ def cron_update_buckets():
   the acl_sets message field. Also inlines swarmbucket builder defaults and
   mixins and clears Builder.mixins field.
   """
+  from swarming import swarmingcfg
+
   config_map = config.get_project_configs(
     cfg_path(), project_config_pb2.BuildbucketCfg)
 

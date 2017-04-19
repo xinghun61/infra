@@ -16,10 +16,10 @@ from protorpc import remote
 from components import auth
 from components import utils
 import gae_ts_mon
+import endpoints
 
 import acl
 import config
-import endpoints
 import errors
 import model
 import service
@@ -115,6 +115,17 @@ class BucketMessage(messages.Message):
   config_file_content = messages.StringField(3)
   config_file_url = messages.StringField(4)
   config_file_rev = messages.StringField(5)
+
+
+def put_request_message_to_build_request(request):
+  return service.BuildRequest(
+      bucket=request.bucket,
+      tags=request.tags,
+      parameters=parse_json(request.parameters_json, 'parameters_json'),
+      lease_expiration_date=parse_datetime(request.lease_expiration_ts),
+      client_operation_id=request.client_operation_id,
+      pubsub_callback=pubsub_callback_from_message(request.pubsub_callback),
+  )
 
 
 def build_to_message(build, include_lease_key=False):
@@ -252,14 +263,7 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def put(self, request):
     """Creates a new build."""
-    build = service.add(service.BuildRequest(
-        bucket=request.bucket,
-        tags=request.tags,
-        parameters=parse_json(request.parameters_json, 'parameters_json'),
-        lease_expiration_date=parse_datetime(request.lease_expiration_ts),
-        client_operation_id=request.client_operation_id,
-        pubsub_callback=pubsub_callback_from_message(request.pubsub_callback),
-    ))
+    build = service.add(put_request_message_to_build_request(request))
     return build_to_response_message(build, include_lease_key=True)
 
   ####### PUT_BATCH ############################################################
@@ -283,15 +287,8 @@ class BuildBucketApi(remote.Service):
   def put_batch(self, request):
     """Creates builds."""
     results = service.add_many_async([
-      service.BuildRequest(
-          bucket=put_req.bucket,
-          tags=put_req.tags,
-          parameters=parse_json(put_req.parameters_json, 'parameters_json'),
-          lease_expiration_date=parse_datetime(put_req.lease_expiration_ts),
-          client_operation_id=put_req.client_operation_id,
-          pubsub_callback=pubsub_callback_from_message(put_req.pubsub_callback),
-      )
-      for put_req in request.builds
+      put_request_message_to_build_request(r)
+      for r in request.builds
     ]).get_result()
 
     res = self.PutBatchResponseMessage()

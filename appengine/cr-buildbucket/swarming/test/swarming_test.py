@@ -25,9 +25,12 @@ import webapp2
 
 from swarming import swarming
 from proto import project_config_pb2
-import config
 import errors
 import model
+
+
+LINUX_CHROMIUM_REL_NG_CACHE_NAME = (
+    'builder_9f9e01191b0c88fe68abef460d9d68df2125dbadc27c772d84db46d39fd5171c')
 
 
 def futuristic(result):
@@ -37,7 +40,6 @@ def futuristic(result):
 
 
 class SwarmingTest(testing.AppengineTestCase):
-
   def setUp(self):
     super(SwarmingTest, self).setUp()
     self.now = datetime.datetime(2015, 11, 30)
@@ -78,10 +80,6 @@ class SwarmingTest(testing.AppengineTestCase):
           caches {
             path: "a"
             name: "a"
-          }
-          caches {
-            path: "builder"
-            name: "shared_builder_cache"
           }
           caches {
             path: "git_cache"
@@ -181,29 +179,53 @@ class SwarmingTest(testing.AppengineTestCase):
       with self.assertRaises(errors.InvalidInputError):
         swarming.validate_build_parameters(p['builder_name'], p)
 
-  def test_execution_timeout(self):
-    builder_cfg = project_config_pb2.Builder(
-        name='fast-builder', execution_timeout_secs=120)
+  def test_shared_cache(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.caches.add(
+        path='builder',
+        name='shared_builder_cache'
+    )
 
     build = model.Build(
         id=1,
         bucket='bucket',
+        create_time=utils.utcnow(),
+        created_by=auth.Identity('user', 'john@example.com'),
         parameters={
-          'builder_name': 'fast-builder',
+          'builder_name': 'linux_chromium_rel_ng',
         },
     )
 
-    task_def = swarming.create_task_def_async(
-        'chromium', self.bucket_cfg.swarming, builder_cfg, build,
-        1).get_result()
+    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
+
+    self.assertEqual(task_def['properties']['caches'], [
+      {'path': 'cache/a', 'name': 'a'},
+      {'path': 'cache/builder', 'name': 'shared_builder_cache'},
+      {'path': 'cache/git_cache', 'name': 'git_chromium'},
+      {'path': 'cache/out', 'name': 'build_chromium'},
+    ])
+
+  def test_execution_timeout(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.execution_timeout_secs = 120
+
+    build = model.Build(
+        id=1,
+        bucket='bucket',
+        create_time=utils.utcnow(),
+        created_by=auth.Identity('user', 'john@example.com'),
+        parameters={
+          'builder_name': 'linux_chromium_rel_ng',
+        },
+    )
+
+    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
 
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], 120)
 
     builder_cfg.execution_timeout_secs = 60
-    task_def = swarming.create_task_def_async(
-        'chromium', self.bucket_cfg.swarming, builder_cfg, build,
-        1).get_result()
+    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], 60)
 
@@ -312,7 +334,7 @@ class SwarmingTest(testing.AppengineTestCase):
         ]),
         'caches': [
           {'path': 'cache/a', 'name': 'a'},
-          {'path': 'cache/builder', 'name': 'shared_builder_cache'},
+          {'path': 'cache/builder', 'name': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
           {'path': 'cache/git_cache', 'name': 'git_chromium'},
           {'path': 'cache/out', 'name': 'build_chromium'},
         ],
@@ -496,7 +518,7 @@ class SwarmingTest(testing.AppengineTestCase):
         ]),
         'caches': [
           {'path': 'cache/a', 'name': 'a'},
-          {'path': 'cache/builder', 'name': 'shared_builder_cache'},
+          {'path': 'cache/builder', 'name': LINUX_CHROMIUM_REL_NG_CACHE_NAME},
           {'path': 'cache/git_cache', 'name': 'git_chromium'},
           {'path': 'cache/out', 'name': 'build_chromium'},
         ],

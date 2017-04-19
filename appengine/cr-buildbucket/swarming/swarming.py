@@ -257,8 +257,8 @@ def _buildbucket_property(build):
 
 
 @ndb.tasklet
-def create_task_def_async(
-    project_id, swarming_cfg, builder_cfg, build, build_number):
+def _create_task_def_async(
+    project_id, swarming_cfg, builder_cfg, build, build_number, fake_build):
   """Creates a swarming task definition for the |build|.
 
   Supports build properties that are supported by Buildbot-Buildbucket
@@ -389,15 +389,16 @@ def create_task_def_async(
     task_properties['execution_timeout_secs'] = (
       builder_cfg.execution_timeout_secs)
 
-  task['pubsub_topic'] = (
-    'projects/%s/topics/%s' %
-    (app_identity.get_application_id(), PUBSUB_TOPIC))
-  task['pubsub_auth_token'] = TaskToken.generate()
-  task['pubsub_userdata'] = json.dumps({
-    'build_id': build.key.id(),
-    'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
-    'swarming_hostname': swarming_cfg.hostname,
-  }, sort_keys=True)
+  if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
+    task['pubsub_topic'] = (
+      'projects/%s/topics/%s' %
+      (app_identity.get_application_id(), PUBSUB_TOPIC))
+    task['pubsub_auth_token'] = TaskToken.generate()
+    task['pubsub_userdata'] = json.dumps({
+      'build_id': build.key.id(),
+      'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
+      'swarming_hostname': swarming_cfg.hostname,
+    }, sort_keys=True)
   raise ndb.Return(task)
 
 
@@ -439,13 +440,14 @@ def _add_named_caches(builder_cfg, task_properties):
 
 
 @ndb.tasklet
-def create_task_async(build):
-  """Creates a swarming task for the build and mutates the build.
+def prepare_task_def_async(build, fake_build=False):
+  """Prepares a swarming task definition.
 
-  May be called only if build's bucket is configured for swarming.
+  Validates the new build.
+  If configured, generates a build number and updates the build.
+  Creates a swarming task definition.
 
-  Raises:
-    errors.InvalidInputError if build attribute values are inavlid.
+  Returns a tuple (bucket_cfg, builder_cfg, task_def).
   """
   if build.lease_key:
     raise errors.InvalidInputError(
@@ -474,14 +476,35 @@ def create_task_async(build):
   build_number = None
   if builder_cfg.build_numbers:  # pragma: no branch
     seq_name = '%s/%s' % (build.bucket, builder_name)
-    build_number = yield sequence.generate_async(seq_name, 1)
+    if fake_build:  # pragma: no cover | covered by swarmbucket_api_test
+      build_number = 0
+    else:
+      build_number = yield sequence.generate_async(seq_name, 1)
     build.tags.append('build_address:%s/%d' % (seq_name, build_number))
 
-  task = yield create_task_def_async(
-      project_id, bucket_cfg.swarming, builder_cfg, build, build_number)
+  task_def = yield _create_task_def_async(
+      project_id, bucket_cfg.swarming, builder_cfg, build, build_number,
+      fake_build)
+  raise ndb.Return(bucket_cfg, builder_cfg, task_def)
+
+
+@ndb.tasklet
+def create_task_async(build):
+  """Creates a swarming task for the build and mutates the build.
+
+  May be called only if build's bucket is configured for swarming.
+
+  Raises:
+    errors.InvalidInputError if build attribute values are inavlid.
+  """
+  bucket_cfg, builder_cfg, task_def = yield prepare_task_def_async(build)
+
   res = yield _call_api_async(
       auth.get_current_identity(),
-      bucket_cfg.swarming.hostname, 'tasks/new', method='POST', payload=task,
+      bucket_cfg.swarming.hostname,
+      'tasks/new',
+      method='POST',
+      payload=task_def,
       # Higher timeout than normal because if the task creation request
       # fails, but the task is actually created, later we will receive a
       # notification that the task is completed, but we won't have a build
@@ -508,12 +531,12 @@ def create_task_async(build):
     build.tags.append('swarming_dimension:%s:%s' % (d['key'], d['value']))
 
   # Mark the build as leased.
-  assert 'expiration_secs' in task, task
+  assert 'expiration_secs' in task_def, task_def
   # task['expiration_secs'] is max time for the task to be pending
-  task_expiration = datetime.timedelta(seconds=int(task['expiration_secs']))
+  task_expiration = datetime.timedelta(seconds=int(task_def['expiration_secs']))
   # task['execution_timeout_secs'] is max time for the task to run
   task_expiration += datetime.timedelta(
-      seconds=int(task['properties']['execution_timeout_secs']))
+      seconds=int(task_def['properties']['execution_timeout_secs']))
   task_expiration += datetime.timedelta(hours=1)
   build.lease_expiration_date = utils.utcnow() + task_expiration
   build.regenerate_lease_key()
