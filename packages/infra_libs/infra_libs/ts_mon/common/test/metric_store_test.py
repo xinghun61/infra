@@ -4,6 +4,8 @@
 
 import functools
 import operator
+import random
+import threading
 import time
 import unittest
 
@@ -28,14 +30,6 @@ class DefaultModifyFnTest(unittest.TestCase):
     with self.assertRaises(errors.MonitoringDecreasingValueError) as cm:
       fn(2, -1)
     self.assertIn('"foo"', str(cm.exception))
-
-
-class MetricFieldsValuesTest(unittest.TestCase):
-  def test_iteritems(self):
-    mfv = metric_store.MetricFieldsValues()
-    fields = (('field', 'value'),)
-    mfv.set_value(fields, 84)
-    self.assertEqual([(fields, 84)], list(mfv.iteritems()))
 
 
 class MetricStoreTestBase(object):
@@ -210,6 +204,45 @@ class MetricStoreTestBase(object):
     # The object we got should not change.
     self.assertEqual(1, dist.count)
     self.assertEqual(42, dist.sum)
+
+  def test_get_all_thread_safe(self):
+    """Dumb test to check that setting metrics while calling get_all is ok."""
+
+    start = threading.Event()
+    stop = threading.Event()
+
+    def modify_worker():
+      start.wait()
+      while not stop.is_set():
+        self.store.set('foo', (('field', random.random()),), None, 1)
+
+    successful_workers = []
+    def get_all_worker():
+      start.wait()
+      while not stop.is_set():
+        for _, _, _, _, fields_values in self.store.get_all():
+          list(fields_values.iteritems())
+      successful_workers.append(True)
+
+    # Create 10 modify threads and 10 get_all threads.
+    threads = (
+        [threading.Thread(target=modify_worker) for _ in xrange(10)] +
+        [threading.Thread(target=get_all_worker) for _ in xrange(10)])
+
+    # Start all the threads at once.
+    for thread in threads:
+      thread.start()
+    start.set()
+
+    # Wait 2 seconds then stop them all.
+    time.sleep(2)
+    stop.set()
+    for thread in threads:
+      thread.join()
+
+    # All the threads should've been successful and not raised an exception in
+    # get_all.
+    self.assertEqual([True] * 10, successful_workers)
 
 
 class InProcessMetricStoreTest(MetricStoreTestBase, unittest.TestCase):
