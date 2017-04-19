@@ -11,19 +11,6 @@ import time
 from infra_libs.ts_mon.common import errors
 
 
-"""A light-weight representation of a set or an incr.
-
-Args:
-  name: The metric name.
-  fields: The normalized field tuple.
-  mod_type: Either 'set' or 'incr'.  Other values will raise
-            UnknownModificationTypeError when it's used.
-  args: (value, enforce_ge) for 'set' or (delta, modify_fn) for 'incr'.
-"""  # pylint: disable=pointless-string-statement
-Modification = collections.namedtuple(
-    'Modification', ['name', 'fields', 'mod_type', 'args'])
-
-
 def default_modify_fn(name):
   def _modify_fn(value, delta):
     if delta < 0:
@@ -114,14 +101,6 @@ class MetricStore(object):
     """
     raise NotImplementedError
 
-  def modify_multi(self, modifications):
-    """Modifies multiple metrics in one go.
-
-    Args:
-      modifications: an iterable of Modification objects.
-    """
-    raise NotImplementedError
-
   def reset_for_unittest(self, name=None):
     """Clears the values metrics.  Useful in unittests.
 
@@ -130,14 +109,6 @@ class MetricStore(object):
         metrics.
     """
     raise NotImplementedError
-
-  def initialize_context(self):
-    """Opens a request-local context for deferring metric updates."""
-    pass  # pragma: no cover
-
-  def finalize_context(self):
-    """Closes a request-local context opened by initialize_context."""
-    pass  # pragma: no cover
 
   def _start_time(self, name):
     if name in self._state.metrics:
@@ -285,11 +256,6 @@ class InProcessMetricStore(MetricStore):
     with self._thread_lock:
       self._entry(name).set_value(fields, target_fields, modify_fn(
           self.get(name, fields, target_fields, 0), delta))
-
-  def modify_multi(self, modifications):
-    # This is only used by DeferredMetricStore on top of MemcacheMetricStore,
-    # but could be implemented here if required in the future.
-    raise NotImplementedError
 
   def reset_for_unittest(self, name=None):
     if name is not None:

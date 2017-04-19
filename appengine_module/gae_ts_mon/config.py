@@ -209,7 +209,6 @@ def initialize(app=None, is_enabled_fn=None, cron_module='default',
 def _instrumented_dispatcher(dispatcher, request, response, time_fn=time.time):
   start_time = time_fn()
   response_status = 0
-  interface.state.store.initialize_context()
   flush_thread = None
   time_now = time_fn()
   if need_to_flush_metrics(time_now):
@@ -271,7 +270,6 @@ def instrument_endpoint(time_fn=time.time):
       endpoint_name = '/_ah/spi/%s.%s' % (service_name, method_name)
       start_time = time_fn()
       response_status = 0
-      interface.state.store.initialize_context()
       flush_thread = None
       time_now = time_fn()
       if need_to_flush_metrics(time_now):
@@ -314,8 +312,6 @@ class DjangoMiddleware(object):
     return '<unknown>'  # pragma: no cover
 
   def process_view(self, request, view_func, view_args, view_kwargs):
-    interface.state.store.initialize_context()
-
     time_now = self._time_fn()
     state = {
         'flush_thread': None,
