@@ -55,8 +55,6 @@ func TestMain(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		Convey("index", func() {
-			c = auth.SetAuthenticator(c, []auth.Method(nil))
-
 			Convey("pathless", func() {
 				indexPage(&router.Context{
 					Context: c,
@@ -84,11 +82,6 @@ func TestMain(t *testing.T) {
 				So(body, ShouldContainSubstring, "login")
 			})
 
-			c = auth.SetAuthenticator(c, []auth.Method{authtest.FakeAuth{
-				User: &auth.User{
-					Identity: "user:user@example.com",
-				},
-			}})
 			authState := &authtest.FakeState{
 				Identity: "user:user@example.com",
 			}
@@ -889,7 +882,6 @@ func TestMain(t *testing.T) {
 		})
 
 		Convey("clientmon", func() {
-			c = auth.SetAuthenticator(c, []auth.Method(nil))
 			body := &eCatcherReq{XSRFToken: tok}
 			bodyBytes, err := json.Marshal(body)
 			So(err, ShouldBeNil)
@@ -905,7 +897,6 @@ func TestMain(t *testing.T) {
 		})
 
 		Convey("treelogo", func() {
-			c = auth.SetAuthenticator(c, []auth.Method(nil))
 			ctx := &router.Context{
 				Context: c,
 				Writer:  w,
@@ -918,7 +909,6 @@ func TestMain(t *testing.T) {
 		})
 
 		Convey("treelogo fail", func() {
-			c = auth.SetAuthenticator(c, []auth.Method(nil))
 			ctx := &router.Context{
 				Context: c,
 				Writer:  w,

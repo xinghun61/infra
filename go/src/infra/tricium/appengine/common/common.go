@@ -81,8 +81,7 @@ func MiddlewareForUI() router.MiddlewareChain {
 	// Configure auth system to use cookies and actually attempt to do the
 	// authentication. Finally, configure templating system.
 	return MiddlewareBase().Extend(
-		auth.Use(auth.Authenticator{server.CookieAuth}),
-		auth.Authenticate,
+		auth.Authenticate(server.CookieAuth),
 		templates.WithTemplates(prepareTemplates()),
 	)
 }
@@ -96,10 +95,7 @@ func MiddlewareForUI() router.MiddlewareChain {
 // checks by examining auth.CurrentIdentity(ctx) (it can be identity.Anonymous).
 func MiddlewareForREST() router.MiddlewareChain {
 	return MiddlewareBase().Extend(
-		auth.Use(auth.Authenticator{
-			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
-		}),
-		auth.Authenticate,
+		auth.Authenticate(&server.OAuth2Method{Scopes: []string{server.EmailScope}}),
 	)
 }
 
@@ -120,13 +116,9 @@ func MiddlewareForRPC() router.MiddlewareChain {
 //   discovery.Enable(srv)
 //   srv.InstallHandlers(router, MiddlewareForRPC())
 func NewRPCServer() *prpc.Server {
-	return &prpc.Server{
-		Authenticator: auth.Authenticator{
-			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
-		},
-		// TODO(vadimsh): Enable monitoring interceptor.
-		// UnaryServerInterceptor: grpcmon.NewUnaryServerInterceptor(nil),
-	}
+	// TODO(vadimsh): Enable monitoring interceptor.
+	// UnaryServerInterceptor: grpcmon.NewUnaryServerInterceptor(nil),
+	return &prpc.Server{}
 }
 
 // NewGAEContext constructs a context compatible with standard appengine lib.

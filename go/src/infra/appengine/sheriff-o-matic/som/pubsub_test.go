@@ -20,7 +20,6 @@ import (
 	"github.com/luci/gae/service/info"
 	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/appengine/gaetesting"
-	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -423,7 +422,6 @@ func TestGetPubSubAlertsHandler(t *testing.T) {
 	Convey("error getting gatekeeper trees", t, func() {
 		c := gaetesting.TestingContext()
 		w := httptest.NewRecorder()
-		c = auth.SetAuthenticator(c, []auth.Method(nil))
 		c = urlfetch.Set(c, http.DefaultTransport)
 
 		oldGetGKTrees := getGatekeeperTrees
@@ -446,7 +444,6 @@ func TestGetPubSubAlertsHandler(t *testing.T) {
 	Convey("unrecognized gatekeeper tree", t, func() {
 		c := gaetesting.TestingContext()
 		w := httptest.NewRecorder()
-		c = auth.SetAuthenticator(c, []auth.Method(nil))
 		c = urlfetch.Set(c, http.DefaultTransport)
 
 		oldGetGKTrees := getGatekeeperTrees

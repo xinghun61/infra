@@ -118,13 +118,9 @@ func checkAuthorizationPrpc(
 }
 
 func base() router.MiddlewareChain {
-	methods := auth.Authenticator{
-		server.CookieAuth,
-	}
 	return gaemiddleware.BaseProd().Extend(
 		templates.WithTemplates(templateBundle),
-		auth.Use(methods),
-		auth.Authenticate,
+		auth.Authenticate(server.CookieAuth),
 	)
 }
 

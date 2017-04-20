@@ -39,12 +39,7 @@ func init() {
 	baseMW := gaemiddleware.BaseProd()
 	getMW := baseMW.Extend(templatesMiddleware())
 	authMW := baseMW.Extend(
-		// Declare what auth methods are supported.
-		auth.Use(auth.Authenticator{
-			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
-		}),
-		// Actually do the authentication.
-		auth.Authenticate,
+		auth.Authenticate(&server.OAuth2Method{Scopes: []string{server.EmailScope}}),
 	)
 
 	gaemiddleware.InstallHandlers(r)

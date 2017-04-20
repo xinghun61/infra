@@ -25,18 +25,17 @@ var TestMode = []Middleware{}
 //     gaemiddleware.WithProd.
 //   - Installs and authenticates the using the Authenticator methods from the
 //     ServiceBase.
-func DefaultMiddleware(a auth.Authenticator) Middleware {
+func DefaultMiddleware(a *auth.Authenticator) Middleware {
 	return func(c context.Context) (context.Context, error) {
 		c = gaemiddleware.WithProd(c, endpoints.HTTPRequest(c))
 
 		a := a
 		if a == nil {
 			mi := MethodInfo(c)
-			a = auth.Authenticator{
-				&gaeauth.OAuth2Method{Scopes: mi.Scopes},
+			a = &auth.Authenticator{
+				Methods: []auth.Method{&gaeauth.OAuth2Method{Scopes: mi.Scopes}},
 			}
 		}
-		c = auth.SetAuthenticator(c, a)
 		return a.Authenticate(c, endpoints.HTTPRequest(c))
 	}
 }

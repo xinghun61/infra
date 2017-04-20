@@ -27,12 +27,7 @@ func init() {
 	gaemiddleware.InstallHandlers(r)
 
 	viewMW := gaemiddleware.BaseProd().Extend(
-		auth.Use(auth.Authenticator{
-			&authServer.OAuth2Method{Scopes: []string{authServer.EmailScope}},
-			authServer.CookieAuth,
-			&authServer.InboundAppIDAuthMethod{},
-		}),
-		auth.Authenticate,
+		auth.Authenticate(authServer.CookieAuth),
 		withTemplates())
 
 	// User-facing templates.

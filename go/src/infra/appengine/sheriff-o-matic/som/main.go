@@ -332,18 +332,16 @@ var getOAuthClient = func(c context.Context) (*http.Client, error) {
 
 // base is the root of the middleware chain.
 func base(includeCookie bool) router.MiddlewareChain {
-	methods := []auth.Method{
-		&server.OAuth2Method{Scopes: []string{server.EmailScope}},
-		&server.InboundAppIDAuthMethod{},
+	a := auth.Authenticator{
+		Methods: []auth.Method{
+			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
+			&server.InboundAppIDAuthMethod{},
+		},
 	}
 	if includeCookie {
-		methods = append(methods, server.CookieAuth)
+		a.Methods = append(a.Methods, server.CookieAuth)
 	}
-
-	return gaemiddleware.BaseProd().Extend(
-		auth.Use(methods),
-		auth.Authenticate,
-	)
+	return gaemiddleware.BaseProd().Extend(a.GetMiddleware())
 }
 
 func requireGoogler(c *router.Context, next router.Handler) {
