@@ -26,6 +26,7 @@ PLATFORMS = {
   ('cp27', 'none', 'win32'): 'windows_i686',
   ('cp27', 'none', 'win_amd64'): 'windows_x86_64',
   ('py2', 'none', 'any'): 'any',
+  ('py2.py3', 'none', 'any'): 'any',
 }
 
 
