@@ -8,23 +8,28 @@ import (
 	"os"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/luci/luci-go/hardcoded/chromeinfra"
 	"github.com/luci/luci-go/vpython/api/vpython"
 	"github.com/luci/luci-go/vpython/application"
 	"github.com/luci/luci-go/vpython/cipd"
 
 	cipdClient "github.com/luci/luci-go/cipd/client/cipd"
-
-	"golang.org/x/net/context"
+	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/logging/gologger"
 )
 
-var defaultConfig = application.Config{
-	PackageLoader: &cipd.PackageLoader{
-		Options: cipdClient.ClientOptions{
-			ServiceURL: chromeinfra.CIPDServiceURL,
-			UserAgent:  "vpython",
-		},
+var cipdPackageLoader = cipd.PackageLoader{
+	Options: cipdClient.ClientOptions{
+		ServiceURL: chromeinfra.CIPDServiceURL,
+		UserAgent:  "vpython",
 	},
+	Template: getCIPDTemplatesForEnvironment,
+}
+
+var defaultConfig = application.Config{
+	PackageLoader: &cipdPackageLoader,
 	VENVPackage: vpython.Spec_Package{
 		Name:    "infra/python/virtualenv",
 		Version: "version:15.1.0",
@@ -32,9 +37,22 @@ var defaultConfig = application.Config{
 	PruneThreshold:    7 * 24 * time.Hour, // One week.
 	MaxPrunesPerSweep: 3,
 	MaxScriptPathLen:  127, // Maximum POSIX shebang length.
+
+	Verification: verificationGen,
+}
+
+func mainImpl(c context.Context) int {
+	// Initialize our CIPD package loader from the environment.
+	if err := cipdPackageLoader.Options.LoadFromEnv(os.Getenv); err != nil {
+		logging.Errorf(c, "Could not inialize CIPD package loader: %s", err)
+		return 1
+	}
+
+	return defaultConfig.Main(c)
 }
 
 func main() {
-	rv := defaultConfig.Main(context.Background())
-	os.Exit(rv)
+	c := context.Background()
+	c = gologger.StdConfig.Use(logging.SetLevel(c, logging.Warning))
+	os.Exit(mainImpl(c))
 }
