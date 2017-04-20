@@ -10,7 +10,7 @@ imports:
   - pubsub
   - storage
 - name: github.com/andygrunwald/go-gerrit
-  version: 647db050555eb2c46f749e11b65da1ab59337a16
+  version: b9b0341bc4038acb31b1a1da9bc3f7fc9e5448e8
   repo: https://chromium.googlesource.com/external/github.com/andygrunwald/go-gerrit.git
 - name: github.com/bradfitz/gomemcache
   version: 1952afaa557dc08e8e0d89eafab110fb501c1a2b
