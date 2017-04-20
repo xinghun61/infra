@@ -149,7 +149,7 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number, failed_steps=['a'],
-        build_completed=False, force=False, force_try_job=False,
+        build_completed=False, force=False,
         queue_name=constants.DEFAULT_QUEUE)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)

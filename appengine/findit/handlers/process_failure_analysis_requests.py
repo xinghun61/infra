@@ -7,8 +7,6 @@ import logging
 
 from common import constants
 from gae_libs.handlers.base_handler import BaseHandler, Permission
-from gae_libs.http.http_client_appengine import HttpClientAppengine
-from waterfall import buildbot
 from waterfall import build_failure_analysis_pipelines
 from waterfall import build_util
 
@@ -22,19 +20,19 @@ def _TriggerNewAnalysesOnDemand(builds):
 
     # TODO(stgao): make alerts-dispatcher send information of whether a build
     # is completed.
-    build = build_util.DownloadBuildData(
-        master_name, builder_name, build_number)
-    if not build or not build.data:
-      logging.error('Failed to retrieve build data for %s/%s/%s, steps=%s',
-                   master_name, builder_name, build_number, repr(failed_steps))
-      continue  # Skip the build, wait for next request to recheck.
 
-    build_info = buildbot.ExtractBuildInfo(
-        master_name, builder_name, build_number, build.data)
+    build_info = build_util.GetBuildInfo(
+        master_name, builder_name, build_number)
+    if not build_info:
+      logging.error('Failed to retrieve build data for %s/%s/%s, steps=%s',
+                    master_name, builder_name, build_number, repr(
+                        failed_steps))
+      continue  # Skip the build, wait for next request to recheck.
+    build_completed = build_info.completed
 
     build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
         master_name, builder_name, build_number, failed_steps=failed_steps,
-        build_completed=build_info.completed,
+        build_completed=build_completed,
         force=False, queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
 

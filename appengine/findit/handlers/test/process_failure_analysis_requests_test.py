@@ -25,15 +25,10 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
        process_failure_analysis_requests.ProcessFailureAnalysisRequests),
   ], debug=True)
 
-  def _MockDownloadBuildData(self, build):
-    def Mocked_DownloadBuildData(*_):
-      return build
-    self.mock(build_util, 'DownloadBuildData', Mocked_DownloadBuildData)
-
-  def _MockExtractBuildInfo(self, build_info):
-    def Mocked_ExtractBuildInfo(*_):
+  def _MockGetBuildInfo(self, build_info):
+    def MockedGetBuildInfo(*_):
       return build_info
-    self.mock(buildbot, 'ExtractBuildInfo', Mocked_ExtractBuildInfo)
+    self.mock(build_util, 'GetBuildInfo', MockedGetBuildInfo)
 
   def _MockScheduleAnalysisIfNeeded(self, requests):
     def Mocked_ScheduleAnalysisIfNeeded(*args, **kwargs):
@@ -41,30 +36,8 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
     self.mock(build_failure_analysis_pipelines,
               'ScheduleAnalysisIfNeeded', Mocked_ScheduleAnalysisIfNeeded)
 
-  def testWhenBuildIsNotAvailable(self):
-    self._MockDownloadBuildData(None)
-    self._MockExtractBuildInfo(None)
-    requests = []
-    self._MockScheduleAnalysisIfNeeded(requests)
-
-    builds = [
-        {
-            'master_name': 'm',
-            'builder_name': 'b',
-            'build_number': 1,
-            'failed_steps': [],
-        },
-    ]
-
-    process_failure_analysis_requests._TriggerNewAnalysesOnDemand(builds)
-    self.assertEqual(0, len(requests))
-
   def testWhenBuildDataIsNotAvailable(self):
-    build = WfBuild.Create('m', 'b', 1)
-    build.data = None
-    self._MockDownloadBuildData(build)
-
-    self._MockExtractBuildInfo(None)
+    self._MockGetBuildInfo(None)
     requests = []
     self._MockScheduleAnalysisIfNeeded(requests)
 
@@ -81,13 +54,9 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
     self.assertEqual(0, len(requests))
 
   def testWhenBuildDataIsDownloadedSuccessfully(self):
-    build = WfBuild.Create('m', 'b', 1)
-    build.data = '{}'
-    self._MockDownloadBuildData(build)
-
     build_info = BuildInfo('m', 'b', 1)
     build_info.completed = False
-    self._MockExtractBuildInfo(build_info)
+    self._MockGetBuildInfo(build_info)
 
     requests = []
     self._MockScheduleAnalysisIfNeeded(requests)
@@ -117,13 +86,9 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
   def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
-    build = WfBuild.Create('m', 'b', 1)
-    build.data = '{}'
-    self._MockDownloadBuildData(build)
-
     build_info = BuildInfo('m', 'b', 1)
     build_info.completed = True
-    self._MockExtractBuildInfo(build_info)
+    self._MockGetBuildInfo(build_info)
 
     requests = []
     self._MockScheduleAnalysisIfNeeded(requests)

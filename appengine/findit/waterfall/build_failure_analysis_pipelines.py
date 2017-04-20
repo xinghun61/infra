@@ -78,7 +78,6 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
                              failed_steps=None,
                              build_completed=False,
                              force=False,
-                             force_try_job=False,
                              queue_name=constants.DEFAULT_QUEUE):
   """Schedules an analysis if needed and returns the build analysis.
 
@@ -93,8 +92,6 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
     build_completed (bool): Indicate whether the build is completed.
     force (bool): If True, a fresh new analysis will be triggered even when an
         old one was completed already; otherwise bail out.
-    force_try_job (bool): Indicate whether or not a try job should be run or
-        rerun as long as a corresponding try bot is configured.
     queue_name (str): The task queue to be used for pipeline tasks.
 
   Returns:
@@ -104,8 +101,7 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
       master_name, builder_name, build_number, failed_steps,
       build_completed, force):
     pipeline_job = AnalyzeBuildFailurePipeline(
-        master_name, builder_name, build_number, build_completed,
-        force_try_job)
+        master_name, builder_name, build_number, build_completed, force)
     # Explicitly run analysis in the backend module "waterfall-backend".
     # Note: Just setting the target in queue.yaml does NOT work for pipeline
     # when deployed to App Engine, but it does work in dev-server locally.

@@ -24,10 +24,9 @@ from waterfall.trigger_swarming_tasks_pipeline import (
 class AnalyzeBuildFailurePipeline(BasePipeline):
 
   def __init__(self, master_name, builder_name, build_number, build_completed,
-               force_rerun_try_job):
+               force):
     super(AnalyzeBuildFailurePipeline, self).__init__(
-        master_name, builder_name, build_number, build_completed,
-        force_rerun_try_job)
+        master_name, builder_name, build_number, build_completed, force)
     self.master_name = master_name
     self.builder_name = builder_name
     self.build_number = build_number
@@ -66,7 +65,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number, build_completed,
-          force_rerun_try_job):
+          force):
     self._ResetAnalysis(master_name, builder_name, build_number)
 
     # The yield statements below return PipelineFutures, which allow subsequent
@@ -88,13 +87,12 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
       # Triggers swarming tasks when first time test failure happens.
       # This pipeline will run before build completes.
       yield TriggerSwarmingTasksPipeline(
-          master_name, builder_name, build_number, failure_info,
-          force_rerun_try_job)
+          master_name, builder_name, build_number, failure_info, force)
 
       # Checks if first time failures happen and starts a try job if yes.
       yield StartTryJobOnDemandPipeline(
           master_name, builder_name, build_number, failure_info,
-          signals, heuristic_result, build_completed, force_rerun_try_job)
+          signals, heuristic_result, build_completed, force)
 
       # Trigger flake analysis on flaky tests, if any.
       yield TriggerFlakeAnalysesPipeline(

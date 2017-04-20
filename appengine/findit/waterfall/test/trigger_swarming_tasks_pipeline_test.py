@@ -337,7 +337,7 @@ class TriggerSwarmingTasksPipelineTest(wf_testcase.WaterfallTestCase):
 
     class _MockedTriggerSwarmingTaskPipeline(BasePipeline):
       count = 0
-      def run(self, *_):
+      def run(self, *args, **kwargs):
         _MockedTriggerSwarmingTaskPipeline.count += 1
     self.mock(trigger_swarming_task_pipeline, 'TriggerSwarmingTaskPipeline',
               _MockedTriggerSwarmingTaskPipeline)

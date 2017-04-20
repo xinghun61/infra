@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 import os
 import re
 
@@ -20,11 +21,12 @@ from model import suspected_cl_status
 from model.suspected_cl_confidence import ConfidenceInformation
 from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.wf_analysis import WfAnalysis
+from model.wf_build import WfBuild
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_try_job import WfTryJob
-from waterfall import build_util
 from waterfall import buildbot
 from waterfall import build_util
+from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
 
 # Root directory appengine/findit.
@@ -257,12 +259,57 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                    re.MULTILINE | re.DOTALL),
         self.test_app.get, '/failure', params={'url': build_url})
 
-  def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self):
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=None)
+  def testCannotGetBuildInfo(self, _):
+    master_name = 'm2'
+    builder_name = 'b 1'
+    build_number = 123
+    build_url = buildbot.CreateBuildUrl(
+        master_name, builder_name, build_number)
+
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('.*501 Not Implemented.*Can&#39;t get information about'
+                   ' build &#34;%s/%s/%s&#34;.*' % (
+                       master_name, builder_name, build_number),
+                   re.MULTILINE | re.DOTALL),
+        self.test_app.get, '/failure', params={'url': build_url})
+
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testCannotRerunIncompleteBuild(self, mock_fn):
+    master_name = 'm2'
+    builder_name = 'b 1'
+    build_number = 123
+    build_url = buildbot.CreateBuildUrl(
+        master_name, builder_name, build_number)
+
+    build_info = BuildInfo(master_name, builder_name, build_number)
+    build_info.completed = False
+    mock_fn.return_value = build_info
+
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('.*501 Not Implemented.*Can&#39;t rerun an incomplete'
+                   ' build &#34;%s/%s/%s&#34;.*' % (
+                       master_name, builder_name, build_number),
+                   re.MULTILINE | re.DOTALL),
+        self.test_app.get, '/failure', params={'url': build_url, 'force': '1'})
+
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self, mock_fn):
     master_name = 'm2'
     builder_name = 'b'
     build_number = 123
     build_url = buildbot.CreateBuildUrl(
         master_name, builder_name, build_number)
+
+    build_info = BuildInfo(master_name, builder_name, build_number)
+    build_info.completed = False
+    mock_fn.return_value = build_info
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
@@ -271,12 +318,17 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(1, len(self.taskqueue_stub.get_filtered_tasks()))
 
-  def testAnyoneCanRequestAnalysisOfFailureOnSupportedMaster(self):
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testAnyoneCanRequestAnalysisOfFailureOnSupportedMaster(self, mock_fn):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
     build_url = buildbot.CreateBuildUrl(
         master_name, builder_name, build_number)
+
+    build_info = BuildInfo(master_name, builder_name, build_number)
+    build_info.completed = False
+    mock_fn.return_value = build_info
 
     response = self.test_app.get('/failure', params={'url': build_url})
     self.assertEquals(200, response.status_int)
@@ -786,8 +838,23 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
   def _PercentFormat(self, float_number):
     return '%d%%' % (round(float_number * 100))
 
-  def testGetTryJobResultForCompileFailure(self):
-    analysis = WfAnalysis.Create('m', 'b', 123)
+  @mock.patch.object(buildbot, 'ExtractBuildInfo')
+  @mock.patch.object(build_util, 'DownloadBuildData')
+  def testGetTryJobResultForCompileFailure(self, mock_fn1, mock_fn2):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.data = 'data'
+    build.put()
+    mock_fn1.return_value = build
+
+    build_info = BuildInfo(master_name, builder_name, build_number)
+    build_info.completed = False
+    mock_fn2.return_value = build_info
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.result = {
         'failures': [
             {

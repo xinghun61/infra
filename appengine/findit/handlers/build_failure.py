@@ -438,14 +438,22 @@ class BuildFailure(BaseHandler):
       # Only allow admin to force a re-run and set the build_completed.
       force = (users.is_current_user_admin() and
                self.request.get('force') == '1')
-      build_completed = (users.is_current_user_admin() and
-                         self.request.get('build_completed') == '1')
-      force_try_job = (users.is_current_user_admin() and
-                       self.request.get('force_try_job') == '1')
+
+      build = build_util.GetBuildInfo(master_name, builder_name, build_number)
+      if not build:
+        return BaseHandler.CreateError(
+            'Can\'t get information about build "%s/%s/%s".' % (
+              master_name, builder_name, build_number), 501)
+      build_completed = build.completed
+
+      if not build_completed and force:
+        return BaseHandler.CreateError(
+            'Can\'t rerun an incomplete build "%s/%s/%s".' % (
+                master_name, builder_name, build_number), 501)
+
       analysis = build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
           master_name, builder_name, build_number,
           build_completed=build_completed, force=force,
-          force_try_job=force_try_job,
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
     data = self._PrepareCommonDataForFailure(analysis)

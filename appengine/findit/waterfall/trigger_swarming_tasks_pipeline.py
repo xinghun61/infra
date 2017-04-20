@@ -72,4 +72,5 @@ class TriggerSwarmingTasksPipeline(BasePipeline):
         master_name, builder_name, build_number, failure_info, force)
     for step_name, base_tests in steps.iteritems():
       yield TriggerSwarmingTaskPipeline(
-          master_name, builder_name, build_number, step_name, base_tests, force)
+          master_name, builder_name, build_number, step_name, base_tests,
+          force=force)
