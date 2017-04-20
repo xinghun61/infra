@@ -25,7 +25,7 @@ import (
 const (
 	topicFormat        = "projects/%s/topics/worker-completion%s"
 	subscriptionFormat = "projects/%s/subscriptions/worker-completion%s"
-	pushURLFormat      = "%s.appspot.com/_ah/push-handlers/notify"
+	pushURLFormat      = "https://%s.appspot.com/_ah/push-handlers/notify"
 )
 
 // PubSubAPI defines the interface to the pubsub server.
