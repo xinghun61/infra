@@ -1,0 +1,42 @@
+per-file android_docker_image_builder.py=bpastene@chromium.org
+
+per-file build_*.py=vadimsh@chromium.org
+
+per-file depot_tools_builder.py=iannucci@chromium.org
+
+per-file gerrit_cq_test.py=tandrii@chromium.org
+
+per-file infra_*.py=iannucci@chromium.org
+per-file infra_*.py=tandrii@chromium.org
+per-file infra_*.py=vadimsh@chromium.org
+
+per-file isolate_go_perf.py=tandrii@chromium.org
+
+per-file lkgr_finder.py=machenbach@chromium.org
+
+per-file luci*.py=dnj@chromium.org
+per-file luci*.py=iannucci@chromium.org
+per-file luci*.py=vadimsh@chromium.org
+
+per-file publish_tarball.py=phajdan.jr@chromium.org
+
+per-file rebaseline_o_matic.py=joelo@chromium.org
+per-file rebaseline_o_matic.py=wkorman@chromium.org
+
+per-file recipe_autoroller.py=iannucci@chromium.org
+per-file recipe_autoroller.py=phajdan.jr@chromium.org
+
+per-file recipe_roll_tryjob.py=martiniss@chromium.org
+
+per-file recipe_simulation.py=iannucci@chromium.org
+per-file recipe_simulation.py=tandrii@chromium.org
+
+per-file recipes_py_continuous.py=phajdan.jr@chromium.org
+
+per-file sheriff-o-matic-wct.py=seanmccullough@chromium.org
+
+per-file sync_submodules.py=dsansome@chromium.org
+per-file sync_submodules.py=emso@chromium.org
+
+per-file wpt*.py=jeffcarp@chromium.org
+per-file wpt*.py=qyearsley@chromium.org
