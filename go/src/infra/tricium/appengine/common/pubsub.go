@@ -25,7 +25,9 @@ import (
 const (
 	topicFormat        = "projects/%s/topics/worker-completion%s"
 	subscriptionFormat = "projects/%s/subscriptions/worker-completion%s"
-	pushURLFormat      = "https://%s.appspot.com/_ah/push-handlers/notify"
+	// The dispatcher can't route _ah URLs. To work around this limitation,
+	// we address the module directly in the pubsub push URL.
+	pushURLFormat = "https://driver-dot-%s.appspot.com/_ah/push-handlers/notify"
 )
 
 // PubSubAPI defines the interface to the pubsub server.
