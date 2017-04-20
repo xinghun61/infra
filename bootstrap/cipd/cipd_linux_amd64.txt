@@ -17,5 +17,8 @@ infra/tools/authutil/linux-amd64  git_revision:92db82258d3a6ea6f35f8058803837229
 # ADB binary.
 infra/adb/linux-amd64             adb_version:1.0.36
 
+# Fastboot binary.
+infra/fastboot/linux-amd64        fastboot_version:5943271ace17
+
 # LogDog tool.
 infra/tools/luci/logdog/logdog/linux-amd64  git_revision:01e09c6fb5e45dd38c38cf43a5c5e46f826a3fd1
