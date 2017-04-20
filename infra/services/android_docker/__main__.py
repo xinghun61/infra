@@ -40,6 +40,38 @@ def reboot_host():
     logging.exception('Unable to reboot host.')
 
 
+def kill_adb():
+  """Kills the adb daemon if it's up and running on the host.
+
+  This is needed because the daemon keeps a handle open for each android
+  device it sees, which prevents other processes from opening them.
+  Consequently, if the daemon is up and running on the host, all containers
+  are blocked from accessing their device; nor will they be able to see
+  or kill the daemon process since it's outside their container.
+  """
+  try:
+    out = subprocess.check_output(['pgrep', '--exact', 'adb'])
+  except subprocess.CalledProcessError:
+    logging.exception('Unable to search for adb processes.')
+    return
+  pids = out.split()
+  # Only kill adb processes that are running outside of a container. Those
+  # running inside a container are harmless.
+  for pid in pids:
+    # A process running in a container should have 'docker' show up in its
+    # cgroup entry in procfs.
+    with open('/proc/%s/cgroup' % pid) as f:
+      cgroups = f.read()
+    if 'docker' not in cgroups:
+      logging.warning(
+          'Found adb process (%s) running outside of a container. Killing '
+          'it...', pid)
+      try:
+        subprocess.check_call(['kill', pid])
+      except subprocess.CalledProcessError:
+        logging.exception('Unable to kill adb process %s', pid)
+
+
 def add_device(docker_client, android_devices, args):
   # pylint: disable=unused-argument
   user_id = os.geteuid()
@@ -179,6 +211,9 @@ def main():
   logger.addHandler(file_handler)
   stdout_handler = logging.StreamHandler(sys.stdout)
   logger.addHandler(stdout_handler)
+
+  logging.debug('Killing any host-side ADB processes.')
+  kill_adb()
 
   logging.debug('Running %s on devices: %s', args.name, args.devices or 'all')
 
