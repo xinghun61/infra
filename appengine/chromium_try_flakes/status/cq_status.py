@@ -154,6 +154,7 @@ def update_issue_tracker():
   # the last 24 hours.
   for flake in Flake.query(Flake.count_day >= MIN_REQUIRED_FLAKY_RUNS,
                            projection=[Flake.count_day]):
+    logging.info('Created processing task for %s' % flake.key)
     taskqueue.add(queue_name='issue-updates',
                   url='/issues/process/%s' % flake.key.urlsafe())
 
@@ -255,7 +256,7 @@ def parse_cq_data(json_data):
           # We assume timestamps from chromium-cq-status are already in UTC.
           timestamp = timestamp_tz.replace(tzinfo=None)
         except KeyError:
-          logging.warning('Failed to parse job details')
+          logging.warning('Failed to parse job details', exc_info=True)
           parsing_errors.increment_by(1)
           continue
 
@@ -276,7 +277,7 @@ def parse_cq_data(json_data):
           time_started = datetime.datetime.utcfromtimestamp(
               attempt_start_ts / 1000000)
         except ValueError:
-          logging.warning('Failed to parse build properties')
+          logging.warning('Failed to parse build properties', exc_info=True)
           parsing_errors.increment_by(1)
           continue
 

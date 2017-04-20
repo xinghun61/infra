@@ -389,12 +389,18 @@ class ProcessIssue(webapp2.RequestHandler):
         FlakeUpdate.time_updated > day_ago,
         ancestor=self._get_flake_update_singleton_key()).count()
     if num_updates_last_day >= MAX_UPDATED_ISSUES_PER_DAY:
+      logging.info('Too many issues updated in the last 24 hours')
       return
 
     now = datetime.datetime.utcnow()
     flake = ndb.Key(urlsafe=urlsafe_key).get()
+    logging.info('Processing %s', flake.key)
+
     # Only update/file issues if there are new flaky runs.
     if flake.num_reported_flaky_runs == len(flake.occurrences):
+      logging.info(
+          'No new flakes (reported %d, total %d)',
+          flake.num_reported_flaky_runs, len(flake.occurrences))
       return
 
     # Retrieve flaky runs outside of the transaction, because we are not
@@ -403,11 +409,13 @@ class ProcessIssue(webapp2.RequestHandler):
     new_flakes = self._get_new_flakes(flake)
 
     if len(new_flakes) < MIN_REQUIRED_FLAKY_RUNS:
+      logging.info('Too few new flakes: %d', len(new_flakes))
       return
 
     if flake.issue_id > 0:
       # Update issues at most once a day.
       if flake.issue_last_updated > now - datetime.timedelta(days=1):
+        logging.info('Issue was updated less than 24 hours ago')
         return
 
       self._update_issue(api, flake, new_flakes, now)
