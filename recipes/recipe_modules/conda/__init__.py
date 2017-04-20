@@ -1,7 +1,7 @@
 DEPS = [
   'build/file',
-  'build/url',
   'depot_tools/cipd',
+  'depot_tools/url',
   'recipe_engine/path',
   'recipe_engine/platform',
   'recipe_engine/python',

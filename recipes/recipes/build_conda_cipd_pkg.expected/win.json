@@ -14,7 +14,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_PACKAGE_REPO[build]\\scripts\\tools\\pycurl.py",
+      "RECIPE_MODULE[depot_tools::url]\\resources\\pycurl.py",
       "https://repo.continuum.io/miniconda/Miniconda2-3.18.3-Windows-x86_64.exe",
       "--outfile",
       "[TMP_BASE]\\conda_tmp_1\\Miniconda2-3.18.3-Windows-x86_64.exe",
