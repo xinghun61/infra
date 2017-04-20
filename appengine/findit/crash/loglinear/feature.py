@@ -179,18 +179,7 @@ class MetaFeatureValue(MetaDict):
     """Collect and format a list of all ``FeatureValue.reason`` strings.
 
     Returns:
-      A str of reasons, each line has a format
-      "feature_name: feature_value -- reason" triples; where the first string is
-      the feature name, the float is some numeric representation of how
-      much influence this feature exerts on the ``Suspect`` being blamed,
-      and the final string is the ``FeatureValue.reason``. The list is
-      sorted by feature name, just to ensure that it comes out in some
-      canonical order.
-
-      At present, the float is the log-domain score of the feature
-      value. However, this isn't the best thing for UX reasons. In the
-      future it might be replaced by the normal-domain score, or by
-      the probability.
+      A dict mapping feature name to reason_strs.
     """
     if self._reason:
       return self._reason

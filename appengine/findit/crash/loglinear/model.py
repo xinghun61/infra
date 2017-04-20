@@ -16,6 +16,10 @@ from libs.math.logarithms import logsumexp
 from libs.math.vectors import vsum
 
 EPSILON = 0.00001
+_FEATURE_TO_REASON_PRIORITY = {'MinDistance': 0,
+                               'TopFrameIndex': -1,
+                               'TouchCrashedDirectory': -2,
+                               'TouchCrashedFile': -3}
 
 
 class UnnormalizedLogLinearModel(object):
@@ -200,16 +204,27 @@ class UnnormalizedLogLinearModel(object):
     return self._scores(x)
 
   def FilterReasonWithWeight(self, reason):
-    """Filters reasons with zero weights."""
+    """Filters reasons with zero weights.
+
+    Args:
+      reason (dict): Dict mapping feature name to reason string.
+
+    Returns:
+      A list of reason strings.
+    """
     flat_weight = self._meta_weight.flat_dict
 
-    filtered_reasons = []
-    for feature_name in flat_weight:
-      if feature_name in reason:
-        filtered_reasons.append(reason[feature_name])
+    filtered_reasons = {}
+    for non_zero_feature in flat_weight:
+      if non_zero_feature in reason:
+        filtered_reasons[non_zero_feature] = reason[non_zero_feature]
 
-    filtered_reasons.sort()
-    return '\n'.join(filtered_reasons)
+    sorted_reasons = sorted(
+        filtered_reasons.items(),
+        key=lambda item: _FEATURE_TO_REASON_PRIORITY.get(
+            item[0], -float('inf')))
+
+    return [reason for _, reason in sorted_reasons]
 
 
 class LogLinearModel(UnnormalizedLogLinearModel):

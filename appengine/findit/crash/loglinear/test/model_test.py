@@ -35,7 +35,7 @@ class UnnormalizedLogLinearModelTest(LoglinearTestCase):
     reason = MetaDict({'f1': 'reason1', 'f2': 'reason2'})
 
     model = UnnormalizedLogLinearModel(None, meta_weight)
-    self.assertEqual(model.FilterReasonWithWeight(reason), 'reason1')
+    self.assertListEqual(model.FilterReasonWithWeight(reason), ['reason1'])
 
 
 class LoglinearTest(LoglinearTestCase):
