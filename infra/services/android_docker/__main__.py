@@ -52,7 +52,7 @@ def kill_adb():
   try:
     out = subprocess.check_output(['pgrep', '--exact', 'adb'])
   except subprocess.CalledProcessError:
-    logging.exception('Unable to search for adb processes.')
+    logging.debug('No adb processes found.')
     return
   pids = out.split()
   # Only kill adb processes that are running outside of a container. Those
