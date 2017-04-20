@@ -4,26 +4,20 @@
 
 from recipe_engine import recipe_test_api
 
+import json
 
 class RecipeTryjobTestApi(recipe_test_api.RecipeTestApi):
-  def make_recipe_config(self, name, deps=None):
-    if not deps:
-      deps = []
-
-    # Deps should be a list of project ids
-    config = [
-        'api_version: 1',
-        'project_id: "%s"' % name,
-        'recipes_path: ""',
-        '',
-    ]
-    for dep in deps:
-      config += [
-        'deps {',
-        '  project_id: "%s"' % dep,
-        '  url: "https://repo.url/foo.git"',
-        '  branch: "master"',
-        '  revision: "deadbeef"',
-        '}',
-      ]
-    return '\n'.join(config)
+  def make_recipe_config(self, name, deps=()):
+    # TODO(iannucci): replace with self.m.json.dumps
+    return json.dumps({
+      'api_version': 2,
+      'project_id': name,
+      'recipes_path': '',
+      'deps': {
+        dep: {
+          'url': 'https://repo.example.com/%s.git' % dep,
+          'branch': 'master',
+          'revision': 'deadbeef',
+        } for dep in deps
+      },
+    }, sort_keys=True)

@@ -4,7 +4,6 @@
 
 import collections
 import hashlib
-import json
 import re
 
 from recipe_engine import recipe_api
@@ -15,21 +14,10 @@ RECIPE_DEV_WORKFLOW_DOC_LINK = (
     'https://chromium.googlesource.com/external/github.com/luci/recipes-py/+/'
     'master/doc/workflow.md')
 
-def get_recipes_path(project_config):
-  # Returns a tuple of the path components to traverse from the root of the repo
-  # to get to the directory containing recipes.
-  return project_config['recipes_path'][0].split('/')
-
-
-def get_deps(project_config):
-  """ Get the recipe engine deps of a project from its recipes.cfg file. """
-  # "[0]" Since parsing makes every field a list
-  return [dep['project_id'][0] for dep in project_config.get('deps', [])]
-
 
 def get_deps_info(projects, configs):
   """Calculates dependency information (forward and backwards) given configs."""
-  deps = {p: get_deps(configs[p]) for p in projects}
+  deps = {p: configs[p].get('deps', {}) for p in projects}
 
   # Figure out the backwards version of the deps graph. This allows us to figure
   # out which projects we need to test given a project. So, given
@@ -125,13 +113,10 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
       project: The name of the project in luci-config.
 
     Returns:
-      The recipes.cfg file for that project, as a parsed dictionary. See
-      parse_protobuf for details on the format to expect.
+      The recipes.cfg file for that project, as a parsed dictionary.
     """
-    result = self.m.luci_config.get_project_config(project, 'recipes.cfg')
-
-    parsed = self.m.luci_config.parse_textproto(result['content'].split('\n'))
-    return parsed
+    return self.m.json.loads(
+      self.m.luci_config.get_project_config(project, 'recipes.cfg')['content'])
 
   def _checkout_projects(self, root_dir, url_mapping, deps,
                         downstream_projects, patches):
@@ -252,7 +237,9 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
 
     Returns the result of running the simulation tests.
     """
-    recipes_path = get_recipes_path(proj_config) + ['recipes.py']
+    recipes_path = proj_config.get('recipes_path', '').split('/')
+    recipes_path.append('recipes.py')
+
     recipes_py_loc = repo_path.join(*recipes_path)
     args = ['--use-bootstrap']
     for dep_name, location in deps.items():
