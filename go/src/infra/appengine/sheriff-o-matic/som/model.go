@@ -23,12 +23,13 @@ import (
 
 // Tree is a tree which sheriff-o-matic receives and groups alerts for.
 type Tree struct {
-	Name          string   `gae:"$id" json:"name"`
-	DisplayName   string   `json:"display_name"`
-	AlertStreams  []string `json:"alert_streams,omitempty"`
-	BugQueueLabel string   `json:"bug_queue_label,omitempty"`
-	HelpLink      string   `json:"help_link,omitempty"`
-	GerritProject string   `json:"gerrit_project,omitempty"`
+	Name           string   `gae:"$id" json:"name"`
+	DisplayName    string   `json:"display_name"`
+	AlertStreams   []string `json:"alert_streams,omitempty"`
+	BugQueueLabel  string   `json:"bug_queue_label,omitempty"`
+	HelpLink       string   `json:"help_link,omitempty"`
+	GerritProject  string   `json:"gerrit_project,omitempty"`
+	GerritInstance string   `json:"gerrit_instance,omitempty"`
 }
 
 // AlertsJSON is the a JSON blob of alerts for a tree.

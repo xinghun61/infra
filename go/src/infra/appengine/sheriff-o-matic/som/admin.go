@@ -62,6 +62,12 @@ func (settingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
 			Type:  settings.UIFieldText,
 			Help:  "The Gerrit project for this tree.",
 		})
+		fields = append(fields, settings.UIField{
+			ID:    fmt.Sprintf("GerritInstance-%s", t.Name),
+			Title: fmt.Sprintf("%s Gerrit Instance", t.DisplayName),
+			Type:  settings.UIFieldText,
+			Help:  "The Gerrit instance for this tree.",
+		})
 	}
 
 	return fields, nil
@@ -83,6 +89,7 @@ func (settingsUIPage) ReadSettings(c context.Context) (map[string]string, error)
 		values[fmt.Sprintf("AlertStreams-%s", t.Name)] = strings.Join(t.AlertStreams, ",")
 		values[fmt.Sprintf("HelpLink-%s", t.Name)] = t.HelpLink
 		values[fmt.Sprintf("GerritProject-%s", t.Name)] = t.GerritProject
+		values[fmt.Sprintf("GerritInstance-%s", t.Name)] = t.GerritInstance
 	}
 
 	values["Trees"] = strings.Join(trees, ",")
@@ -194,6 +201,10 @@ func writeAllValues(c context.Context, values map[string]string) error {
 
 		if gerritProject, ok := values[fmt.Sprintf("GerritProject-%s", t.Name)]; ok {
 			t.GerritProject = gerritProject
+		}
+
+		if gerritInstance, ok := values[fmt.Sprintf("GerritInstance-%s", t.Name)]; ok {
+			t.GerritInstance = gerritInstance
 		}
 
 		// Try to do only write per tree each save.
