@@ -9,7 +9,7 @@
       "--patch_root",
       "infra/go/src/github.com/luci/gae",
       "--revision_mapping_file",
-      "{\"infra/go/src/github.com/luci/gae\": \"got_revision\"}",
+      "{\"got_revision\": \"infra/go/src/github.com/luci/gae\"}",
       "--git-cache-dir",
       "[GIT_CACHE]",
       "--output_json",

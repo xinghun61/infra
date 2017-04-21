@@ -9,7 +9,7 @@
       "--patch_root",
       "infra_internal",
       "--revision_mapping_file",
-      "{\"infra_internal\": \"got_revision\"}",
+      "{\"got_revision\": \"infra_internal\"}",
       "--git-cache-dir",
       "[CACHE]/git",
       "--issue",

@@ -9,7 +9,7 @@
       "--patch_root",
       "infra",
       "--revision_mapping_file",
-      "{\"infra/luci\": \"got_revision\"}",
+      "{\"got_revision\": \"infra/luci\"}",
       "--git-cache-dir",
       "[CACHE]/git",
       "--output_json",

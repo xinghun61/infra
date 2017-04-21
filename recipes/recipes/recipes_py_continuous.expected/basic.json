@@ -9,7 +9,7 @@
       "--patch_root",
       "recipes-py",
       "--revision_mapping_file",
-      "{\"recipes-py\": \"got_revision\"}",
+      "{\"got_revision\": \"recipes-py\"}",
       "--git-cache-dir",
       "[GIT_CACHE]",
       "--output_json",
