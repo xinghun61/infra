@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"flag"
 	"fmt"
+	"io"
+	"os"
 	"path/filepath"
 
 	"infra/tools/backuptogs/filetree"
@@ -27,6 +30,7 @@ type options struct {
 	bucket    string
 	prefix    string
 	creds     string
+	key       string
 	prevState string
 	newState  string
 	workers   int
@@ -57,15 +61,15 @@ func (o *options) registerFlags(fs *flag.FlagSet) {
 	o.tsmonFlags = tsmon.NewFlags()
 	o.tsmonFlags.Flush = tsmon.FlushAuto
 	o.tsmonFlags.Target.TargetType = target.TaskType
-	o.tsmonFlags.Target.TaskServiceName = "backup_to_gs"
-	o.tsmonFlags.Target.TaskJobName = "backup_to_gs"
+	o.tsmonFlags.Target.TaskServiceName = "backuptogs"
+	o.tsmonFlags.Target.TaskJobName = "backuptogs"
 	o.tsmonFlags.Register(fs)
 
 	// logging
 	o.loggingConfig.Level = logging.Info
 	o.loggingConfig.AddFlags(fs)
 
-	// backup_to_gs
+	// backuptogs
 	fs.StringVar(&o.exclude, "exclude", "", "List of PATTERNs for paths to exclude from backups, delimited by ':'. Each PATTERN is a shell glob.")
 	fs.StringVar(&o.gitMode, "gitmode", "keep", "Controls handling of git directories encountered within the backup target.\n"+
 		"'keep' means git directories are treated like any other directory and backed up in their entirety.\n"+
@@ -75,6 +79,7 @@ func (o *options) registerFlags(fs *flag.FlagSet) {
 	fs.StringVar(&o.bucket, "bucket", "", "Bucket where backup should be stored")
 	fs.StringVar(&o.prefix, "prefix", "", "Prefix to add to names of objects before writing to GCS")
 	fs.StringVar(&o.creds, "creds", "", "Location of credentials file for Google Cloud Storage")
+	fs.StringVar(&o.key, "key", "", "Location of encryption key file for Google Cloud Storage")
 	fs.StringVar(&o.prevState, "prevstate", "", "Location of backupState file from a previous run."+
 		"If provided, the backup will run as an incremental backup from the previous state")
 	fs.StringVar(&o.newState, "newstate", "", "if backup is successful, backup state will be written to this file")
@@ -82,17 +87,17 @@ func (o *options) registerFlags(fs *flag.FlagSet) {
 }
 
 // makeJob validates values in o and creates a corresponding job
-func (o *options) makeJob(ctx context.Context) (*job, error) {
-	j := &job{}
+func (o *options) makeJob(ctx context.Context) (j *job, err error) {
+	j = &job{}
 	// Populate params, validating along the way
 	// backup root
 	j.root = o.root
 
 	// exclusion patterns
 	j.exclusions = filepath.SplitList(o.exclude)
-	for _, e := range j.exclusions {
-		if _, err := filepath.Match("", e); err != nil {
-			return nil, fmt.Errorf("invalid pattern in -exclude flag: '%s'", e)
+	for _, ex := range j.exclusions {
+		if _, err = filepath.Match("", ex); err != nil {
+			return nil, fmt.Errorf("invalid pattern in -exclude flag: '%s'", ex)
 		}
 	}
 
@@ -115,6 +120,15 @@ func (o *options) makeJob(ctx context.Context) (*job, error) {
 	// prefix
 	j.prefix = o.prefix
 
+	// encryption key
+	if o.key != "" {
+		key, err := readKey(o.key)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read encryption key from file '%s': %v", o.key, err)
+		}
+		j.key = key
+	}
+
 	// prevState
 	if o.prevState != "" {
 		state, err := filetree.Load(ctx, o.prevState)
@@ -122,12 +136,30 @@ func (o *options) makeJob(ctx context.Context) (*job, error) {
 			return nil, fmt.Errorf("failed to get previous backup state: %v", err)
 		}
 		j.prevState = state
-	} else {
-		j.prevState = filetree.New()
 	}
 
 	// workers
 	j.workers = o.workers
 
 	return j, nil
+}
+
+func readKey(file string) (key []byte, err error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open encryption key file '%s': %v", file, err)
+	}
+	defer func() {
+		if errClose := f.Close(); errClose != nil {
+			err = fmt.Errorf("failed to close encryption key file '%s': %v", file, errClose)
+		}
+	}()
+
+	decoder := base64.NewDecoder(base64.StdEncoding, f)
+	key = make([]byte, 32) // AES key is 32 bytes
+	if _, err = io.ReadFull(decoder, key); err != nil {
+		return nil, fmt.Errorf("failed to decode key from file '%s': %v", file, err)
+	}
+
+	return key, nil // nil error may be overwritten in defer
 }

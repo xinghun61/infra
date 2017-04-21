@@ -26,6 +26,7 @@ type job struct {
 	oneFs      bool
 	bucket     *storage.BucketHandle
 	prefix     string
+	key        []byte
 	prevState  *filetree.Dir
 	workers    int
 }
@@ -42,12 +43,14 @@ func (j *job) run(ctx context.Context) (*filetree.Dir, error) {
 		runDuration.Set(ctx, time.Since(start).Seconds())
 	}()
 
+	logging.Debugf(ctx, "Starting backup pipeline")
 	// backup files to GCS
 	newState, err := j.backupFiles(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	logging.Debugf(ctx, "Starting deletion pipeline")
 	// delete files from GCS
 	if err = j.delFiles(ctx); err != nil {
 		return nil, err
@@ -82,7 +85,7 @@ func (j *job) backupFiles(ctx context.Context) (*filetree.Dir, error) {
 	newState := filetree.New()
 	backupsChan := filterFiles(pipelineCtx, allFilesChan, j.prevState, newState)
 
-	backupDone := backupToGS(pipelineCtx, backupsChan, j.bucket, j.prefix, j.workers, errorChan)
+	backupDone := backupToGS(pipelineCtx, backupsChan, j.bucket, j.prefix, j.key, j.workers, errorChan)
 
 	// Wait for the pipeline to finish while also checking errorChan for non-nil errors
 	if err := waitToFinish(ctx, backupDone, errorChan, cancelPipeline); err != nil {

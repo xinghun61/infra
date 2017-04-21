@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"syscall"
 
@@ -17,10 +18,9 @@ func getFs(ctx context.Context, filename string) (uint64, error) {
 		return 0, err
 	}
 
-	realStat, ok := stat.Sys().(syscall.Stat_t)
+	realStat, ok := stat.Sys().(*syscall.Stat_t)
 	if !ok {
-		logging.Errorf(ctx, "Failed to convert stat.Sys() to syscall.Stat_t for file '%s': %v", filename, err)
-		return 0, err
+		return 0, fmt.Errorf("Failed to convert stat.Sys() to syscall.Stat_t for file '%s'", filename)
 	}
 
 	return uint64(realStat.Dev), nil

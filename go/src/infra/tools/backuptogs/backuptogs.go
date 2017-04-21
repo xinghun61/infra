@@ -39,6 +39,7 @@ func backupToGS(
 	filenameChan <-chan string,
 	bucket *storage.BucketHandle,
 	prefix string,
+	key []byte,
 	workers int,
 	errorChan chan<- error) <-chan struct{} {
 
@@ -58,7 +59,7 @@ func backupToGS(
 				}
 
 				objName := prefix + filepath.ToSlash(filename)
-				written, err := writeToGS(ctx, filename, bucket, objName)
+				written, err := writeToGS(ctx, filename, bucket, objName, key)
 				if err != nil {
 					if os.IsNotExist(err) { // Non-existent files are tolerable
 						logging.Warningf(ctx, "File intended for backup was not found: %s", filename)
@@ -83,8 +84,13 @@ func backupToGS(
 	return doneChan
 }
 
-func writeToGS(ctx context.Context, filename string, bucket *storage.BucketHandle, objname string) (int64, error) {
+func writeToGS(ctx context.Context, filename string, bucket *storage.BucketHandle, objname string, key []byte) (int64, error) {
 	obj := bucket.Object(objname)
+
+	if key != nil {
+		obj = obj.Key(key)
+	}
+
 	// TODO set metadata on obj
 
 	var written int64
@@ -104,8 +110,6 @@ func writeToGS(ctx context.Context, filename string, bucket *storage.BucketHandl
 				err = fmt.Errorf("Failed to close gzipWriter: %v", errZip)
 			}
 		}()
-
-		// FIXME wrap in encryption
 
 		f, err := os.Open(filename)
 		if err != nil {
