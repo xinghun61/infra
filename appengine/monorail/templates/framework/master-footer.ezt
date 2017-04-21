@@ -77,6 +77,7 @@ runOnLoad(function() {
   [if-any viewing_user_page]
     [# Keep anything that looks like an email address out of GA.]
     ga('set', 'title', 'A user page');
+    ga('set', 'location', 'A user page URL');
   [end]
 
   ga('send', 'pageview');
