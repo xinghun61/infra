@@ -181,6 +181,8 @@ def get_kitchen_version(template):
 def get_latest_kitchen_package_git_revision():
   """Returns a value of git_revision tag of the latest kitchen packages."""
   git('-C', INFRA_REPO_ROOT, 'fetch', 'origin')
+  print  # Print empty line after git-fetch output
+
   # Read up to 100 commits. It is unlikely that we will have a latest set of
   # CIPD packages further than 100 commits ago.
   log = git('-C', INFRA_REPO_ROOT, 'log', '-100', '--format=%H')
@@ -281,6 +283,12 @@ def main(argv):
     os.chdir(args.config_dir)
     print 'entering %s' % args.config_dir
 
+  if not os.path.isfile(CANARY_TEMPLATE_FILENAME):
+    print(
+        './%s is not found. Are you running this in the config directory?' %
+        CANARY_TEMPLATE_FILENAME)
+    return 1
+
   # Check current directory:
   # - must be a git repo
   # - the work tree must be clean
@@ -290,6 +298,7 @@ def main(argv):
     print('The work tree in is dirty!')
     return 1
   git('fetch', 'origin', 'master')
+  print  # Print empty line after git-fetch output
   expected, actual = (
       git('rev-parse', 'FETCH_HEAD', 'HEAD').splitlines())
   if expected != actual:
