@@ -14,6 +14,7 @@ from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.api.urlfetch_errors import ConnectionClosedError
 
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from infra_api_clients import logdog_util
 from libs.http.retry_http_client import RetryHttpClient
 from model.wf_config import FinditConfig
 from model.wf_step import WfStep
@@ -135,6 +136,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     super(SwarmingUtilTest, self).setUp()
     self.http_client = SwarmingHttpClient()
     self.logged_http_client = _LoggedHttpClient()
+    self.task_id = 'abc123'
+    self.step_name = 'browser_tests on platform'
 
   def testGetSwarmingTaskRequest(self):
     task_request_json = {
@@ -766,3 +769,39 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_counts, swarming_util.GetSwarmingBotCounts(
         dimensions, self.http_client))
+
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForSwarmedBuild',
+                     return_value='step')
+  @mock.patch.object(logdog_util, 'GetStreamForStep',
+                     return_value='log_stream')
+  @mock.patch.object(logdog_util, 'GetLogForSwarmedBuild',
+                     return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
+  def testGetStepMetadata(self, *_):
+    step_metadata = swarming_util.GetStepLog(
+      self.task_id, self.step_name, RetryHttpClient(), 'step_metadata')
+    self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
+
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForSwarmedBuild',
+                     return_value=None)
+  def testGetStepMetadataStepNone(self, _):
+    step_metadata = swarming_util.GetStepLog(
+      self.task_id, self.step_name, RetryHttpClient(), 'step_metadata')
+    self.assertIsNone(step_metadata)
+
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForSwarmedBuild',
+                     return_value='step')
+  @mock.patch.object(logdog_util, 'GetStreamForStep',
+                     return_value=None)
+  def testGetStepMetadataStreamNone(self, *_):
+    step_metadata = swarming_util.GetStepLog(
+      self.task_id, self.step_name, RetryHttpClient(), 'step_metadata')
+    self.assertIsNone(step_metadata)
+
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForSwarmedBuild',
+                     return_value='step')
+  @mock.patch.object(logdog_util, 'GetStreamForStep', return_value='stream')
+  @mock.patch.object(logdog_util, 'GetLogForSwarmedBuild',
+                     return_value='log1/nlog2')
+  def testGetStepLogStdio(self, *_):
+    self.assertEqual('log1/nlog2', swarming_util.GetStepLog(
+        self.task_id, self.step_name, self.http_client))

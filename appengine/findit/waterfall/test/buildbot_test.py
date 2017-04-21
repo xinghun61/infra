@@ -15,39 +15,11 @@ import urllib
 
 import google
 
+from common import rpc_util
+from infra_api_clients import logdog_util
 from libs.http.retry_http_client import RetryHttpClient
 from waterfall import buildbot
 from waterfall.test import wf_testcase
-
-third_party = os.path.join(
-  os.path.dirname(__file__), os.path.pardir, os.path.pardir, 'third_party')
-sys.path.insert(0, third_party)
-google.__path__.append(os.path.join(third_party, 'google'))
-from logdog import annotations_pb2
-
-
-def _GenerateGetResJson(value):
-  data = {
-      'logs': [
-          {
-              'text': {
-                  'lines': [
-                      {
-                          'value': value
-                      },
-                      {
-                          'other': '\n'
-                      }
-                  ]
-              }
-          }
-      ]
-  }
-  return json.dumps(data)
-
-
-_SAMPLE_GET_RESPONSE = _GenerateGetResJson(json.dumps(
-  wf_testcase.SAMPLE_STEP_METADATA))
 
 
 class DummyHttpClient(RetryHttpClient):
@@ -71,17 +43,6 @@ class DummyHttpClient(RetryHttpClient):
     pass
 
 
-def _CreateProtobufMessage(
-    step_name, stdout_stream, step_metadata_stream, label='step_metadata'):
-  step = annotations_pb2.Step()
-  message = step.substep.add().step
-  message.name = step_name
-  message.stdout_stream.name = stdout_stream
-  link = message.other_links.add(label=label)
-  link.logdog_stream.name = step_metadata_stream
-  return step
-
-
 class BuildBotTest(unittest.TestCase):
   def setUp(self):
     super(BuildBotTest, self).setUp()
@@ -95,28 +56,12 @@ class BuildBotTest(unittest.TestCase):
     self.stdout_stream = 'stdout_stream'
     self.step_metadata_stream = 'step_metadata_stream'
 
-  def _GenerateTailRes(self):
-    step_proto = _CreateProtobufMessage(
-      self.step_name, self.stdout_stream, self.step_metadata_stream)
-    step_log = step_proto.SerializeToString()
-    step_b64 = base64.b64encode(step_log)
-    tail_res_json = {
-        'logs': [
-            {
-                'datagram': {
-                    'data': step_b64
-                }
-            }
-        ]
-    }
-    return json.dumps(tail_res_json)
-
-  @mock.patch.object(buildbot, 'DownloadJsonData', return_value=None)
+  @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=None)
   def testFailToGetRecentCompletedBuilds(self, _):
     self.assertEqual(
       [], buildbot.GetRecentCompletedBuilds('m', 'b', _))
 
-  @mock.patch.object(buildbot, 'DownloadJsonData')
+  @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetRecentCompletedBuilds(self, mock_fn):
     builders_data = {
         'builders': {
@@ -257,7 +202,7 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(1, len(http_client.requests))
     self.assertEqual(expected_url, http_client.requests[0])
 
-  @mock.patch.object(buildbot, 'DownloadJsonData')
+  @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetBuildDataFromBuildMasterSuccess(self, mock_fn):
     master_name = 'a'
     builder_name = 'b c'
@@ -489,98 +434,11 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(
       438538, buildbot._GetCommitPosition('refs/heads/master@{#438538}'))
 
-  @mock.patch.object(buildbot, '_GetResultJson')
-  @mock.patch.object(buildbot, '_DownloadData')
-  def testDownloadJsonData(self, mock_fn_1, mock_fn_2):
-    mocked_response_json = {'a': 'a'}
-    mocked_response = json.dumps(mocked_response_json)
-    mock_fn_1.return_value = mocked_response
-    mock_fn_2.return_value = mocked_response_json
-
-    url = 'url'
-    data = {'data': 'data'}
-    http_client = RetryHttpClient()
-
-    response_json = buildbot.DownloadJsonData(url, data, http_client)
-
-    self.assertEqual(response_json, mocked_response_json)
-    mock_fn_1.assert_called_once_with(url, data, http_client)
-    mock_fn_2.assert_called_once_with(mocked_response)
-
-  def testDownloadDataError(self):
-    mocked_http_client = mock.Mock()
-    mocked_http_client.Post.return_value = (404, '404')
-
-    url = 'url'
-    data = {
-        'data': 'data'
-    }
-    self.assertIsNone(
-      buildbot._DownloadData(url, data, mocked_http_client))
-    mocked_http_client.assert_has_calls(
-      mock.call.Post(
-        'url', json.dumps(data),
-        headers={
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'}))
-
-  def testDownloadData(self):
-    response = 'response'
-    mocked_http_client = mock.Mock()
-    mocked_http_client.Post.return_value = (200, response)
-
-    url = 'url'
-    data = {
-        'data': 'data'
-    }
-    self.assertEqual(
-      response, buildbot._DownloadData(url, data, mocked_http_client))
-
-  def testGetResultJsonNoPrefix(self):
-    response = 'response_json'
-    self.assertEqual(response, buildbot._GetResultJson(response))
-
-  def testGetResultJson(self):
-    response_json = 'response_json'
-    response = '%s%s' % (buildbot._RESPONSE_PREFIX, response_json)
-    self.assertEqual(response_json, buildbot._GetResultJson(response))
-
-  def testProcessStringForLogDog(self):
-    builder_name = 'Mac 10.10 Release (Intel)'
-    expected_builder_name = 'Mac_10.10_Release__Intel_'
-    self.assertEqual(expected_builder_name,
-                     buildbot._ProcessStringForLogDog(builder_name))
-
-  @mock.patch.object(buildbot, 'DownloadJsonData',
-                     return_value=_SAMPLE_GET_RESPONSE)
-  def testGetStepMetadataFromLogDog(self, _):
-    step_metadata = buildbot._GetLogFromLogDog(
-      self.master_name, self.builder_name, self.build_number,
-      'stream', self.http_client)
-    self.assertEqual(json.loads(step_metadata),
-                     wf_testcase.SAMPLE_STEP_METADATA)
-
-  @mock.patch.object(buildbot, 'DownloadJsonData',
-                     return_value=None)
-  def testGetStepMetadataFromLogDogNoResponse(self, _):
-    step_metadata = buildbot._GetLogFromLogDog(
-      self.master_name, self.builder_name, self.build_number,
-      'stream', self.http_client)
-    self.assertIsNone(step_metadata)
-
-  @mock.patch.object(buildbot, 'DownloadJsonData',
-                     return_value=json.dumps({'a': 'a'}))
-  def testGetStepMetadataFromLogDogNoJson(self, _):
-    step_metadata = buildbot._GetLogFromLogDog(
-      self.master_name, self.builder_name, self.build_number,
-      'stream', self.http_client)
-    self.assertIsNone(step_metadata)
-
-  @mock.patch.object(buildbot, '_GetAnnotationsProto',
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
                      return_value='step')
-  @mock.patch.object(buildbot, '_ProcessAnnotationsToGetStream',
+  @mock.patch.object(logdog_util, 'GetStreamForStep',
                      return_value='log_stream')
-  @mock.patch.object(buildbot, '_GetLogFromLogDog',
+  @mock.patch.object(logdog_util, 'GetLogForBuild',
                      return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
   def testGetStepMetadata(self, *_):
     step_metadata = buildbot.GetStepLog(
@@ -588,7 +446,7 @@ class BuildBotTest(unittest.TestCase):
       self.http_client, 'step_metadata')
     self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
 
-  @mock.patch.object(buildbot, '_GetAnnotationsProto',
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
                      return_value=None)
   def testGetStepMetadataStepNone(self, _):
     step_metadata = buildbot.GetStepLog(
@@ -596,98 +454,15 @@ class BuildBotTest(unittest.TestCase):
       self.http_client, 'step_metadata')
     self.assertIsNone(step_metadata)
 
-  @mock.patch.object(buildbot, '_GetAnnotationsProto',
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
                      return_value='step')
-  @mock.patch.object(buildbot, '_ProcessAnnotationsToGetStream',
+  @mock.patch.object(logdog_util, 'GetStreamForStep',
                      return_value=None)
   def testGetStepMetadataStreamNone(self, *_):
     step_metadata = buildbot.GetStepLog(
       self.master_name, self.builder_name, self.build_number, self.step_name,
       self.http_client, 'step_metadata')
     self.assertIsNone(step_metadata)
-
-  def testProcessAnnotationsToGetStreamForStepMetadata(self):
-    step_proto = _CreateProtobufMessage(
-      self.step_name, self.stdout_stream, self.step_metadata_stream)
-    log_stream = buildbot._ProcessAnnotationsToGetStream(
-      self.step_name, step_proto, 'step_metadata')
-    self.assertEqual(log_stream, self.step_metadata_stream)
-
-  def testProcessAnnotationsToGetStreamForStdout(self):
-    step_proto = _CreateProtobufMessage(
-      self.step_name, self.stdout_stream, self.step_metadata_stream)
-    log_stream = buildbot._ProcessAnnotationsToGetStream(
-      self.step_name, step_proto)
-    self.assertEqual(log_stream, self.stdout_stream)
-
-  def testProcessAnnotationsToGetStreamNoStep(self):
-    step = _CreateProtobufMessage(
-      'step', self.stdout_stream, self.step_metadata_stream)
-    log_stream = buildbot._ProcessAnnotationsToGetStream(
-      self.step_name, step, 'step_metadata')
-    self.assertIsNone(log_stream)
-
-  def testProcessAnnotationsToGetStreamNoStepMetadta(self):
-    step = _CreateProtobufMessage(
-      self.step_name, self.stdout_stream, self.step_metadata_stream, 'step')
-    log_stream = buildbot._ProcessAnnotationsToGetStream(
-      self.step_name, step, 'step_metadata')
-    self.assertIsNone(log_stream)
-
-  @mock.patch.object(buildbot, 'DownloadJsonData')
-  def testGetAnnotationsProto(self, mock_fn):
-    mock_fn.return_value = self._GenerateTailRes()
-    step = buildbot._GetAnnotationsProto(
-      self.master_name, self.builder_name, self.build_number,
-      self.http_client)
-    self.assertIsNotNone(step)
-
-  @mock.patch.object(buildbot, 'DownloadJsonData', return_value=None)
-  def testGetAnnotationsProtoNoResponse(self, _):
-    step = buildbot._GetAnnotationsProto(
-      self.master_name, self.builder_name, self.build_number,
-      self.http_client)
-    self.assertIsNone(step)
-
-  @mock.patch.object(buildbot, 'DownloadJsonData',
-                     return_value=json.dumps({'a': 'a'}))
-  def testGetAnnotationsProtoNoLogs(self, _):
-    step = buildbot._GetAnnotationsProto(
-      self.master_name, self.builder_name, self.build_number,
-      self.http_client)
-    self.assertIsNone(step)
-
-  @mock.patch.object(buildbot, 'DownloadJsonData')
-  def testGetAnnotationsProtoNoAnnotationsB64(self, mock_fn):
-    data = {
-        'logs': [
-            {
-                'data': 'data'
-            }
-        ]
-    }
-    mock_fn.return_value = json.dumps(data)
-    step = buildbot._GetAnnotationsProto(
-      self.master_name, self.builder_name, self.build_number,
-      self.http_client)
-    self.assertIsNone(step)
-
-  @mock.patch.object(buildbot, 'DownloadJsonData')
-  def testGetAnnotationsProtoNoB64decodable(self, mock_fn):
-    data = {
-        'logs': [
-            {
-                'datagram': {
-                    'data': 'data'
-                }
-            }
-        ]
-    }
-    mock_fn.return_value = json.dumps(data)
-    step = buildbot._GetAnnotationsProto(
-      self.master_name, self.builder_name, self.build_number,
-      self.http_client)
-    self.assertIsNone(step)
 
   def testCreateStdioLogUrl(self):
     master_name = 'a'
@@ -731,17 +506,19 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(1, len(http_client.requests))
     self.assertEqual(expected_url, http_client.requests[0])
 
-  @mock.patch.object(buildbot, '_GetAnnotationsProto', return_value='step')
-  @mock.patch.object(buildbot, '_ProcessAnnotationsToGetStream',
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
+                     return_value='step')
+  @mock.patch.object(logdog_util, 'GetStreamForStep',
                      return_value='stream')
-  @mock.patch.object(buildbot, '_GetLogFromLogDog', return_value='log1/nlog2')
+  @mock.patch.object(logdog_util, 'GetLogForBuild', return_value='log1/nlog2')
   def testGetStepLogStdio(self, *_):
     self.assertEqual('log1/nlog2', buildbot.GetStepLog(
         self.master_name, self.builder_name, self.build_number, self.step_name,
         self.http_client))
 
 
-  @mock.patch.object(buildbot, '_GetAnnotationsProto', return_value=None)
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
+                     return_value=None)
   @mock.patch.object(buildbot, '_GetStepStdioFromBuildBot',
                      return_value='log1/nlog2')
   def testGetStepLogStdioIfNoProto(self, *_):
@@ -749,8 +526,9 @@ class BuildBotTest(unittest.TestCase):
         self.master_name, self.builder_name, self.build_number, self.step_name,
         self.http_client))
 
-  @mock.patch.object(buildbot, '_GetAnnotationsProto', return_value='step')
-  @mock.patch.object(buildbot, '_ProcessAnnotationsToGetStream',
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
+                     return_value='step')
+  @mock.patch.object(logdog_util, 'GetStreamForStep',
                      return_value=None)
   @mock.patch.object(buildbot, '_GetStepStdioFromBuildBot',
                      return_value='log1/nlog2')
@@ -758,3 +536,12 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual('log1/nlog2', buildbot.GetStepLog(
         self.master_name, self.builder_name, self.build_number, self.step_name,
         self.http_client))
+
+  def testGetSwarmingTaskIdFromUrl(self):
+    swarm_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
+    non_swarm_url = ('https://luci-milo.appspot.com/buildbot/chromium.linux'
+                     '/Linux%20Builder/82087')
+
+    self.assertEqual('3595be5002f4bc10',
+                     buildbot.GetSwarmingTaskIdFromUrl(swarm_url))
+    self.assertIsNone(buildbot.GetSwarmingTaskIdFromUrl(non_swarm_url))

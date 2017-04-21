@@ -4,7 +4,6 @@
 
 import base64
 import contextlib
-import cStringIO
 from datetime import datetime
 import gzip
 import io
@@ -17,16 +16,10 @@ import urllib
 
 import cloudstorage as gcs
 
+from common import rpc_util
+from infra_api_clients import logdog_util
+from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
-
-import google
-# protobuf and GAE have package name conflict on 'google'.
-# Add this to solve the conflict.
-third_party = os.path.join(
-    os.path.dirname(__file__), os.path.pardir, 'third_party')
-sys.path.insert(0, third_party)
-google.__path__.insert(0, os.path.join(third_party, 'google'))
-from logdog import annotations_pb2
 
 _HOST_NAME_PATTERN = (
     r'https?://(?:build\.chromium\.org/p|uberchromegw\.corp\.google\.com/i)')
@@ -36,6 +29,9 @@ _MASTER_URL_PATTERN = re.compile(
 
 _MILO_MASTER_URL_PATTERN = re.compile(
     r'^https?://luci-milo\.appspot\.com/buildbot/([^/]+)(?:/.*)?$')
+
+_MILO_SWARMING_TASK_URL_PATTERN = re.compile(
+    r'^https?://luci-milo\.appspot\.com/swarming/task/([^/]+)(?:/.*)?$')
 
 _BUILD_URL_PATTERN = re.compile(
     r'^%s/([^/]+)/builders/([^/]+)/builds/([\d]+)(?:/.*)?$' %
@@ -56,48 +52,11 @@ _STEP_URL_PATTERN = re.compile(
 _COMMIT_POSITION_PATTERN = re.compile(
     r'refs/heads/master@{#(\d+)}$', re.IGNORECASE)
 
-_RESPONSE_PREFIX = ')]}\'\n'
-
-_LOGDOG_ENDPOINT = 'https://luci-logdog.appspot.com/prpc/logdog.Logs'
-_LOGDOG_TAIL_ENDPOINT = '%s/Tail' % _LOGDOG_ENDPOINT
-_LOGDOG_GET_ENDPOINT = '%s/Get' % _LOGDOG_ENDPOINT
-_BASE_LOGDOG_REQUEST_PATH = 'bb/%s/%s/%s/+/%s'
-
 
 # These values are buildbot constants used for Build and BuildStep.
 # This line was copied from buildbot/master/buildbot/status/results.py.
 SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, CANCELLED = range(7)
 
-
-def _DownloadData(url, data, http_client):
-  """Downloads data from rpc endpoints like Logdog or Milo."""
-
-  headers = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
-
-  status_code, response = http_client.Post(
-      url, json.dumps(data), headers=headers)
-  if status_code != 200 or not response:
-    logging.error('Post request to %s failed' % url)
-    return None
-
-  return response
-
-
-def _GetResultJson(response):
-  """Converts response from rpc endpoints to json format."""
-
-  if response.startswith(_RESPONSE_PREFIX):
-    # Removes extra _RESPONSE_PREFIX so we can get json data.
-    return response[len(_RESPONSE_PREFIX):]
-  return response
-
-def DownloadJsonData(url, data, http_client):
-  """Downloads data from rpc endpoints and converts response in json format."""
-  response = _DownloadData(url, data, http_client)
-  return _GetResultJson(response) if response else None
 
 def _ProcessMiloData(response_json, master_name, builder_name, build_number=''):
   if not response_json:
@@ -138,7 +97,8 @@ def GetRecentCompletedBuilds(master_name, builder_name, http_client):
   data = {
     'name': master_name
   }
-  response_json = DownloadJsonData(_MILO_ENDPOINT_MASTER, data, http_client)
+  response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_MASTER, data,
+                                            http_client)
   master_data_json = _ProcessMiloData(response_json, master_name, builder_name)
   if not master_data_json:
     return []
@@ -159,6 +119,14 @@ def GetMasterNameFromUrl(url):
   if not match:
     return None
   return match.group(1)
+
+
+def GetSwarmingTaskIdFromUrl(url):
+  swarming_match = _MILO_SWARMING_TASK_URL_PATTERN.match(url)
+  if swarming_match:
+    task_id = swarming_match.groups()[0]
+    return task_id
+  return None
 
 
 def ParseBuildUrl(url):
@@ -224,7 +192,8 @@ def GetBuildDataFromBuildMaster(
       'builder': builder_name,
       'buildNum': build_number
   }
-  response_json = DownloadJsonData(_MILO_ENDPOINT_BUILD, data, http_client)
+  response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_BUILD, data,
+                                            http_client)
   return _ProcessMiloData(
       response_json, master_name, builder_name, str(build_number))
 
@@ -355,138 +324,6 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   return build_info
 
 
-def _ProcessStringForLogDog(base_string):
-  """Processes base string and replaces all special characters to '_'.
-
-  Special characters are non alphanumeric nor ':_-.'.
-  Reference: https://chromium.googlesource.com/chromium/tools/build/+/refs/
-      heads/master/scripts/slave/logdog_bootstrap.py#349
-  """
-  new_string_list = []
-  for c in base_string:
-    if not c.isalnum() and not c in ':_-.':
-      new_string_list.append('_')
-    else:
-      new_string_list.append(c)
-  return ''.join(new_string_list)
-
-
-def _GetAnnotationsProto(master_name, builder_name, build_number, http_client):
-  """Gets annotations message for the build."""
-
-  base_error_log = 'Error when load annotations protobuf: %s'
-
-  path = _BASE_LOGDOG_REQUEST_PATH % (
-      master_name, _ProcessStringForLogDog(builder_name), build_number,
-      'recipes/annotations')
-
-  data = {
-      'project': 'chromium',
-      'path': path
-  }
-
-  response_json = DownloadJsonData(_LOGDOG_TAIL_ENDPOINT, data, http_client)
-  if not response_json:
-    return None
-
-  # Gets data for proto. Data format as below:
-  # {
-  #    'logs': [
-  #        {
-  #            'datagram': {
-  #                'data': (base64 encoded data)
-  #            }
-  #        }
-  #     ]
-  # }
-  logs = json.loads(response_json).get('logs')
-  if not logs or not isinstance(logs, list):
-    logging.error(base_error_log % 'Wrong format - "logs"')
-    return None
-
-  annotations_b64 = logs[-1].get('datagram', {}).get('data')
-  if not annotations_b64:
-    logging.error(base_error_log % 'Wrong format - "data"')
-    return None
-
-  # Gets proto.
-  try:
-    annotations = base64.b64decode(annotations_b64)
-    step = annotations_pb2.Step()
-    step.ParseFromString(annotations)
-    return step
-  except Exception:
-    logging.error(base_error_log % 'could not get annotations.')
-    return None
-
-
-def _GetLogFromLogDog(
-      master_name, builder_name, build_number, logdog_stream, http_client):
-  """Gets log from LogDog."""
-
-  path = _BASE_LOGDOG_REQUEST_PATH % (
-      master_name, _ProcessStringForLogDog(builder_name), build_number,
-      logdog_stream)
-
-  data = {
-      'project': 'chromium',
-      'path': path
-  }
-
-  base_error_log = 'Error when fetch log: %s'
-
-  response_json = DownloadJsonData(
-      _LOGDOG_GET_ENDPOINT, data, http_client)
-  if not response_json:
-    logging.error(base_error_log % 'cannot get json log.')
-    return None
-
-  # Gets data for log. Data format as below:
-  # {
-  #    'logs': [
-  #        {
-  #            'text': {
-  #                'lines': [
-  #                   {
-  #                       'value': 'line'
-  #                   }
-  #                ]
-  #            }
-  #        }
-  #     ]
-  # }
-  logs = json.loads(response_json).get('logs')
-  if not logs or not isinstance(logs, list):
-    logging.error(base_error_log % 'Wrong format - "logs"')
-    return None
-
-  sio = cStringIO.StringIO()
-  for log in logs:
-    for line in log.get('text', {}).get('lines', []):
-      sio.write('%s\n' % line.get('value', '').encode('utf-8'))
-  data = sio.getvalue()
-  sio.close()
-
-  return data
-
-
-def _ProcessAnnotationsToGetStream(step_name, step, log_type='stdout'):
-  for substep in step.substep:
-    if substep.step.name != step_name:
-      continue
-
-    if log_type.lower() == 'stdout':
-      # Gets stdout_stream.
-      return substep.step.stdout_stream.name
-
-    # Gets stream for step_metadata.
-    for link in substep.step.other_links:
-      if link.label.lower() == log_type:
-        return link.logdog_stream.name
-
-  return None
-
-
 def _CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
   return ('https://build.chromium.org/p/%s/builders/%s/builds/%s/'
           'steps/%s/logs/stdio/text') % (
@@ -508,9 +345,9 @@ def GetStepLog(master_name, builder_name, build_number,
   """Returns sepcific log of the specified step."""
 
   # 1. Get annotations proto for the build.
-  step = _GetAnnotationsProto(
+  annotations = logdog_util.GetAnnotationsProtoForBuild(
       master_name, builder_name, build_number, http_client)
-  if not step:
+  if not annotations:
     if log_type.lower() == 'stdout':
       return _GetStepStdioFromBuildBot(
           master_name, builder_name, build_number, full_step_name, http_client)
@@ -518,7 +355,8 @@ def GetStepLog(master_name, builder_name, build_number,
       return None
 
   # 2. Find the log stream info for the log.
-  logdog_stream = _ProcessAnnotationsToGetStream(full_step_name, step, log_type)
+  logdog_stream = logdog_util.GetStreamForStep(
+      full_step_name, annotations, log_type)
   # 3. Get the log.
   if not logdog_stream:
     if log_type.lower() == 'stdout':
@@ -527,7 +365,7 @@ def GetStepLog(master_name, builder_name, build_number,
     else:
       return None
 
-  data = _GetLogFromLogDog(
+  data = logdog_util.GetLogForBuild(
       master_name, builder_name, build_number, logdog_stream, http_client)
 
   if log_type.lower() == 'step_metadata':  # pragma: no branch
