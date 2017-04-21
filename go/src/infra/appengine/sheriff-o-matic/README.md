@@ -69,6 +69,26 @@ of commits to include. Then:
 - Send the RELNOTES.md update CL for review by OWNERS.
 - Land CL.
 - run `make deploy-prod`
+- Go to the Versions section of the
+[App Engine Console](https://appengine.google.com/) and update the default
+version of the app.
+- Send a PSA email to cit-sheriffing@ about the new release.
+
+### Deploying to staging
+
+Sheriff-o-Matic also has a staging server with the AppEngine ID
+sheriff-o-matic-staging. To deploy to staging:
+
+- run `make deploy`
+- Optional: Go to the Versions section of the
+[App Engine Console](https://appengine.google.com/) and update the default
+version of the app.
+
+### Authenticating for deployment
+
+In order to deploy to App Engine, you will need to be a member of the
+project (either sheriff-o-matic or sheriff-o-matic-staging). Before your first
+deployment, you will have to run `./gae.py login` to authenticate yourself.
 
 ## Configuring and populating devserver SoM with alerts
 
