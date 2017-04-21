@@ -63,6 +63,7 @@ class AdminApi(remote.Service):
       conf = config.GlobalConfig()
 
     changed = conf.modify(
+        updated_by=auth.get_current_identity().to_bytes(),
         service_account_email=request.client_email,
         service_account_pkey=request.private_key,
         service_account_pkey_id=request.private_key_id)
@@ -87,6 +88,7 @@ class AdminApi(remote.Service):
       conf = config.GlobalConfig()
 
     changed = conf.modify(
+        updated_by=auth.get_current_identity().to_bytes(),
         cas_gs_path=request.cas_gs_path.rstrip('/'),
         cas_gs_temp=request.cas_gs_temp.rstrip('/'))
     if changed:
