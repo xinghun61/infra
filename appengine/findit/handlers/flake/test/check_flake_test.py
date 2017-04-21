@@ -22,6 +22,7 @@ from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from waterfall import buildbot
 from waterfall.flake import flake_analysis_service
 from waterfall.test import wf_testcase
 
@@ -47,9 +48,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com')
 
     response = self.test_app.get('/waterfall/flake', params={
-        'master_name': master_name,
-        'builder_name': builder_name,
-        'build_number': build_number,
+        'url': buildbot.CreateBuildUrl(master_name, builder_name, build_number),
         'step_name': step_name,
         'test_name': test_name})
 
@@ -69,9 +68,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         self.test_app.get,
         '/waterfall/flake',
         params={
-            'master_name': master_name,
-            'builder_name': builder_name,
-            'build_number': build_number,
+            'url': buildbot.CreateBuildUrl(
+                master_name, builder_name, build_number),
             'step_name': step_name,
             'test_name': test_name
         })
@@ -159,9 +157,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         self.test_app.get,
         '/waterfall/flake',
         params={
-            'master_name': master_name,
-            'builder_name': builder_name,
-            'build_number': build_number,
+            'url': buildbot.CreateBuildUrl(
+                master_name, builder_name, build_number),
             'step_name': step_name,
             'test_name': test_name,
             'format': 'json'})
@@ -211,9 +208,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     previous_request.Save()
 
     response = self.test_app.get('/waterfall/flake', params={
-        'master_name': master_name,
-        'builder_name': builder_name,
-        'build_number': build_number,
+        'url': buildbot.CreateBuildUrl(master_name, builder_name, build_number),
         'step_name': step_name,
         'test_name': test_name,
         'format': 'json'})
@@ -273,9 +268,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         self.test_app.get,
         '/waterfall/flake',
         params={
-            'master_name': master_name,
-            'builder_name': builder_name,
-            'build_number': build_number,
+            'url': buildbot.CreateBuildUrl(
+                master_name, builder_name, build_number),
             'step_name': step_name,
             'test_name': test_name,
             'format': 'json'})
@@ -311,9 +305,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         triage_result, {'build_number': suspected_flake_build_number}, 'test')
 
     response = self.test_app.get('/waterfall/flake', params={
-        'master_name': master_name,
-        'builder_name': builder_name,
-        'build_number': build_number,
+        'url': buildbot.CreateBuildUrl(master_name, builder_name, build_number),
         'step_name': step_name,
         'test_name': test_name,
         'format': 'json'})
@@ -329,38 +321,20 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         suspected_flake_build_number)
 
   def testValidateInput(self):
-    self.assertIsNone(
-        CheckFlake()._ValidateInput('m', 'b', '123', 's', 't', None))
-    self.assertIsNone(
-        CheckFlake()._ValidateInput('m', 'b', '123', 's', 't', '654321'))
+    self.assertIsNone(CheckFlake()._ValidateInput('s', 't', None))
+    self.assertIsNone(CheckFlake()._ValidateInput('s', 't', '654321'))
     self.assertEqual(
         CheckFlake()._ValidateInput(
-            None, 'b', '1', 's', 't', 'a').get('data', {}).get('error_message'),
-        'Master name must be specified')
-    self.assertEqual(
-        CheckFlake()._ValidateInput(
-            'm', None, '1', 's', 't', '').get('data', {}).get('error_message'),
-        'Builder name must be specified')
-    self.assertEqual(
-        CheckFlake()._ValidateInput(
-            'm', 'b', None, 's', 't', '').get('data', {}).get('error_message'),
-        'Build number must be specified as an int')
-    self.assertEqual(
-        CheckFlake()._ValidateInput(
-            'm', 'b', 'a', 's', 't', '').get('data', {}).get('error_message'),
-        'Build number must be specified as an int')
-    self.assertEqual(
-        CheckFlake()._ValidateInput(
-            'm', 'b', '1', None, 't', '').get('data', {}).get('error_message'),
+            None, 't', '').get('data', {}).get('error_message'),
         'Step name must be specified')
     self.assertEqual(
         CheckFlake()._ValidateInput(
-            'm', 'b', '1', 's', None, '').get('data', {}).get('error_message'),
+            's', None, '').get('data', {}).get('error_message'),
         'Test name must be specified')
     self.assertEqual(
         CheckFlake()._ValidateInput(
-            'm', 'b', '1', 's', 't', 'a').get('data', {}).get('error_message'),
-        'Bug id (optional) must be an int')
+            's', 't', 'a').get('data', {}).get('error_message'),
+        'Bug id must be an int')
 
   def testGetSuspectedFlakeInfo(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

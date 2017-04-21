@@ -17,6 +17,7 @@ from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from waterfall import buildbot
 from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
 
@@ -159,8 +160,7 @@ def _GetLastAttemptedTryJobDetails(analysis):
 class CheckFlake(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
-  def _ValidateInput(self, master_name, builder_name, build_number, step_name,
-                     test_name, bug_id):
+  def _ValidateInput(self, step_name, test_name, bug_id):
     """Ensures the input is valid and generates an error otherwise.
 
     Args:
@@ -174,16 +174,6 @@ class CheckFlake(BaseHandler):
     Returns:
       None if all input fields are valid, or an error dict otherwise.
     """
-
-    if not master_name:
-      return self.CreateError('Master name must be specified', 400)
-
-    if not builder_name:
-      return self.CreateError('Builder name must be specified', 400)
-
-    if not build_number or not build_number.isdigit():
-      return self.CreateError('Build number must be specified as an int', 400)
-
     if not step_name:
       return self.CreateError('Step name must be specified', 400)
 
@@ -191,7 +181,7 @@ class CheckFlake(BaseHandler):
       return self.CreateError('Test name must be specified', 400)
 
     if bug_id and not bug_id.isdigit():
-      return self.CreateError('Bug id (optional) must be an int', 400)
+      return self.CreateError('Bug id must be an int', 400)
 
     return None
 
@@ -202,16 +192,18 @@ class CheckFlake(BaseHandler):
       if not analysis:  # pragma: no cover
         return self.CreateError('Analysis of flake is not found', 404)
     else:
-      master_name = self.request.get('master_name', '').strip()
-      builder_name = self.request.get('builder_name', '').strip()
-      build_number = self.request.get('build_number', '').strip()
+      build_url = self.request.get('url', '').strip()
+      build_info = buildbot.ParseBuildUrl(build_url)
+      if not build_info:  # pragma: no cover
+        return self.CreateError('Unknown build info!', 400)
+      master_name, builder_name, build_number = build_info
+
       step_name = self.request.get('step_name', '').strip()
       test_name = self.request.get('test_name', '').strip()
       bug_id = self.request.get('bug_id', '').strip()
       # TODO(lijeffrey): Add support for force flag to trigger a rerun.
 
-      error = self._ValidateInput(
-          master_name, builder_name, build_number, step_name, test_name, bug_id)
+      error = self._ValidateInput(step_name, test_name, bug_id)
 
       if error:  # pragma: no cover
         return error

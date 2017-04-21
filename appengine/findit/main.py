@@ -97,6 +97,7 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/failure', build_failure.BuildFailure),
     ('/waterfall/failure-log', failure_log.FailureLog),
     ('/waterfall/flake', check_flake.CheckFlake),
+    ('/waterfall/list-failures', list_analyses.ListAnalyses),
     ('/waterfall/list-flakes', list_flakes.ListFlakes),
     ('/waterfall/help-triage', help_triage.HelpTriage),
     ('/waterfall/list-analyses', list_analyses.ListAnalyses),

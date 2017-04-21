@@ -5,150 +5,82 @@
   <meta charset="utf-8">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <script>
-  function parseInputURL(url) {
-    url = decodeURI(url);
-    url = url.trim();
-    if (!url)
-      return;
-
-    var buildbotBuildRegex = /^(?:https?\:\/\/)(?:build\.chromium\.org\/p|uberchromegw\.corp\.google\.com\/i)\/([^\/]+)\/builders\/([^\/]+)\/builds\/([^\/]+)(.*$)/;
-    var miloBuildRegex = /^https?\:\/\/luci-milo\.appspot\.com\/buildbot\/([^\/]+)\/([^\/]+)\/([^\/]+)$/;
-    var groups = url.match(buildbotBuildRegex) || url.match(miloBuildRegex);
-    if (!groups) {
-      alert('Unrecognized build url!');
-      return;
-    }
-
-    var info = {
-      'masterName': groups[1],
-      'builderName': groups[2],
-      'buildNumber': groups[3],
-    };
-    var remaining = groups[4] || '';
-
-    var stepTestRegex = /^\/steps\/([^\/]+)\/logs\/([^\/]+)$/;
-    groups = remaining.match(stepTestRegex);
-    if (!groups || groups[2] == 'stdio')
-      return info;
-
-    info['stepName'] = groups[1];
-    info['testName'] = groups[2];
-
+  function decodeTestName(testName) {
     // Example: DetailsPanel_FileManagerDetailsPanelBrowserTest.Test_1 should be
     // DetailsPanel/FileManagerDetailsPanelBrowserTest.Test/1 instead.
     var encodedTestNameRegex = /^[^\.\_]+\_[^\.]+\.[^\.]+\_\d+$/;
-    if (info['testName'].match(encodedTestNameRegex))
-      info['realTestName'] = info['testName'].replace(/\_/g, '/');
-
-    return info;
-  }
-
-  function processInputURL() {
-    var info = parseInputURL($('#input-url').val());
-    if (!info)
-      return;
-
-    // Waterfall failure.
-    if (!info['stepName'] || !info['testName']) {
-      $('#url').val($('#input-url').val());
-      $('#failure').submit();
-      return;
-    }
-
-    // Flaky test.
-    $('#master-name').val(info['masterName']);
-    $('#builder-name').val(info['builderName']);
-    $('#build-number').val(info['buildNumber']);
-    $('#step-name').val(info['stepName']);
-    if (!info['realTestName']) {
-      $('#test-name').val(info['testName']);
-      $('#test-info').hide();
-    } else {
-      // Request user confirm test name.
-      $('#test-name-1-label').val(info['realTestName']);
-      $('#test-name-2-label').val(info['testName']);
-      $('#test-info').show();
-    }
-    $('#flake-info').show();
-    $('#input-bug-id').focus();
-  }
-
-  function submitFlakeForm() {
-    if ($('#test-info').is(':visible')) {
-      var testNameLabel = $('input:radio[name=real-test-name]:checked').val();
-      var testName = $('#' + testNameLabel).val().trim();
-      if (!testName) {
-        alert('Test name should not be empty!');
-        return;
-      }
-      $('#test-name').val(testName);
-    }
-    if (!$('#input-bug-id').val().trim()) {
-      alert('Bug number is required!');
-      return;
-    }
-    if (!$('#input-bug-id').val().trim().match(/^\d+$/)) {
-      alert('Bug should be a number!');
-      return;
-    }
-    $('#bug-id').val($('#input-bug-id').val().trim());
-    $('#flake').submit();
+    if (testName.match(encodedTestNameRegex))
+      testName = testName.replace(/\_/g, '/');
+    return testName;
   }
 
   $(document).ready(function() {
-    $('#input-url').on('keyup', function(e) {
-      if (e.keyCode != 13) {  // ENTER
-        $('#flake-info').hide();
+    $('#test-name').on('change paste', function() {
+      var testName = $('#test-name').val().trim();
+      if (!testName) {
+        $('#crbug-link').attr('href', 'https://crbug.com');
+        $('#test-name-warning').hide();
         return;
       }
-
-      processInputURL();
-    });
-
-    $('#input-url').on('change paste', function() {
-      $('#flake-info').hide();
-    });
-
-    $('#submit').on('click', submitFlakeForm);
-
-    $('#input-bug-id').on('keyup', function(e) {
-      if (e.keyCode != 13)  // ENTER
-        return;
-
-      submitFlakeForm();
+      var decodedTestName = decodeTestName(testName);
+      if (decodedTestName != testName) {  // Warn about encoded test name.
+        $('#decoded-test-name').text(decodedTestName);
+        $('#test-name').focus();
+        $('#test-name-warning').show();
+      } else {
+        $('#test-name-warning').hide();
+      }
+      $('#crbug-link').attr('href', 'https://crbug.com?q=' + encodeURIComponent(testName));
     });
   });
   </script>
 </head>
 <body>
-  <form id="failure" action="/waterfall/failure" method="GET" style="display:none">
-    <input type="text" name="url" id="url"/>
-  </form>
-  <form id="flake" action="/waterfall/flake" method="GET" style="display:none">
-    <input type="hidden" name="master_name" id="master-name"/>
-    <input type="hidden" name="builder_name" id="builder-name"/>
-    <input type="hidden" name="build_number" id="build-number"/>
-    <input type="hidden" name="step_name" id="step-name"/>
-    <input type="hidden" name="test_name" id="test-name"/>
-    <input type="hidden" name="bug_id" id="bug-id"/>
-  </form>
-  <div id="initial-input">
-    Paste the URL to either a failed Waterfall build or the log of a flaky gtest, and then press ENTER:
-    <ul>For example:
-      <li>Waterfall test/compile failures: https://luci-milo.appspot.com/buildbot/chromium.linux/Linux%20Tests/44306</li>
-      <li>Flaky gtest on Waterfall/CQ: https://build.chromium.org/p/chromium.linux/builders/Linux%20Tests/builds/49779/steps/browser_side_navigation_unit_tests/logs/RecentTabsSubMenuModelTest.MaxWidth</li>
-    </ul>
-    URL: <input type="url" id="input-url" size="200" placeholder="paste URL here and press ENTER to continue"/>
-  </div>
-  <div id="flake-info" style="display:none">
-    <div id="test-info" style="display:none">
-      <br>
-      Confirm/edit the test name:<br>
-      <input type="radio" checked name="real-test-name" id="test-name-1" value="test-name-1-label"/><input type="text" disabled id="test-name-1-label" size="100"><br>
-      <input type="radio" name="real-test-name" id="test-name-2" value="test-name-2-label"/><input type="text" id="test-name-2-label" size="100">
+  <div style="width:900px; margin:auto;">
+    <br>
+    <br>
+    <div style="text-align:center;font-size:40px;"> Findit </div>
+    <br>
+    <br>
+    <br>
+    <div>
+      <div><span style="color:GREEN"><b>Flaky test</b> (Gtest or Android Instrument) on Waterfall or CQ</span>: (<a href="/waterfall/list-flakes">previous analyses</a>)</div>
+      <form id="flake" action="/waterfall/flake" method="GET">
+        <table>
+          <tr>
+            <td style="text-align:right">Build URL</td>
+            <td><input required id="flake-build-url" type="url" name="url" size="120" placeholder="URL to the build cycle of the flaky test, like https://luci-milo.appspot.com/buildbot/chromium.mac/Mac10.11%20Tests/6472"/></td>
+          <tr>
+          <tr>
+            <td style="text-align:right">Step Name</td>
+            <td><input required type="text" name="step_name" id="step-name" size="120" placeholder="Full step name like 'browser_tests on Mac-10.11'"/></td>
+          </tr>
+          <tr>
+            <td style="text-align:right">Test Name</td>
+            <td>
+              <input required type="text" name="test_name" id="test-name" size="120" placeholder="PasswordManagerBrowserTestBase.InFrameNavigationDoesNotClearPopupState"/>
+            </td>
+          </tr>
+          <tr id="test-name-warning" style="color:RED;display:none">
+            <td></td>
+            <td>Should the test name be "<span id="decoded-test-name"></span>" instead?</td>
+          </tr>
+          <tr>
+            <td style="text-align:right"><a id="crbug-link" href="https://crbug.com" target="_blank">Monorail</a> Bug</td>
+            <td><input required type="text" name="bug_id" id="bug-id" size="120" placeholder="123456 (Click Monorail link to search for an existing bug before creating a new bug)"/><td>
+          </tr>
+        </table>
+        <input type="submit" value="Analyze flake"/>
+      </form>
     </div>
     <br>
-    BUG: <input type="text" id="input-bug-id" size="100" placeholder="123456 (Bug number to notify findings, search crbug.com with test name before creating a new bug)"/><br>
-    <input type="button" id="submit" value="Find Regression Range">
+    <br>
+    <div>
+      <div><span style="color:GREEN"><b>Compile/test</b> failure on Waterfall:</span> (<a href="/waterfall/list-failures">previous analyses</a>)</div>
+      <form id="failure" action="/waterfall/failure" method="GET">
+        <label for="build-url">URL</label> <input required id="build-url" type="url" name="url" size="130" placeholder="Press ENTER after pasting the URL to the build cycle like https://luci-milo.appspot.com/buildbot/chromium.linux/Linux%20Tests/44306"/><br>
+        <input type="submit" value="Analyze failure"/>
+      </form>
+    </div>
   </div>
 </body>
