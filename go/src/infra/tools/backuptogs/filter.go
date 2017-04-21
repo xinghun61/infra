@@ -46,7 +46,7 @@ func filterFiles(
 			}
 
 			filesSeen.Add(ctx, 1)
-			if !prevState.MatchOsInfo(info.path, info.osInfo) {
+			if prevState == nil || !prevState.MatchOsInfo(info.path, info.osInfo) {
 				backupsChan <- info.path
 			}
 

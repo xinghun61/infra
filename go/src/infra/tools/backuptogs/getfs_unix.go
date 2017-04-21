@@ -22,6 +22,10 @@ func getFs(ctx context.Context, filename string) (uint64, error) {
 	if !ok {
 		return 0, fmt.Errorf("Failed to convert stat.Sys() to syscall.Stat_t for file '%s'", filename)
 	}
+	if realStat == nil {
+		logging.Warningf(ctx, "Unable to get OS-level stat data for file '%s'. Returning 0 for filesystem id.")
+		return 0, nil
+	}
 
 	return uint64(realStat.Dev), nil
 }
