@@ -107,18 +107,23 @@ def _ValidateComponentClassifierConfig(component_classifier_config):
       its function and path patterns, and some other settings.
       For example:
       {
-          'path_function_component': [
-              [
-                  'src/chrome/common/extensions/api/gcm.json',
-                  '',
-                  'Services>CloudMessaging'
-              ],
-              ...
-              [
-                  'src/chrome/browser/accessibility',
-                  '',
-                  'UI>Accessibility'
-              ],
+          'component_info': [
+              {
+                'component': 'Platform>Apps>AppLauncher>Install',
+                'dirs': [
+                  'src/third_party/WebKit/public/platform/modules/installedapp',
+                  'src/third_party/WebKit/Source/modules/installedapp'
+                ]
+              },
+              ...,
+              {
+                'component': 'Internals>GPU>Testing',
+                'dirs': [
+                  'src/gpu/gles2_conform_support',
+                  'src/gpu/command_buffer/tests',
+                  'src/content/test/gpu/'
+                ]
+              },
            ],
           'top_n': 4
       }
@@ -130,13 +135,13 @@ def _ValidateComponentClassifierConfig(component_classifier_config):
   if not isinstance(component_classifier_config, dict):
     return False
 
-  path_function_component = component_classifier_config.get(
-      'path_function_component')
-  if not isinstance(path_function_component, list):
+  component_info = component_classifier_config.get(
+      'component_info')
+  if not isinstance(component_info, list):
     return False
 
-  if not all(_IsListOfStrings(component)
-             for component in path_function_component):
+  if not all(isinstance(component, dict)
+             for component in component_info):
     return False
 
   top_n = component_classifier_config.get('top_n')

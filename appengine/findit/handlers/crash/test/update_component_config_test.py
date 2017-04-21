@@ -20,7 +20,7 @@ from libs.http.retry_http_client import RetryHttpClient
 from model.crash.crash_config import CrashConfig
 
 
-_MOCK_OWNERS_MAPPINGS = {
+_MOCK_OWNERS_MAPPINGS = json.dumps({
   'component-to-team': {
       "compoA": "team1@chromium.org",
       "compoB": "team2@chromium.org",
@@ -32,9 +32,9 @@ _MOCK_OWNERS_MAPPINGS = {
       "dirC": "compoB",
       "dirE": "compoE",
     }
-}
+})
 
-_MOCK_PREDATOR_MAPPINGS = {
+_MOCK_PREDATOR_MAPPINGS = json.dumps({
   'path_function_component': [
     [
       "file1",
@@ -51,8 +51,9 @@ _MOCK_PREDATOR_MAPPINGS = {
       "",
       "compoF"
     ]
-  ]
-}
+  ],
+  'top_n': 4
+})
 
 _MOCK_CONFIG = {
     'component_info': [
@@ -70,7 +71,8 @@ _MOCK_CONFIG = {
          'function': 'fn_a',
          'component': 'compoA',
          'team': 'team1@chromium.org'}
-    ]
+    ],
+    'top_n': 4
 }
 
 
@@ -104,7 +106,7 @@ class UpdateComponentConfigTest(TestCase):
     component_classifier_config = GetComponentClassifierConfig(
         'mock_owners_mapping.json', 'mock_predator_mapping.json',
         DummyHttpClient())
-    self.assertEqual(_MOCK_CONFIG, component_classifier_config)
+    self.assertDictEqual(_MOCK_CONFIG, component_classifier_config)
 
   def testGetComponentClassifierConfigNoOWNERS(self):
     component_classifier_config = GetComponentClassifierConfig(

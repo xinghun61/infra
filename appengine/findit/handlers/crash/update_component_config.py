@@ -7,6 +7,7 @@
 from collections import defaultdict
 import json
 import logging
+import traceback
 
 from google.appengine.api import users
 
@@ -47,9 +48,14 @@ def GetComponentClassifierConfig(owner_mapping_url=OWNERS_MAPPING_URL,
     """
   component_dict = defaultdict(dict)
   # Mappings from OWNERS files.
-  status_code, owner_mappings = http_client.Get(owner_mapping_url,
-                                                {'format': 'json'})
+  status_code, owner_mappings = http_client.Get(owner_mapping_url)
   if status_code != 200:
+    return None
+
+  try:
+    owner_mappings = json.loads(owner_mappings)
+  except Exception:  # pragma: no cover
+    logging.error(traceback.format_exc())
     return None
 
   for dir_name, component in owner_mappings['dir-to-component'].items():
@@ -60,12 +66,17 @@ def GetComponentClassifierConfig(owner_mapping_url=OWNERS_MAPPING_URL,
         component_dict[component]['team'] = (
             owner_mappings['component-to-team'].get(component))
 
-    component_dict[component]['dirs'].append("src/" + dir_name)
+    component_dict[component]['dirs'].append('src/' + dir_name)
 
   # Mappings manually collected for Predator in the Past.
-  status_code, predator_mappings = http_client.Get(
-      predator_mapping_url, {'format': 'json'})
+  status_code, predator_mappings = http_client.Get(predator_mapping_url)
   if status_code != 200:
+    return None
+
+  try:
+    predator_mappings = json.loads(predator_mappings)
+  except Exception:  # pragma: no cover
+    logging.error(traceback.format_exc())
     return None
 
   for path_function_component in predator_mappings['path_function_component']:
@@ -84,7 +95,8 @@ def GetComponentClassifierConfig(owner_mapping_url=OWNERS_MAPPING_URL,
             path_function_component[1])
 
   component_classifier_config = {'component_info':
-                                 component_dict.values()}
+                                 component_dict.values(),
+                                 'top_n': predator_mappings['top_n']}
   return component_classifier_config
 
 
@@ -96,8 +108,9 @@ class UpdateComponentConfig(BaseHandler):
     new_config_dict = {'component_classifier': GetComponentClassifierConfig(
         OWNERS_MAPPING_URL, PREDATOR_MAPPING_URL, HttpClientAppengine())}
     if not new_config_dict.get('component_classifier'):  # pragma: no cover.
-      return BaseHandler.CreateError('Component Classifier Config Update Fail')
+      return BaseHandler.CreateError(
+          'Component Classifier Config Update Fail', 400)
 
     crash_config = CrashConfig.Get()
     crash_config.Update(
-        users.get_current_user(), users.IsCurrentUserAdmin(), **new_config_dict)
+        users.User('cron_admin@chromium.org'), True, **new_config_dict)

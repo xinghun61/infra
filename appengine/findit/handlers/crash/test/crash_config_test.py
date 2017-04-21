@@ -27,17 +27,16 @@ _MOCK_FRACAS_CONFIG = {
 }
 
 _MOCK_COMPONENT_CONFIG = {
-    'path_function_component': [
-        [
-            'src/comp1.*',
-            '',
-            'Comp1>Dummy'
-        ],
-        [
-            'src/comp2.*',
-            'func2.*',
-            'Comp2>Dummy'
-        ],
+    'component_info': [
+        {
+            'dirs': ['src/comp1'],
+            'component': 'Comp1>Dummy'
+        },
+        {
+            'dirs': ['src/comp2'],
+            'function': 'func2.*',
+            'component': 'Comp2>Dummy'
+        },
     ],
     'top_n': 4
 }
@@ -153,20 +152,20 @@ class CrashConfigTest(TestCase):
     # Return False if config is not a dict
     self.assertFalse(crash_config._ValidateComponentClassifierConfig(None))
 
-    # Return False if config dict has not "path_function_component".
+    # Return False if config dict has not "component_info".
     self.assertFalse(crash_config._ValidateComponentClassifierConfig({}))
 
-    # Return False if config "path_function_component" is not list.
-    config = {'path_function_component': {}}
+    # Return False if config "component_info" is not list.
+    config = {'component_info': {}}
     self.assertFalse(crash_config._ValidateComponentClassifierConfig(config))
 
-    # Return False if config "path_function_component" is not a list of strings.
-    config = {'path_function_component': [None]}
+    # Return False if config "component_info" is not a list of strings.
+    config = {'component_info': [None]}
     self.assertFalse(crash_config._ValidateComponentClassifierConfig(config))
 
     # Return False if config "top_n" is not int.
-    config = {'path_function_component':
-              _MOCK_COMPONENT_CONFIG['path_function_component'],
+    config = {'component_info':
+              _MOCK_COMPONENT_CONFIG['component_info'],
               'top_n': []}
     self.assertFalse(crash_config._ValidateComponentClassifierConfig(config))
 
