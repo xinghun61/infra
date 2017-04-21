@@ -463,7 +463,7 @@ def temp_file(body=None, root=None):
 
 def cipd(workspace, args, silent=False):
   """Calls 'cipd' tool (from PATH), returns the process exit code."""
-  cmd = ['cipd.exe' if sys.platform == 'win32' else 'cipd']
+  cmd = ['cipd.bat' if sys.platform == 'win32' else 'cipd']
   cmd += args
   if args[0] not in ['pkg-build']:  # non-local op?
     if workspace.service_account_json:
