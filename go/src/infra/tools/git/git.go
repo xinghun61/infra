@@ -13,7 +13,9 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -218,6 +220,10 @@ type gitRunner struct {
 	// between retries. If it returns an error, subsequent retry attempts will be
 	// abandoned.
 	BetweenRetryFunc betweenRetryFunc
+
+	// For tests, allows mocking runtime.GOOS. If empty, uses real runtime.GOOS
+	// value.
+	testGOOS string
 }
 
 func (gr *gitRunner) getStdin() io.Reader {
@@ -314,8 +320,28 @@ func (gr *gitRunner) runWithRetries(c context.Context) (int, error) {
 	}
 }
 
+// goos returns either the mocked os version, or the real runtime.GOOS.
+func (gr *gitRunner) goos() string {
+	if gr.testGOOS == "" {
+		return runtime.GOOS
+	}
+	return gr.testGOOS
+}
+
 func (gr *gitRunner) setupCommand(c context.Context) *exec.Cmd {
-	cmd := exec.CommandContext(c, gr.State.GitPath, gr.Args...)
+	args := gr.Args
+	if gr.goos() == "windows" && strings.HasSuffix(strings.ToLower(gr.State.GitPath), ".bat") {
+		// If the 'real' git we're invoking is a .bat file, we need to escape
+		// ^ characters twice:
+		//   * once when the .bat processes its own cmdline args
+		//   * again when the .bat invokes the underlying git.exe
+		args = make([]string, len(gr.Args))
+		for i := range gr.Args {
+			args[i] = strings.Replace(gr.Args[i], "^", "^^^^", -1)
+		}
+	}
+
+	cmd := exec.CommandContext(c, gr.State.GitPath, args...)
 	cmd.Env = gr.Env.Sorted()
 	cmd.Stdin = gr.getStdin()
 	cmd.Dir = gr.WorkDir

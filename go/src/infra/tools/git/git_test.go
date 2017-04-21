@@ -535,6 +535,34 @@ func TestGitCommand(t *testing.T) {
 			})
 		})
 	}))
+
+	Convey(`Unittests`, t, func() {
+		Convey(`For windows`, func() {
+			gitPathPrefix := "cool/path/to/git"
+			gr := &gitRunner{
+				GitCommand: &GitCommand{
+					State: state.State{},
+				},
+				testGOOS: "windows",
+			}
+
+			Convey(`We properly escape the '^' symbol when invoking a batfile`, func() {
+				gitPath := gitPathPrefix + ".Bat"
+				gr.GitCommand.State.GitPath = gitPath
+				gr.Args = []string{"diff-tree", "HEAD^!"}
+				cmd := gr.setupCommand(context.Background())
+				So(cmd.Args, ShouldResemble, []string{gitPath, "diff-tree", "HEAD^^^^!"})
+			})
+
+			Convey(`Should leave things alone when invoking an exe`, func() {
+				gitPath := gitPathPrefix + ".exe"
+				gr.GitCommand.State.GitPath = gitPath
+				gr.Args = []string{"diff-tree", "HEAD^!"}
+				cmd := gr.setupCommand(context.Background())
+				So(cmd.Args, ShouldResemble, []string{gitPath, "diff-tree", "HEAD^!"})
+			})
+		})
+	})
 }
 
 func makeTestAgent(inPath string) *testAgent {
