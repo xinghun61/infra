@@ -60,8 +60,12 @@ def kill_adb():
   for pid in pids:
     # A process running in a container should have 'docker' show up in its
     # cgroup entry in procfs.
-    with open('/proc/%s/cgroup' % pid) as f:
-      cgroups = f.read()
+    try:
+      with open('/proc/%s/cgroup' % pid) as f:
+        cgroups = f.read()
+    except IOError:
+      logging.warning('Unable to read cgroup of process %s.', pid)
+      continue
     if 'docker' not in cgroups:
       logging.warning(
           'Found adb process (%s) running outside of a container. Killing '
