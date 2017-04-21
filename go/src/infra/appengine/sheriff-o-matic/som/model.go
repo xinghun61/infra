@@ -28,6 +28,7 @@ type Tree struct {
 	AlertStreams  []string `json:"alert_streams,omitempty"`
 	BugQueueLabel string   `json:"bug_queue_label,omitempty"`
 	HelpLink      string   `json:"help_link,omitempty"`
+	GerritProject string   `json:"gerrit_project,omitempty"`
 }
 
 // AlertsJSON is the a JSON blob of alerts for a tree.

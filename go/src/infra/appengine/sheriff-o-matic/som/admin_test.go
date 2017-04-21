@@ -32,6 +32,7 @@ func TestRenderSettingsPage(t *testing.T) {
 			BugQueueLabel: "test",
 			AlertStreams:  []string{"hello", "world"},
 			HelpLink:      "http://google.com/",
+			GerritProject: "some/project/name",
 		}
 
 		So(datastore.Put(c, tree), ShouldBeNil)
@@ -40,17 +41,18 @@ func TestRenderSettingsPage(t *testing.T) {
 		Convey("Fields", func() {
 			fields, err := settingsUIPage.Fields(s, c)
 			So(err, ShouldBeNil)
-			So(len(fields), ShouldEqual, 4)
+			So(len(fields), ShouldEqual, 5)
 		})
 
 		Convey("ReadSettings", func() {
 			settings, err := settingsUIPage.ReadSettings(s, c)
 			So(err, ShouldBeNil)
-			So(len(settings), ShouldEqual, 4)
+			So(len(settings), ShouldEqual, 5)
 			So(settings["Trees"], ShouldEqual, "oak:Great Oaakk")
 			So(settings["BugQueueLabels"], ShouldEqual, "oak:test")
 			So(settings["AlertStreams-oak"], ShouldEqual, "hello,world")
 			So(settings["HelpLink-oak"], ShouldEqual, "http://google.com/")
+			So(settings["GerritProject-oak"], ShouldEqual, "some/project/name")
 		})
 	})
 }
