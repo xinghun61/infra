@@ -3,12 +3,16 @@
 # found in the LICENSE file.
 
 """Identifies mismatches between main waterfall builders and Findit trybots."""
+import base64
 from collections import defaultdict
+import gzip
+import io
 import json
 import os
 import sys
+import urllib
+import urllib2
 
-from google.appengine.api import urlfetch
 
 _REMOTE_API_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
 sys.path.insert(1, _REMOTE_API_DIR)
@@ -17,9 +21,56 @@ import remote_api
 from model.wf_config import FinditConfig
 
 
-BUILDER_URL_TEMPLATE = 'http://build.chromium.org/p/%s/json/builders'
 NOT_AVAILABLE = 'N/A'
 
+
+_MILO_RESPONSE_PREFIX = ')]}\'\n'
+_MILO_MASTER_ENDPOINT = ('https://luci-milo.appspot.com/prpc/milo.Buildbot/'
+                         'GetCompressedMasterJSON')
+
+
+def _ProcessMiloData(data):
+  if not data.startswith(_MILO_RESPONSE_PREFIX):
+    return None
+  data = data[len(_MILO_RESPONSE_PREFIX):]
+
+  try:
+    response_data = json.loads(data)
+  except Exception:
+    return None
+
+  try:
+    decoded_data = base64.b64decode(response_data.get('data'))
+  except Exception:
+    return None
+
+  try:
+    with io.BytesIO(decoded_data) as compressed_file:
+      with gzip.GzipFile(fileobj=compressed_file) as decompressed_file:
+        data_json = decompressed_file.read()
+  except Exception:
+    return None
+
+  return json.loads(data_json)
+
+
+def _GetBuilderList(master_name):
+  try:
+    headers = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+    }
+    values = {'name': master_name}
+    data = urllib.urlencode(values)
+    req = urllib2.Request(_MILO_MASTER_ENDPOINT, None, headers)
+    f = urllib2.urlopen(req, json.dumps(values), timeout=60)
+  except Exception as e:
+    print ('WARNING: Unable to reach builbot to retrieve trybot '
+           'information')
+    raise e
+
+  data = _ProcessMiloData(f.read())
+  return [bot for bot in data.get('builders', {}).keys()]
 
 if __name__ == '__main__':
   remote_api.EnableRemoteApi(app_id='findit-for-me')
@@ -42,12 +93,10 @@ if __name__ == '__main__':
       print
       continue
 
-    json_url = BUILDER_URL_TEMPLATE % master
     try:
-      result = urlfetch.fetch(json_url, deadline=60)
-      main_waterfall_builders = json.loads(result.content).keys()
+      main_waterfall_builders = _GetBuilderList(master)
     except Exception:
-      print 'Data could not be retrieved from %s. Skipping.' % json_url
+      print 'Data could not be retrieved for master %s. Skipping.' % master
       print
       main_waterfall_cache[master] = NOT_AVAILABLE
       continue
@@ -66,7 +115,7 @@ if __name__ == '__main__':
       # deprecated.
       tryserver = trybots[master][builder]['mastername']
       tryservers.add(tryserver)
-      variable_builder = trybots[master][builder]['buildername']
+      variable_builder = trybots[master][builder]['waterfall_trybot']
       variable_builders_cache[variable_builder].append(
           {
               'master': master,
@@ -108,24 +157,23 @@ if __name__ == '__main__':
   variable_builders_in_config = set()
   for master, builders in trybots.iteritems():
     for builder_info in builders.values():
-      variable_builder = builder_info['buildername']
+      variable_builder = builder_info['waterfall_trybot']
       variable_builders_in_config.add(variable_builder)
 
   for tryserver in tryservers:
     print 'Tryserver: %s' % tryserver
 
-    json_url = BUILDER_URL_TEMPLATE % tryserver
     try:
-      result = urlfetch.fetch(json_url, deadline=60)
-      tryserver_builders = json.loads(result.content).keys()
+      tryserver_builders = _GetBuilderList(tryserver)
     except Exception:
-      print 'Data could not be retrieved from %s' % json_url
+      print 'Data could not be retrieved for %s' % tryserver
       print
       continue
 
     any_unused = False
     for builder in tryserver_builders:
-      if 'variable' in builder and builder not in variable_builders_in_config:
+      if ('variable' in builder and 'deflake' not in builder and builder not in
+          variable_builders_in_config):
         print '\'%s\' is unused.' % builder
         any_unused = True
 
