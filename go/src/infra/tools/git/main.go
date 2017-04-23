@@ -95,7 +95,7 @@ func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader
 		st.SelfPath = self
 	}
 
-	if st.GitPath, err = gitProbe.Locate(c, self, st.GitPath, env); err != nil {
+	if st.GitPath, err = gitProbe.Locate(c, st.SelfPath, st.GitPath, env); err != nil {
 		logError(err, "failed to locate system Git")
 		return gitWrapperErrorReturnCode
 	}

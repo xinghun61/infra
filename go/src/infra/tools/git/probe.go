@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -48,9 +49,12 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 	//
 	// This may fail if we have been deleted since running. If so, we will skip
 	// the SameFile check.
-	selfStat, err := os.Stat(self)
-	if err != nil {
-		log.Printf("WARNING: Failed to stat self [%s]: %s", self, err)
+	var selfStat os.FileInfo
+	if self != "" {
+		var err error
+		if selfStat, err = os.Stat(self); err != nil {
+			log.Printf("WARNING: Failed to stat self [%s]: %s", self, err)
+		}
 	}
 
 	// If we have a cached path, check that it exists and is executable and use it
@@ -77,10 +81,14 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 
 	// Get stats on our parent directory. This may fail; if so, we'll skip the
 	// SameFile check.
-	selfDir := filepath.Dir(self)
-	selfDirStat, err := os.Stat(selfDir)
-	if err != nil {
-		log.Printf("WARNING: Failed to stat self directory [%s]: %s", selfDir, err)
+	var selfDirStat os.FileInfo
+	if self != "" {
+		selfDir := filepath.Dir(self)
+
+		var err error
+		if selfDirStat, err = os.Stat(selfDir); err != nil {
+			log.Printf("WARNING: Failed to stat self directory [%s]: %s", selfDir, err)
+		}
 	}
 
 	// Walk through PATH. Our goal is to find the first program named Target that
@@ -90,7 +98,7 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 	// "checkWrapper" set to true. Since we will do this repeatedly, we will
 	// generate the "check enabled" environment once and reuse it for each check.
 	envWithCheckEnabled := env.Clone()
-	envWithCheckEnabled.Set(gitWrapperCheckENV, self)
+	envWithCheckEnabled.Set(gitWrapperCheckENV, "1")
 	envWithCheckEnabledStr := envWithCheckEnabled.Sorted()
 
 	origPATH, _ := env.Get("PATH")
@@ -234,6 +242,12 @@ func (p *SystemProbe) checkForWrapper(c context.Context, path string, checkENV [
 				if rc, ok := exitcode.Get(err); ok {
 					return rc, nil
 				}
+
+				envDump := make([]string, len(checkENV))
+				for i, e := range checkENV {
+					envDump[i] = fmt.Sprintf("%q", e)
+				}
+				log.Printf("WARNING: Failed to run check command [%s] with environment: %s", path, strings.Join(envDump, " "))
 				return 0, errors.Annotate(err).Reason("failed to run check command").Err()
 			}
 			return 0, nil
