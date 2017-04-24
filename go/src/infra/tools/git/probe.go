@@ -5,15 +5,16 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/system/exitcode"
 	"github.com/luci/luci-go/common/system/filesystem"
@@ -53,7 +54,7 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 	if self != "" {
 		var err error
 		if selfStat, err = os.Stat(self); err != nil {
-			log.Printf("WARNING: Failed to stat self [%s]: %s", self, err)
+			logging.Debugf(c, "Failed to stat self [%s]: %s", self, err)
 		}
 	}
 
@@ -65,9 +66,10 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 			// Use the cached path. First, pass it through a sanity check to ensure
 			// that it is not self.
 			if selfStat == nil || !os.SameFile(selfStat, cachedStat) {
+				logging.Debugf(c, "Using cached Git: %s", cached)
 				return cached, nil
 			}
-			log.Printf("WARNING: Cached value [%s] is the wrapper [%s]; ignoring.", cached, self)
+			logging.Debugf(c, "Cached value [%s] is this wrapper [%s]; ignoring.", cached, self)
 
 		case os.IsNotExist(err):
 			// Our cached path doesn't exist, so we will have to look for a new one.
@@ -75,7 +77,7 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 		case err != nil:
 			// We couldn't check our cached path, so we will have to look for a new
 			// one. This is an unexpected error, though, so emit it.
-			log.Printf("WARNING: Failed to stat cached [%s]: %s", cached, err)
+			logging.Debugf(c, "Failed to stat cached [%s]: %s", cached, err)
 		}
 	}
 
@@ -87,7 +89,7 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 
 		var err error
 		if selfDirStat, err = os.Stat(selfDir); err != nil {
-			log.Printf("WARNING: Failed to stat self directory [%s]: %s", selfDir, err)
+			logging.Debugf(c, "Failed to stat self directory [%s]: %s", selfDir, err)
 		}
 	}
 
@@ -134,19 +136,21 @@ func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.F
 		case err == nil:
 			// "dir" exists; if it is the same as "selfDir", we can ignore it.
 			if os.SameFile(selfDir, checkDirStat) {
+				logging.Debugf(c, "Candidate shares wrapper directory [%s]; skipping...", dir)
 				return ""
 			}
 
 		case os.IsNotExist(err):
+			logging.Debugf(c, "Candidate directory does not exist [%s]; skipping...", dir)
 			return ""
 
 		default:
-			log.Printf("WARNING: Failed to stat candidate directory [%s]: %s", dir, err)
+			logging.Debugf(c, "Failed to stat candidate directory [%s]: %s", dir, err)
 			return ""
 		}
 	}
 
-	t := p.lookPathWithDir(dir)
+	t := p.lookPathWithDir(c, dir)
 	if t == "" {
 		return ""
 	}
@@ -164,23 +168,24 @@ func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.F
 			return ""
 
 		default:
-			log.Printf("WARNING: Failed to stat candidate path [%s]: %s", t, err)
+			logging.Debugf(c, "Failed to stat candidate path [%s]: %s", t, err)
 			return ""
 		}
 	}
 
 	if err := filesystem.AbsPath(&t); err != nil {
-		log.Printf("WARNING: Failed to normalize candidate path [%s]: %s", t, err)
+		logging.Debugf(c, "Failed to normalize candidate path [%s]: %s", t, err)
 		return ""
 	}
 
 	// Try running the candidate command and confirm that it is not a wrapper.
 	switch isWrapper, err := p.checkForWrapper(c, t, checkENV); {
 	case err != nil:
-		log.Printf("WARNING: Failed to check if [%s] is a wrapper: %s", t, err)
+		logging.Debugf(c, "Failed to check if [%s] is a wrapper: %s", t, err)
 		return ""
 
 	case isWrapper:
+		logging.Debugf(c, "Candidate is a Git wrapper: %s", t)
 		return ""
 	}
 
@@ -199,7 +204,7 @@ func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.F
 //
 // We use LookPath over custom checking because it implements operating system
 // semantics for identifying an application with a name.
-func (p *SystemProbe) lookPathWithDir(dir string) string {
+func (p *SystemProbe) lookPathWithDir(c context.Context, dir string) string {
 	// Use LookPath to identify "git".
 	origPATH := os.Getenv("PATH")
 	if err := os.Setenv("PATH", dir); err != nil {
@@ -218,6 +223,7 @@ func (p *SystemProbe) lookPathWithDir(dir string) string {
 		return ""
 	}
 
+	logging.Debugf(c, "Identified system candidate at: %s", t)
 	return t
 }
 
@@ -247,7 +253,7 @@ func (p *SystemProbe) checkForWrapper(c context.Context, path string, checkENV [
 				for i, e := range checkENV {
 					envDump[i] = fmt.Sprintf("%q", e)
 				}
-				log.Printf("WARNING: Failed to run check command [%s] with environment: %s", path, strings.Join(envDump, " "))
+				logging.Warningf(c, "Failed to run check command [%s] with environment: %s", path, strings.Join(envDump, " "))
 				return 0, errors.Annotate(err).Reason("failed to run check command").Err()
 			}
 			return 0, nil

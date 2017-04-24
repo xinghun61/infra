@@ -7,7 +7,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"regexp"
 	"time"
@@ -18,6 +17,8 @@ import (
 
 	"github.com/luci/luci-go/cipd/version"
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/common/retry"
 	"github.com/luci/luci-go/common/system/environ"
 )
@@ -43,6 +44,12 @@ const gitWrapperENV = "INFRA_GIT_WRAPPER"
 // immediately with a non-zero return code.
 const gitWrapperCheckENV = "INFRA_GIT_WRAPPER_CHECK"
 
+// gitWrapperTraceENV, if set and not empty, instructs the Git wrapper to emit
+// trace-level logging.
+//
+// NOTE: This can get in the way of some processes that require output parsing.
+const gitWrapperTraceENV = "INFRA_GIT_WRAPPER_TRACE"
+
 // gitProbe is the SystemProbe used by the main application to locate Git.
 var gitProbe = SystemProbe{
 	Target: "git",
@@ -63,9 +70,24 @@ func probeVersionString() string {
 }
 
 func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader, stdout, stderr io.Writer) int {
+	// Set up our logging parameters. If we're not tracing, we will only show
+	// Info and higher level logs.
+	const loggingFormat = `[%{level:.1s} %{shortfile}] %{message}`
+	logCfg := gologger.LoggerConfig{
+		Out:    os.Stderr,
+		Format: loggingFormat,
+	}
+	c = logCfg.Use(c)
+	if v, _ := env.Get(gitWrapperTraceENV); v != "" {
+		c = logging.SetLevel(c, logging.Debug)
+	} else {
+		c = logging.SetLevel(c, logging.Info)
+	}
+
 	// If we are performing a Git wrapper check, exit immediately with a non-zero
 	// return code.
 	if _, ok := env.Get(gitWrapperCheckENV); ok {
+		logging.Debugf(c, "Observed check env ["+gitWrapperCheckENV+"]; exiting with non-zero code.")
 		return 1
 	}
 
@@ -73,18 +95,20 @@ func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader
 	var st state.State
 	if v, ok := env.Get(gitWrapperENV); ok {
 		if err := st.FromENV(v); err != nil {
-			log.Printf("WARNING: Failed to decode "+gitWrapperENV+" [%s]: %s", v, err)
+			logging.Warningf(c, "Failed to decode "+gitWrapperENV+" [%s]: %s", v, err)
 		}
+		logging.Debugf(c, "Loaded state from ["+gitWrapperENV+"]: %#v", st)
 	}
 
 	// Locate the system Git.
 	args := argv[1:]
 	self, err := os.Executable()
+	logging.Debugf(c, "Identified Git wrapper (self) path at: %s", self)
 	switch {
 	case err != nil:
 		// If we can't identify our own path, we can't check our cached Git path,
 		// so invalidate it.
-		log.Printf("WARNING: Failed to get absolute path of self [%s]: %s", self, err)
+		logging.Warningf(c, "Failed to get absolute path of self [%s]: %s", self, err)
 		st.SelfPath = ""
 		st.GitPath = ""
 
@@ -96,9 +120,10 @@ func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader
 	}
 
 	if st.GitPath, err = gitProbe.Locate(c, st.SelfPath, st.GitPath, env); err != nil {
-		logError(err, "failed to locate system Git")
+		errors.Log(c, errors.Annotate(err).Reason("failed to locate system Git").Err())
 		return gitWrapperErrorReturnCode
 	}
+	logging.Debugf(c, "Identified system Git at: %s", st.GitPath)
 
 	// Construct and execute a managed Git command.
 	cmd := GitCommand{
@@ -113,23 +138,11 @@ func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader
 	}
 	rc, err := cmd.Run(c, args, env)
 	if err != nil {
-		logError(err, "failed to run Git")
+		errors.Log(c, errors.Annotate(err).Reason("failed to run Git").Err())
 		return gitWrapperErrorReturnCode
 	}
 
 	return rc
-}
-
-func logError(err error, reason string) {
-	if err == nil {
-		return
-	}
-
-	log.Printf("ERROR: %s", reason)
-	rs := errors.RenderStack(err)
-	if _, renderErr := rs.DumpTo(os.Stderr); renderErr != nil {
-		log.Printf("ERROR: Failed to render error stack: %s", renderErr)
-	}
 }
 
 // gitTransientRetry returns the retry.Iterator to use when retrying Git

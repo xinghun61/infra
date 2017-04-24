@@ -8,7 +8,6 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,6 +25,7 @@ import (
 	"infra/tools/git/state"
 
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/system/exitcode"
@@ -103,13 +103,13 @@ func (gc *GitCommand) Run(c context.Context, args []string, env environ.Env) (in
 		// Use system working directory.
 		var err error
 		if effectiveWorkDir, err = os.Getwd(); err != nil {
-			log.Printf("WARNING: Couldn't determine effective working directory: %s", err)
+			logging.Warningf(c, "Couldn't determine effective working directory: %s", err)
 		}
 	}
 	if effectiveWorkDir != "" {
 		// Make working directory absolute, if possible.
 		if err := filesystem.AbsPath(&effectiveWorkDir); err != nil {
-			log.Printf("WARNING: Couldn't get absolute path of effective working directory [%s]: %s",
+			logging.Warningf(c, "Couldn't get absolute path of effective working directory [%s]: %s",
 				effectiveWorkDir, err)
 		}
 	}
@@ -169,7 +169,7 @@ func (gc *GitCommand) Run(c context.Context, args []string, env environ.Env) (in
 					// We're doing a clone, and the target directory does not exist. If
 					// it is created during operation, we assume ownership of it in
 					// between retries.
-					gr.BetweenRetryFunc = removeCloneDirBetweenRetries(tdir)
+					gr.BetweenRetryFunc = gc.removeCloneDirBetweenRetries(tdir)
 				}
 			}
 		}
@@ -185,10 +185,10 @@ func (gc *GitCommand) Run(c context.Context, args []string, env environ.Env) (in
 // the clone directory. It will recursively remove the directory if it exists
 // in between retries so that a half-failed clone doesn't break subsequent
 // clone attempts.
-func removeCloneDirBetweenRetries(cloneDir string) betweenRetryFunc {
+func (gc *GitCommand) removeCloneDirBetweenRetries(cloneDir string) betweenRetryFunc {
 	return func(c context.Context) error {
 		if st, err := os.Stat(cloneDir); err == nil && st.IsDir() {
-			log.Printf("INFO: Cleaning up `clone` target directory for retry: %s", cloneDir)
+			logging.Infof(c, "Cleaning up `clone` target directory for retry: %s", cloneDir)
 			if err := filesystem.RemoveAll(cloneDir); err != nil {
 				return errors.Annotate(err).Reason("failed to remove 'clone' directory in between retries").
 					D("cloneDir", cloneDir).
@@ -276,11 +276,11 @@ func (gr *gitRunner) runWithRetries(c context.Context) (int, error) {
 			// Did we hit a transient error?
 			transient := false
 			if s := stdoutPM.Found; s != "" {
-				log.Printf("WARNING: Transient error string identified in STDOUT: %q", s)
+				logging.Warningf(c, "Transient error string identified in STDOUT: %q", s)
 				transient = true
 			}
 			if s := stderrPM.Found; s != "" {
-				log.Printf("WARNING: Transient error string identified in STDERR: %q", s)
+				logging.Warningf(c, "Transient error string identified in STDERR: %q", s)
 				transient = true
 			}
 
@@ -291,13 +291,13 @@ func (gr *gitRunner) runWithRetries(c context.Context) (int, error) {
 
 		return nil
 	}, func(err error, delay time.Duration) {
-		log.Printf("WARNING: Retrying after %s (rc=%d): %s", delay, rc, err)
+		logging.Warningf(c, "Retrying after %s (rc=%d): %s", delay, rc, err)
 		transientFailures++
 
 		if brf := gr.BetweenRetryFunc; brf != nil {
 			if brfErr = brf(c); brfErr != nil {
 				// Prevent future retries.
-				log.Printf("ERROR: Failed to recover in between retries: %s", err)
+				logging.Errorf(c, "Failed to recover in between retries: %s", err)
 				cancelFunc()
 			}
 		}
@@ -314,7 +314,7 @@ func (gr *gitRunner) runWithRetries(c context.Context) (int, error) {
 	default:
 		// Success or transient failure; propagate the last return code.
 		if transientFailures > 0 {
-			log.Printf("WARNING: Command completed with rc %d after %d transient failure(s).", rc, transientFailures)
+			logging.Warningf(c, "Command completed with rc %d after %d transient failure(s).", rc, transientFailures)
 		}
 		return rc, nil
 	}
@@ -461,7 +461,7 @@ func (gr *gitRunner) runGitVersion(c context.Context) (int, error) {
 	writeBuf := func(b *bytes.Buffer, out io.Writer, name string) {
 		if b.Len() > 0 && out != nil {
 			if _, err := b.WriteTo(out); err != nil {
-				log.Printf("ERROR: Failed to write %s content: %s", name, err)
+				logging.Warningf(c, "Failed to write %s content: %s", name, err)
 			}
 		}
 	}

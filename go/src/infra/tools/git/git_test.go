@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -22,6 +21,7 @@ import (
 	"infra/tools/git/state"
 
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/system/filesystem"
@@ -88,8 +88,10 @@ func TestGitCommand(t *testing.T) {
 	const runTestAgentENV = "INFRA_TOOLS_GIT__GIT_TEST__TESTING_AGENT"
 	testRunnerArgs := []string{"-test.run", "^TestGitCommand$", "--"}
 	if tb := os.Getenv(runTestAgentENV); tb != "" {
+		c := baseTestContext()
+
 		if err := os.Unsetenv(runTestAgentENV); err != nil {
-			log.Printf("Failed to clear %q: %s", runTestAgentENV, err)
+			logging.Errorf(c, "Failed to clear %q: %s", runTestAgentENV, err)
 			os.Exit(testAgentFailedReturnCode)
 		}
 
@@ -97,7 +99,7 @@ func TestGitCommand(t *testing.T) {
 		//
 		// Note that we cut off the executable and injected "-test.run" arguments.
 		ta := makeTestAgent(tb)
-		os.Exit(ta.run(os.Args[1+len(testRunnerArgs):]))
+		os.Exit(ta.run(c, os.Args[1+len(testRunnerArgs):]))
 		return
 	}
 
@@ -176,7 +178,7 @@ func TestGitCommand(t *testing.T) {
 			return rc, err
 		}
 
-		c := context.Background()
+		c := baseTestContext()
 
 		Convey(`Testing GitCommandDirect`, func() {
 			args = []string{"status"}
@@ -576,7 +578,6 @@ func (ta *testAgent) readRequest() error {
 	// Read in our request.
 	d, err := ioutil.ReadFile(ta.inPath)
 	if err != nil {
-		log.Printf("Failed to read input params: %s", err)
 		return errors.Annotate(err).Reason("failed to read input params").Err()
 	}
 
@@ -595,7 +596,7 @@ func (ta *testAgent) writeResponse() (err error) {
 	return nil
 }
 
-func (ta *testAgent) run(args []string) int {
+func (ta *testAgent) run(c context.Context, args []string) int {
 	ta.out = testAgentResponse{
 		Args:       args,
 		Env:        environ.System().Sorted(),
@@ -604,27 +605,27 @@ func (ta *testAgent) run(args []string) int {
 
 	// Always emit our output params ("incomplete").
 	if err := ta.writeResponse(); err != nil {
-		log.Printf("Failed to write initial response: %s", err)
+		errors.Log(c, err)
 		return testAgentFailedReturnCode
 	}
 
 	// Read our input request JSON.
 	if err := ta.readRequest(); err != nil {
-		log.Printf("Failed to read input request: %s", err)
+		errors.Log(c, err)
 		return testAgentFailedReturnCode
 	}
 
 	// Process our request, update our response.
 	rc := ta.in.ReturnCode
-	if err := ta.processRequest(args, &rc); err != nil {
-		log.Printf("Failed to process request: %s", err)
+	if err := ta.processRequest(c, args, &rc); err != nil {
+		errors.Log(c, err)
 		return testAgentFailedReturnCode
 	}
 
 	// Write our final response ("complete") output on completion.
 	ta.out.Incomplete = false
 	if err := ta.writeResponse(); err != nil {
-		log.Printf("Failed to write final response: %s", err)
+		errors.Log(c, err)
 		return testAgentFailedReturnCode
 	}
 
@@ -632,7 +633,7 @@ func (ta *testAgent) run(args []string) int {
 }
 
 // testGitCommandAgent is the TestGitCommand testing agent entry point.
-func (ta *testAgent) processRequest(args []string, rc *int) error {
+func (ta *testAgent) processRequest(c context.Context, args []string, rc *int) error {
 	if ta.in.ReadStdin {
 		var err error
 		if ta.out.Stdin, err = ioutil.ReadAll(os.Stdin); err != nil {
