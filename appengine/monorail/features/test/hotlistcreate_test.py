@@ -91,6 +91,23 @@ class HotlistCreateTest(unittest.TestCase):
     url = self.servlet.ProcessFormData(self.mr, post_data)
     self.assertTrue('/u/111/hotlists/Hotlist' in url)
 
+  def testProcessFormData_OwnerInEditors(self):
+    self.servlet.services.user.TestAddUser('owner_editor', 222L)
+    self.mr.auth.user_id = 222L
+    self.mr.cnxn = 'fake cnxn'
+    post_data = fake.PostData(hotlistname=['Hotlist-owner-editor'],
+                              summary=['summ'],
+                              description=['hi'],
+                              editors=['owner_editor'], is_private=['yes'])
+    url = self.servlet.ProcessFormData(self.mr, post_data)
+    self.assertTrue('/u/222/hotlists/Hotlist-owner-editor' in url)
+    hotlists_by_id = self.servlet.services.features.LookupHotlistIDs(
+        self.mr.cnxn, ['Hotlist-owner-editor'], [222L])
+    self.assertTrue(('Hotlist-owner-editor', 222L) in hotlists_by_id)
+    hotlist = hotlists_by_id[('Hotlist-owner-editor', 222L)]
+    self.assertEquals(hotlist.owner_ids, [222L])
+    self.assertEquals(hotlist.editor_ids, [])
+
   def testProcessFormData_RejectTemplateInvalid(self):
     mr = testing_helpers.MakeMonorailRequest()
     # invalid hotlist name and nonexistent editor

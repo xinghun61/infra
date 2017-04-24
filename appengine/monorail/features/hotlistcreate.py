@@ -87,6 +87,8 @@ class HotlistCreate(servlet.Servlet):
         editor_ids = editor_dict.values()
       except user_svc.NoSuchUserException:
         mr.errors.editors = _MSG_INVALID_MEMBERS_INPUT
+      # In case the logged-in user specifies themselves as an editor, ignore it.
+      editor_ids = [eid for eid in editor_ids if eid != mr.auth.user_id]
 
     is_private = post_data.get('is_private')
 
