@@ -129,14 +129,6 @@ class SendNotificationTest(unittest.TestCase):
          '    Labels: -Removed Added'],
         params['amendments'].split('\n'))
 
-  def testAddAllEmailTasks(self):
-    notify.AddAllEmailTasks(
-      tasks=[{'to': 'user'}, {'to': 'user2'}])
-
-    tasks = self.taskqueue_stub.get_filtered_tasks(
-        url=urls.OUTBOUND_EMAIL_TASK + '.do')
-    self.assertEqual(2, len(tasks))
-
 
 class NotifyTaskHandleRequestTest(unittest.TestCase):
 

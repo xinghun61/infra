@@ -27,6 +27,7 @@ from google.appengine.runtime import apiproxy_errors
 import settings
 from features import autolink
 from features import notify_helpers
+from features import notify_reasons
 from framework import emailfmt
 from framework import framework_bizobj
 from framework import framework_constants
@@ -38,7 +39,6 @@ from framework import permissions
 from framework import template_helpers
 from framework import urls
 from services import user_svc
-from tracker import component_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from tracker import tracker_views
@@ -102,34 +102,6 @@ def SendIssueBulkChangeNotification(
 
   logging.info('adding bulk task with params %r', params)
   taskqueue.add(url=urls.NOTIFY_BULK_CHANGE_TASK + '.do', params=params)
-
-
-def _EnqueueOutboundEmail(message_dict):
-  """Create a task to send one email message, all fields are in the dict.
-
-  We use a separate task for each outbound email to isolate errors.
-
-  Args:
-    message_dict: dict with all needed info for the task.
-  """
-  # We use a JSON-encoded payload because it ensures that the task size is
-  # effectively the same as the sum of the email bodies. Using params results
-  # in the dict being urlencoded, which can (worst case) triple the size of
-  # an email body containing many characters which need to be escaped.
-  payload = json.dumps(message_dict)
-  taskqueue.add(
-    url=urls.OUTBOUND_EMAIL_TASK + '.do', payload=payload,
-    queue_name='outboundemail')
-
-
-def AddAllEmailTasks(tasks):
-  """Add one GAE task for each email to be sent."""
-  notified = []
-  for task in tasks:
-    _EnqueueOutboundEmail(task)
-    notified.append(task['to'])
-
-  return notified
 
 
 class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
@@ -203,7 +175,7 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
           all_comments, comment, starrer_ids, contributor_could_view,
           hostport, omit_ids)
 
-    notified = AddAllEmailTasks(tasks)
+    notified = notify_helpers.AddAllEmailTasks(tasks)
 
     return {
         'params': params,
@@ -262,102 +234,13 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
         project, auth.effective_ids)
     noisy = tracker_helpers.IsNoisy(len(all_comments) - 1, len(starrer_ids))
 
-    # Get the transitive set of owners and Cc'd users, and their proxies.
-    reporter = [issue.reporter_id] if issue.reporter_id in starrer_ids else []
-    old_direct_owners, old_transitive_owners = (
-        self.services.usergroup.ExpandAnyUserGroups(cnxn, [old_owner_id]))
-    direct_owners, transitive_owners = (
-        self.services.usergroup.ExpandAnyUserGroups(cnxn, [issue.owner_id]))
-    der_direct_owners, der_transitive_owners = (
-        self.services.usergroup.ExpandAnyUserGroups(
-            cnxn, [issue.derived_owner_id]))
-    direct_comp, trans_comp = self.services.usergroup.ExpandAnyUserGroups(
-        cnxn, component_helpers.GetComponentCcIDs(issue, config))
-    direct_ccs, transitive_ccs = self.services.usergroup.ExpandAnyUserGroups(
-        cnxn, list(issue.cc_ids))
-    # TODO(jrobbins): This will say that the user was cc'd by a rule when it
-    # was really added to the derived_cc_ids by a component.
-    der_direct_ccs, der_transitive_ccs = (
-        self.services.usergroup.ExpandAnyUserGroups(
-            cnxn, list(issue.derived_cc_ids)))
-    users_by_id.update(framework_views.MakeAllUserViews(
-        cnxn, self.services.user, transitive_owners, der_transitive_owners,
-        direct_comp, trans_comp, transitive_ccs, der_transitive_ccs))
-
-    # Notify interested people according to the reason for their interest:
-    # owners, component auto-cc'd users, cc'd users, starrers, and
-    # other notification addresses.
-    reporter_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
-        cnxn, reporter, project, issue, self.services, omit_addrs, users_by_id)
-    owner_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
-        cnxn, direct_owners + transitive_owners, project, issue,
-        self.services, omit_addrs, users_by_id)
-    old_owner_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
-        cnxn, old_direct_owners + old_transitive_owners, project, issue,
-        self.services, omit_addrs, users_by_id)
-    owner_addr_perm_set = set(owner_addr_perm_list)
-    old_owner_addr_perm_list = [ap for ap in old_owner_addr_perm_list
-                                if ap not in owner_addr_perm_set]
-    der_owner_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
-        cnxn, der_direct_owners + der_transitive_owners, project, issue,
-        self.services, omit_addrs, users_by_id)
-    cc_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
-        cnxn, direct_ccs + transitive_ccs, project, issue,
-        self.services, omit_addrs, users_by_id)
-    der_cc_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
-        cnxn, der_direct_ccs + der_transitive_ccs, project, issue,
-        self.services, omit_addrs, users_by_id)
-
-    starrer_addr_perm_list = []
-    sub_addr_perm_list = []
-    if not noisy or commenter_in_project:
-      # Avoid an OOM by only notifying a number of starrers that we can handle.
-      # And, we really should limit the number of emails that we send anyway.
-      max_starrers = settings.max_starrers_to_notify
-      starrer_ids = starrer_ids[-max_starrers:]
-      # Note: starrers can never be user groups.
-      starrer_addr_perm_list = (
-          notify_helpers.ComputeIssueChangeAddressPermList(
-              cnxn, starrer_ids, project, issue,
-              self.services, omit_addrs, users_by_id,
-              pref_check_function=lambda u: u.notify_starred_issue_change))
-
-      sub_addr_perm_list = _GetSubscribersAddrPermList(
-          cnxn, self.services, issue, project, config, omit_addrs,
-          users_by_id)
-
-    # Get the list of addresses to notify based on filter rules.
-    issue_notify_addr_list = notify_helpers.ComputeIssueNotificationAddrList(
-        issue, omit_addrs)
-    # Get the list of addresses to notify based on project settings.
-    proj_notify_addr_list = notify_helpers.ComputeProjectNotificationAddrList(
-        project, contributor_could_view, omit_addrs)
-
     # Give each user a bullet-list of all the reasons that apply for that user.
-    group_reason_list = [
-        (reporter_addr_perm_list, 'You reported this issue'),
-        (owner_addr_perm_list, 'You are the owner of the issue'),
-        (old_owner_addr_perm_list,
-         'You were the issue owner before this change'),
-        (der_owner_addr_perm_list, 'A rule made you owner of the issue'),
-        (cc_addr_perm_list, 'You were specifically CC\'d on the issue'),
-        (der_cc_addr_perm_list, 'A rule CC\'d you on the issue'),
-        ]
-    group_reason_list.extend(notify_helpers.ComputeComponentFieldAddrPerms(
-        cnxn, config, issue, project, self.services, omit_addrs,
-        users_by_id))
-    group_reason_list.extend(notify_helpers.ComputeCustomFieldAddrPerms(
-        cnxn, config, issue, project, self.services, omit_addrs,
-        users_by_id))
-    group_reason_list.extend([
-        (starrer_addr_perm_list, 'You starred the issue'),
-        (sub_addr_perm_list, 'Your saved query matched the issue'),
-        (issue_notify_addr_list,
-         'A rule was set up to notify you'),
-        (proj_notify_addr_list,
-         'The project was configured to send all issue notifications '
-         'to this address'),
-        ])
+    group_reason_list = notify_reasons.ComputeGroupReasonList(
+        cnxn, self.services, project, issue, config, users_by_id,
+        omit_addrs, contributor_could_view, noisy=noisy,
+        starrer_ids=starrer_ids, old_owner_id=old_owner_id,
+        commenter_in_project=commenter_in_project)
+
     commenter_view = users_by_id[comment.user_id]
     detail_url = framework_helpers.FormatAbsoluteURLForDomain(
         hostport, issue.project_name, urls.ISSUE_DETAIL,
@@ -431,7 +314,7 @@ class NotifyBlockingChangeTask(notify_helpers.NotifyTaskBase):
             issue, omit_ids, hostport, commenter_view)
         tasks.extend(one_issue_email_tasks)
 
-    notified = AddAllEmailTasks(tasks)
+    notified = notify_helpers.AddAllEmailTasks(tasks)
 
     return {
         'params': params,
@@ -484,59 +367,11 @@ class NotifyBlockingChangeTask(notify_helpers.NotifyTaskBase):
     omit_addrs = {users_by_id[omit_id].email for omit_id in omit_ids}
 
     # Get the transitive set of owners and Cc'd users, and their UserView's.
-    direct_owners, trans_owners = self.services.usergroup.ExpandAnyUserGroups(
-        cnxn, [tracker_bizobj.GetOwnerId(upstream_issue)])
-    direct_ccs, trans_ccs = self.services.usergroup.ExpandAnyUserGroups(
-        cnxn, list(upstream_issue.cc_ids))
-    # TODO(jrobbins): This will say that the user was cc'd by a rule when it
-    # was really added to the derived_cc_ids by a component.
-    der_direct_ccs, der_transitive_ccs = (
-        self.services.usergroup.ExpandAnyUserGroups(
-            cnxn, list(upstream_issue.derived_cc_ids)))
-    # direct owners and Ccs are already in users_by_id
-    users_by_id.update(framework_views.MakeAllUserViews(
-        cnxn, self.services.user, trans_owners, trans_ccs, der_transitive_ccs))
-
-    owner_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
-        cnxn, direct_owners + trans_owners, upstream_project, upstream_issue,
-        self.services, omit_addrs, users_by_id)
-    cc_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
-        cnxn, direct_ccs + trans_ccs, upstream_project, upstream_issue,
-        self.services, omit_addrs, users_by_id)
-    der_cc_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
-        cnxn, der_direct_ccs + der_transitive_ccs, upstream_project,
-        upstream_issue, self.services, omit_addrs, users_by_id)
-    sub_addr_perm_list = _GetSubscribersAddrPermList(
-        cnxn, self.services, upstream_issue, upstream_project, upstream_config,
-        omit_addrs, users_by_id)
-
-    issue_notify_addr_list = notify_helpers.ComputeIssueNotificationAddrList(
-        upstream_issue, omit_addrs)
-    proj_notify_addr_list = notify_helpers.ComputeProjectNotificationAddrList(
-        upstream_project, contributor_could_view, omit_addrs)
-
     # Give each user a bullet-list of all the reasons that apply for that user.
-    group_reason_list = [
-        (owner_addr_perm_list, 'You are the owner of the issue'),
-        (cc_addr_perm_list, 'You were specifically CC\'d on the issue'),
-        (der_cc_addr_perm_list, 'A rule CC\'d you on the issue'),
-        ]
-    group_reason_list.extend(notify_helpers.ComputeComponentFieldAddrPerms(
-        cnxn, upstream_config, upstream_issue, upstream_project, self.services,
-        omit_addrs, users_by_id))
-    group_reason_list.extend(notify_helpers.ComputeCustomFieldAddrPerms(
-        cnxn, upstream_config, upstream_issue, upstream_project, self.services,
-        omit_addrs, users_by_id))
-    group_reason_list.extend([
-        # Starrers are not notified of blocking changes to reduce noise.
-        (sub_addr_perm_list, 'Your saved query matched the issue'),
-        (issue_notify_addr_list,
-         'Project filter rules were setup to notify you'),
-        (proj_notify_addr_list,
-         'The project was configured to send all issue notifications '
-         'to this address'),
-        ])
-
+    # Starrers are not notified of blocking changes to reduce noise.
+    group_reason_list = notify_reasons.ComputeGroupReasonList(
+        cnxn, self.services, upstream_project, upstream_issue,
+        upstream_config, users_by_id, omit_addrs, contributor_could_view)
     one_issue_email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
         group_reason_list, upstream_issue, body, body, upstream_project,
         hostport, commenter_view, detail_url)
@@ -601,7 +436,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
           mr.cnxn, issue.issue_id)
       named_ids = set()  # users named in user-value fields that notify.
       for fd in config.field_defs:
-        named_ids.update(notify_helpers.ComputeNamedUserIDsToNotify(issue, fd))
+        named_ids.update(notify_reasons.ComputeNamedUserIDsToNotify(issue, fd))
       direct, indirect = self.services.usergroup.ExpandAnyUserGroups(
           mr.cnxn, list(issue.cc_ids) + list(issue.derived_cc_ids) +
           [issue.owner_id, old_owner_id, issue.derived_owner_id] +
@@ -634,7 +469,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
           commenter_view, hostport, comment_text, amendments, config)
       tasks = email_tasks
 
-    notified = AddAllEmailTasks(tasks)
+    notified = notify_helpers.AddAllEmailTasks(tasks)
     return {
         'params': params,
         'notified': notified,
@@ -654,7 +489,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
     ids_to_notify_of_issue = {}
     additional_addrs_to_notify_of_issue = collections.defaultdict(list)
 
-    users_to_queries = notify_helpers.GetNonOmittedSubscriptions(
+    users_to_queries = notify_reasons.GetNonOmittedSubscriptions(
         cnxn, self.services, [project.project_id], {})
     config = self.services.config.GetProjectConfig(
         cnxn, project.project_id)
@@ -665,7 +500,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
       # users named in user-value fields that notify.
       for fd in config.field_defs:
         issue_participants.update(
-            notify_helpers.ComputeNamedUserIDsToNotify(issue, fd))
+            notify_reasons.ComputeNamedUserIDsToNotify(issue, fd))
       for user_id in ids_in_issues[issue.local_id]:
         # TODO(jrobbins): implement batch GetUser() for speed.
         if not user_id:
@@ -693,7 +528,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
             [i.local_id for i in ids_to_notify_of_issue.get(user_id, [])])
 
       # Find all subscribers that should be notified.
-      subscribers_to_consider = notify_helpers.EvaluateSubscriptions(
+      subscribers_to_consider = notify_reasons.EvaluateSubscriptions(
           cnxn, issue, users_to_queries, self.services, config)
       for sub_id in subscribers_to_consider:
         auth = monorailrequest.AuthData.FromUserID(cnxn, sub_id, self.services)
@@ -963,23 +798,3 @@ class OutboundEmailTask(jsonfeed.InternalTask):
     return dict(
         sender=sender, to=to, subject=subject, body=body, html_body=html_body,
         reply_to=reply_to, references=references)
-
-
-def _GetSubscribersAddrPermList(
-    cnxn, services, issue, project, config, omit_addrs, users_by_id):
-  """Lookup subscribers, evaluate their saved queries, and decide to notify."""
-  users_to_queries = notify_helpers.GetNonOmittedSubscriptions(
-      cnxn, services, [project.project_id], omit_addrs)
-  # TODO(jrobbins): need to pass through the user_id to use for "me".
-  subscribers_to_notify = notify_helpers.EvaluateSubscriptions(
-      cnxn, issue, users_to_queries, services, config)
-  # TODO(jrobbins): expand any subscribers that are user groups.
-  subs_needing_user_views = [
-      uid for uid in subscribers_to_notify if uid not in users_by_id]
-  users_by_id.update(framework_views.MakeAllUserViews(
-      cnxn, services.user, subs_needing_user_views))
-  sub_addr_perm_list = notify_helpers.ComputeIssueChangeAddressPermList(
-      cnxn, subscribers_to_notify, project, issue, services, omit_addrs,
-      users_by_id, pref_check_function=lambda *args: True)
-
-  return sub_addr_perm_list

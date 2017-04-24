@@ -21,7 +21,7 @@ import webapp2
 
 import settings
 from features import commitlogcommands
-from features import notify
+from features import notify_helpers
 from framework import emailfmt
 from framework import framework_constants
 from framework import monorailrequest
@@ -77,7 +77,7 @@ class InboundEmail(webapp2.RequestHandler):
     email_tasks = self.ProcessMail(msg, project_addr)
 
     if email_tasks:
-      notify.AddAllEmailTasks(email_tasks)
+      notify_helpers.AddAllEmailTasks(email_tasks)
 
   def ProcessMail(self, msg, project_addr):
     """Process an inbound email message."""
