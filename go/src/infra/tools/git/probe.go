@@ -5,7 +5,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -101,7 +100,6 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 	// generate the "check enabled" environment once and reuse it for each check.
 	envWithCheckEnabled := env.Clone()
 	envWithCheckEnabled.Set(gitWrapperCheckENV, "1")
-	envWithCheckEnabledStr := envWithCheckEnabled.Sorted()
 
 	origPATH, _ := env.Get("PATH")
 	pathParts := strings.Split(origPATH, string(os.PathListSeparator))
@@ -112,7 +110,7 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 		}
 		checked[dir] = struct{}{}
 
-		path := p.checkDir(c, dir, selfStat, selfDirStat, envWithCheckEnabledStr)
+		path := p.checkDir(c, dir, selfStat, selfDirStat, envWithCheckEnabled)
 		if path != "" {
 			return path, nil
 		}
@@ -127,7 +125,7 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 // checkDir checks "checkDir" for our Target executable. It ignores
 // executables whose target is the same file or shares the same parent directory
 // as "self".
-func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.FileInfo, checkENV []string) string {
+func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.FileInfo, env environ.Env) string {
 	// If we have a self directory defined, ensure that "dir" isn't the same
 	// directory. If it is, we will ignore this option, since we are looking for
 	// something outside of the wrapper directory.
@@ -150,8 +148,8 @@ func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.F
 		}
 	}
 
-	t := p.lookPathWithDir(c, dir)
-	if t == "" {
+	t, err := findInDir(p.Target, dir, env)
+	if err != nil {
 		return ""
 	}
 
@@ -179,7 +177,7 @@ func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.F
 	}
 
 	// Try running the candidate command and confirm that it is not a wrapper.
-	switch isWrapper, err := p.checkForWrapper(c, t, checkENV); {
+	switch isWrapper, err := p.checkForWrapper(c, t, env); {
 	case err != nil:
 		logging.Debugf(c, "Failed to check if [%s] is a wrapper: %s", t, err)
 		return ""
@@ -192,41 +190,6 @@ func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.F
 	return t
 }
 
-// lookPathWithDir uses exec.LookPath to identify a target executable in the
-// specified directory.
-//
-// In order to check our specific directory, we will modify the "PATH"
-// environment variable, which LookPath uses, to include only that directory.
-// This is done at a controlled point in the Git wrapper's execution such that
-// the modification and restoration of PATH are safe.
-//
-// Note that tests will have to reproduce this assurance.
-//
-// We use LookPath over custom checking because it implements operating system
-// semantics for identifying an application with a name.
-func (p *SystemProbe) lookPathWithDir(c context.Context, dir string) string {
-	// Use LookPath to identify "git".
-	origPATH := os.Getenv("PATH")
-	if err := os.Setenv("PATH", dir); err != nil {
-		return ""
-	}
-	defer func() {
-		// Restore our original PATH. If this fails, it is irrecoverable.
-		if err := os.Setenv("PATH", origPATH); err != nil {
-			panic(errors.Annotate(err).Reason("failed to restore PATH").Err())
-		}
-	}()
-
-	// Scan "dir" for our target.
-	t, err := exec.LookPath(p.Target)
-	if err != nil {
-		return ""
-	}
-
-	logging.Debugf(c, "Identified system candidate at: %s", t)
-	return t
-}
-
 // checkForWrapper executes the target path and determines if it is a wrapper.
 //
 // The environment that we run "path" with has the "checkWrapper" State
@@ -236,9 +199,9 @@ func (p *SystemProbe) lookPathWithDir(c context.Context, dir string) string {
 // We will run the "version" command, which should be very safe and return
 // a "0". If, for whatever, reason, "path" fails returns a non-zero even if it
 // isn't a wrapper, we dismiss it as unsuitable.
-func (p *SystemProbe) checkForWrapper(c context.Context, path string, checkENV []string) (bool, error) {
+func (p *SystemProbe) checkForWrapper(c context.Context, path string, env environ.Env) (bool, error) {
 	cmd := exec.CommandContext(c, path, "version")
-	cmd.Env = checkENV
+	cmd.Env = env.Sorted()
 
 	runCommand := p.testRunCommand
 	if runCommand == nil {
@@ -249,11 +212,7 @@ func (p *SystemProbe) checkForWrapper(c context.Context, path string, checkENV [
 					return rc, nil
 				}
 
-				envDump := make([]string, len(checkENV))
-				for i, e := range checkENV {
-					envDump[i] = fmt.Sprintf("%q", e)
-				}
-				logging.Warningf(c, "Failed to run check command [%s] with environment: %s", path, strings.Join(envDump, " "))
+				logging.Warningf(c, "Failed to run check command [%s] with environment: %s", path, strings.Join(env.Sorted(), " "))
 				return 0, errors.Annotate(err).Reason("failed to run check command").Err()
 			}
 			return 0, nil

@@ -25,22 +25,15 @@ import (
 )
 
 // TestFindSystemGit tests the ability to locate the "git" command in PATH.
-//
-// This test is NOT parallel-safe, as it modifies the process-global PATH
-// environment variable.
 func TestSystemProbe(t *testing.T) {
-	// Protect absolutely against PATH modifications in this test.
-	origPATH := os.Getenv("PATH")
-	defer func() {
-		if err := os.Setenv("PATH", origPATH); err != nil {
-			t.Fatalf("Failed to restore PATH: %s", err)
-		}
-	}()
+	t.Parallel()
 
+	var envBase environ.Env
 	var selfEXESuffix, otherEXESuffix string
 	if runtime.GOOS == "windows" {
 		selfEXESuffix = ".exe"
 		otherEXESuffix = ".bat"
+		envBase.Set("PATHEXT", strings.Join([]string{".com", ".exe", ".bat", ".ohai"}, string(os.PathListSeparator)))
 	}
 
 	Convey(`With a fake PATH setup`, t, testfs.MustWithTempDir(t, "git_find", func(tdir string) {
@@ -87,10 +80,9 @@ func TestSystemProbe(t *testing.T) {
 			},
 		}
 
-		env := environ.System()
+		env := envBase.Clone()
 		setPATH := func(v ...string) {
-			path := strings.Join(v, string(os.PathListSeparator))
-			env.Set("PATH", path)
+			env.Set("PATH", strings.Join(v, string(os.PathListSeparator)))
 		}
 
 		Convey(`Can identify the next Git when it follows self in PATH.`, func() {
