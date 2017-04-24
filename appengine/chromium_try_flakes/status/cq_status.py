@@ -210,8 +210,6 @@ def delete_old_flake_occurrences():
 
 
 def get_int_value(properties, key):
-  if not key in properties:
-    raise ValueError('key not found')
   value = properties[key]
   if type(value) == type(list()):
     value = value[0]
@@ -276,7 +274,7 @@ def parse_cq_data(json_data):
           attempt_start_ts = get_int_value(build_properties, 'attempt_start_ts')
           time_started = datetime.datetime.utcfromtimestamp(
               attempt_start_ts / 1000000)
-        except ValueError:
+        except (ValueError, KeyError):
           logging.warning('Failed to parse build properties', exc_info=True)
           parsing_errors.increment_by(1)
           continue
