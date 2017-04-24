@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
+import itertools
 import json
 import logging
 import os
@@ -238,103 +239,98 @@ def parse_cq_data(json_data):
     if fields.get('project') != 'chromium':
       continue
 
-    job_states = fields.get('jobs', [])
-    for state in job_states:
-      # Just go by |result|.
-      #if state not in ['JOB_SUCCEEDED', 'JOB_FAILED', 'JOB_TIMED_OUT']:
-      #  continue
+    job_states = fields.get('jobs', {})
+    for job in itertools.chain.from_iterable(job_states.values()):
+      try:
+        master = job['master']
+        builder = job['builder']
+        result = job['result']
+        timestamp_tz = dateutil.parser.parse(
+            job.get('created_ts') or job['timestamp'])
+        # We assume timestamps from chromium-cq-status are already in UTC.
+        timestamp = timestamp_tz.replace(tzinfo=None)
+      except KeyError:
+        logging.warning('Failed to parse job details', exc_info=True)
+        parsing_errors.increment_by(1)
+        continue
 
-      for job in job_states[state]:
-        try:
-          master = job['master']
-          builder = job['builder']
-          result = job['result']
-          timestamp_tz = dateutil.parser.parse(
-              job.get('created_ts') or job['timestamp'])
-          # We assume timestamps from chromium-cq-status are already in UTC.
-          timestamp = timestamp_tz.replace(tzinfo=None)
-        except KeyError:
-          logging.warning('Failed to parse job details', exc_info=True)
-          parsing_errors.increment_by(1)
+      if build_result.isResultPending(result):
+        continue
+
+      build_properties = job.get('build_properties')
+      if not build_properties:
+        logging.warning('Missing field build_properties in job details')
+        parsing_errors.increment_by(1)
+        continue
+
+      try:
+        buildnumber = get_int_value(build_properties, 'buildnumber')
+        issue = get_int_value(build_properties, 'issue')
+        patchset = get_int_value(build_properties, 'patchset')
+        attempt_start_ts = get_int_value(build_properties, 'attempt_start_ts')
+        time_started = datetime.datetime.utcfromtimestamp(
+            attempt_start_ts / 1000000)
+      except (ValueError, KeyError):
+        logging.warning('Failed to parse build properties', exc_info=True)
+        parsing_errors.increment_by(1)
+        continue
+
+      # At this point, only success or failure.
+      success = build_result.isResultSuccess(result)
+
+      patchset_builder_runs = get_patchset_builder_runs(issue=issue,
+                                                        patchset=patchset,
+                                                        master=master,
+                                                        builder=builder)
+
+      build_run = BuildRun(parent=patchset_builder_runs.key,
+                           buildnumber=buildnumber,
+                           result=result,
+                           time_started=time_started,
+                           time_finished=timestamp)
+
+      previous_runs = BuildRun.query(
+          ancestor=patchset_builder_runs.key).fetch()
+
+      duplicate = False
+      for previous_run in previous_runs:
+        # We saw this build run already or there are multiple green runs,
+        # in which case we ignore subsequent ones to avoid showing failures
+        # multiple times.
+        if (previous_run.buildnumber == buildnumber) or \
+           (build_run.is_success and previous_run.is_success) :
+          duplicate = True
+          break
+
+      if duplicate:
+        continue
+
+      build_run.put()
+
+      for previous_run in previous_runs:
+        if previous_run.is_success == build_run.is_success:
           continue
+        if success:
+          # We saw the flake and then the pass.
+          failure_run = previous_run
+          success_run = build_run
+        else:
+          # We saw the pass and then the failure. Could happen when fetching
+          # historical data, or for the bot_update step (patch can't be
+          # applied cleanly anymore).
+          failure_run = build_run
+          success_run = previous_run
 
-        if build_result.isResultPending(result):
-          continue
+        logging_output.append(failure_run.key.parent().get().builder +
+                              str(failure_run.buildnumber))
 
-        build_properties = job.get('build_properties')
-        if not build_properties:
-          logging.warning('Missing field build_properties in job details')
-          parsing_errors.increment_by(1)
-          continue
-
-        try:
-          buildnumber = get_int_value(build_properties, 'buildnumber')
-          issue = get_int_value(build_properties, 'issue')
-          patchset = get_int_value(build_properties, 'patchset')
-          attempt_start_ts = get_int_value(build_properties, 'attempt_start_ts')
-          time_started = datetime.datetime.utcfromtimestamp(
-              attempt_start_ts / 1000000)
-        except (ValueError, KeyError):
-          logging.warning('Failed to parse build properties', exc_info=True)
-          parsing_errors.increment_by(1)
-          continue
-
-        # At this point, only success or failure.
-        success = build_result.isResultSuccess(result)
-
-        patchset_builder_runs = get_patchset_builder_runs(issue=issue,
-                                                          patchset=patchset,
-                                                          master=master,
-                                                          builder=builder)
-
-        build_run = BuildRun(parent=patchset_builder_runs.key,
-                             buildnumber=buildnumber,
-                             result=result,
-                             time_started=time_started,
-                             time_finished=timestamp)
-
-        previous_runs = BuildRun.query(
-            ancestor=patchset_builder_runs.key).fetch()
-
-        duplicate = False
-        for previous_run in previous_runs:
-          # We saw this build run already or there are multiple green runs,
-          # in which case we ignore subsequent ones to avoid showing failures
-          # multiple times.
-          if (previous_run.buildnumber == buildnumber) or \
-             (build_run.is_success and previous_run.is_success) :
-            duplicate = True
-            break
-
-        if duplicate:
-          continue
-
-        build_run.put()
-
-        for previous_run in previous_runs:
-          if previous_run.is_success == build_run.is_success:
-            continue
-          if success:
-            # We saw the flake and then the pass.
-            failure_run = previous_run
-            success_run = build_run
-          else:
-            # We saw the pass and then the failure. Could happen when fetching
-            # historical data, or for the bot_update step (patch can't be
-            # applied cleanly anymore).
-            failure_run = build_run
-            success_run = previous_run
-
-          logging_output.append(failure_run.key.parent().get().builder +
-                                str(failure_run.buildnumber))
-
-          # Queue a task to fetch the error of this failure and create FlakyRun.
-          flakes_metric.increment_by(1)
-          taskqueue.add(
-              queue_name='issue-updates',
-              url='/issues/create_flaky_run',
-              params={'failure_run_key': failure_run.key.urlsafe(),
-                      'success_run_key': success_run.key.urlsafe()})
+        # Queue a task to fetch the error of this failure and create FlakyRun.
+        flakes_metric.increment_by(1)
+        taskqueue.add(
+            queue_name='issue-updates',
+            url='/issues/create_flaky_run',
+            params={'failure_run_key': failure_run.key.urlsafe(),
+                    'success_run_key': success_run.key.urlsafe()})
 
   return logging_output
 
