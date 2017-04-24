@@ -114,8 +114,10 @@ class LoadApiClientConfigs(webapp2.RequestHandler):
 class ClientConfigService(object):
   """The persistence layer for client config data."""
 
-  # One hour
-  EXPIRES_IN = 3600
+  # Reload no more than once every 15 minutes.
+  # Different GAE instances can load it at different times,
+  # so clients may get inconsistence responses shortly after whitelisting.
+  EXPIRES_IN = 15 * framework_constants.SECS_PER_MINUTE
 
   def __init__(self):
     self.client_configs = None
