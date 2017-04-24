@@ -146,6 +146,19 @@ class HotlistPeopleListTest(unittest.TestCase):
     self.assertEqual(hotlist.owner_ids, [333L])
     self.assertEqual(hotlist.editor_ids, [222L, 111L])
 
+  def testProcessChangeOwnership_UnownedHotlist(self):
+    hotlist = self.services.features.TestAddHotlist(
+        'unowned', 'new owner 333L, who-dis', [], [222L])
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/whatever',
+        hotlist=hotlist)
+    mr.hotlist_id = hotlist.hotlist_id
+    post_data = fake.PostData(
+        changeowners = ['who-dis@gmail.com'],
+        becomeeditor = ['on'])
+    self.servlet.ProcessChangeOwnership(mr, post_data)
+    self.assertEqual([333L], mr.hotlist.owner_ids)
+
   def testProcessChangeOwnership_BadEmail(self):
     hotlist = self.servlet.services.features.TestAddHotlist(
         'HotlistName', 'new owner 333L, who-dis', [111L], [222L])

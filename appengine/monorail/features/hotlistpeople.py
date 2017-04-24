@@ -133,9 +133,10 @@ class HotlistPeopleList(servlet.Servlet):
           mr, initial_new_owner_username=post_data.get('changeowners'),
           open_dialog=ezt.boolean(True))
     else:
+      old_and_new_owner_ids = [new_owner_id] + mr.hotlist.owner_ids
       (_, editor_ids, follower_ids) = hotlist_helpers.MembersWithoutGivenIDs(
-          mr.hotlist, [mr.hotlist.owner_ids[0], new_owner_id])
-      if remain_as_editor:
+          mr.hotlist, old_and_new_owner_ids)
+      if remain_as_editor and mr.hotlist.owner_ids:
         editor_ids.append(mr.hotlist.owner_ids[0])
 
       self.services.features.UpdateHotlistRoles(

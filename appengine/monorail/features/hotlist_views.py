@@ -7,6 +7,8 @@
 
 from third_party import ezt
 
+import logging
+
 from framework import framework_helpers
 from framework import permissions
 from framework import template_helpers
@@ -49,6 +51,12 @@ class HotlistView(template_helpers.PBProxy):
         user_auth.effective_ids, hotlist_pb)
 
     self.access_is_private = ezt.boolean(hotlist_pb.is_private)
+    if not hotlist_pb.owner_ids:  # Should never happen.
+      logging.error('Unowned Hotlist: id:%r, name:%r',
+        hotlist_pb.hotlist_id,
+        hotlist_pb.name)
+      self.url = ''
+      return
     owner_id = hotlist_pb.owner_ids[0]  # only one owner allowed
     owner = users_by_id[owner_id]
     if owner.user.banned:

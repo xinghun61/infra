@@ -59,6 +59,12 @@ class HotlistViewTest(unittest.TestCase):
     self.users_by_id = {1: self.user1_view, 2: self.user2_view,
         3: self.user3_view, 4: self.user4_view}
 
+  def testNoOwner(self):
+    hotlist = fake.Hotlist('unowned', 500, owner_ids=[])
+    view = hotlist_views.HotlistView(hotlist, self.user_auth, 1,
+                                             self.users_by_id)
+    self.assertFalse(view.url)
+
   def testBanned(self):
     # With a banned user
     hotlist = fake.Hotlist('userBanned', 423, owner_ids=[4])

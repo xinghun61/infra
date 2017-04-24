@@ -5,6 +5,8 @@
 
 """Helper functions and classes used by the hotlist pages."""
 
+import logging
+
 from features import features_constants
 from framework import framework_views
 from framework import framework_helpers
@@ -272,6 +274,10 @@ def GetURLOfHotlist(cnxn, hotlist, user_service, url_for_token=False):
     Returns:
       The string url to be used when accessing this hotlist.
     """
+    if not hotlist.owner_ids:  # Should never happen.
+      logging.error('Unowned Hotlist: id:%r, name:%r', hotlist.hotlist_id,
+                                                       hotlist.name)
+      return ''
     owner_id = hotlist.owner_ids[0]  # only one owner allowed
     owner = user_service.GetUser(cnxn, owner_id)
     if owner.obscure_email or url_for_token:

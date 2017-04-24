@@ -434,6 +434,11 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, 'hot1', 'hot 1', 'test hotlist', [567], [678])
     self.mox.VerifyAll()
 
+  def testCreateHotlist_NoOwner(self):
+    with self.assertRaises(features_svc.UnownedHotlistException):
+      self.features_service.CreateHotlist(self.cnxn, 'unowned-hotlist',
+          'Unowned Hotlist', 'A Hotlist that is not owned', [], [])
+
   def SetUpLookupHotlistIDs(self):
     self.features_service.hotlist_tbl.Select(
         self.cnxn, cols=['id', 'name'], name=['hot1']).AndReturn([

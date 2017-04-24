@@ -500,11 +500,15 @@ class FeaturesService(object):
     Raises:
       HotlistAlreadyExists: if any of the owners already own a hotlist with
         the same name.
+      UnownedHotlistException: if owner_ids is empty.
     """
     assert framework_bizobj.IsValidHotlistName(name)
     if self.LookupHotlistIDs(cnxn, [name], owner_ids):
       raise HotlistAlreadyExists()
 
+    if not owner_ids:  # Should never happen.
+      logging.error('Attempt to create unowned Hotlist: name:%r', name)
+      raise UnownedHotlistException()
     hotlist_item_fields = [
         (issue_id, rank*100, owner_ids[0], ts, '') for
         rank, issue_id in enumerate(issue_ids or [])]
@@ -542,8 +546,12 @@ class FeaturesService(object):
     self.hotlist_tbl.Update(cnxn, delta, id=hotlist_id)
 
     self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
-    self.hotlist_names_owner_to_ids.InvalidateKeys(
-        cnxn,(hotlist.name, hotlist.owner_ids[0]))
+    if not hotlist.owner_ids:  # Should never happen.
+      logging.warn('Modifying unowned Hotlist: id:%r, name:%r',
+        hotlist_id, hotlist.name)
+    for owner_id in hotlist.owner_ids:
+      self.hotlist_names_owner_to_ids.InvalidateKeys(cnxn,
+          (hotlist.name, owner_id))
 
     # Update the hotlist PB in RAM
     if name is not None:
@@ -845,8 +853,12 @@ class FeaturesService(object):
     self.hotlist_2lc.InvalidateKeys(cnxn, [hotlist_id])
     self.hotlist_user_to_ids.InvalidateKeys(cnxn, hotlist.owner_ids)
     self.hotlist_user_to_ids.InvalidateKeys(cnxn, hotlist.editor_ids)
-    self.hotlist_names_owner_to_ids.InvalidateKeys(
-        cnxn,(hotlist.name, hotlist.owner_ids[0]))
+    if not hotlist.owner_ids:  # Should never happen.
+      logging.warn('Deleting unowned Hotlist: id:%r, name:%r',
+        hotlist_id, hotlist.name)
+    for owner_id in hotlist.owner_ids:
+      self.hotlist_names_owner_to_ids.InvalidateKeys(cnxn,
+          (hotlist.name, owner_id))
 
 
 class HotlistAlreadyExists(Exception):
@@ -854,6 +866,12 @@ class HotlistAlreadyExists(Exception):
   with the same owner."""
   pass
 
+
 class NoSuchHotlistException(Exception):
   """The requested hotlist was not found."""
+  pass
+
+
+class UnownedHotlistException(Exception):
+  """Tried to create a hotlist with no owner."""
   pass

@@ -274,3 +274,10 @@ class HelpersUnitTest(unittest.TestCase):
     url = hotlist_helpers.GetURLOfHotlist(
         cnxn, hotlist1, self.services.user)
     self.assertEqual('/u/432/hotlists/hotlist1', url)
+
+    # Test that a Hotlist without an owner has an empty URL.
+    hotlist_unowned = self.services.features.TestAddHotlist('hotlist2',
+        hotlist_id=234, owner_ids=[])
+    url = hotlist_helpers.GetURLOfHotlist(cnxn, hotlist_unowned,
+        self.services.user)
+    self.assertFalse(url)

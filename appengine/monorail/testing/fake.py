@@ -1668,6 +1668,8 @@ class FeaturesService(object):
     """Create and store a Hotlist with the given attributes."""
     if hotlist_name in self.test_hotlists:
       raise features_svc.HotlistAlreadyExists()
+    if not owner_ids:  # Should never happen.
+      raise features_svc.UnownedHotlistException()
     hotlist_item_fields = [
         (issue_id, rank*100, owner_ids[0] or None, ts, '') for
         rank, issue_id in enumerate(issue_ids or [])]
@@ -1768,6 +1770,10 @@ class FeaturesService(object):
     for name in hotlist_names:
       hotlist = self.test_hotlists.get(name)
       if hotlist:
+        if not hotlist.owner_ids:  # Should never happen.
+          logging.warn('Unowned Hotlist: id:%r, name:%r',
+            hotlist.hotlist_id, hotlist.name)
+          continue
         if hotlist.owner_ids[0] in owner_ids:
           id_dict[(name, hotlist.owner_ids[0])] = hotlist
     return id_dict
