@@ -21,8 +21,7 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "infra@HEAD",
-      "--output_manifest"
+      "infra@HEAD"
     ],
     "env": {
       "GIT_HTTP_LOW_SPEED_LIMIT": "1000",

@@ -19,8 +19,7 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "gerrit-test-cq-normal@HEAD",
-      "--output_manifest"
+      "gerrit-test-cq-normal@HEAD"
     ],
     "env": {
       "GIT_HTTP_LOW_SPEED_LIMIT": "1000",

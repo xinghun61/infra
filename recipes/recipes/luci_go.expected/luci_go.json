@@ -17,8 +17,7 @@
       "--revision",
       "infra@origin/master",
       "--revision",
-      "infra/go/src/github.com/luci/luci-go@c14d891d44f0afff64e56ed7c9702df1d807b1ee",
-      "--output_manifest"
+      "infra/go/src/github.com/luci/luci-go@c14d891d44f0afff64e56ed7c9702df1d807b1ee"
     ],
     "env": {
       "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
