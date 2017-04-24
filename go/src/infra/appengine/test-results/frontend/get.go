@@ -57,6 +57,12 @@ func getHandler(ctx *router.Context) {
 		return
 	}
 
+	// This allows to query test results also based on the original step name.
+	// Queries which are run against normalized (cleaned) test type already should
+	// be unaffected since normalizing previously normalized test type should be a
+	// no-op.
+	params.TestType = cleanTestType(params.TestType)
+
 	switch {
 	case params.Key != "":
 		respondTestFileData(ctx, params)

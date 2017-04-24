@@ -258,6 +258,11 @@ func cleanTestStep(name string) (clean string, ok bool) {
 }
 
 func cleanTestType(name string) string {
+	// We keep " (with patch)" suffix to make sure that results from the tryserver
+	// are not placed in the same table as waterfall results in the Flakiness
+	// Dashboard. This is needed because waterfall results are always aligned
+	// vertically by revisions, while tryserver results are run on uncommitted
+	// code and are not comparable to each other.
 	withPatch := false
 	if strings.Contains(name, " (with patch)") {
 		withPatch = true
