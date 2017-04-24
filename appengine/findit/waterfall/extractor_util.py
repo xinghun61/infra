@@ -32,6 +32,7 @@ SUPPORTED_FILE_EXTENSIONS = [
     'obj',
     'py',
     'pyc',
+    'rc',
     'sh',
     'sha1',
     'txt',
