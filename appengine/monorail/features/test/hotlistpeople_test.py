@@ -131,6 +131,32 @@ class HotlistPeopleListTest(unittest.TestCase):
     self.assertTrue('/u/111/hotlists/HotlistName/people' in url)
     self.assertEqual(hotlist.editor_ids, [222L, 333L])
 
+  def testProcessAddMembers_OwnerToEditor(self):
+    hotlist = self.servlet.services.features.TestAddHotlist(
+        'HotlistName', 'adding owner 111, buzbuz as editor', [111L], [222L])
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/u/buzbuz@gmail.com/hotlists/HotlistName/people',
+        hotlist=hotlist)
+    mr.hotlist_id = hotlist.hotlist_id
+    addmembers_input = 'buzbuz@gmail.com'
+    post_data = fake.PostData(
+        addmembers = [addmembers_input],
+        role = ['editor'])
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        mr, initial_add_members=addmembers_input, initially_expand_form=True)
+    self.mox.ReplayAll()
+    url = self.servlet.ProcessAddMembers(
+        mr, post_data, '/u/111/hotlists/HotlistName')
+    self.mox.VerifyAll()
+    self.assertEqual(
+        'Cannot have a hotlist without an owner; please leave at least one.',
+        mr.errors.addmembers)
+    self.assertIsNone(url)
+    # Verify that no changes have actually occurred.
+    self.assertEqual(hotlist.owner_ids, [111L])
+    self.assertEqual(hotlist.editor_ids, [222L])
+
   def testProcessChangeOwnership(self):
     hotlist = self.servlet.services.features.TestAddHotlist(
         'HotlistName', 'new owner 333L, who-dis', [111L], [222L])

@@ -173,14 +173,17 @@ class HotlistPeopleList(servlet.Servlet):
         mr.hotlist, new_member_ids, role)
     # TODO(jojwang): implement MAX_HOTLIST_PEOPLE
 
-    self.services.features.UpdateHotlistRoles(
-        mr.cnxn, mr.hotlist_id, owner_ids, editor_ids, follower_ids)
+    if not owner_ids:
+      mr.errors.addmembers = (
+          'Cannot have a hotlist without an owner; please leave at least one.')
 
     if mr.errors.AnyErrors():
       add_members_str = post_data.get('addmembers', '')
       self.PleaseCorrect(
           mr, initial_add_members=add_members_str, initially_expand_form=True)
     else:
+      self.services.features.UpdateHotlistRoles(
+          mr.cnxn, mr.hotlist_id, owner_ids, editor_ids, follower_ids)
       return framework_helpers.FormatAbsoluteURL(
           mr, '%s%s' % (
               hotlist_url, urls.HOTLIST_PEOPLE),
