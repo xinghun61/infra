@@ -6,8 +6,6 @@ package main
 
 import (
 	"os"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"golang.org/x/net/context"
@@ -20,7 +18,6 @@ import (
 	cipdClient "github.com/luci/luci-go/cipd/client/cipd"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/mitchellh/go-homedir"
 )
 
 var cipdPackageLoader = cipd.PackageLoader{
@@ -28,9 +25,7 @@ var cipdPackageLoader = cipd.PackageLoader{
 		ServiceURL: chromeinfra.CIPDServiceURL,
 		UserAgent:  "vpython",
 	},
-	Template: func(c context.Context, e *vpython.Environment) (map[string]string, error) {
-		return getPEP425CIPDTemplates(runtime.GOOS, e.Pep425Tag), nil
-	},
+	Template: getCIPDTemplatesForEnvironment,
 }
 
 var defaultConfig = application.Config{
@@ -48,21 +43,9 @@ var defaultConfig = application.Config{
 
 func mainImpl(c context.Context) int {
 	// Initialize our CIPD package loader from the environment.
-	//
-	// If we don't have an environment-specific CIPD cache directory, use one
-	// relative to the user's home directory.
 	if err := cipdPackageLoader.Options.LoadFromEnv(os.Getenv); err != nil {
 		logging.Errorf(c, "Could not inialize CIPD package loader: %s", err)
 		return 1
-	}
-	if cipdPackageLoader.Options.CacheDir == "" {
-		hd, err := homedir.Dir()
-		if err == nil {
-			cipdPackageLoader.Options.CacheDir = filepath.Join(hd, ".vpython_cipd_cache")
-		} else {
-			logging.WithError(err).Warningf(c,
-				"Failed to resolve user home directory. No CIPD cache will be enabled.")
-		}
 	}
 
 	return defaultConfig.Main(c)
