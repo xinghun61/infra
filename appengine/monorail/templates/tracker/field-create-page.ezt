@@ -139,8 +139,7 @@
       <select name="date_action">
         <option value="no_action" [is initial_date_action "no_action"]selected="selected"[end]
                 >No action</option>
-        <option value="ping_owner_only" [is initial_date_action "ping_owner_only"]selected="selected"[end]
-                >Post a "ping" comment and notify the issue owner</option>
+        [# TODO(jrobbins): owner-only option.]
         <option value="ping_participants" [is initial_date_action "ping_participants"]selected="selected"[end]
                 >Post a "ping" comment and notify all issue participants</option>
       </select>
