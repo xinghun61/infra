@@ -106,3 +106,6 @@ blacklist:
     description: someone trying to fuzz our server
   - subnet: 172.56.7.191
     description: endlessly requesting favicon.ico
+
+  - subnet: 62.76.185.68
+    description: attempted SQL injection
