@@ -47,13 +47,6 @@ cron:
     min_backoff_seconds: 2.5
     max_doublings: 5
 
-- description: Update Chromium perf alerts
-  url: /_cron/analyze/chromium.perf
-  schedule: every 5 minutes
-  retry_parameters:
-    min_backoff_seconds: 2.5
-    max_doublings: 5
-
 - description: Update iOS alerts
   url: /_cron/analyze/ios
   schedule: every 5 minutes
