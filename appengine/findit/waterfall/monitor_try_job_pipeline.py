@@ -453,7 +453,7 @@ class MonitorTryJobPipeline(BasePipeline):
           report = json.loads(buildbot.GetStepLog(
               try_job_master_name, try_job_builder_name, try_job_build_number,
               'report', HttpClientAppengine(), 'report'))
-        except ValueError as e:  # pragma: no cover
+        except (ValueError, TypeError) as e:  # pragma: no cover
           report = {}
           logging.exception(
               'Failed to load result report for %s/%s/%s due to exception %s.'
