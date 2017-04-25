@@ -107,7 +107,8 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "build@HEAD"
+      "build@HEAD",
+      "--output_manifest"
     ],
     "cwd": "[START_DIR]/build",
     "env": {

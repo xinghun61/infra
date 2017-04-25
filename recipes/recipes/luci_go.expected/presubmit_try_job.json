@@ -23,7 +23,8 @@
       "--revision",
       "infra@origin/master",
       "--revision",
-      "infra/go/src/github.com/luci/luci-go@HEAD"
+      "infra/go/src/github.com/luci/luci-go@HEAD",
+      "--output_manifest"
     ],
     "env": {
       "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
