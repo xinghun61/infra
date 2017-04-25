@@ -9,16 +9,13 @@ import gzip
 import io
 import logging
 import json
-import os
 import re
-import sys
 import urllib
 
 import cloudstorage as gcs
 
 from common import rpc_util
 from infra_api_clients import logdog_util
-from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
 
 _HOST_NAME_PATTERN = (
@@ -58,7 +55,8 @@ _COMMIT_POSITION_PATTERN = re.compile(
 SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, CANCELLED = range(7)
 
 
-def _ProcessMiloData(response_json, master_name, builder_name, build_number=''):
+def _ProcessMiloData(
+    response_json, master_name, builder_name, build_number=''):
   if not response_json:
     return None
   try:
@@ -89,17 +87,30 @@ def _ProcessMiloData(response_json, master_name, builder_name, build_number=''):
 
   return data_json
 
+
+def _GetMasterJsonData(
+    http_client, master_name, builder_name='', build_number=''):
+  response_json = rpc_util.DownloadJsonData(
+      _MILO_ENDPOINT_MASTER, {'name': master_name}, http_client)
+
+  return _ProcessMiloData(
+      response_json, master_name, builder_name, build_number)
+
+
+def ListBuildersOnMaster(master_name, http_client):
+  master_data_json = _GetMasterJsonData(http_client, master_name)
+  if not master_data_json:
+    return []
+  data = json.loads(master_data_json)
+  return [bot for bot in data.get('builders', {}).keys()]
+
+
 def GetRecentCompletedBuilds(master_name, builder_name, http_client):
   """Returns a sorted list of recent completed builds for the given builder.
 
   Sorted by completed time, newer builds at beginning of the returned list.
   """
-  data = {
-    'name': master_name
-  }
-  response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_MASTER, data,
-                                            http_client)
-  master_data_json = _ProcessMiloData(response_json, master_name, builder_name)
+  master_data_json = _GetMasterJsonData(http_client, master_name, builder_name)
   if not master_data_json:
     return []
 
@@ -185,7 +196,7 @@ def CreateGtestResultPath(master_name, builder_name, build_number, step_name):
 
 
 def GetBuildDataFromBuildMaster(
-      master_name, builder_name, build_number, http_client):
+    master_name, builder_name, build_number, http_client):
   """Returns the json-format data of the build."""
   data = {
       'master': master_name,

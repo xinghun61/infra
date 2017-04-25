@@ -63,7 +63,6 @@ class FinditConfig(VersionedConfig):
   #      },
   #      ...
   # }
-
   builders_to_trybots = ndb.JsonProperty(indexed=False, default={})
 
   # A dict containing common settings for try jobs. For example,

@@ -61,6 +61,24 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(
       [], buildbot.GetRecentCompletedBuilds('m', 'b', _))
 
+  @mock.patch.object(buildbot, '_GetMasterJsonData')
+  def testListBuildersOnMaster(self, mocked_fn):
+    mocked_fn.return_value = json.dumps({
+        'builders': {
+            'builder_1': {},
+            'builder_2': {}
+        }})
+
+    self.assertEqual(
+        ['builder_1', 'builder_2'],
+        buildbot.ListBuildersOnMaster('master', RetryHttpClient()))
+
+  @mock.patch.object(buildbot, '_GetMasterJsonData', return_value=None)
+  def testListBuildersOnMasterError(self, _):
+    self.assertEqual(
+        [],
+        buildbot.ListBuildersOnMaster('master', RetryHttpClient()))
+
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetRecentCompletedBuilds(self, mock_fn):
     builders_data = {

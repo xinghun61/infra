@@ -15,6 +15,7 @@ from handlers import build_failure
 from handlers import calculate_confidence_scores
 from handlers import check_duplicate_failures
 from handlers import check_reverted_cls
+from handlers import check_trybot_mapping
 from handlers import collect_tree_closures
 from handlers import config
 from handlers import culprit
@@ -90,6 +91,8 @@ waterfall_frontend_web_pages_handler_mappings = [
      check_duplicate_failures.CheckDuplicateFailures),
     ('/waterfall/check-flake', check_flake.CheckFlake),
     ('/waterfall/check-reverted-cls', check_reverted_cls.CheckRevertedCLs),
+    ('/waterfall/check-trybot-mapping',
+     check_trybot_mapping.CheckTrybotMapping),
     ('/waterfall/collect-tree-closures',
      collect_tree_closures.CollectTreeClosures),
     ('/waterfall/config', config.Configuration),

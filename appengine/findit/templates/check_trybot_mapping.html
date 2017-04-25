@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<head>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Check Trybot Mapping</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
+</head>
+<body>
+  <h2>Validates coverage of main waterfall builders that run compile to ensure 1:1 coverage by Findit builders on tryservers</h2>
+  <br>
+  <b>Masters with builders on the main waterfall not covered by a Findit trybot:</b>
+  {% if missing %}
+    <table>
+      <tr>
+        <th>Main-waterfall master</th>
+        <th>Builders not covered</th>
+      </tr>
+      {% for master in missing %}
+        <tr>
+          <td>{{ master }}</td>
+          <td>
+            {% for builder in missing[master] %}
+              {{ builder }}
+              <br>
+            {% endfor %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <br>
+    All supported masters are backed by builders on the tryserver.
+  {% endif %}
+  <br>
+  <br>
+  <b>Builders Findit is covering that no longer exist on main waterfall masters:</b>
+  {% if deprecated %}
+    <table>
+      <tr>
+        <th>Master in config</th>
+        <th>Deprecated builders</th>
+      </tr>
+      {% for master in deprecated %}
+        <tr>
+          <td>{{ master }}</td>
+          <td>
+            {% for builder in deprecated[master] %}
+              {{ builder }}
+              <br>
+            {% endfor %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <br>
+    All builders in config are actively covering builders on the main waterfall.
+  {% endif %}
+  <br>
+  <br>
+  <b>Variable builders found on the tryservers not mentioned in Findit's config:</b>
+  {% if unused_variable_builders %}
+    <table>
+      <tr>
+        <th>Tryserver</th>
+        <th>Unused builders</th>
+      </tr>
+      {% for tryserver in unused_variable_builders %}
+        <tr>
+          <td>{{ tryserver }}</td>
+          <td>
+            {% for builder in unused_variable_builders[tryserver] %}
+              {{ builder }}
+              <br>
+            {% endfor %}
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <br>
+    All variable builders on tryservers are used in config.
+  {% endif %}
+</body>
