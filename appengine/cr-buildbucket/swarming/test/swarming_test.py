@@ -222,12 +222,12 @@ class SwarmingTest(testing.AppengineTestCase):
     _, _, task_def = swarming.prepare_task_def_async(build).get_result()
 
     self.assertEqual(
-        task_def['properties']['execution_timeout_secs'], 120)
+        task_def['properties']['execution_timeout_secs'], '120')
 
     builder_cfg.execution_timeout_secs = 60
     _, _, task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
-        task_def['properties']['execution_timeout_secs'], 60)
+        task_def['properties']['execution_timeout_secs'], '60')
 
   def test_create_task_async(self):
     build = model.Build(

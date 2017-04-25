@@ -391,8 +391,8 @@ def _create_task_def_async(
   _add_named_caches(builder_cfg, task_properties)
 
   if builder_cfg.execution_timeout_secs > 0:
-    task_properties['execution_timeout_secs'] = (
-      builder_cfg.execution_timeout_secs)
+    task_properties['execution_timeout_secs'] = str(
+        builder_cfg.execution_timeout_secs)
 
   if not fake_build:  # pragma: no branch | covered by swarmbucketapi_test.py
     task['pubsub_topic'] = (
@@ -538,8 +538,10 @@ def create_task_async(build):
   # Mark the build as leased.
   assert 'expiration_secs' in task_def, task_def
   # task['expiration_secs'] is max time for the task to be pending
+  # It is encoded as string.
   task_expiration = datetime.timedelta(seconds=int(task_def['expiration_secs']))
   # task['execution_timeout_secs'] is max time for the task to run
+  # It is encoded as string.
   task_expiration += datetime.timedelta(
       seconds=int(task_def['properties']['execution_timeout_secs']))
   task_expiration += datetime.timedelta(hours=1)
