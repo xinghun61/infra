@@ -114,10 +114,11 @@ def _CreateTreeClosure(tree_name, statuses, first_open_status):
   possible_flake = False
   has_revert = False
   for s in statuses[1:]:
+    message = s.message.lower()
     for signal in ('flake', 'flaky', 'bot failure'):
-      if signal in s.message:
+      if signal in message:
         possible_flake = True
-    if 'revert' in s.message:
+    if 'revert' in message:
       has_revert = True
 
   master_name, builder_name, build_id, step_name = _ExtractFailureInfo(

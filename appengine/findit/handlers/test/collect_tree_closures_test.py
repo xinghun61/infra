@@ -133,7 +133,7 @@ class CollectTreeClosuresTest(TestCase):
         ),
         TreeStatus(
             time=datetime(2017, 03, 31, 0, 15, 0),
-            message='speculative reverted r12345678',
+            message='speculative Reverted r12345678',
             state='open',
             username='test@chromium.org',
         ),
