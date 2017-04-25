@@ -100,5 +100,6 @@ func dashboard(ctx *router.Context) {
 		"ChopsServices":  sla,
 		"NonSLAServices": nonSLA,
 		"Dates":          dates,
+		"OlderDate":      dates[0].AddDate(0, 0, -1).Unix(),
 	})
 }

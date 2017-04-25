@@ -11,8 +11,14 @@
     padding-left: 10px;
     text-align: center;
   }
+  .table-footer {
+    height: 20px;
+  }
+  .table-footer,
   header {
     background-color: rgb(205, 223, 250);
+  }
+  header {
     font-size: 2em;
     height: 100px;
     width: 100%;
@@ -26,6 +32,9 @@
   .logo {
     height: 95px;
     width: 95px;
+  }
+  .navigation-link {
+    text-align: right;
   }
   .right {
     text-align: right;
@@ -60,6 +69,7 @@
       Check this page any time to view the current status of the services listed below.
     </p>
     {{$dates := .Dates}}
+    {{$older := .OlderDate}}
     {{if .ChopsServices}}
       <p class="subtext">Projects covered by a Service Level Agreement</p>
       <table>
@@ -80,6 +90,13 @@
             {{end}}
           </tr>
         {{end}}
+        <tr class="table-footer">
+          <td colspan="8">
+            <div class="navigation-link">
+              <a href="?upto={{$older}}">Older</a>
+            </div>
+          </td>
+        </tr>
       </table>
     {{end}}
 
