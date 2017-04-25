@@ -37,8 +37,17 @@ var (
 			},
 		},
 	}
+	incidentIneqIdx = datastore.IndexDefinition{
+		Kind:     "ServiceIncident",
+		Ancestor: true,
+		SortBy: []datastore.IndexColumn{
+			{
+				Property: "StartTime",
+			},
+		},
+	}
 
-	indexes = []*datastore.IndexDefinition{&serviceIdx, &incidentIdx}
+	indexes = []*datastore.IndexDefinition{&serviceIdx, &incidentIdx, &incidentIneqIdx}
 )
 
 type getServiceTest struct {
@@ -60,29 +69,34 @@ var testServiceAnother = Service{
 }
 
 var now = time.Now().UTC().Truncate(time.Minute)
+var baseDate = time.Date(2017, time.April, 11, 23, 0, 0, 0, time.UTC)
 
 var testIncs = []ServiceIncident{
 	{
-		ID:       "cqRedAlert",
-		Severity: SeverityRed,
-		Open:     true,
+		ID:        "cqRedAlert",
+		Severity:  SeverityRed,
+		StartTime: baseDate.AddDate(0, 0, 5),
+		Open:      true,
 	},
 	{
-		ID:       "cqYellowAlert",
-		Severity: SeverityYellow,
-		EndTime:  now,
-		Open:     false,
+		ID:        "cqYellowAlert",
+		Severity:  SeverityYellow,
+		StartTime: baseDate.AddDate(0, 0, -2),
+		EndTime:   now,
+		Open:      false,
 	},
 	{
-		ID:       "monorailRedAlert",
-		Severity: SeverityRed,
-		Open:     true,
+		ID:        "monorailRedAlert",
+		Severity:  SeverityRed,
+		StartTime: baseDate,
+		Open:      true,
 	},
 	{
-		ID:       "monorailYellowAlert",
-		Severity: SeverityYellow,
-		EndTime:  now,
-		Open:     false,
+		ID:        "monorailYellowAlert",
+		Severity:  SeverityYellow,
+		StartTime: baseDate,
+		EndTime:   now,
+		Open:      false,
 	},
 }
 
@@ -145,17 +159,30 @@ func TestGetServiceIncidents(t *testing.T) {
 	testCases := []struct {
 		want      []ServiceIncident
 		serviceID string
-		openOnly  bool
+		queryOpts *QueryOptions
 	}{
 		// Test with Service that has ServiceIncidents children.
-		{[]ServiceIncident{*testIncOne, *testIncTwo}, testService.ID, false},
+		{[]ServiceIncident{*testIncOne, *testIncTwo}, testService.ID, nil},
 		// Test with Service that has no ServiceIncidents children.
-		{[]ServiceIncident{}, testServiceAnother.ID, false},
+		{[]ServiceIncident{}, testServiceAnother.ID, nil},
 		// Test with Service for only open ServiceIncidents.
-		{[]ServiceIncident{*testIncOne}, testService.ID, true},
+		{[]ServiceIncident{*testIncOne}, testService.ID, &QueryOptions{
+			Status: IncidentStatusOpen}},
+		// Test with Service for only closed ServiceIncidents.
+		{[]ServiceIncident{*testIncTwo}, testService.ID, &QueryOptions{
+			Status: IncidentStatusClosed}},
+		// Test with Service using StartTime upper/lower limit.
+		{[]ServiceIncident{*testIncTwo}, testService.ID, &QueryOptions{
+			After:  baseDate.AddDate(0, 0, -5),
+			Before: baseDate},
+		},
+		{[]ServiceIncident{}, testService.ID, &QueryOptions{
+			After:  baseDate.AddDate(0, 0, -1),
+			Before: baseDate},
+		},
 	}
 	for i, tc := range testCases {
-		incidents, err := GetServiceIncidents(ctx, tc.serviceID, tc.openOnly)
+		incidents, err := GetServiceIncidents(ctx, tc.serviceID, tc.queryOpts)
 		if err != nil {
 			t.Errorf("%d: Expect no errors. Found: %v", i, err)
 		}

@@ -7,6 +7,7 @@ package dashboard
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -17,39 +18,41 @@ import (
 )
 
 var (
-	serviceIdx = datastore.IndexDefinition{
-		Kind:     "Service",
-		Ancestor: true,
-		SortBy: []datastore.IndexColumn{
-			{
-				Property:   "Name",
-				Descending: true,
-			},
-		},
-	}
-
-	incidentIdx = datastore.IndexDefinition{
+	incidentStartIdx = datastore.IndexDefinition{
 		Kind:     "ServiceIncident",
 		Ancestor: true,
 		SortBy: []datastore.IndexColumn{
 			{
-				Property:   "ID",
-				Descending: true,
+				Property: "Open",
+			},
+			{
+				Property: "StartTime",
 			},
 		},
 	}
-
-	indexes = []*datastore.IndexDefinition{&serviceIdx, &incidentIdx}
+	indexes = []*datastore.IndexDefinition{&incidentStartIdx}
 )
+
+var baseDate = time.Date(2017, time.April, 11, 23, 0, 0, 0, time.UTC)
 
 var testService = backend.Service{
 	ID:   "testservice",
 	Name: "Test Service",
 	SLA:  "www.google.com",
 }
-var testIncident = backend.ServiceIncident{
-	ID:       "cqRedAlert",
-	Severity: backend.SeverityRed,
+var testOpenIncident = backend.ServiceIncident{
+	ID:        "cqRedAlert",
+	Severity:  backend.SeverityRed,
+	Open:      true,
+	StartTime: baseDate,
+}
+
+var testCloseIncident = backend.ServiceIncident{
+	ID:        "cqYellowAlert",
+	Severity:  backend.SeverityYellow,
+	Open:      false,
+	StartTime: baseDate.AddDate(0, 0, -4),
+	EndTime:   baseDate.AddDate(0, 0, -3),
 }
 
 var testServiceAnother = backend.Service{
@@ -68,19 +71,23 @@ func newTestContext() context.Context {
 func TestCreateServicesPageData(t *testing.T) {
 	ctx := newTestContext()
 	datastore.Put(ctx, &testService)
-	testInc := testIncident
-	testInc.ServiceKey = datastore.NewKey(ctx, "Service", testService.ID, 0, nil)
-	datastore.Put(ctx, &testInc)
+	testOpenInc := testOpenIncident
+	testOpenInc.ServiceKey = datastore.NewKey(ctx, "Service", testService.ID, 0, nil)
+	datastore.Put(ctx, &testOpenInc)
+
+	testCloseInc := testCloseIncident
+	testCloseInc.ServiceKey = datastore.NewKey(ctx, "Service", testService.ID, 0, nil)
+	datastore.Put(ctx, &testCloseInc)
+
 	datastore.Put(ctx, &testServiceAnother)
 
 	wantSLA := []TemplateService{
-		{testService, []backend.ServiceIncident{testInc}},
+		{testService, []backend.ServiceIncident{testOpenInc, testCloseInc}},
 	}
 	wantNonSLA := []TemplateService{
 		{testServiceAnother, []backend.ServiceIncident{}},
 	}
-
-	sla, nonSLA, err := createServicesPageData(ctx)
+	sla, nonSLA, err := createServicesPageData(ctx, baseDate.AddDate(0, 0, -5), baseDate.AddDate(0, 0, -1))
 	if err != nil {
 		t.Errorf("did not expect error, found %v", err)
 	}

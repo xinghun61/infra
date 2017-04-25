@@ -19,13 +19,21 @@ type Severity int
 
 const (
 	// SeverityRed represents paging alerts.
-	SeverityRed Severity = 0
+	SeverityRed Severity = iota
 	// SeverityYellow represents email alerts.
-	SeverityYellow Severity = 1
+	SeverityYellow
 )
 
-var (
-	serviceIDs = []string{"monorail", "som"}
+// IncidentStatus represents a status category of a ServiceIncident.
+type IncidentStatus int
+
+const (
+	// IncidentStatusAny represents a status that is either Open or Closed.
+	IncidentStatusAny IncidentStatus = iota
+	// IncidentStatusOpen represents the status of Open ServiceIncidents.
+	IncidentStatusOpen
+	// IncidentStatusClosed represents the status of Closed ServiceIncidents.
+	IncidentStatusClosed
 )
 
 // ServiceIncident contains incident details and its parent service key.
@@ -43,6 +51,14 @@ type Service struct {
 	ID   string `gae:"$id"` // eg. "monorail", "som"
 	Name string // eg. "Monorail", "Sheriff-O-Matic"
 	SLA  string
+}
+
+// QueryOptions contains maps for additional query options that indicate interface{} value
+// the fields should match.
+type QueryOptions struct {
+	After  time.Time      // if non-zero, a start of time range to fetch
+	Before time.Time      // if non-zero, an end of time range to fetch
+	Status IncidentStatus // indicates the status the fetched incidents should have
 }
 
 // GetIncident gets the specified ServiceIncident from datastore.
@@ -74,11 +90,23 @@ func GetIncident(c context.Context, id string, serviceID string) (*ServiceIncide
 //
 // It returns (incidents, nil) on success or (nil, err) on datastore errors.
 // If no incidents for the service were found, incidents will be empty.
-func GetServiceIncidents(c context.Context, serviceID string, onlyOpen bool) ([]ServiceIncident, error) {
+func GetServiceIncidents(c context.Context, serviceID string, queryOpts *QueryOptions) ([]ServiceIncident, error) {
 	serviceKey := datastore.NewKey(c, "Service", serviceID, 0, nil)
 	query := datastore.NewQuery("ServiceIncident").Ancestor(serviceKey)
-	if onlyOpen {
-		query = query.Eq("Open", true)
+	if queryOpts != nil {
+		switch statusType := queryOpts.Status; statusType {
+		case IncidentStatusOpen:
+			query = query.Eq("Open", true)
+		case IncidentStatusClosed:
+			query = query.Eq("Open", false)
+		}
+
+		if !queryOpts.After.IsZero() {
+			query = query.Gte("StartTime", queryOpts.After)
+		}
+		if !queryOpts.Before.IsZero() {
+			query = query.Lte("StartTime", queryOpts.Before)
+		}
 	}
 	incidents := []ServiceIncident{}
 	if err := datastore.GetAll(c, query, &incidents); err != nil {

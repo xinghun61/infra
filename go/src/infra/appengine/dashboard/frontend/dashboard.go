@@ -57,20 +57,33 @@ type TemplateService struct {
 	Incidents []backend.ServiceIncident
 }
 
-func createServicesPageData(c context.Context) (sla []TemplateService, nonSLA []TemplateService, err error) {
+func createServicesPageData(c context.Context, after time.Time, before time.Time) (sla []TemplateService, nonSLA []TemplateService, err error) {
 	services, e := backend.GetAllServices(c)
 	if e != nil {
-		logging.Errorf(c, "Error getting Service entities %v", e)
+		logging.Errorf(c, "error getting Service entities %s", e)
 		return nil, nil, e
 	}
 
 	for _, service := range services {
-		incidents, e := backend.GetServiceIncidents(c, service.ID, false)
+		closedQueryOpts := &backend.QueryOptions{
+			After:  after,
+			Before: before,
+			Status: backend.IncidentStatusClosed,
+		}
+		closedIncidents, e := backend.GetServiceIncidents(c, service.ID, closedQueryOpts)
 		if err != nil {
-			logging.Errorf(c, "Error getting ServiceIncident entities %v", e)
+			logging.Errorf(c, "error getting ServiceIncident entities %s", e)
 			return nil, nil, e
 		}
-		templateService := TemplateService{service, incidents}
+		openQueryOpts := &backend.QueryOptions{
+			Status: backend.IncidentStatusOpen,
+		}
+		openIncidents, e := backend.GetServiceIncidents(c, service.ID, openQueryOpts)
+		if err != nil {
+			logging.Errorf(c, "error getting ServiceIncident entities %s", e)
+			return nil, nil, e
+		}
+		templateService := TemplateService{service, append(openIncidents, closedIncidents...)}
 		if service.SLA == "" {
 			nonSLA = append(nonSLA, templateService)
 		} else {
@@ -82,20 +95,36 @@ func createServicesPageData(c context.Context) (sla []TemplateService, nonSLA []
 }
 
 func dashboard(ctx *router.Context) {
-	c, w := ctx.Context, ctx.Writer
-
-	dates := []time.Time{}
-	for i := 0; i < 7; i++ {
-		dates = append(dates, time.Now().AddDate(0, 0, -i))
-	}
-
-	sla, nonSLA, err := createServicesPageData(c)
+	c, w, r := ctx.Context, ctx.Writer, ctx.Request
+	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, "Failed to create Services page data, see logs",
+		http.Error(w, "Failed to parse form",
 			http.StatusInternalServerError)
 		return
 	}
+	upto := r.Form.Get("upto")
+	var lastDate time.Time
+	if upto != "" {
+		lastDate, err = time.Parse("1-02-2006", upto)
+		if err != nil {
+			http.Error(w, "failed to parse \"upto\" date paramater",
+				http.StatusBadRequest)
+			return
+		}
+	} else {
+		lastDate = time.Now()
+	}
+	dates := []time.Time{}
+	for i := 0; i < 7; i++ {
+		dates = append(dates, lastDate.AddDate(0, 0, -i))
+	}
 
+	sla, nonSLA, err := createServicesPageData(c, dates[6], lastDate)
+	if err != nil {
+		http.Error(w, "failed to create Services page data, see logs",
+			http.StatusInternalServerError)
+		return
+	}
 	templates.MustRender(c, w, "pages/dash.tmpl", templates.Args{
 		"ChopsServices":  sla,
 		"NonSLAServices": nonSLA,

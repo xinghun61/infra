@@ -30,7 +30,7 @@ func (s *dashboardService) UpdateOpenIncidents(ctx context.Context, req *dashpb.
 		incidentsByID[incident.Id] = *incident
 	}
 
-	dsIncidents, err := backend.GetServiceIncidents(ctx, serviceName, true)
+	dsIncidents, err := backend.GetServiceIncidents(ctx, serviceName, &backend.QueryOptions{Status: backend.IncidentStatusOpen})
 	if err != nil {
 		return nil, grpc.Errorf(codes.Internal, "error getting ServiceIncidents from datastore - %s", err)
 	}
