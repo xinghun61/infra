@@ -22,31 +22,36 @@ commas are allowed.
 
 Each builders.pyl describes a single *waterfall*, which is a collection
 of buildbot *builders* that talk to a single buildbot *master*. Each
-builder may be implemented by multiple *slaves*; you can think of a
-slave as a single VM.
+builder may be implemented by multiple *bots*; you can think of a
+bot as a single VM or machine.
 
 Each master has one or more builders. A builder is basically a single
 configuration running a single series of steps, collected together into
 a [recipe](recipes.md). Each builder may have per-builder properties
 set for it (to control the logic the recipe executes), and each builder
-may also pass along properties from the slave, so there are four types
+may also pass along properties from the bot, so there are four types
 of configuration:
 
 1.  overall per-master
 2.  per-builder
 3.  per-scheduler
-4.  per-slave
+4.  per-bot
 
 The keys in the dict should follow that order; within each section, all
 required keys should appear first (sorted alphabetically), then all
 optional keys (sorted alphabetically).
 
-Slaves are usually collected into *pools*, so that they can be load
-balanced. Every slave in the pool has the same configuration.
+Bots are usually collected into *pools*, so that they can be load
+balanced. Every bot in the pool has the same configuration.
 
 *** aside
-Side note: the "master"/"slave" terminology is buildbot's; we don't
-like it, but use it to avoid confusion.
+Side note: buildbot used to call things "slaves" instead of "bots", and
+lots of Chromium docs still use "slave".
+
+For compatibility with older versions of builders.pyl, if the file contains
+a field called "slave_port", then any field named "bot_X" mustbe called
+"slave_X" instead. Once all of the builders.pyl files have been updated,
+this support will be dropped.
 ***
 
 ## Example
@@ -58,14 +63,14 @@ Here's a simple file containing all of the required fields:
   "master_base_class": "Master1",
   "master_port": 20100,
   "master_port_alt": 40100,
-  "slave_port": 30100,
+  "bot_port": 30100,
   "templates": ["../master.chromium/templates"],
 
   "builders": {
      "Chromium Mojo Linux": {
        "recipe": "chromium_mojo",
        "scheduler": "chromium_src_commits",
-       "slave_pools": ["linux_precise"],
+       "bot_pools": ["linux_precise"],
        "category": "0builders",
      },
   },
@@ -77,14 +82,14 @@ Here's a simple file containing all of the required fields:
     },
   },
 
-  "slave_pools": {
+  "bot_pools": {
     "linux_precise": {
-      "slave_data": {
+      "bot_data": {
         "bits": 64,
         "os": "linux",
         "version": "precise",
       },
-      "slaves": ["vm46-m1"],
+      "bots": ["vm46-m1"],
     },
   },
 }
@@ -117,10 +122,10 @@ This is a *required* field. It must be set to the alternate IP port that
 the buildbot master instance runs on. You should set this to the port
 obtained from the admins.
 
-### slave_port
+### bot_port
 
 This is a *required* field. It must be set to the port that the buildbot
-slaves will attempt to connect to on the master.
+bots will attempt to connect to on the master.
 
 ### templates
 
@@ -170,9 +175,9 @@ equivalently, if any of the builders have their scheduler set to `None`,
 this field must be present.
 
 If set, it should point to the filename in the credentials directory on
-the slave machine (i.e., just the basename + extension, no directory
+the bot machine (i.e., just the basename + extension, no directory
 part), that contains the [OAuth service account
-info](../master_auth.md) the slave will use to connect to buildbucket.
+info](../master_auth.md) the bot will use to connect to buildbucket.
 By convention, the value is "service-account-\<project\>.json". If not
 set, it defaults to None.
 
@@ -183,9 +188,9 @@ must be present if the builders on the master are intended to send build data
 to pubsub.
 
 If set, it should point to the filename in the credentials directory on
-the slave machine (i.e., just the basename + extension, no directory
+the bot machine (i.e., just the basename + extension, no directory
 part), that contains the [OAuth service account
-info](../master_auth.md) the slave will use to connect to pubsub.
+info](../master_auth.md) the bot will use to connect to pubsub.
 By convention, the value is "service-account-\<project\>.json".
 The <project> field is usually "luci-milo" for most masters.  If not
 set, it defaults to None.
@@ -204,7 +209,7 @@ are described in the per-scheduler configurations section, below. The
 dict may be empty, if there are no scheduled builders, only tryservers,
 but it must be present even in that case.
 
-### slave_pools
+### bot_pools
 
 This is a *required* field and must be a dict of pool names and
 properties, as described below.
@@ -233,9 +238,9 @@ A builder that has a scheduler specified may also potentially be
 scheduled via buildbucket, but that doing so would be unusual (builders
 should normally only have one purpose).
 
-### slave_pools
+### bot_pools
 
-This is a *required* field that specifies one or more pools of slaves
+This is a *required* field that specifies one or more pools of bots
 that can be builders.
 
 ### mergeRequests
@@ -259,7 +264,7 @@ reboot after each build. If not specified, it defaults to `True`.
 This is an *optional* field that is a dict of settings that will be
 passed to the [recipe](recipes.md) as key/value properties.
 
-### slavebuilddir
+### botbuilddir
 
 This is an *optional* field; if it is not set, it defaults to the
 builder name. This field can be used to share a single build directory
@@ -344,7 +349,7 @@ This field and the `minute` field control when cron jobs are scheduled
 on the builder.
 
 The field may have a value of either `"*"`, an integer, or a list of
-integers, where integers must be in the range [0, 23). The value `"*"`
+integers, where integers must be in the range \[0, 23). The value `"*"`
 is equivalent to specifying a list containing every value in the range.
 This matches the syntax used for the `Nightly` scheduler in buildbot.
 
@@ -357,29 +362,29 @@ This field and the `hour` field control when cron jobs are scheduled on
 the builder.
 
 The field may have a value of either `"*"`, an integer, or a list of
-integers, where integers must be in the range [0, 60). The value `"*"`
+integers, where integers must be in the range \[0, 60). The value `"*"`
 is equivalent to specifying a list containing every value in the range.
 This matches the syntax used for the `Nightly` scheduler in buildbot.
 
 ## Per-pool configurations
 
-Each pool (or group) of slaves consists of a set of machines that all
+Each pool (or group) of bots consists of a set of machines that all
 have the same characteristics. The pool is described by a dict that
 contains two fields
 
-### slave_data
+### bot_data
 
 This is a *required* field that contains a dict describing the
-configuration of every slaves in the pool, as described below.
+configuration of every bot in the pool, as described below.
 
-### slaves
+### bots
 
 This is a *required* field that contains list of individual hostnames,
 one for each VM (do not specify the domain, just the basename).
 
-## Per-slave configurations
+## Per-bot configurations
 
-The slave-data dict provides a bare description of the physical
+The bot-data dict provides a bare description of the physical
 characteristics of each machine: operating system name, version, and
 architecture, with the following keys:
 
