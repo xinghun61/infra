@@ -22,15 +22,15 @@ import (
 
 const bbServerDefault = "https://cr-buildbucket.appspot.com"
 
-func builderDefinitionCmd(authOpts auth.Options) *subcommands.Command {
+func getBuilderCmd(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
-		UsageLine: "builder-def -B bucket_name -builder builder_name [-recipes <hash>] [-d dimension=value]*",
+		UsageLine: "get-builder -B bucket_name -builder builder_name [-recipes <hash>] [-d dimension=value]*",
 		ShortDesc: "Pulls a builder definition from buildbucket and prints a swarming task definition.",
 		LongDesc: `Obtains the builder definition from buildbucket and prints a modified
 		version of it as a JobDefinition.`,
 
 		CommandRun: func() subcommands.CommandRun {
-			ret := &cmdBuilderDefinition{}
+			ret := &cmdGetBuilder{}
 			ret.logCfg.Level = logging.Info
 
 			ret.logCfg.AddFlags(&ret.Flags)
@@ -45,7 +45,7 @@ func builderDefinitionCmd(authOpts auth.Options) *subcommands.Command {
 	}
 }
 
-type cmdBuilderDefinition struct {
+type cmdGetBuilder struct {
 	subcommands.CommandRunBase
 
 	logCfg    logging.Config
@@ -56,7 +56,7 @@ type cmdBuilderDefinition struct {
 	builder  string
 }
 
-func (c *cmdBuilderDefinition) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
+func (c *cmdGetBuilder) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
 	if len(args) > 0 {
 		err = errors.Reason("unexpected positional arguments: %(args)q").D("args", args).Err()
 		return
@@ -64,7 +64,7 @@ func (c *cmdBuilderDefinition) validateFlags(ctx context.Context, args []string)
 	return c.authFlags.Options()
 }
 
-func (c *cmdBuilderDefinition) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+func (c *cmdGetBuilder) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 	authOpts, err := c.validateFlags(ctx, args)
 	if err != nil {

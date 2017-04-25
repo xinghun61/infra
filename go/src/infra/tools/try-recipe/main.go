@@ -57,9 +57,28 @@ func main() {
 		},
 
 		Commands: []*subcommands.Command{
+			// commands to isolate recipe stuff. These all begin with `isolate`.
 			isolateCmd(authDefaults),
-			builderDefinitionCmd(authDefaults),
+			// TODO(iannucci): `isolate-single` to isolate one repo without deps.
+			// TODO(iannucci): `isolate-combine` to combine multiple singly-isolated
+			//		repos into a single isolate.
+
+			// commands to obtain JobDescriptions. These all begin with `get`.
+			// TODO(iannucci): `get` to scrape from any URL
+			// TODO(iannucci): `get-swarming` to scrape from swarming
+			// TODO(iannucci): `get-milo` to scrape from milo
+			getBuilderCmd(authDefaults),
+
+			// commands to edit JobDescriptions. These all begin with `edit`.
 			editCmd(),
+			// TODO(iannucci): `edit-cl` to do cl-specific edits (i.e. knows about
+			//   current recipe conventions for handling CLs).
+
+			// commands to launch swarming tasks. These all begin with `launch`.
+			// TODO(iannucci): `launch` does the full flow; isolate, get, edit,
+			//   launch-raw.
+			// TODO(iannucci): `launch-raw` consumes JobDescription on stdin and just
+			//   pushes it so swarming.
 
 			authcli.SubcommandLogin(authDefaults, "auth-login", false),
 			authcli.SubcommandLogout(authDefaults, "auth-logout", false),
