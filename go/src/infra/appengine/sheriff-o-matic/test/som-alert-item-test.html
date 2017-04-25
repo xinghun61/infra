@@ -32,22 +32,19 @@
   });
 
   suite('basic tests', function() {
-    test('renders bare minimum', function(done) {
+    test('renders bare minimum', function() {
       element.alert = {
         title: 'test title',
         body: 'test body',
         links: [],
         type: '',
       };
-      flush(function () {
-        assert.equal(
-            'test title',
-            element.$$('.alert-title').textContent.trim());
-        done();
-      });
+      assert.equal(
+          'test title',
+          element.$$('.alert-title').textContent);
     });
 
-    test('renders actions for trooper failures on /trooper ', function(done) {
+    test('renders actions for trooper failures on /trooper ', function() {
       element.alert = {
         type: AlertTypes.IdleBuilder,
         severity: AlertSeverity.IdleBuilder,
@@ -57,17 +54,14 @@
       };
       element.tree = 'trooper';
 
-      flush(function () {
-        assert.equal(
-            'test title',
-            element.$$('.alert-title').textContent.trim());
-        assert.isFalse(element.$$('#link-bug').hidden);
-        assert.isFalse(element.$$('#snooze').hidden);
-        done();
-      });
+      assert.equal(
+          'test title',
+          element.$$('.alert-title').textContent);
+      assert.isFalse(element.$$('#link-bug').hidden);
+      assert.isFalse(element.$$('#snooze').hidden);
     });
 
-    test('hides actions for trooper failures on sheriff pages', function(done) {
+    test('hides actions for trooper failures on sheriff pages', function() {
       element.alert = {
         type: AlertTypes.IdleBuilder,
         severity: AlertSeverity.IdleBuilder,
@@ -77,19 +71,16 @@
       };
       element.tree = 'chromium';
 
-      flush(function () {
-        assert.isTrue(element._hideActions(AlertTypes.IdleBuilder, 'chromium'));
-        assert.isFalse(element._hideActions(AlertTypes.IdleBuilder, 'trooper'));
-        assert.isFalse(element._hideExamine(AlertTypes.IdleBuilder, false,
-            'trooper'));
+      assert.isTrue(element._hideActions(AlertTypes.IdleBuilder, 'chromium'));
+      assert.isFalse(element._hideActions(AlertTypes.IdleBuilder, 'trooper'));
+      assert.isFalse(element._hideExamine(AlertTypes.IdleBuilder, false,
+          'trooper'));
 
-        assert.equal(
-            'test title',
-            element.$$('.alert-title').textContent.trim());
-        assert.isTrue(element.$$('#link-bug').hidden);
-        assert.isTrue(element.$$('#snooze').hidden);
-        done();
-      });
+      assert.equal(
+          'test title',
+          element.$$('.alert-title').textContent);
+      assert.isTrue(element.$$('#link-bug').hidden);
+      assert.isTrue(element.$$('#snooze').hidden);
     });
 
     test('snoozed affects snoozed text', function() {
@@ -182,7 +173,7 @@
         {title: 'two', href: uberUrl}
       ]};
 
-      assert.isTrue(element._haveLinks(null, element.alert));
+      assert.isTrue(element._haveLinks(element.alert));
 
       flush(function() {
         let links = element.$.usefulLinks.querySelectorAll(".alert-link");

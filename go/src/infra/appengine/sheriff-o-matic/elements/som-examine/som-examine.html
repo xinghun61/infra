@@ -26,7 +26,6 @@
       }
       .builder-page {
         padding: 1em;
-        min-height: 1000px;
       }
       som-webkit-tests {
         display: flex;
@@ -53,7 +52,7 @@
     <!-- iframe for each builder/build/test log etc -->
     <paper-tabs id="builder-tabs" selected="{{selectedBuilder}}" attr-for-selected="id" scrollable>
       <template is="dom-repeat" items="[[alert.extension.builders]]" as="builder">
-        <paper-tab id$="[[_tabId(builder)]]">
+        <paper-tab id$="[[builder.name]]">
           [[_tabTitle(builder)]]
           <a href$="[[_linkify(linkStyle, builder.url, builder.latest_failure, selectedStep)]]"
               title="Open in a new window"
@@ -65,13 +64,13 @@
     </paper-tabs>
     <iron-pages id="builder-pages" selected="{{selectedBuilder}}" attr-for-selected="id" class="flex layout vertical">
       <template is="dom-repeat" items="[[alert.extension.builders]]" as="builder">
-        <div id$="[[builder.name]]:[[builder.latest_failure]]" class="builder-page flex layout vertical">
+        <div id$="[[builder.name]]" class="builder-page flex layout vertical">
           <div>Builds: [[builder.first_failure]]-[[builder.latest_failure]]</div>
           <div class="flex layout vertical">
             <som-webkit-tests builder="[[builder]]" test-name="[[selectedTest]]" test-type="[[alert.extension.reason.step]]" hidden$="[[hideWebKitTests]]">
             </som-webkit-tests>
             <iframe
-                src$="[[_linkify(linkStyle, builder.url, builder.latest_failure, selectedStep)]]"
+                src$="[[_linkify(linkStyle, builder.url,builder.latest_failure,selectedStep)]]"
                 class="flex"
             ></iframe>
           </div>

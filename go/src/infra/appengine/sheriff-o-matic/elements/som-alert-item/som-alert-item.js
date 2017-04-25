@@ -21,12 +21,6 @@
      */
 
     /**
-     * Fired when an alert requests that the group dialog be shown.
-     *
-     * @event group
-     */
-
-    /**
      * Fired when an alert has an annotation change that needs to be sent to the
      * server.
      *
@@ -42,10 +36,6 @@
       },
       tree: {type: String, value: function() { return ''; }},
       annotation: Object,
-      selectedAlert: {
-        tupe: String,
-        value: '',
-      },
       _commentsClass: {
         type: String,
         computed: '_computeCommentsClass(_numComments)',
@@ -72,26 +62,8 @@
         type: String,
         computed: '_computeSnoozeIcon(annotation.snoozed)',
       },
-      _hasGroup: {
-        type: Boolean,
-        computed: '_computeHasGroup(tree)',
-      },
-      _hasUngroup: {
-        type: Boolean,
-        computed: '_computeHasUngroup(alert)',
-      },
-      _hasResolve: {
-        type: Boolean,
-        computed: '_computeHasResolve(tree)',
-      },
       _startTime:
           {type: String, computed: '_formatTimestamp(alert.start_time)'},
-      _groupNameInput: {
-        type: Object,
-        value: function() {
-          return this.$.groupName;
-        }
-      },
       useCompactView: Boolean,
     },
 
@@ -178,22 +150,6 @@
       return snoozed ? 'alarm-off' : 'alarm';
     },
 
-    _isCrOSTree: function(tree) {
-      return tree && (tree == 'chromeos' || tree == 'gardener');
-    },
-
-    _computeHasGroup: function(tree) {
-      return this._isCrOSTree(tree);
-    },
-
-    _computeHasUngroup: function(alert) {
-      return alert && !!alert.grouped;
-    },
-
-    _computeHasResolve: function(tree) {
-      return this._isCrOSTree(tree);
-    },
-
     _linkBug: function(evt) {
       this.fire('link-bug');
     },
@@ -205,9 +161,8 @@
       return '';
     },
 
-    _haveLinks: function(selected, alert) {
-      return (selected || !alert.grouped) &&
-             alert && alert.links && alert.links.length > 0;
+    _haveLinks: function(alert) {
+      return alert && alert.links && alert.links.length > 0;
     },
 
     _hideActions: function(alertType, tree) {
@@ -235,66 +190,6 @@
         this.fire('snooze');
       }
       evt.preventDefault();
-    },
-
-    _group: function(evt) {
-      this.fire('group');
-    },
-
-    _ungroup: function(evt) {
-      this.fire('ungroup');
-    },
-
-    _resolve: function(evt) {
-      this.fire('resolve');
-    },
-
-    _updateGroupName: function(evt) {
-      let value = evt.detail.keyboardEvent.target.value;
-      this.fire('annotation-change', {
-        type: 'add',
-        change: {'group_id': value},
-      });
-    },
-
-    _haveSubAlerts: function(alert) {
-      return alert && alert.alerts && alert.alerts.length > 0;
-    },
-
-    _getSelected: function(selected, alert) {
-      if (!alert) {
-        return selected;
-      }
-
-      if (alert.grouped && alert.alerts) {
-        // This alert is a group, search for the selected sub-alert.
-        let subAlert = alert.alerts.find((a) => {
-          return a.key == selected;
-        });
-
-        if (subAlert) {
-          // Return the selected alert.
-          return subAlert;
-        }
-
-        // Return the group extensions.
-        return alert;
-      }
-
-      return alert;
-    },
-
-    _getExtension: function(selected, alert) {
-      return this._getSelected(selected, alert).extension;
-    },
-
-    _getLinks: function(selected, alert) {
-      return this._getSelected(selected, alert).links;
-    },
-
-    _expandAlertCollapse: function() {
-      this.selectedAlert = '';
-      this.$.alertCollapse.updateSize(String(this.$.alertCollapse.scrollHeight) + 'px');
     },
 
     toggle: function(evt) {

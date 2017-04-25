@@ -1,7 +1,6 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
-<link rel="import" href="../../bower_components/iron-icons/editor-icons.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
 <link rel="import" href="../../bower_components/paper-ripple/paper-ripple.html">
@@ -27,10 +26,14 @@
      .alert-controls {
        text-align: center;
        min-width: 380px;
-       max-width: 420px;
        padding-right: 4px;
-       min-height: 100px;
-       max-height: 200px;
+       height: 100px;
+     }
+     .alert-controls paper-button {
+       text-align: center;
+       min-width: 110px;
+       display: inline-block;
+       font-size: 0.9em;
      }
      .alert-controls-links {
        padding: 0 8px;
@@ -39,12 +42,6 @@
      .alert-controls-links .link {
        padding: 8px;
        cursor: pointer;
-     }
-     .alert-controls-buttons paper-button {
-       text-align: center;
-       min-width: 110px;
-       display: inline-block;
-       font-size: 0.9em;
      }
      .alert-expanded {
        color: #666;
@@ -73,22 +70,8 @@
      .alert-title-bar:hover {
        cursor: pointer;
      }
-     .sub-alert-list {
-       max-height: 60px;
-       overflow-y: auto;
-     }
-     .alert-radio {
-       font-size: 0.8em;
-     }
-     .alert-radio paper-radio-button {
-       --paper-radio-button-size: 12px;
-       padding: 4px;
-     }
      .file-bug-icon,
-     .snooze-icon,
-     .group-icon,
-     .ungroup-icon,
-     .resolve-icon {
+     .snooze-icon {
        color: #aaa;
      }
      .snoozed {
@@ -96,16 +79,6 @@
      }
      .comments-link-highlighted {
        color: #FF8C00;
-     }
-     .subAlert {
-        border-radius: 2px;
-        border: 1px solid #dcdcdc;
-        font-size: smaller;
-        margin: .1em;
-        padding: .3em 0.5em;
-        display: inline-block;
-        background: #E75D54;
-        color: #f4f4f4;
      }
      #expand-tip {
        color: #a9a9a9;
@@ -140,19 +113,6 @@
      #handleLink {
        margin-left: 16px;
      }
-     #groupID {
-       font-size: 0.8em;
-       background: #eee;
-       border-radius: 16px;
-       padding: 1px 2px 1px 4px;
-       display: inline-block;
-       margin: 0 2px;
-       white-space: nowrap;
-       overflow: hidden;
-     }
-     #groupName {
-       width: 320px;
-     }
      #collapse {
        transition: height 3s ease;
      }
@@ -167,9 +127,6 @@
      #usefulLinks {
        margin: .25em 0;
      }
-     #sub-alert-menu {
-       width: 500px;
-     }
     </style>
     <div id="root" class$="[[_cssClass]]">
       <div class="alert-title-bar horizontal layout justified" on-tap="toggle">
@@ -177,15 +134,7 @@
         </paper-ripple>
         <div class="horizontal layout wrap">
           <div class="layout horizontal flex-child">
-            <div class="alert-title self-center">
-              <template is="dom-if" if="[[_hasUngroup]]">
-                <iron-a11y-keys target="[[_groupNameInput]]" keys="enter" on-keys-pressed="_updateGroupName"></iron-a11y-keys>
-                <paper-input id="groupName" value="[[alert.title]]"></paper-input>
-              </template>
-              <template is="dom-if" if="[[!_hasUngroup]]">
-                [[alert.title]]
-              </template>
-            </div>
+            <div class="alert-title self-center">[[alert.title]]</div>
             <div id="handleLink" class="self-center" hidden$="[[!_helpLinkForAlert(alert)]]">
               [<a href$="[[_helpLinkForAlert(alert)]]" target="_blank">Help</a>]
             </div>
@@ -220,54 +169,26 @@
               <iron-icon icon="question-answer"></iron-icon> ([[_numComments]])
             </span>
           </div>
-          <div class="alert-controls-buttons layout horizontal center flex-child wrap">
-            <paper-button class="horizontal layout center" id="link-bug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, tree)]]" raised noink>
-              <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
-              Link/File Bug
-            </paper-button>
-            <paper-button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" hidden$="[[_hideActions(alert.type, tree)]]" raised noink>
-              <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
-              </iron-icon>
-              [[_snoozeText]]
-            </paper-button>
-            <paper-button class="horizontal layout center" id="group" on-tap="_group" alt="Group" raised noink hidden$="[[!_hasGroup]]">
-              <iron-icon class="group-icon" icon="editor:merge-type"></iron-icon>
-              Group
-            </paper-button>
-            <paper-button class="horizontal layout center" id="ungroup" on-tap="_ungroup" alt="Ungroup" raised noink hidden$="[[!_hasUngroup]]">
-              <iron-icon class="ungroup-icon" icon="close"></iron-icon>
-              Ungroup
-            </paper-button>
-            <paper-button class="horizontal layout center" id="resolve" on-tap="_resolve" alt="Resolve" raised noink hidden$="[[!_hasResolve]]">
-              <iron-icon class="ungroup-icon" icon="check"></iron-icon>
-              Resolve
-            </paper-button>
-          </div>
+          <paper-button class="horizontal layout center" id="link-bug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, tree)]]" raised noink>
+            <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
+            Link/File Bug
+          </paper-button>
+          <paper-button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" hidden$="[[_hideActions(alert.type, tree)]]" raised noink>
+            <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
+            </iron-icon>
+            [[_snoozeText]]
+          </paper-button>
         </div>
         <div class="alert-info flex">
-          <template is="dom-if" if="[[_haveSubAlerts(alert)]]">
-            <div class="collapse layout horizontal center" on-tap="_expandAlertCollapse">
-              [[alert.alerts.length]] alerts.
-            </div>
-          </template>
-          <iron-collapse id="alertCollapse" class="sub-alert-list" opened="more" hidden$="[[!_haveSubAlerts(alert)]]">
-            <paper-radio-group id="alertRadio" class="alert-radio" attr-for-selected="value" selected="{{selectedAlert}}">
-              <template is="dom-repeat" items="[[alert.alerts]]" as="subalert">
-                <paper-radio-button value="[[subalert.key]]">
-                  [[subalert.title]]
-                </paper-radio-button>
-              </template>
-            </paper-radio-group>
-          </iron-collapse>
-          <div id="usefulLinks" hidden$="[[!_haveLinks(selectedAlert, alert)]]">
+          <div id="usefulLinks" hidden$="[[!_haveLinks(alert)]]">
             Useful Links:
-            <template is="dom-repeat" items="[[_getLinks(selectedAlert, alert)]]" as="link">
+            <template is="dom-repeat" items="[[alert.links]]" as="link">
               <a class="alert-link" target="_blank" href$="[[_linkify(linkStyle, link.href)]]">[[link.title]]</a>
             </template>
           </div>
           <som-extension-trooper-failure tree="[[tree]]" type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-trooper-failure>
           <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-build-failure>
-          <som-extension-cros-failure type="[[alert.type]]" extension="[[_getExtension(selectedAlert, alert)]]" link-style="[[linkStyle]]"></som-extension-cros-failure>
+          <som-extension-cros-failure type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-cros-failure>
         </div>
       </div>
     </div>

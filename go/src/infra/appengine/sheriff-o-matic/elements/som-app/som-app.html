@@ -271,7 +271,7 @@
                     </div>
                   </template>
                 </h2>
-                <template is="dom-repeat" items="[[_alertItemsWithCategory(_alerts, annotations, cat, _isTrooperPage)]]" as="alert">
+                <template is="dom-repeat" items="[[_alertsWithCategory(_alerts, cat, _isTrooperPage)]]" as="alert">
                   <som-alert-item
                       class="alert-item"
                       tabindex="0"
@@ -284,9 +284,6 @@
                       on-comment="_handleComment"
                       on-link-bug="_handleLinkBug"
                       on-snooze="_handleSnooze"
-                      on-group="_handleGroup"
-                      on-ungroup="_handleUngroup"
-                      on-resolve="_handleResolve"
                       on-opened-change="_handleOpenedChange"
                       use-compact-view="[[useCompactView]]"
                   ></som-alert-item>
@@ -311,7 +308,6 @@
                   on-comment="_handleComment"
                   on-link-bug="_handleLinkBug"
                   on-snooze="_handleSnooze"
-                  on-group="_handleGroup"
                   examining
               ></som-alert-item>
               <som-examine alert="[[_examinedAlert]]" link-style="[[linkStyle]]" class="flex layout vertical"></som-examine>

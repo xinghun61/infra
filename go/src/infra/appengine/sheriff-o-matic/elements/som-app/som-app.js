@@ -403,20 +403,6 @@
       return activeRequests !== 0;
     },
 
-    _countBuilders: function(alert) {
-      if (alert.grouped && alert.alerts) {
-        let count = 0;
-        for (let i in alert.alerts) {
-          count += this._countBuilders(alert.alerts[i]);
-        }
-        return count;
-      } else if (alert.extension && alert.extension.builders) {
-        return alert.extension.builders.length;
-      } else {
-        return 1;
-      }
-    },
-
     _computeAlerts: function(
         alertsData, annotations, showInfraFailures, isTrooperPage) {
       if (!alertsData || !alertsData.base) {
@@ -437,63 +423,7 @@
           });
         }
 
-        let alertItems = [];
-        let groups = {};
-        for (let i in alerts) {
-          let alert = alerts[i];
-          let ann = this.computeAnnotation(annotations, alert);
-          if (ann.groupID) {
-            if (!(ann.groupID in groups)) {
-              let group = {
-                key: ann.groupID,
-                title: ann.groupID,
-                body: ann.groupID,
-                severity: alert.severity,
-                time: alert.time,
-                start_time: alert.start_time,
-                links: [],
-                tags: [],
-                type: alert.type,
-                extension: {stages: [], builders: [], grouped: true},
-                grouped: true,
-                alerts: [],
-              }
-
-              // Group name is stored using the groupID annotation.
-              let groupAnn = this.computeAnnotation(annotations, group);
-              if (groupAnn.groupID) {
-                group.title = groupAnn.groupID;
-              }
-
-              groups[ann.groupID] = group;
-              alertItems.push(group);
-            }
-            let group = groups[ann.groupID];
-            if (alert.severity < group.severity) {
-              group.severity = alert.severity;
-            }
-            if (alert.time > group.time) {
-              group.time = alert.time;
-            }
-            if (alert.start_time < group.start_time) {
-              group.start_time = alert.start_time;
-            }
-            group.links = group.links.concat(alert.links);
-            group.tags = group.tags.concat(alert.tags);
-            if (alert.extension) {
-              this._mergeStages(group.extension.stages, alert.extension.stages,
-                                alert.extension.builders);
-              this._mergeBuilders(group.extension.builders,
-                                  alert.extension.builders,
-                                  alert.extension.stages);
-            }
-            group.alerts.push(alert);
-          } else {
-            // Ungrouped alert.
-            alertItems.push(alert);
-          }
-        }
-        allAlerts = allAlerts.concat(alertItems);
+        allAlerts = allAlerts.concat(alerts);
       }
 
       if (!allAlerts) {
@@ -507,8 +437,12 @@
         let aHasBugs = aAnn.bugs && aAnn.bugs.length > 0;
         let bHasBugs = bAnn.bugs && bAnn.bugs.length > 0;
 
-        let aBuilders = this._countBuilders(a);
-        let bBuilders = this._countBuilders(b);
+        let aBuilders = a.extension && a.extension.builders ?
+            a.extension.builders.length :
+            1;
+        let bBuilders = b.extension && b.extension.builders ?
+            b.extension.builders.length :
+            1;
 
         let aHasSuspectedCLs = a.extension && a.extension.suspected_cls;
         let bHasSuspectedCLs = b.extension && b.extension.suspected_cls;
@@ -533,8 +467,6 @@
           }
           return a.severity - b.severity;
         }
-
-        // TODO(davidriley): Handle groups.
 
         if (aAnn.snoozed == bAnn.snoozed && aHasBugs == bHasBugs) {
           // We want to show alerts with Findit results above.
@@ -586,89 +518,6 @@
       return allAlerts;
     },
 
-    _mergeExtensions: function(extension) {
-      if (!this._haveGrouped(extension)) {
-        return extension;
-      }
-
-      // extension is a list of extensions.
-      let mergedExtension = {stages: [], builders:[]};
-      for (let i in extension) {
-        let subExtension = extension[i];
-        this._mergeStages(mergedExtension.stages, subExtension.stages,
-                          subExtension.builders);
-        this._mergeBuilders(mergedExtension.builders, subExtension.builders,
-                            subExtension.stages);
-      }
-
-      return mergedExtension;
-    },
-
-    _mergeStages: function(mergedStages, stages, builders) {
-      for (let i in stages) {
-        this._mergeStage(mergedStages, stages[i], builders);
-      }
-    },
-
-    _mergeStage: function(mergedStages, stage, builders) {
-      let merged = mergedStages.find((s) => {
-        return s.name == stage.name;
-      });
-
-      if (!merged) {
-        merged = {
-          name: stage.name,
-          status: stage.status,
-          logs: [],
-          links: [],
-          notes: stage.notes,
-          builders: [],
-        };
-
-        mergedStages.push(merged);
-      }
-      if (stage.status != merged.status && stage.status == 'failed') {
-        merged.status = 'failed';
-      }
-
-      // Only keep notes that are in common between all builders.
-      merged.notes = merged.notes.filter(function(n) {
-        return stage.notes.indexOf(n) !== -1;
-      });
-
-      merged.builders = merged.builders.concat(builders);
-    },
-
-    _mergeBuilders: function(mergedBuilders, builders, stages) {
-      for (let i in builders) {
-        this._mergeBuilder(mergedBuilders, builders[i], stages);
-      }
-    },
-
-    _mergeBuilder: function(mergedBuilders, builder, stages) {
-      let merged = mergedBuilders.find((b) => {
-        // TODO: In the future actually merge these into a single entry.
-        return b.name == builder.name &&
-               b.first_failure == builder.first_failure &&
-               b.latest_failure == builder.latest_failure;
-      });
-
-      if (!merged) {
-        merged = Object.assign({stages: []}, builder);
-        mergedBuilders.push(merged);
-      }
-
-      merged.start_time = Math.min(merged.start_time, builder.start_time);
-      merged.first_failure = Math.min(merged.first_failure,
-                                      builder.first_failure);
-      if (builder.latest_failure > merged.latest_failure) {
-        merged.url = builder.url;
-        merged.latest_failure = builder.latest_failure;
-      }
-
-      merged.stages = merged.stages.concat(stages);
-    },
-
 
     _computeHideJulie: function(
         alerts, fetchedAlerts, fetchingAlerts, fetchAlertsError, tree) {
@@ -681,8 +530,7 @@
 
     ////////////////////// Alert Categories ///////////////////////////
 
-    _alertItemsWithCategory: function(
-        alerts, annotations, category, isTrooperPage) {
+    _alertsWithCategory: function(alerts, category, isTrooperPage) {
       return alerts.filter(function(alert) {
         if (isTrooperPage) {
           return alert.tree == category;
@@ -764,8 +612,7 @@
 
       this.mutateLocalState((newState) => {
         let cat = evt.model.dataHost.dataHost.cat;
-        this._alertItemsWithCategory(this._alerts, this.annotations,
-                                     cat, this._isTrooperPage)
+        this._alertsWithCategory(this._alerts, cat, this._isTrooperPage)
             .forEach((alr) => {
               newState[alr.key] =
                   Object.assign(newState[alr.key] || {}, {opened: false});
@@ -780,23 +627,11 @@
 
       this.mutateLocalState((newState) => {
         let cat = evt.model.dataHost.dataHost.cat;
-        this._alertItemsWithCategory(this._alerts, this.annotations, 
-                                     cat, this._isTrooperPage)
+        this._alertsWithCategory(this._alerts, cat, this._isTrooperPage)
             .forEach((alr) => {
               newState[alr.key] =
                   Object.assign(newState[alr.key] || {}, {opened: true});
             });
-      });
-    },
-
-    _computeGroupTargets: function(alert, alerts) {
-      // Valid group targets:
-      // - must be of same type
-      // - must not be with itself
-      // - must not consist of two groups
-      return alerts.filter((a) => {
-        return a.type == alert.type && a.key != alert.key &&
-               (!alert.grouped || !a.grouped);
       });
     },
 
@@ -819,52 +654,5 @@
     _handleSnooze: function(evt) {
       this.$.annotations.handleSnooze(evt);
     },
-
-    _handleGroup: function(evt) {
-      this.$.annotations.handleGroup(
-          evt, this._computeGroupTargets(evt.target.alert, this._alerts));
-    },
-
-    _handleUngroup: function(evt) {
-      this.$.annotations.handleUngroup(evt);
-    },
-
-    _handleResolve: function(evt) {
-      if (evt.target.alert.grouped) {
-        this._resolveAlerts(evt.target.tree, evt.target.alert.alerts);
-      } else {
-        this._resolveAlerts(evt.target.tree, [evt.target.alert]);
-      }
-    },
-
-    _resolveAlerts: function(tree, alerts) {
-      let url = '/api/v1/resolve/' + encodeURIComponent(tree);
-      let keys = alerts.map((a) => {
-        return a.key;
-      });
-      let request = {
-        'keys': keys,
-        'resolved': true,
-      }
-      this.$.annotations
-          .postJSON(url, request)
-          .then(jsonParsePromise)
-          .then(this._resolveResponse.bind(this));
-    },
-
-    _resolveResponse: function(response) {
-      if (response.resolved) {
-        let alerts = this._alertsData[response.tree];
-        alerts = alerts.filter(function(alert) {
-          return !response.keys.find((key) => {
-            return alert.key == key;
-          });
-        });
-        // Ensure that the modification is captured.
-        this.set(['_alertsData', response.tree], alerts);
-      }
-      return response;
-    },
-
   });
 })();

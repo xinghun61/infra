@@ -62,21 +62,21 @@
     test('builder tab click selection', function(done) {
       element.alert = WEBKIT_TEST_FAILURE;
       flush(function() {
-        assert.equal('WebKit Linux:64889', element.selectedBuilder);
+        assert.equal('WebKit Linux', element.selectedBuilder);
         let tabs = element.$$('#builder-tabs');
         let secondTab = tabs.items[1];
 
         // Click on the second tab.
         secondTab.click();
 
-        assert.equal('WebKit Linux Trusty:12559', tabs.selected);
+        assert.equal('WebKit Linux Trusty', tabs.selected);
 
         // The second page should be selected.
         let builderPages = element.$$('#builder-pages');
-        assert.equal('WebKit Linux Trusty:12559', builderPages.selected);
+        assert.equal('WebKit Linux Trusty', builderPages.selected);
 
         // And the data bound element property should be updated.
-        assert.equal('WebKit Linux Trusty:12559', element.selectedBuilder);
+        assert.equal('WebKit Linux Trusty', element.selectedBuilder);
         done();
       });
     });
@@ -84,18 +84,18 @@
     test('builder tab property bound selection', function(done) {
       element.alert = WEBKIT_TEST_FAILURE;
       flush(function() {
-        assert.equal('WebKit Linux:64889', element.selectedBuilder);
+        assert.equal('WebKit Linux', element.selectedBuilder);
 
         // Set the data bound property.
-        element.selectedBuilder = 'WebKit Linux Trusty:12259';
+        element.selectedBuilder = 'WebKit Linux Trusty';
 
         // The second page should be selected.
         let builderPages = element.$$('#builder-pages');
-        assert.equal('WebKit Linux Trusty:12259', builderPages.selected);
+        assert.equal('WebKit Linux Trusty', builderPages.selected);
 
         // And the second tab should be selected.
         let tabs = element.$$('#builder-tabs');
-        assert.equal('WebKit Linux Trusty:12259', tabs.selected);
+        assert.equal('WebKit Linux Trusty', tabs.selected);
         done();
       });
     });
@@ -103,7 +103,7 @@
     test('webkit_test details', function(done) {
       element.alert = WEBKIT_TEST_FAILURE;
       flush(function() {
-        assert.equal('WebKit Linux:64889', element.selectedBuilder);
+        assert.equal('WebKit Linux', element.selectedBuilder);
         let tests = element.$$('som-webkit-tests');
         assert(!tests.hidden);
         assert.equal('WebKit Linux', tests.builder.name);

@@ -1,6 +1,7 @@
 package som
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"sort"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/urlfetch"
+	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
@@ -152,8 +154,19 @@ func storeAlertsSummary(c context.Context, a *analyzer.Analyzer, tree string, al
 	}
 	alertsSummary.Timestamp = messages.TimeToEpochTime(time.Now())
 
-	// TODO(seanmccullough): remove "milo." prefix.
-	return putAlertsDatastore(c, "milo."+tree, alertsSummary, true)
+	b, err := json.MarshalIndent(alertsSummary, "", "\t")
+	if err != nil {
+		return err
+	}
+
+	alertsJSON := &AlertsJSON{
+		// TODO(seanmccullough): remove "milo." prefix.
+		Tree:     datastore.MakeKey(c, "Tree", "milo."+tree),
+		Date:     clock.Now(c).UTC(),
+		Contents: b,
+	}
+
+	return datastore.Put(c, alertsJSON)
 }
 
 func getMiloDiffs(c context.Context, tree string) (*dmp.DiffMatchPatch, []dmp.Diff, error) {

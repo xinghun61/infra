@@ -15,9 +15,3 @@ indexes:
   properties:
   - name: Date
     direction: desc
-
-- kind: RevisionSummaryJSON
-  ancestor: yes
-  properties:
-  - name: Date
-    direction: asc
