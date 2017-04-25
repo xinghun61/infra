@@ -1,3 +1,27 @@
+# Release Notes sheriff-o-matic 2017-04-25
+
+- 11 commits, 0 bugs affected since 791981d (2017-04-17T23:27:06Z)
+- 5 Authors:
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+  - vadimsh@chromium.org
+  - chanli@chromium.org
+  - davidriley@chromium.org
+
+## Changes in this release
+
+- [Revert "[som] Add support for grouping of Chrome OS alerts."](https://chromium-review.googlesource.com/487086) (davidriley@chromium.org)
+- [[som] Add support for grouping of Chrome OS alerts.](https://chromium-review.googlesource.com/464387) (davidriley@chromium.org)
+- [[som] Add gerrit instance settings to tree configs/admin page](https://chromium-review.googlesource.com/484629) (seanmccullough@chromium.org)
+- [SoM: Update README with more information on deployment.](https://chromium-review.googlesource.com/484799) (zhangtiff@google.com)
+- [[som] Add basic geritt support for creating CLs](https://chromium-review.googlesource.com/483969) (seanmccullough@chromium.org)
+- [[som] Add gerrit project settings to tree configs/admin page](https://chromium-review.googlesource.com/483386) (seanmccullough@chromium.org)
+- [Roll luci-go DEPS.](https://chromium-review.googlesource.com/482576) (vadimsh@chromium.org)
+- [SoM: Change sidebar menus to use submenus.](https://chromium-review.googlesource.com/479753) (zhangtiff@google.com)
+- [[Som-Findit] Display a less obtrusive message when Findit doesn't have results for an alert.](https://chromium-review.googlesource.com/481881) (chanli@chromium.org)
+- [SoM: Tweak header styling.](https://chromium-review.googlesource.com/482422) (zhangtiff@google.com)
+- [Replace hiding alerts with bug with autosnoozing on link bug.](https://chromium-review.googlesource.com/482419) (zhangtiff@google.com)
+
 # Release Notes sheriff-o-matic 2017-04-17
 
 - 11 commits, 0 bugs affected since fa87fb4 (2017-04-11T22:38:25Z)
