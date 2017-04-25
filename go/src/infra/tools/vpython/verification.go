@@ -38,7 +38,7 @@ func verificationGen(c context.Context, vf application.VerificationFunc) {
 		{"linux", "armv6l", tag("cp27", "cp27mu", "linux_armv6l")},
 		{"linux", "armv6l", tag("cp27", "cp27mu", "linux_armv7l")},
 
-		{"mac", "amd64", tag("cp27", "cp27m", "macox_10_10_x86_64")},
+		{"mac", "amd64", tag("cp27", "cp27m", "macox_10_10_intel")},
 
 		{"windows", "386", tag("cp27", "cp27m", "win32")},
 		{"windows", "amd64", tag("cp27", "cp27m", "win_amd64")},
