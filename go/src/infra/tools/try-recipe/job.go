@@ -99,3 +99,61 @@ func JobDefinitionFromNewTaskRequest(r *NewTaskRequest) (*JobDefinition, error) 
 
 	return ret, nil
 }
+
+func updateMap(updates map[string]string, slc *[]*swarming.SwarmingRpcsStringPair) {
+	if len(updates) == 0 {
+		return
+	}
+
+	newSlice := make([]*swarming.SwarmingRpcsStringPair, 0, len(*slc)+len(updates))
+	for k, v := range updates {
+		if v != "" {
+			newSlice = append(newSlice, &swarming.SwarmingRpcsStringPair{
+				Key: k, Value: v})
+		}
+	}
+	for _, pair := range *slc {
+		if _, ok := updates[pair.Key]; !ok {
+			newSlice = append(newSlice, pair)
+		}
+	}
+
+	*slc = newSlice
+}
+
+func (jd *JobDefinition) Edit(dims, props, env map[string]string, recipe string) (*JobDefinition, error) {
+	if len(dims) == 0 && len(props) == 0 && len(env) == 0 && recipe == "" {
+		return jd, nil
+	}
+
+	ret := *jd
+	ret.SwarmingTask = &(*jd.SwarmingTask)
+
+	if recipe != "" {
+		ret.RecipeIsolatedHash = recipe
+	}
+
+	updateMap(dims, &ret.SwarmingTask.Properties.Dimensions)
+	updateMap(env, &ret.SwarmingTask.Properties.Env)
+
+	if len(props) > 0 {
+		ret.RecipeProperties = make(map[string]interface{}, len(jd.RecipeProperties)+len(props))
+		for k, v := range props {
+			if v != "" {
+				var obj interface{}
+				if err := json.NewDecoder(strings.NewReader(v)).Decode(&obj); err != nil {
+					return nil, err
+				}
+				ret.RecipeProperties[k] = obj
+			}
+		}
+		for k, v := range jd.RecipeProperties {
+			if new, ok := props[k]; ok && new == "" {
+				continue
+			}
+			ret.RecipeProperties[k] = v
+		}
+	}
+
+	return &ret, nil
+}
