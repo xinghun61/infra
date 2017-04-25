@@ -39,8 +39,7 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "build@HEAD",
-      "--output_manifest"
+      "build@HEAD"
     ],
     "cwd": "[START_DIR]",
     "env": {

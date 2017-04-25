@@ -107,8 +107,7 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "build@HEAD",
-      "--output_manifest"
+      "build@HEAD"
     ],
     "cwd": "[START_DIR]/build",
     "env": {
@@ -175,8 +174,7 @@
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
-      "recipe_engine@HEAD",
-      "--output_manifest"
+      "recipe_engine@HEAD"
     ],
     "cwd": "[START_DIR]/recipe_engine",
     "env": {
