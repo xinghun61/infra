@@ -31,11 +31,11 @@ _MILO_SWARMING_TASK_URL_PATTERN = re.compile(
     r'^https?://luci-milo\.appspot\.com/swarming/task/([^/]+)(?:/.*)?$')
 
 _BUILD_URL_PATTERN = re.compile(
-    r'^%s/([^/]+)/builders/([^/]+)/builds/([\d]+)(?:/.*)?$' %
+    r'^%s/([^/]+)/builders/([^/]+)/builds/(\d+)(?:/.*)?$' %
     _HOST_NAME_PATTERN)
 
 _MILO_BUILD_URL_PATTERN = re.compile(
-    r'^https?://luci-milo\.appspot\.com/buildbot/([^/]+)/([^/]+)/([^/]+)'
+    r'^https?://luci-milo\.appspot\.com/buildbot/([^/]+)/([^/]+)/(\d+)'
     '(?:/.*)?$')
 
 _MILO_ENDPOINT = 'https://luci-milo.appspot.com/prpc/milo.Buildbot'
@@ -43,7 +43,7 @@ _MILO_ENDPOINT_BUILD = '%s/GetBuildbotBuildJSON' % _MILO_ENDPOINT
 _MILO_ENDPOINT_MASTER = '%s/GetCompressedMasterJSON' % _MILO_ENDPOINT
 
 _STEP_URL_PATTERN = re.compile(
-    r'^%s/([^/]+)/builders/([^/]+)/builds/([\d]+)/steps/([^/]+)(/.*)?$' %
+    r'^%s/([^/]+)/builders/([^/]+)/builds/(\d+)/steps/([^/]+)(/.*)?$' %
     _HOST_NAME_PATTERN)
 
 _COMMIT_POSITION_PATTERN = re.compile(
