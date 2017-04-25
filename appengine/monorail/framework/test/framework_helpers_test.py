@@ -149,6 +149,26 @@ class UrlFormattingTest(unittest.TestCase):
       '/p/bar/issues/detail?id=123#c7',
       framework_helpers.FormatMovedProjectURL(mr, 'bar'))
 
+  def testFormatCanonicalURL(self):
+    mr = testing_helpers.MakeMonorailRequest(
+      path='/dude/wheres/my/car?foo=bar',
+      headers={'Host': 'example.com'})
+
+    self.assertEqual(
+      'http://example.com/dude/wheres/my/car?foo=bar',
+      framework_helpers.FormatCanonicalURL(
+        mr, ['bar', 'foo', 'baz']))
+
+    self.assertEqual(
+      'http://example.com/dude/wheres/my/car?foo=bar',
+      framework_helpers.FormatCanonicalURL(
+        mr, ['foo']))
+
+    self.assertEqual(
+      'http://example.com/dude/wheres/my/car',
+      framework_helpers.FormatCanonicalURL(
+        mr, []))
+
   def testFormatURL(self):
     mr = testing_helpers.MakeMonorailRequest()
     path = '/dude/wheres/my/car'

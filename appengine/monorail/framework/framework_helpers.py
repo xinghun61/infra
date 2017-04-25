@@ -211,6 +211,28 @@ def FormatAbsoluteURL(
   return '%s://%s%s%s' % (scheme, mr.request.host, project_base, path_and_args)
 
 
+def FormatCanonicalURL(mr, retain_query):
+  """Return an absolute canonical URL based on a request.
+
+  Args:
+    mr: info parsed from the current request.
+    retain_query: iterable of querystring keys to retain.
+
+  Returns:
+    A full url beginning with 'http[s]://'.  The URL will be in the configured
+    canonical domain with the same path as for the current request.
+  """
+  host = GetPreferredDomain(mr.request.host)
+  qs = ''
+  if mr.request.query_string:
+    # we only retain a single value for retain_query - multi-valued
+    # parameters not currently handled.
+    qs_params = [(k, mr.request.params.get(k))
+                 for k in mr.request.GET.keys() if k in retain_query]
+    qs = _FormatQueryString('', qs_params)
+  return '%s://%s%s%s' % (mr.request.scheme, host, mr.request.path, qs)
+
+
 def FormatMovedProjectURL(mr, moved_to):
   """Return a transformation of the given url into the given project.
 

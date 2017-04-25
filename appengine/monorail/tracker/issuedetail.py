@@ -352,6 +352,7 @@ class IssueDetail(issuepeek.IssuePeek):
         'num_detail_rows': len(comment_views) + 4,
         'noisy': ezt.boolean(tracker_helpers.IsNoisy(
             len(comment_views), issue.star_count)),
+        'link_rel_canonical': framework_helpers.FormatCanonicalURL(mr, ['id']),
 
         'flipper': flipper,
         'flipper_hotlist_id': self.hotlist_id,
