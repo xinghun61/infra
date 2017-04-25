@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -16,17 +17,17 @@ import (
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/flag/stringmapflag"
 	"github.com/luci/luci-go/common/logging"
 )
+
+const bbServerDefault = "https://cr-buildbucket.appspot.com"
 
 func builderDefinitionCmd(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
 		UsageLine: "builder-def -B bucket_name -builder builder_name [-recipes <hash>] [-d dimension=value]*",
 		ShortDesc: "Pulls a builder definition from buildbucket and prints a swarming task definition.",
-		LongDesc: `Obtains the builder definition from buildbucket and renders a stanadlone
-		swarming task definition. If -recipes is supplied, the rendered definition will
-		be setup to run that recipe bundle.`,
+		LongDesc: `Obtains the builder definition from buildbucket and prints a modified
+		version of it as a JobDefinition.`,
 
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdBuilderDefinition{}
@@ -35,8 +36,10 @@ func builderDefinitionCmd(authOpts auth.Options) *subcommands.Command {
 			ret.logCfg.AddFlags(&ret.Flags)
 			ret.authFlags.Register(&ret.Flags, authOpts)
 
-			ret.Flags.StringVar(&ret.recipesHash, "recipes", "RECIPE_HASH", "a value for the recipe isolate hash.")
-			ret.Flags.Var(&ret.dimensions, "d", "set a swarming dimension. Will override buildbucket's value, if any.")
+			ret.Flags.StringVar(&ret.bucket, "B", "", "The bucket to grab from.")
+			ret.Flags.StringVar(&ret.builder, "builder", "", "The builder to grab from.")
+
+			ret.Flags.StringVar(&ret.bbServer, "bbserver", bbServerDefault, "The buildbucket server to grab the definition from.")
 			return ret
 		},
 	}
@@ -48,8 +51,9 @@ type cmdBuilderDefinition struct {
 	logCfg    logging.Config
 	authFlags authcli.Flags
 
-	recipesHash string
-	dimensions  stringmapflag.Value
+	bbServer string
+	bucket   string
+	builder  string
 }
 
 func (c *cmdBuilderDefinition) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
@@ -57,24 +61,12 @@ func (c *cmdBuilderDefinition) validateFlags(ctx context.Context, args []string)
 		err = errors.Reason("unexpected positional arguments: %(args)q").D("args", args).Err()
 		return
 	}
-
-	for k, v := range c.dimensions {
-		if k == "" {
-			err = errors.New("dimension has empty name")
-			return
-		}
-		if v == "" {
-			err = errors.Reason("dimension %(key)q has empty value").D("dimension", k).Err()
-			return
-		}
-	}
-
 	return c.authFlags.Options()
 }
 
 func (c *cmdBuilderDefinition) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
-	_, err := c.validateFlags(ctx, args)
+	authOpts, err := c.validateFlags(ctx, args)
 	if err != nil {
 		logging.Errorf(ctx, "bad arguments: %s", err)
 		fmt.Fprintln(os.Stderr)
@@ -82,5 +74,18 @@ func (c *cmdBuilderDefinition) Run(a subcommands.Application, args []string, env
 		return 1
 	}
 
-	panic("not implemented")
+	jd, err := grabBuilderDefinition(ctx, c.bbServer, c.bucket, c.builder, authOpts)
+	if err != nil {
+		logging.Errorf(ctx, "fatal error: %s", err)
+		return 1
+	}
+
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(jd); err != nil {
+		logging.Errorf(ctx, "fatal error: %s", err)
+		return 1
+	}
+
+	return 0
 }
