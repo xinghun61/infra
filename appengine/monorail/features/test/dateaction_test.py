@@ -5,6 +5,7 @@
 
 """Unittest for the dateaction module."""
 
+import logging
 import time
 import unittest
 
@@ -14,6 +15,7 @@ from google.appengine.api import taskqueue
 
 from features import dateaction
 from framework import framework_constants
+from framework import framework_views
 from framework import timestr
 from framework import urls
 from proto import tracker_pb2
@@ -71,6 +73,7 @@ class DateActionCronTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     self.servlet.HandleRequest(mr)
+    self.mox.VerifyAll()
 
   def SetUpEnqueueDateAction(self, issue_id):
     self.mox.StubOutWithMock(taskqueue, 'add')
@@ -86,12 +89,14 @@ class DateActionCronTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     self.servlet.HandleRequest(mr)
+    self.mox.VerifyAll()
 
   def testEnqueueDateAction(self):
     self.SetUpEnqueueDateAction(78901)
     self.mox.ReplayAll()
 
     self.servlet.EnqueueDateAction(78901)
+    self.mox.VerifyAll()
 
 
 class IssueDateActionTaskTest(unittest.TestCase):
@@ -99,7 +104,10 @@ class IssueDateActionTaskTest(unittest.TestCase):
   def setUp(self):
     self.services = service_manager.Services(
         user=fake.UserService(),
+        usergroup=fake.UserGroupService(),
+        features=fake.FeaturesService(),
         issue=fake.IssueService(),
+        project=fake.ProjectService(),
         config=fake.ConfigService())
     self.servlet = dateaction.IssueDateActionTask(
         'req', 'res', services=self.services)
@@ -121,6 +129,10 @@ class IssueDateActionTaskTest(unittest.TestCase):
             None, None, tracker_pb2.DateAction.NO_ACTION, 'doc', False),
         ]
     self.services.config.StoreConfig('cnxn', self.config)
+    self.project = self.services.project.TestAddProject('proj', project_id=789)
+    self.owner = self.services.user.TestAddUser('owner@example.com', 111L)
+    self.date_action_user = self.services.user.TestAddUser(
+        'date-action-user@example.com', 555L)
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -133,10 +145,20 @@ class IssueDateActionTaskTest(unittest.TestCase):
         789, 1, 'summary', 'New', 111L, issue_id=78901))
     self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
         mr.cnxn, 78901)))
+    self.mox.ReplayAll()
 
     self.servlet.HandleRequest(mr)
     self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
         mr.cnxn, 78901)))
+    self.mox.VerifyAll()
+
+  def SetUpEnqueueOutboundEmailTask(self, num_emails):
+    self.mox.StubOutWithMock(taskqueue, 'add')
+    for _ in range(num_emails):
+      taskqueue.add(
+        queue_name='outboundemail',
+        url=urls.OUTBOUND_EMAIL_TASK + '.do',
+        payload=mox.IgnoreArg())
 
   def testHandleRequest_IssueHasOneArriveDate(self):
     _request, mr = testing_helpers.GetRequestObjects(
@@ -150,8 +172,11 @@ class IssueDateActionTaskTest(unittest.TestCase):
         tracker_bizobj.MakeFieldValue(123, None, None, None, now, False)]
     self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
         mr.cnxn, 78901)))
+    self.SetUpEnqueueOutboundEmailTask(1)
+    self.mox.ReplayAll()
 
     self.servlet.HandleRequest(mr)
+    self.mox.VerifyAll()
     comments = self.services.issue.GetCommentsForIssue(mr.cnxn, 78901)
     self.assertEqual(2, len(comments))
     self.assertEqual(
@@ -173,11 +198,44 @@ class IssueDateActionTaskTest(unittest.TestCase):
         ]
     self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
         mr.cnxn, 78901)))
+    self.SetUpEnqueueOutboundEmailTask(1)
+    self.mox.ReplayAll()
 
     self.servlet.HandleRequest(mr)
+    self.mox.VerifyAll()
     comments = self.services.issue.GetCommentsForIssue(mr.cnxn, 78901)
     self.assertEqual(2, len(comments))
     self.assertEqual(
       'The EoL date has arrived: %s\n'
       'The NextAction date has arrived: %s' % (date_str, date_str),
       comments[1].content)
+
+  def testMakeEmailTasks(self):
+    issue = fake.MakeTestIssue(
+        789, 1, 'summary', 'New', self.owner.user_id, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    now = int(time.time())
+    issue.field_values = [
+        tracker_bizobj.MakeFieldValue(123, None, None, None, now, False),
+        tracker_bizobj.MakeFieldValue(124, None, None, None, now, False),
+        tracker_bizobj.MakeFieldValue(125, None, None, None, now, False),
+        ]
+    issue.project_name = 'proj'
+    comment = tracker_pb2.IssueComment()
+    comment.project_id = self.project.project_id
+    comment.user_id = self.date_action_user.user_id
+    comment.content = 'Some date(s) arrived...'
+    config = self.services.config.GetProjectConfig('fake cnxn', 789)
+    users_by_id = framework_views.MakeAllUserViews(
+        'fake cnxn', self.services.user,
+        [self.owner.user_id, self.date_action_user.user_id])
+
+    tasks = self.servlet._MakeEmailTasks(
+        'fake cnxn', issue, self.project, config, comment,
+        'example-app.appspot.com', users_by_id)
+    self.assertEqual(1, len(tasks))
+    notify_owner_task = tasks[0]
+    self.assertEqual('owner@example.com', notify_owner_task['to'])
+    self.assertEqual(
+        'Ping on issue 1 in proj: summary',
+        notify_owner_task['subject'])

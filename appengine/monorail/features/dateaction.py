@@ -18,16 +18,20 @@ from google.appengine.api import taskqueue
 import settings
 
 from features import notify_helpers
+from features import notify_reasons
 from framework import framework_constants
 from framework import framework_helpers
+from framework import framework_views
 from framework import jsonfeed
+from framework import permissions
 from framework import timestr
 from framework import urls
 from proto import tracker_pb2
+from tracker import tracker_bizobj
+from tracker import tracker_views
 
 
 TEMPLATE_PATH = framework_constants.TEMPLATE_PATH
-
 
 class DateActionCron(jsonfeed.InternalTask):
 
@@ -101,6 +105,8 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
     issue_id = mr.GetPositiveIntParam('issue_id')
     hostport = framework_helpers.GetHostPort()
     issue = self.services.issue.GetIssue(mr.cnxn, issue_id)
+    project = self.services.project.GetProject(mr.cnxn, issue.project_id)
+    config = self.services.config.GetProjectConfig(mr.cnxn, issue.project_id)
     pings = self._CalculateIssuePings(mr.cnxn, issue)
     if not pings:
       logging.warning('Issue %r has no dates to ping afterall?', issue_id)
@@ -109,9 +115,60 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
     author_email_addr = '%s@%s' % (settings.date_action_ping_author, hostport)
     date_action_user_id = self.services.user.LookupUserID(
         mr.cnxn, author_email_addr, autocreate=True)
-    self.services.issue.CreateIssueComment(
+    comment = self.services.issue.CreateIssueComment(
         mr.cnxn, issue.project_id, issue.local_id, date_action_user_id, content)
-    # TODO(jrobbins): generate emails.
+
+    users_by_id = framework_views.MakeAllUserViews(
+        mr.cnxn, self.services.user,
+        tracker_bizobj.UsersInvolvedInIssues([issue]),
+        [comment.user_id])
+    logging.info('users_by_id is %r', users_by_id)
+    tasks = self._MakeEmailTasks(
+      mr.cnxn, issue, project, config, comment, hostport, users_by_id)
+
+    notified = notify_helpers.AddAllEmailTasks(tasks)
+    return {
+        'notified': notified,
+        }
+
+  def _MakeEmailTasks(
+      self, cnxn, issue, project, config, comment, hostport, users_by_id):
+    """Return a list of dicts for tasks to notify people."""
+    detail_url = framework_helpers.IssueCommentURL(
+        hostport, project, issue.local_id, seq_num=comment.sequence)
+    email_data = {
+        'issue': tracker_views.IssueView(issue, users_by_id, config),
+        'summary': issue.summary,
+        'ping_comment_content': comment.content,
+        'detail_url': detail_url,
+        }
+
+    # TODO(jrobbins): when we include the context of the comments that
+    # set the date values, we will need to generate member and non-member
+    # body text so that only members see all the emails revealed.
+    body = self.email_template.GetResponse(email_data)
+    logging.info('body for members and non-members is:\n%r' % body)
+    contributor_could_view = permissions.CanViewIssue(
+        set(), permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET,
+        project, issue)
+    # Note: We never notify the reporter of any issue just because they
+    # reported it, only if they star it.
+    # TODO(jrobbins): add an pref for starrers.
+    starrer_ids = []
+
+    # TODO(jrobbins): consider IsNoisy() when we support notifying starrers.
+    group_reason_list = notify_reasons.ComputeGroupReasonList(
+        cnxn, self.services, project, issue, config, users_by_id,
+        [], contributor_could_view, starrer_ids=starrer_ids,
+        commenter_in_project=True)
+
+    commenter_view = users_by_id[comment.user_id]
+    email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
+        group_reason_list, issue, body, body,
+        project, hostport, commenter_view, detail_url, seq_num=comment.sequence,
+        subject_prefix='Ping on issue ', compact_subject_prefix='Ping ')
+
+    return email_tasks
 
   def _CalculateIssuePings(self, cnxn, issue):
     """Return a list of (field, timestamp) pairs for dates that should ping."""

@@ -259,7 +259,7 @@ classifier_project_id = 'project-id-testing-only'
 
 # Necessary for tests.
 if 'APPLICATION_ID' not in os.environ:
-  os.environ['APPLICATION_ID'] = 'testing app'
+  os.environ['APPLICATION_ID'] = 'testing-app'
 
 if dev_mode:
   # This is monorail-staging.  There is no local stub for Cloud Prediction.

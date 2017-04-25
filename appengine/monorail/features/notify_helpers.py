@@ -125,7 +125,8 @@ class NotifyTaskBase(jsonfeed.InternalTask):
 
 def MakeBulletedEmailWorkItems(
     group_reason_list, issue, body_for_non_members, body_for_members,
-    project, hostport, commenter_view, detail_url, seq_num=None):
+    project, hostport, commenter_view, detail_url, seq_num=None,
+    subject_prefix=None, compact_subject_prefix=None):
   """Make a list of dicts describing email-sending tasks to notify users.
 
   Args:
@@ -138,6 +139,8 @@ def MakeBulletedEmailWorkItems(
     commenter_view: UserView for the user who made the comment.
     detail_url: str direct link to the issue.
     seq_num: optional int sequence number of the comment.
+    subject_prefix: optional string to customize the email subject line.
+    compact_subject_prefix: optional string to customize the email subject line.
 
   Returns:
     A list of dictionaries, each with all needed info to send an individual
@@ -155,7 +158,8 @@ def MakeBulletedEmailWorkItems(
     email_tasks.append(_MakeEmailWorkItem(
         memb_addr_perm, reasons, issue, body_for_non_members,
         body_for_members, project, hostport, commenter_view, detail_url,
-        seq_num=seq_num))
+        seq_num=seq_num, subject_prefix=subject_prefix,
+        compact_subject_prefix=compact_subject_prefix))
 
   return email_tasks
 
@@ -171,11 +175,15 @@ def _TruncateBody(body):
 def _MakeEmailWorkItem(
     (recipient_is_member, to_addr, user, reply_perm), reasons, issue,
     body_for_non_members, body_for_members, project, hostport, commenter_view,
-     detail_url, seq_num=None):
+    detail_url, seq_num=None, subject_prefix=None, compact_subject_prefix=None):
   """Make one email task dict for one user, includes a detailed reason."""
-  subject_format = 'Issue %(local_id)d in %(project_name)s: %(summary)s'
+  subject_format = (
+      (subject_prefix or 'Issue ') +
+      '%(local_id)d in %(project_name)s: %(summary)s')
   if user and user.email_compact_subject:
-    subject_format = '%(project_name)s:%(local_id)d: %(summary)s'
+    subject_format = (
+        (compact_subject_prefix or '') +
+        '%(project_name)s:%(local_id)d: %(summary)s')
 
   subject = subject_format % {
     'local_id': issue.local_id,

@@ -435,8 +435,7 @@ class UserService(object):
     if email in self.users_by_email:
       return
     user_id = framework_helpers.MurmurHash3_x86_32(email)
-    self.users_by_id[user_id] = email
-    self.users_by_email[email] = user_id
+    self.TestAddUser(email, user_id)
 
   def _CreateUsers(self, cnxn, emails):
     for email in emails:

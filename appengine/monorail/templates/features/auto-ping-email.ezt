@@ -1,1 +1,7 @@
-TODO(jrobbins): this is the auto-ping email.
+[ping_comment_content]
+[detail_url]
+
+[# TODO(jrobbins): field descriptions]
+[# TODO(jrobbins): component triage notes]
+[# TODO(jrobbins): hotlist triage notes]
+[# TODO(jrobbins): context comment that set the date value]
