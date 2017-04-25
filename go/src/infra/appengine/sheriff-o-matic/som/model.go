@@ -32,12 +32,44 @@ type Tree struct {
 	GerritInstance string   `json:"gerrit_instance,omitempty"`
 }
 
-// AlertsJSON is the a JSON blob of alerts for a tree.
+// AlertsJSON is the JSON blob of alerts for a tree.
 type AlertsJSON struct {
 	ID       int64          `gae:"$id" json:"-"`
 	Tree     *datastore.Key `gae:"$parent"`
 	Date     time.Time
 	Contents []byte `gae:",noindex"`
+}
+
+// AlertJSON is the JSON blob of an alert for a tree.
+type AlertJSON struct {
+	ID           string         `gae:"$id" json:"-"`
+	Tree         *datastore.Key `gae:"$parent"`
+	Date         time.Time
+	Contents     []byte `gae:",noindex"`
+	Resolved     bool
+	AutoResolved bool
+	ResolvedDate time.Time
+}
+
+// RevisionSummaryJSON is the JSON blob of a RevisionSummary for a tree.
+type RevisionSummaryJSON struct {
+	ID       string         `gae:"$id" json:"-"`
+	Tree     *datastore.Key `gae:"$parent"`
+	Date     time.Time
+	Contents []byte `gae:",noindex"`
+}
+
+// ResolveRequest is the format of the request to resolve alerts.
+type ResolveRequest struct {
+	Keys     []string `json:"keys"`
+	Resolved bool     `json:"resolved"`
+}
+
+// ResolveResponse is the format of the response to resolve alerts.
+type ResolveResponse struct {
+	Tree     string   `json:"tree"`
+	Keys     []string `json:"keys"`
+	Resolved bool     `json:"resolved"`
 }
 
 // Annotation is any information sheriffs want to annotate an alert with. For
@@ -48,6 +80,7 @@ type Annotation struct {
 	Bugs             []string  `gae:",noindex" json:"bugs"`
 	Comments         []Comment `gae:",noindex" json:"comments"`
 	SnoozeTime       int       `json:"snoozeTime"`
+	GroupID          string    `gae:",noindex" json:"group_id"`
 	ModificationTime time.Time
 }
 
@@ -62,12 +95,14 @@ type annotationAdd struct {
 	Time     int      `json:"snoozeTime"`
 	Bugs     []string `json:"bugs"`
 	Comments []string `json:"comments"`
+	GroupID  string   `json:"group_id"`
 }
 
 type annotationRemove struct {
 	Time     bool     `json:"snoozeTime"`
 	Bugs     []string `json:"bugs"`
 	Comments []int    `json:"comments"`
+	GroupID  bool     `json:"group_id"`
 }
 
 // Extracts the bug id from a URL or returns the input if the user entered a
@@ -153,6 +188,11 @@ func (a *Annotation) add(c context.Context, r io.Reader) (bool, error) {
 		modified = true
 	}
 
+	if change.GroupID != "" {
+		a.GroupID = change.GroupID
+		modified = true
+	}
+
 	if modified {
 		a.ModificationTime = clock.Now(c)
 	}
@@ -192,6 +232,11 @@ func (a *Annotation) remove(c context.Context, r io.Reader) (bool, error) {
 			return false, errors.New("Invalid comment index")
 		}
 		a.Comments = append(a.Comments[:i], a.Comments[i+1:]...)
+		modified = true
+	}
+
+	if change.GroupID {
+		a.GroupID = ""
 		modified = true
 	}
 

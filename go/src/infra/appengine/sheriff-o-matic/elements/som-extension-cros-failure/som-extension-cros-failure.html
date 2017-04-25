@@ -19,12 +19,12 @@
        padding-bottom: 0;
      }
      .stage {
-        border-radius: 2px;
-        border: 1px solid #dcdcdc;
-        font-size: smaller;
-        margin: .1em;
-        padding: .3em 0.5em;
-        display: inline-block;
+       border-radius: 2px;
+       border: 1px solid #dcdcdc;
+       font-size: smaller;
+       margin: .1em;
+       padding: .3em 0.5em;
+       display: block;
      }
      .stage-failed {
        background: #e88;
@@ -38,6 +38,36 @@
        background: #fa3;
        color: #f4f4f4;
      }
+     .builder {
+       border-radius: 2px;
+       border: 1px solid #dcdcdc;
+       font-size: smaller;
+       margin: .1em;
+       padding: .3em 0.5em;
+       display: inline-block;
+     }
+     .build-list {
+       flex-wrap: nowrap;
+       flex-direction: row;
+       display: flex;
+       align-items: flex-end;
+     }
+     .builds {
+       margin: .1em;
+       padding: .3em 0.5em;
+       flex-grow: 1;
+     }
+     paper-tabs {
+       color: white;
+       height: 15px;
+     }
+     paper-tab {
+       color: white;
+       font-size: smaller;
+       height: 8px;
+       margin: .1em;
+       padding: .1em 0.2em;
+     }
     </style>
     <template is="dom-if" if="[[_isCrosFailure(type)]]">
       <div>
@@ -46,14 +76,25 @@
             <div class="header">
               Unsuccessful stages:
             </div>
-            <ul>
               <template is="dom-repeat" items="[[extension.stages]]" as="stage">
-                <li id="stage">
+                <div id="stage">
                   <span class$="[[_classForStage(stage)]]">
-                    [[stage.name]] [[stage.status]]
-                    <template is="dom-repeat" items="[[stage.logs]]" as="logs">
-                      [<a target="_blank" href$="[[logs.href]]">[[logs.title]]</a>]
-                    </template>
+                    <div class="build-list">
+                      [[stage.name]] [[stage.status]]
+                      <template is="dom-repeat" items="[[stage.logs]]" as="logs">
+                        [<a target="_blank" href$="[[logs.href]]">[[logs.title]]</a>]
+                      </template>
+                      <template is="dom-if" if="[[_haveStageBuilders(stage)]]">
+                          [[[_stageBuilderText(stage, extension.builders)]]]
+                          <span class="builds">
+                            <paper-tabs scrollable selectable="false">
+                              <template is="dom-repeat" items="[[stage.builders]]" as="builder">
+                                <paper-tab>[[_buildRange(builder)]]</paper-tab>
+                              </template>
+                            </paper-tabs>
+                          </span>
+                      </template>
+                    </div>
                     <ul>
                       <template is="dom-repeat" items="[[stage.links]]" as="link">
                         <li id="stage_links">
@@ -69,9 +110,8 @@
                       </template>
                     </ul>
                   </span>
-                </li>
+                </div>
               </template>
-            <ul>
           </template>
         </div>
       </div>

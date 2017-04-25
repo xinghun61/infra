@@ -50,51 +50,46 @@ func getTrooperAlerts(c context.Context, useMilo bool) ([]byte, error) {
 	// Assume that none of the timestamps will be from after right now.
 	timestamp := messages.EpochTime(time.Now().Unix())
 
+	result["revision_summaries"] = nil
+
 	for _, t := range trees {
-		q := datastore.NewQuery("AlertsJSON")
+		q := datastore.NewQuery("AlertJSON")
 		name := t.Name
 		if useMilo {
 			name = "milo." + name
 		}
 		q = q.Ancestor(datastore.MakeKey(c, "Tree", name))
-		q = q.Order("-Date")
-		q = q.Limit(1)
+		q = q.Eq("Resolved", false)
 
-		alertsJSON := []*AlertsJSON{}
-		err := datastore.GetAll(c, q, &alertsJSON)
+		alertResults := []*AlertJSON{}
+		err := datastore.GetAll(c, q, &alertResults)
 		if err != nil {
 			return nil, err
 		}
 
-		if len(alertsJSON) > 0 {
-			data := alertsJSON[0].Contents
-
-			result["date"] = alertsJSON[0].Date
-
-			alertsSummary := &messages.AlertsSummary{}
-
-			err = json.Unmarshal(data, alertsSummary)
+		for _, alertJSON := range alertResults {
+			alert := &messages.Alert{}
+			err = json.Unmarshal(alertJSON.Contents, alert)
 			if err != nil {
 				return nil, err
 			}
 
-			newTime := alertsSummary.Timestamp
+			newTime := messages.EpochTime(alertJSON.Date.Unix())
 			if newTime > 0 && newTime < timestamp {
 				timestamp = newTime
 			}
-			result["revision_summaries"] = alertsSummary.RevisionSummaries
 
-			for _, a := range alertsSummary.Alerts {
-				switch a.Type {
-				case messages.AlertStaleMaster,
-					messages.AlertHungBuilder,
-					messages.AlertOfflineBuilder,
-					messages.AlertIdleBuilder,
-					messages.AlertInfraFailure:
-					newAlert := &TrooperAlert{a, t.Name}
-					alerts = append(alerts, newAlert)
-					break
-				}
+			result["date"] = alertJSON.Date
+
+			switch alert.Type {
+			case messages.AlertStaleMaster,
+				messages.AlertHungBuilder,
+				messages.AlertOfflineBuilder,
+				messages.AlertIdleBuilder,
+				messages.AlertInfraFailure:
+				newAlert := &TrooperAlert{*alert, t.Name}
+				alerts = append(alerts, newAlert)
+				break
 			}
 		}
 	}

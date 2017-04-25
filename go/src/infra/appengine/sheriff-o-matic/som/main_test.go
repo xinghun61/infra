@@ -31,6 +31,7 @@ import (
 	"github.com/luci/luci-go/appengine/gaetesting"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/clock/testclock"
+	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/authtest"
 	"github.com/luci/luci-go/server/auth/xsrf"
@@ -46,6 +47,8 @@ func TestMain(t *testing.T) {
 
 	Convey("main", t, func() {
 		c := gaetesting.TestingContext()
+		c = gologger.StdConfig.Use(c)
+
 		cl := testclock.New(testclock.TestRecentTimeUTC)
 		c = clock.Set(c, cl)
 
@@ -130,7 +133,18 @@ func TestMain(t *testing.T) {
 					},
 				},
 			}
-			datastore.GetTestable(c).AddIndexes(&alertsIdx)
+			revisionSummaryIdx := datastore.IndexDefinition{
+				Kind:     "RevisionSummaryJSON",
+				Ancestor: true,
+				SortBy: []datastore.IndexColumn{
+					{
+						Property:   "Date",
+						Descending: false,
+					},
+				},
+			}
+			indexes := []*datastore.IndexDefinition{&alertsIdx, &revisionSummaryIdx}
+			datastore.GetTestable(c).AddIndexes(indexes...)
 
 			Convey("/trees", func() {
 				Convey("no trees yet", func() {
@@ -170,10 +184,28 @@ func TestMain(t *testing.T) {
 			})
 
 			Convey("/alerts", func() {
-				alerts := &AlertsJSON{
+				contents, _ := json.Marshal(&messages.Alert{
+					Key: "test",
+				})
+				alertJSON := &AlertJSON{
+					ID:       "test",
 					Tree:     datastore.MakeKey(c, "Tree", "oak"),
-					Contents: []byte("hithere"),
+					Resolved: false,
+					Contents: []byte(contents),
 				}
+				oldRevisionSummaryJSON := &RevisionSummaryJSON{
+					ID:       "rev1",
+					Tree:     datastore.MakeKey(c, "Tree", "oak"),
+					Date:     time.Unix(1, 0).UTC(),
+					Contents: []byte(contents),
+				}
+				newRevisionSummaryJSON := &RevisionSummaryJSON{
+					ID:       "rev2",
+					Tree:     datastore.MakeKey(c, "Tree", "oak"),
+					Date:     clock.Now(c),
+					Contents: []byte(contents),
+				}
+
 				Convey("GET", func() {
 					Convey("no alerts yet", func() {
 						getAlertsHandler(&router.Context{
@@ -183,14 +215,14 @@ func TestMain(t *testing.T) {
 							Params:  makeParams("tree", "oak"),
 						})
 
-						r, err := ioutil.ReadAll(w.Body)
+						_, err := ioutil.ReadAll(w.Body)
 						So(err, ShouldBeNil)
-						body := string(r)
-						So(w.Code, ShouldEqual, 404)
-						So(body, ShouldContainSubstring, "Tree")
+						So(w.Code, ShouldEqual, 200)
 					})
 
-					So(datastore.Put(c, alerts), ShouldBeNil)
+					So(datastore.Put(c, alertJSON), ShouldBeNil)
+					So(datastore.Put(c, oldRevisionSummaryJSON), ShouldBeNil)
+					So(datastore.Put(c, newRevisionSummaryJSON), ShouldBeNil)
 
 					Convey("basic alerts", func() {
 						getAlertsHandler(&router.Context{
@@ -202,9 +234,14 @@ func TestMain(t *testing.T) {
 
 						r, err := ioutil.ReadAll(w.Body)
 						So(err, ShouldBeNil)
-						body := string(r)
 						So(w.Code, ShouldEqual, 200)
-						So(body, ShouldEqual, "hithere")
+						summary := &messages.AlertsSummary{}
+						err = json.Unmarshal(r, &summary)
+						So(err, ShouldBeNil)
+						So(summary.Alerts, ShouldHaveLength, 1)
+						So(summary.Alerts[0].Key, ShouldEqual, "test")
+						So(summary.RevisionSummaries, ShouldHaveLength, 1)
+						So(summary.RevisionSummaries, ShouldContainKey, "rev2")
 					})
 
 					Convey("trooper alerts", func() {
@@ -222,12 +259,13 @@ func TestMain(t *testing.T) {
 								},
 							},
 						}
-						asBytes, err := json.Marshal(alertsSummary)
+						asBytes, err := json.Marshal(alertsSummary.Alerts[0])
 						So(err, ShouldBeNil)
 
-						datastore.Put(c, &AlertsJSON{
-							ID:       1,
+						datastore.Put(c, &AlertJSON{
+							ID:       "1",
 							Tree:     datastore.MakeKey(c, "Tree", "chromium"),
+							Date:     time.Unix(1, 0).UTC(),
 							Contents: asBytes,
 						})
 						ta.CatchupIndexes()
@@ -243,7 +281,7 @@ func TestMain(t *testing.T) {
 						So(err, ShouldBeNil)
 						body := string(r)
 						So(w.Code, ShouldEqual, 200)
-						So(body, ShouldEqual, `{"alerts":[{"key":"","title":"","body":"","severity":0,"time":0,"start_time":0,"links":null,"tags":null,"type":"offline-builder","extension":null,"tree":"chromium"}],"date":"0001-01-01T00:00:00Z","revision_summaries":null,"swarming":{"dead":null,"quarantined":null,"errors":["auth: the library is not properly configured"]},"timestamp":1}`)
+						So(body, ShouldEqual, `{"alerts":[{"key":"","title":"","body":"","severity":0,"time":0,"start_time":0,"links":null,"tags":null,"type":"offline-builder","extension":null,"tree":"chromium"}],"date":"1970-01-01T00:00:01Z","revision_summaries":null,"swarming":{"dead":null,"quarantined":null,"errors":["auth: the library is not properly configured"]},"timestamp":1}`)
 					})
 
 					Convey("getSwarmingAlerts", func() {
@@ -263,15 +301,16 @@ func TestMain(t *testing.T) {
 				})
 
 				Convey("POST", func() {
-					q := datastore.NewQuery("AlertsJSON")
-					results := []*AlertsJSON{}
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldBeEmpty)
 
+					// Add an alert.
 					postAlertsHandler(&router.Context{
 						Context: c,
 						Writer:  w,
-						Request: makePostRequest(`{"timestamp": 12345.0}`),
+						Request: makePostRequest(`{"alerts":[{"key": "test"}], "timestamp": 12345.0, "revision_summaries":{"123": {"git_hash": "123"}}}`),
 						Params:  makeParams("tree", "oak"),
 					})
 
@@ -283,23 +322,121 @@ func TestMain(t *testing.T) {
 					So(w.Code, ShouldEqual, 200)
 					So(body, ShouldEqual, "")
 
+					// Verify the expected alert.
 					datastore.GetTestable(c).CatchupIndexes()
-					results = []*AlertsJSON{}
+					results = []*AlertJSON{}
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldHaveLength, 1)
+					fmt.Print(results)
 					itm := results[0]
-					So(itm.Tree, ShouldResemble, alerts.Tree)
+					So(itm.Tree, ShouldResemble, alertJSON.Tree)
 					rslt := make(map[string]interface{})
 					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
-					So(rslt, ShouldResemble, map[string]interface{}{
-						"date":      "2016-02-03 04:05:06.000000007 +0000 UTC",
-						"timestamp": 12345.0,
+					So(rslt["key"], ShouldEqual, "test")
+
+					// Verify the revision summary.
+					revisions := []*RevisionSummaryJSON{}
+					q = datastore.NewQuery("RevisionSummaryJSON")
+					So(datastore.GetAll(c, q, &revisions), ShouldBeNil)
+					So(revisions, ShouldHaveLength, 1)
+					summary := revisions[0]
+					So(summary.Tree, ShouldResemble, alertJSON.Tree)
+					rslt = make(map[string]interface{})
+					So(json.NewDecoder(bytes.NewReader(summary.Contents)).Decode(&rslt), ShouldBeNil)
+					So(rslt["git_hash"], ShouldEqual, "123")
+
+					// Replace the alert.
+					postAlertsHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`{"alerts":[{"key": "test2"}], "timestamp": 12345.0}`),
+						Params:  makeParams("tree", "oak"),
 					})
+
+					r, err = ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					body = string(r)
+					So(w.Code, ShouldEqual, 200)
+					So(body, ShouldEqual, "")
+
+					// Verify the expected alert.
+					datastore.GetTestable(c).CatchupIndexes()
+					results = []*AlertJSON{}
+					q = datastore.NewQuery("AlertJSON")
+					q = q.Eq("Resolved", false)
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldHaveLength, 1)
+					fmt.Print(results)
+					itm = results[0]
+					So(itm.Tree, ShouldResemble, alertJSON.Tree)
+					rslt = make(map[string]interface{})
+					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
+					So(rslt["key"], ShouldEqual, "test2")
+
+					// Verify the original alert is resolved.
+					datastore.GetTestable(c).CatchupIndexes()
+					results = []*AlertJSON{}
+					q = datastore.NewQuery("AlertJSON")
+					q = q.Eq("Resolved", true)
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldHaveLength, 1)
+					fmt.Print(results)
+					itm = results[0]
+					So(itm.Tree, ShouldResemble, alertJSON.Tree)
+					So(itm.AutoResolved, ShouldEqual, true)
+					rslt = make(map[string]interface{})
+					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
+					So(rslt["key"], ShouldEqual, "test")
+
+					// Re-add original alert.
+					postAlertsHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`{"alerts":[{"key": "test"}], "timestamp": 12345.0, "revision_summaries":{"123": {"git_hash": "123"}}}`),
+						Params:  makeParams("tree", "oak"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusOK)
+
+					r, err = ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					body = string(r)
+					So(w.Code, ShouldEqual, 200)
+					So(body, ShouldEqual, "")
+
+					// Verify the expected alert.
+					datastore.GetTestable(c).CatchupIndexes()
+					results = []*AlertJSON{}
+					q = datastore.NewQuery("AlertJSON")
+					q = q.Eq("Resolved", false)
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldHaveLength, 1)
+					fmt.Print(results)
+					itm = results[0]
+					So(itm.Tree, ShouldResemble, alertJSON.Tree)
+					rslt = make(map[string]interface{})
+					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
+					So(rslt["key"], ShouldEqual, "test")
+
+					// Verify the second alert is resolved.
+					datastore.GetTestable(c).CatchupIndexes()
+					results = []*AlertJSON{}
+					q = datastore.NewQuery("AlertJSON")
+					q = q.Eq("Resolved", true)
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldHaveLength, 1)
+					fmt.Print(results)
+					itm = results[0]
+					So(itm.Tree, ShouldResemble, alertJSON.Tree)
+					So(itm.AutoResolved, ShouldEqual, true)
+					rslt = make(map[string]interface{})
+					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
+					So(rslt["key"], ShouldEqual, "test2")
 				})
 
 				Convey("POST err", func() {
-					q := datastore.NewQuery("AlertsJSON")
-					results := []*AlertsJSON{}
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldBeEmpty)
 
@@ -314,8 +451,8 @@ func TestMain(t *testing.T) {
 				})
 
 				Convey("POST err, valid but wrong json", func() {
-					q := datastore.NewQuery("AlertsJSON")
-					results := []*AlertsJSON{}
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldBeEmpty)
 
@@ -329,6 +466,299 @@ func TestMain(t *testing.T) {
 					So(w.Code, ShouldEqual, http.StatusBadRequest)
 				})
 
+			})
+
+			Convey("/alert", func() {
+				contents, _ := json.Marshal(&messages.Alert{
+					Key: "test",
+				})
+				alertJSON := &AlertJSON{
+					ID:       "test",
+					Tree:     datastore.MakeKey(c, "Tree", "oak"),
+					Resolved: false,
+					Contents: []byte(contents),
+				}
+				Convey("POST", func() {
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+
+					postAlertHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`{"key": "test", "body": "foo"}`),
+						Params:  makeParams("tree", "oak", "key", "test"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusOK)
+
+					r, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					body := string(r)
+					So(w.Code, ShouldEqual, 200)
+					So(body, ShouldEqual, "")
+
+					datastore.GetTestable(c).CatchupIndexes()
+					results = []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldHaveLength, 1)
+					itm := results[0]
+					So(itm.ID, ShouldEqual, "test")
+					So(itm.Tree, ShouldResemble, alertJSON.Tree)
+					So(itm.Resolved, ShouldEqual, false)
+					So(itm.AutoResolved, ShouldEqual, false)
+					rslt := make(map[string]interface{})
+					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
+					So(rslt["key"], ShouldEqual, "test")
+					So(rslt["body"], ShouldEqual, "foo")
+				})
+
+				Convey("POST replace", func() {
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+
+					So(datastore.Put(c, alertJSON), ShouldBeNil)
+
+					postAlertHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`{"key": "test", "body": "foo"}`),
+						Params:  makeParams("tree", "oak", "key", "test"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusOK)
+
+					r, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					body := string(r)
+					So(w.Code, ShouldEqual, 200)
+					So(body, ShouldEqual, "")
+
+					datastore.GetTestable(c).CatchupIndexes()
+					results = []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldHaveLength, 1)
+					itm := results[0]
+					So(itm.ID, ShouldEqual, "test")
+					So(itm.Tree, ShouldResemble, alertJSON.Tree)
+					So(itm.Resolved, ShouldEqual, false)
+					So(itm.AutoResolved, ShouldEqual, false)
+					rslt := make(map[string]interface{})
+					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
+					So(rslt["key"], ShouldEqual, "test")
+					So(rslt["body"], ShouldEqual, "foo")
+				})
+
+				Convey("POST resolved", func() {
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+
+					alertJSON.Resolved = true
+					So(datastore.Put(c, alertJSON), ShouldBeNil)
+
+					postAlertHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`{"key": "test", "body": "foo"}`),
+						Params:  makeParams("tree", "oak", "key", "test"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusOK)
+
+					r, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					body := string(r)
+					So(w.Code, ShouldEqual, 200)
+					So(body, ShouldEqual, "")
+
+					datastore.GetTestable(c).CatchupIndexes()
+					results = []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldHaveLength, 1)
+					itm := results[0]
+					So(itm.ID, ShouldEqual, "test")
+					So(itm.Tree, ShouldResemble, alertJSON.Tree)
+					So(itm.Resolved, ShouldEqual, true)
+					So(itm.AutoResolved, ShouldEqual, false)
+					rslt := make(map[string]interface{})
+					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
+					So(rslt["key"], ShouldEqual, "test")
+					So(rslt["body"], ShouldEqual, "foo")
+				})
+
+				Convey("POST auto-resolved", func() {
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+
+					alertJSON.Resolved = true
+					alertJSON.AutoResolved = true
+					So(datastore.Put(c, alertJSON), ShouldBeNil)
+
+					postAlertHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`{"key": "test", "body": "foo"}`),
+						Params:  makeParams("tree", "oak", "key", "test"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusOK)
+
+					r, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					body := string(r)
+					So(w.Code, ShouldEqual, 200)
+					So(body, ShouldEqual, "")
+
+					datastore.GetTestable(c).CatchupIndexes()
+					results = []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldHaveLength, 1)
+					itm := results[0]
+					So(itm.ID, ShouldEqual, "test")
+					So(itm.Tree, ShouldResemble, alertJSON.Tree)
+					So(itm.Resolved, ShouldEqual, false)
+					So(itm.AutoResolved, ShouldEqual, false)
+					rslt := make(map[string]interface{})
+					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
+					So(rslt["key"], ShouldEqual, "test")
+					So(rslt["body"], ShouldEqual, "foo")
+				})
+
+				Convey("POST err", func() {
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+
+					postAlertHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`not valid json`),
+						Params:  makeParams("tree", "oak", "key", "test"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusBadRequest)
+				})
+			})
+
+			Convey("/resolve", func() {
+				contents, _ := json.Marshal(&messages.Alert{
+					Key: "test",
+				})
+				alertJSON := &AlertJSON{
+					ID:       "test",
+					Tree:     datastore.MakeKey(c, "Tree", "oak"),
+					Resolved: false,
+					Contents: []byte(contents),
+				}
+				makeResolve := func(data *ResolveRequest, tok string) string {
+					change, err := json.Marshal(map[string]interface{}{
+						"xsrf_token": tok,
+						"data":       data,
+					})
+					So(err, ShouldBeNil)
+					return string(change)
+				}
+				Convey("POST", func() {
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+
+					So(datastore.Put(c, alertJSON), ShouldBeNil)
+
+					// Resolve.
+					req := &ResolveRequest{
+						Keys:     make([]string, 1),
+						Resolved: true,
+					}
+					req.Keys[0] = "test"
+					resolveAlertHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(makeResolve(req, tok)),
+						Params:  makeParams("tree", "oak"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusOK)
+
+					r, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					So(w.Code, ShouldEqual, 200)
+
+					resolveResponse := &ResolveResponse{}
+					So(json.Unmarshal(r, resolveResponse), ShouldBeNil)
+					So(resolveResponse.Keys, ShouldHaveLength, 1)
+					So(resolveResponse.Keys[0], ShouldEqual, "test")
+					So(resolveResponse.Resolved, ShouldEqual, true)
+
+					datastore.GetTestable(c).CatchupIndexes()
+					results = []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldHaveLength, 1)
+					itm := results[0]
+					So(itm.Tree, ShouldResemble, alertJSON.Tree)
+					So(itm.Resolved, ShouldEqual, true)
+					So(itm.AutoResolved, ShouldEqual, false)
+					rslt := make(map[string]interface{})
+					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
+					So(rslt["key"], ShouldEqual, "test")
+				})
+
+				Convey("POST non-existant", func() {
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+
+					// Resolve.
+					req := &ResolveRequest{
+						Keys:     make([]string, 1),
+						Resolved: true,
+					}
+					req.Keys[0] = "test"
+					resolveAlertHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(makeResolve(req, tok)),
+						Params:  makeParams("tree", "oak"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusInternalServerError)
+
+					r, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					body := string(r)
+					So(body, ShouldContainSubstring, "not found")
+
+					datastore.GetTestable(c).CatchupIndexes()
+					results = []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+				})
+
+				Convey("POST err", func() {
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+
+					resolveAlertHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`not valid json`),
+						Params:  makeParams("tree", "oak"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusBadRequest)
+				})
 			})
 
 			Convey("/annotations", func() {
