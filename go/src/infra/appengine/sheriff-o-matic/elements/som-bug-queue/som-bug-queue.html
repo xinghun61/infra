@@ -2,11 +2,15 @@
 
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
 
+<link rel="import" href="../../elements/som-header-styles.html">
+
 <dom-module id="som-bug-queue">
   <template>
+    <style include="som-header-styles"></style>
     <style>
       #main {
         background: white;
@@ -20,26 +24,6 @@
       #noBugs {
         padding: 0.25em 8px;
         margin: 0 16px;
-      }
-      h2, h4 {
-        font-weight: bold;
-        background-color: #eee;
-        border-bottom: 1px solid #ddd;
-        margin: 0.25em 16px;
-      }
-      h2 {
-        font-size: 18px;
-        line-height: 180%;
-        padding: 0.5em 8px 0.25em;
-      }
-      h4 {
-        cursor: pointer;
-        padding: 0.5em 8px 0.25em;
-        margin-top: 0.5em;
-      }
-      h4 iron-icon {
-        height: 16px;
-        width: 16px;
       }
       .bug {
         padding: 0.25em 16px;
@@ -82,11 +66,24 @@
         last-response="{{_uncachedBugsJson}}"
         debounce-duration="300"></iron-ajax>
     <div id="main" hidden$="[[_hideBugQueue]]">
-      <h2 hidden$="[[_isTrooperQueue]]">
-        [[treeDisplayName]] Bug Queue (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues" target="_blank">Help?</a>)
-      </h2>
-      <h2 hidden$="[[!_isTrooperQueue]]">
-        Trooper Queue (<a href="http://go/trooper-queue" target="_blank">View in Monorail</a>)
+      <h2 class="layout horizontal justified">
+        <span hidden$="[[_isTrooperQueue]]">
+          [[treeDisplayName]] Bug Queue
+          (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues" target="_blank">Help?</a>)
+        </span>
+        <span hidden$="[[!_isTrooperQueue]]">
+          Trooper Queue (<a href="http://go/trooper-queue" target="_blank">View in Monorail</a>)
+        </span>
+
+        <div class="self-center end header-buttons">
+          <span class="collapse-button" on-tap="_collapseAll">
+            Collapse all
+          </span>
+          /
+          <span class="collapse-button" on-tap="_expandAll">
+            Expand all
+          </span>
+        </div>
       </h2>
       <div class="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
         Error fetching bug queue: [[_bugQueueJsonError.error]]
@@ -98,7 +95,7 @@
       <div id="loadingBugs" hidden$="[[!_showBugsLoading(_bugsLoaded, _bugQueueJsonError)]]"><paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bug Queue... </div>
       <div id="noBugs" hidden$="[[!_showNoBugs]]">No bugs in the queue!</div>
       <template is="dom-repeat" items="[[_bugsByPriority]]" as="bucket">
-        <h4 on-tap="_togglePriorityCollapse">
+        <h4 on-tap="_togglePriorityCollapse" class="priority-header">
           <iron-icon
             icon="[[_computeCollapseIcon(_defaultOpenState)]]"
             id$="toggleIconPri[[bucket.priority]]"></iron-icon>

@@ -113,14 +113,6 @@
       return result;
     },
 
-    _computeCollapseId: function(pri) {
-      return `collapsePri${pri}`;
-    },
-
-    _computeCollapseIcon: function(opened) {
-      return opened ? 'remove' : 'add';
-    },
-
     _computeHideBugQueue: function(bugQueueLabel) {
       // No loading or empty message is shown unless a bug queue exists.
       return !bugQueueLabel || bugQueueLabel === '' ||
@@ -191,8 +183,46 @@
       return !bugsLoaded && this._haveNoErrors(error);
     },
 
+    _validPriority: function(pri) {
+      return pri != this.UNSET_PRIORITY;
+    },
+
+    // Collapsing/expanding priority headers.
+
+    _computeCollapseId: function(pri) {
+      return `collapsePri${pri}`;
+    },
+
+    _computeCollapseIcon: function(opened) {
+      return opened ? 'remove' : 'add';
+    },
+
+    _collapseAll: function () {
+      for (let i = 0; i < this._bugsByPriority.length; i++) {
+        let pri = this._bugsByPriority[i].priority;
+        let id = this._computeCollapseId(pri);
+        let collapse = this.$$('#' + id);
+
+        collapse.opened = false;
+        this.$$('#toggleIconPri' + pri).icon =
+            this._computeCollapseIcon(collapse.opened);
+      }
+    },
+
+    _expandAll: function () {
+      for (let i = 0; i < this._bugsByPriority.length; i++) {
+        let pri = this._bugsByPriority[i].priority;
+        let id = this._computeCollapseId(pri);
+        let collapse = this.$$('#' + id);
+
+        collapse.opened = true;
+        this.$$('#toggleIconPri' + pri).icon =
+            this._computeCollapseIcon(collapse.opened);
+      }
+    },
+
     _togglePriorityCollapse: function(evt) {
-      let i = evt.model.index;
+      let i = evt.model.get('index');
       let pri = this._bugsByPriority[i].priority;
       let id = this._computeCollapseId(pri);
       let collapse = this.$$('#' + id);
@@ -205,9 +235,5 @@
             this._computeCollapseIcon(collapse.opened);
       }
     },
-
-    _validPriority: function(pri) {
-      return pri != this.UNSET_PRIORITY;
-    }
   });
 })();
