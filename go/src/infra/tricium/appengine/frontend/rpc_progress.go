@@ -65,6 +65,7 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Analyze
 			Analyzer:          extractAnalyzerName(w.Name),
 			Platform:          w.Platform,
 			State:             w.State,
+			SwarmingTaskId:    fmt.Sprintf("%s/task?id=%s", w.SwarmingURL, w.TaskID),
 			NumResultComments: int32(w.NumResultComments),
 		})
 	}
