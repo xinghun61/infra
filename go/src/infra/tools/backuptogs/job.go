@@ -50,10 +50,12 @@ func (j *job) run(ctx context.Context) (*filetree.Dir, error) {
 		return nil, err
 	}
 
-	logging.Debugf(ctx, "Starting deletion pipeline")
-	// delete files from GCS
-	if err = j.delFiles(ctx); err != nil {
-		return nil, err
+	if j.prevState != nil {
+		logging.Debugf(ctx, "Starting deletion pipeline")
+		// delete files from GCS
+		if err = j.delFiles(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	return newState, nil

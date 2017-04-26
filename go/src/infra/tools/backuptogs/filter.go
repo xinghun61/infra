@@ -50,7 +50,10 @@ func filterFiles(
 				backupsChan <- info.path
 			}
 
-			prevState.Del(info.path)
+			if prevState != nil {
+				prevState.Del(info.path)
+			}
+
 			newState.Put(info.path, &filetree.FileInfo{
 				Size:    info.osInfo.Size(),
 				ModTime: info.osInfo.ModTime(),
