@@ -55,6 +55,10 @@
             return time.getTime() > dateCutoff.getTime();
           });
         }
+
+        if (ann.group_id != undefined) {
+          returnVal.groupID = ann.group_id;
+        }
       }
 
       returnVal.opened = (ann && ann.opened) || false;

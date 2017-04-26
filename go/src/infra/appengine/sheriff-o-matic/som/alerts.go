@@ -19,7 +19,7 @@ import (
 
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
 )
 
@@ -47,32 +47,70 @@ func getAlertsHandler(ctx *router.Context) {
 		return
 	}
 
-	results := []*AlertsJSON{}
-	q := datastore.NewQuery("AlertsJSON")
 	// TODO(seanmccullough): remove this check once we turn down a-d and only
 	// use the cron tasks for alerts for all trees. See crbug.com/705074
 	if tree == "chromium" {
 		tree = "milo.chromium"
 	}
-	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
-	q = q.Order("-Date")
-	q = q.Limit(1)
 
-	err := datastore.GetAll(c, q, &results)
+	q := datastore.NewQuery("AlertJSON")
+	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
+	q = q.Eq("Resolved", false)
+
+	alertResults := []*AlertJSON{}
+	err := datastore.GetAll(c, q, &alertResults)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	if len(results) == 0 {
-		logging.Warningf(c, "No alerts found for tree %s", tree)
-		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("Tree \"%s\" not found", tree))
+	q = datastore.NewQuery("RevisionSummaryJSON")
+	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
+	q = q.Gt("Date", clock.Get(c).Now().Add(-recentRevisions))
+
+	revisionSummaryResults := []*RevisionSummaryJSON{}
+	err = datastore.GetAll(c, q, &revisionSummaryResults)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	alertsJSON := results[0]
+	alertsSummary := &messages.AlertsSummary{
+		Alerts:            make([]messages.Alert, len(alertResults)),
+		RevisionSummaries: make(map[string]messages.RevisionSummary),
+	}
+
+	for i, alertJSON := range alertResults {
+		err = json.Unmarshal(alertJSON.Contents,
+			&alertsSummary.Alerts[i])
+		if err != nil {
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		t := messages.EpochTime(alertJSON.Date.Unix())
+		if alertsSummary.Timestamp == 0 || t > alertsSummary.Timestamp {
+			alertsSummary.Timestamp = t
+		}
+	}
+
+	for _, summaryJSON := range revisionSummaryResults {
+		var summary messages.RevisionSummary
+		err = json.Unmarshal(summaryJSON.Contents, &summary)
+		if err != nil {
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		alertsSummary.RevisionSummaries[summaryJSON.ID] = summary
+	}
+
+	data, err := json.MarshalIndent(alertsSummary, "", "\t")
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(alertsJSON.Contents)
+	w.Write(data)
 }
 
 func postAlertsHandler(ctx *router.Context) {
@@ -80,10 +118,6 @@ func postAlertsHandler(ctx *router.Context) {
 
 	tree := p.ByName("tree")
 
-	alerts := AlertsJSON{
-		Tree: datastore.MakeKey(c, "Tree", tree),
-		Date: clock.Now(c),
-	}
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		errStatus(c, w, http.StatusBadRequest, err.Error())
@@ -109,29 +143,219 @@ func postAlertsHandler(ctx *router.Context) {
 		return
 	}
 
-	// Now actually do decoding necessary for storage.
-	out := make(map[string]interface{})
-	err = json.Unmarshal(data, &out)
+	err = putAlertsDatastore(c, tree, alertsSummary, true)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+	}
+}
 
+func putAlertsDatastore(c context.Context, tree string, alertsSummary *messages.AlertsSummary, autoResolve bool) error {
+	treeKey := datastore.MakeKey(c, "Tree", tree)
+	now := clock.Now(c).UTC()
+
+	// Search for existing entities to preserve resolved status.
+	alertJSONs := []*AlertJSON{}
+	alertMap := make(map[string]*messages.Alert)
+	for _, alert := range alertsSummary.Alerts {
+		alertJSONs = append(alertJSONs, &AlertJSON{
+			ID:           alert.Key,
+			Tree:         treeKey,
+			Resolved:     false,
+			AutoResolved: false,
+		})
+		alertMap[alert.Key] = &alert
+	}
+
+	// Add/modify alerts.
+	var err error
+	err = datastore.RunInTransaction(c, func(c context.Context) error {
+		// Get any existing keys to preserve resolved status, assign updated content.
+		datastore.Get(c, alertJSONs)
+		for i, alert := range alertsSummary.Alerts {
+			alertJSONs[i].Date = now
+			alertJSONs[i].Contents, err = json.Marshal(alert)
+			if err != nil {
+				return err
+			}
+			// Unresolve autoresolved alerts.
+			if alertJSONs[i].Resolved && alertJSONs[i].AutoResolved {
+				alertJSONs[i].Resolved = false
+				alertJSONs[i].AutoResolved = false
+			}
+		}
+		return datastore.Put(c, alertJSONs)
+	}, nil)
+	if err != nil {
+		return err
+	}
+
+	if autoResolve {
+		// Ideally this request would be performed in a transaction, but it can exceed the datastore API request size limit.
+		alertJSONs = []*AlertJSON{}
+		q := datastore.NewQuery("AlertJSON")
+		q = q.Ancestor(treeKey)
+		q = q.Eq("Resolved", false)
+		openAlerts := []*AlertJSON{}
+		err = datastore.GetAll(c, q, &openAlerts)
+		if err != nil {
+			return err
+		}
+		for _, alert := range openAlerts {
+			if _, modified := alertMap[alert.ID]; !modified {
+				alert.Resolved = true
+				alert.AutoResolved = true
+				alert.ResolvedDate = now
+				alertJSONs = append(alertJSONs, alert)
+			}
+		}
+		err = datastore.Put(c, alertJSONs)
+		if err != nil {
+			return err
+		}
+	}
+
+	revisionSummaryJSONs := make([]RevisionSummaryJSON,
+		len(alertsSummary.RevisionSummaries))
+	i := 0
+	for key, summary := range alertsSummary.RevisionSummaries {
+		revisionSummaryJSONs[i].ID = key
+		revisionSummaryJSONs[i].Tree = treeKey
+		revisionSummaryJSONs[i].Date = now
+		revisionSummaryJSONs[i].Contents, err = json.Marshal(summary)
+		if err != nil {
+			return err
+		}
+
+		i++
+	}
+
+	return datastore.Put(c, revisionSummaryJSONs)
+}
+
+func postAlertHandler(ctx *router.Context) {
+	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+
+	tree := p.ByName("tree")
+	key := p.ByName("key")
+
+	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		errStatus(c, w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	out["date"] = alerts.Date.String()
-	data, err = json.Marshal(out)
+	if err := r.Body.Close(); err != nil {
+		errStatus(c, w, http.StatusBadRequest, err.Error())
+		return
+	}
 
+	// Do a sanity check.
+	alert := &messages.Alert{}
+	err = json.Unmarshal(data, alert)
+	if err != nil {
+		errStatus(c, w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if key != alert.Key {
+		errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("POST key '%s' does not match alert key '%s'", key, alert.Key))
+		return
+	}
+
+	alertJSON := &AlertJSON{
+		ID:       key,
+		Tree:     datastore.MakeKey(c, "Tree", tree),
+		Resolved: false,
+	}
+
+	err = datastore.RunInTransaction(c, func(c context.Context) error {
+		// Try and get the alert to maintain resolved status.
+		datastore.Get(c, alertJSON)
+		alertJSON.Date = clock.Now(c)
+		alertJSON.Contents = data
+		if alertJSON.Resolved && alertJSON.AutoResolved {
+			alertJSON.Resolved = false
+			alertJSON.AutoResolved = false
+		}
+		return datastore.Put(c, alertJSON)
+	}, nil)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+}
+
+func resolveAlertHandler(ctx *router.Context) {
+	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+
+	tree := p.ByName("tree")
+	treeKey := datastore.MakeKey(c, "Tree", tree)
+	now := clock.Now(c).UTC()
+
+	req := &postRequest{}
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("while decoding request: %s", err))
+		return
+	}
+
+	if err := xsrf.Check(c, req.XSRFToken); err != nil {
+		errStatus(c, w, http.StatusForbidden, err.Error())
+		return
+	}
+
+	if err := r.Body.Close(); err != nil {
+		errStatus(c, w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if req.Data == nil {
+		errStatus(c, w, http.StatusBadRequest, err.Error())
+		return
+	}
+	resolveRequest := &ResolveRequest{}
+	err = json.Unmarshal(*req.Data, resolveRequest)
+	if err != nil {
+		errStatus(c, w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	alertJSONs := make([]AlertJSON, len(resolveRequest.Keys))
+	for i, key := range resolveRequest.Keys {
+		alertJSONs[i].ID = key
+		alertJSONs[i].Tree = treeKey
+	}
+
+	err = datastore.RunInTransaction(c, func(c context.Context) error {
+		datastore.Get(c, alertJSONs)
+		for i := range resolveRequest.Keys {
+			if len(alertJSONs[i].Contents) == 0 {
+				return fmt.Errorf("Key %s not found", alertJSONs[i].ID)
+			}
+			alertJSONs[i].Resolved = resolveRequest.Resolved
+			alertJSONs[i].AutoResolved = false
+			alertJSONs[i].ResolvedDate = now
+		}
+		return datastore.Put(c, alertJSONs)
+	}, nil)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	alerts.Contents = data
-	err = datastore.Put(c, &alerts)
+	resolveResponse := &ResolveResponse{
+		Tree:     tree,
+		Keys:     resolveRequest.Keys,
+		Resolved: resolveRequest.Resolved,
+	}
+	resp, err := json.Marshal(resolveResponse)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
 }
 
 func getRestartingMastersHandler(ctx *router.Context) {

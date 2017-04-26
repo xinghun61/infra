@@ -74,6 +74,22 @@
           return this.$.snoozeTime;
         }
       },
+      _groupErrorMessage: String,
+      _groupInput: {
+        type: Object,
+        value: function() {
+          return this.$.groupID;
+        }
+      },
+      _groupModel: Object,
+      _ungroupErrorMessage: String,
+      _ungroupInput: {
+        type: Object,
+        value: function() {
+          return '';
+        }
+      },
+      _ungroupModel: Object,
       user: String,
       xsrfToken: String,
     },
@@ -106,11 +122,6 @@
     // Returns a promise of the POST request to the server to carry out the
     // annotation change.
     sendAnnotation: function(key, type, change) {
-      let data = {
-        xsrf_token: this.xsrfToken,
-        data: change,
-      };
-
       return this
           .postJSON(
               '/api/v1/annotations/' + encodeURIComponent(key) + '/' + type,
@@ -245,6 +256,18 @@
       this.$.snoozeTime.value = this._defaultSnoozeTime;
       this._snoozeErrorMessage = '';
       this.$.snoozeDialog.open();
+    },
+
+    handleGroup: function(evt, targets) {
+      this._groupModel = {alert: evt.target.alert, targets: targets};
+      this._groupErrorMessage = '';
+      this.$.groupDialog.open();
+    },
+
+    handleUngroup: function(evt) {
+      this._ungroupModel = evt.target.alert;
+      this._ungroupErrorMessage = '';
+      this.$.ungroupDialog.open();
     },
 
     ////////////////////// Bugs ///////////////////////////
@@ -400,5 +423,97 @@
             });
       }
     },
+
+    ////////////////////// Groups ///////////////////////////
+
+    _group: function() {
+      this._groupErrorMessage = '';
+
+      // Group the current alert and all checked alerts.
+      let alerts = this._groupModel.targets.filter((t) => {
+        return t.checked;
+      });
+      alerts.push(this._groupModel.alert);
+
+      // Determine group ID.
+      let groupAlert = null;
+      for (let a in alerts) {
+        if (alerts[a].grouped) {
+          if (groupAlert) {
+            this._groupErrorMessage = 'attempting to group multiple groups';
+            return;
+          }
+          groupAlert = alerts[a];
+        }
+      }
+      let groupID = groupAlert ? groupAlert.key : this._generateUUID();
+
+      // Determine ungrouped alerts to group.
+      alerts = alerts.filter((a) => {
+        return !a.grouped;
+      });
+
+      // Create annotation for each ungrouped alert key.
+      for (let i in alerts) {
+        if (this._groupErrorMessage) {
+          break;
+        }
+        this.sendAnnotation(
+                alerts[i].key, 'add',
+                {group_id: groupID})
+            .then(
+                (response) => {
+                  this.$.groupDialog.close();
+                  alerts[i].checked = false;
+
+                  this.setLocalStateKey(response.key, {opened: false});
+                },
+                (error) => {
+                  this._groupErrorMessage = error;
+                });
+      }
+    },
+
+    _ungroup: function() {
+      // TODO(add proper error handling)
+      for (let i in this._ungroupModel.alerts) {
+        if (!this._ungroupErrorMessage && this._ungroupModel.alerts[i].checked) {
+          this.sendAnnotation(
+                  this._ungroupModel.alerts[i].key, 'remove',
+                  {group_id: true})
+              .then(
+                  (response) => {
+                    this.$.ungroupDialog.close();
+
+                    this.setLocalStateKey(response.key, {opened: false});
+                  },
+                  (error) => {
+                    this._ungroupErrorMessage = error;
+                  });
+          // TODO(davidriley): Figure out why things remain checked.
+          this._ungroupModel.alerts[i].checked = false;
+        }
+      }
+    },
+
+    _haveSubAlerts: function(alert) {
+      return alert.alerts && alert.alerts.length > 0;
+    },
+
+    _haveStages: function(alert) {
+      return alert.extension && alert.extension.stages &&
+             alert.extension.stages.length > 0;
+    },
+
+    _generateUUID: function() {
+      // This is actually an rfc4122 version 4 compliant uuid taken from:
+      // http://stackoverflow.com/questions/105034
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+        /[xy]/g, function(c) {
+          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+    },
+
   })
 })();

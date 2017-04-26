@@ -59,8 +59,9 @@
         assert.isNotNull(item);
         assert.isNotNull(item.children[0]);
         assert.isNotNull(item.children[0].children[0]);
-        assert.isNotNull(item.children[0].children[0].href);
-        assert.equal(item.children[0].children[0].href, 'https://go/logs');
+        assert.isNotNull(item.children[0].children[0].children[0]);
+        assert.isDefined(item.children[0].children[0].children[0].href);
+        assert.equal(item.children[0].children[0].children[0].href, 'https://go/logs');
         done();
       });
     });

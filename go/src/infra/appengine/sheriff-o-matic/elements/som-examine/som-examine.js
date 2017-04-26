@@ -39,7 +39,7 @@
           !this.alert.extension.builders) {
         return;
       }
-      this.selectedBuilder = this.alert.extension.builders[0].name;
+      this.selectedBuilder = this._tabId(this.alert.extension.builders[0]);
       if (!this.alert.extension.reason) {
         return;
       }
@@ -70,6 +70,10 @@
         this.hideTests = true;
         this.hideWebKitTests = true;
       }
+    },
+
+    _tabId: function(builder) {
+      return builder.name + ':' +  builder.latest_failure;
     },
 
     _tabTitle: function(builder) {

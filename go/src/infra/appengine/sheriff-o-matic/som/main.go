@@ -42,6 +42,8 @@ const (
 	annotationExpiration  = time.Hour * 24 * 10
 	productionAnalyticsID = "UA-55762617-1"
 	stagingAnalyticsID    = "UA-55762617-22"
+	// RevisionSummaryJSONs this recent will be returned
+	recentRevisions = time.Hour * 24 * 7
 )
 
 var (
@@ -106,7 +108,7 @@ func indexPage(ctx *router.Context) {
 
 	tok, err := xsrf.Token(c)
 	if err != nil {
-		logging.Errorf(c, "while getting xrsf token: %s", err)
+		logging.Errorf(c, "while getting xsrf token: %s", err)
 	}
 
 	AnalyticsID := stagingAnalyticsID
@@ -365,7 +367,7 @@ func getXSRFToken(ctx *router.Context) {
 
 	tok, err := xsrf.Token(c)
 	if err != nil {
-		logging.Errorf(c, "while getting xrsf token: %s", err)
+		logging.Errorf(c, "while getting xsrf token: %s", err)
 	}
 
 	data := map[string]string{
@@ -401,6 +403,8 @@ func init() {
 	// Disallow cookies because this handler should not be accessible by regular
 	// users.
 	r.POST("/api/v1/alerts/:tree", base(false).Extend(requireGoogler), postAlertsHandler)
+	r.POST("/api/v1/alert/:tree/:key", base(false).Extend(requireGoogler), postAlertHandler)
+	r.POST("/api/v1/resolve/:tree", protected, resolveAlertHandler)
 	r.GET("/api/v1/annotations/", protected, getAnnotationsHandler)
 	r.POST("/api/v1/annotations/:annKey/:action", protected, postAnnotationsHandler)
 	r.GET("/api/v1/bugqueue/:label", protected, getBugQueueHandler)

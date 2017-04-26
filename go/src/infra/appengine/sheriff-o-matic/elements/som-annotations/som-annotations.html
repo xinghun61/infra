@@ -17,7 +17,7 @@
       #bugDialog, #snoozeDialog {
         width: 300px;
       }
-      #commentsDialog {
+      #commentsDialog, #groupDialog, #ungroupDialog {
         width: 80%;
         min-width: 300px;
         max-width: 600px;
@@ -38,6 +38,11 @@
         background-color: #aaa;
       }
       #commentsList {
+        display: block;
+        max-height: 400px;
+        overflow: auto;
+      }
+      #groupList, #ungroupList {
         display: block;
         max-height: 400px;
         overflow: auto;
@@ -67,6 +72,16 @@
         padding: 0.5em 8px 0.25em;
         margin: 1em 4px;
         background-color: #eee;
+      }
+      .subAlert {
+        display: block;
+        font-size: 0.8em;
+          color: #0c0;
+      }
+      .stage {
+        display: block;
+        font-size: 0.8em;
+          color: #c00;
       }
     </style>
     <template is="dom-if" if="[[_haveAnnotationError(annotationError.*)]]">
@@ -139,6 +154,64 @@
         </paper-button>
         <paper-button raised disabled="[[_commentInFlight]]" on-tap="_addComment">
           Comment
+        </paper-button>
+      </div>
+    </paper-dialog>
+    <iron-a11y-keys target="[[_groupInput]]" keys="enter" on-keys-pressed="_group"></iron-a11y-keys>
+    <paper-dialog id="groupDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+      <h2>Group</h2>
+      <div id="groupList">
+        <template is="dom-repeat" items="[[_groupModel.targets]]" as="target">
+          <div>
+            <paper-checkbox checked="{{target.checked}}">
+              [[target.title]]
+              <template is="dom-if" if="[[_haveSubAlerts(target)]]">
+                <span>
+                  <template is="dom-repeat" items="[[target.alerts]]" as="subAlert">
+                    <span class="subAlert">[[subAlert.title]]</span>
+                  </template>
+                </span>
+              </template>
+              <template is="dom-if" if="[[!_haveSubAlerts(target) && !haveStages(target)]]">
+                <span>
+                  <template is="dom-repeat" items="[[target.extension.stages]]" as="stage">
+                    <span class="stage">[[stage.name]] [[stage.status]]</span>
+                  </template>
+                </span>
+              </template>
+            </paper-checkbox>
+          </div>
+        </template>
+      </div>
+      <div class="error">[[_groupErrorMessage]]</div>
+      <div class="buttons">
+        <paper-button dialog-dismiss raised>
+          Close
+        </paper-button>
+        <paper-button raised on-tap="_group">
+          Group
+        </paper-button>
+      </div>
+    </paper-dialog>
+    <iron-a11y-keys target="[[_ungroupInput]]" keys="enter" on-keys-pressed="_ungroup"></iron-a11y-keys>
+    <paper-dialog id="ungroupDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+      <h2>Ungroup</h2>
+      <div id="groupList">
+        <template is="dom-repeat" items="[[_ungroupModel.alerts]]" as="alert">
+          <div>
+            <paper-checkbox checked="{{alert.checked}}">
+              [[alert.title]]
+            </paper-checkbox>
+          </div>
+        </template>
+      </div>
+      <div class="error">[[_ungroupErrorMessage]]</div>
+      <div class="buttons">
+        <paper-button dialog-dismiss raised>
+          Close
+        </paper-button>
+        <paper-button raised on-tap="_ungroup">
+          Ungroup
         </paper-button>
       </div>
     </paper-dialog>
