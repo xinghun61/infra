@@ -120,21 +120,10 @@
     },
 
     _calculateDuration(tree, alert) {
-      if (this._isCrOSTree(tree)) {
-        let date = moment(alert.start_time * 1000).tz('America/Los_Angeles');
-        let duration =  date.format('M/DD/YYYY, h:mm a z') +
-                        ' (' + date.fromNow() + ')';
-        return duration;
-      }
-
-      let deltaSec = Math.round((alert.time - alert.start_time));
-      let hours = Math.floor(deltaSec / 60 / 60);
-      let minutes = Math.floor((deltaSec - hours * 60 * 60) / 60);
-      let seconds = deltaSec - hours * 60 * 60 - minutes * 60;
-      if (hours == 0 && minutes == 0 && seconds == 0) {
-        return '';
-      }
-      return `Active for: ${hours}h ${minutes}m ${seconds}s`;
+      let date = moment(alert.start_time * 1000).tz('America/Los_Angeles');
+      let duration =  date.format('M/DD/YYYY, h:mm a z') +
+                      ' (' + date.fromNow() + ')';
+      return duration;
     },
 
     _helpLinkForAlert: function(alert) {
