@@ -13,6 +13,8 @@
   }
   .table-footer {
     height: 20px;
+    font-size: .7em;
+    text-align: right;
   }
   .table-footer,
   header {
@@ -32,9 +34,6 @@
   .logo {
     height: 95px;
     width: 95px;
-  }
-  .navigation-link {
-    text-align: right;
   }
   .right {
     text-align: right;
@@ -68,8 +67,12 @@
     <p class="subtext dash-summary">
       Check this page any time to view the current status of the services listed below.
     </p>
+    <p class="subtext dash-summary">
+      Dates displayed on dashboard are using UTC timezone.
+    </p>
     {{$dates := .Dates}}
     {{$older := .OlderDate}}
+    {{$newer := .NewerDate}}
     {{if .ChopsServices}}
       <p class="subtext">Projects covered by a Service Level Agreement</p>
       <table>
@@ -92,9 +95,14 @@
         {{end}}
         <tr class="table-footer">
           <td colspan="8">
-            <div class="navigation-link">
+            <span>
               <a href="?upto={{$older}}">Older</a>
-            </div>
+            </span>
+            {{if $newer}}
+              <span>
+                <a href="?upto={{$newer}}">Newer</a>
+              </span>
+            {{end}}
           </td>
         </tr>
       </table>

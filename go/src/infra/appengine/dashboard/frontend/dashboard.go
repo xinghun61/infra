@@ -7,6 +7,7 @@ package dashboard
 import (
 	"html/template"
 	"net/http"
+	"strconv"
 	"time"
 
 	"golang.org/x/net/context"
@@ -94,6 +95,14 @@ func createServicesPageData(c context.Context, after time.Time, before time.Time
 
 }
 
+// dateEqual should be used to check if two time.Times occur within the same day.
+// Using Time.Equal has too granular of equality.
+func dateEqual(date1, date2 time.Time) bool {
+	y1, m1, d1 := date1.Date()
+	y2, m2, d2 := date2.Date()
+	return y1 == y2 && m1 == m2 && d1 == d2
+}
+
 func dashboard(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 	err := r.ParseForm()
@@ -103,32 +112,40 @@ func dashboard(ctx *router.Context) {
 		return
 	}
 	upto := r.Form.Get("upto")
-	var lastDate time.Time
+	lastDate := time.Now()
+	var newerDate int64
 	if upto != "" {
-		lastDate, err = time.Parse("1-02-2006", upto)
+		unixInt, err := strconv.ParseInt(upto, 10, 64)
 		if err != nil {
+			logging.Infof(c, "%v, %v", err, lastDate)
 			http.Error(w, "failed to parse \"upto\" date paramater",
 				http.StatusBadRequest)
 			return
 		}
-	} else {
-		lastDate = time.Now()
+		dateFromParams := time.Unix(unixInt, 0)
+		if !dateEqual(lastDate, dateFromParams) {
+			lastDate = dateFromParams
+			newerDate = lastDate.AddDate(0, 0, 7).Unix()
+		}
 	}
+
 	dates := []time.Time{}
-	for i := 0; i < 7; i++ {
+	for i := 6; i >= 0; i-- {
 		dates = append(dates, lastDate.AddDate(0, 0, -i))
 	}
 
-	sla, nonSLA, err := createServicesPageData(c, dates[6], lastDate)
+	sla, nonSLA, err := createServicesPageData(c, dates[0], lastDate)
 	if err != nil {
 		http.Error(w, "failed to create Services page data, see logs",
 			http.StatusInternalServerError)
 		return
 	}
+
 	templates.MustRender(c, w, "pages/dash.tmpl", templates.Args{
 		"ChopsServices":  sla,
 		"NonSLAServices": nonSLA,
 		"Dates":          dates,
 		"OlderDate":      dates[0].AddDate(0, 0, -1).Unix(),
+		"NewerDate":      newerDate,
 	})
 }
