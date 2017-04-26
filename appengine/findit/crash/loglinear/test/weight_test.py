@@ -18,8 +18,8 @@ class WeightTest(unittest.TestCase):
 
   def testMultiply(self):
     """Tests overloading operators ``__mul__`` and ``__rmul__``"""
-    self.assertEqual((Weight(0.8) * 2.0).value, 0.8 * 2.0)
-    self.assertEqual((2.0 * Weight(0.8)).value, 2.0 * 0.8)
+    self.assertEqual((Weight(0.8) * 2.0), 0.8 * 2.0)
+    self.assertEqual((2.0 * Weight(0.8)), 2.0 * 0.8)
 
   def testEqual(self):
     """Tests ``__eq__`` and ``__ne__``."""

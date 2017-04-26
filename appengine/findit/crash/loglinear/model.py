@@ -212,7 +212,7 @@ class UnnormalizedLogLinearModel(object):
     Returns:
       A list of reason strings.
     """
-    flat_weight = self._meta_weight.flat_dict
+    flat_weight = self._meta_weight.leaves
 
     filtered_reasons = {}
     for non_zero_feature in flat_weight:

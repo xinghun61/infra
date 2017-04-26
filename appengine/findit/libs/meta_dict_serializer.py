@@ -28,11 +28,10 @@ should be de-serialized to a ``meta_weight`` to multiply with ``meta_feature``.
 
 from collections import OrderedDict
 
-from libs.meta_object import Element
 from libs.meta_object import MetaDict
 
 
-class ElementSerializer(Element):
+class Serializer(object):
 
   def ToList(self, element, default=None):
     """Serializes an ``Element`` to a list of this single element.
@@ -53,8 +52,6 @@ class ElementSerializer(Element):
     if element is None:
       return [default]
 
-    assert element.is_element, Exception(
-        '%s can only serialize Element object.' % self.__class__.__name__)
     return [element]
 
   def FromList(self, element_list, constructor=None):
@@ -70,13 +67,13 @@ class ElementSerializer(Element):
     Raises:
       Exception: An error occurs when the element_list is not 1.
     """
-    assert len(element_list) == len(self), Exception(
+    assert len(element_list) == self.Length(), Exception(
         'The element list should have the same length as serializer')
 
     constructor = constructor or (lambda x: x)
     return constructor(element_list[0])
 
-  def __len__(self):
+  def Length(self):
     return 1
 
 
@@ -129,7 +126,7 @@ class MetaDictSerializer(MetaDict):
       Exception: An error occurs when the length of element_list is not equal
         to the serializer length.
     """
-    assert len(self) == len(element_list), Exception(
+    assert self.Length() == len(element_list), Exception(
         'The element list should have the same length as serializer')
 
     meta_constructor = meta_constructor or (lambda x: x)
@@ -138,18 +135,18 @@ class MetaDictSerializer(MetaDict):
     for key, serializer in self.iteritems():
       # Truncate the segment in the element list to construct
       # the ``MetaObject`` corresponding to ``key``.
-      segment = element_list[index : (index + len(serializer))]
-      if serializer.is_element:
+      segment = element_list[index : (index + serializer.Length())]
+      if not hasattr(serializer, 'is_meta'):
         meta_objs[key] = serializer.FromList(segment, element_constructor)
       else:
         meta_objs[key] = serializer.FromList(segment, meta_constructor,
                                              element_constructor)
 
-      index += len(serializer)
+      index += serializer.Length()
 
     return meta_constructor(meta_objs)
 
-  def _Length(self):
+  def Length(self):
     """Methods to get the length of the serializer recusively.
 
     Note, the length of a serializer is the number of elements, which is also
@@ -160,12 +157,9 @@ class MetaDictSerializer(MetaDict):
 
     self._length = 0
     for value in self.itervalues():
-      self._length += len(value)
+      self._length += value.Length()
 
     return self._length
-
-  def __len__(self):
-    return self._Length()
 
 
 def GetSerializer(meta_object, key=None):
@@ -175,8 +169,8 @@ def GetSerializer(meta_object, key=None):
     meta_object (MetaObject): ``Element`` or ``MetaDict`` objects.
     key (callable or None): Key function to sort ``MetaDict`` object.
   """
-  if meta_object.is_element:
-    return ElementSerializer()
+  if not hasattr(meta_object, 'is_meta'):
+    return Serializer()
 
   sorted_meta = sorted(meta_object.iteritems(), key=key)
   ordered_dict = OrderedDict((key, GetSerializer(sub_meta))

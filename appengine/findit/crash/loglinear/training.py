@@ -119,8 +119,7 @@ class TrainableLogLinearModel(LogLinearModel):
 
   def _MetaToNumPyArray(self, meta_weight):
     """Converts dict (mapping feature name to weight) to numpy array."""
-    return np.array([weight.value for weight in
-                     self._serializer.ToList(meta_weight, default=Weight(0))])
+    return np.array(self._serializer.ToList(meta_weight, default=Weight(0)))
 
   def FeaturesAsNumPyArray(self, x):
     """A variant of ``Features`` which returns a ``np.ndarray``.

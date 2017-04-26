@@ -5,37 +5,14 @@
 import math
 
 from crash.loglinear.feature import MetaFeatureValue
-from libs.meta_object import Element
 from libs.meta_object import MetaDict
 
 
-class Weight(Element):
+class Weight(float):
   """Float-like class that represents the weight for a feature."""
-
-  def __init__(self, value):
-    super(Weight, self).__init__()
-    self._value = float(value)
-
-  @property
-  def value(self):
-    return self._value
-
-  def __mul__(self, number):
-    return Weight(self._value * float(number))
-
-  __rmul__ = __mul__
 
   def __len__(self):
     return 1
-
-  def __float__(self):
-    return self.value
-
-  def __eq__(self, other):
-    return self._value == other._value
-
-  def __ne__(self, other):
-    return not self.__eq__(other)
 
   @property
   def l0(self):
@@ -43,12 +20,12 @@ class Weight(Element):
 
     N.B., despite being popularly called the "l0-norm", this isn't
     actually a norm in the mathematical sense."""
-    return float(bool(self._value))
+    return bool(self)
 
   @property
   def l1(self):
     """The l1 (aka: Manhattan) norm of the weight."""
-    return math.fabs(self._value)
+    return math.fabs(self)
 
   @property
   def quadrance(self):
@@ -59,17 +36,17 @@ class Weight(Element):
     as its own quantity in many places. Also, computing it directly avoids
     the error introduced by squaring the square-root of an IEEE-754 float.
     """
-    return math.fabs(self._value)**2
+    return math.fabs(self)**2
 
   def IsZero(self, epsilon):
-    return math.fabs(self._value) <= epsilon
+    return math.fabs(self) <= epsilon
 
 
 class MetaWeight(MetaDict):
   """Dict-like class mapping features in ``Metafeature`` to their weights."""
 
   def IsZero(self, epsilon):
-    if not self._value:
+    if not self:
       return True
 
     return all(weight.IsZero(epsilon) for weight in self.itervalues())
@@ -77,15 +54,16 @@ class MetaWeight(MetaDict):
   def DropZeroWeights(self, epsilon=0.):
     """Drops all zero weights."""
     # Make all sub meta weights drop their zero weights.
-    for weight in self.itervalues():
-      if not weight.is_element:
+    zero_keys = set()
+    for key, weight in self.iteritems():
+      if hasattr(weight, 'is_meta'):
         weight.DropZeroWeights(epsilon=epsilon)
 
-    self._value = {name: weight for name, weight in self.iteritems()
-                   if not weight.IsZero(epsilon)}
+      if weight.IsZero(epsilon):
+        zero_keys.add(key)
 
-  def __len__(self):
-    return len(self._value)
+    for key in zero_keys:
+      del self[key]
 
   def __mul__(self, meta_feature):
     """``MetaWeight`` can multiply with ``MetaFeatureValue``."""
@@ -95,19 +73,6 @@ class MetaWeight(MetaDict):
                      for name, weight in self.iteritems())
 
   __rmul__ = __mul__
-
-  def __eq__(self, other):
-    if len(self) != len(other):
-      return False
-
-    for key, value in self.iteritems():
-      if value != other.get(key):
-        return False
-
-    return True
-
-  def __ne__(self, other):
-    return not self.__eq__(other)
 
   @property
   def l0(self):

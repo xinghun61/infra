@@ -4,105 +4,65 @@
 
 """This module defines an interface of a meta structure -- ``MetaObject``.
 
-We can consider ``MetaObject`` as tree node, and it has ``is_element`` property
-for us to tell whether it is a leaf or not. We can think ``MetaObject`` is an
-effective way to group elements, basically each ``MetaObject``(tree root)
-controls all the ``Element``s (leaf) under it.
+We can consider ``MetaObject`` as inner node, and it has ``is_meta`` property.
+``MetaObject`` is good way to group leaf nodes (which have some real value).
 
-There are 2 kinds of ``MetaObject``s:
-  (1) ``Element``: The basic class (leaf node).
-  (2) ``Meta*``: A collection of ``MetaObject``s. It can be ``MetaDict``,
-      ``MetaList`` or ``MetaSet``...etc. (non-leaf node)
+An easy example for ``MetaDict``:
+MetaDict({'a': 1, 'b': MetaDict({'c': 2, 'd': 3})}), its leaves are
+{'a': 1, 'c': 2, 'd': 3}.
 
-      N.B. Except self-awareness of that itself is not an ``Element`` (since
-      the ``is_element`` property is False), the ``Meta*`` acts the same way as
-      whatever container it is. (list, dict, set...etc.)
-
-      An easy example for ``Meta*``, say we have a ``MetaDict`` as below:
-      {'a': e(1), 'b': {'c': e(2), 'd': e(3)}}, it is a dict of ``MetaObject``s,
-      The e(1) is an ``Element`` and the {'c': e(2), 'd': e(3)} is a
-      ``MetaDict``.
-
-An usecase is in ``Predator``, ``Feature`` inherits ``Element`` and
-``MetaFeature`` inherits ``MetaDict``, so for some relevant features, we can
-group them together to get a ``MetaFeature``..
+An use case in Predator is that being a subclass of ``MetaDict``,
+``MetaFeature``  can group relevant features together to share common
+operations.
 """
-
-import copy
-
 
 class MetaObject(object):
   """Class that can be either one element or a collection of elements."""
 
-  def IsElement(self):  # pragma: no cover
-    return NotImplementedError()
-
-
-class Element(MetaObject):
-  """Element class that cannot be divided anymore."""
-
   @property
-  def is_element(self):
+  def is_meta(self):  # pragma: no cover
     return True
 
 
-class MetaDict(MetaObject):
+class MetaDict(dict, MetaObject):
   """Dict-like object containing a collection of ``MetaObject``s."""
 
-  def __init__(self, value):
-    """Construct a meta dict from a dict of meta objects.
-
-    Args:
-      value (dict): Dict of meta objects.
-    """
-    try:
-      self._value = copy.deepcopy(value)
-    except TypeError:  # pragma: no cover
-      self._value = copy.copy(value)
-
   @property
-  def is_element(self):
-    return False
+  def leaves(self):
+    """Gets a dict of all leaf items."""
+    leaves = {}
+    for key, value in self.iteritems():
+      if not hasattr(value, 'is_meta'):
+        leaves[key] = value
+      else:
+        leaves.update(value.leaves)
 
-  def __getitem__(self, key):
-    return self._value[key]
+    return leaves
 
-  def __setitem__(self, key, val):
-    self._value[key] = val
+  def iterleaves(self):
+    """Iterates leaf items."""
+    for key, value in self.iteritems():
+      if not hasattr(value, 'is_meta'):
+        yield (key, value)
+      else:
+        for sub_key, sub_value in value.iterleaves():
+          yield (sub_key, sub_value)
 
-  def get(self, key, default=None):
-    return self._value.get(key, default)
-
-  def __iter__(self):
-    return iter(self._value)
+  def UpdateLeaves(self, leaves):
+    """Update leaf nodes by a dict - ``leaves``."""
+    for key, value in self.iteritems():
+      if not hasattr(value, 'is_meta'):
+        if key in leaves:
+          self[key] = leaves[key]
+      else:
+        value.UpdateLeaves(leaves)
 
   def __eq__(self, other):
-    return self._value == other._value
-
-  def iteritems(self):
-    return self._value.iteritems()
-
-  def itervalues(self):
-    return self._value.itervalues()
-
-  def keys(self):
-    return self._value.keys()
-
-  def values(self):
-    return self._value.values()
-
-  @property
-  def dict(self):
-    return self._value
-
-  @property
-  def flat_dict(self):
-    """Flattens meta dict to a flat dict."""
-    flat_dict = {}
     for key, value in self.iteritems():
-      if value.is_element:
-        flat_dict[key] = value
-      else:
-        flat_dict.update(value.flat_dict)
+      if key not in other or value != other[key]:
+        return False
 
-    return flat_dict
+    return True
+
+  def __ne__(self, other):
+    return not self.__eq__(other)

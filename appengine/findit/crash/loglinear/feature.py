@@ -8,7 +8,6 @@ import math
 
 import libs.math.logarithms as lmath
 from libs.math.vectors import vsum
-from libs.meta_object import Element
 from libs.meta_object import MetaDict
 
 
@@ -84,7 +83,7 @@ class ChangedFile(namedtuple('ChangedFile',
         % (self.__class__.__name__, self.name, self.blame_url, self.reasons))
 
 
-class FeatureValue(Element): # pragma: no cover
+class FeatureValue(object): # pragma: no cover
   """The result of an feature.
 
   Attributes:
@@ -97,8 +96,6 @@ class FeatureValue(Element): # pragma: no cover
       by the ``Suspect`` annotated with reasons why the feature function
       generating this object blames those changes.
   """
-  __slots__ = ()
-
   def __init__(self, name, value, reason, changed_files):
     self._value = float(value)
     self._name = name
@@ -125,9 +122,6 @@ class FeatureValue(Element): # pragma: no cover
     return ('%s(name = %s, value = %f, reason = %s, changed_files = %s)'
         % (self.__class__.__name__, self.name, self.value, self.reason,
            self.changed_files))
-
-  def __len__(self):
-    return 1
 
   def __mul__(self, number):
     return self._value * float(number)
@@ -189,7 +183,7 @@ class MetaFeatureValue(MetaDict):
       if not feature.reason:
         continue
 
-      if feature.is_element:
+      if not hasattr(feature, 'is_meta'):
         reasons[feature.name] = feature.reason
       else:
         reasons.update(feature.reason)
@@ -233,19 +227,19 @@ class MetaFeatureValue(MetaDict):
     self._changed_files.sort(key=lambda changed_file: changed_file.name)
     return self._changed_files
 
-  def __len__(self):
-    return len(self._value)
-
   def __eq__(self, other):
-    return (self.name == other.name and self._value == other._value and
+    if not (self.name == other.name and
             self.reason == other.reason and
-            self.changed_files == other.changed_files)
+            self.changed_files == other.changed_files):
+      return False
+
+    return super(MetaFeatureValue, self).__eq__(other)
 
   def __ne__(self, other):
     return not self.__eq__(other)
 
 
-class Feature(Element):
+class Feature(object):
   """Abstract base class for features use by loglinear models."""
 
   @property

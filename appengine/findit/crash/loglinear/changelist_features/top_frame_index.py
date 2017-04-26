@@ -89,9 +89,6 @@ class TopFrameIndexFeature(Feature):
             top_frame.index, re.sub('\(.*\)', '', top_frame.function),
             os.path.basename(top_frame.file_path))
 
-      return FeatureValue(name=self.name,
-                          value=value,
-                          reason=reason,
-                          changed_files=None)
+      return FeatureValue(self.name, value, reason, None)
 
     return FeatureValueGivenReport
