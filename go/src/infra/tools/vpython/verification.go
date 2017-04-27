@@ -32,7 +32,7 @@ func verificationGen(c context.Context, vf application.VerificationFunc) {
 		{"linux", "386", tag("cp27", "cp27mu", "manylinux1_i686")},
 		{"linux", "amd64", tag("cp27", "cp27mu", "manylinux1_x86_64")},
 		{"linux", "arm64", tag("cp27", "cp27mu", "linux_arm64")},
-		{"linux", "mips64", tag("cp27", "none", "linux_mips64")},
+		{"linux", "mips64", tag("cp27", "cp27mu", "linux_mips64")},
 
 		// NOTE: CIPD generalizes "platform" to "armv6l" even on armv7l platforms.
 		{"linux", "armv6l", tag("cp27", "cp27mu", "linux_armv6l")},
