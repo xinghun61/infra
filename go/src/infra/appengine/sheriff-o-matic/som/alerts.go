@@ -23,6 +23,11 @@ import (
 	"github.com/luci/luci-go/server/router"
 )
 
+const (
+	// Maximum number of alerts to autoresolve at once to datastore to avoid exceedding datasize limits.
+	maxAlertsAutoResolveCount = 100
+)
+
 var (
 	masterStateURL = "https://chrome-internal.googlesource.com/infradata/master-manager/+/master/desired_master_state.json?format=text"
 	masterStateKey = "masterState"
@@ -206,11 +211,22 @@ func putAlertsDatastore(c context.Context, tree string, alertsSummary *messages.
 				alert.AutoResolved = true
 				alert.ResolvedDate = now
 				alertJSONs = append(alertJSONs, alert)
+
+				// Avoid really large datastore transactions.
+				if len(alertJSONs) > maxAlertsAutoResolveCount {
+					err = datastore.Put(c, alertJSONs)
+					if err != nil {
+						return err
+					}
+					alertJSONs = []*AlertJSON{}
+				}
 			}
 		}
-		err = datastore.Put(c, alertJSONs)
-		if err != nil {
-			return err
+		if len(alertJSONs) >= 1 {
+			err = datastore.Put(c, alertJSONs)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

@@ -327,7 +327,6 @@ func TestMain(t *testing.T) {
 					results = []*AlertJSON{}
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldHaveLength, 1)
-					fmt.Print(results)
 					itm := results[0]
 					So(itm.Tree, ShouldResemble, alertJSON.Tree)
 					rslt := make(map[string]interface{})
@@ -366,7 +365,6 @@ func TestMain(t *testing.T) {
 					q = q.Eq("Resolved", false)
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldHaveLength, 1)
-					fmt.Print(results)
 					itm = results[0]
 					So(itm.Tree, ShouldResemble, alertJSON.Tree)
 					rslt = make(map[string]interface{})
@@ -380,7 +378,6 @@ func TestMain(t *testing.T) {
 					q = q.Eq("Resolved", true)
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldHaveLength, 1)
-					fmt.Print(results)
 					itm = results[0]
 					So(itm.Tree, ShouldResemble, alertJSON.Tree)
 					So(itm.AutoResolved, ShouldEqual, true)
@@ -411,7 +408,6 @@ func TestMain(t *testing.T) {
 					q = q.Eq("Resolved", false)
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldHaveLength, 1)
-					fmt.Print(results)
 					itm = results[0]
 					So(itm.Tree, ShouldResemble, alertJSON.Tree)
 					rslt = make(map[string]interface{})
@@ -425,13 +421,67 @@ func TestMain(t *testing.T) {
 					q = q.Eq("Resolved", true)
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldHaveLength, 1)
-					fmt.Print(results)
 					itm = results[0]
 					So(itm.Tree, ShouldResemble, alertJSON.Tree)
 					So(itm.AutoResolved, ShouldEqual, true)
 					rslt = make(map[string]interface{})
 					So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
 					So(rslt["key"], ShouldEqual, "test2")
+				})
+
+				Convey("POST auto-resolve many", func() {
+					q := datastore.NewQuery("AlertJSON")
+					results := []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldBeEmpty)
+
+					for i := 0; i < 123; i++ {
+						alert := &AlertJSON{
+							ID:       fmt.Sprintf("test %d", i),
+							Tree:     datastore.MakeKey(c, "Tree", "oak"),
+							Resolved: false,
+							Contents: []byte(contents),
+						}
+						So(datastore.Put(c, alert), ShouldBeNil)
+					}
+
+					// Add an alert.
+					postAlertsHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makePostRequest(`{"alerts":[{"key": "test"}], "timestamp": 12345.0, "revision_summaries":{"123": {"git_hash": "123"}}}`),
+						Params:  makeParams("tree", "oak"),
+					})
+
+					So(w.Code, ShouldEqual, http.StatusOK)
+
+					r, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					body := string(r)
+					So(w.Code, ShouldEqual, 200)
+					So(body, ShouldEqual, "")
+
+					// Verify the expected alert.
+					datastore.GetTestable(c).CatchupIndexes()
+					results = []*AlertJSON{}
+					So(datastore.GetAll(c, q, &results), ShouldBeNil)
+					So(results, ShouldHaveLength, 124)
+					resolvedCount := 0
+					keyMatchCount := 0
+					for _, itm := range results {
+						if itm.Resolved {
+							resolvedCount++
+						}
+						if itm.ID == "test" {
+							keyMatchCount++
+						}
+						So(itm.Tree, ShouldResemble, alertJSON.Tree)
+						rslt := make(map[string]interface{})
+						So(json.NewDecoder(bytes.NewReader(itm.Contents)).Decode(&rslt), ShouldBeNil)
+						So(rslt["key"], ShouldEqual, "test")
+					}
+					So(resolvedCount, ShouldEqual, 123)
+					So(keyMatchCount, ShouldEqual, 1)
 				})
 
 				Convey("POST err", func() {
