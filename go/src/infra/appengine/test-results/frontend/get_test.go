@@ -131,7 +131,7 @@ func TestGetHandler(t *testing.T) {
 		})
 	})
 
-	FocusConvey("getHandler::respondTestFileList", t, func() {
+	Convey("getHandler::respondTestFileList", t, func() {
 		ctx := memory.Use(context.Background())
 
 		withTestingContext := func(c *router.Context, next router.Handler) {
