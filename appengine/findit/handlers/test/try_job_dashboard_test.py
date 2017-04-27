@@ -110,6 +110,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     try_job_in_progress.try_job_type = 'compile'
     try_job_in_progress.start_time = datetime(2016, 5, 4, 0, 0, 1)
     try_job_in_progress.request_time = datetime(2016, 5, 4, 0, 0, 0)
+    try_job_in_progress.created_time = datetime(2016, 5, 4, 0, 0, 0)
     try_job_in_progress.try_job_url = 'url1'
     try_job_in_progress.last_buildbucket_response = {'status': 'STARTED'}
     try_job_in_progress.put()
@@ -119,6 +120,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     try_job_with_error.try_job_type = 'compile'
     try_job_with_error.start_time = datetime(2016, 5, 4, 0, 0, 1)
     try_job_with_error.request_time = datetime(2016, 5, 4, 0, 0, 0)
+    try_job_with_error.created_time = datetime(2016, 5, 4, 0, 0, 0)
     try_job_with_error.end_time = datetime(2016, 5, 4, 0, 0, 2)
     try_job_with_error.try_job_url = 'url2'
     try_job_with_error.error = {
@@ -135,6 +137,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     try_job_completed.try_job_type = 'compile'
     try_job_completed.start_time = datetime(2016, 5, 4, 0, 0, 1)
     try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
+    try_job_completed.created_time = datetime(2016, 5, 4, 0, 0, 0)
     try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
     try_job_completed.try_job_url = 'url3'
     try_job_completed.culprits = {
@@ -152,6 +155,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         'm', 'b', 's', 't', 'a1b2c3d4').key
     flake_try_job_completed.start_time = datetime(2016, 5, 4, 0, 0, 1)
     flake_try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
+    flake_try_job_completed.created_time = datetime(2016, 5, 4, 0, 0, 0)
     flake_try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
     flake_try_job_completed.try_job_url = 'url4'
     flake_try_job_completed.analysis_key = ndb.Key('key', 1)
@@ -229,6 +233,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
         'm', 'b', 's', 't', 'a1b2c3d4').key
     flake_try_job_completed.start_time = datetime(2016, 5, 4, 0, 0, 1)
     flake_try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
+    flake_try_job_completed.created_time = datetime(2016, 5, 4, 0, 0, 0)
     flake_try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
     flake_try_job_completed.try_job_url = 'url4'
     flake_try_job_completed.analysis_key = ndb.Key('key', 1)
@@ -264,6 +269,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     try_job_completed.try_job_type = 'compile'
     try_job_completed.start_time = datetime(2016, 5, 4, 0, 0, 1)
     try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
+    try_job_completed.created_time = datetime(2016, 5, 4, 0, 0, 0)
     try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
     try_job_completed.try_job_url = 'url3'
     try_job_completed.culprits = {

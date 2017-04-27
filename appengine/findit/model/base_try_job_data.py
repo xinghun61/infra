@@ -10,6 +10,9 @@ from model.base_try_job import BaseTryJob
 class BaseTryJobData(ndb.Model):
   """Represents a tryjob's metadata."""
 
+  # When this entity was created.
+  created_time = ndb.DateTimeProperty(indexed=True)
+
   # When the try job completed.
   end_time = ndb.DateTimeProperty(indexed=True)
 
@@ -22,7 +25,7 @@ class BaseTryJobData(ndb.Model):
   # The last buildbucket build response received.
   last_buildbucket_response = ndb.JsonProperty(indexed=False, compressed=True)
 
-  # When the try job was created.
+  # When the try job was requested according to buildbucket.
   request_time = ndb.DateTimeProperty(indexed=True)
 
   # When the try job began executing.

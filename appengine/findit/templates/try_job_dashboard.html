@@ -99,7 +99,7 @@
                 {% endif %}
               </td>
               <td>{{ try_job_display_data.try_job_type }}</td>
-              <td>{{ try_job_display_data.request_time }}</td>
+              <td>{{ try_job_display_data.request_time or try_job_display_data.created_time }}</td>
               <td>{{ try_job_display_data.pending_time }}</td>
               <td>{{ try_job_display_data.elapsed_time }}</td>
               <td>{{ try_job_display_data.status }}</td>

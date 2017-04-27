@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from common.waterfall import failure_type
+from libs import time_util
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
@@ -24,6 +25,7 @@ class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
   def _CreateTryJobData(
       self, build_id, try_job_key, has_compile_targets, has_heuristic_results):
     try_job_data = WfTryJobData.Create(build_id)
+    try_job_data.created_time = time_util.GetUTCNow()
     try_job_data.has_compile_targets = has_compile_targets
     try_job_data.has_heuristic_results = has_heuristic_results
     try_job_data.try_job_key = try_job_key

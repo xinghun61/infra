@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from common.waterfall import failure_type
+from libs import time_util
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from waterfall import waterfall_config
@@ -41,6 +42,7 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
   @ndb.transactional
   def _CreateTryJobData(self, build_id, try_job_key, urlsafe_analysis_key):
     try_job_data = FlakeTryJobData.Create(build_id)
+    try_job_data.created_time = time_util.GetUTCNow()
     try_job_data.try_job_key = try_job_key
     try_job_data.analysis_key = ndb.Key(urlsafe=urlsafe_analysis_key)
     try_job_data.put()

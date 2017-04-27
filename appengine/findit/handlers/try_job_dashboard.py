@@ -55,12 +55,14 @@ def _FormatDisplayData(try_job_data):
   """Returns information of a WfTryJobData/FlakeTryJobData as a dict."""
   display_data = try_job_data.to_dict()
 
-  for attribute in ('start_time', 'end_time', 'request_time'):
+  for attribute in ('created_time', 'start_time', 'end_time', 'request_time'):
     display_data[attribute] = time_util.FormatDatetime(
         display_data[attribute])
 
-  display_data['pending_time'] = _FormatDuration(
-      try_job_data.request_time, try_job_data.start_time)
+  display_data['pending_time'] = (
+      _FormatDuration(try_job_data.request_time, try_job_data.start_time) if
+      try_job_data.start_time else
+      _FormatDuration(try_job_data.created_time, time_util.GetUTCNow()))
   display_data['last_buildbucket_response'] = json.dumps(
       _PrepareBuildbucketResponseForDisplay(
           display_data['last_buildbucket_response']), sort_keys=True)
@@ -114,23 +116,23 @@ class TryJobDashboard(BaseHandler):
 
     if category.lower() == 'flake':
       try_job_data_list = FlakeTryJobData.query(
-          FlakeTryJobData.request_time >= start_date,
-          FlakeTryJobData.request_time < end_date).fetch()
+          FlakeTryJobData.created_time >= start_date,
+          FlakeTryJobData.created_time < end_date).fetch()
     elif category.lower() == 'waterfall':
       try_job_data_list = WfTryJobData.query(
-          WfTryJobData.request_time >= start_date,
-          WfTryJobData.request_time < end_date).fetch()
+          WfTryJobData.created_time >= start_date,
+          WfTryJobData.created_time < end_date).fetch()
     else:
       wf_try_job_query = WfTryJobData.query(
-          WfTryJobData.request_time >= start_date,
-          WfTryJobData.request_time < end_date)
+          WfTryJobData.created_time >= start_date,
+          WfTryJobData.created_time < end_date)
       flake_try_job_query = FlakeTryJobData.query(
-          FlakeTryJobData.request_time >= start_date,
-          FlakeTryJobData.request_time < end_date)
+          FlakeTryJobData.created_time >= start_date,
+          FlakeTryJobData.created_time < end_date)
       try_job_data_list = wf_try_job_query.fetch() + flake_try_job_query.fetch()
 
-    # Sort try job data list by most recent request first.
-    try_job_data_list.sort(key=lambda x: x.request_time, reverse=True)
+    # Sort try job data list by most recent first.
+    try_job_data_list.sort(key=lambda x: x.created_time, reverse=True)
 
     try_jobs_in_progress = []
     try_jobs_with_error = []
@@ -140,9 +142,10 @@ class TryJobDashboard(BaseHandler):
       display_data = _FormatDisplayData(try_job_data)
 
       if not try_job_data.end_time and not try_job_data.error:
+        start_time = try_job_data.request_time or try_job_data.created_time
+        now = time_util.GetUTCNow()
         display_data['elapsed_time'] = (
-            _FormatDuration(try_job_data.request_time, time_util.GetUTCNow()) if
-            try_job_data.request_time else None)
+            _FormatDuration(start_time, now) if start_time else None)
         display_data['status'] = (
             'running' if try_job_data.start_time else 'pending')
         try_jobs_in_progress.append(display_data)
