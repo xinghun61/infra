@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <link rel="stylesheet" href="/common.css"></link>
+  <title>Crash Configuration</title>
+  <script>
+    var crash = {};
+    crash.fracas = {{ fracas | tojson | safe }};
+    crash.cracas = {{ cracas | tojson | safe }};
+    crash.component_classifier = {{ component_classifier | tojson | safe }};
+    crash.project_classifier = {{ project_classifier | tojson | safe }};
+
+    function getJsonOfTextarea(textId) {
+      return JSON.parse($('#' + textId).val());
+    }
+
+    function getStringFromJson(json) {
+      return JSON.stringify(json, null, '  ');
+    }
+
+    function save(e) {
+      var newConfig = {
+        'fracas': getJsonOfTextarea('fracas'),
+        'cracas': getJsonOfTextarea('cracas'),
+        'component_classifier': getJsonOfTextarea('component-classifier'),
+        'project_classifier': getJsonOfTextarea('project-classifier'),
+      };
+      $.post('/crash/config', { data: JSON.stringify(newConfig) }).done(function() {
+        window.location.reload();  // Reload after successful saving.
+      }).fail(function(xhr) {
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
+      e.preventDefault();
+    }
+
+    $(document).ready(function() {
+      $('#save-button').click(save);
+      $('#fracas').val(getStringFromJson(crash.fracas));
+      $('#cracas').val(getStringFromJson(crash.cracas));
+      $('#component-classifier').val(getStringFromJson(crash.component_classifier));
+      $('#project-classifier').val(getStringFromJson(crash.project_classifier));
+    });
+  </script>
+</head>
+<body>
+  <h3>Crash Configuration</h3>
+  <div>
+    Settings for Fracas:<br>
+    <textarea id="fracas" rows="20" cols="80"></textarea>
+  </div>
+  <div>
+    Settings for Cracas:<br>
+    <textarea id="cracas" rows="20" cols="80"></textarea>
+  </div>
+  <div>
+    Settings for component classifier:<br>
+    <textarea id="component-classifier" rows="20" cols="80"></textarea>
+  </div>
+  <div>
+    Settings for project classifier:<br>
+    <textarea id="project-classifier" rows="20" cols="80"></textarea>
+  </div>
+  <button type="submit" id="save-button">Save</button>
+</body>

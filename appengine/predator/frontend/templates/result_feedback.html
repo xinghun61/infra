@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<head>
+  <title>{{client}} result feedback</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <style>
+    .error {
+      color: #ffffff;
+      background-color: #e98080;
+      border-color: #a77272;
+    }
+    .correct {
+      border-top: solid 1px;
+      border-bottom: solid 1px;
+      border-left: solid 1px;
+      border-top-left-radius: 7px;
+      border-bottom-left-radius: 7px;
+      padding-left: 10px;
+      padding-right: 10px;
+      margin: auto;
+    }
+    .incorrect {
+      border: solid 1px;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+    .unsure {
+      border-top: solid 1px;
+      border-bottom: solid 1px;
+      border-right: solid 1px;
+      border-top-right-radius: 7px;
+      border-bottom-right-radius: 7px;
+      padding-left: 10px;
+      padding-right: 14px;
+    }
+    .correct:hover, .correct.triaged {
+      background-color: #8fdf5f;
+    }
+    .incorrect:hover, .incorrect.triaged {
+      background-color: #e98080;
+    }
+    .unsure:hover, .unsure.triaged {
+      background-color: #FFD700;
+    }
+  </style>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script>
+    var analysis_completed = '{{analysis_completed}}' == 'True';
+    var analysis_failed = '{{analysis_failed}}' == 'True';
+    var analysis_correct = {{analysis_correct | tojson | safe}};
+    var regression_range = {{regression_range | tojson | safe}};
+    var suspected_cls = {{suspected_cls | tojson | safe}};
+    var suspected_project = '{{suspected_project}}';
+    var suspected_components = {{suspected_components | tojson | safe}};
+
+    var culprit_regression_range = {{culprit_regression_range | tojson | safe}};
+    var culprit_cls = {{culprit_cls | tojson | safe}};
+    var culprit_project = '{{culprit_project}}' == 'None' ? undefined : '{{culprit_project}}';
+    var culprit_components = {{culprit_components | tojson | safe}};
+
+    var note = {{note | tojson | safe}}
+    var note = note == null ? undefined : note.replace(/['"]+/g, '');
+
+    function createUrl(base_url, parameters) {
+      var params = [];
+      for(var key in parameters) {
+        if (parameters[key] != undefined) {
+          params.push(key + '=' + parameters[key]);
+        }
+      }
+
+      if (params.length == 0) {
+        return base_url;
+      } else {
+        return base_url + '?' + params.join('&');
+      }
+    }
+
+
+    function constructMonorailUrl() {
+      var parameters = {};
+      parameters.status = 'Unconfirmed';
+      parameters.labels = 'Pri-2,Restrict-View-Google';
+      parameters.components = 'Tools>Test>Predator';
+      parameters.summary = encodeURIComponent('[Predator] Predator bug or feature');
+      parameters.comment = encodeURIComponent(
+          'Signature: {{signature}}\nVersion: {{version}}\n' +
+          'Channel: {{channel}}\nPlatform: {{platform}}\n\n' +
+          'Predator result: ' + window.location.href +
+          '\n\nWhat is the bug or feature?');
+      return createUrl('https://code.google.com/p/chromium/issues/entry',
+                       parameters);
+    }
+
+
+    function getCulpritPropertyNameForResult(result) {
+      if (result.match('^suspected'))
+        return result.replace('suspected', 'culprit');
+
+      return 'culprit_' + result;
+    }
+
+    function convertClsToString(cls) {
+      result_str = '';
+      for (var i in cls) {
+        result_str += cls[i] + '\n';
+      }
+      return result_str;
+    }
+
+    //Action to take when click triage (correct/incorrect/unsure) buttons.
+    function triageAnalysisResult(e) {
+      var target = $(this);
+      if (target.hasClass('triaged'))
+        return;
+
+      var new_analysis = {};
+      var update_data = {};
+      var result = target.attr('result_property');
+      var culprit_result = getCulpritPropertyNameForResult(result)
+      if (target.hasClass('incorrect')) {
+        var triage_status = 1;
+        update_data[culprit_result] = null;
+      } else if (target.hasClass('correct')) {
+        var triage_status = 2;
+        //Converts a list of suspected cl dicts to a list of commit urls.
+        if (result == 'suspected_cls') {
+          var culprits = [];
+          for (var i in window[result]) {
+            culprits[i] = window[result][i]['url'];
+          }
+        }
+        else {
+          var culprits = window[result];
+        }
+        update_data[culprit_result] = culprits;
+      } else if (target.hasClass('unsure')) {
+        var triage_status = 3;
+        update_data[culprit_result] = null;
+      }
+      update_data[result + '_triage_status'] = triage_status;
+
+      $.post('triage-analysis?key={{key}}', {'update-data': JSON.stringify(update_data)}, function(data) {
+        if (data['success']) {
+          $('.triaged[result_property=\'' + result + '\']').addClass('triage').removeClass('triaged');
+          target.addClass('triaged').removeClass('triage');
+          if (triage_status == 2) {
+            culprit_result_str = update_data[culprit_result];
+            if (culprit_result == 'culprit_cls') {
+              culprit_result_str = convertClsToString(update_data[culprit_result])
+            }
+            $('#' + culprit_result).val(culprit_result_str);
+          }
+          //Show the input box for suspected_cl anyway even if the triage result is correct, this is because we may have 3 result, but only one of them is correct,
+          //we want the know the exact correct culprit.
+          if (result == 'suspected_cls' || triage_status != 2) {
+            $('#' + result + '_culprit_input').removeClass('not-display');
+          }
+          else {
+            $('#' + result + '_culprit_input').addClass('not-display');
+          }
+        } else {
+          alert('Failed to update triage results. Please refresh and try again.');
+        }
+      }).error(function(xhr) {
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
+      e.preventDefault();
+    }
+
+
+    //Action after clicking save button.
+    function saveCulprits(e) {
+      e.preventDefault();
+      var update_data = {};
+      var properties = ['culprit_regression_range', 'culprit_cls', 'culprit_project', 'culprit_components', 'note']
+      for (var i in properties) {
+        var value = $('#' + properties[i]).val()
+        if (value) {
+          if (properties[i] == 'culprit_cls') {
+            value = value.split('\n').filter(function(s) {return s != ''})
+          }
+          update_data[properties[i]] = value;
+        }
+      }
+      $.post('triage-analysis?key={{key}}', {'update-data': JSON.stringify(update_data)}, function(data) {
+          if (!data['success']) {
+            alert('Failed to update datastore. Please refresh and try again.');
+          }
+        }).error(function(xhr) {
+          // Replace the whole page with errors from server side.
+          document.body.outerHTML = xhr.responseText;
+        });
+    }
+
+
+    $(document).ready(function() {
+      $('#monorail-bug').attr('href', constructMonorailUrl());
+      $('.triage').click(triageAnalysisResult);
+      $.each(analysis_correct, function(result, triage_status) {
+        if (triage_status == 1) {  // Triaged-incorrect.
+          $('.incorrect[result_property=\'' + result + '\']').addClass('triaged').removeClass('triage');
+          $('#' + result + '_culprit_input').removeClass('not-display');
+        } else if (triage_status == 2) {  // Triaged-correct.
+          $('.correct[result_property=\'' + result + '\']').addClass('triaged').removeClass('triage');
+          if (result == 'suspected_cls') {
+            $('#' + result + '_culprit_input').removeClass('not-display');
+          } else {
+            $('#' + result + '_culprit_input').addClass('not-display');
+          }
+        } else if (triage_status == 3) {  // Triaged-unsure.
+          $('.unsure[result_property=\'' + result + '\']').addClass('triaged').removeClass('triage');
+          $('#' + result + '_culprit_input').removeClass('not-display');
+        }
+      });
+      $('#culprit_regression_range').val(culprit_regression_range);
+      $('#culprit_cls').val(convertClsToString(culprit_cls));
+      $('#culprit_project').val(culprit_project);
+      $('#culprit_components').val(culprit_components);
+      $('#note').val(note);
+      $('#save-button').click(saveCulprits);
+    })
+  </script>
+</head>
+<body>
+  <div>
+    {% if crash_url %}
+      <a href='{{crash_url}}'><b>Crash:</b></a>
+    {% else %}
+      <b>Crash:</b>
+    {% endif %}
+    (<a href="#" id='monorail-bug'>File a Predator bug</a>)<br>
+    Signature: {{signature}}<br>
+    Version: <a href="https://chromium.googlesource.com/chromium/src.git/+/{{version}}">{{version}}</a><br>
+    {% if channel %}
+      Channel: {{channel}}<br>
+    {% endif %}
+    Platform: {{platform}}<br>
+    Request time: {{request_time}}<br>
+    <br>
+  </div>
+
+  <div>
+    <b> Stacktrace: </b>
+    <pre>{{stack_trace}}</pre>
+  </div>
+
+  {% if historical_metadata %}
+    <div>
+      <br>
+      <b> Historical metadata (last 20 versions):</b>
+      <table id="reliable_failures_table">
+        <tbody>
+          <tr>
+            <td align="center">Version</td>
+            {% for metadata in historical_metadata %}
+              <td align="center" width="40"> {{metadata.chrome_version}} </td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td align="center">CPM</td>
+            {% for metadata in historical_metadata %}
+              <td align="center" width="40"> {{metadata.cpm}} </td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td align="center">Total clients</td>
+            {% for metadata in historical_metadata %}
+              <td align="center" width="40"> {{metadata.client_number}} </td>
+            {% endfor %}
+          </tr>
+          <tr>
+            <td align="center">Total reports</td>
+            {% for metadata in historical_metadata %}
+              <td align="center" width="40"> {{metadata.report_number}} </td>
+            {% endfor %}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  <div>
+    <br>
+    <b> Regression range: </b>
+    {% if regression_range %}
+      <a href="https://chromium.googlesource.com/chromium/src/+log/{{regression_range[0]}}..{{regression_range[1]}}?pretty=fuller">{{regression_range[0]}} : {{regression_range[1]}}</a>
+    {% else %}
+      Not found
+    {% endif %}
+    <br>
+    <div class="triage-area">
+      <div class="triage correct" result_property="regression_range">Correct<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_satisfied_black_24dp.png"/></div>
+      <div class="triage incorrect" result_property="regression_range">Incorrect<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_dissatisfied_black_24dp.png"/></div>
+      <div class="triage unsure" result_property="regression_range">Unsure<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_neutral_black_24dp.png"/></div>
+      <div class="not-display" id="regression_range_culprit_input">
+        <br><br>Culprit regression range: (e.g. 53.0.2749.0, 53.0.2750.0)<br>
+        <textarea id="culprit_regression_range" size="30" rows="1" cols="30"></textarea>
+      </div>
+    </div>
+  <div>
+
+  <div>
+    <br><br>
+    {% if analysis_failed or not analysis_completed %}
+    <span class="error">No result because of some error in analysis!<br></span>
+    {% else %}
+    <b> Suspected cls: </b>
+      {% if suspected_cls %}
+      <table id="suspected_cls_table">
+        <tr>
+          <th>Suspected cls</th>
+          <th>Author</th>
+          <th>Time</th>
+          <th>Score</th>
+          <th>Reasons</th>
+          <th>Changed files</th>
+        </tr>
+        <tbody>
+          {% for suspected_cl in suspected_cls %}
+            <tr>
+              <td align="center"> <a href={{suspected_cl.url}}>{{suspected_cl.revision}}</a> </td>
+              <td align="center"> <a href={{suspected_cl.author}}>{{suspected_cl.author}}</a> </td>
+              <td align="center"> <a href={{suspected_cl.time}}>{{suspected_cl.time}}</a> </td>
+              <td align="center"> {{suspected_cl.confidence}} </td>
+              <td align="left"><pre>{{suspected_cl.reasons}}</pre></td>
+              <td align="left">
+                {% for changed_file in suspected_cl.changed_files %}
+                  <li>
+                  <a href={{changed_file.blame_url}}>{{changed_file.file}}</a><br>
+                  <pre>{{changed_file.info}}</pre>
+                  </li>
+                {% endfor %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        Not found <br>
+      {% endif %}
+    {% endif %}
+    <div class="triage-area">
+      <div class="triage correct" result_property="suspected_cls">Correct<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_satisfied_black_24dp.png"/></div>
+      <div class="triage incorrect" result_property="suspected_cls">Incorrect<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_dissatisfied_black_24dp.png"/></div>
+      <div class="triage unsure" result_property="suspected_cls">Unsure<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_neutral_black_24dp.png"/></div>
+      <div class="not-display" id="suspected_cls_culprit_input">
+        <br><br>Culprit suspected cls: (e.g.  https://chromium.googlesource.com/chromium/src/+/346a46f9cc4151e989b961d2d0429d16aeb49c14)<br>
+        <textarea id="culprit_cls" size="30" rows="3" cols="100"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <br><br>
+    <b> Suspected project: </b>
+    {% if suspected_project %}
+      {{suspected_project}}
+    {% else %}
+      Not found
+    {% endif %}
+    <br>
+    <div class="triage-area">
+      <div class="triage correct" result_property="suspected_project">Correct<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_satisfied_black_24dp.png"/></div>
+      <div class="triage incorrect" result_property="suspected_project">Incorrect<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_dissatisfied_black_24dp.png"/></div>
+      <div class="triage unsure" result_property="suspected_project">Unsure<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_neutral_black_24dp.png"/></div>
+      <div class="not-display" id="suspected_project_culprit_input">
+        <br><br>Culprit project: (e.g.  chromium)<br>
+        <textarea id="culprit_project" size="30" rows="1"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <br><br>
+    <b> Suspected components:</b>
+    {% if suspected_components %}
+      <br>
+      {% for component in suspected_components %}
+      <li>
+        {{component}}
+      </li>
+      {% endfor %}
+    {% else %}
+      Not found <br>
+    {% endif %}
+    <div class="triage-area">
+      <div class="triage correct" result_property="suspected_components">Correct<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_satisfied_black_24dp.png"/></div>
+      <div class="triage incorrect" result_property="suspected_components">Incorrect<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_dissatisfied_black_24dp.png"/></div>
+      <div class="triage unsure" result_property="suspected_components">Unsure<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_neutral_black_24dp.png"/></div>
+      <div class="not-display" id="suspected_components_culprit_input">
+        <br><br>Culprit components: (e.g.  Blink>API, Blink>DOM)<br>
+        <textarea id="culprit_components" rows="2"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <form>
+      <br><br>
+      <b>Note:<br></b>
+      <textarea id="note" rows="5" cols="80"></textarea>
+      <br>
+    </form>
+  </div>
+
+  <button type="submit" id="save-button">Save</button>
+
+  <div>
+    <br><br>
+    {% if triage_history %}
+    Triage history:
+    <table>
+      <tr><th>When</th><th>Who</th><th>Property</th><th>Result</th></tr>
+      <tbody>
+        {% for triage_record in triage_history %}
+          <tr>
+            <td>{{triage_record.triage_time}}</td>
+            <td>{{triage_record.user_name}}</td>
+            <td>{{triage_record.result_property}}</td>
+            <td>{{triage_record.triage_status}}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  <div>
+
+</body>

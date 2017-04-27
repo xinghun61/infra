@@ -7,7 +7,7 @@ import logging
 import math
 
 from analysis.crash_report import CrashReport
-from analysis.loglinear.model import UnnormalizedLogLinearModel
+from analysis.linear.model import UnnormalizedLogLinearModel
 from analysis.suspect import Suspect
 from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
 
