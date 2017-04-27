@@ -64,9 +64,17 @@
         type: Number,
         computed: '_computeNumComments(annotation.comments)',
       },
+      _snoozed: {
+        type: Boolean,
+        computed: '_compute(annotation.snoozeTime)',
+      },
       _snoozeText: {
         type: String,
         computed: '_computeSnoozeText(annotation.snoozed)',
+      },
+      _snoozeTimeLeft: {
+        type: String,
+        computed: '_computeSnoozeTimeLeft(annotation.snoozeTime)',
       },
       _snoozeIcon: {
         type: String,
@@ -164,6 +172,21 @@
 
     _computeSnoozeText: function(snoozed) {
       return snoozed ? 'Unsnooze' : 'Snooze';
+    },
+
+    _computeSnoozeTimeLeft: function(snoozeTime) {
+      if (!snoozeTime) return '';
+      let now = moment(new Date());
+      let later = moment(snoozeTime);
+      let duration = moment.duration(later.diff(now));
+      let text = '';
+      if (duration.hours()) {
+        text += duration.hours() + 'h ';
+      }
+      if (duration.minutes()) {
+        text += duration.minutes() + 'm ';
+      }
+      return text + 'left';
     },
 
     _computeCssClass: function(snoozed) {

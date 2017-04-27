@@ -185,7 +185,8 @@
                 <paper-input id="groupName" value="[[alert.title]]"></paper-input>
               </template>
               <template is="dom-if" if="[[!_hasUngroup]]">
-                [[alert.title]]
+                <span id="snoozeTitle" hidden="[[!annotation.snoozed]]">Snoozed ([[_snoozeTimeLeft]]): </span>
+                <span id="alertTitle">[[alert.title]]</span>
               </template>
             </div>
             <div id="handleLink" class="self-center" hidden$="[[!_helpLinkForAlert(alert)]]">
@@ -223,7 +224,7 @@
             </span>
           </div>
           <div class="alert-controls-buttons layout horizontal center flex-child wrap">
-            <paper-button class="horizontal layout center" id="link-bug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, tree)]]" raised noink>
+            <paper-button class="horizontal layout center" id="linkBug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, tree)]]" raised noink>
               <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
               Link/File Bug
             </paper-button>

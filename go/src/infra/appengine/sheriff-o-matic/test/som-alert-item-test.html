@@ -12,6 +12,7 @@
 <script>
 (function() {
   'use strict';
+  var clock;
   var element;
   var server;
   var responseHeaders = {
@@ -23,6 +24,7 @@
 
   setup(function() {
     element = fixture('basic');
+    clock = sinon.useFakeTimers();
     server = sinon.fakeServer.create();
     element.alert = {};
   });
@@ -42,7 +44,7 @@
       flush(function () {
         assert.equal(
             'test title',
-            element.$$('.alert-title').textContent.trim());
+            element.$$('#alertTitle').textContent.trim());
         done();
       });
     });
@@ -60,9 +62,9 @@
       flush(function () {
         assert.equal(
             'test title',
-            element.$$('.alert-title').textContent.trim());
-        assert.isFalse(element.$$('#link-bug').hidden);
-        assert.isFalse(element.$$('#snooze').hidden);
+            element.$$('#alertTitle').textContent.trim());
+        assert.isFalse(element.$.linkBug.hidden);
+        assert.isFalse(element.$.snooze.hidden);
         done();
       });
     });
@@ -85,9 +87,9 @@
 
         assert.equal(
             'test title',
-            element.$$('.alert-title').textContent.trim());
-        assert.isTrue(element.$$('#link-bug').hidden);
-        assert.isTrue(element.$$('#snooze').hidden);
+            element.$$('#alertTitle').textContent.trim());
+        assert.isTrue(element.$.linkBug.hidden);
+        assert.isTrue(element.$.snooze.hidden);
         done();
       });
     });
@@ -102,6 +104,26 @@
         snoozed: true,
       };
       assert.equal(element.$.snooze.title.trim(), 'Unsnooze');
+    });
+
+    test('snoozed adds text to header', function(done) {
+      element.annotation = {
+        snoozed: false,
+      };
+
+      expect(element.$$('#snoozeTitle')).be.hidden;
+
+      element.annotation = {
+        snoozed: true,
+        snoozeTime: 60 * 60 * 1000, // 60 minutes in milliseconds
+      };
+
+      flush(function () {
+        expect(element.$$('#snoozeTitle')).be.visible;
+        assert.equal(element.$$('#snoozeTitle').textContent.trim(),
+          'Snoozed (1h left):');
+        done();
+      });
     });
 
     test('snoozed affects class', function() {

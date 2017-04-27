@@ -34,6 +34,7 @@
 
       if (ann) {
         if (ann.snoozeTime) {
+          returnVal.snoozeTime = ann.snoozeTime;
           returnVal.snoozed = Date.now() < ann.snoozeTime;
         }
 
