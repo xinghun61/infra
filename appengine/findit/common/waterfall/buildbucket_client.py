@@ -20,6 +20,7 @@ _BUILDBUCKET_HOST = 'cr-buildbucket.appspot.com'
 _BUILDBUCKET_PUT_GET_ENDPOINT = (
     'https://{hostname}/api/buildbucket/v1/builds'.format(
         hostname=_BUILDBUCKET_HOST))
+_LUCI_PREFIX = 'luci.'
 
 
 def _GetBucketName(master_name):
@@ -28,21 +29,38 @@ def _GetBucketName(master_name):
   Buildbucket uses full master name (master.tryserver.chromium.linux) as bucket
   name, while Findit uses shortened master name (tryserver.chromium.linux).
   """
-  prefix = 'master.'
-  if master_name.startswith(prefix):
+  buildbot_prefix = 'master.'
+  if (master_name.startswith(buildbot_prefix) or
+      master_name.startswith(_LUCI_PREFIX)):
     return master_name
-  return '%s%s' % (prefix, master_name)
+  return '%s%s' % (buildbot_prefix, master_name)
 
 
 class TryJob(collections.namedtuple(
     'TryJobNamedTuple',
     ('master_name', 'builder_name', 'revision', 'properties', 'tags',
-     'additional_build_parameters'))
+     'additional_build_parameters', 'cache_name', 'dimensions'))
 ):
   """Represents a try-job to be triggered through Buildbucket.
 
   Tag for "user_agent" should not be set, as it will be added automatically.
   """
+  def _AddSwarmbucketOverrides(self, parameters):
+    assert self.cache_name
+    parameters['swarming'] = {
+        'override_builder_cfg': {
+            'caches': [{
+                'name': self.cache_name,
+                'path': 'builder'
+            }],
+        }
+    }
+    if 'recipe' in self.properties:
+      parameters['swarming']['override_builder_cfg']['recipe'] = {
+          'name': self.properties['recipe']}
+    if self.dimensions:
+      parameters['swarming']['override_builder_cfg']['dimensions'] = (
+          self.dimensions)
 
   def ToBuildbucketRequest(self):
     parameters_json = {
@@ -65,12 +83,19 @@ class TryJob(collections.namedtuple(
     tags = self.tags[:]
     tags.append('user_agent:findit')
 
+    bucket = _GetBucketName(self.master_name)
+    if bucket.startswith(_LUCI_PREFIX):
+      self._AddSwarmbucketOverrides(parameters_json)
+
     return {
-        'bucket': _GetBucketName(self.master_name),
+        'bucket': bucket,
         'parameters_json': json.dumps(parameters_json),
         'tags': tags,
         'pubsub_callback': MakeTryJobPubsubCallback(),
     }
+# Make the last two members optional.
+TryJob.__new__.__defaults__ = (None, None)
+
 
 
 class BuildbucketBuild(object):
