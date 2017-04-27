@@ -49,27 +49,26 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	if len(req.Paths) == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
-	runID, err := analyze(c, req, config.LuciConfigServer)
+	runID, code, err := analyze(c, req, config.LuciConfigServer)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "analyze failed: %v", err)
-		return nil, grpc.Errorf(codes.Internal, "failed to execute analyze request")
+		return nil, grpc.Errorf(code, "failed to execute analyze request")
 	}
 	logging.Infof(c, "[frontend] Run ID: %s", runID)
 	return &tricium.AnalyzeResponse{runID}, nil
 }
 
-func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderAPI) (string, error) {
+func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderAPI) (string, codes.Code, error) {
 	pc, err := cp.GetProjectConfig(c, req.Project)
 	if err != nil {
-		return "", fmt.Errorf("failed to get project config, project: %q: %v", req.Project, err)
+		return "", codes.Internal, fmt.Errorf("failed to get project config, project: %q: %v", req.Project, err)
 	}
 	ok, err := tricium.CanRequest(c, pc)
 	if err != nil {
-		return "", fmt.Errorf("failed to authorize: %v", err)
+		return "", codes.Internal, fmt.Errorf("failed to authorize: %v", err)
 	}
 	if !ok {
-		// TODO(emso): make this bubble up as a permission denied error
-		return "", fmt.Errorf("no request access for project %q", req.Project)
+		return "", codes.PermissionDenied, fmt.Errorf("no request access for project %q", req.Project)
 	}
 	// TODO(emso): Verify that there is no current run for this request (map hashed requests to run IDs).
 	// TODO(emso): Read Git repo info from the configuration projects/ endpoint.
@@ -124,7 +123,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		return tq.Add(c, common.LauncherQueue, t)
 	}, &ds.TransactionOptions{XG: true})
 	if err != nil {
-		return "", fmt.Errorf("failed to track and launch request: %v", err)
+		return "", codes.Internal, fmt.Errorf("failed to track and launch request: %v", err)
 	}
-	return strconv.FormatInt(run.ID, 10), nil
+	return strconv.FormatInt(run.ID, 10), codes.OK, nil
 }

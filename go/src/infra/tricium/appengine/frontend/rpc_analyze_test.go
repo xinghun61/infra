@@ -71,7 +71,7 @@ func TestAnalyze(t *testing.T) {
 				Identity: identity.Identity(okACLUser),
 			})
 
-			_, err := analyze(ctx, &tricium.AnalyzeRequest{
+			_, _, err := analyze(ctx, &tricium.AnalyzeRequest{
 				Project: project,
 				GitRef:  gitref,
 				Paths:   paths,
