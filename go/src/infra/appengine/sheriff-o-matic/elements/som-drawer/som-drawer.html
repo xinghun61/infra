@@ -83,30 +83,30 @@
         default-tree="{{defaultTree}}"
     ></som-settings>
 
-      <paper-menu attr-for-selected="value" selected="[[tree]]" selectable="paper-item" id="menu">
-        <paper-submenu id="treeMenu" opened>
-          <h2 class="menu-trigger" on-tap="toggleTree">
-            <iron-icon icon="folder"></iron-icon>Trees
-            <iron-icon icon="[[_treeIcon]]"></iron-icon>
-          </h2>
-          <div class="menu-content">
-            <template is="dom-repeat" items="[[_treeList]]" as="tree">
-              <paper-item value="[[tree.name]]" on-tap="_onSelected">[[tree.display_name]]</paper-item>
-            </template>
-          </div>
-        </paper-submenu>
+    <paper-menu attr-for-selected="value" selected="[[tree]]" selectable="paper-item" id="menu">
+      <paper-submenu id="treeMenu" opened>
+        <h2 class="menu-trigger" on-tap="toggleTree">
+          <iron-icon icon="folder"></iron-icon>Trees
+          <iron-icon icon="[[_treeIcon]]"></iron-icon>
+        </h2>
+        <div class="menu-content">
+          <template is="dom-repeat" items="[[_treeList]]" as="tree">
+            <paper-item value="[[tree.name]]" on-tap="_onSelected">[[tree.display_name]]</paper-item>
+          </template>
+        </div>
+      </paper-submenu>
 
-        <paper-submenu id="helpMenu" opened>
-          <h2 class="menu-trigger">
-            <iron-icon icon="help"></iron-icon>Help
-          </h2>
-          <div class="menu-content">
-            <template is="dom-repeat" items="[[_staticPageList]]" as="page">
-              <paper-item value="[[page.name]]" on-tap="_onSelected">[[page.displayText]]</paper-item>
-            </template>
-          </div>
-        </paper-submenu>
-      </paper-menu>
+      <paper-submenu id="helpMenu" opened>
+        <h2 class="menu-trigger">
+          <iron-icon icon="help"></iron-icon>Help
+        </h2>
+        <div class="menu-content">
+          <template is="dom-repeat" items="[[_staticPageList]]" as="page">
+            <paper-item value="[[page.name]]" on-tap="_onSelected">[[page.displayText]]</paper-item>
+          </template>
+        </div>
+      </paper-submenu>
+    </paper-menu>
 
     <h2><iron-icon icon="perm-phone-msg"></iron-icon>Current On Calls</h2>
 
