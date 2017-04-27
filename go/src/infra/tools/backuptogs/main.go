@@ -7,6 +7,7 @@ import (
 
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
+	"github.com/luci/luci-go/common/logging/teelogger"
 	"github.com/luci/luci-go/common/tsmon"
 	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/common/tsmon/types"
@@ -37,6 +38,7 @@ var (
 // error codes returned by the process
 const (
 	optionsError int = iota
+	logfileError
 	tsmonError
 	jobError
 	backupError
@@ -46,15 +48,36 @@ const (
 func main() {
 	ctx := context.Background()
 
-	// Create options
+	// Create options from flags
 	opts, err := newOptionsFromArgs(os.Args[1:])
 	if err != nil {
 		fmt.Printf("Failed to initialize options: %v", err)
 		os.Exit(optionsError)
 	}
 
+	// Add timeout to context
+	if opts.timeout > 0 {
+		var cancelContext func()
+		ctx, cancelContext = context.WithTimeout(ctx, opts.timeout)
+		defer cancelContext()
+	}
+
 	// Init Logging
-	ctx = gologger.StdConfig.Use(ctx)
+	ctx = gologger.StdConfig.Use(ctx) // Stdout logger
+	if opts.logfile != "" {
+		f, err := os.OpenFile(opts.logfile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			fmt.Printf("Failed to open logfile '%s' for append: %v\n", opts.logfile, err)
+			os.Exit(logfileError)
+		}
+		defer func() {
+			if err := f.Close(); err != nil {
+				fmt.Printf("Failed to close logfile '%s': %v\n", opts.logfile, err)
+			}
+		}()
+		fileLogger := gologger.LoggerConfig{Out: f}
+		ctx = teelogger.Use(ctx, fileLogger.NewLogger)
+	}
 	ctx = opts.loggingConfig.Set(ctx)
 
 	// Init Tsmon
@@ -69,7 +92,7 @@ func main() {
 		tsmon.Shutdown(ctx)
 	}()
 
-	// Init backup job
+	// Init backup job from options
 	job, err := opts.makeJob(ctx)
 	if err != nil {
 		logging.Errorf(ctx, "Failed to make job from options: %v", err)

@@ -29,6 +29,7 @@ type job struct {
 	key        []byte
 	prevState  *filetree.Dir
 	workers    int
+	timeout    time.Duration
 }
 
 // run performs a backup run
@@ -77,6 +78,7 @@ func (j *job) backupFiles(ctx context.Context) (*filetree.Dir, error) {
 	// The result channels are passed to subsequent stages of the processing pipeline
 	// The result channels are closed when a goroutine has finished all work.
 	skipGit := j.gitMode == gitModeChanged || j.gitMode == gitModeSkip
+	logging.Debugf(ctx, "skipGit is %t", skipGit)
 	filesSeenChan, gitDirsChan := walkFilesystem(pipelineCtx, j.root, j.exclusions, j.oneFs, skipGit, errorChan)
 
 	findGitChanged := j.gitMode == gitModeChanged

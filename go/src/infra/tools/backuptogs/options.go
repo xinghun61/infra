@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"infra/tools/backuptogs/filetree"
 
@@ -34,6 +35,8 @@ type options struct {
 	prevState string
 	newState  string
 	workers   int
+	timeout   time.Duration
+	logfile   string
 }
 
 func newOptionsFromArgs(args []string) (*options, error) {
@@ -84,6 +87,8 @@ func (o *options) registerFlags(fs *flag.FlagSet) {
 		"If provided, the backup will run as an incremental backup from the previous state")
 	fs.StringVar(&o.newState, "newstate", "", "if backup is successful, backup state will be written to this file")
 	fs.IntVar(&o.workers, "workers", 10, "number of file uploaders to run in parallel")
+	fs.DurationVar(&o.timeout, "timeout", 0, "maximum run time for the backup job")
+	fs.StringVar(&o.logfile, "logfile", "", "file to write log messages to")
 }
 
 // makeJob validates values in o and creates a corresponding job
