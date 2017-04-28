@@ -151,6 +151,8 @@ class BaseHandler(webapp2.RequestHandler):
       self.response.headers['cache-control'] = (
           'max-age=%s, public' % cache_expiry)
     self.response.headers['Content-Type'] = content_type
+    # Set X-Frame-Options to prevent Clickjacking.
+    self.response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     self.response.write(data)
 
   def GetLoginUrl(self):
