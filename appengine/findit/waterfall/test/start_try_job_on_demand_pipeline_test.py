@@ -232,8 +232,13 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
 
     mock_module.NeedANewWaterfallTryJob.return_value = (
         True, try_job.key)
-    mock_module.GetFailedTargetsFromSignals.return_value = {}
 
+    self.MockPipeline(
+        start_try_job_on_demand_pipeline.UpdateAnalysisWithFlakeInfoPipeline,
+        None,
+        expected_args=[master_name, builder_name, build_number,
+                       'targeted_tests'],
+        expected_kwargs={})
     self.MockPipeline(
         start_try_job_on_demand_pipeline.ScheduleTestTryJobPipeline,
         'try_job_id',

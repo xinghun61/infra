@@ -5,6 +5,8 @@
 import datetime
 
 from libs import analysis_status
+from model import result_status
+from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util
 from waterfall.process_swarming_task_result_pipeline import (
@@ -42,6 +44,43 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     task.task_id = 'task_id1'
     task.put()
 
+    analysis = WfAnalysis.Create(self.master_name, self.builder_name,
+                                 self.build_number)
+    analysis.result = {
+        'failures': [
+            {
+              'step_name': 'another_step1'
+            },
+            {
+                'tests': [
+                  {
+                      'last_pass': self.build_number,
+                      'first_failure': self.build_number,
+                      'suspected_cls': [],
+                      'test_name': 'TestSuite1.test1'
+                  },
+                  {
+                      'last_pass': self.build_number,
+                      'first_failure': self.build_number,
+                      'suspected_cls': [],
+                      'test_name': 'TestSuite1.test2'
+                  },
+                  {
+                      'last_pass': self.build_number,
+                      'first_failure': self.build_number,
+                      'suspected_cls': [],
+                      'test_name': 'TestSuite1.test3'
+                  },
+                ],
+                'step_name': self.step_name
+            },
+            {
+              'step_name': 'another_step2'
+            },
+        ]
+    }
+    analysis.put()
+
     pipeline = ProcessSwarmingTaskResultPipeline()
     pipeline.start_test()
     pipeline.run(
@@ -59,7 +98,6 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
 
     task = WfSwarmingTask.Get(
         self.master_name, self.builder_name, self.build_number, self.step_name)
-
     self.assertEqual(analysis_status.COMPLETED, task.status)
     self.assertEqual(base_test._EXPECTED_TESTS_STATUS, task.tests_statuses)
     self.assertEqual(

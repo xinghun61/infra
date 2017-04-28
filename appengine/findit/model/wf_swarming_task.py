@@ -45,6 +45,10 @@ class WfSwarmingTask(BaseBuildModel, BaseSwarmingTask):
   def reliable_tests(self):
     return self.classified_tests.get('reliable_tests', [])
 
+  @property
+  def flaky_tests(self):
+    return self.classified_tests.get('flaky_tests', [])
+
   @ndb.ComputedProperty
   def step_name(self):
     return self.key.pairs()[1][1]

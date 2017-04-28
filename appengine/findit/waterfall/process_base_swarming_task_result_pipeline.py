@@ -140,7 +140,6 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     task_started = callback_params['task_started']
     task_completed = callback_params['task_completed']
     step_name_no_platform = callback_params['step_name_no_platform']
-
     task = self._GetSwarmingTask(*call_args)
 
     def check_task_completion():

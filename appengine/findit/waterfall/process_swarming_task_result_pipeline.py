@@ -27,4 +27,5 @@ class ProcessSwarmingTaskResultPipeline(ProcessBaseSwarmingTaskResultPipeline):
                               step_name)
 
   def _GetPipelineResult(self, step_name, step_name_no_platform, task):
-    return step_name, (step_name_no_platform, task.reliable_tests)
+    return step_name, (
+        step_name_no_platform, task.reliable_tests, task.flaky_tests)

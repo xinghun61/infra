@@ -44,6 +44,8 @@ class WfSwarmingTaskTest(unittest.TestCase):
     self.assertEqual(expected_classified_tests, task.classified_tests)
     self.assertEqual(expected_classified_tests['reliable_tests'],
                      task.reliable_tests)
+    self.assertEqual(expected_classified_tests['flaky_tests'],
+                     task.flaky_tests)
 
   def testStepName(self):
     master_name = 'm'

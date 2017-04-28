@@ -16,6 +16,8 @@ from waterfall.schedule_compile_try_job_pipeline import (
     ScheduleCompileTryJobPipeline)
 from waterfall.schedule_test_try_job_pipeline import (
     ScheduleTestTryJobPipeline)
+from waterfall.update_analysis_with_flake_info_pipeline import (
+    UpdateAnalysisWithFlakeInfoPipeline)
 
 
 def _GetLastPassCompile(build_number, failed_steps):
@@ -103,7 +105,7 @@ class StartTryJobOnDemandPipeline(BasePipeline):
       # So here the try_job_type is failure_type.TEST.
 
       # Waits and gets the swarming tasks' results.
-      reliable_tests = []
+      task_results = []
       for step_name, step_failure in failure_info['failed_steps'].iteritems():
         step_has_first_time_failure = _HasFirstTimeFailure(
             step_failure.get('tests', {}), build_number)
@@ -111,11 +113,13 @@ class StartTryJobOnDemandPipeline(BasePipeline):
           continue
         task_result = yield ProcessSwarmingTaskResultPipeline(
             master_name, builder_name, build_number, step_name)
-        reliable_tests.append(task_result)
+        task_results.append(task_result)
 
+      yield UpdateAnalysisWithFlakeInfoPipeline(
+          master_name, builder_name, build_number, *task_results)
       try_job_id = yield ScheduleTestTryJobPipeline(
           master_name, builder_name, build_number, good_revision, bad_revision,
-          try_job_type, suspected_revisions, *reliable_tests)
+          try_job_type, suspected_revisions, *task_results)
 
     try_job_result = yield MonitorTryJobPipeline(
         try_job_key.urlsafe(), try_job_type, try_job_id)

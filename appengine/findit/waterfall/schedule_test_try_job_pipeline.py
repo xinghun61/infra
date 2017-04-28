@@ -11,13 +11,13 @@ from model.wf_try_job_data import WfTryJobData
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 
 
-def _GetTargetedTests(reliable_tests):
+def _GetTargetedTests(task_results):
   targeted_tests = defaultdict(list)
-  for step_reliable_tests in reliable_tests.itervalues():
-    step_name_no_platform = step_reliable_tests[0]
-    tests = step_reliable_tests[1]
-    if tests:
-      targeted_tests[step_name_no_platform].extend(tests)
+  for step_task_results in task_results.itervalues():
+    step_name_no_platform = step_task_results[0]
+    reliable_tests = step_task_results[1]
+    if reliable_tests:
+      targeted_tests[step_name_no_platform].extend(reliable_tests)
   return targeted_tests
 
 
@@ -47,7 +47,7 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(
       self, master_name, builder_name, build_number, good_revision,
-      bad_revision, try_job_type, suspected_revisions, *reliable_tests):
+      bad_revision, try_job_type, suspected_revisions, *task_results):
     """
     Args:
       master_name (str): the master name of a build.
@@ -57,7 +57,7 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
       bad__revision (str): the revision of the first failed build.
       try_job_type (int): type of the try job: TEST in this case.
       suspected_revisions (list): a list of suspected revisions from heuristic.
-      reliable_tests (list): a list of reliable failed tests.
+      task_results (list): a list of reliable failed tests.
 
     Returns:
       build_id (str): id of the triggered try job.
@@ -67,7 +67,7 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
         master_name, builder_name, build_number, good_revision, bad_revision,
         try_job_type, suspected_revisions)
 
-    targeted_tests = _GetTargetedTests(dict(reliable_tests))
+    targeted_tests = _GetTargetedTests(dict(task_results))
     if not targeted_tests:  # pragma: no cover
       logging.info('All tests are flaky, no try job will be triggered.')
       return
