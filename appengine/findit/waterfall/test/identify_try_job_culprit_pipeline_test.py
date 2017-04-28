@@ -42,6 +42,22 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.mock(GitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
 
+  def _CreateEntities(
+      self, master_name, builder_name, build_number, try_job_id,
+      try_job_status=None, compile_results=None, test_results=None):
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    if try_job_status:
+      try_job.status = try_job_status
+    if compile_results:
+      try_job.compile_results = compile_results
+    if test_results:
+      try_job.test_results = test_results
+    try_job.put()
+
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
   def testGetFailedRevisionFromCompileResult(self):
     self.assertIsNone(
         identify_try_job_culprit_pipeline._GetFailedRevisionFromCompileResult(
@@ -419,11 +435,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
     try_job_id = '1'
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.put()
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.put()
+    self._CreateEntities(master_name, builder_name, build_number, try_job_id)
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
@@ -439,6 +451,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    try_job_data = WfTryJobData.Get(try_job_id)
 
     self.assertEqual(analysis_status.COMPLETED, try_job.status)
     self.assertEqual([], try_job.compile_results)
@@ -460,26 +473,12 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             },
             'culprit': 'rev2'
         },
+        'try_job_id': try_job_id,
     }
 
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = WfTryJob.Create(
-        master_name, builder_name, build_number).key
-    try_job_data.put()
-
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = analysis_status.RUNNING
-    try_job.compile_results = [{
-        'report': {
-            'result': {
-                'rev1': 'passed',
-                'rev2': 'failed'
-            },
-            'culprit': 'rev2'
-        },
-        'try_job_id': try_job_id,
-    }]
-    try_job.put()
+    self._CreateEntities(master_name, builder_name, build_number, try_job_id,
+                         try_job_status=analysis_status.RUNNING,
+                         compile_results=[compile_result])
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
@@ -551,12 +550,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         'try_job_id': try_job_id,
     }
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.put()
-
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.put()
+    self._CreateEntities(master_name, builder_name, build_number, try_job_id)
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
@@ -581,19 +575,73 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(analysis.result_status)
     self.assertIsNone(analysis.suspected_cls)
 
+  def testIdentifyCulpritForFlakyCompile(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+
+    compile_result = {
+        'report': {
+            'result': {
+                'rev1': 'failed',
+                'rev2': 'failed'
+            },
+            'metadata': {
+                'sub_ranges': [
+                  [
+                      None,
+                      'rev2'
+                  ]
+                ]
+            }
+        },
+        'url': 'url',
+        'try_job_id': try_job_id,
+    }
+
+    self._CreateEntities(master_name, builder_name, build_number, try_job_id)
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.result = {
+        'failures': [
+            {
+                'step_name': 'compile',
+                'suspected_cls': []
+            }
+        ]
+    }
+    analysis.put()
+
+    self.MockPipeline(RevertAndNotifyCulpritPipeline,
+                      None,
+                      expected_args=[master_name, builder_name, build_number,
+                                     {}, [], None, failure_type.COMPILE])
+    pipeline = IdentifyTryJobCulpritPipeline(
+        master_name, builder_name, build_number,
+        failure_type.COMPILE, '1', compile_result)
+    pipeline.start()
+    self.execute_queued_tasks()
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+
+    self.assertEqual(analysis_status.COMPLETED, try_job.status)
+
+    try_job_data = WfTryJobData.Get(try_job_id)
+    self.assertIsNone(try_job_data.culprits)
+
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual(result_status.FLAKY, analysis.result_status)
+    self.assertEqual([], analysis.suspected_cls)
+
   def testIdentifyCulpritForTestTryJobNoTryJobResultNoHeuristicResult(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
     try_job_id = '1'
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = analysis_status.RUNNING
-    try_job.put()
-
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.put()
+    self._CreateEntities(master_name, builder_name, build_number, try_job_id,
+                         try_job_status=analysis_status.RUNNING)
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
@@ -626,13 +674,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         'repo_name': 'chromium'
     }
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = analysis_status.RUNNING
-    try_job.put()
-
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.put()
+    self._CreateEntities(master_name, builder_name, build_number, try_job_id,
+                         try_job_status=analysis_status.RUNNING)
 
     # Heuristic analysis already provided some results.
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
@@ -680,13 +723,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         'try_job_id': try_job_id
     }
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = analysis_status.RUNNING
-    try_job.put()
-
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.put()
+    self._CreateEntities(master_name, builder_name, build_number, try_job_id,
+                         try_job_status=analysis_status.RUNNING)
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
@@ -735,13 +773,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         'try_job_id': try_job_id
     }
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = analysis_status.RUNNING
-    try_job.put()
-
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.put()
+    self._CreateEntities(master_name, builder_name, build_number, try_job_id,
+                         try_job_status=analysis_status.RUNNING)
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
@@ -792,6 +825,17 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     test_result = {
         'report': {
             'result': {
+                'rev0': {
+                    'a_test': {
+                        'status': 'passed',
+                        'valid': True,
+                    },
+                    'b_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['b_test1']
+                    }
+                },
                 'rev1': {
                     'a_test': {
                         'status': 'failed',
@@ -811,8 +855,9 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                         'failures': ['a_test1', 'a_test2']
                     },
                     'b_test': {
-                        'status': 'passed',
-                        'valid': True
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['b_test1']
                     }
                 }
             },
@@ -821,23 +866,18 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                     'a_test1': 'rev1',
                     'a_test2': 'rev2'
                 },
-                'b_test': {
-                    'b_test1': 'rev1'
-                }
+            },
+            'flakes': {
+                'b_test': ['b_test1']
             }
         },
         'url': 'url',
         'try_job_id': try_job_id
     }
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = analysis_status.RUNNING
-    try_job.test_results = [test_result]
-    try_job.put()
-
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.put()
+    self._CreateEntities(master_name, builder_name, build_number, try_job_id,
+                         try_job_status=analysis_status.RUNNING,
+                         test_results=[test_result])
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
@@ -855,11 +895,20 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         'repo_name': 'chromium'
     }
 
-    b_test1_suspected_cl = a_test1_suspected_cl
-
     expected_test_result = {
         'report': {
             'result': {
+                'rev0': {
+                    'a_test': {
+                        'status': 'passed',
+                        'valid': True,
+                    },
+                    'b_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['b_test1']
+                    }
+                },
                 'rev1': {
                     'a_test': {
                         'status': 'failed',
@@ -879,8 +928,9 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                         'failures': ['a_test1', 'a_test2']
                     },
                     'b_test': {
-                        'status': 'passed',
-                        'valid': True
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['b_test1']
                     }
                 }
             },
@@ -889,9 +939,9 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                     'a_test1': 'rev1',
                     'a_test2': 'rev2'
                 },
-                'b_test': {
-                    'b_test1': 'rev1'
-                }
+            },
+            'flakes': {
+                'b_test': ['b_test1']
             }
         },
         'url': 'url',
@@ -901,11 +951,6 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                 'tests': {
                     'a_test1': a_test1_suspected_cl,
                     'a_test2': a_test2_suspected_cl
-                }
-            },
-            'b_test': {
-                'tests': {
-                    'b_test1': b_test1_suspected_cl
                 }
             }
         }
@@ -937,9 +982,6 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         'a_test': {
             'a_test1': 'rev1',
             'a_test2': 'rev2',
-        },
-        'b_test': {
-            'b_test1': 'rev1',
         }
     }
 
@@ -961,7 +1003,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             'url': 'url_2',
             'repo_name': 'chromium',
             'failures': {
-                'a_test': ['a_test1', 'a_test2']
+                'a_test': ['a_test1', 'a_test2'],
+                'b_test': ['b_test1'],
             },
             'top_score': None
         }
@@ -1015,24 +1058,12 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             },
             'culprit': revision
         },
+        'try_job_id': try_job_id,
     }
 
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.status = analysis_status.RUNNING
-    try_job.compile_results = [{
-        'report': {
-            'result': {
-                revision: 'failed',
-            },
-            'culprit': revision
-        },
-        'try_job_id': try_job_id,
-    }]
-    try_job.put()
-
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.put()
+    self._CreateEntities(master_name, builder_name, build_number, try_job_id,
+                         try_job_status=analysis_status.RUNNING,
+                         compile_results=[compile_result])
 
     self.MockPipeline(RevertAndNotifyCulpritPipeline,
                       None,
@@ -1199,3 +1230,28 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   def testGetTestFailureCausedByCL(self):
     self.assertIsNone(
         identify_try_job_culprit_pipeline._GetTestFailureCausedByCL(None))
+
+  def testGetTestFailureCausedByCLPassed(self):
+    result = {
+        'a_test': {
+            'status': 'passed',
+            'valid': True,
+        },
+        'b_test': {
+            'status': 'failed',
+            'valid': True,
+            'failures': ['b_test1']
+        }
+    }
+
+    expected_failures = {
+        'b_test': ['b_test1']
+    }
+
+    self.assertEqual(
+        expected_failures,
+        identify_try_job_culprit_pipeline._GetTestFailureCausedByCL(result))
+
+  def testCompileFailureIsFlakyInvalidResult(self):
+    self.assertFalse(
+        identify_try_job_culprit_pipeline._CompileFailureIsFlaky(None))

@@ -9,6 +9,7 @@ from google.appengine.ext import ndb
 from gae_libs.pipeline_wrapper import BasePipeline
 from model import result_status
 from model.wf_analysis import WfAnalysis
+from waterfall import swarming_util
 
 
 def _GetFlakyTests(task_results):
@@ -31,21 +32,7 @@ def _UpdateAnalysisWithFlakeInfo(
   if not analysis or not analysis.result:
     return False
 
-  all_flaked = True
-  for failure in analysis.result.get('failures', {}):
-    step_name = failure.get('step_name')
-    if step_name in flaky_tests:
-      failure['flaky'] = True
-      for test in failure.get('tests', []):
-        if test.get('test_name') in flaky_tests[step_name]:
-          test['flaky'] = True
-        else:
-          all_flaked = False
-          failure['flaky'] = False
-    else:
-      # Checks all other steps to see if all failed steps/ tests are flaky.
-      if not failure.get('flaky'):
-        all_flaked = False
+  all_flaked = swarming_util.UpdateAnalysisResult(analysis.result, flaky_tests)
 
   if all_flaked:
     analysis.result_status = result_status.FLAKY

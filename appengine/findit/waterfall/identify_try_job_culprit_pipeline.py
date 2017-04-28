@@ -18,6 +18,7 @@ from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall import suspected_cl_util
+from waterfall import swarming_util
 from waterfall.revert_and_notify_culprit_pipeline import (
     RevertAndNotifyCulpritPipeline)
 
@@ -25,12 +26,13 @@ GIT_REPO = CachedGitilesRepository(
     HttpClientAppengine(), 'https://chromium.googlesource.com/chromium/src.git')
 
 
-def _GetResultAnalysisStatus(analysis, result):
+def _GetResultAnalysisStatus(analysis, result, all_flaked=False):
   """Returns the analysis status based on existing status and try job result.
 
   Args:
     analysis: The WfAnalysis entity corresponding to this try job.
     result: A result dict containing the result of this try job.
+    all_flaked: A flag indicates if all failures are flaky.
 
   Returns:
     A result_status code.
@@ -40,8 +42,11 @@ def _GetResultAnalysisStatus(analysis, result):
   # possible the heuristic-based result was triaged before the completion of
   # this try job.
   old_result_status = analysis.result_status
-  try_job_found_culprit = result and result.get('culprit')
 
+  if all_flaked:
+    return result_status.FLAKY
+
+  try_job_found_culprit = result and result.get('culprit')
   if (try_job_found_culprit and
       (old_result_status is None or
        old_result_status == result_status.NOT_FOUND_UNTRIAGED or
@@ -134,6 +139,51 @@ def _GetTestFailureCausedByCL(result):
   return failures
 
 
+def _GetRevisionsInRange(sub_ranges):
+  """Get revisions in regression range by flattening sub_ranges.
+
+  sub_ranges is in a format like [[None, 'r1', 'r2'], ['r3', 'r4', 'r5']].
+  """
+  return [
+      revision for sub_range in sub_ranges for revision in sub_range if revision
+  ]
+
+
+def _CompileFailureIsFlaky(result):
+
+  if not result:
+    return False
+
+  culprit = result.get('report', {}).get('culprit')
+  try_job_result = result.get('report', {}).get('result')
+  sub_ranges = result.get('report', {}).get('metadata', {}).get('sub_ranges')
+
+  if (culprit or not try_job_result or
+     'failed' not in try_job_result.values() or not sub_ranges):
+    return False
+
+  tested_revisions = try_job_result.keys()
+  # Looks for the good revision which will not be in sub_ranges.
+  good_revision = list(
+      set(tested_revisions) - set(_GetRevisionsInRange(sub_ranges)))
+  return bool(good_revision)
+
+
+def _GetFlakyTestsFromTryJob(result):
+  return result.get('report', {}).get('flakes')
+
+
+def _GetUpdatedAnalysisResult(analysis, flaky_failures):
+  if not analysis or not analysis.result or not analysis.result.get('failures'):
+    return [], False
+
+  analysis_result = copy.deepcopy(analysis.result)
+  all_flaky = swarming_util.UpdateAnalysisResult(
+      analysis_result, flaky_failures)
+
+  return analysis_result, all_flaky
+
+
 class IdentifyTryJobCulpritPipeline(BasePipeline):
   """A pipeline to identify culprit CL info based on try job compile results."""
 
@@ -204,14 +254,17 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     Please refer to try_job_result_format.md for format check.
     """
     culprits = None
+    flaky_failures = {}
     if try_job_id and result and result.get('report'):
       try_job_data = WfTryJobData.Get(try_job_id)
       if try_job_type == failure_type.COMPILE:
-        # For compile failures, the try job will stop if one revision fails, so
-        # the culprit will be the last revision in the result.
         failed_revision = _GetFailedRevisionFromCompileResult(result)
         failed_revisions = [failed_revision] if failed_revision else []
         culprits = self._GetCulpritInfo(failed_revisions)
+
+        if not culprits and _CompileFailureIsFlaky(result):
+          flaky_failures = {'compile': []}
+
         if culprits:
           result['culprit'] = {
               'compile': culprits[failed_revision]
@@ -221,6 +274,9 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
         culprit_map, failed_revisions = self._FindCulpritForEachTestFailure(
             result)
         culprits = self._GetCulpritInfo(failed_revisions)
+
+        if not culprits:
+          flaky_failures = _GetFlakyTestsFromTryJob(result)
         if culprits:
           self._UpdateCulpritMapWithCulpritInfo(culprit_map, culprits)
           result['culprit'] = culprit_map
@@ -250,19 +306,24 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
 
     @ndb.transactional
     def UpdateWfAnalysisWithTryJobResult():
-      if not culprits:
+      if not culprits and not flaky_failures:
         return
 
       analysis = WfAnalysis.Get(master_name, builder_name, build_number)
       # Update analysis result and suspected CLs with results of this try job if
-      # culprits were found.
-      updated_result_status = _GetResultAnalysisStatus(analysis, result)
+      # culprits were found or failures are flaky.
+      updated_result, all_flaked = _GetUpdatedAnalysisResult(
+          analysis, flaky_failures)
+      updated_result_status = _GetResultAnalysisStatus(
+          analysis, result, all_flaked)
       updated_suspected_cls = _GetSuspectedCLs(
           analysis, try_job_type, result, culprits)
       if (analysis.result_status != updated_result_status or
-          analysis.suspected_cls != updated_suspected_cls):
+          analysis.suspected_cls != updated_suspected_cls or
+          analysis.result != updated_result):  # pragma: no cover
         analysis.result_status = updated_result_status
         analysis.suspected_cls = updated_suspected_cls
+        analysis.result = updated_result
         analysis.put()
 
     def UpdateSuspectedCLs():
@@ -301,7 +362,6 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     # current build.
     # Updates suspected_cl.
     UpdateSuspectedCLs()
-
     yield RevertAndNotifyCulpritPipeline(
         master_name, builder_name, build_number, culprits, heuristic_cls,
         compile_suspected_cl, try_job_type)

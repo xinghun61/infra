@@ -611,6 +611,7 @@ def GetSwarmingBotCounts(dimensions, http_client):
 
   return bot_counts
 
+
 def GetStepLog(swarming_task_id, full_step_name, http_client,
                log_type='stdout'):
   """Returns sepcific log of the specified step."""
@@ -635,6 +636,32 @@ def GetStepLog(swarming_task_id, full_step_name, http_client,
     return json.loads(data) if data else None
 
   return data
+
+
+def UpdateAnalysisResult(analysis_result, flaky_failures):
+  """Updates WfAnalysis' result and result_analysis on flaky failures.
+
+  If found flaky tests from swarming reruns, or flaky tests or compile from
+  try jobs, updates WfAnalysis.
+  """
+  all_flaked = True
+  for failure in analysis_result.get('failures', {}):
+    step_name = failure.get('step_name')
+    if step_name in flaky_failures:
+      failure['flaky'] = True
+      for test in failure.get('tests', []):
+        if test.get('test_name') in flaky_failures[step_name]:
+          test['flaky'] = True
+        else:
+          all_flaked = False
+          failure['flaky'] = False
+    else:
+      # Checks all other steps to see if all failed steps/ tests are flaky.
+      if not failure.get('flaky'):
+        all_flaked = False
+
+  return all_flaked
+
 
 def GetCacheName(master, builder):
   hash_part = hashlib.sha256('%s:%s' % (master, builder)).hexdigest()

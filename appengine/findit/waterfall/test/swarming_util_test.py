@@ -806,6 +806,169 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('log1/nlog2', swarming_util.GetStepLog(
         self.task_id, self.step_name, self.http_client))
 
+  def testUpdateAnalysisResult(self):
+    analysis_result = {
+        'failures': [
+            {
+                'step_name': 'another_step1',
+                'flaky': True
+            },
+            {
+                'tests': [
+                  {
+                      'last_pass': 123,
+                      'first_failure': 123,
+                      'suspected_cls': [],
+                      'test_name': 'TestSuite1.test1'
+                  },
+                  {
+                      'last_pass': 123,
+                      'first_failure': 123,
+                      'suspected_cls': [],
+                      'test_name': 'TestSuite1.test2'
+                  },
+                  {
+                      'last_pass': 123,
+                      'first_failure': 123,
+                      'suspected_cls': [],
+                      'test_name': 'TestSuite1.test3'
+                  },
+                ],
+                'step_name': self.step_name
+            },
+            {
+                'step_name': 'another_step2'
+            },
+        ]
+    }
+
+    flaky_failures = {
+        self.step_name: [
+            'TestSuite1.test1', 'TestSuite1.test2']
+    }
+
+    all_flaked = swarming_util.UpdateAnalysisResult(
+        analysis_result, flaky_failures)
+
+    expected_result = {
+        'failures': [
+            {
+                'step_name': 'another_step1',
+                'flaky': True
+            },
+            {
+                'tests': [
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test1',
+                        'flaky': True
+                    },
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test2',
+                        'flaky': True
+                    },
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test3'
+                    },
+                ],
+                'step_name': self.step_name,
+                'flaky': False
+            },
+            {
+                'step_name': 'another_step2'
+            },
+        ]
+    }
+
+    self.assertFalse(all_flaked)
+    self.assertEqual(expected_result, analysis_result)
+
+  def testUpdateAnalysisResultAllFlaky(self):
+    analysis_result = {
+        'failures': [
+            {
+                'tests': [
+                  {
+                      'last_pass': 123,
+                      'first_failure': 123,
+                      'suspected_cls': [],
+                      'test_name': 'TestSuite1.test1'
+                  },
+                  {
+                      'last_pass': 123,
+                      'first_failure': 123,
+                      'suspected_cls': [],
+                      'test_name': 'TestSuite1.test2'
+                  }
+                ],
+                'step_name': self.step_name
+            }
+        ]
+    }
+
+    flaky_failures = {
+        self.step_name: [
+            'TestSuite1.test1', 'TestSuite1.test2']
+    }
+
+    all_flaked = swarming_util.UpdateAnalysisResult(
+        analysis_result, flaky_failures)
+
+    expected_result = {
+        'failures': [
+            {
+                'tests': [
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test1',
+                        'flaky': True
+                    },
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test2',
+                        'flaky': True
+                    }
+                ],
+                'step_name': self.step_name,
+                'flaky': True
+            }
+        ]
+    }
+
+    self.assertTrue(all_flaked)
+    self.assertEqual(expected_result, analysis_result)
+
+  def testUpdateAnalysisResultOnlyStep(self):
+    analysis_result = {
+        'failures': [
+            {
+                'step_name': 'another_step1'
+            }
+        ]
+    }
+
+    flaky_failures = {
+        self.step_name: [
+            'TestSuite1.test1', 'TestSuite1.test2']
+    }
+
+    all_flaked = swarming_util.UpdateAnalysisResult(
+        analysis_result, flaky_failures)
+
+    self.assertFalse(all_flaked)
+
   def testGetCacheName(self):
     cache_name_a = swarming_util.GetCacheName('luci.chromium.try',
                                               'LUCI linux_chromium_variable')
