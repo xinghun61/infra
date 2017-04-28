@@ -297,8 +297,18 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     call_args = self._GetArgs(master_name, builder_name, build_number,
                               step_name, *args)
     task = self._GetSwarmingTask(*call_args)
+
+    task_id = task_id or task.task_id
+
     if not task_id:
-      task_id = task.task_id
+      # The swarming task encountered an error when being triggered.
+      if not task.error:  # pragma no branch
+        task.error = {
+            'error': 'Undetected error in swarming task. No task id found!',
+            'message': 'Undetected error in swarming task. No task id found!'
+        }
+        task.put()
+      return
 
     # Check to make this method idempotent.
     if task.callback_url and self.pipeline_id in task.callback_url:
@@ -325,9 +335,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           *call_args, pass_rate=-1, flake_swarming_task=task,
           has_valid_artifact=has_valid_artifact)
       self.complete(self._GetPipelineResult(
-            step_name, step_name_no_platform, task))
+          step_name, step_name_no_platform, task))
       return
-
 
     self.last_params = {
         'task_id': task_id,

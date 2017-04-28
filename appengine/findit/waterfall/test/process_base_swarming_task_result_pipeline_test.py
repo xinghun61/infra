@@ -525,8 +525,9 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     mocked_fn.return_value = build_info
 
     task = FlakeSwarmingTask.Create(
-      self.master_name, self.builder_name, self.build_number, self.step_name,
-      self.test_name)
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        self.test_name)
+    task.task_id = 'task_id'
     task.put()
 
     analysis = MasterFlakeAnalysis.Create(
@@ -545,6 +546,27 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.SKIPPED, task.status)
     self.assertEqual(-1, analysis.data_points[-1].pass_rate)
     self.assertFalse(analysis.data_points[-1].has_valid_artifact)
+
+  def testMonitorSwarmingTaskFailedToTriggerUndetectedError(self):
+    task = FlakeSwarmingTask.Create(
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        self.test_name)
+    task.put()
+
+    analysis = MasterFlakeAnalysis.Create(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name, self.test_name)
+    analysis.Save()
+
+    pipeline = ProcessFlakeSwarmingTaskResultPipeline()
+    pipeline.start_test()
+    pipeline.run(
+        self.master_name, self.builder_name,
+        self.build_number, self.step_name, None, self.build_number,
+        self.test_name, 1)
+
+    self.assertIsNone(task.task_id)
+    self.assertIsNotNone(task.error)
 
   @mock.patch.object(swarming_util, 'GetSwarmingTaskFailureLog',
                      return_value=(_SAMPLE_FAILURE_LOG, None))
