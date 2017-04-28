@@ -39,8 +39,8 @@ var (
 	date       = flag.String("date", "", "YYYY-MM-DD. Release date.")
 	sinceDate  = flag.String("since-date", "", "YYYY-MM-DD. All changes since this date.")
 	sinceHash  = flag.String("since-hash", "", "All changes since this long hash.")
-	bugRE      = regexp.MustCompile("\n    BUG[=:][[:space:]]+([0-9]+)")
-	monorailRE = regexp.MustCompile("\n    BUG[=:][[:space:]]+([a-z]+):([0-9]+)")
+	bugRE      = regexp.MustCompile(`\n    BUG[=:][\s]*([0-9]+)`)
+	monorailRE = regexp.MustCompile(`\n    BUG[=:][\s]*([a-z]+):([0-9]+)`)
 	authorRE   = regexp.MustCompile("\nAuthor:.+<(.+)>")
 	hashRE     = regexp.MustCompile("commit (.*)\n")
 	reviewRE   = regexp.MustCompile("\n    (Review-Url|Reviewed-on): (.*)\n")
@@ -93,12 +93,12 @@ type commit struct {
 
 func parsecommit(s string) *commit {
 	c := &commit{}
-	bugs := bugRE.FindAllStringSubmatch(s, -1)
+	bugs := bugRE.FindAllStringSubmatch(strings.ToUpper(s), -1)
 	for _, b := range bugs {
 		c.bugs = append(c.bugs, fmt.Sprintf("https://crbug.com/%s", b[1]))
 	}
 
-	monorailBugs := monorailRE.FindAllStringSubmatch(s, -1)
+	monorailBugs := monorailRE.FindAllStringSubmatch(strings.ToUpper(s), -1)
 	for _, b := range monorailBugs {
 		c.bugs = append(c.bugs, fmt.Sprintf(monorailURL, b[1], b[2]))
 	}
