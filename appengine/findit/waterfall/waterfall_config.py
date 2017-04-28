@@ -163,10 +163,29 @@ def GetFlakeTrybot(wf_mastername, wf_buildername):
     The trybot mastername and buildername to re-run flake try jobs, or
     (None, None) if not supported.
   """
+  bot_dict = _GetTrybotConfig(wf_mastername, wf_buildername)
+  return bot_dict.get('mastername'), bot_dict.get('flake_trybot')
+
+
+def _GetTrybotConfig(master, builder):
   trybot_config = _ConvertOldTrybotFormatToNew(
       FinditConfig.Get().builders_to_trybots)
-  bot_dict = trybot_config.get(wf_mastername, {}).get(wf_buildername, {})
-  return bot_dict.get('mastername'), bot_dict.get('flake_trybot')
+  return trybot_config.get(master, {}).get(builder, {})
+
+
+def GetTrybotDimensions(wf_mastername, wf_buildername):
+  """Returns dimensions for a tryjob via swarmbucket.
+
+  Args:
+    wf_mastername: The mastername of a waterfall builder.
+    wf_buildername: The buildername of a waterfall builder.
+
+  Returns:
+    (list of str)
+    Colon-separated pairs of key:value identifying the swarming dimensions
+    required to match the configuration of the main waterfall builer.
+  """
+  return _GetTrybotConfig(wf_mastername, wf_buildername).get('dimensions')
 
 
 def GetWaterfallTrybot(wf_mastername, wf_buildername):
@@ -183,9 +202,7 @@ def GetWaterfallTrybot(wf_mastername, wf_buildername):
     builder. If the given waterfall builder is not supported yet, (None, None)
     is returned.
   """
-  trybot_config = _ConvertOldTrybotFormatToNew(
-      FinditConfig.Get().builders_to_trybots)
-  bot_dict = trybot_config.get(wf_mastername, {}).get(wf_buildername, {})
+  bot_dict = _GetTrybotConfig(wf_mastername, wf_buildername)
   return bot_dict.get('mastername'), bot_dict.get('waterfall_trybot')
 
 

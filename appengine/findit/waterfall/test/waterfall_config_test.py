@@ -289,3 +289,9 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         'commit_bot_emails': ['commit-bot@chromium.org'],
       },
       waterfall_config.GetCodeReviewSettings())
+
+  def testGetTrybotDimensions(self):
+    self.assertEqual(
+        ['os:Mac-10.9', 'cpu:x86-64'],
+        waterfall_config.GetTrybotDimensions('m', 'b')
+    )

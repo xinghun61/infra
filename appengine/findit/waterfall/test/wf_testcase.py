@@ -72,7 +72,8 @@ _DEFAULT_TRY_BOT_MAPPING = {
         'b': {
             'mastername': 'tryserver.master',
             'waterfall_trybot': 'tryserver.builder',
-            'flake_trybot': 'tryserver.flake_builder'
+            'flake_trybot': 'tryserver.flake_builder',
+            'dimensions': ['os:Mac-10.9', 'cpu:x86-64']
         },
     },
 }
