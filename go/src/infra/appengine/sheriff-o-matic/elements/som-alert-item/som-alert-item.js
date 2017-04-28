@@ -238,9 +238,11 @@
     },
 
     _removeBug: function(evt) {
-      this.fire('annotation-change', {
-        type: 'remove',
-        change: {'bugs': [evt.model.bug]},
+      let bugId = evt.model.bug;
+      this.fire('remove-bug', {
+        bug: bugId,
+        summary: this._bugSummary(bugId, this.annotation.bugData),
+        url: this._bugUrl(bugId),
       });
     },
 

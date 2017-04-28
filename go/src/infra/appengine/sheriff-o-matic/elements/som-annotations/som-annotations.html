@@ -14,7 +14,7 @@
 <dom-module id="som-annotations">
   <template>
     <style>
-      #bugDialog, #snoozeDialog {
+      #bugDialog, #removeBugDialog, #snoozeDialog {
         width: 300px;
       }
       #commentsDialog, #groupDialog, #ungroupDialog {
@@ -68,6 +68,9 @@
         color: #c00;
         margin-top: 0;
       }
+      .buttons {
+        margin-top: 1em;
+      }
       .header {
         padding: 0.5em 8px 0.25em;
         margin: 1em 4px;
@@ -115,6 +118,29 @@
         </paper-button>
       </div>
     </paper-dialog>
+
+    <paper-dialog id="removeBugDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+      <h2>Unlinking bug from alert</h2>
+      <div>
+        <a target="_blank" href="[[_removeBugModel.url]]">Bug [[_removeBugModel.bug]]</a>
+        <p>
+          [[_removeBugModel.summary]]
+        </p>
+        <p>
+          Linked to: <em>[[_removeBugModel.alert.title]]</em>
+        </p>
+      </div>
+      <div class="error">[[_removeBugErrorMessage]]</div>
+      <div class="buttons">
+        <paper-button raised on-tap="_removeBug">
+          Yes, unlink this bug
+        </paper-button>
+        <paper-button dialog-dismiss raised>
+          Cancel
+        </paper-button>
+      </div>
+    </paper-dialog>
+
     <iron-a11y-keys target="[[_snoozeTimeInput]]" keys="enter" on-keys-pressed="_snooze"></iron-a11y-keys>
     <paper-dialog id="snoozeDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
       <h2>Snooze</h2>
@@ -129,6 +155,7 @@
         </paper-button>
       </div>
     </paper-dialog>
+
     <iron-a11y-keys target="[[_commentTextInput]]" keys="enter" on-keys-pressed="_addComment"></iron-a11y-keys>
     <paper-dialog id="commentsDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
       <h2>Comments</h2>
@@ -157,6 +184,7 @@
         </paper-button>
       </div>
     </paper-dialog>
+
     <iron-a11y-keys target="[[_groupInput]]" keys="enter" on-keys-pressed="_group"></iron-a11y-keys>
     <paper-dialog id="groupDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
       <h2>Group</h2>

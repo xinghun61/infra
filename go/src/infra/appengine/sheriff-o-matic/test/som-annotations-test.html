@@ -293,6 +293,29 @@
       }]);
     });
 
+    test('remove bug sends an annotation', function() {
+      let sendStub = sinon.stub(element, 'sendAnnotation');
+      sendStub.onCall(0).returns({
+          then: (f) => {
+            f({key: 'foo'});
+          }
+      });
+
+      element._removeBugModel = {
+        bug: 'bar',
+        alert: {key: 'foo'}
+      };
+
+      element._removeBug();
+
+      sinon.assert.calledOnce(sendStub);
+      sendStub.calledWith('foo', [{
+        remove: {
+          bugs: ['bar']
+        }
+      }]);
+    });
+
     test('autosnooze bug', function() {
       let sendStub = sinon.stub(element, 'sendAnnotation');
       sendStub.onCall(0).returns({

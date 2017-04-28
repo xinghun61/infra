@@ -66,6 +66,8 @@
         type: Boolean,
         value: false,
       },
+      _removeBugErrorMessage: String,
+      _removeBugModel: Object,
       _snoozeErrorMessage: String,
       _snoozeModel: Object,
       _snoozeTimeInput: {
@@ -251,6 +253,13 @@
       this.$.bugDialog.open();
     },
 
+    handleRemoveBug: function(evt) {
+      this.$.removeBugDialog.open();
+      this._removeBugModel = Object.assign({alert: evt.target.alert},
+        evt.detail);
+      this._removeBugErrorMessage = '';
+    },
+
     handleSnooze: function(evt) {
       this._snoozeModel = evt.target.alert;
       this.$.snoozeTime.value = this._defaultSnoozeTime;
@@ -306,6 +315,20 @@
 
     _fileBugClicked: function() {
       this._filedBug = true;
+    },
+
+    _removeBug: function() {
+      let model = this._removeBugModel;
+      let data = {bugs: [model.bug]};
+      this.sendAnnotation(model.alert.key, 'remove', data)
+          .then(
+              (response) => {
+                this.$.removeBugDialog.close();
+                this._removeBugErrorMessage = '';
+              },
+              (error) => {
+                this._removeBugErrorMessage = error;
+              });
     },
 
     _saveBug: function() {

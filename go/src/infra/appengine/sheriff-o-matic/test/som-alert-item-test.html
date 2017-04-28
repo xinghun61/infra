@@ -160,20 +160,19 @@
 
     test('fires remove event when remove bug clicked', function(done) {
       element.annotation = {
-        bugs: ["foo/bar"]
+        bugs: ['foo/bar']
       };
 
       let labelStub = sinon.stub(element, '_bugLabel');
       labelStub.onFirstCall().returns('');
 
-      element.addEventListener('annotation-change', (evt)=> {
-        assert.deepEqual(evt.detail.change, {'bugs': ["foo/bar"]});
-        assert.equal(evt.detail.type, 'remove');
+      element.addEventListener('remove-bug', (evt) => {
+        assert.equal(evt.detail.bug, 'foo/bar');
         done();
       });
 
       flush(function() {
-        element.$.bugsList.querySelector("#remove0").click();
+        element.$.bugsList.querySelector('#remove0').click();
       });
     });
 

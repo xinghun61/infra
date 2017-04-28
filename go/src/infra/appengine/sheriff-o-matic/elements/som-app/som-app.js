@@ -780,7 +780,7 @@
 
       this.mutateLocalState((newState) => {
         let cat = evt.model.dataHost.dataHost.cat;
-        this._alertItemsWithCategory(this._alerts, this.annotations, 
+        this._alertItemsWithCategory(this._alerts, this.annotations,
                                      cat, this._isTrooperPage)
             .forEach((alr) => {
               newState[alr.key] =
@@ -814,6 +814,10 @@
 
     _handleLinkBug: function(evt) {
       this.$.annotations.handleLinkBug(evt);
+    },
+
+    _handleRemoveBug: function(evt) {
+      this.$.annotations.handleRemoveBug(evt);
     },
 
     _handleSnooze: function(evt) {
