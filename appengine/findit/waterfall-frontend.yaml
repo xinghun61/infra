@@ -14,19 +14,28 @@ handlers:
 - url: /
   static_files: templates/home.html
   upload: templates/home.html
+  secure: always
 
 - url: /robots.txt
   static_files: static/robots.txt
   upload: static/robots.txt
+  secure: always
 
 - url: /common.css
   static_files: static/common.css
   upload: static/common.css
+  secure: always
+
+- url: /js/flot/(.*\.js)$
+  static_files: third_party/flot/\1
+  upload: third_party/flot/.*\.js$
+  secure: always
 
 - url: /favicon.ico
   mime_type: image/x-icon
   static_files: static/images/favicon.ico
   upload: static/images/favicon.ico
+  secure: always
 
 # Pipeline status UI handler.
 - url: /_ah/pipeline(/.*)?
