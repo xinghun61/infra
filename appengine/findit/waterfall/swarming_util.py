@@ -4,6 +4,7 @@
 
 import base64
 from collections import defaultdict
+import hashlib
 import json
 import logging
 import time
@@ -634,3 +635,7 @@ def GetStepLog(swarming_task_id, full_step_name, http_client,
     return json.loads(data) if data else None
 
   return data
+
+def GetCacheName(master, builder):
+  hash_part = hashlib.sha256('%s:%s' % (master, builder)).hexdigest()
+  return 'builder_' + hash_part

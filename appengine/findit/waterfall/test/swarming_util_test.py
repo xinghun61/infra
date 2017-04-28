@@ -805,3 +805,18 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   def testGetStepLogStdio(self, *_):
     self.assertEqual('log1/nlog2', swarming_util.GetStepLog(
         self.task_id, self.step_name, self.http_client))
+
+  def testGetCacheName(self):
+    cache_name_a = swarming_util.GetCacheName('luci.chromium.try',
+                                              'LUCI linux_chromium_variable')
+    cache_name_b = swarming_util.GetCacheName('luci.chromium.try',
+                                              'LUCI win_chromium_variable')
+    cache_name_c = swarming_util.GetCacheName('luci.chromium.ci',
+                                              'LUCI win_chromium_variable')
+
+    self.assertTrue(cache_name_a.startswith('builder_'))
+    self.assertTrue(cache_name_b.startswith('builder_'))
+    self.assertTrue(cache_name_c.startswith('builder_'))
+    self.assertNotEqual(cache_name_a, cache_name_b)
+    self.assertNotEqual(cache_name_a, cache_name_c)
+    self.assertNotEqual(cache_name_b, cache_name_c)
