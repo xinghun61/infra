@@ -8,7 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/vpython/api/vpython"
+	"github.com/luci/luci-go/vpython/cipd"
 )
 
 // pep425MacArch is a parsed PEP425 Mac architecture string.
@@ -137,8 +139,8 @@ func pep425IsBetterLinuxArch(cur, candidate string) bool {
 // pep425TagSelector chooses the "best" PEP425 tag from a set of potential tags.
 // This "best" tag will be used to resolve our CIPD templates and allow for
 // Python implementation-specific CIPD template parameters.
-func pep425TagSelector(goOS string, tags []*vpython.Environment_Pep425Tag) *vpython.Environment_Pep425Tag {
-	var best *vpython.Environment_Pep425Tag
+func pep425TagSelector(goOS string, tags []*vpython.Pep425Tag) *vpython.Pep425Tag {
+	var best *vpython.Pep425Tag
 
 	// isPreferredOSArch is an OS-specific architecture preference function.
 	isPreferredOSArch := func(cur, candidate string) bool { return false }
@@ -149,7 +151,7 @@ func pep425TagSelector(goOS string, tags []*vpython.Environment_Pep425Tag) *vpyt
 		isPreferredOSArch = pep425IsBetterMacArch
 	}
 
-	isBetter := func(t *vpython.Environment_Pep425Tag) bool {
+	isBetter := func(t *vpython.Pep425Tag) bool {
 		switch {
 		case best == nil:
 			return true
@@ -194,12 +196,15 @@ func pep425TagSelector(goOS string, tags []*vpython.Environment_Pep425Tag) *vpyt
 // - py_arch: The PEP425 Python architecture (e.g., "manylinux1_x86_64").
 // - py_tag: The full PEP425 tag (e.g., "cp27-cp27mu-manylinux1_x86_64").
 //
+// This function also backports the Python platform into the CIPD "platform"
+// field, ensuring that regardless of the host architecture, the Python CIPD
+// wheel is chosen based solely on that host's Python interpreter.
+//
 // Infra CIPD packages tend to use "${platform}" (generic) combined with
 // "${py_abi}" and "${py_arch}" to identify its packages.
-func getPEP425CIPDTemplates(goOS string, tags []*vpython.Environment_Pep425Tag) map[string]string {
-	tag := pep425TagSelector(goOS, tags)
+func getPEP425CIPDTemplateForTag(tag *vpython.Pep425Tag) (map[string]string, error) {
 	if tag == nil {
-		return nil
+		return nil, errors.New("no PEP425 tag")
 	}
 
 	template := make(map[string]string, 4)
@@ -215,5 +220,20 @@ func getPEP425CIPDTemplates(goOS string, tags []*vpython.Environment_Pep425Tag) 
 	if tag.Version != "" && tag.Abi != "" && tag.Arch != "" {
 		template["py_tag"] = tag.TagString()
 	}
-	return template
+
+	// Override the CIPD "platform" based on the PEP425 tag. This allows selection
+	// of Python wheels based on the architecture of the Python executable rather
+	// than the architecture of the underlying platform.
+	//
+	// For example, a 64-bit Windows version can run 32-bit Python, and we'll
+	// want to use 32-bit Python wheels.
+	platform := cipd.PlatformForPEP425Tag(tag)
+	if platform == "" {
+		return nil, errors.Reason("failed to infer CIPD platform for tag [%(tag)s]").
+			D("tag", tag.TagString()).
+			Err()
+	}
+	template["platform"] = platform
+
+	return template, nil
 }

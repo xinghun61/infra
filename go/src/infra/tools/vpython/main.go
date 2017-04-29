@@ -29,7 +29,11 @@ var cipdPackageLoader = cipd.PackageLoader{
 		UserAgent:  "vpython",
 	},
 	Template: func(c context.Context, e *vpython.Environment) (map[string]string, error) {
-		return getPEP425CIPDTemplates(runtime.GOOS, e.Pep425Tag), nil
+		tag := pep425TagSelector(runtime.GOOS, e.Pep425Tag)
+		if tag == nil {
+			return nil, nil
+		}
+		return getPEP425CIPDTemplateForTag(tag)
 	},
 }
 
@@ -42,8 +46,6 @@ var defaultConfig = application.Config{
 	PruneThreshold:    7 * 24 * time.Hour, // One week.
 	MaxPrunesPerSweep: 3,
 	MaxScriptPathLen:  127, // Maximum POSIX shebang length.
-
-	Verification: verificationGen,
 }
 
 func mainImpl(c context.Context) int {
@@ -65,6 +67,7 @@ func mainImpl(c context.Context) int {
 		}
 	}
 
+	defaultConfig.WithVerificationConfig = withVerificationConfig
 	return defaultConfig.Main(c)
 }
 

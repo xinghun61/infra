@@ -13,37 +13,29 @@ import (
 
 	"github.com/luci/luci-go/vpython/api/vpython"
 
+	. "github.com/luci/luci-go/common/testing/assertions"
 	. "github.com/smartystreets/goconvey/convey"
 )
-
-func mkTag(version, abi, arch string) *vpython.Environment_Pep425Tag {
-	return &vpython.Environment_Pep425Tag{
-		Version: version,
-		Abi:     abi,
-		Arch:    arch,
-	}
-}
 
 func TestPEP425TagSelector(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
 		goOS     string
-		tags     []*vpython.Environment_Pep425Tag
+		tags     []*vpython.Pep425Tag
 		template map[string]string
 	}{
-		{"linux", nil, nil},
-
 		{
 			"linux",
-			[]*vpython.Environment_Pep425Tag{
-				mkTag("py2", "none", "any"),
-				mkTag("py27", "none", "any"),
-				mkTag("cp27", "cp27mu", "linux_x86_64"),
-				mkTag("cp27", "cp27mu", "manylinux1_x86_64"),
-				mkTag("cp27", "none", "manylinux1_x86_64"),
+			[]*vpython.Pep425Tag{
+				{"py2", "none", "any"},
+				{"py27", "none", "any"},
+				{"cp27", "cp27mu", "linux_x86_64"},
+				{"cp27", "cp27mu", "manylinux1_x86_64"},
+				{"cp27", "none", "manylinux1_x86_64"},
 			},
 			map[string]string{
+				"platform":   "linux-amd64",
 				"py_tag":     "cp27-cp27mu-manylinux1_x86_64",
 				"py_version": "cp27",
 				"py_abi":     "cp27mu",
@@ -53,46 +45,47 @@ func TestPEP425TagSelector(t *testing.T) {
 
 		{
 			"darwin",
-			[]*vpython.Environment_Pep425Tag{
-				mkTag("cp27", "cp27m", "macosx_10_12_x86_64"),
-				mkTag("cp27", "cp27m", "macosx_10_12_fat64"),
-				mkTag("cp27", "cp27m", "macosx_10_12_fat32"),
-				mkTag("cp27", "cp27m", "macosx_10_12_intel"),
-				mkTag("cp27", "cp27m", "macosx_10_10_intel"),
-				mkTag("cp27", "cp27m", "macosx_10_9_fat64"),
-				mkTag("cp27", "cp27m", "macosx_10_9_fat32"),
-				mkTag("cp27", "cp27m", "macosx_10_9_universal"),
-				mkTag("cp27", "cp27m", "macosx_10_8_fat32"),
-				mkTag("cp27", "cp27m", "macosx_10_8_universal"),
-				mkTag("cp27", "cp27m", "macosx_10_6_intel"),
-				mkTag("cp27", "cp27m", "macosx_10_6_fat64"),
-				mkTag("cp27", "cp27m", "macosx_10_6_fat32"),
-				mkTag("cp27", "cp27m", "macosx_10_6_universal"),
-				mkTag("cp27", "cp27m", "macosx_10_5_universal"),
-				mkTag("cp27", "cp27m", "macosx_10_4_intel"),
-				mkTag("cp27", "cp27m", "macosx_10_4_fat32"),
-				mkTag("cp27", "cp27m", "macosx_10_1_universal"),
-				mkTag("cp27", "cp27m", "macosx_10_0_fat32"),
-				mkTag("cp27", "cp27m", "macosx_10_0_universal"),
-				mkTag("cp27", "none", "macosx_10_12_x86_64"),
-				mkTag("cp27", "none", "macosx_10_12_intel"),
-				mkTag("cp27", "none", "macosx_10_12_fat64"),
-				mkTag("cp27", "none", "macosx_10_9_universal"),
-				mkTag("cp27", "none", "macosx_10_8_x86_64"),
-				mkTag("cp27", "none", "macosx_10_8_intel"),
-				mkTag("cp27", "none", "macosx_10_7_intel"),
-				mkTag("cp27", "none", "macosx_10_7_fat64"),
-				mkTag("cp27", "none", "macosx_10_7_fat32"),
-				mkTag("cp27", "none", "macosx_10_6_universal"),
-				mkTag("cp27", "none", "macosx_10_5_x86_64"),
-				mkTag("cp27", "none", "macosx_10_5_intel"),
-				mkTag("cp27", "none", "macosx_10_3_fat32"),
-				mkTag("cp27", "none", "macosx_10_3_universal"),
-				mkTag("cp27", "none", "macosx_10_2_fat32"),
-				mkTag("py2", "none", "macosx_10_4_intel"),
-				mkTag("cp27", "none", "any"),
+			[]*vpython.Pep425Tag{
+				{"cp27", "cp27m", "macosx_10_12_x86_64"},
+				{"cp27", "cp27m", "macosx_10_12_fat64"},
+				{"cp27", "cp27m", "macosx_10_12_fat32"},
+				{"cp27", "cp27m", "macosx_10_12_intel"},
+				{"cp27", "cp27m", "macosx_10_10_intel"},
+				{"cp27", "cp27m", "macosx_10_9_fat64"},
+				{"cp27", "cp27m", "macosx_10_9_fat32"},
+				{"cp27", "cp27m", "macosx_10_9_universal"},
+				{"cp27", "cp27m", "macosx_10_8_fat32"},
+				{"cp27", "cp27m", "macosx_10_8_universal"},
+				{"cp27", "cp27m", "macosx_10_6_intel"},
+				{"cp27", "cp27m", "macosx_10_6_fat64"},
+				{"cp27", "cp27m", "macosx_10_6_fat32"},
+				{"cp27", "cp27m", "macosx_10_6_universal"},
+				{"cp27", "cp27m", "macosx_10_5_universal"},
+				{"cp27", "cp27m", "macosx_10_4_intel"},
+				{"cp27", "cp27m", "macosx_10_4_fat32"},
+				{"cp27", "cp27m", "macosx_10_1_universal"},
+				{"cp27", "cp27m", "macosx_10_0_fat32"},
+				{"cp27", "cp27m", "macosx_10_0_universal"},
+				{"cp27", "none", "macosx_10_12_x86_64"},
+				{"cp27", "none", "macosx_10_12_intel"},
+				{"cp27", "none", "macosx_10_12_fat64"},
+				{"cp27", "none", "macosx_10_9_universal"},
+				{"cp27", "none", "macosx_10_8_x86_64"},
+				{"cp27", "none", "macosx_10_8_intel"},
+				{"cp27", "none", "macosx_10_7_intel"},
+				{"cp27", "none", "macosx_10_7_fat64"},
+				{"cp27", "none", "macosx_10_7_fat32"},
+				{"cp27", "none", "macosx_10_6_universal"},
+				{"cp27", "none", "macosx_10_5_x86_64"},
+				{"cp27", "none", "macosx_10_5_intel"},
+				{"cp27", "none", "macosx_10_3_fat32"},
+				{"cp27", "none", "macosx_10_3_universal"},
+				{"cp27", "none", "macosx_10_2_fat32"},
+				{"py2", "none", "macosx_10_4_intel"},
+				{"cp27", "none", "any"},
 			},
 			map[string]string{
+				"platform":   "mac-amd64",
 				"py_tag":     "cp27-cp27m-macosx_10_4_intel",
 				"py_version": "cp27",
 				"py_abi":     "cp27m",
@@ -101,44 +94,32 @@ func TestPEP425TagSelector(t *testing.T) {
 		},
 
 		{
-			"exampleOS",
-			[]*vpython.Environment_Pep425Tag{
-				mkTag("py27", "none", "any"),
-				mkTag("py27", "foo", "bar"),
+			"linux",
+			[]*vpython.Pep425Tag{
+				{"py27", "none", "any"},
+				{"py27", "none", "linux_i686"},
 			},
 			map[string]string{
-				"py_tag":     "py27-foo-bar",
-				"py_version": "py27",
-				"py_abi":     "foo",
-				"py_arch":    "bar",
-			},
-		},
-
-		{
-			"exampleOS",
-			[]*vpython.Environment_Pep425Tag{
-				mkTag("py27", "none", "any"),
-				mkTag("py27", "none", "linux_386"),
-			},
-			map[string]string{
-				"py_tag":     "py27-none-linux_386",
+				"platform":   "linux-386",
+				"py_tag":     "py27-none-linux_i686",
 				"py_version": "py27",
 				"py_abi":     "none",
-				"py_arch":    "linux_386",
+				"py_arch":    "linux_i686",
 			},
 		},
 
 		{
-			"exampleOS",
-			[]*vpython.Environment_Pep425Tag{
-				mkTag("py27", "none", "any"),
-				mkTag("py27", "cp27mu", "any"),
+			"linux",
+			[]*vpython.Pep425Tag{
+				{"py27", "none", "any"},
+				{"py27", "none", "linux_x86_64"},
 			},
 			map[string]string{
-				"py_tag":     "py27-cp27mu-any",
+				"platform":   "linux-amd64",
+				"py_tag":     "py27-none-linux_x86_64",
 				"py_version": "py27",
-				"py_abi":     "cp27mu",
-				"py_arch":    "any",
+				"py_abi":     "none",
+				"py_arch":    "linux_x86_64",
 			},
 		},
 	}
@@ -157,7 +138,7 @@ func TestPEP425TagSelector(t *testing.T) {
 				for i, tc := range testCases {
 					tags := tc.tags
 					if randomized {
-						tags = make([]*vpython.Environment_Pep425Tag, len(tc.tags))
+						tags = make([]*vpython.Pep425Tag, len(tc.tags))
 						for i, v := range rand.Perm(len(tc.tags)) {
 							tags[v] = tc.tags[i]
 						}
@@ -175,10 +156,33 @@ func TestPEP425TagSelector(t *testing.T) {
 					tagsList := strings.Join(tagsStr, ", ")
 
 					Convey(fmt.Sprintf(`On OS %q, generates template for [%s]`, tc.goOS, tagsList), func() {
-						So(getPEP425CIPDTemplates(tc.goOS, tags), ShouldResemble, tc.template)
+						tag := pep425TagSelector(tc.goOS, tags)
+
+						template, err := getPEP425CIPDTemplateForTag(tag)
+						So(err, ShouldBeNil)
+						So(template, ShouldResemble, tc.template)
 					})
 				}
 			})
 		}
+
+		Convey(`Returns an error when no tag is selected.`, func() {
+			tag := pep425TagSelector("linux", nil)
+			So(tag, ShouldBeNil)
+
+			_, err := getPEP425CIPDTemplateForTag(tag)
+			So(err, ShouldErrLike, "no PEP425 tag")
+		})
+
+		Convey(`Returns an error when an unknown platform is selected.`, func() {
+			tag := pep425TagSelector("linux", []*vpython.Pep425Tag{
+				{"py27", "none", "any"},
+				{"py27", "foo", "bar"},
+			})
+			So(tag, ShouldResemble, &vpython.Pep425Tag{Version: "py27", Abi: "foo", Arch: "bar"})
+
+			_, err := getPEP425CIPDTemplateForTag(tag)
+			So(err, ShouldErrLike, "failed to infer CIPD platform for tag")
+		})
 	})
 }
