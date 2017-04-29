@@ -12,7 +12,10 @@ import unittest
 
 import settings
 from proto import features_pb2
+from features import hotlist_views
 from features import notify
+from framework import framework_views
+from framework import monorailrequest
 from framework import permissions
 from framework import profiler
 from framework import template_helpers
@@ -741,3 +744,105 @@ class FlipperTest(unittest.TestCase):
     self.assertFalse(no_show_hotlist_flipper.show)
 
   # TODO(jojwang): Test other flipper functions
+
+class ModuleFunctionsTest(unittest.TestCase):
+
+  def setUp(self):
+    self.services = service_manager.Services(
+        issue=fake.IssueService(),
+        user=fake.UserService(),
+        usergroup=fake.UserGroupService(),
+        project=fake.ProjectService(),
+        features=fake.FeaturesService())
+    self.cnxn = fake.MonorailConnection()
+
+    # Set up for testing getBinnedHotlistViews.
+    # Project p1; issue i1 in p1; user u1 owns i1; ui1 is an *involved* user.
+    self.services.user.TestAddUser('u1', 111L)
+    project = self.services.project.TestAddProject('p1')
+    issue_local_id = self.services.issue.CreateIssue(
+        self.cnxn, self.services, project_id=project.project_id,
+        summary='summary', status='Open', owner_id=111L, cc_ids=[], labels=[],
+        field_values=[], component_ids=[], reporter_id=111L,
+        marked_description='marked description')
+    self.issue_id = self.services.issue.LookupIssueID(
+        self.cnxn, project_id=project.project_id, local_id=issue_local_id)
+    # ul1 is a *logged in* user.
+    self.services.user.TestAddUser('ul1', 222L)
+    # uo1 is an *other* user.
+    self.services.user.TestAddUser('uo1', 333L)
+
+    users_by_id = self.services.user.GetUsersByIDs(self.cnxn,
+                                                  [111L, 222L, 333L])
+    self.userviews_by_id = {k: framework_views.UserView(v)
+        for k, v in users_by_id.items()}
+
+    self.user_auth = monorailrequest.AuthData.FromEmail(
+        self.cnxn, 'ul1', self.services)
+
+    self.hotlist_item_fields = [(self.issue_id, None, None, None, None)]
+
+  def test_GetBinnedHotlistViews_IssueOwnerHasAHotlist(self):
+    """user u1 owns h1 and the issue; h1 should go into the "involved" bin."""
+    # Hotlist h1; user u1 owns h1; u1 is the issue reporter and owner, and so
+    # is an *involved* user.
+    hotlist_h1 = fake.Hotlist(hotlist_name='h1', hotlist_id=1, owner_ids=[111L],
+        hotlist_item_fields=self.hotlist_item_fields)
+    h1_view = hotlist_views.HotlistView(
+        hotlist_h1, viewed_user_id=222L, user_auth=self.user_auth,
+        users_by_id=self.userviews_by_id)
+    self.assertEqual(
+        ([], [h1_view], []),
+        issuedetail._GetBinnedHotlistViews([h1_view], involved_users=[111L]))
+
+  def test_GetBinnedHotlistViews_SignedInUserHasAHotlist(self):
+    """user ul1 owns h2 and is logged in; h2 should go into the "user" bin"""
+    # Hotlist h2; user ul1 owns h2; ul1 is a *logged in* user.
+    hotlist_h2 = fake.Hotlist(hotlist_name='h2', hotlist_id=2, owner_ids=[222L],
+        hotlist_item_fields=self.hotlist_item_fields)
+    h2_view = hotlist_views.HotlistView(
+        hotlist_h2, viewed_user_id=222L, user_auth=self.user_auth,
+        users_by_id=self.userviews_by_id)
+    self.assertEqual(
+        ([h2_view], [], []),
+        issuedetail._GetBinnedHotlistViews([h2_view], involved_users=[111L]))
+
+  def test_GetBinnedHotlistViews_OtherUserHasAHotlist(self):
+    """user uo1 owns h3; uo1 is an "other"; h3 should go into the "user" bin"""
+    # Hotlist h3; user uo1 owns h3; uo3 is an *other* user.
+    hotlist_h3 = fake.Hotlist(hotlist_name='h3', hotlist_id=3, owner_ids=[333L],
+        hotlist_item_fields=self.hotlist_item_fields)
+    h3_view = hotlist_views.HotlistView(
+        hotlist_h3, viewed_user_id=222L, user_auth=self.user_auth,
+        users_by_id=self.userviews_by_id)
+    self.assertEqual(
+        ([], [], [h3_view]),
+        issuedetail._GetBinnedHotlistViews([h3_view], involved_users=[111L]))
+
+  def test_GetBinnedHotlistViews_Empty(self):
+    """When no hotlist views are passed in, all bins should be empty"""
+    self.assertEqual(
+        ([], [], []),
+        issuedetail._GetBinnedHotlistViews([], involved_users=[111L]))
+
+  def test_GetBinnedHotlistViews_Multiple(self):
+    """Should correctly bin each hotlist view when passed in multiple views"""
+    hotlist_h1 = fake.Hotlist(hotlist_name='h1', hotlist_id=1, owner_ids=[111L],
+        hotlist_item_fields=self.hotlist_item_fields)
+    h1_view = hotlist_views.HotlistView(
+        hotlist_h1, viewed_user_id=222L, user_auth=self.user_auth,
+        users_by_id=self.userviews_by_id)
+    hotlist_h2 = fake.Hotlist(hotlist_name='h2', hotlist_id=2, owner_ids=[222L],
+        hotlist_item_fields=self.hotlist_item_fields)
+    h2_view = hotlist_views.HotlistView(
+        hotlist_h2, viewed_user_id=222L, user_auth=self.user_auth,
+        users_by_id=self.userviews_by_id)
+    hotlist_h3 = fake.Hotlist(hotlist_name='h3', hotlist_id=3, owner_ids=[333L],
+        hotlist_item_fields=self.hotlist_item_fields)
+    h3_view = hotlist_views.HotlistView(
+        hotlist_h3, viewed_user_id=222L, user_auth=self.user_auth,
+        users_by_id=self.userviews_by_id)
+    self.assertEqual(
+        ([h2_view], [h1_view], [h3_view]),
+        issuedetail._GetBinnedHotlistViews([h1_view, h2_view, h3_view],
+                                           involved_users=[111L]))

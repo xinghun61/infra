@@ -192,6 +192,7 @@ class IssuePeek(servlet.Servlet):
         # for template issue-meta-part shared by issuedetail servlet
         'user_hotlists': [],
         'user_issue_hotlists': [],
+        'involved_users_issue_hotlists': [],
         'remaining_issue_hotlists': [],
         }
 

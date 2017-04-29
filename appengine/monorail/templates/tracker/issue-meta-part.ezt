@@ -230,7 +230,7 @@
 
     <br>
     <span id="user-hotlists" style=display:[if-any user_issue_hotlists]block[else]none[end]>
-      <b>Hotlists:</b>
+      <b>Your hotlists:</b>
         <div id="user-hotlists-list">
           [for user_issue_hotlists]
             <a href="[user_issue_hotlists.url]">[user_issue_hotlists.name]</a><br>
@@ -242,12 +242,26 @@
     [if-any logged_in_user]<a id="add-issue-to-hotlist">Add to hotlist</a><br>
     [include "add-to-hotlist-dialog.ezt"]
     [end]
+
+    [if-any involved_users_issue_hotlists]
+     <br><b>Participants' hotlists:</b><br>
+     [for involved_users_issue_hotlists]
+      <a href="[involved_users_issue_hotlists.url]">[involved_users_issue_hotlists.name]</a><br>
+     [end]
+    [end]
+
     [if-any remaining_issue_hotlists]
-      [# TODO(jojwang): add collapse/expand for remainig_issue_hotlists]
-      <br><b>[if-any user_issue_hotlists]Other h[else]H[end]otlists containing this issue:</b><br>
-      [for remaining_issue_hotlists]
-      <a href="[remaining_issue_hotlists.url]">[remaining_issue_hotlists.name]</a><br>
-      [end]
+     <div class="closed">
+      <br>
+      <a href="#" class="ifClosed toggleHidden">Show other hotlists</a>
+
+      <div class="ifOpened">
+        <br><b>[if-any user_issue_hotlists involved_users_issue_hotlists]Other h[else]H[end]otlists containing this issue:</b><br>
+        [for remaining_issue_hotlists]
+         <a href="[remaining_issue_hotlists.url]">[remaining_issue_hotlists.name]</a><br>
+        [end]
+      </div>
+     </div>
     [end]
 </div>
 

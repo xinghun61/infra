@@ -232,12 +232,13 @@ class IssueDetail(issuepeek.IssuePeek):
       (descriptions, visible_comments,
        cmnt_pagination) = self._PaginatePartialComments(mr, issue)
 
+    users_involved_in_issue = tracker_bizobj.UsersInvolvedInIssues([issue])
+    users_involved_in_comment_list = tracker_bizobj.UsersInvolvedInCommentList(
+        descriptions + visible_comments)
     with self.profiler.Phase('making user views'):
       users_by_id = framework_views.MakeAllUserViews(
-          mr.cnxn, self.services.user,
-          tracker_bizobj.UsersInvolvedInIssues([issue]),
-          tracker_bizobj.UsersInvolvedInCommentList(
-              descriptions + visible_comments))
+          mr.cnxn, self.services.user, users_involved_in_issue,
+          users_involved_in_comment_list)
       framework_views.RevealAllEmailsToMembers(mr, users_by_id)
 
     issue_flaggers, comment_flaggers = [], {}
@@ -330,12 +331,11 @@ class IssueDetail(issuepeek.IssuePeek):
 
     visible_issue_hotlist_views = [view for view in issue_hotlist_views if
                                    view.visible]
-    user_issue_hotlist_views = [
-        view for view in visible_issue_hotlist_views if (
-            view.role_name=='owner' or view.role_name=='editor')]
-    remaining_issue_hotlist_views = [
-        view for view in visible_issue_hotlist_views if
-        view not in user_issue_hotlist_views]
+
+    (user_issue_hotlist_views, involved_users_issue_hotlist_views,
+     remaining_issue_hotlist_views) = _GetBinnedHotlistViews(
+         visible_issue_hotlist_views, users_involved_in_issue)
+
     user_hotlists = [hotlist for hotlist in
                       self.services.features.GetHotlistsByUserID(
                           mr.cnxn, mr.auth.user_id) if
@@ -410,6 +410,7 @@ class IssueDetail(issuepeek.IssuePeek):
         'user_hotlists': user_hotlists,
         # For showing hotlists that contain this issue
         'user_issue_hotlists': user_issue_hotlist_views,
+        'involved_users_issue_hotlists': involved_users_issue_hotlist_views,
         'remaining_issue_hotlists': remaining_issue_hotlist_views
     }
 
@@ -1479,3 +1480,21 @@ def CheckMoveIssueRequest(
     return None
 
   return move_to_project
+
+
+def _GetBinnedHotlistViews(visible_hotlist_views, involved_users):
+  """Bins into (logged-in user's, issue-involved users', others') hotlists"""
+  user_issue_hotlist_views = []
+  involved_users_issue_hotlist_views = []
+  remaining_issue_hotlist_views = []
+
+  for view in visible_hotlist_views:
+    if view.role_name in ('owner', 'editor'):
+      user_issue_hotlist_views.append(view)
+    elif view.owner_ids[0] in involved_users:
+      involved_users_issue_hotlist_views.append(view)
+    else:
+      remaining_issue_hotlist_views.append(view)
+
+  return (user_issue_hotlist_views, involved_users_issue_hotlist_views,
+          remaining_issue_hotlist_views)
