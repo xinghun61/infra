@@ -10,7 +10,7 @@ import threading
 
 from git_checkout import local_git_parsers
 from libs.gitiles.git_repository import GitRepository
-import script_util
+from local_libs import script_util
 
 _CHANGELOG_FORMAT_STRING = ('commit %H%n'
                             'author %an%n'

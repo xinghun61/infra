@@ -10,10 +10,10 @@ import datetime
 import os
 import sys
 
-_REMOTE_API_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
-sys.path.insert(1, _REMOTE_API_DIR)
-
-import remote_api
+_FINDIT_DIR = os.path.join(os.path.dirname(__file__),
+                           os.path.pardir, os.path.pardir)
+sys.path.insert(1, _FINDIT_DIR)
+from local_libs import remote_api
 
 from libs import analysis_status
 from model.wf_swarming_task import WfSwarmingTask

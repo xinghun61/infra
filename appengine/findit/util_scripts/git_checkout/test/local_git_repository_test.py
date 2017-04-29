@@ -14,8 +14,8 @@ from testing_utils import testing
 from git_checkout import local_git_repository
 from libs.gitiles import blame
 from libs.gitiles import change_log
-import local_cache
-import script_util
+from local_libs import local_cache
+from local_libs import script_util
 
 
 class LocalGitRepositoryTest(testing.AppengineTestCase):

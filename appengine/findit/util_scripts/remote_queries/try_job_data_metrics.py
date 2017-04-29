@@ -17,10 +17,10 @@ try:
 except ImportError:
   pyplot = None
 
-_REMOTE_API_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
-sys.path.insert(1, _REMOTE_API_DIR)
-
-import remote_api
+_FINDIT_DIR = os.path.join(os.path.dirname(__file__),
+                           os.path.pardir, os.path.pardir)
+sys.path.insert(1, _FINDIT_DIR)
+from local_libs import remote_api
 
 from model.wf_try_job_data import WfTryJobData
 

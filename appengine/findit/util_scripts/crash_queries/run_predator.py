@@ -13,11 +13,11 @@ import traceback
 import zlib
 
 _CRASH_QUERIES_DIR = os.path.dirname(os.path.realpath(__file__))
-_SCRIPT_DIR = os.path.join(_CRASH_QUERIES_DIR, os.path.pardir)
-sys.path.insert(1, _SCRIPT_DIR)
+_FINDIT_DIR = os.path.join(_CRASH_QUERIES_DIR, os.path.pardir, os.path.pardir)
+sys.path.insert(1, _FINDIT_DIR)
 
-from local_cache import LocalCache
-import script_util
+from local_libs.local_cache import LocalCache
+from local_libs import script_util
 
 from crash.crash_pipeline import FinditForClientID
 from crash.chromecrash_parser import ChromeCrashParser
@@ -28,9 +28,9 @@ from gae_libs.http.http_client_appengine import HttpClientAppengine
 from git_checkout.local_git_repository import LocalGitRepository
 from libs.cache_decorator import Cached
 from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
+from local_libs import remote_api
 from model.crash import crash_analysis
 from model.crash.crash_config import CrashConfig
-import remote_api
 
 # TODO(crbug.com/662540): Add unittests.
 

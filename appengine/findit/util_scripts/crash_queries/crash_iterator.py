@@ -10,12 +10,12 @@ import sys
 _SCRIPT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
                            os.path.pardir)
 sys.path.insert(1, _SCRIPT_DIR)
-import script_util
 
 from crash.type_enums import CrashClient
-import iterator
 from libs.cache_decorator import GeneratorCached
-from local_cache import LocalCache
+from local_libs import local_iterator
+from local_libs import script_util
+from local_libs.local_cache import LocalCache
 from model.crash.cracas_crash_analysis import CracasCrashAnalysis
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
 
@@ -69,9 +69,9 @@ def IterateCrashes(client_id,
   # According to go/in-with-cursor-query-prob, the query must be sorted by key
   # to make a query with both ``IN`` operation and cursor.
   query = query.order(-cls.requested_time, cls.key)
-  for crash in iterator.ScriptIterate(query, app_id, projection=projection,
-                                      batch_size=batch_size,
-                                      batch_run=batch_run):
+  for crash in local_iterator.ScriptIterate(
+      query, app_id, projection=projection,
+      batch_size=batch_size, batch_run=batch_run):
     yield crash
 
 

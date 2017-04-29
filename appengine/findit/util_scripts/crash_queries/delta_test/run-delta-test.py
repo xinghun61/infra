@@ -12,15 +12,15 @@ import os
 import pickle
 import sys
 
-_SCRIPT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                           os.path.pardir, os.path.pardir)
-sys.path.insert(1, _SCRIPT_DIR)
-import script_util
+_FINDIT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                           os.path.pardir, os.path.pardir, os.path.pardir)
+sys.path.insert(1, _FINDIT_DIR)
+from local_libs import script_util
 script_util.SetUpSystemPaths()
 
 from crash.type_enums import CrashClient
-from crash_queries.delta_test import delta_test
-from crash_queries.delta_test import delta_util
+from util_scripts.crash_queries.delta_test import delta_test
+from util_scripts.crash_queries.delta_test import delta_util
 
 _TODAY = date.today().strftime('%Y-%m-%d')
 _A_YEAR_AGO = (date.today() - timedelta(days=365)).strftime('%Y-%m-%d')

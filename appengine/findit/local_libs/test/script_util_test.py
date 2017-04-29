@@ -8,8 +8,8 @@ import tempfile
 
 from testing_utils import testing
 
-import local_cache
-import script_util
+from local_libs import local_cache
+from local_libs import script_util
 
 
 class ScriptUtilTest(testing.AppengineTestCase):

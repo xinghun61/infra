@@ -10,11 +10,11 @@ import pickle
 import subprocess
 import zlib
 
-from crash_queries import crash_iterator
-from crash_queries.delta_test import delta_util
-from crash_queries.run_predator import GetCulpritsOnRevision
+from util_scripts.crash_queries import crash_iterator
+from util_scripts.crash_queries.delta_test import delta_util
+from util_scripts.crash_queries.run_predator import GetCulpritsOnRevision
 from libs.cache_decorator import Cached
-from local_cache import LocalCache  # pylint: disable=W
+from local_libs.local_cache import LocalCache  # pylint: disable=W
 
 # TODO(crbug.com/662540): Add unittests.
 

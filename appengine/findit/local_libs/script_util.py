@@ -23,14 +23,14 @@ TASK_QUEUE = None
 GIT_HASH_PATTERN = re.compile(r'^[0-9a-fA-F]{40}$')
 
 
-def SetUpSystemPaths():  # pragma: no cover
+def SetUpSystemPaths(root_dir=None):  # pragma: no cover
   """Sets system paths so as to import modules in findit, third_party and
   appengine."""
-  findit_root_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                 os.path.pardir)
-  first_party_dir = os.path.join(findit_root_dir, 'first_party')
-  third_party_dir = os.path.join(findit_root_dir, 'third_party')
-  appengine_sdk_dir = os.path.join(findit_root_dir, os.path.pardir,
+  root_dir = root_dir or os.path.join(
+      os.path.dirname(os.path.realpath(__file__)), os.path.pardir)
+  first_party_dir = os.path.join(root_dir, 'first_party')
+  third_party_dir = os.path.join(root_dir, 'third_party')
+  appengine_sdk_dir = os.path.join(root_dir, os.path.pardir,
                                    os.path.pardir, os.path.pardir,
                                    'google_appengine')
 
@@ -40,10 +40,13 @@ def SetUpSystemPaths():  # pragma: no cover
   dev_appserver.fix_sys_path()
 
   # Add Findit root dir to sys.path so that modules in Findit is available.
-  sys.path.insert(1, findit_root_dir)
+  if not root_dir in sys.path:
+    sys.path.insert(1, root_dir)
   # Add App Engine SDK dir to sys.path.
-  sys.path.insert(1, third_party_dir)
-  sys.path.insert(1, first_party_dir)
+  if not third_party_dir in sys.path:
+    sys.path.insert(1, third_party_dir)
+  if not first_party_dir in sys.path:
+    sys.path.insert(1, first_party_dir)
 
   import google
   # protobuf and GAE have package name conflict on 'google'.

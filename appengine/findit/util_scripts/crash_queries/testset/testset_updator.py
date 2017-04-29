@@ -8,10 +8,9 @@ import pickle
 import sys
 import zlib
 
-_SCRIPT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
-                           os.path.pardir)
-sys.path.insert(1, _SCRIPT_DIR)
-
+_FINDIT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
+                           os.path.pardir, os.path.pardir)
+sys.path.insert(1, _FINDIT_DIR)
 import script_util
 script_util.SetUpSystemPaths()
 

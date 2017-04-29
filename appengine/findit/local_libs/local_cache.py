@@ -10,9 +10,8 @@ import zlib
 
 from libs.cache import Cache
 
-
-PREDATOR_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir, 'crash')
-CACHE_DIR = os.path.join(PREDATOR_DIR, '.predator', 'cache')
+ROOT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
+CACHE_DIR = os.path.join(ROOT_DIR, '.local_scripts', 'cache')
 
 
 class LocalCache(Cache):

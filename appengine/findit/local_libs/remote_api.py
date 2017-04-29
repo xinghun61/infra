@@ -14,9 +14,6 @@ For detail on usage of Remote API, please refer to:
 
 import socket
 
-import script_util  # pylint: disable=W
-script_util.SetUpSystemPaths()
-
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
 from google.appengine.ext.remote_api import remote_api_stub

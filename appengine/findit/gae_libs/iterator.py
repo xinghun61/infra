@@ -4,18 +4,14 @@
 
 """Fetches entities and iterate over and process them."""
 
-import os
-
-import remote_api  # pylint: disable=W
-
-_DEFAULT_BATCH_SIZE = 1000
+DEFAULT_BATCH_SIZE = 1000
 
 
 # TODO(katesonia): Move this to gae_libs.
 # TODO(crbug.com/662540): Add unittests.
 def Iterate(query,
             projection=None,
-            batch_size=_DEFAULT_BATCH_SIZE,
+            batch_size=DEFAULT_BATCH_SIZE,
             batch_run=False):  # pragma: no cover.
   """Iterates entities queried by query.
 
@@ -50,25 +46,3 @@ def Iterate(query,
       break
 
     cursor = next_cursor
-
-
-def ScriptIterate(query,
-                  app_id,
-                  projection=None,
-                  batch_size=_DEFAULT_BATCH_SIZE,
-                  batch_run=False):  # pragma: no cover.
-  """Iterates entities queried by query.
-
-  Args:
-    query (ndb.Query): The query to fetch entities.
-    batch_size (int): The number of entities to query at one time.
-    batch_run (bool): If True, iterate batches of entities, if
-      False, iterate each entity.
-
-    An exmaple is available in crash_printer/print_crash.py.
-  """
-  remote_api.EnableRemoteApi(app_id)
-
-  for entity in Iterate(query, projection=projection, batch_size=batch_size,
-                        batch_run=batch_run):
-    yield entity

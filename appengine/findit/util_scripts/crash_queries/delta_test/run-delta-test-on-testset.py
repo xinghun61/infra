@@ -13,15 +13,16 @@ import os
 import pickle
 import sys
 
-_SCRIPT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
-                           os.path.pardir)
-sys.path.insert(1, _SCRIPT_DIR)
+_ROOT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
+                         os.path.pardir)
+sys.path.insert(1, _ROOT_DIR)
 
-import script_util
+from local_libs import script_util
 script_util.SetUpSystemPaths()
 
-from crash_queries.delta_test import delta_util
-from crash_queries.delta_test.delta_test import EvaluateDeltaOnTestSet
+from util_scripts.crash_queries.delta_test import delta_util
+from util_scripts.crash_queries.delta_test.delta_test import (
+    EvaluateDeltaOnTestSet)
 
 DELTA_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
                                        'delta_results')

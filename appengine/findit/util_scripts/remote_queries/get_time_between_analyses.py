@@ -21,10 +21,10 @@ sys.path.insert(1, _APPENGINE_SDK_DIR)
 
 from google.appengine.ext import ndb
 
-_REMOTE_API_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
-
-sys.path.insert(1, _REMOTE_API_DIR)
-import remote_api
+_FINDIT_DIR = os.path.join(os.path.dirname(__file__),
+                           os.path.pardir, os.path.pardir)
+sys.path.insert(1, _FINDIT_DIR)
+from local_libs import remote_api
 
 from common.waterfall import failure_type
 from model.wf_analysis import WfAnalysis

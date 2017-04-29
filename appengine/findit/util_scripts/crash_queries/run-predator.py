@@ -13,16 +13,16 @@ import traceback
 import zlib
 
 _CRASH_QUERIES_DIR = os.path.dirname(os.path.realpath(__file__))
-_SCRIPT_DIR = os.path.join(_CRASH_QUERIES_DIR, os.path.pardir)
-sys.path.insert(1, _SCRIPT_DIR)
+_FINDIT_DIR = os.path.join(_CRASH_QUERIES_DIR, os.path.pardir, os.path.pardir)
+sys.path.insert(1, _FINDIT_DIR)
 
-import remote_api
-import script_util
+from local_libs import remote_api
+from local_libs import script_util
 script_util.SetUpSystemPaths()
 
 from google.appengine.ext import ndb
 
-from crash_queries.run_predator import GetCulprits
+from util_scripts.crash_queries.run_predator import GetCulprits
 
 PREDATOR_RESULTS_DIRECTORY = os.path.join(_CRASH_QUERIES_DIR,
                                           'predator_results')
@@ -53,7 +53,7 @@ def RunPredator():
       '--key',
       '-k',
       default=None,
-      help='Key to a single crash.')
+      help='Key to one single crash.')
 
   argparser.add_argument(
       '--client',
