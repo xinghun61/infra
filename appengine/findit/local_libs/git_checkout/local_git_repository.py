@@ -8,8 +8,8 @@ from urlparse import urlparse
 import subprocess
 import threading
 
-from scripts.git_checkout import local_git_parsers
 from libs.gitiles.git_repository import GitRepository
+from local_libs.git_checkout import local_git_parsers
 from local_libs import script_util
 
 _CHANGELOG_FORMAT_STRING = ('commit %H%n'

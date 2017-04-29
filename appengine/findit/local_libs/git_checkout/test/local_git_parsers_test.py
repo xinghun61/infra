@@ -15,10 +15,10 @@ sys.path.insert(1, _ROOT_DIR)
 from local_libs import script_util
 script_util.SetUpSystemPaths()
 
-from git_checkout import local_git_parsers
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs.gitiles import change_log
+from local_libs.git_checkout import local_git_parsers
 
 
 class LocalGitParsersTest(unittest.TestCase):

@@ -15,13 +15,12 @@ import zlib
 _CRASH_QUERIES_DIR = os.path.dirname(os.path.realpath(__file__))
 _FINDIT_DIR = os.path.join(_CRASH_QUERIES_DIR, os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
-
-from local_libs import remote_api
 from local_libs import script_util
 script_util.SetUpSystemPaths()
 
 from google.appengine.ext import ndb
 
+from local_libs import remote_api
 from util_scripts.crash_queries.run_predator import GetCulprits
 
 PREDATOR_RESULTS_DIRECTORY = os.path.join(_CRASH_QUERIES_DIR,

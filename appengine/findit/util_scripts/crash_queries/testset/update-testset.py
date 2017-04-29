@@ -11,13 +11,13 @@ import sys
 _FINDIT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
                            os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
-import script_util
+from local_libs import script_util
 script_util.SetUpSystemPaths()
 
 from crash.type_enums import CrashClient
-from crash_queries.testset.testset_updator import TestsetUpdator
 from model.crash.cracas_crash_analysis import CracasCrashAnalysis
 from model.crash.fracas_crash_analysis import FracasCrashAnalysis
+from util_scripts.crash_queries.testset.testset_updator import TestsetUpdator
 
 _DATETIME_FORMAT = '%Y-%m-%d'
 _TODAY = date.today().strftime(_DATETIME_FORMAT)

@@ -15,20 +15,17 @@ import zlib
 _CRASH_QUERIES_DIR = os.path.dirname(os.path.realpath(__file__))
 _FINDIT_DIR = os.path.join(_CRASH_QUERIES_DIR, os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
-
-from local_libs.local_cache import LocalCache
 from local_libs import script_util
+script_util.SetUpSystemPaths()
 
 from crash.crash_pipeline import FinditForClientID
 from crash.chromecrash_parser import ChromeCrashParser
 from crash.clusterfuzz_parser import ClusterfuzzParser
 from crash.type_enums import CrashClient
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
-from git_checkout.local_git_repository import LocalGitRepository
 from libs.cache_decorator import Cached
-from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
 from local_libs import remote_api
+from local_libs.git_checkout.local_git_repository import LocalGitRepository
+from local_libs.local_cache import LocalCache
 from model.crash import crash_analysis
 from model.crash.crash_config import CrashConfig
 

@@ -28,12 +28,9 @@ from analysis.type_enums import CrashClient
 from common.crash_pipeline import FinditForClientID
 from common.model import crash_analysis
 from common.model.crash_config import CrashConfig
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs.cache_decorator import Cached
-from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
 from local_libs import remote_api
-from scripts.git_checkout.local_git_repository import LocalGitRepository
+from local_libs.git_checkout.local_git_repository import LocalGitRepository
 
 # TODO(crbug.com/662540): Add unittests.
 

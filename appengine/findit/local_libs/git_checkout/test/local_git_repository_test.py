@@ -11,11 +11,11 @@ import textwrap
 
 from testing_utils import testing
 
-from scripts.git_checkout import local_git_repository
 from libs.gitiles import blame
 from libs.gitiles import change_log
 from local_libs import local_cache
 from local_libs import script_util
+from local_libs.git_checkout import local_git_repository
 
 
 class LocalGitRepositoryTest(testing.AppengineTestCase):
