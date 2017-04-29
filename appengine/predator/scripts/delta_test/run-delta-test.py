@@ -12,15 +12,17 @@ import os
 import pickle
 import sys
 
-_ROOT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                         os.path.pardir, os.path.pardir)
-sys.path.insert(1, _ROOT_DIR)
+_ROOT_DIR = os.path.join(os.path.dirname(
+    os.path.realpath(__file__)), os.path.pardir, os.path.pardir)
+_FIRST_PARTY_DIR = os.path.join(_ROOT_DIR, 'first_party')
+sys.path.insert(1, _FIRST_PARTY_DIR)
 from local_libs import script_util
-script_util.SetUpSystemPaths()
+script_util.SetUpSystemPaths(_ROOT_DIR)
 
 from analysis.type_enums import CrashClient
 from scripts.delta_test import delta_test
 from scripts.delta_test import delta_util
+
 
 _TODAY = date.today().strftime('%Y-%m-%d')
 _A_YEAR_AGO = (date.today() - timedelta(days=365)).strftime('%Y-%m-%d')

@@ -7,38 +7,33 @@
 import argparse
 from datetime import date
 from datetime import timedelta
+import hashlib
 import logging
 import os
 import pickle
 import sys
 
-_ROOT_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                         os.path.pardir, os.path.pardir)
-sys.path.insert(1, _ROOT_DIR)
+_ROOT_DIR = os.path.join(os.path.dirname(
+    os.path.realpath(__file__)), os.path.pardir)
+_FIRST_PARTY_DIR = os.path.join(_ROOT_DIR, 'first_party')
+sys.path.insert(1, _FIRST_PARTY_DIR)
+
 from local_libs import script_util
-script_util.SetUpSystemPaths()
+script_util.SetUpSystemPaths(_ROOT_DIR)
 
-from analysis.type_enums import CrashClient
-from scripts.delta_test import delta_test
 from scripts.delta_test import delta_util
-
-_TODAY = date.today().strftime('%Y-%m-%d')
-_A_YEAR_AGO = (date.today() - timedelta(days=365)).strftime('%Y-%m-%d')
-
-# App Engine APIs will fail if batch size is more than 1000.
-_MAX_BATCH_SIZE = 1000
-_DEFAULT_BATCH_SIZE = _MAX_BATCH_SIZE
-_DEFAULT_MAX_N = 100
+from scripts.delta_test.delta_test import EvaluateDeltaOnTestSet
 
 DELTA_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
                                        'delta_results')
 
 
-def GenerateDeltaCSVPath(directory, git_hash1, git_hash2,
-                         since_date, until_date, max_n):
+def GenerateDeltaCSVPath(directory, git_hash1, git_hash2, client_id,
+                         testset_path):
   """Returns the file path of delta result."""
-  delta_result_prefix = '%s_%s_%s..%s_max_%d.delta.csv' % (
-      git_hash1[:7], git_hash2[:7], since_date, until_date, max_n)
+  delta_result_prefix = '%s_%s_%s_%s.delta.csv' % (
+      client_id, git_hash1[:7], git_hash2[:7],
+      hashlib.md5(testset_path).hexdigest())
 
   return os.path.join(directory, delta_result_prefix)
 
@@ -53,6 +48,9 @@ def RunDeltaTest():
                    'different revisions of local repo, please commit all local '
                    'changes before running the script, and do not make any '
                    'new changes while running it.'))
+
+  argparser.add_argument('testset',
+                         help='The path to testset to run delta test on.')
 
   argparser.add_argument(
       '--revisions',
@@ -70,7 +68,7 @@ def RunDeltaTest():
   argparser.add_argument(
       '--client',
       '-c',
-      default=CrashClient.CRACAS,
+      default='cracas',
       help=('Type of client data the delta test is running on, '
             'possible values are: fracas, cracas, clusterfuzz. '
             'Right now, only fracas data is available'))
@@ -85,38 +83,6 @@ def RunDeltaTest():
             'the default value.\nNOTE, only appspot app ids are supported, '
             'the app_id of googleplex app will have access issues '
             'due to internal proxy. '))
-
-  argparser.add_argument(
-      '--since',
-      '-s',
-      default=_A_YEAR_AGO,
-      help=('Query data since this date (including this date). '
-            'The date should be in YYYY-MM-DD format (e.g. 2015-09-31), '
-            'defaults to a year ago.'))
-
-  argparser.add_argument(
-      '--until',
-      '-u',
-      default=_TODAY,
-      help=('Query data until this date (not including this date). '
-            'Should be in YYYY-MM-DD format (e.g. 2015-09-31), '
-            'defaults to today.'))
-
-  argparser.add_argument(
-      '--batch',
-      '-b',
-      type=int,
-      default=_DEFAULT_BATCH_SIZE,
-      help=('The size of batch that can be processed at one time.\n'
-            'NOTE, the batch size cannot be greater than 1000, or app engine '
-            'APIs would fail, defaults to 1000.'))
-
-  argparser.add_argument(
-      '--max',
-      '-m',
-      type=int,
-      default=_DEFAULT_MAX_N,
-      help='The maximum number of crashes we want to check, defaults to 100.')
 
   argparser.add_argument(
       '--verbose',
@@ -134,15 +100,8 @@ def RunDeltaTest():
     logging.basicConfig(level=logging.INFO)
 
   if len(args.revisions) > 2:
-    logging.error('Only support delta test between 2 revisions.')
+    logging.error('Delta test can compare at most two revisions.')
     sys.exit(1)
-
-  if args.batch > _MAX_BATCH_SIZE:
-    logging.error('Batch size cannot be greater than %s, or app engine APIs '
-                  'would fail.', _MAX_BATCH_SIZE)
-    sys.exit(1)
-
-  args.batch = min(args.max, args.batch)
 
   # If only one revision provided, default the rev2 to HEAD.
   if len(args.revisions) == 1:
@@ -151,15 +110,14 @@ def RunDeltaTest():
   git_hash1 = delta_util.ParseGitHash(args.revisions[0])
   git_hash2 = delta_util.ParseGitHash(args.revisions[1])
 
-  # Compute delta.
-  deltas, triage_results, crash_num = delta_test.EvaluateDelta(
+  testset_path = os.path.realpath(args.testset)
+  deltas, triage_results, crash_num = EvaluateDeltaOnTestSet(
       git_hash1, git_hash2, args.client, args.app,
-      args.since, args.until, args.batch, args.max,
-      verbose=args.verbose)
+      testset_path, verbose=args.verbose)
 
   delta_csv_path = GenerateDeltaCSVPath(DELTA_RESULTS_DIRECTORY,
                                         git_hash1, git_hash2,
-                                        args.since, args.until, args.max)
+                                        args.client, testset_path)
   delta_util.WriteDeltaToCSV(deltas, crash_num, args.client, args.app,
                              git_hash1, git_hash2, delta_csv_path,
                              triage_results=triage_results)
