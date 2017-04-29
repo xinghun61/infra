@@ -213,7 +213,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
 
   def test_get_task_def_bad_request(self):
     req = {
-      'build_id': '8982540789124571952',
       'build_request': {
         'bucket': ')))',
         'parameters_json': json.dumps({
@@ -221,7 +220,16 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         }),
       }
     }
+    self.call_api('get_task_def', req, status=400)
 
+    req = {
+      'build_request': {'bucket': 'luci.chromium.try'},
+    }
+    self.call_api('get_task_def', req, status=400)
+
+    req = {
+      'build_request': {'bucket': 'luci.chromium.try', 'parameters_json': '{}'},
+    }
     self.call_api('get_task_def', req, status=400)
 
   def test_get_task_def_forbidden(self):

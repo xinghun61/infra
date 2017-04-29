@@ -116,28 +116,28 @@ class SwarmbucketApi(remote.Service):
       GetTaskDefinitionResponseMessage)
   def get_task_def(self, request):
     """Returns a swarming task definition for a build request."""
-    build_request = api.put_request_message_to_build_request(
-        request.build_request)
     try:
+      build_request = api.put_request_message_to_build_request(
+          request.build_request)
       build_request = build_request.normalize()
+
+      identity = auth.get_current_identity()
+      if not acl.can_add_build(build_request.bucket):
+        raise endpoints.ForbiddenException(
+            '%s cannot schedule builds in bucket %s' %
+            (identity, build_request.bucket))
+
+      build = build_request.create_build(1, identity)
+      bucket_cfg, _, task_def = (
+          swarming.prepare_task_def_async(build, fake_build=True).get_result())
+      task_def_json = json.dumps(task_def)
+      return GetTaskDefinitionResponseMessage(
+          task_definition=task_def_json,
+          api_explorer_link=(
+              ('https://%s/_ah/api/explorer'
+               '#p/swarming/v1/swarming.tasks.new?resource=%s') %
+              (bucket_cfg.swarming.hostname, urllib.quote(task_def_json))),
+      )
     except errors.InvalidInputError as ex:
       raise endpoints.BadRequestException(
           'invalid build request: %s' % ex.message)
-
-    identity = auth.get_current_identity()
-    if not acl.can_add_build(build_request.bucket):
-      raise endpoints.ForbiddenException(
-          '%s cannot schedule builds in bucket %s' %
-          (identity, build_request.bucket))
-
-    build = build_request.create_build(1, identity)
-    bucket_cfg, _, task_def = (
-        swarming.prepare_task_def_async(build, fake_build=True).get_result())
-    task_def_json = json.dumps(task_def)
-    return GetTaskDefinitionResponseMessage(
-        task_definition=task_def_json,
-        api_explorer_link=(
-            ('https://%s/_ah/api/explorer'
-             '#p/swarming/v1/swarming.tasks.new?resource=%s') %
-            (bucket_cfg.swarming.hostname, urllib.quote(task_def_json))),
-    )
