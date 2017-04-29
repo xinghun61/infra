@@ -5,14 +5,10 @@
 package main
 
 import (
-	"path/filepath"
-
 	"golang.org/x/net/context"
 
 	"github.com/luci/luci-go/vpython/api/vpython"
 	"github.com/luci/luci-go/vpython/application"
-
-	"github.com/luci/luci-go/common/system/filesystem"
 )
 
 var verificationScenarios = []*vpython.Pep425Tag{
@@ -34,29 +30,18 @@ var verificationScenarios = []*vpython.Pep425Tag{
 // verificationGen is an application.VerificationFunc which will generate
 // verification scenarios for infra-supported package combinations.
 func withVerificationConfig(c context.Context, fn func(application.Config, []*vpython.Pep425Tag) error) error {
-	// Run verification within the scope of a tempdir. We use an explicit tempdir
-	// for caching so our verification resolves everything against the live CIPD
-	// service. We will, however, share a cache directory and root in between
-	// verification rounds so that we can cache duplicate lookups.
-	td := filesystem.TempDir{
-		Prefix: "vpython_verification",
-	}
-	return td.With(func(tdir string) error {
-		// Clone our default package loader and configure it for verification.
-		plBase := cipdPackageLoader
-		plBase.Options.CacheDir = filepath.Join(tdir, "cache")
-		plBase.Options.Root = filepath.Join(tdir, "root")
-		plBase.Template = func(c context.Context, e *vpython.Environment) (map[string]string, error) {
-			if len(e.Pep425Tag) == 0 {
-				return nil, nil
-			}
-			return getPEP425CIPDTemplateForTag(e.Pep425Tag[0])
+	// Clone our default package loader and configure it for verification.
+	plBase := cipdPackageLoader
+	plBase.Template = func(c context.Context, e *vpython.Environment) (map[string]string, error) {
+		if len(e.Pep425Tag) == 0 {
+			return nil, nil
 		}
+		return getPEP425CIPDTemplateForTag(e.Pep425Tag[0])
+	}
 
-		// Build an alternative Config with that set.
-		vcfg := defaultConfig
-		vcfg.PackageLoader = &plBase
+	// Build an alternative Config with that set.
+	vcfg := defaultConfig
+	vcfg.PackageLoader = &plBase
 
-		return fn(vcfg, verificationScenarios)
-	})
+	return fn(vcfg, verificationScenarios)
 }
