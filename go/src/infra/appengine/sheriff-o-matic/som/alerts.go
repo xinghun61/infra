@@ -54,8 +54,8 @@ func getAlertsHandler(ctx *router.Context) {
 
 	// TODO(seanmccullough): remove this check once we turn down a-d and only
 	// use the cron tasks for alerts for all trees. See crbug.com/705074
-	if tree == "chromium" {
-		tree = "milo.chromium"
+	if tree == "chromium" || tree == "ios" {
+		tree = "milo." + tree
 	}
 
 	q := datastore.NewQuery("AlertJSON")
