@@ -67,6 +67,11 @@ def main():
   pkg = o.package
   version = o.version
 
+  # '-' is used in wheel file names as a separator. Some scripts are getting
+  # confused if '-' is used in package names. Use '_' instead. PyPI understand
+  # this: "a-b-c" and "a_b_c" point to the exact same package.
+  pkg = pkg.replace('-', '_')
+
   info = query_pypi(pkg, version)
   releases = sorted(info['releases'][version])
 
@@ -121,24 +126,25 @@ def main():
       continue
     wheels.append(r)
 
-  print 'Going to ingest following source distribution:'
+  print 'Going to ingest the following source distribution:'
   print '  * %s (%d downloads)' % (source['filename'], source['downloads'])
   print
 
-  print 'Going to ingest the following wheels:'
-  for r in wheels:
-    print '  * %s (%d downloads)' % (r['filename'], r['downloads'])
-  print
+  if wheels:
+    print 'Going to ingest the following wheels:'
+    for r in wheels:
+      print '  * %s (%d downloads)' % (r['filename'], r['downloads'])
+    print
 
-  if 'any' in only_on:
-    only_on = []
-    print 'This will make the package available on all platforms.'
-  else:
-    only_on = sorted(only_on)
-    print 'This will make the package available on:'
-    for p in only_on:
-      print '  * %s' % p
-  print
+    if 'any' in only_on:
+      only_on = []
+      print 'This will make the package available on all platforms.'
+    else:
+      only_on = sorted(only_on)
+      print 'This will make the package available on:'
+      for p in only_on:
+        print '  * %s' % p
+    print
 
   if raw_input('Continue? [Y] ') not in ('', 'y', 'Y'):
     return 2
@@ -174,6 +180,14 @@ def main():
 
   print 'deps.pyl entry:'
   print json.dumps({pkg: entry}, sort_keys=True, indent=2)
+
+  if not wheels:
+    print
+    print 'This is a source-only release. Once you update deps.pyl you\'ll need'
+    print 'to run the following command to build and upload the cross-platform'
+    print 'wheel made of the source code:'
+    print
+    print './build_deps.py --upload %s' % pkg
 
 
 if __name__ == '__main__':
