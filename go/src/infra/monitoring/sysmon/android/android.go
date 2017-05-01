@@ -136,7 +136,10 @@ func updateFromFile(c context.Context, f deviceStatusFile) {
 			continue
 		}
 
-		cpuTemp.Set(c, d.Temp.EMMCTherm, name)
+		cpuTempValue := d.Temp.GetTemperature()
+		if cpuTempValue != nil {
+			cpuTemp.Set(c, *cpuTempValue, name)
+		}
 		battTemp.Set(c, d.Battery.GetTemperature(), name)
 		battCharge.Set(c, d.Battery.Level, name)
 		devOS.Set(c, d.Build.ID, name)

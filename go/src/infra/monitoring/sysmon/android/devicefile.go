@@ -89,8 +89,26 @@ type memory struct {
 	Total int64 `json:"total"`
 }
 
+// Depending on the type of device, a CPU sensor's name may vary. Assign the
+// fields to pointers to differentiate a missing field vs a field that's zero.
 type temperature struct {
-	EMMCTherm float64 `json:"emmc_therm"`
+	// Most Nexus devices
+	TSensTZ0 *float64 `json:"tsens_tz_sensor0,omitempty"`
+	// Android One
+	MtktsCPU *float64 `json:"mtktscpu,omitempty"`
+	// Nexus 9
+	CPUTherm *float64 `json:"CPU-therm,omitempty"`
+}
+
+func (t *temperature) GetTemperature() *float64 {
+	if t.TSensTZ0 != nil {
+		return t.TSensTZ0
+	} else if t.MtktsCPU != nil {
+		return t.MtktsCPU
+	} else if t.CPUTherm != nil {
+		return t.CPUTherm
+	}
+	return nil
 }
 
 func loadFile(c context.Context, path string) (deviceStatusFile, status, float64, error) {

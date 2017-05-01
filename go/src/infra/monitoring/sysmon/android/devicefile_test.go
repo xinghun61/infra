@@ -90,7 +90,8 @@ func TestLoadFile(t *testing.T) {
                 "emmc_therm": 23.0,
                 "pa_therm0": 23.0,
                 "pm8841_tz": 37.0,
-                "pm8941_tz": 24.541
+                "pm8941_tz": 24.541,
+                "tsens_tz_sensor0": 25
               },
               "uptime": 1159.48
             }
@@ -102,6 +103,7 @@ func TestLoadFile(t *testing.T) {
 			f, status, _, err := loadFile(ctx, fileName)
 			So(err, ShouldBeNil)
 			So(status, ShouldEqual, "good")
+			var cpu float64 = 25
 			So(f, ShouldResemble, deviceStatusFile{
 				Devices: map[string]deviceStatus{
 					"02eccd9208ead9ab": {
@@ -120,9 +122,47 @@ func TestLoadFile(t *testing.T) {
 						Processes: 179,
 						State:     "available",
 						Temp: temperature{
-							EMMCTherm: 23,
+							TSensTZ0: &cpu,
+							MtktsCPU: nil,
+							CPUTherm: nil,
 						},
 						Uptime: 1159.48,
+					},
+				},
+				Version:   1,
+				Timestamp: 9.46782245e+08,
+			})
+		})
+
+		Convey("loads a valid file, no CPUs", func() {
+			err := ioutil.WriteFile(fileName, []byte(`
+        {
+          "version": 1,
+          "timestamp": 946782245,
+          "devices": {
+            "02eccd9208ead9ab": {
+              "state": "available",
+              "temp": {
+                "omg_sensor": 23.0
+              }
+            }
+          }
+        }
+      `), 0644)
+			So(err, ShouldBeNil)
+
+			f, status, _, err := loadFile(ctx, fileName)
+			So(err, ShouldBeNil)
+			So(status, ShouldEqual, "good")
+			So(f, ShouldResemble, deviceStatusFile{
+				Devices: map[string]deviceStatus{
+					"02eccd9208ead9ab": {
+						State: "available",
+						Temp: temperature{
+							TSensTZ0: nil,
+							MtktsCPU: nil,
+							CPUTherm: nil,
+						},
 					},
 				},
 				Version:   1,

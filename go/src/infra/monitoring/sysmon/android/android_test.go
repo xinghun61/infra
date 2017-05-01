@@ -59,6 +59,7 @@ func TestMetrics(t *testing.T) {
 	c := context.Background()
 	c, _ = tsmon.WithDummyInMemory(c)
 
+	var cpu float64 = 23
 	Convey("Device metrics", t, func() {
 		file := deviceStatusFile{
 			Devices: map[string]deviceStatus{
@@ -78,7 +79,9 @@ func TestMetrics(t *testing.T) {
 					Processes: 179,
 					State:     "available",
 					Temp: temperature{
-						EMMCTherm: 23,
+						CPUTherm: &cpu,
+						MtktsCPU: nil,
+						TSensTZ0: nil,
 					},
 					Uptime: 1159.48,
 				},
