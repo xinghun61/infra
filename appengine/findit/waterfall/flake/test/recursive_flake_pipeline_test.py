@@ -66,8 +66,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     mocked_pst_now = datetime(2016, 9, 04, 13, 0, 0, 0)
     mocked_utc_now = datetime(2016, 9, 04, 20, 0, 0, 0)
     self.MockUTCNow(mocked_utc_now)
-    self.MockUTCNowWithTimezone(mocked_utc_now)
-    with mock.patch('libs.time_util.GetDatetimeInTimezone') as timezone_func:
+    with mock.patch('libs.time_util.GetPSTNow') as timezone_func:
       timezone_func.side_effect = [mocked_pst_now, None]
       self.assertEqual(mocked_utc_now,
                        recursive_flake_pipeline._GetETAToStartAnalysis(False))
@@ -77,33 +76,24 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     mocked_pst_now = datetime(2016, 9, 20, 1, 0, 0, 0)
     mocked_utc_now = datetime(2016, 9, 20, 8, 0, 0, 0)
     self.MockUTCNow(mocked_utc_now)
-    self.MockUTCNowWithTimezone(mocked_utc_now)
-    with mock.patch('libs.time_util.GetDatetimeInTimezone') as timezone_func:
+    with mock.patch('libs.time_util.GetPSTNow') as timezone_func:
       timezone_func.side_effect = [mocked_pst_now, None]
       self.assertEqual(mocked_utc_now,
                        recursive_flake_pipeline._GetETAToStartAnalysis(False))
 
   def testGetETAToStartAnalysisWhenTriggeredInPeakHoursOnPSTWeekday(self):
-    # Tuesday 1pm in PST, and Tuesday 8pm in UTC.
+    # Tuesday 12pm in PST, and Tuesday 8pm in UTC.
     seconds_delay = 10
-    mocked_pst_now = datetime(2016, 9, 20, 13, 0, 0, 0)
-    mocked_utc_now = datetime(2016, 9, 20, 20, 0, 0, 0)
-    mocked_pst_eta = datetime(
-        2016, 9, 20, 18, 0, seconds_delay, 0)  # With arbitrary delay of 10s.
-    mocked_utc_eta = datetime(2016, 9, 21, 1, 0, 0, 0)  # Without delay.
+    mocked_utc_now = datetime(2016, 9, 21, 20, 0, 0, 0)
+    mocked_pst_now = datetime(2016, 9, 21, 12, 0, 0, 0)
+    mocked_utc_eta = datetime(2016, 9, 22, 2, 0, seconds_delay)
     self.MockUTCNow(mocked_utc_now)
-    self.MockUTCNowWithTimezone(mocked_utc_now)
-    with mock.patch('libs.time_util.GetDatetimeInTimezone') as (
+    with mock.patch('libs.time_util.GetPSTNow') as (
         timezone_func), mock.patch('random.randint') as random_func:
       timezone_func.side_effect = [mocked_pst_now, mocked_utc_eta]
       random_func.side_effect = [seconds_delay, None]
       self.assertEqual(mocked_utc_eta,
                        recursive_flake_pipeline._GetETAToStartAnalysis(False))
-      self.assertEqual(2, timezone_func.call_count)
-      self.assertEqual(mock.call('US/Pacific', mocked_utc_now),
-                       timezone_func.call_args_list[0])
-      self.assertEqual(mock.call('UTC', mocked_pst_eta),
-                       timezone_func.call_args_list[1])
 
   @mock.patch.object(RecursiveFlakePipeline, '_BotsAvailableForTask',
                      return_value=True)

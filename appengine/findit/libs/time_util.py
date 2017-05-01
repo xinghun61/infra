@@ -7,22 +7,20 @@ from datetime import datetime
 from datetime import time
 from datetime import timedelta
 
-import pytz
+
+def GetPSTNow():
+  # For simplicity, assume PST is UTC - 8 hours.
+  return GetUTCNow() - timedelta(hours=8)
 
 
-def GetPSTNow():  # pragma: no cover
-  """Returns datetime.now but in pst timezone. This is to mock for testing."""
-  return datetime.now(pytz.timezone('US/Pacific'))
+def ConvertPSTToUTC(pst_datetime):
+  # For simplicity, assume UTC is PST + 8 hours.
+  return pst_datetime + timedelta(hours=8)
 
 
 def GetUTCNow():  # pragma: no cover.
   """Returns the datetime.utcnow. This is to mock for testing."""
   return datetime.utcnow()
-
-
-def GetUTCNowWithTimezone():  # pragma: no cover.
-  """Returns datetime.now but in utc timezone. This is to mock for testing."""
-  return datetime.now(pytz.utc)
 
 
 def ConvertToTimestamp(date_time):
@@ -84,20 +82,6 @@ def FormatDuration(datetime_start, datetime_end):
   if not datetime_start or not datetime_end:
     return None
   return FormatTimedelta(datetime_end - datetime_start)
-
-
-def GetDatetimeInTimezone(timezone_name, date_time):
-  """Returns the datetime.datetime of the given one in the specified timezone.
-
-  Args:
-    timezone_name (str): The name of any timezone supported by pytz.
-    date_time (datetime.datetime): The optional datetime to be converted into
-        the new timezone.
-
-  Returns:
-    A datetime.datetime of the given one in the specified timezone.
-  """
-  return date_time.astimezone(pytz.timezone(timezone_name))
 
 
 def MicrosecondsToDatetime(microseconds):

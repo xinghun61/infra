@@ -2,12 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
+from datetime import timedelta
 import mock
 import unittest
 
 from libs import time_util
-from datetime import datetime
-from datetime import timedelta
 
 
 class TimeUtilTest(unittest.TestCase):
@@ -44,15 +44,6 @@ class TimeUtilTest(unittest.TestCase):
     self.assertEqual(
         time_util.FormatDatetime(datetime(2016, 1, 2, 1, 2, 3)),
         '2016-01-02 01:02:03 UTC')
-
-  @mock.patch('libs.time_util.pytz')
-  def testGetDateTimeInTimezoneWithGivenDatetime(self, mocked_pytz_module):
-    mocked_datetime = mock.MagicMock()
-    mocked_datetime.astimezone.return_value = 'expected'
-
-    self.assertEqual('expected',
-                     time_util.GetDatetimeInTimezone('PST', mocked_datetime))
-    mocked_pytz_module.timezone.assert_called_with('PST')
 
   def testFormatDuration(self):
     date1 = datetime(2016, 5, 1, 1, 1, 1)
@@ -115,3 +106,14 @@ class TimeUtilTest(unittest.TestCase):
     self.assertEqual(
         (datetime(2017, 3, 15, 0, 0, 0), datetime(2017, 3, 16, 0, 0, 0)),
         time_util.GetStartEndDates('2017-03-15', '2017-03-16'))
+
+
+  @mock.patch.object(time_util, 'GetUTCNow',
+                     return_value=datetime(2017, 4, 27, 8, 0, 0))
+  def testGetPSTNow(self, _):
+    self.assertEqual(datetime(2017, 4, 27, 0, 0, 0),
+                     time_util.GetPSTNow())
+
+  def testConvertPSTToUTC(self):
+    self.assertEqual(datetime(2017, 4, 27, 8, 0, 0),
+                     time_util.ConvertPSTToUTC(datetime(2017, 4, 27, 0, 0, 0)))

@@ -90,8 +90,7 @@ def _GetETAToStartAnalysis(manually_triggered):
     # If the analysis is manually triggered, run it right away.
     return time_util.GetUTCNow()
 
-  now_at_pst = time_util.GetDatetimeInTimezone(
-      'US/Pacific', time_util.GetUTCNowWithTimezone())
+  now_at_pst = time_util.GetPSTNow()
   if now_at_pst.weekday() >= 5:  # PST Saturday or Sunday.
     return time_util.GetUTCNow()
 
@@ -107,7 +106,7 @@ def _GetETAToStartAnalysis(manually_triggered):
   eta = now_at_pst + diff
 
   # Convert back to UTC.
-  return time_util.GetDatetimeInTimezone('UTC', eta)
+  return time_util.ConvertPSTToUTC(eta)
 
 
 def _IsSwarmingTaskSufficientForCacheHit(

@@ -42,10 +42,6 @@ class BaseTestCase(unittest.TestCase):  # pragma: no cover.
     """Mocks utcnow with the given value for testing."""
     self.mock(time_util, 'GetUTCNow', lambda: mocked_utcnow)
 
-  def MockUTCNowWithTimezone(self, mocked_utcnow):
-    """Mocks utcnow with the given value for testing."""
-    self.mock(time_util, 'GetUTCNowWithTimezone', lambda: mocked_utcnow)
-
   def GetMockHttpClient(self, response_for_url=None):
     """Returns mocked http client class."""
     return MockHttpClient(response_for_url or {})
