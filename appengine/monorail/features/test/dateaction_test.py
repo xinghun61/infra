@@ -237,5 +237,5 @@ class IssueDateActionTaskTest(unittest.TestCase):
     notify_owner_task = tasks[0]
     self.assertEqual('owner@example.com', notify_owner_task['to'])
     self.assertEqual(
-        'Ping on issue 1 in proj: summary',
+        'Follow up on issue 1 in proj: summary',
         notify_owner_task['subject'])

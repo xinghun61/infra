@@ -166,7 +166,8 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
     email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
         group_reason_list, issue, body, body,
         project, hostport, commenter_view, detail_url, seq_num=comment.sequence,
-        subject_prefix='Ping on issue ', compact_subject_prefix='Ping ')
+        subject_prefix='Follow up on issue ',
+        compact_subject_prefix='Follow up ')
 
     return email_tasks
 
