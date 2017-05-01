@@ -1166,18 +1166,18 @@ function ShowAddToHotlistDialog() {
 }
 
 function CreateNewHotlistWithIssues(onResponse, opt_SelectedIssueRefs) {
-  issueRefs = opt_SelectedIssueRefs || GetSelectedIssues();
-  var data = {'issue_refs': issueRefs.join(',')}
+  var selectedIssueRefs = opt_SelectedIssueRefs || GetSelectedIssues();
+  var data = {'issue_refs': selectedIssueRefs.join(',')}
   CS_doPost('/hosting/addToHotlist.do', onResponse, data);
 }
 
 function AddIssuesToHotlist(onResponse, opt_SelectedIssueRefs) {
-  issueRefs = opt_SelectedIssueRefs || GetSelectedIssues();
+  var selectedIssueRefs = opt_SelectedIssueRefs || GetSelectedIssues();
   selectedHotlistIDs = GetSelectedHotlists();
   if (selectedHotlistIDs.length > 0) {
     var data = {
       hotlist_ids: selectedHotlistIDs.join(','),
-      issue_refs: issueRefs.join(','),
+      issue_refs: selectedIssueRefs.join(','),
     }
     CS_doPost('/hosting/addToHotlist.do', onResponse, data);
   } else {
