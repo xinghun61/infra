@@ -195,7 +195,7 @@ function fillValues(td, values) {
  */
 function renderHotlistRow(tableRow, pageSettings) {
   var tr = document.createElement('tr');
-  if (pageSettings['cursor'] || tableRow['issueRef']) {
+  if (pageSettings['cursor'] == tableRow['issueRef']) {
     tr.setAttribute('class', 'ifOpened hoverTarget cursor_on drag_item');
   } else {
     tr.setAttribute('class', 'ifOpened hoverTarget cursor_off drag_item');
