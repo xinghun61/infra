@@ -104,22 +104,6 @@ def _GetFailedRevisionFromCompileResult(compile_result):
       else None)
 
 
-def _GetSuspectedCLFoundByHeuristicForCompile(analysis):
-  """For compile failure, gets the suspected revision found by heuristic."""
-  if not analysis or not analysis.result:
-    return None
-
-  for failure in analysis.result.get('failures', []):
-    if (failure['step_name'].lower() == 'compile' and
-        len(failure['suspected_cls']) == 1):
-      # Based on confidence calculation, suspected_cl found by heuristic for
-      # compile is very likely to be the culprit.
-      # Since the current confidence calculation is for results with single
-      # suspected_cl, we might need to have the same regulation here.
-      return failure['suspected_cls'][0]
-  return None
-
-
 def _GetHeuristicSuspectedCLs(analysis):
   """Gets revisions of suspected cls found by heuristic approach."""
   if analysis and analysis.suspected_cls:
@@ -351,9 +335,6 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     # This part must be before UpdateWfAnalysisWithTryJobResult().
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     heuristic_cls = _GetHeuristicSuspectedCLs(analysis)
-    compile_suspected_cl = (
-        _GetSuspectedCLFoundByHeuristicForCompile(analysis)
-        if try_job_type == failure_type.COMPILE else None)
 
     # Add try-job results to WfAnalysis.
     UpdateWfAnalysisWithTryJobResult()
@@ -364,4 +345,4 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     UpdateSuspectedCLs()
     yield RevertAndNotifyCulpritPipeline(
         master_name, builder_name, build_number, culprits, heuristic_cls,
-        compile_suspected_cl, try_job_type)
+        try_job_type)

@@ -30,7 +30,6 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     heuristic_cls = [[repo_name, revision]]
-    compile_suspected_cl = None
     try_job_type = failure_type.TEST
 
     self.MockPipeline(SendNotificationForCulpritPipeline,
@@ -40,7 +39,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = RevertAndNotifyCulpritPipeline(
         master_name, builder_name, build_number, culprits,
-        heuristic_cls, compile_suspected_cl, try_job_type)
+        heuristic_cls, try_job_type)
     pipeline.start(queue_name=DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -57,7 +56,6 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     heuristic_cls = [[repo_name, revision]]
-    compile_suspected_cl = None
     try_job_type = failure_type.COMPILE
 
     self.MockPipeline(CreateRevertCLPipeline,
@@ -73,32 +71,6 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = RevertAndNotifyCulpritPipeline(
         master_name, builder_name, build_number, culprits,
-        heuristic_cls, compile_suspected_cl, try_job_type)
-    pipeline.start(queue_name=DEFAULT_QUEUE)
-    self.execute_queued_tasks()
-
-  def testSendNotificationForCompileHeuristic(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 124
-    repo_name = 'chromium'
-    revision = 'r1'
-    culprits = None
-    heuristic_cls = [[repo_name, revision]]
-    compile_suspected_cl = {
-        'repo_name': repo_name,
-        'revision': revision,
-    }
-    try_job_type = failure_type.COMPILE
-
-    self.MockPipeline(SendNotificationForCulpritPipeline,
-                      None,
-                      expected_args=[
-                          master_name, builder_name, build_number, repo_name,
-                          revision, True])
-
-    pipeline = RevertAndNotifyCulpritPipeline(
-        master_name, builder_name, build_number, culprits,
-        heuristic_cls, compile_suspected_cl, try_job_type)
+        heuristic_cls, try_job_type)
     pipeline.start(queue_name=DEFAULT_QUEUE)
     self.execute_queued_tasks()

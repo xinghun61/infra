@@ -14,35 +14,28 @@ class RevertAndNotifyCulpritPipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(
       self, master_name, builder_name, build_number, culprits, heuristic_cls,
-      compile_suspected_cl, try_job_type):
-    if culprits:
-      # There is a try job result, checks if we can revert the culprit or send
-      # notification.
-      if try_job_type == failure_type.COMPILE:
-        # For compile, there should be only one culprit. Tries to revert it.
-        culprit = culprits.values()[0]
-        repo_name = culprit['repo_name']
-        revision = culprit['revision']
+      try_job_type):
+    assert culprits
+    # There is a try job result, checks if we can revert the culprit or send
+    # notification.
+    if try_job_type == failure_type.COMPILE:
+      # For compile, there should be only one culprit. Tries to revert it.
+      culprit = culprits.values()[0]
+      repo_name = culprit['repo_name']
+      revision = culprit['revision']
 
-        force_notify = [repo_name, revision] in heuristic_cls
+      force_notify = [repo_name, revision] in heuristic_cls
 
-        revert_status = yield CreateRevertCLPipeline(
-            master_name, builder_name, build_number, repo_name, revision)
+      revert_status = yield CreateRevertCLPipeline(
+          master_name, builder_name, build_number, repo_name, revision)
+      yield SendNotificationForCulpritPipeline(
+          master_name, builder_name, build_number, culprit['repo_name'],
+          culprit['revision'], force_notify, revert_status)
+    else:
+      # Checks if any of the culprits was also found by heuristic analysis.
+      for culprit in culprits.itervalues():
+        force_notify = [
+            culprit['repo_name'], culprit['revision']] in heuristic_cls
         yield SendNotificationForCulpritPipeline(
             master_name, builder_name, build_number, culprit['repo_name'],
-            culprit['revision'], force_notify, revert_status)
-      else:
-        # Checks if any of the culprits was also found by heuristic analysis.
-        for culprit in culprits.itervalues():
-          force_notify = [
-              culprit['repo_name'], culprit['revision']] in heuristic_cls
-          yield SendNotificationForCulpritPipeline(
-              master_name, builder_name, build_number, culprit['repo_name'],
-              culprit['revision'], force_notify)
-    elif compile_suspected_cl:  # pragma: no branch
-      # A special case where try job didn't find any suspected cls, but
-      # heuristic found a suspected_cl.
-      yield SendNotificationForCulpritPipeline(
-          master_name, builder_name, build_number,
-          compile_suspected_cl['repo_name'], compile_suspected_cl['revision'],
-          True)
+            culprit['revision'], force_notify)
