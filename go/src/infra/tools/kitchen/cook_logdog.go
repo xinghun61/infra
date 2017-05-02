@@ -147,7 +147,6 @@ func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) erro
 
 // runWithLogdogButler rus the supplied command through the a LogDog Butler
 // engine instance. This involves:
-//	- Determine a LogDog Prefix.
 //	- Configuring / setting up the Butler.
 //	- Initiating a LogDog Pub/Sub Output, registering with remote server.
 //	- Running the recipe process.
@@ -155,9 +154,7 @@ func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) erro
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
 func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env environ.Env) (rc int, err error) {
-	if c.logdog.annotationAddr != nil {
-		log.Infof(ctx, "Using LogDog host: %s", c.logdog.annotationAddr.URL().String())
-	}
+	log.Infof(ctx, "Using LogDog URL: %s", c.logdog.annotationAddr.URL().String())
 
 	// Install a global gRPC logger adapter. This routes gRPC log messages that
 	// are emitted through our logger. We only log gRPC prints if our logger is
@@ -166,10 +163,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 	// We need to dump initial properties so our annotation stream includes them.
 	rr.opArgs.AnnotationFlags.EmitInitialProperties = true
-
-	// Use the annotation stream's prefix component for our Butler run.
-	prefix, annoName := c.logdog.annotationAddr.Path.Split()
-	log.Infof(ctx, "Using LogDog prefix: %s", prefix)
 
 	// Construct our global tags. We will prefer user-supplied tags to our
 	// generated ones.
@@ -180,9 +173,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	for k, v := range c.logdog.globalTags {
 		globalTags[k] = v
 	}
-
-	// Determine our base path and annotation subpath.
-	basePath, annoSubpath := annoName.Split()
 
 	// Create our stream server instance.
 	streamServer, err := c.getLogDogStreamServer(withNonCancel(ctx))
@@ -200,6 +190,11 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	}()
 
 	log.Debugf(ctx, "Generated stream server at: %s", streamServer.Address())
+
+	// Use the annotation stream's prefix component for our Butler run.
+	prefix, annoName := c.logdog.annotationAddr.Path.Split()
+	// Determine our base path and annotation subpath.
+	basePath, annoSubpath := annoName.Split()
 
 	// Augment our environment with Butler parameters.
 	bsEnv := bootstrap.Environment{
