@@ -26,12 +26,9 @@ from handlers import pipeline_errors_dashboard
 from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
 from handlers import swarming_push
-from handlers import swarming_task
 from handlers import triage_suspected_cl
-from handlers import try_job
 from handlers import try_job_dashboard
 from handlers import try_job_push
-from handlers import try_job_result
 from handlers import verify_analysis
 from handlers import version
 from handlers.crash import crash_config
@@ -106,13 +103,10 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/list-analyses', list_analyses.ListAnalyses),
     ('/waterfall/pipeline-errors-dashboard',
      pipeline_errors_dashboard.PipelineErrorsDashboard),
-    ('/waterfall/swarming-task', swarming_task.SwarmingTask),
     ('/waterfall/triage-flake-analysis',
      triage_flake_analysis.TriageFlakeAnalysis),
     ('/waterfall/triage-suspected-cl', triage_suspected_cl.TriageSuspectedCl),
-    ('/waterfall/try-job', try_job.TryJob),
     ('/waterfall/try-job-dashboard', try_job_dashboard.TryJobDashboard),
-    ('/waterfall/try-job-result', try_job_result.TryJobResult),
     ('/waterfall/verify-analysis', verify_analysis.VerifyAnalysis),
 ]
 waterfall_frontend_web_application = webapp2.WSGIApplication(

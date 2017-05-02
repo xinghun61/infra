@@ -5,16 +5,10 @@
 from google.appengine.ext import ndb
 
 from gae_libs.handlers.base_handler import BaseHandler, Permission
+from libs import time_util
 from model import analysis_approach_type
 from model.wf_culprit import WfCulprit
 from waterfall import build_util
-
-
-def _FormatDatetime(dt):
-  if not dt:
-    return None  # pragma: no cover
-  else:
-    return dt.strftime('%Y-%m-%d %H:%M:%S UTC')
 
 
 def _GetBuildInfoAsDict(culprit):
@@ -64,7 +58,8 @@ class Culprit(BaseHandler):
         'revision': culprit.revision,
         'commit_position': culprit.commit_position,
         'cr_notified': culprit.cr_notified,
-        'cr_notification_time': _FormatDatetime(culprit.cr_notification_time),
+        'cr_notification_time': time_util.FormatDatetime(
+            culprit.cr_notification_time),
         'builds': _GetBuildInfoAsDict(culprit),
         'key': key,
     }
