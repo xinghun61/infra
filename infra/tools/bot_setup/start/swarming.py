@@ -18,10 +18,16 @@ def is_staging(hostname):
       re.match(r'^swarm[0-9]-c4$', hostname))
 
 
+def is_internal(hostname):
+  return hostname.startswith('swarm-cros-')
+
+
 def start(hostname, root_dir):
   host_url = 'https://chromium-swarm.appspot.com'
   if is_staging(hostname):
     host_url = 'https://chromium-swarm-dev.appspot.com'
+  elif is_internal(hostname):
+    host_url = 'https://chrome-swarming.appspot.com'
 
   # Kill previous known bot location.
   if sys.platform != 'win32' and os.path.isdir('/b/swarm_slave'):
