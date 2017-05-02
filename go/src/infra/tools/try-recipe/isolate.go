@@ -7,7 +7,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -183,11 +182,14 @@ func bundleAndIsolate(ctx context.Context, overrides map[string]string, isolated
 		nil,
 	)
 
-	var w io.Writer
+	// The archiver is pretty noisy at Info level, so we skip giving it
+	// a logging-enabled context unless the user actually requseted verbose.
+	arcCtx := context.Background()
 	if logging.GetLevel(ctx) < logging.Info {
-		w = os.Stdout
+		arcCtx = ctx
 	}
-	arc := archiver.New(isoClient, w)
+	// os.Stderr will cause the archiver to print a one-liner progress status.
+	arc := archiver.New(arcCtx, isoClient, os.Stderr)
 	hash, err := isolateDirectory(ctx, arc, bundlePath)
 	if err != nil {
 		return err
