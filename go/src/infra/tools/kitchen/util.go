@@ -5,6 +5,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"os"
@@ -27,6 +28,14 @@ func encodeJSONToPath(path string, obj interface{}) (err error) {
 		return errors.Annotate(err).Reason("failed to write encoded object").Err()
 	}
 	return nil
+}
+
+// unmarshalJSONWithNumber unmarshals JSON, where numbers are unmarshaled as
+// json.Number.
+func unmarshalJSONWithNumber(data []byte, dest interface{}) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	return decoder.Decode(dest)
 }
 
 // ensureDir ensures dir at path exists.
@@ -57,4 +66,22 @@ func dirHasFiles(path string) (bool, error) {
 	}
 
 	return len(names) > 0, nil
+}
+
+// getReturnCode returns a return code value for a given error. It handles the
+// returnCodeError type specially, returning its integer value verbatim.
+//
+// The error returned by getReturnCode is the same as the input error, unless
+// the input error was a zero return code, in which case it will be nil.
+func getReturnCode(err error) (int, error) {
+	if err == nil {
+		return 0, nil
+	}
+	if rc, ok := errors.Unwrap(err).(returnCodeError); ok {
+		if rc == 0 {
+			return 0, nil
+		}
+		return int(rc), err
+	}
+	return 1, err
 }
