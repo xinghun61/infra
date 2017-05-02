@@ -443,7 +443,7 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 	log.Infof(ctx, "using properties:\n%s", propsJSON)
 
 	// If we're not using LogDog, send out annotations.
-	bootstrapSuccess := true
+	bootstrapSuccess := false
 	if c.logdog.shouldEmitAnnotations() {
 		// This code is reachable only in buildbot mode.
 
@@ -483,9 +483,9 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 	// Run the recipe.
 	recipeExitCode, err := c.ensureAndRun(ctx, env)
 	if err != nil {
-		bootstrapSuccess = false
 		return err
 	}
+	bootstrapSuccess = true
 	return returnCodeError(recipeExitCode)
 }
 
