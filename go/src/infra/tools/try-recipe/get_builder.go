@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 
 	swarmbucket "github.com/luci/luci-go/common/api/buildbucket/swarmbucket/v1"
+	swarming "github.com/luci/luci-go/common/api/swarming/swarming/v1"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/errors"
 )
@@ -45,7 +46,7 @@ func grabBuilderDefinition(ctx context.Context, bbHost, bucket, builder string, 
 		return nil, errors.WrapTransient(err)
 	}
 
-	newTask := &NewTaskRequest{}
+	newTask := &swarming.SwarmingRpcsNewTaskRequest{}
 	r := strings.NewReader(answer.TaskDefinition)
 	if err := json.NewDecoder(r).Decode(newTask); err != nil {
 		return nil, err

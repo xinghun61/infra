@@ -41,6 +41,11 @@ func isolateCmd(authOpts auth.Options) *subcommands.Command {
 
 			ret.Flags.Var(&ret.overrides, "O",
 				"override a repo dependency. Must be in the form of project_id=/path/to/local/repo. May be specified multiple times.")
+
+			ret.Flags.BoolVar(&ret.editMode, "em", false, "alias for `edit-mode`")
+			ret.Flags.BoolVar(&ret.editMode, "edit-mode", false,
+				("enables `edit mode`. This causes the command to read a JobDescription on stdin, add the isolate hash and print the " +
+					"new JobDescription to stdout."))
 			return ret
 		},
 	}
@@ -54,6 +59,8 @@ type cmdIsolate struct {
 	isolatedFlags isolatedclient.Flags
 
 	overrides stringmapflag.Value
+
+	editMode bool
 }
 
 func (c *cmdIsolate) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
@@ -106,13 +113,41 @@ func (c *cmdIsolate) Run(a subcommands.Application, args []string, env subcomman
 	if err != nil {
 		logging.Errorf(ctx, "bad arguments: %s", err)
 		fmt.Fprintln(os.Stderr)
-		subcommands.CmdHelp.CommandRun().Run(a, args, env)
+		subcommands.CmdHelp.CommandRun().Run(a, []string{"isolate"}, env)
 		return 1
 	}
 
-	if err := bundleAndIsolate(ctx, c.overrides, c.isolatedFlags, authOpts); err != nil {
+	logging.Infof(ctx, "bundling recipes")
+	bundlePath, err := bundle(ctx, c.overrides)
+	if err != nil {
+		logging.Errorf(ctx, "fatal error during bundle: %s", err)
+		return 1
+	}
+	defer os.RemoveAll(bundlePath)
+	logging.Infof(ctx, "bundling recipes: done")
+
+	logging.Infof(ctx, "isolating recipes")
+	hash, err := isolate(ctx, bundlePath, c.isolatedFlags, authOpts)
+	if err != nil {
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1
+	}
+	logging.Infof(ctx, "isolating recipes: done")
+
+	if c.editMode {
+		err := editMode(func(jd *JobDefinition) (*JobDefinition, error) {
+			ret := &(*jd)
+			ret.RecipeIsolatedHash = hash
+			return ret, nil
+		})
+		if err != nil {
+			logging.WithError(err).Errorf(ctx, "fatal")
+			return 1
+		}
+	} else {
+		logging.Infof(ctx, "isolated: %q", hash)
+		logging.Infof(ctx, "URL: %s/browse?namespace=%s&hash=%s",
+			c.isolatedFlags.ServerURL, c.isolatedFlags.Namespace, hash)
 	}
 
 	return 0

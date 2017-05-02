@@ -61,6 +61,18 @@ func (c *cmdGetBuilder) validateFlags(ctx context.Context, args []string) (authO
 		err = errors.Reason("unexpected positional arguments: %(args)q").D("args", args).Err()
 		return
 	}
+	if c.bbServer == "" {
+		err = errors.New("empty server")
+		return
+	}
+	if c.bucket == "" {
+		err = errors.New("empty bucket")
+		return
+	}
+	if c.builder == "" {
+		err = errors.New("empty builder")
+		return
+	}
 	return c.authFlags.Options()
 }
 
@@ -70,15 +82,17 @@ func (c *cmdGetBuilder) Run(a subcommands.Application, args []string, env subcom
 	if err != nil {
 		logging.Errorf(ctx, "bad arguments: %s", err)
 		fmt.Fprintln(os.Stderr)
-		subcommands.CmdHelp.CommandRun().Run(a, args, env)
+		subcommands.CmdHelp.CommandRun().Run(a, []string{"get-builder"}, env)
 		return 1
 	}
 
+	logging.Infof(ctx, "getting builder definition")
 	jd, err := grabBuilderDefinition(ctx, c.bbServer, c.bucket, c.builder, authOpts)
 	if err != nil {
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1
 	}
+	logging.Infof(ctx, "getting builder definition: done")
 
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")

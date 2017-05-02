@@ -12,6 +12,7 @@ import (
 	"github.com/maruel/subcommands"
 
 	"github.com/luci/luci-go/common/cli"
+	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/flag/stringmapflag"
 	"github.com/luci/luci-go/common/logging"
 )
@@ -77,25 +78,31 @@ func (e *editFlags) Edit(jd *JobDefinition) (*JobDefinition, error) {
 	return jd.Edit(e.dimensions, e.properties, e.environment, e.recipeIsolate)
 }
 
-func (c *cmdEdit) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
-
+func editMode(cb func(jd *JobDefinition) (*JobDefinition, error)) error {
 	jd := &JobDefinition{}
 	if err := json.NewDecoder(os.Stdin).Decode(jd); err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
-		return 1
+		return errors.Annotate(err).Reason("decoding JobDefinition").Err()
 	}
 
-	jd, err := c.editFlags.Edit(jd)
+	jd, err := cb(jd)
 	if err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
-		return 1
+		return err
 	}
 
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(jd); err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		return errors.Annotate(err).Reason("encoding JobDefinition").Err()
+	}
+
+	return nil
+}
+
+func (c *cmdEdit) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
+
+	if err := editMode(c.editFlags.Edit); err != nil {
+		logging.WithError(err).Errorf(ctx, "fatal")
 		return 1
 	}
 
