@@ -62,7 +62,7 @@ var cmdCook = &subcommands.Command{
 		fs.StringVar(
 			&c.Revision,
 			"revision",
-			"",
+			"HEAD",
 			"Revison of the recipe to run (if -repository is specified). It can be HEAD, a commit hash or a fully-qualified "+
 				"ref. (defaults to HEAD)")
 
