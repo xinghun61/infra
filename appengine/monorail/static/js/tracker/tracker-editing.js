@@ -1134,7 +1134,7 @@ function TKR_addToHotlist() {
 }
 
 
-function GetSelectedIssues() {
+function GetSelectedIssuesRefs() {
   var selectedIssueRefs = [];
   for (var i = 0; i < issueRefs.length; i++) {
     var checkbox = document.getElementById('cb_' + issueRefs[i]['id'])
@@ -1143,10 +1143,20 @@ function GetSelectedIssues() {
           'cb_' + issueRefs[i]['project_name'] + ':' + issueRefs[i]['id'])
     }
     if (checkbox && checkbox.checked) {
-      selectedIssueRefs.push(issueRefs[i]['project_name']+':'+issueRefs[i]['id']);
+      selectedIssueRefs.push(issueRefs[i]);
     }
   }
   return selectedIssueRefs;
+}
+
+function GetSelectedIssues() {
+  var selectedIssuesRefs = GetSelectedIssuesRefs();
+  var selectedIssues = [];
+  for (var i = 0; i < selectedIssuesRefs.length; i++) {
+    selectedIssues.push(selectedIssuesRefs[i]['project_name'] + ':' +
+      selectedIssuesRefs[i]['id']);
+  }
+  return selectedIssues;
 }
 
 function GetSelectedHotlists() {
@@ -1253,12 +1263,10 @@ function onAddIssuesResponse(event) {
  */
 // TODO(jrobbins): cross-project bulk edit
 function TKR_HandleBulkEdit() {
+  var selectedIssueRefs = GetSelectedIssuesRefs();
   var selectedLocalIDs = [];
-  for (var i = 0; i < issueRefs.length; i++) {
-    var checkbox = document.getElementById('cb_' + issueRefs[i]['id']);
-    if (checkbox && checkbox.checked) {
-      selectedLocalIDs.push(issueRefs[i]['id']);
-    }
+  for(var i = 0; i < selectedIssueRefs.length; i++) {
+    selectedLocalIDs.push(selectedIssueRefs[i]['id']);
   }
   if (selectedLocalIDs.length > 0) {
     var selectedLocalIDString = selectedLocalIDs.join(',');
