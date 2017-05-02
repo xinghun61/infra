@@ -13,7 +13,7 @@ from testing_utils import testing
 import mock
 
 from proto import project_config_pb2
-from test import future
+from test.test_util import future
 import acl
 import config
 import errors

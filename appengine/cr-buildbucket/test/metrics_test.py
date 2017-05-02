@@ -8,11 +8,9 @@ from google.appengine.ext import ndb
 import mock
 import gae_ts_mon
 
-from components import utils
 from testing_utils import testing
 from proto import project_config_pb2
-from test import future
-import config
+from test.test_util import future
 import metrics
 import model
 

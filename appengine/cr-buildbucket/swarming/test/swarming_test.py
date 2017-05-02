@@ -14,10 +14,8 @@ utils.fix_protobuf_package()
 from google import protobuf
 
 from components import auth
-from components import config as config_component
 from components import net
 from components import utils
-from google.appengine.ext import ndb
 from testing_utils import testing
 from webob import exc
 import mock
@@ -25,18 +23,13 @@ import webapp2
 
 from swarming import swarming
 from proto import project_config_pb2
+from test.test_util import future, ununicide
 import errors
 import model
 
 
 LINUX_CHROMIUM_REL_NG_CACHE_NAME = (
     'builder_9f9e01191b0c88fe68abef460d9d68df2125dbadc27c772d84db46d39fd5171c')
-
-
-def futuristic(result):
-  f = ndb.Future()
-  f.set_result(result)
-  return f
 
 
 class SwarmingTest(testing.AppengineTestCase):
@@ -50,7 +43,7 @@ class SwarmingTest(testing.AppengineTestCase):
     self.json_response = None
     def json_request_async(*_, **__):
       if self.json_response is not None:
-        return futuristic(self.json_response)
+        return future(self.json_response)
       self.fail('unexpected outbound request')  # pragma: no cover
 
     self.patch(
@@ -97,12 +90,17 @@ class SwarmingTest(testing.AppengineTestCase):
 
     self.patch(
         'config.get_bucket_async', autospec=True,
-        return_value=futuristic(('chromium', self.bucket_cfg)))
+        return_value=future(('chromium', self.bucket_cfg)))
 
     self.task_template = {
       'name': 'buildbucket:${bucket}:${builder}',
       'priority': '100',
       'expiration_secs': '3600',
+      'tags': [
+        ('log_location:logdog://luci-logdog-dev.appspot.com/${project}/'
+         'buildbucket/${hostname}/${build_id}/+/annotations'),
+        'luci_project:${project}',
+      ],
       'properties': {
         'execution_timeout_secs': '3600',
         'extra_args': [
@@ -145,7 +143,7 @@ class SwarmingTest(testing.AppengineTestCase):
         template = self.task_template
       else:
         template = self.task_template_canary
-      return futuristic((
+      return future((
           'template_rev',
           json.dumps(template) if template is not None else None
       ))
@@ -155,7 +153,10 @@ class SwarmingTest(testing.AppengineTestCase):
         side_effect=get_self_config_async)
 
     self.patch(
-        'components.auth.delegate_async', return_value=futuristic('blah'))
+        'components.auth.delegate_async', return_value=future('blah'))
+    self.patch(
+        'google.appengine.api.app_identity.get_default_version_hostname',
+        return_value='cr-buildbucket.appspot.com')
 
   def test_validate_build_parameters(self):
     bad = [
@@ -290,12 +291,15 @@ class SwarmingTest(testing.AppengineTestCase):
         'build_address:bucket/linux_chromium_rel_ng/1',
         'buildbucket_bucket:bucket',
         'buildbucket_build_id:1',
-        'buildbucket_hostname:None',
+        'buildbucket_hostname:cr-buildbucket.appspot.com',
         'buildbucket_template_canary:false',
         'buildbucket_template_revision:template_rev',
         'builder:linux_chromium_rel_ng',
         'buildertag:yes',
         'commontag:yes',
+        ('log_location:logdog://luci-logdog-dev.appspot.com/chromium/'
+         'buildbucket/cr-buildbucket.appspot.com/1/+/annotations'),
+        'luci_project:chromium',
         'recipe_name:recipe',
         'recipe_repository:https://example.com/repo',
         'recipe_revision:HEAD',
@@ -361,7 +365,7 @@ class SwarmingTest(testing.AppengineTestCase):
       }, sort_keys=True),
       'numerical_value_for_coverage_in_format_obj': 42,
     }
-    self.assertEqual(actual_task_def, expected_task_def)
+    self.assertEqual(ununicide(actual_task_def), expected_task_def)
 
     self.assertEqual(set(build.tags), {
       'build_address:bucket/linux_chromium_rel_ng/1',
@@ -477,12 +481,15 @@ class SwarmingTest(testing.AppengineTestCase):
         'build_address:bucket/linux_chromium_rel_ng/1',
         'buildbucket_bucket:bucket',
         'buildbucket_build_id:1',
-        'buildbucket_hostname:None',
+        'buildbucket_hostname:cr-buildbucket.appspot.com',
         'buildbucket_template_canary:true',
         'buildbucket_template_revision:template_rev',
         'builder:linux_chromium_rel_ng',
         'buildertag:yes',
         'commontag:yes',
+        ('log_location:logdog://luci-logdog-dev.appspot.com/chromium/'
+         'buildbucket/cr-buildbucket.appspot.com/1/+/annotations'),
+        'luci_project:chromium',
         'recipe_name:recipe',
         'recipe_repository:https://example.com/repo',
         'recipe_revision:HEAD',
@@ -545,7 +552,7 @@ class SwarmingTest(testing.AppengineTestCase):
       }, sort_keys=True),
       'numerical_value_for_coverage_in_format_obj': 42,
     }
-    self.assertEqual(actual_task_def, expected_task_def)
+    self.assertEqual(ununicide(actual_task_def), expected_task_def)
 
     self.assertEqual(set(build.tags), {
       'build_address:bucket/linux_chromium_rel_ng/1',
@@ -995,7 +1002,7 @@ class SubNotifyTest(testing.AppengineTestCase):
         })
       }
     })
-    load_task_result_async.return_value = futuristic({
+    load_task_result_async.return_value = future({
       'task_id': 'deadbeef',
       'state': 'COMPLETED',
     })
@@ -1098,7 +1105,7 @@ class SubNotifyTest(testing.AppengineTestCase):
         })
       }
     })
-    load_task_result_async.return_value = futuristic({
+    load_task_result_async.return_value = future({
       'task_id': 'deadbeef',
       'state': 'COMPLETED',
     })
@@ -1206,7 +1213,7 @@ class CronUpdateTest(testing.AppengineTestCase):
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_update_build_async(self, load_task_result_async):
-    load_task_result_async.return_value = futuristic({
+    load_task_result_async.return_value = future({
       'state': 'RUNNING',
     })
 
@@ -1217,7 +1224,7 @@ class CronUpdateTest(testing.AppengineTestCase):
     self.assertIsNotNone(build.lease_key)
     self.assertIsNone(build.complete_time)
 
-    load_task_result_async.return_value = futuristic({
+    load_task_result_async.return_value = future({
       'state': 'COMPLETED',
     })
 
@@ -1230,7 +1237,7 @@ class CronUpdateTest(testing.AppengineTestCase):
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_update_build_async_no_task(self, load_task_result_async):
-    load_task_result_async.return_value = futuristic(None)
+    load_task_result_async.return_value = future(None)
 
     build = self.build
     swarming.CronUpdateBuilds().update_build_async(build).get_result()

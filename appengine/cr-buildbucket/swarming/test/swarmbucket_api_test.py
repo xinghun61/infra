@@ -10,8 +10,8 @@ from components import auth_testing
 from testing_utils import testing
 
 from test import config_test
-from swarming.test.swarming_test import futuristic
 from swarming import swarmbucket_api
+from test.test_util import future
 import config
 
 
@@ -110,7 +110,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
 
     self.patch(
         'swarming.swarming.get_task_template_async',
-        return_value=futuristic(('rev', self.task_template, False)))
+        return_value=future(('rev', self.task_template, False)))
 
   def test_get_builders(self):
     secret_cfg = 'name: "secret"'

@@ -22,6 +22,7 @@ import mock
 import gae_ts_mon
 
 from test import config_test
+from test.test_util import future
 import api
 import config
 import errors
@@ -203,8 +204,7 @@ class ApiTests(object):
 
     build2 = model.Build(id=2, bucket='v8')
 
-    add_many_async.return_value = ndb.Future()
-    add_many_async.return_value.set_result([
+    add_many_async.return_value = future([
       (self.test_build, None),
       (build2, None),
       (None, errors.InvalidInputError('Just bad'))

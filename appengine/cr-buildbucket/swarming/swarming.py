@@ -302,8 +302,9 @@ def _create_task_def_async(
     'builder_hash': (
         hashlib.sha256('%s:%s' % (build.bucket, builder_cfg.name)).hexdigest()),
     'build_id': build.key.id(),
-    'cache_dir': CACHE_DIR,
     'builder': builder_cfg.name,
+    'cache_dir': CACHE_DIR,
+    'hostname': app_identity.get_default_version_hostname(),
     'project': project_id,
     'swarming_hostname': swarming_cfg.hostname,
   }
