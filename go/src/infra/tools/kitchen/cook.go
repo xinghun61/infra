@@ -252,23 +252,6 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 // ensureAndRun ensures that we have recipes (according to -repository,
 // -revision and -checkout-dir), and then runs them.
 func (c *cookRun) ensureAndRun(ctx context.Context, env environ.Env) (recipeExitCode int, err error) {
-	// Build both exported (env) PATH and local process PATH.
-	if len(c.PrefixPathENV) > 0 {
-		currentPATH, _ := env.Get("PATH")
-
-		allPATH := make([]string, 0, len(c.PrefixPathENV)+1)
-		allPATH = append(allPATH, c.PrefixPathENV...)
-		if len(currentPATH) > 0 {
-			allPATH = append(allPATH, currentPATH)
-		}
-
-		fullPATH := strings.Join(allPATH, string(os.PathListSeparator))
-		env.Set("PATH", fullPATH)
-		if err = os.Setenv("PATH", fullPATH); err != nil {
-			return 0, errors.Annotate(err).Reason("failed to update process PATH").Err()
-		}
-	}
-
 	if c.RepositoryURL == "" {
 		// The ready-to-run recipe is already present on the file system.
 		recipesPath, err := exec.LookPath(filepath.Join(c.CheckoutDir, "recipes"))
@@ -301,13 +284,6 @@ func (c *cookRun) ensureAndRun(ctx context.Context, env environ.Env) (recipeExit
 	if err != nil {
 		return 0, errors.Annotate(err).Reason("failed to prepare workdir").Err()
 	}
-
-	env.Set("PYTHONPATH", strings.Join(c.PythonPaths, string(os.PathListSeparator)))
-
-	// Tell subproceses to use Kitchen's temp dir.
-	env.Set("TEMPDIR", c.TempDir)
-	env.Set("TMPDIR", c.TempDir)
-	env.Set("MAC_CHROMIUM_TMPDIR", c.TempDir)
 
 	// Bootstrap through LogDog Butler?
 	if c.logdog.active() {
@@ -498,6 +474,13 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 	}
 	c.rr.properties = props
 
+	c.updateEnv(env)
+	// Make kitchen use the new $PATH too.
+	// In practice, we do it so that kitchen uses the installed git wrapper.
+	path, _ := env.Get("PATH")
+	if err := os.Setenv("PATH", path); err != nil {
+		return errors.Annotate(err).Reason("failed to update process PATH").Err()
+	}
 	// Run the recipe.
 	recipeExitCode, err := c.ensureAndRun(ctx, env)
 	if err != nil {
@@ -505,6 +488,35 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 		return err
 	}
 	return returnCodeError(recipeExitCode)
+}
+
+// updateEnv updates $PATH, $PYTHONPATH and temp path env variables in env.
+// It does not change env of the current process.
+func (c *cookRun) updateEnv(env environ.Env) {
+	addPaths := func(key string, paths []string) {
+		if len(paths) == 0 {
+			return
+		}
+		cur, _ := env.Get(key)
+		all := make([]string, 0, len(paths)+1)
+		all = append(all, paths...)
+		if len(cur) > 0 {
+			all = append(all, cur)
+		}
+		env.Set(key, strings.Join(all, string(os.PathListSeparator)))
+	}
+
+	addPaths("PATH", c.PrefixPathENV)
+	addPaths("PYTHONPATH", c.PythonPaths)
+
+	// Tell subprocesses to use Kitchen's temp dir.
+	if c.TempDir == "" {
+		// It should have been initialized in c.run.
+		panic("TempDir was not initialzied earlier")
+	}
+	for _, v := range []string{"TEMPDIR", "TMPDIR", "TEMP", "TMP", "MAC_CHROMIUM_TMPDIR"} {
+		env.Set(v, c.TempDir)
+	}
 }
 
 // unmarshalJSONWithNumber unmarshals JSON, where numbers are unmarshaled as
