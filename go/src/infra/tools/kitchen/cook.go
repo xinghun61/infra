@@ -36,8 +36,8 @@ const BootstrapStepName = "recipe bootstrap"
 // cmdCook checks out a repository at a revision and runs a recipe.
 var cmdCook = &subcommands.Command{
 	UsageLine: "cook -repository <repository URL> -recipe <recipe>",
-	ShortDesc: "bootstraps a swarmbucket job.",
-	LongDesc:  "Bootstraps a swarmbucket job.",
+	ShortDesc: "bootstraps a LUCI job.",
+	LongDesc:  "Bootstraps a LUCI job.",
 	CommandRun: func() subcommands.CommandRun {
 		var c cookRun
 
@@ -182,6 +182,14 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	if c.CheckoutDir == "" {
 		return fmt.Errorf("empty -checkout-dir")
 	}
+	switch st, err := os.Stat(c.CheckoutDir); {
+	case os.IsNotExist(err) && c.RepositoryURL == "":
+		return inputError("-repository not specified and -checkout-dir doesn't exist")
+	case !os.IsNotExist(err) && err != nil:
+		return err
+	case err == nil && !st.IsDir():
+		return inputError("--checkout-dir is not a directory")
+	}
 
 	if c.rr.recipeName == "" {
 		return inputError("-recipe is required")
@@ -262,15 +270,7 @@ func (c *cookRun) ensureAndRun(ctx context.Context, env environ.Env) (recipeExit
 	}
 
 	if c.RepositoryURL == "" {
-		switch st, err := os.Stat(c.CheckoutDir); {
-		case os.IsNotExist(err):
-			return 0, inputError("-repository not specified and -checkout-dir doesn't exist")
-		case err != nil:
-			return 0, errors.Annotate(err).Reason("could not stat -checkout-dir").Err()
-		case !st.IsDir():
-			return 0, inputError("-checkout-dir is not a directory")
-		}
-
+		// The ready-to-run recipe is already present on the file system.
 		recipesPath, err := exec.LookPath(filepath.Join(c.CheckoutDir, "recipes"))
 		if err != nil {
 			return 0, errors.Annotate(err).Reason("could not find bundled recipes").Err()
