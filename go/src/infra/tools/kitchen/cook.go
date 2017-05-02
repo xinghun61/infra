@@ -248,9 +248,9 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	return nil
 }
 
-// ensureAndRun ensures that we have recipes (according to -repository,
-// -revision and -checkout-dir), and then runs them.
-func (c *cookRun) ensureAndRun(ctx context.Context, env environ.Env) (recipeExitCode int, err error) {
+// ensureAndRunRecipe ensures that we have the recipe (according to -repository,
+// -revision and -checkout-dir) and runs it.
+func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) (recipeExitCode int, err error) {
 	if c.RepositoryURL == "" {
 		// The ready-to-run recipe is already present on the file system.
 		recipesPath, err := exec.LookPath(filepath.Join(c.CheckoutDir, "recipes"))
@@ -392,18 +392,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 	ctx := cli.GetContext(a, c, env)
 	sysEnv := environ.System()
 
-	// Process flags.
-	if len(args) != 0 {
-		fmt.Fprintf(os.Stderr, "unexpected arguments: %v", args)
-		return 1
-	}
-	if err := c.normalizeFlags(sysEnv); err != nil {
-		fmt.Fprintln(os.Stderr, err.Error())
-		fmt.Fprintln(os.Stderr, "for usage run: kitchen cook -help")
-		return 1
-	}
-
-	rc, err := getReturnCode(c.runErr(ctx, args, sysEnv))
+	rc, err := getReturnCode(c.run(ctx, args, sysEnv))
 	switch {
 	case errors.Unwrap(err) == context.Canceled:
 		log.Warningf(ctx, "Process was cancelled.")
@@ -417,7 +406,18 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 	return rc
 }
 
-func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) error {
+func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) error {
+	// Process input.
+	if len(args) != 0 {
+		return inputError("unexpected arguments: %v", args)
+	}
+	if _, err := os.Getwd(); err != nil {
+		return inputError("failed to resolve CWD: %s", err)
+	}
+	if err := c.normalizeFlags(env); err != nil {
+		return err
+	}
+
 	// initialize temp dir.
 	if c.TempDir == "" {
 		tdir, err := ioutil.TempDir("", "kitchen")
@@ -480,7 +480,7 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 		return errors.Annotate(err).Reason("failed to update process PATH").Err()
 	}
 	// Run the recipe.
-	recipeExitCode, err := c.ensureAndRun(ctx, env)
+	recipeExitCode, err := c.ensureAndRunRecipe(ctx, env)
 	if err != nil {
 		return err
 	}
