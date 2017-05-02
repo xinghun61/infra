@@ -63,12 +63,12 @@ func (m swarmingCookMode) readSwarmingEnv(env environ.Env) (botId, runId string,
 	var ok bool
 	botId, ok = env.Get("SWARMING_BOT_ID")
 	if !ok {
-		err = userError("no Swarming bot ID in $SWARMING_BOT_ID")
+		err = inputError("no Swarming bot ID in $SWARMING_BOT_ID")
 		return
 	}
 
 	if runId, ok = env.Get("SWARMING_TASK_ID"); !ok {
-		err = userError("no Swarming run ID in $SWARMING_TASK_ID")
+		err = inputError("no Swarming run ID in $SWARMING_TASK_ID")
 		return
 	}
 	return
@@ -129,7 +129,7 @@ func (m buildBotCookMode) alwaysForwardAnnotations() bool { return true }
 func (m buildBotCookMode) addProperties(props map[string]interface{}, env environ.Env) error {
 	botID, ok := env.Get("BUILDBOT_SLAVENAME")
 	if !ok {
-		return userError("no slave name in $BUILDBOT_SLAVENAME")
+		return inputError("no slave name in $BUILDBOT_SLAVENAME")
 	}
 	props[PropertyBotId] = botID
 	return nil

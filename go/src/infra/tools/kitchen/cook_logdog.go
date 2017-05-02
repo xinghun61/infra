@@ -117,7 +117,7 @@ func (p *cookLogDogParams) shouldEmitAnnotations() bool {
 func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) error {
 	if !p.active() {
 		if p.logDogOnly {
-			return userError("LogDog flag (-logdog-only) requires -logdog-annotation-url or -logdog-debug-out-file")
+			return inputError("LogDog flag (-logdog-only) requires -logdog-annotation-url or -logdog-debug-out-file")
 		}
 		return nil
 	}
@@ -137,7 +137,7 @@ func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) erro
 				Err()
 		}
 		if p.annotationAddr, err = types.ParseURL(annotationURL); err != nil {
-			return userError("invalid LogDog annotation URL (-logdog-annotation-url) %q: %s", annotationURL, err)
+			return inputError("invalid LogDog annotation URL (-logdog-annotation-url) %q: %s", annotationURL, err)
 		}
 	}
 

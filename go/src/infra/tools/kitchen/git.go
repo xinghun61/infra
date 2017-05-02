@@ -55,7 +55,7 @@ func checkoutRepository(c context.Context, checkoutDir, repoURL, revision string
 					D("dir", checkoutDir).
 					Err()
 			} else if hasFiles {
-				return userError("workdir %q is a non-git non-empty directory", checkoutDir)
+				return inputError("workdir %q is a non-git non-empty directory", checkoutDir)
 			}
 		}
 	}
