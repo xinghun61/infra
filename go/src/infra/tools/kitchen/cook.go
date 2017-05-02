@@ -432,11 +432,11 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 		}()
 	}
 
-	props, err := c.prepareProperties(env)
-	if err != nil {
+	var err error
+	if c.rr.properties, err = c.prepareProperties(env); err != nil {
 		return err
 	}
-	propsJSON, err := json.MarshalIndent(props, "", "  ")
+	propsJSON, err := json.MarshalIndent(c.rr.properties, "", "  ")
 	if err != nil {
 		return errors.Annotate(err).Reason("could not marshal properties to JSON").Err()
 	}
@@ -462,7 +462,7 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 			}
 		}()
 
-		for k, v := range props {
+		for k, v := range c.rr.properties {
 			// Order is not stable, but that is okay.
 			jv, err := json.Marshal(v)
 			if err != nil {
@@ -471,7 +471,6 @@ func (c *cookRun) runErr(ctx context.Context, args []string, env environ.Env) er
 			annotate("SET_BUILD_PROPERTY", k, string(jv))
 		}
 	}
-	c.rr.properties = props
 
 	c.updateEnv(env)
 	// Make kitchen use the new $PATH too.
