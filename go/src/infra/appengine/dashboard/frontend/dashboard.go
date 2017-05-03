@@ -29,7 +29,7 @@ var templateBundle = &templates.Bundle{
 	DebugMode: info.IsDevAppServer,
 	FuncMap: template.FuncMap{
 		"fmtDate": func(date time.Time) string {
-			return date.Format("1-02-2006")
+			return date.Format("1-2-2006")
 		},
 	},
 }

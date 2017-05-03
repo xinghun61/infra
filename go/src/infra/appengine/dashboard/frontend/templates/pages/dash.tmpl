@@ -44,7 +44,9 @@
   table {
     border-collapse: collapse;
   }
-  table, td, th {
+  table,
+  td,
+  th {
     border: 1px solid rgb(205, 223, 250);
   }
   th {
@@ -54,6 +56,7 @@
     height: 30px;
   }
 </style>
+<link rel="stylesheet" type="text/css" href="/static/icons.css">
 <div class="container">
   <header>
     <img class="logo" src="/static/chops-logo.png">
@@ -132,9 +135,9 @@
     {{end}}
 
     <p class="subtext right">
-      <img class="light" src="/static/green.png">No issues
-      <img class="light" src="/static/yellow.png">Service disruption
-      <img class="light" src="/static/red.png">Service outage
+      <i class="green circle"></i>No issues
+      <i class="yellow circle"></i>Service disruption
+      <i class="red circle"></i>Service outage
     </p>
 
   </main>

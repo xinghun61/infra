@@ -1,0 +1,30 @@
+.circle {
+  border-radius: 50%;
+  display: inline-block;
+  height: 12px;
+  width: 12px;
+}
+.green {
+  background-color: green;
+}
+.red {
+  background-color: red;
+}
+.center,
+.right,
+.left {
+  display: inline-block;
+  height: 12px;
+  width: 6px;
+}
+.right {
+  border-bottom-right-radius: 12px;
+  border-top-right-radius: 12px;
+}
+.left {
+  border-bottom-left-radius: 12px;
+  border-top-left-radius: 12px;
+}
+.yellow {
+  background-color: gold;
+}
