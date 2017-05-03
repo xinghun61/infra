@@ -355,29 +355,15 @@ def GetStepLog(master_name, builder_name, build_number,
                full_step_name, http_client, log_type='stdout'):
   """Returns sepcific log of the specified step."""
 
-  # 1. Get annotations proto for the build.
-  annotations = logdog_util.GetAnnotationsProtoForBuild(
-      master_name, builder_name, build_number, http_client)
-  if not annotations:
+  # 1. Get log.
+  data = logdog_util.GetStepLogLegacy(master_name, builder_name, build_number,
+                                      full_step_name, log_type, http_client)
+  if not data:
     if log_type.lower() == 'stdout':
       return _GetStepStdioFromBuildBot(
           master_name, builder_name, build_number, full_step_name, http_client)
     else:
       return None
-
-  # 2. Find the log stream info for the log.
-  logdog_stream = logdog_util.GetStreamForStep(
-      full_step_name, annotations, log_type)
-  # 3. Get the log.
-  if not logdog_stream:
-    if log_type.lower() == 'stdout':
-      return _GetStepStdioFromBuildBot(
-          master_name, builder_name, build_number, full_step_name, http_client)
-    else:
-      return None
-
-  data = logdog_util.GetLogForBuild(
-      master_name, builder_name, build_number, logdog_stream, http_client)
 
   if log_type.lower() == 'step_metadata':  # pragma: no branch
     return json.loads(data) if data else None
