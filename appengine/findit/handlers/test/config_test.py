@@ -881,32 +881,31 @@ class ConfigTest(testing.AppengineTestCase):
 
     params = {
         'format': 'json',
-        'data': json.dumps({
-            'steps_for_masters_rules': {
-                'supported_masters': {
-                    'a': {
-                    },
-                    'b': {
-                        'supported_steps': ['1'],
-                        'unsupported_steps': ['2', '3', '4'],
-                    },
-                    'c': {
-                        'supported_steps': ['5'],
-                        'check_global': False
-                    }
+        'steps_for_masters_rules': json.dumps({
+            'supported_masters': {
+                'a': {
                 },
-                'global': {
-                    'unsupported_steps': ['1']
+                'b': {
+                    'supported_steps': ['1'],
+                    'unsupported_steps': ['2', '3', '4'],
+                },
+                'c': {
+                    'supported_steps': ['5'],
+                    'check_global': False
                 }
             },
-            'builders_to_trybots': _MOCK_BUILDERS_TO_TRYBOTS,
-            'try_job_settings': _MOCK_TRY_JOB_SETTINGS,
-            'swarming_settings': _MOCK_SWARMING_SETTINGS,
-            'download_build_data_settings': _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS,
-            'action_settings': _MOCK_ACTION_SETTINGS,
-            'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
-            'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS
-        })
+            'global': {
+                'unsupported_steps': ['1']
+            }
+        }),
+        'builders_to_trybots': json.dumps(_MOCK_BUILDERS_TO_TRYBOTS),
+        'try_job_settings': json.dumps(_MOCK_TRY_JOB_SETTINGS),
+        'swarming_settings': json.dumps(_MOCK_SWARMING_SETTINGS),
+        'download_build_data_settings': json.dumps(
+            _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS),
+        'action_settings': json.dumps(_MOCK_ACTION_SETTINGS),
+        'check_flake_settings': json.dumps(_MOCK_CHECK_FLAKE_SETTINGS),
+        'code_review_settings': json.dumps(_MOCK_CODE_REVIEW_SETTINGS),
     }
 
     response = self.test_app.post('/config', params=params)

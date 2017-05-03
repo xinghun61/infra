@@ -330,8 +330,11 @@ class Configuration(BaseHandler):
     return {'template': 'config.html', 'data': data}
 
   def HandlePost(self):
-    data = self.request.params.get('data')
-    new_config_dict = json.loads(data)
+    new_config_dict = {}
+    for name in self.request.params.keys():
+      if name != 'format':
+        new_config_dict[name] = json.loads(self.request.params[name])
+
     if not _ConfigurationDictIsValid(new_config_dict):  # pragma: no cover
       return self.CreateError(
           'New configuration settings is not properly formatted.', 400)

@@ -5,162 +5,79 @@
   <link rel="stylesheet" href="/common.css"></link>
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <title>Findit Configuration</title>
-  <style>
-    .previous, .next, .latest {
-      color: #0645AD;
-      background: none;
-      border: none;
-      padding: 0;
-      font: inherit;
-      border-bottom: 1px solid #0645AD;
-      cursor: pointer;
-    }
-    .disabled {
-      color: #d3d3d3;
-      background: none;
-      border: none;
-      padding: 0;
-      font: inherit;
-      border-bottom: 1px solid #d3d3d3;
-      cursor: pointer;
-    }
-  </style>
   <script>
-    var findit = {};
-    findit.stepsForMastersRules = {{ masters | tojson | safe }};
-    findit.builders = {{ builders | tojson | safe }};
-    findit.tryJobSettings = {{ try_job_settings | tojson | safe}};
-    findit.swarmingSettings = {{ swarming_settings | tojson | safe }};
-    findit.downloadBuildDataSettings = {{ download_build_data_settings | tojson | safe }};
-    findit.actionSettings = {{ action_settings | tojson | safe }};
-    findit.checkFlakeSettings = {{ check_flake_settings | tojson | safe }};
-    findit.codeReviewSettings = {{ code_review_settings | tojson | safe }};
-
-    function getJsonOfTextarea(textId) {
-      return JSON.parse($('#' + textId).val());
-    }
-
-    function getStringFromJson(json) {
-      return JSON.stringify(json, null, '  ');
-    }
-
-    function createUrl(version) {
-      if (version)
-        return '/waterfall/config?version=' + version.toString();
-      else
-        return '/waterfall/config';
-    }
-
-    function loadPrevious() {
-      var newUrl = createUrl({{ version }} - 1);
-      window.location.replace(newUrl);
-    }
-
-    function loadNext() {
-      var newUrl = createUrl({{ version }} + 1);
-      window.location.replace(newUrl);
-    }
-
-    function loadLatest() {
-      var newUrl = createUrl(null);
-      window.location.replace(newUrl);
-    }
-
-    function save(e) {
-      var newConfig = {
-        'steps_for_masters_rules': getJsonOfTextarea('steps-for-masters-rules'),
-        'builders_to_trybots': getJsonOfTextarea('builders-to-trybots'),
-        'try_job_settings': getJsonOfTextarea('try-job-settings'),
-        'swarming_settings': getJsonOfTextarea('swarming-settings'),
-        'download_build_data_settings': getJsonOfTextarea('download-build-data-settings'),
-        'action_settings': getJsonOfTextarea('action-settings'),
-        'check_flake_settings': getJsonOfTextarea('check-flake-settings'),
-        'code_review_settings': getJsonOfTextarea('code-review-settings')
-      };
-      $.post('/waterfall/config', { data: JSON.stringify(newConfig) }).done(function(){
-        window.location.replace(createUrl(null));  // Reload after successful saving.
-      }).fail(function(xhr){
-        // Replace the whole page with errors from server side.
-        document.body.outerHTML = xhr.responseText;
-      });
-      e.preventDefault();
-    }
-
     $(document).ready(function() {
-      $('#previous-version-button').click(loadPrevious);
-      $('#next-version-button').click(loadNext);
-      $('#latest-version-button').click(loadLatest);
-      $('#save-button').click(save);
-      $('#steps-for-masters-rules').val(getStringFromJson(findit.stepsForMastersRules));
-      $('#builders-to-trybots').val(getStringFromJson(findit.builders));
-      $('#try-job-settings').val(getStringFromJson(findit.tryJobSettings));
-      $('#swarming-settings').val(getStringFromJson(findit.swarmingSettings));
-      $('#download-build-data-settings').val(getStringFromJson(findit.downloadBuildDataSettings));
-      $('#action-settings').val(getStringFromJson(findit.actionSettings));
-      $('#check-flake-settings').val(getStringFromJson(findit.checkFlakeSettings));
-      $('#code-review-settings').val(getStringFromJson(findit.codeReviewSettings));
-
-      if ({{ version }} < 2) {
-        $('#previous-version-button').attr('disabled', 'disabled');
-        $('#previous-version-button').addClass('disabled');
-      }
-      else if ({{ version }} >= {{ latest_version }} ) {
-        $('#next-version-button').attr('disabled', 'disabled');
-        $('#next-version-button').addClass('disabled');
-      }
-      else {
-        $('#previous-version-button').removeAttr('disabled');
-        $('#next-version-button').removeAttr('disabled');
-      }
+      // Format the json data in textarea elements.
+      $('textarea').each(function() {
+        var textarea = $(this);
+        try {
+          textarea.val(JSON.stringify(JSON.parse(textarea.val()), null, '  '));
+        } catch (err) {
+        }
+      });
     });
   </script>
 </head>
 <body>
-  <h3>Findit Configuration Page</h3>
   <div>
     Configuration version: {{ version }}<br>
     Updated by: {{ updated_by }}<br>
     Updated time: {{ updated_ts }}<br>
   </div>
+  <br>
   <div>
     Browse version:
-    <button id="previous-version-button" class="previous">previous</button>
-    <button id="next-version-button" class="next">next</button>
-    <button id="latest-version-button" class="latest">latest</button>
+    {% if version > 1 %}
+      <a href="/waterfall/config?version={{ version - 1 }}">Previous</a>
+    {% endif %}
+    {% if version != latest_version %}
+      <a href="/waterfall/config?version={{ version - 1 }}">Next</a>
+      <a href="/waterfall/config">Latest</a>
+      <div style="color:red;font-weight:bold">Note: not latest version!</div>
+    {% endif %}
   </div>
   <br>
-  <div>
-    Steps for Masters Rules:<br>
-    <textarea id="steps-for-masters-rules" rows="20" cols="80"></textarea>
-  </div>
-  <div>
-    Waterfall Builders to Try-server trybots:<br>
-    <textarea id="builders-to-trybots" rows="20" cols="80"></textarea>
-  </div>
-  <div>
-    Try Job Settings:<br>
-    <textarea id="try-job-settings" rows="10" cols="80"></textarea>
-  </div>
-  <div>
-    Swarming Task Settings:<br>
-    <textarea id="swarming-settings" rows="10" cols="80"></textarea>
-  </div>
-  <div>
-    Download Build Data Settings:<br>
-    <textarea id="download-build-data-settings" rows="10" cols="80"></textarea>
-  </div>
-  <div>
-    Action Settings for identified culprits or suspects:<br>
-    <textarea id="action-settings" rows="10" cols="80"></textarea>
-  </div>
-  <div>
-    Check Test Flakiness Settings:<br>
-    <textarea id="check-flake-settings" rows="10" cols="80"></textarea>
-  </div>
-  <div>
-    CodeReview Settings:<br>
-    <textarea id="code-review-settings" rows="10" cols="80"></textarea>
-  </div>
-  <br>
-  <button type="submit" id="save-button">Save</button>
+  <form action="/waterfall/config" method="post">
+    <div>
+      Steps for Masters Rules:<br>
+      <textarea id="steps-for-masters-rules" name="steps_for_masters_rules" rows="20" cols="80">{{masters | tojson }}</textarea>
+    </div>
+    <br>
+    <div>
+      Waterfall Builders to Try-server trybots:<br>
+      <textarea id="builders-to-trybots" name="builders_to_trybots" rows="20" cols="80">{{ builders | tojson }}</textarea>
+    </div>
+    <br>
+    <div>
+      Try Job Settings:<br>
+      <textarea id="try-job-settings" name="try_job_settings" rows="10" cols="80">{{ try_job_settings | tojson }}</textarea>
+    </div>
+    <br>
+    <div>
+      Swarming Task Settings:<br>
+      <textarea id="swarming-settings" name="swarming_settings" rows="10" cols="80">{{ swarming_settings | tojson }}</textarea>
+    </div>
+    <br>
+    <div>
+      Download Build Data Settings:<br>
+      <textarea id="download-build-data-settings" name="download_build_data_settings" rows="10" cols="80">{{ download_build_data_settings | tojson }}</textarea>
+    </div>
+    <br>
+    <div>
+      Action Settings for identified culprits or suspects:<br>
+      <textarea id="action-settings" name="action_settings" rows="10" cols="80">{{ action_settings | tojson }}</textarea>
+    </div>
+    <br>
+    <div>
+      Check Test Flakiness Settings:<br>
+      <textarea id="check-flake-settings" name="check_flake_settings" rows="10" cols="80">{{ check_flake_settings | tojson }}</textarea>
+    </div>
+    <br>
+    <div>
+      CodeReview Settings:<br>
+      <textarea id="code-review-settings" name="code_review_settings" rows="10" cols="80">{{ code_review_settings | tojson }}</textarea>
+    </div>
+    <br>
+    <button type="submit" id="save-button">Save</button>
+  </form>
 </body>
