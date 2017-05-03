@@ -162,6 +162,15 @@ _ISSUE_REF_RE = re.compile(r"""
      (?P<local_id>\d+)\b
      (,?[ \t]*(and|or)?)?)+""", re.IGNORECASE | re.VERBOSE)
 
+# This is for chromium.org's crbug.com shorthand domain.
+_CRBUG_REF_RE = re.compile(r"""
+    (?P<prefix>\b(https?://)?crbug.com/)
+    ((?P<project_name>\b[-a-z0-9]+)(?P<separator>/))?
+    (?P<local_id>\d+)\b""", re.IGNORECASE | re.VERBOSE)
+
+# Once the overall issue reference has been detected, pick out the specific
+# issue project:id items within it.  Often there is just one, but the "and|or"
+# syntax can allow multiple issues.
 _SINGLE_ISSUE_REF_RE = re.compile(r"""
     (?P<prefix>\b(issue|bug)[ \t]*)?
     (?P<project_name>\b[-a-z0-9]+[:\#])?
@@ -234,17 +243,32 @@ def _ParseProjectNameMatch(project_name):
   return project_name.lstrip().rstrip('#: \t\n')
 
 
-def ExtractProjectAndIssueIds(_mr, autolink_regex_match):
+def _ExtractProjectAndIssueIds(
+    autolink_regex_match, subregex, default_project_name=None):
   """Convert a regex match for a textual reference into our internal form."""
   whole_str = autolink_regex_match.group(0)
   refs = []
-  for submatch in _SINGLE_ISSUE_REF_RE.finditer(whole_str):
-    ref = (_ParseProjectNameMatch(submatch.group('project_name')),
-           int(submatch.group('local_id')))
+  for submatch in subregex.finditer(whole_str):
+    project_name = (
+        _ParseProjectNameMatch(submatch.group('project_name')) or
+        default_project_name)
+    ref = (project_name, int(submatch.group('local_id')))
     refs.append(ref)
     logging.info('issue ref = %s', ref)
 
   return refs
+
+
+def ExtractProjectAndIssueIdsNormal(_mr, autolink_regex_match):
+  """Convert a regex match for a textual reference into our internal form."""
+  return _ExtractProjectAndIssueIds(
+      autolink_regex_match, _SINGLE_ISSUE_REF_RE)
+
+
+def ExtractProjectAndIssueIdsCrBug(_mr, autolink_regex_match):
+  """Convert a regex match for a textual reference into our internal form."""
+  return _ExtractProjectAndIssueIds(
+      autolink_regex_match, _CRBUG_REF_RE, default_project_name='chromium')
 
 
 # This uses project name to avoid a lookup on project ID in a function
@@ -257,24 +281,28 @@ def _IssueProjectKey(project_name, local_id):
 class IssueRefRun(object):
   """A text run that links to a referenced issue."""
 
-  def __init__(self, issue, is_closed, project_name, prefix):
+  def __init__(self, issue, is_closed, project_name, content):
     self.tag = 'a'
     self.css_class = 'closed_ref' if is_closed else None
     self.title = issue.summary
     self.href = '/p/%s/issues/detail?id=%d' % (project_name, issue.local_id)
 
-    self.content = '%s%d' % (prefix, issue.local_id)
-    if is_closed and not prefix:
+    self.content = content
+    if is_closed:
       self.content = ' %s ' % self.content
 
 
-def ReplaceIssueRef(mr, autolink_regex_match, component_ref_artifacts):
+def _ReplaceIssueRef(
+    autolink_regex_match, component_ref_artifacts, single_issue_regex,
+    default_project_name):
   """Examine a textual reference and replace it with an autolink or not.
 
   Args:
-    mr: commonly used info parsed from the request
     autolink_regex_match: regex match for the textual reference.
     component_ref_artifacts: result of earlier call to GetReferencedIssues.
+    single_issue_regex: regular expression to parse individual issue references
+        out of a multi-issue-reference phrase.  E.g., "issues 12 and 34".
+    default_project_name: project name to use when not specified.
 
   Returns:
     A list of IssueRefRuns and TextRuns to replace the textual
@@ -287,13 +315,13 @@ def ReplaceIssueRef(mr, autolink_regex_match, component_ref_artifacts):
   logging.info('called ReplaceIssueRef on %r', original)
   result_runs = []
   pos = 0
-  for submatch in _SINGLE_ISSUE_REF_RE.finditer(original):
+  for submatch in single_issue_regex.finditer(original):
     if submatch.start() >= pos:
       if original[pos: submatch.start()]:
         result_runs.append(template_helpers.TextRun(
             original[pos: submatch.start()]))
       replacement_run = _ReplaceSingleIssueRef(
-          mr, submatch, open_dict, closed_dict)
+          submatch, open_dict, closed_dict, default_project_name)
       result_runs.append(replacement_run)
       pos = submatch.end()
 
@@ -303,29 +331,39 @@ def ReplaceIssueRef(mr, autolink_regex_match, component_ref_artifacts):
   return result_runs
 
 
-def _ReplaceSingleIssueRef(mr, submatch, open_dict, closed_dict):
+def ReplaceIssueRefNormal(mr, autolink_regex_match, component_ref_artifacts):
+  """Replaces occurances of 'issue 123' with link TextRuns as needed."""
+  return _ReplaceIssueRef(
+      autolink_regex_match, component_ref_artifacts,
+      _SINGLE_ISSUE_REF_RE, mr.project_name)
+
+
+def ReplaceIssueRefCrBug(_mr, autolink_regex_match, component_ref_artifacts):
+  """Replaces occurances of 'crbug.com/123' with link TextRuns as needed."""
+  return _ReplaceIssueRef(
+      autolink_regex_match, component_ref_artifacts,
+      _CRBUG_REF_RE, 'chromium')
+
+
+def _ReplaceSingleIssueRef(
+    submatch, open_dict, closed_dict, default_project_name):
   """Replace one issue reference with a link, or the original text."""
-  prefix = submatch.group('prefix') or ''
+  content = submatch.group(0)
   project_name = submatch.group('project_name')
   if project_name:
-    prefix += project_name
     project_name = project_name.lstrip().rstrip(':#')
   else:
     # We need project_name for the URL, even if it is not in the text.
-    project_name = mr.project_name
+    project_name = default_project_name
 
-  number_sign = submatch.group('number_sign')
-  if number_sign:
-    prefix += number_sign
   local_id = int(submatch.group('local_id'))
-  issue_key = _IssueProjectKey(project_name or mr.project_name, local_id)
-
+  issue_key = _IssueProjectKey(project_name, local_id)
   if issue_key in open_dict:
-    return IssueRefRun(open_dict[issue_key], False, project_name, prefix)
+    return IssueRefRun(open_dict[issue_key], False, project_name, content)
   elif issue_key in closed_dict:
-    return IssueRefRun(closed_dict[issue_key], True, project_name, prefix)
+    return IssueRefRun(closed_dict[issue_key], True, project_name, content)
   else:  # Don't link to non-existent issues.
-    return template_helpers.TextRun('%s%d' % (prefix, local_id))
+    return template_helpers.TextRun(content)
 
 
 class Autolink(object):
@@ -447,16 +485,22 @@ class Autolink(object):
 def RegisterAutolink(services):
   """Register all the autolink hooks."""
   services.autolink.RegisterComponent(
-      '01-linkify',
+      '01-tracker',
+      CurryGetReferencedIssues(services),
+      ExtractProjectAndIssueIdsNormal,
+      {_ISSUE_REF_RE: ReplaceIssueRefNormal})
+
+  services.autolink.RegisterComponent(
+      '01-tracker-crbug',
+      CurryGetReferencedIssues(services),
+      ExtractProjectAndIssueIdsCrBug,
+      {_CRBUG_REF_RE: ReplaceIssueRefCrBug})
+
+  services.autolink.RegisterComponent(
+      '02-linkify',
       lambda request, mr: None,
       lambda mr, match: None,
       {_IS_A_LINK_RE: Linkify})
-
-  services.autolink.RegisterComponent(
-      '02-tracker',
-      CurryGetReferencedIssues(services),
-      ExtractProjectAndIssueIds,
-      {_ISSUE_REF_RE: ReplaceIssueRef})
 
   services.autolink.RegisterComponent(
       '03-versioncontrol',

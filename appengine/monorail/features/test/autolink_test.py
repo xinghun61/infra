@@ -375,17 +375,18 @@ class TrackerAutolinkTest(unittest.TestCase):
     'as well as bug 4, bug #5, and bug6 \n'
     'with issue other-project:12 and issue other-project#13. \n'
     'Watch out for issues 21, 22, and 23 with oxford comma. \n'
-    'And also bugs 31, 32 and 33 with no oxford comma\n'
+    'And also bugs 31, 32 and 33 with no oxford comma.\n'
+    'Here comes crbug.com/123 and crbug.com/monorail/456.\n'
     'We do not match when an issue\n'
     '999. Is split across lines.'
     )
 
-  def testExtractProjectAndIssueId(self):
+  def testExtractProjectAndIssueIdNormal(self):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/detail?id=1')
     ref_batches = []
     for match in autolink._ISSUE_REF_RE.finditer(self.COMMENT_TEXT):
-      new_refs = autolink.ExtractProjectAndIssueIds(mr, match)
+      new_refs = autolink.ExtractProjectAndIssueIdsNormal(mr, match)
       ref_batches.append(new_refs)
 
     self.assertEquals(
@@ -402,17 +403,36 @@ class TrackerAutolinkTest(unittest.TestCase):
        [(None, 31), (None, 32), (None, 33)],
        ])
 
-  def DoReplaceIssueRef(self, content):
+
+  def testExtractProjectAndIssueIdCrbug(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/detail?id=1')
+    ref_batches = []
+    for match in autolink._CRBUG_REF_RE.finditer(self.COMMENT_TEXT):
+      new_refs = autolink.ExtractProjectAndIssueIdsCrBug(mr, match)
+      ref_batches.append(new_refs)
+
+    self.assertEquals(
+      ref_batches,
+      [[('chromium', 123)],
+       [('monorail', 456)],
+      ])
+
+  def DoReplaceIssueRef(
+      self, content, regex=autolink._ISSUE_REF_RE,
+      single_issue_regex=autolink._SINGLE_ISSUE_REF_RE,
+      default_project_name=None):
     """Calls the ReplaceIssueRef method and returns the result.
 
     Args:
       content: string that may have a textual reference to an issue.
+      regex: optional regex to use instead of _ISSUE_REF_RE.
 
     Returns:
       A list of TextRuns with some runs will have the reference hyperlinked.
       Or, None if no reference detected.
     """
-    match = autolink._ISSUE_REF_RE.search(content)
+    match = regex.search(content)
     if not match:
       return None
 
@@ -427,55 +447,80 @@ class TrackerAutolinkTest(unittest.TestCase):
                    'proj:5': _Issue('proj', 5, 'summary-PROJ-5', 'Fixed'),
                    'other-project:13': _Issue('other-project', 13,
                                               'summary-OP-12', 'Invalid'),
+                   'chromium:13': _Issue('chromium', 13,
+                                         'summary-Cr-13', 'Invalid'),
                   }
     comp_ref_artifacts = (open_dict, closed_dict,)
 
-    mr = testing_helpers.MakeMonorailRequest(path='/p/proj/issues/detail?r=1')
-    replacement_runs = autolink.ReplaceIssueRef(mr, match, comp_ref_artifacts)
+    replacement_runs = autolink._ReplaceIssueRef(
+        match, comp_ref_artifacts, single_issue_regex, default_project_name)
     return replacement_runs
 
   def testReplaceIssueRef_NoMatch(self):
     result = self.DoReplaceIssueRef('What is this all about?')
     self.assertIsNone(result)
 
-  def testReplaceIssueRef(self):
-    result = self.DoReplaceIssueRef('This relates to issue 1')
+  def testReplaceIssueRef_Normal(self):
+    result = self.DoReplaceIssueRef(
+        'This relates to issue 1', default_project_name='proj')
     self.assertEquals('/p/proj/issues/detail?id=1', result[0].href)
     self.assertEquals('issue 1', result[0].content)
     self.assertEquals(None, result[0].css_class)
     self.assertEquals('summary-PROJ-1', result[0].title)
     self.assertEquals('a', result[0].tag)
 
-    result = self.DoReplaceIssueRef(', issue #2')
+    result = self.DoReplaceIssueRef(
+        ', issue #2', default_project_name='proj')
     self.assertEquals('/p/proj/issues/detail?id=2', result[0].href)
-    self.assertEquals('issue #2', result[0].content)
+    self.assertEquals(' issue #2 ', result[0].content)
     self.assertEquals('closed_ref', result[0].css_class)
     self.assertEquals('summary-PROJ-2', result[0].title)
     self.assertEquals('a', result[0].tag)
 
-    result = self.DoReplaceIssueRef(', and issue3 ')
+    result = self.DoReplaceIssueRef(
+        ', and issue3 ', default_project_name='proj')
     self.assertEquals(None, result[0].href)  # There is no issue 3
     self.assertEquals('issue3', result[0].content)
 
-    result = self.DoReplaceIssueRef('as well as bug 4')
+    result = self.DoReplaceIssueRef(
+        'as well as bug 4', default_project_name='proj')
     self.assertEquals('/p/proj/issues/detail?id=4', result[0].href)
     self.assertEquals('bug 4', result[0].content)
 
-    result = self.DoReplaceIssueRef(', bug #5, ')
+    result = self.DoReplaceIssueRef(
+        ', bug #5, ', default_project_name='proj')
     self.assertEquals('/p/proj/issues/detail?id=5', result[0].href)
-    self.assertEquals('bug #5', result[0].content)
+    self.assertEquals(' bug #5 ', result[0].content)
 
-    result = self.DoReplaceIssueRef('and bug6')
+    result = self.DoReplaceIssueRef(
+        'and bug6', default_project_name='proj')
     self.assertEquals('/p/proj/issues/detail?id=6', result[0].href)
     self.assertEquals('bug6', result[0].content)
 
-    result = self.DoReplaceIssueRef('with issue other-project:12')
+    result = self.DoReplaceIssueRef(
+        'with issue other-project:12', default_project_name='proj')
     self.assertEquals('/p/other-project/issues/detail?id=12', result[0].href)
     self.assertEquals('issue other-project:12', result[0].content)
 
-    result = self.DoReplaceIssueRef('and issue other-project#13')
+    result = self.DoReplaceIssueRef(
+        'and issue other-project#13', default_project_name='proj')
     self.assertEquals('/p/other-project/issues/detail?id=13', result[0].href)
-    self.assertEquals('issue other-project#13', result[0].content)
+    self.assertEquals(' issue other-project#13 ', result[0].content)
+
+  def testReplaceIssueRef_CrBug(self):
+    result = self.DoReplaceIssueRef(
+        'and crbug.com/other-project/13', regex=autolink._CRBUG_REF_RE,
+        single_issue_regex=autolink._CRBUG_REF_RE,
+        default_project_name='chromium')
+    self.assertEquals('/p/other-project/issues/detail?id=13', result[0].href)
+    self.assertEquals(' crbug.com/other-project/13 ', result[0].content)
+
+    result = self.DoReplaceIssueRef(
+        'and http://crbug.com/13', regex=autolink._CRBUG_REF_RE,
+        single_issue_regex=autolink._CRBUG_REF_RE,
+        default_project_name='chromium')
+    self.assertEquals('/p/chromium/issues/detail?id=13', result[0].href)
+    self.assertEquals(' http://crbug.com/13 ', result[0].content)
 
   def testParseProjectNameMatch(self):
     golden = 'project-name'
