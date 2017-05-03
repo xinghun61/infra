@@ -6,6 +6,7 @@ import mock
 
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
+from model.wf_build import WfBuild
 from waterfall import schedule_try_job_pipeline
 from waterfall.flake.schedule_flake_try_job_pipeline import (
     ScheduleFlakeTryJobPipeline)
@@ -63,6 +64,11 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
   def testTriggerTryJobFlake(self, mock_module):
     master_name = 'm'
     builder_name = 'b'
+    build_number = 1
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.data = {'properties': {'parent_mastername': 'pm',
+                                 'parent_buildername': 'pb'}}
+    build.put()
     response = {
         'build': {
             'id': '1',
@@ -75,7 +81,8 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
 
     build_id = ScheduleFlakeTryJobPipeline()._TriggerTryJob(
         master_name, builder_name, {}, [],
-        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST))
+        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
+        None, None)
 
     self.assertEqual(build_id, '1')
 
@@ -83,6 +90,11 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
   def testTriggerTryJobWaterfall(self, mock_module):
     master_name = 'm'
     builder_name = 'b'
+    build_number = 1
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.data = {'properties': {'parent_mastername': 'pm',
+                                 'parent_buildername': 'pb'}}
+    build.put()
     response = {
         'build': {
             'id': '1',
@@ -95,6 +107,7 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
 
     build_id = ScheduleCompileTryJobPipeline()._TriggerTryJob(
         master_name, builder_name, {}, [],
-        failure_type.GetDescriptionForFailureType(failure_type.COMPILE))
+        failure_type.GetDescriptionForFailureType(failure_type.COMPILE), None,
+        None)
 
     self.assertEqual(build_id, '1')

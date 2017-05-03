@@ -4,10 +4,13 @@
 
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
+from model.wf_build import WfBuild
 from waterfall import buildbot
 from waterfall import monitoring
+from waterfall import swarming_util
 from waterfall import waterfall_config
 
 
@@ -43,19 +46,19 @@ class ScheduleTryJobPipeline(BasePipeline):
         })
 
   def _GetTrybot(self, master_name, builder_name):  # pragma: no cover.
-    """Returns the master and builder on the tryserver to run the try job."""
+    """Returns the master and builder on the tryserver to run the try job. """
     return waterfall_config.GetWaterfallTrybot(master_name, builder_name)
 
   def _TriggerTryJob(
-      self, master_name, builder_name, properties, additional_parameters,
-      try_job_type):
+      self, master_name, builder_name, properties,
+      additional_parameters, try_job_type, cache_name, dimensions):
 
     tryserver_mastername, tryserver_buildername = self._GetTrybot(
         master_name, builder_name)
 
     try_job = buildbucket_client.TryJob(
         tryserver_mastername, tryserver_buildername, None, properties, [],
-        additional_parameters)
+        additional_parameters, cache_name, dimensions)
     error, build = buildbucket_client.TriggerTryJobs([try_job])[0]
 
     self._OnTryJobTriggered(try_job_type, master_name, builder_name)

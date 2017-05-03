@@ -6,7 +6,9 @@ import logging
 
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import BasePipeline
+from waterfall import swarming_util
 from waterfall import try_job_util
+from waterfall import waterfall_config
 from waterfall.identify_try_job_culprit_pipeline import (
     IdentifyTryJobCulpritPipeline)
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
@@ -97,9 +99,13 @@ class StartTryJobOnDemandPipeline(BasePipeline):
     if try_job_type == failure_type.COMPILE:
       compile_targets = try_job_util.GetFailedTargetsFromSignals(
           signals, master_name, builder_name)
+      dimensions = waterfall_config.GetTrybotDimensions(master_name,
+                                                        builder_name)
+      cache_name = swarming_util.GetCacheName(master_name, builder_name)
       try_job_id = yield ScheduleCompileTryJobPipeline(
           master_name, builder_name, build_number, good_revision, bad_revision,
-          try_job_type, compile_targets, suspected_revisions)
+          try_job_type, compile_targets, suspected_revisions, cache_name,
+          dimensions)
     else:
       # If try_job_type is other type, the pipeline has returned.
       # So here the try_job_type is failure_type.TEST.
@@ -117,9 +123,19 @@ class StartTryJobOnDemandPipeline(BasePipeline):
 
       yield UpdateAnalysisWithFlakeInfoPipeline(
           master_name, builder_name, build_number, *task_results)
+
+      parent_mastername = failure_info.get('parent_mastername') or master_name
+      parent_buildername = failure_info.get('parent_buildername') or (
+          builder_name)
+      dimensions = waterfall_config.GetTrybotDimensions(parent_mastername,
+                                                        parent_buildername)
+      cache_name = swarming_util.GetCacheName(parent_mastername,
+                                              parent_buildername)
+
       try_job_id = yield ScheduleTestTryJobPipeline(
           master_name, builder_name, build_number, good_revision, bad_revision,
-          try_job_type, suspected_revisions, *task_results)
+          try_job_type, suspected_revisions, cache_name, dimensions,
+          *task_results)
 
     try_job_result = yield MonitorTryJobPipeline(
         try_job_key.urlsafe(), try_job_type, try_job_id)

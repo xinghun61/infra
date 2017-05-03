@@ -85,10 +85,10 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 
   def __init__(
       self, urlsafe_flake_analysis_key, commit_position, revision,
-      lower_boundary_commit_position):
+      lower_boundary_commit_position, cache_name, dimensions):
     super(RecursiveFlakeTryJobPipeline, self).__init__(
         urlsafe_flake_analysis_key, commit_position, revision,
-        lower_boundary_commit_position)
+        lower_boundary_commit_position, cache_name, dimensions)
     self.urlsafe_flake_analysis_key = urlsafe_flake_analysis_key
     self.commit_position = commit_position
     self.revision = revision
@@ -133,7 +133,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, urlsafe_flake_analysis_key, commit_position, revision,
-          lower_boundary_commit_position):
+          lower_boundary_commit_position, cache_name, dimensions):
     """Runs a try job at a revision to determine its flakiness.
 
     Args:
@@ -171,9 +171,9 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
       iterations_to_rerun = analysis.algorithm_parameters.get(
           'try_job_rerun', {}).get('iterations_to_rerun')
       try_job_id = yield ScheduleFlakeTryJobPipeline(
-          analysis.master_name, analysis.builder_name,
-          analysis.canonical_step_name, analysis.test_name,
-          revision, analysis.key.urlsafe(), iterations_to_rerun)
+          analysis.master_name, analysis.builder_name, analysis.build_number,
+          analysis.canonical_step_name, analysis.test_name, revision,
+          analysis.key.urlsafe(), iterations_to_rerun, cache_name, dimensions)
 
       try_job_result = yield MonitorTryJobPipeline(
           try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
@@ -184,7 +184,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 
       yield NextCommitPositionPipeline(
           urlsafe_flake_analysis_key, try_job.key.urlsafe(),
-          lower_boundary_commit_position)
+          lower_boundary_commit_position, cache_name, dimensions)
 
 
 def _NormalizeDataPoints(data_points):
@@ -226,7 +226,7 @@ class NextCommitPositionPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, urlsafe_flake_analysis_key, urlsafe_try_job_key,
-          lower_boundary_commit_position):
+          lower_boundary_commit_position, cache_name, dimensions):
     """Determines the next commit position to run a try job on.
 
     Args:
@@ -286,7 +286,7 @@ class NextCommitPositionPipeline(BasePipeline):
 
     pipeline_job = RecursiveFlakeTryJobPipeline(
         urlsafe_flake_analysis_key, next_commit_position, next_revision,
-        lower_boundary_commit_position)
+        lower_boundary_commit_position, cache_name, dimensions)
     # Disable attribute 'target' defined outside __init__ pylint warning,
     # because pipeline generates its own __init__ based on run function.
     pipeline_job.target = (  # pylint: disable=W0201

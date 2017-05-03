@@ -474,6 +474,8 @@ class DetectFirstFailurePipeline(BasePipeline):
         'builds': {},
         'failed_steps': {},
         'failure_type': build_failure_type,
+        'parent_mastername': build_info.parent_mastername,
+        'parent_buildername': build_info.parent_buildername,
     }
 
     if build_info.result == buildbot.SUCCESS or not build_info.failed_steps:

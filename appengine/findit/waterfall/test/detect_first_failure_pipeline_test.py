@@ -731,7 +731,9 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
                 'first_failure': 25409
             }
         },
-        'failure_type': failure_type.COMPILE
+        'failure_type': failure_type.COMPILE,
+        'parent_mastername': None,
+        'parent_buildername': None,
     }
 
     self.assertEqual(failure_info, expected_failure_info)

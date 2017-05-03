@@ -20,6 +20,8 @@ class BuildInfo(object):  # pragma: no cover
     self.failed_steps = []
     self.passed_steps = []
     self.not_passed_steps = []
+    self.parent_mastername = None
+    self.parent_buildername = None
 
   def PrettyPrint(self):
     print 'master: %s' % self.master_name
@@ -35,3 +37,5 @@ class BuildInfo(object):  # pragma: no cover
     print 'Failed steps: %s' % ', '.join(self.failed_steps)
     print 'Passed steps: %s' % ', '.join(self.passed_steps)
     print 'Not-passed steps: %s' % ', '.join(self.not_passed_steps)
+    print 'Parent builder: %s' % ', '.join(self.parent_buildername)
+    print 'Parent master: %s' % ', '.join(self.parent_mastername)

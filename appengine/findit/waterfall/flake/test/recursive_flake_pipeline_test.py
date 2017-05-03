@@ -14,6 +14,7 @@ from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
+from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.flake import lookback_algorithm
 from waterfall.flake import recursive_flake_pipeline
@@ -23,6 +24,14 @@ from waterfall.flake.recursive_flake_pipeline import NextBuildNumberPipeline
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
+
+
+_DEFAULT_CACHE_NAME = swarming_util.GetCacheName('pm', 'pb')
+
+
+class MOCK_INFO(object):
+  parent_buildername = 'pb'
+  parent_mastername = 'pm'
 
 
 class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
@@ -716,6 +725,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(0.8, analysis.culprit.confidence)
     self.assertEqual(analysis_status.COMPLETED, analysis.try_job_status)
 
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value = MOCK_INFO)
   @mock.patch.object(
       lookback_algorithm, 'GetNextRunPointNumber',
       return_value=(None, 100, None))
@@ -756,7 +766,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_kwargs={})
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
                       '',
-                      expected_args=[analysis.key.urlsafe(), 9, 'r2', 8],
+                      expected_args=[analysis.key.urlsafe(), 9, 'r2', 8,
+                                     _DEFAULT_CACHE_NAME, None ],
                       expected_kwargs={})
 
     pipeline = NextBuildNumberPipeline(
@@ -991,6 +1002,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value = MOCK_INFO)
   @mock.patch.object(
       lookback_algorithm, 'GetNextRunPointNumber',
       return_value=(None, 100, None))
@@ -1038,7 +1050,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_kwargs={})
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
                       '',
-                      expected_args=[analysis.key.urlsafe(), 9, 'r2', 7],
+                      expected_args=[analysis.key.urlsafe(), 9, 'r2', 7,
+                                     _DEFAULT_CACHE_NAME, None],
                       expected_kwargs={})
 
     pipeline = NextBuildNumberPipeline(
@@ -1054,6 +1067,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(0.7, analysis.confidence_in_suspected_build)
     self.assertIsNone(analysis.culprit)
 
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value = MOCK_INFO)
   @mock.patch.object(
       lookback_algorithm, 'GetNextRunPointNumber',
       return_value=(None, 98, None))
@@ -1107,7 +1121,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_kwargs={})
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
                       '',
-                      expected_args=[analysis.key.urlsafe(), 5, 'r5', 5],
+                      expected_args=[analysis.key.urlsafe(), 5, 'r5', 5,
+                                     _DEFAULT_CACHE_NAME, None],
                       expected_kwargs={})
 
     pipeline = NextBuildNumberPipeline(

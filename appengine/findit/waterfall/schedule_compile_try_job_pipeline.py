@@ -36,7 +36,8 @@ class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(
       self, master_name, builder_name, build_number, good_revision,
-      bad_revision, try_job_type, compile_targets, suspected_revisions):
+      bad_revision, try_job_type, compile_targets, suspected_revisions,
+      cache_name, dimensions):
     """
     Args:
       master_name (str): the master name of a build.
@@ -59,7 +60,8 @@ class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
 
     build_id = self._TriggerTryJob(
         master_name, builder_name, properties, additional_parameters,
-        failure_type.GetDescriptionForFailureType(failure_type.COMPILE))
+        failure_type.GetDescriptionForFailureType(failure_type.COMPILE),
+        cache_name, dimensions)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     try_job.compile_results.append({'try_job_id': build_id})

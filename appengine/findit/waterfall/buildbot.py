@@ -288,6 +288,10 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
       data_json.get('properties', []), 'got_revision')
   commit_position_line = GetBuildProperty(
       data_json.get('properties', []), 'got_revision_cp')
+  parent_buildername = GetBuildProperty(
+      data_json.get('properties', []), 'parent_buildername')
+  parent_mastername = GetBuildProperty(
+      data_json.get('properties', []), 'parent_mastername')
 
   build_info.build_start_time = GetBuildStartTime(data_json)
   build_info.build_end_time = GetBuildEndTime(data_json)
@@ -295,6 +299,8 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   build_info.commit_position = _GetCommitPosition(commit_position_line)
   build_info.completed = data_json.get('currentStep') is None
   build_info.result = GetBuildResult(data_json)
+  build_info.parent_buildername = parent_buildername
+  build_info.parent_mastername = parent_mastername
 
   changes = data_json.get('sourceStamp', {}).get('changes', [])
   for change in changes:

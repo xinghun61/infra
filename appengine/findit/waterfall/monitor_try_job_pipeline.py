@@ -434,12 +434,12 @@ class MonitorTryJobPipeline(BasePipeline):
                                                    error.reason))
     elif build.status == BuildbucketBuild.COMPLETED:
       swarming_task_id = buildbot.GetSwarmingTaskIdFromUrl(
-          try_job_data.try_job_url)
+          build.url)
 
       if swarming_task_id:
         try:
           report = json.loads(swarming_util.GetStepLog(
-              swarming_task_id, 'report', HttpClientAppengine(), 'report'))
+              try_job_id, 'report', HttpClientAppengine(), 'report'))
         except (ValueError, TypeError) as e:  # pragma: no cover
           report = {}
           logging.exception(
@@ -447,7 +447,7 @@ class MonitorTryJobPipeline(BasePipeline):
               'due to exception %s.' % (swarming_task_id, e.message))
       else:
         try_job_master_name, try_job_builder_name, try_job_build_number = (
-            buildbot.ParseBuildUrl(try_job_data.try_job_url))
+            buildbot.ParseBuildUrl(build.url))
 
         try:
           report = json.loads(buildbot.GetStepLog(

@@ -6,6 +6,7 @@ import mock
 
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
+from model.wf_build import WfBuild
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall import schedule_test_try_job_pipeline
@@ -59,6 +60,10 @@ class ScheduleTestTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     bad_revision = 'rev2'
     targeted_tests = ['a on platform', ['a', ['test1', 'test2']]]
     build_id = '1'
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.data = {'properties': {'parent_mastername': 'pm',
+                                 'parent_buildername': 'pb'}}
+    build.put()
 
     response = {
         'build': {
@@ -75,7 +80,7 @@ class ScheduleTestTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_pipeline = ScheduleTestTryJobPipeline()
     try_job_id = try_job_pipeline.run(
         master_name, builder_name, build_number, good_revision, bad_revision,
-        failure_type.TEST, None, targeted_tests)
+        failure_type.TEST, None, None, None, targeted_tests)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(try_job_id, build_id)

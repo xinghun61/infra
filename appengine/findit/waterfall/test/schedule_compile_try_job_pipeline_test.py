@@ -6,6 +6,7 @@ import mock
 
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
+from model.wf_build import WfBuild
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall import schedule_try_job_pipeline
@@ -48,6 +49,10 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     bad_revision = 'rev2'
     build_id = '1'
     url = 'url'
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.data = {'properties': {'parent_mastername': 'pm',
+                                 'parent_buildername': 'pb'}}
+    build.put()
 
     response = {
         'build': {
@@ -64,7 +69,7 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_pipeline = ScheduleCompileTryJobPipeline()
     try_job_id = try_job_pipeline.run(
         master_name, builder_name, build_number, good_revision, bad_revision,
-        failure_type.COMPILE, None, ['r5'])
+        failure_type.COMPILE, None, ['r5'], None, None)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     try_job_data = WfTryJobData.Get(build_id)

@@ -37,7 +37,9 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
 
   def _GetTrybot(self, master_name, builder_name):
     """Overrides the base method to get a dedicated flake trybot instead."""
-    return waterfall_config.GetFlakeTrybot(master_name, builder_name)
+    try_master, try_builder = waterfall_config.GetFlakeTrybot(
+        master_name, builder_name)
+    return try_master, try_builder
 
   @ndb.transactional
   def _CreateTryJobData(self, build_id, try_job_key, urlsafe_analysis_key):
@@ -48,8 +50,9 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
     try_job_data.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, canonical_step_name, test_name,
-          git_hash, urlsafe_analysis_key, iterations_to_rerun=None):
+  def run(self, master_name, builder_name, canonical_step_name,
+          test_name, git_hash, urlsafe_analysis_key, cache_name, dimensions,
+          iterations_to_rerun=None):
     """Triggers a flake try job.
 
     Args:
@@ -71,7 +74,8 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
         iterations_to_rerun)
     build_id = self._TriggerTryJob(
         master_name, builder_name, properties, {},
-        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST))
+        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
+        cache_name, dimensions)
 
     try_job = FlakeTryJob.Get(
         master_name, builder_name, canonical_step_name, test_name, git_hash)

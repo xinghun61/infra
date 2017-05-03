@@ -16,7 +16,9 @@ from libs import time_util
 from model import result_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from model.wf_build import WfBuild
 from model.wf_swarming_task import WfSwarmingTask
+from waterfall import build_util
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
@@ -603,9 +605,17 @@ class NextBuildNumberPipeline(BasePipeline):
             logging.info('Running try-jobs against commits in regressions')
             start_commit_position = suspected_build_point.commit_position - 1
             start_revision = blamed_cls[start_commit_position]
+            build_info = build_util.GetBuildInfo(
+                master_name, builder_name, triggering_build_number)
+            parent_mastername = build_info.parent_mastername or master_name
+            parent_buildername = build_info.parent_buildername or builder_name
+            cache_name = swarming_util.GetCacheName(
+                parent_mastername, parent_buildername)
+            dimensions = waterfall_config.GetTrybotDimensions(
+                parent_mastername, parent_buildername)
             yield RecursiveFlakeTryJobPipeline(
                 analysis.key.urlsafe(), start_commit_position, start_revision,
-                lower_bound)
+                lower_bound, cache_name, dimensions)
             return  # No update to bug yet.
           else:
             logging.info('Single commit in the blame list of suspected build')

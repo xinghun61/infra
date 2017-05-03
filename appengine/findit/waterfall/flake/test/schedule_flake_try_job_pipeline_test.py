@@ -10,6 +10,7 @@ from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
+from model.wf_build import WfBuild
 from waterfall import schedule_try_job_pipeline
 from waterfall.flake.schedule_flake_try_job_pipeline import (
     ScheduleFlakeTryJobPipeline)
@@ -68,13 +69,17 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   def testScheduleFlakeTryJob(self, mock_module):
     master_name = 'm'
     builder_name = 'b'
+    build_number = 1
     step_name = 's'
     test_name = 't'
     git_hash = 'a1b2c3d4'
     build_id = '1'
     url = 'url'
     analysis_key = ndb.Key('key', 1)
-
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.data = {'properties': {'parent_mastername': 'pm',
+                                 'parent_buildername': 'pb'}}
+    build.put()
     response = {
         'build': {
             'id': build_id,
@@ -91,7 +96,7 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_pipeline = ScheduleFlakeTryJobPipeline()
     try_job_id = try_job_pipeline.run(
         master_name, builder_name, step_name, test_name, git_hash,
-        analysis_key.urlsafe())
+        analysis_key.urlsafe(), None, None)
 
     try_job = FlakeTryJob.Get(
         master_name, builder_name, step_name, test_name, git_hash)
@@ -107,6 +112,11 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   def testTriggerTryJob(self, mock_module):
     master_name = 'm'
     builder_name = 'b'
+    build_number = 1
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.data = {'properties': {'parent_mastername': 'pm',
+                                 'parent_buildername': 'pb'}}
+    build.put()
     response = {
         'build': {
             'id': '1',
@@ -119,7 +129,7 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     build_id = ScheduleFlakeTryJobPipeline()._TriggerTryJob(
         master_name, builder_name, {}, [],
-        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST))
+        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
+        None, None)
 
     self.assertEqual(build_id, '1')
-

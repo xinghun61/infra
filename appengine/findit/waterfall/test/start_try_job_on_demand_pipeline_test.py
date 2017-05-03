@@ -191,6 +191,8 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
     try_job_type = failure_type.TEST
     failure_info = {
+        'parent_mastername': None,
+        'parent_buildername': None,
         'failure_type': try_job_type,
         'builds': {
             '0': {
