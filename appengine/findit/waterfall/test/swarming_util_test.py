@@ -13,7 +13,6 @@ from google.appengine.api.urlfetch_errors import DeadlineExceededError
 from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.api.urlfetch_errors import ConnectionClosedError
 
-from common.waterfall import buildbucket_client
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from infra_api_clients import logdog_util
 from libs.http.retry_http_client import RetryHttpClient
@@ -23,15 +22,6 @@ from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.swarming_task_request import SwarmingTaskRequest
 from waterfall.test import wf_testcase
-
-
-class MockBuild(object):
-  def __init__(self, response):
-    self.response = response
-
-
-MOCK_BUILDS = [(None, MockBuild({'tags': [
-              'swarming_tag:log_location:logdog://host/project/path']}))]
 
 
 class SwarmingHttpClient(RetryHttpClient):
@@ -146,7 +136,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     super(SwarmingUtilTest, self).setUp()
     self.http_client = SwarmingHttpClient()
     self.logged_http_client = _LoggedHttpClient()
-    self.buildbucket_id = '88123'
+    self.task_id = 'abc123'
     self.step_name = 'browser_tests on platform'
 
   def testGetSwarmingTaskRequest(self):
@@ -780,69 +770,41 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_counts, swarming_util.GetSwarmingBotCounts(
         dimensions, self.http_client))
 
-  @mock.patch.object(
-      buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  @mock.patch.object(logdog_util, '_GetLogLocationFromBuildbucketBuild',
-                     return_value=('host', 'project', 'path'))
-  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForSwarmedBuild',
                      return_value='step')
-  @mock.patch.object(logdog_util, '_GetStreamForStep',
+  @mock.patch.object(logdog_util, 'GetStreamForStep',
                      return_value='log_stream')
-  @mock.patch.object(logdog_util, 'GetStepLogForBuild',
+  @mock.patch.object(logdog_util, 'GetLogForSwarmedBuild',
                      return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
   def testGetStepMetadata(self, *_):
     step_metadata = swarming_util.GetStepLog(
-      self.buildbucket_id, self.step_name, RetryHttpClient(), 'step_metadata')
+      self.task_id, self.step_name, RetryHttpClient(), 'step_metadata')
     self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
 
-  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForSwarmedBuild',
                      return_value=None)
   def testGetStepMetadataStepNone(self, _):
     step_metadata = swarming_util.GetStepLog(
-      self.buildbucket_id, self.step_name, RetryHttpClient(), 'step_metadata')
+      self.task_id, self.step_name, RetryHttpClient(), 'step_metadata')
     self.assertIsNone(step_metadata)
 
-  @mock.patch.object(
-      buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForSwarmedBuild',
                      return_value='step')
-  @mock.patch.object(logdog_util, '_GetLogLocationFromBuildbucketBuild',
-                     return_value=('host', 'project','some/path'))
-  @mock.patch.object(logdog_util, '_GetStreamForStep',
+  @mock.patch.object(logdog_util, 'GetStreamForStep',
                      return_value=None)
   def testGetStepMetadataStreamNone(self, *_):
     step_metadata = swarming_util.GetStepLog(
-      self.buildbucket_id, self.step_name, RetryHttpClient(), 'step_metadata')
+      self.task_id, self.step_name, RetryHttpClient(), 'step_metadata')
     self.assertIsNone(step_metadata)
 
-  @mock.patch.object(
-      buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
+  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForSwarmedBuild',
                      return_value='step')
-  @mock.patch.object(logdog_util, '_GetLogLocationFromBuildbucketBuild',
-                     return_value=('host', 'project','some/path'))
-  @mock.patch.object(logdog_util, '_GetStreamForStep', return_value='stream')
-  @mock.patch.object(logdog_util, 'GetStepLogForBuild',
+  @mock.patch.object(logdog_util, 'GetStreamForStep', return_value='stream')
+  @mock.patch.object(logdog_util, 'GetLogForSwarmedBuild',
                      return_value='log1/nlog2')
   def testGetStepLogStdio(self, *_):
     self.assertEqual('log1/nlog2', swarming_util.GetStepLog(
-        self.buildbucket_id, self.step_name, self.http_client))
-
-  @mock.patch.object(
-      buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
-                     return_value=None)
-  @mock.patch.object(logdog_util, '_GetLogLocationFromBuildbucketBuild',
-                     return_value=('host', 'project','some/path'))
-  def testGetStepLogStdioNoAnnotations(self, *_):
-    self.assertIsNone(swarming_util.GetStepLog(
-         self.buildbucket_id, self.step_name, self.http_client))
-
-  @mock.patch.object(
-      buildbucket_client, 'GetTryJobs', return_value=[(Exception(), None)])
-  def testGetStepLogBuildbucketError(self, *_):
-    self.assertIsNone(swarming_util.GetStepLog(
-         self.buildbucket_id, self.step_name, self.http_client))
+        self.task_id, self.step_name, self.http_client))
 
   def testUpdateAnalysisResult(self):
     analysis_result = {
