@@ -28,7 +28,7 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
-    if not analysis:  # pragma: no cover
+    if not analysis or not analysis.failure_result_map:  # pragma: no cover
       return
 
     for step in analysis.failure_result_map.iterkeys():
