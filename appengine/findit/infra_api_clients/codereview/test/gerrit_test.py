@@ -38,6 +38,9 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     url = 'https://%s/a/changes/%s/detail' % (host, change_id)
     response = self._MakeResponse({
       'status': 'MERGED',
+      'owner': {
+          'email': 'abc@chromium.org'
+      },
       'current_revision': 'fakerevision',
       'revisions': {
           'fakerevision':{
@@ -171,6 +174,9 @@ class GerritTest(testing.AppengineTestCase):
         return_value={
             'change_id': 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7',
             'status': 'MERGED',
+            'owner': {
+                'email': 'abc@chromium.org'
+            },
             'submitted': '2017-03-24 01:07:39.000000000',
             'reviewers': {
                 'REVIEWER': [
@@ -212,6 +218,9 @@ class GerritTest(testing.AppengineTestCase):
         return_value={
             'change_id': 'I7ecd56d7d0c3fef90cfe998a29b948c5032980e4',
             'status': 'MERGED',
+            'owner': {
+                'email': 'abc@chromium.org'
+            },
             'submitted': '2017-03-08 04:43:30.000000000',
             'reviewers': {
                 'REVIEWER': [
@@ -247,6 +256,9 @@ class GerritTest(testing.AppengineTestCase):
         side_effect=[{
             'change_id': 'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
             'status': 'MERGED',
+            'owner': {
+                'email': 'abc@chromium.org'
+            },
             'submitted': '2017-02-27 18:56:54.000000000',
             '_number': 446905,
             'reviewers': {
@@ -290,6 +302,9 @@ class GerritTest(testing.AppengineTestCase):
             'change_id': 'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
             'status': 'MERGED',
             'submitted': '2017-02-27 19:05:03.000000000',
+            'owner': {
+                'email': 'abc@chromium.org'
+            },
             '_number': 446788,
             'reviewers': {
                 'REVIEWER': [
@@ -336,6 +351,7 @@ class GerritTest(testing.AppengineTestCase):
       cl_info = self.gerrit.GetClDetails(change_id)
     self.assertEqual(cl_info.serialize(),{
       'server_hostname': 'server.host.name',
+      'owner_email': 'abc@chromium.org',
       'reviewers': [u'one@chromium.org',
                     u'commit-bot@chromium.org',
                     u'two@chromium.org'],
@@ -350,6 +366,7 @@ class GerritTest(testing.AppengineTestCase):
                    'timestamp': '2017-02-27 19:04:51 UTC',
                    'reverting_cl': {
                        'server_hostname': 'server.host.name',
+                       'owner_email': 'abc@chromium.org',
                        'reviewers': [u'one@chromium.org',
                                      u'commit-bot@chromium.org',
                                      u'two@chromium.org'],

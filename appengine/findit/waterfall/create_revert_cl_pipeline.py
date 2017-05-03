@@ -16,7 +16,6 @@ from infra_api_clients.codereview import codereview_util
 from libs import analysis_status as status
 from libs import time_util
 from model.base_suspected_cl import RevertCL
-from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import buildbot
 from waterfall import suspected_cl_util
@@ -29,9 +28,14 @@ ERROR = 2
 SKIPPED = 3
 
 
+NEWEST_BUILD_GREEN = 'Newest build is green.'
+CULPRIT_OWNED_BY_FINDIT = 'Culprit is a revert created by Findit.'
+
+
 @ndb.transactional
 def _UpdateCulprit(
-    repo_name, revision, revert_status=None, revert_cl=None):
+    repo_name, revision, revert_status=None, revert_cl=None,
+    skip_revert_reason=None):
   culprit = WfSuspectedCL.Get(repo_name, revision)
   assert culprit
 
@@ -39,6 +43,7 @@ def _UpdateCulprit(
 
   culprit.revert_status = revert_status or culprit.revert_status
   culprit.revert_cl = revert_cl or culprit.revert_cl
+  culprit.skip_revert_reason = skip_revert_reason or culprit.skip_revert_reason
 
   if revert_cl:
     culprit.cr_notification_status = status.COMPLETED
@@ -73,6 +78,10 @@ def _LatestBuildFailed(master_name, builder_name, build_number):
   return True
 
 
+def _IsOwnerFindit(owner_email):
+  return owner_email == constants.DEFAULT_SERVICE_ACCOUNT
+
+
 def _RevertCulprit(
     master_name, builder_name, build_number, repo_name, revision):
 
@@ -100,6 +109,12 @@ def _RevertCulprit(
     logging.error('Failed to get cl_info for %s/%s' % (repo_name, revision))
     return ERROR
 
+  # Checks if the culprit is a revert created by Findit. If yes, bail out.
+  if _IsOwnerFindit(culprit_cl_info.owner_email):
+    _UpdateCulprit(repo_name, revision, status.SKIPPED,
+                   skip_revert_reason=CULPRIT_OWNED_BY_FINDIT)
+    return SKIPPED
+
   # 1. Checks if a revert CL by sheriff has been created.
   reverts = culprit_cl_info.GetRevertCLsByRevision(revision)
 
@@ -112,7 +127,7 @@ def _RevertCulprit(
 
   findit_revert = None
   for revert in reverts:
-    if revert.reverting_user_email == constants.DEFAULT_SERVICE_ACCOUNT:
+    if _IsOwnerFindit(revert.reverting_user_email):
       findit_revert = revert
       break
 
@@ -123,7 +138,8 @@ def _RevertCulprit(
   # 2. Reverts the culprit.
   if not _LatestBuildFailed(master_name, builder_name, build_number):
     # The latest build didn't fail, skip.
-    _UpdateCulprit(repo_name, revision, status.SKIPPED)
+    _UpdateCulprit(repo_name, revision, status.SKIPPED,
+                   skip_revert_reason=NEWEST_BUILD_GREEN)
     return SKIPPED
 
   revert_change_id = None

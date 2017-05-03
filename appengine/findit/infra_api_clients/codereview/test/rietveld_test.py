@@ -151,6 +151,7 @@ class RietveldTest(testing.AppengineTestCase):
     self.assertEqual(cl_info.serialize(),
     {'server_hostname': 'server.host.name',
      'change_id': '123456001',
+     'owner_email': 'author@chromium.org',
      'commits': [
          {
              'patchset_id': '100001',
@@ -182,6 +183,7 @@ class RietveldTest(testing.AppengineTestCase):
                  'cc': [u'chromium-reviews@chromium.org'],
                  'reviewers': [u'someone@chromium.org'],
                  'server_hostname': 'server.host.name',
+                 'owner_email': 'author@chromium.org',
                  'change_id': '2713613003',
                  'commits': [
                      {

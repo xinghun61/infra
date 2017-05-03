@@ -121,6 +121,7 @@ class Gerrit(codereview.CodeReview):
       'REVIEWER', [])]
     result.cc = [x['email'] for x in change_info['reviewers'].get('CC', [])]
     result.closed = change_info['status'] == 'MERGED'
+    result.owner_email = change_info['owner']['email']
 
     # If the status is merged, look at the commit details for the current
     # commit.

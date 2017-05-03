@@ -78,6 +78,9 @@ class ClInfo(object):  # pragma: no cover
     # code review site.
     self.change_id = change_id
 
+    # The email of the CL owner.
+    self.owner_email = None
+
     # A map of patchset_id to CommitAttempt objects.
     self.commit_attempts = {}
 
@@ -110,6 +113,7 @@ class ClInfo(object):  # pragma: no cover
     return {
         'server_hostname': self.server_hostname,
         'change_id': self.change_id,
+        'owner_email': self.owner_email,
         'commits': [x.serialize() for x in self.commits],
         'commit_attempts': [x.serialize() for x in
                             self.commit_attempts.values()],

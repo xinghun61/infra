@@ -196,6 +196,7 @@ class Rietveld(codereview.CodeReview):
     cl.closed = data['closed']
     cl.cc = data['cc']
     cl.reviewers = data['reviewers']
+    cl.owner_email = data['owner_email']
     return cl
 
   def GetClDetails(self, change_id):

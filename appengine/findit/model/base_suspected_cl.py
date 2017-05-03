@@ -59,6 +59,9 @@ class BaseSuspectedCL(ndb.Model):
   # their revert CL was created. None if this suspected cl is a false positive.
   sheriff_action_time = ndb.DateTimeProperty(indexed=False)
 
+  # The reason why creating revert is skipped.
+  skip_revert_reason = ndb.StringProperty(indexed=False)
+
   @property
   def revert_cl_url(self):
     return self.revert_cl.revert_cl_url if self.revert_cl else None
