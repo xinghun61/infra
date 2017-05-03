@@ -343,6 +343,8 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     # current build.
     # Updates suspected_cl.
     UpdateSuspectedCLs()
+    if not culprits:
+      return
     yield RevertAndNotifyCulpritPipeline(
         master_name, builder_name, build_number, culprits, heuristic_cls,
         try_job_type)
