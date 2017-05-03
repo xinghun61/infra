@@ -169,7 +169,7 @@
             show-infra-failures="{{showInfraFailures}}"
             link-style="{{linkStyle}}"
             trees="{{_trees}}"
-            use-compact-view="{{useCompactView}}"
+            collapse-by-default="{{collapseByDefault}}"
             ></som-drawer>
       </paper-header-panel>
       <paper-header-panel main id="mainHeaderPanel">
@@ -192,8 +192,13 @@
           </div>
           <paper-spinner id="fetchingAlerts" active="[[_fetchingAlerts]]"></paper-spinner>
         </paper-toolbar>
-        <som-annotations id="annotations" annotations="{{annotations}}" bug-queue-label="[[_bugQueueLabel]]"
-          local-state="{{localState}}" user="{{user}}" xsrf-token="{{xsrfToken}}"></som-annotations>
+        <som-annotations id="annotations"
+            annotations="{{annotations}}"
+            bug-queue-label="[[_bugQueueLabel]]"
+            collapse-by-default="[[collapseByDefault]]"
+            local-state="{{localState}}"
+            user="{{user}}"
+            xsrf-token="{{xsrfToken}}"></som-annotations>
         <iron-pages attr-for-selected='id' selected="[[_selectedPage]]">
           <div id="mainView" class="page-body">
             <div id="notifications" class="page-section">
@@ -237,17 +242,15 @@
                     </span>
                     (<a href="/help-som" target="_blank">Help?</a>)
                   </span>
-                  <template is="dom-if" if="[[useCompactView]]">
-                    <div class="self-center end header-buttons">
-                      <span class="collapse-button" on-tap="collapseAll">
-                        Collapse all
-                      </span>
-                      /
-                      <span class="collapse-button" on-tap="expandAll">
-                        Expand all
-                      </span>
-                    </div>
-                  </template>
+                  <div class="self-center end header-buttons">
+                    <span class="collapse-button" on-tap="_collapseAll">
+                      <iron-icon icon="remove"></iron-icon> Collapse all
+                    </span>
+                    /
+                    <span class="collapse-button" on-tap="_expandAll">
+                      <iron-icon icon="add"></iron-icon> Expand all
+                    </span>
+                  </div>
                 </h2>
                 <template is="dom-repeat" items="[[_alertItemsWithCategory(_alerts, annotations, cat, _isTrooperPage)]]" as="alert">
                   <som-alert-item
@@ -256,7 +259,7 @@
                       alert="{{alert}}"
                       tree="[[_tree]]"
                       selected="[[selected]]"
-                      annotation="[[computeAnnotation(annotations, alert)]]"
+                      annotation="[[computeAnnotation(annotations, alert, collapseByDefault)]]"
                       link-style="[[linkStyle]]"
                       on-annotation-change="_handleAnnotation"
                       on-comment="_handleComment"
@@ -267,7 +270,6 @@
                       on-ungroup="_handleUngroup"
                       on-resolve="_handleResolve"
                       on-opened-change="_handleOpenedChange"
-                      use-compact-view="[[useCompactView]]"
                   ></som-alert-item>
                 </template>
               </template>

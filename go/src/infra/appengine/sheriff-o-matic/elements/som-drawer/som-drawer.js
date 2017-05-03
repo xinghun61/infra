@@ -11,11 +11,6 @@
         computed: '_computeIsTrooperPage(tree)',
         value: false,
       },
-      hideAlertsWithBugs: {
-        type: Boolean,
-        notify: true,
-        value: false,
-      },
       path: {
         type: String,
         notify: true,
@@ -34,10 +29,6 @@
         type: Array,
         computed: '_computeSheriffs(tree, _sheriffRotations, _rotations)',
         value: null,
-      },
-      showInfraFailures: {
-        type: Boolean,
-        notify: true,
       },
       _staticPageList: {
         type: Array,
@@ -63,19 +54,24 @@
         type: String,
         value: 'icons:unfold-less'
       },
-       trees: {
+      trees: {
         type: Object,
         notify: true,
         computed: '_computeTrees(_treeList)',
       },
-      useCompactView: {
+      // Settings.
+      collapseByDefault: {
         type: Boolean,
         notify: true,
       },
       linkStyle: {
         type: String,
         notify: true,
-      }
+      },
+      showInfraFailures: {
+        type: Boolean,
+        notify: true,
+      },
     },
 
     refresh: function() {
@@ -226,7 +222,7 @@
     },
 
     toggleTree: function() {
-      // Unfortunately, there's a Polymer bug that makes toggling the menu take 
+      // Unfortunately, there's a Polymer bug that makes toggling the menu take
       // two clicks the first time:
       // https://github.com/PolymerElements/paper-menu/issues/88
       let opened = this.$.treeMenu.opened;

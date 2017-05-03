@@ -5,15 +5,15 @@
     is: 'som-settings',
 
     properties: {
+      collapseByDefault: {
+        type: Boolean,
+        notify: true,
+      },
       defaultTree: {
         type: String,
         notify: true,
       },
       showInfraFailures: {
-        type: Boolean,
-        notify: true,
-      },
-      useCompactView: {
         type: Boolean,
         notify: true,
       },

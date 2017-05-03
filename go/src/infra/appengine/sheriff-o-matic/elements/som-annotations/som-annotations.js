@@ -39,6 +39,7 @@
       },
       _bugModel: Object,
       bugQueueLabel: String,
+      collapseByDefault: Boolean,
       _commentInFlight: Boolean,
       _commentsErrorMessage: String,
       _commentsModel: Object,
@@ -178,9 +179,7 @@
 
     _computeAnnotations: function(annotationsJson, localState) {
       let annotations = {};
-      if (!annotationsJson) {
-        annotationsJson = [];
-      }
+      annotationsJson = annotationsJson || [];
 
       Object.keys(localState).forEach((key) => {
         key = decodeURIComponent(key);
@@ -407,7 +406,7 @@
       if (!annotations || !model) {
         return null;
       }
-      return this.computeAnnotation(annotations, model);
+      return this.computeAnnotation(annotations, model, this.collapseByDefault);
     },
 
     _computeHideDeleteComment(comment) {

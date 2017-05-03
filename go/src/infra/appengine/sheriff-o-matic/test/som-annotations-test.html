@@ -177,24 +177,24 @@
         },
         bar: {
           key: 'bar',
-          bugs: ["bar"],
+          bugs: ['bar'],
         },
         baz: {
           key: 'baz',
-          opened: true,
+          opened: false,
         }
       };
 
       assert.deepEqual(element.computeAnnotation(annotations, {key: 'foo'}), {
           key: 'foo',
           snoozed: false,
-          opened: false,
+          opened: true,
         });
 
       assert.deepEqual(element.computeAnnotation(annotations, {key: 'baz'}), {
           key: 'baz',
           snoozed: false,
-          opened: true,
+          opened: false,
         });
 
       annotations.foo.snoozeTime = 200;
@@ -202,15 +202,46 @@
           key: 'foo',
           snoozed: true,
           snoozeTime: 200,
-          opened: false,
+          opened: true,
         });
 
       assert.deepEqual(element.computeAnnotation(annotations, {key: 'bar'}), {
           key: 'bar',
           bugs:['bar'],
           snoozed: false,
-          opened: false,
+          opened: true,
         });
+    });
+
+    test('compute annotation with collapseByDefault', function() {
+      let annotations = {
+        bar: {
+          key: 'bar',
+        },
+        baz: {
+          key: 'baz',
+          opened: false,
+        }
+      };
+
+      let collapseByDefault = true;
+      assert.deepEqual(
+        element.computeAnnotation(annotations, {key: 'bar'}, collapseByDefault),
+          {key: 'bar', snoozed: false, opened: false});
+
+      assert.deepEqual(
+        element.computeAnnotation(annotations, {key: 'baz'}, collapseByDefault),
+          {key: 'baz', snoozed: false, opened: false});
+
+      collapseByDefault = false;
+
+      assert.deepEqual(
+        element.computeAnnotation(annotations, {key: 'bar'}, collapseByDefault),
+          {key: 'bar', snoozed: false, opened: true});
+
+      assert.deepEqual(
+        element.computeAnnotation(annotations, {key: 'baz'}, collapseByDefault),
+          {key: 'baz', snoozed: false, opened: false});
     });
   });
 

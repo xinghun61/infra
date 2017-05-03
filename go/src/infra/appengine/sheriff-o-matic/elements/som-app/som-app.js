@@ -18,7 +18,8 @@
           return [];
         },
         computed:
-            '_computeAlerts(_alertsData.*, annotations, showInfraFailures, _isTrooperPage)',
+            `_computeAlerts(_alertsData.*, annotations, showInfraFailures,
+              _isTrooperPage, collapseByDefault)`,
       },
       // Map of stream to data, timestamp of latest updated data.
       _alertsData: {
@@ -93,7 +94,6 @@
         type: Boolean,
         value: false,
       },
-      showInfraFailures: Boolean,
       _showSwarmingAlerts: {
         type: Boolean,
         computed: '_computeShowSwarmingAlerts(_swarmingAlerts, _isTrooperPage)',
@@ -149,8 +149,9 @@
         computed: '_computeExaminedAlertKey(_path)',
       },
       user: String,
-      useCompactView: Boolean,
+      collapseByDefault: Boolean,
       linkStyle: String,
+      showInfraFailures: Boolean,
       xsrfToken: String,
     },
 
@@ -418,7 +419,8 @@
     },
 
     _computeAlerts: function(
-        alertsData, annotations, showInfraFailures, isTrooperPage) {
+        alertsData, annotations, showInfraFailures, isTrooperPage,
+        collapseByDefault) {
       if (!alertsData || !alertsData.base) {
         return [];
       }
@@ -441,7 +443,8 @@
         let groups = {};
         for (let i in alerts) {
           let alert = alerts[i];
-          let ann = this.computeAnnotation(annotations, alert);
+          let ann = this.computeAnnotation(annotations, alert,
+            collapseByDefault);
           if (ann.groupID) {
             if (!(ann.groupID in groups)) {
               let group = {
@@ -460,7 +463,8 @@
               }
 
               // Group name is stored using the groupID annotation.
-              let groupAnn = this.computeAnnotation(annotations, group);
+              let groupAnn = this.computeAnnotation(annotations, group,
+                collapseByDefault);
               if (groupAnn.groupID) {
                 group.title = groupAnn.groupID;
               }
@@ -501,8 +505,8 @@
       }
 
       allAlerts.sort((a, b) => {
-        let aAnn = this.computeAnnotation(annotations, a);
-        let bAnn = this.computeAnnotation(annotations, b);
+        let aAnn = this.computeAnnotation(annotations, a, collapseByDefault);
+        let bAnn = this.computeAnnotation(annotations, b, collapseByDefault);
 
         let aHasBugs = aAnn.bugs && aAnn.bugs.length > 0;
         let bHasBugs = bAnn.bugs && bAnn.bugs.length > 0;
@@ -757,35 +761,26 @@
 
     ////////////////////// Annotations ///////////////////////////
 
-    collapseAll: function(evt) {
-      if (!this.useCompactView) {
-        return;
-      }
-
-      this.mutateLocalState((newState) => {
-        let cat = evt.model.dataHost.dataHost.cat;
-        this._alertItemsWithCategory(this._alerts, this.annotations,
-                                     cat, this._isTrooperPage)
-            .forEach((alr) => {
-              newState[alr.key] =
-                  Object.assign(newState[alr.key] || {}, {opened: false});
-            });
-      });
+    _collapseAll: function(evt) {
+      let cat = evt.model.get('cat');
+      let alerts = this._alertItemsWithCategory(this._alerts, this.annotations,
+                                   cat, this._isTrooperPage);
+      this._toggleAlertsOpenedState(alerts, false);
     },
 
-    expandAll: function(evt) {
-      if (!this.useCompactView) {
-        return;
-      }
+    _expandAll: function(evt) {
+      let cat = evt.model.get('cat');
+      let alerts = this._alertItemsWithCategory(this._alerts, this.annotations,
+                                   cat, this._isTrooperPage);
+      this._toggleAlertsOpenedState(alerts, true);
+    },
 
+    _toggleAlertsOpenedState: function(alerts, opened) {
       this.mutateLocalState((newState) => {
-        let cat = evt.model.dataHost.dataHost.cat;
-        this._alertItemsWithCategory(this._alerts, this.annotations,
-                                     cat, this._isTrooperPage)
-            .forEach((alr) => {
-              newState[alr.key] =
-                  Object.assign(newState[alr.key] || {}, {opened: true});
-            });
+        alerts.forEach((alr) => {
+          newState[alr.key] =
+            Object.assign(newState[alr.key] || {}, {opened: opened});
+        });
       });
     },
 

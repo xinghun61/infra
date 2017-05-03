@@ -204,17 +204,15 @@
           </div>
         </div>
         <div class="horizontal layout end">
-          <template is="dom-if" if="[[useCompactView]]">
-            <span id="expand-tip" class="layout end">
-              Click to expand
-            </span>
-          </template>
+          <span id="expand-tip" class="layout end">
+            Click to expand
+          </span>
           <div class="alert-times">
             [[_duration]]
           </div>
         </div>
       </div>
-      <div id="collapse" hidden$="[[_isHidden(annotation.opened, useCompactView)]]" class="alert-expanded layout horizontal wrap">
+      <div id="collapse" hidden$="[[!annotation.opened]]" class="alert-expanded layout horizontal wrap">
         <div class="alert-controls layout horizontal center flex-child">
           <div class="layout vertical alert-controls-links">
             <a href$="[[tree]]/examine/[[alert.key]]" hidden$="[[_hideExamine(alert.type, examining, tree)]]">Examine</a>

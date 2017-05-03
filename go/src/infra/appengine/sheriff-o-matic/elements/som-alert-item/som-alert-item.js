@@ -64,10 +64,6 @@
         type: Number,
         computed: '_computeNumComments(annotation.comments)',
       },
-      _snoozed: {
-        type: Boolean,
-        computed: '_compute(annotation.snoozeTime)',
-      },
       _snoozeText: {
         type: String,
         computed: '_computeSnoozeText(annotation.snoozed)',
@@ -100,7 +96,7 @@
           return this.$.groupName;
         }
       },
-      useCompactView: Boolean,
+      collapseByDefault: Boolean,
     },
 
     _bugLabel: function(bug) {
@@ -329,14 +325,6 @@
       }
 
       this.fire('opened-change', {value: !this.annotation.opened});
-    },
-
-    _isHidden: function(opened, useCompactView) {
-      if (!useCompactView) {
-        return false;
-      }
-
-      return !opened;
     },
   });
 })();

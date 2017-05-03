@@ -20,7 +20,7 @@
     },
 
     // Compute the annotation for a given alert.
-    computeAnnotation: function(annotations, alert) {
+    computeAnnotation: function(annotations, alert, collapseByDefault) {
       let key = alert.key;
 
       let ann = annotations[key];
@@ -29,8 +29,10 @@
       };
 
       // We want to make sure snoozed is not undefined because this makes later
-      // checks weirdly falsey
+      // checks weirdly falsey.
       returnVal.snoozed = false;
+
+      returnVal.opened = !collapseByDefault;
 
       if (ann) {
         if (ann.snoozeTime) {
@@ -60,9 +62,11 @@
         if (ann.group_id != undefined) {
           returnVal.groupID = ann.group_id;
         }
-      }
 
-      returnVal.opened = (ann && ann.opened) || false;
+        if (ann.opened !== undefined) {
+          returnVal.opened = ann.opened;
+        }
+      }
       return returnVal;
     },
 
