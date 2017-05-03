@@ -24,8 +24,7 @@ from logdog import annotations_pb2
 
 
 _BUILDBOT_LOGDOG_REQUEST_PATH = 'bb/%s/%s/%s/+/%s'
-_SWARMING_LOGDOG_REQUEST_PATH = 'swarm/chromium-swarm.appspot.com/%s/+/%s'
-_LOGDOG_ENDPOINT = 'https://luci-logdog.appspot.com/prpc/logdog.Logs'
+_LOGDOG_ENDPOINT = 'https://%s/prpc/logdog.Logs'
 _LOGDOG_TAIL_ENDPOINT = '%s/Tail' % _LOGDOG_ENDPOINT
 _LOGDOG_GET_ENDPOINT = '%s/Get' % _LOGDOG_ENDPOINT
 
@@ -45,15 +44,16 @@ def _ProcessStringForLogDog(base_string):
       new_string_list.append(c)
   return ''.join(new_string_list)
 
-def _GetLogForPath(path, http_client):
+
+def _GetLogForPath(host, project, path, http_client):
   base_error_log = 'Error when fetch log: %s'
   data = {
-      'project': 'chromium',
+      'project': project,
       'path': path
   }
 
   response_json = rpc_util.DownloadJsonData(
-      _LOGDOG_GET_ENDPOINT, data, http_client)
+      _LOGDOG_GET_ENDPOINT % host, data, http_client)
   if not response_json:
     logging.error(base_error_log % 'cannot get json log.')
     return None
@@ -87,16 +87,16 @@ def _GetLogForPath(path, http_client):
   return data
 
 
-def _GetAnnotationsProtoForPath(path, http_client):
+def _GetAnnotationsProtoForPath(host, project, path, http_client):
   base_error_log = 'Error when load annotations protobuf: %s'
 
   data = {
-      'project': 'chromium',
+      'project': project,
       'path': path
   }
 
-  response_json = rpc_util.DownloadJsonData(_LOGDOG_TAIL_ENDPOINT, data,
-                                            http_client)
+  response_json = rpc_util.DownloadJsonData(
+      _LOGDOG_TAIL_ENDPOINT % host, data, http_client)
   if not response_json:
     return None
 
@@ -131,24 +131,7 @@ def _GetAnnotationsProtoForPath(path, http_client):
     return None
 
 
-def GetAnnotationsProtoForBuild(master_name, builder_name, build_number,
-                                http_client):
-  """Gets annotations message for a buildbot build."""
-
-  path = _BUILDBOT_LOGDOG_REQUEST_PATH % (
-      master_name, _ProcessStringForLogDog(builder_name), build_number,
-      'recipes/annotations')
-  return _GetAnnotationsProtoForPath(path, http_client)
-
-
-def GetAnnotationsProtoForSwarmedBuild(task_id, http_client):
-  """Gets annotations message for a swarmed build."""
-  path = _SWARMING_LOGDOG_REQUEST_PATH % (
-      task_id, 'annotations')
-  return _GetAnnotationsProtoForPath(path, http_client)
-
-
-def GetStreamForStep(step_name, data, log_type='stdout'):
+def _GetStreamForStep(step_name, data, log_type='stdout'):
   for substep in data.substep:
     if substep.step.name != step_name:
       continue
@@ -165,20 +148,70 @@ def GetStreamForStep(step_name, data, log_type='stdout'):
   return None
 
 
-def GetLogForBuild(
-      master_name, builder_name, build_number, logdog_stream, http_client):
-  """Gets log from LogDog."""
+def _GetLogLocationFromBuildbucketBuild(buildbucket_build):
+  """Gets the path to the logdog annotations.
 
+  Args:
+    buildbucket_build (dict): The build as retrieved by the buildbucket client.
+  Returns:
+    The (host, project, path) triad that identifies the location of the
+    annotations proto.
+  """
+  host = project = path = None
+  # The log location is a property on buildbot builds and a tag on swarming
+  # builds.
+  result_details = json.loads(buildbucket_build.get(
+      'result_details_json', '{}'))
+  # TODO(robertocn): An upcoming change will make it unnecessary to retrieve
+  # run_id. crbug.com/718191
+  run_id = result_details.get('swarming', {}).get('task_result', {}).get(
+      'run_id')
+  # First try to get it from properties,
+  log_location = result_details.get('properties', {}).get('log_location')
+
+  # then check the tags.
+  if not log_location:
+    for tag in buildbucket_build.get('tags', []):
+      if tag.startswith('swarming_tag:log_location:logdog:'):
+        log_location = tag.split(':', 2)[2]
+  if log_location:
+    # logdog://luci-logdog.appspot.com/chromium/...
+    _logdog, _, host, project, path = log_location.split('/', 4)
+  # TODO(robertocn): Just like above the following 2 lines may become
+  # unnecessary soon. crbug.com/718191
+  if run_id and path:
+    path = path.replace('${swarming_run_id}', run_id)
+  return host, project, path
+
+
+def _GetLog(annotations, step_name, log_type, http_client):
+  if not annotations:
+    return None
+  stream = _GetStreamForStep(step_name, annotations, log_type)
+  if not stream:
+    return None
+  env = annotations.command.environ
+  host = env['LOGDOG_COORDINATOR_HOST']
+  project = env['LOGDOG_STREAM_PROJECT']
+  prefix = env['LOGDOG_STREAM_PREFIX']
+  if not all([host, project, prefix]):
+    return None
+  path = '%s/+/%s' % (prefix, stream)
+  return _GetLogForPath(host, project, path, http_client)
+
+
+def GetStepLogForBuild(buildbucket_build, step_name, log_type, http_client):
+  host, project, path = _GetLogLocationFromBuildbucketBuild(buildbucket_build)
+  annotations = _GetAnnotationsProtoForPath(host, project, path, http_client)
+  return _GetLog(annotations, step_name, log_type, http_client)
+
+
+def GetStepLogLegacy(master_name, builder_name, build_number, step_name,
+                     log_type, http_client):
+  host = 'luci-logdog.appspot.com'
+  project = 'chromium'
   path = _BUILDBOT_LOGDOG_REQUEST_PATH % (
       master_name, _ProcessStringForLogDog(builder_name), build_number,
-      logdog_stream)
-
-  return _GetLogForPath(path, http_client)
-
-
-def GetLogForSwarmedBuild(task_id, logdog_stream, http_client):
-  """Gets log from LogDog."""
-
-  path = _SWARMING_LOGDOG_REQUEST_PATH % (
-      task_id, logdog_stream)
-  return _GetLogForPath(path, http_client)
+      'recipes/annotations')
+  annotations = _GetAnnotationsProtoForPath(host, project, path, http_client)
+  return _GetLog(annotations, step_name, log_type, http_client)

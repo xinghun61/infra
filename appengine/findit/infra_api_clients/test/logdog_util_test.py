@@ -66,7 +66,12 @@ class LogDogUtilTest(unittest.TestCase):
     self.builder_name = 'b'
     self.build_number = 123
     self.step_name = 'browser_tests on platform'
-    self.task_id = 'abc123'
+    self.build_data = {
+        'result_details_json':
+             json.dumps(
+                  {
+                      'properties': {
+                          'log_location': 'logdog://h/p/path'}})}
     self.stdout_stream = 'stdout_stream'
     self.step_metadata_stream = 'step_metadata_stream'
 
@@ -95,92 +100,71 @@ class LogDogUtilTest(unittest.TestCase):
   @mock.patch.object(rpc_util, 'DownloadJsonData',
                      return_value=_SAMPLE_GET_RESPONSE)
   def testGetStepMetadataFromLogDog(self, _):
-    step_metadata = logdog_util.GetLogForBuild(
-      self.master_name, self.builder_name, self.build_number,
-      'stream', self.http_client)
-    self.assertEqual(json.loads(step_metadata),
-                     wf_testcase.SAMPLE_STEP_METADATA)
-
-  @mock.patch.object(rpc_util, 'DownloadJsonData',
-                     return_value=_SAMPLE_GET_RESPONSE)
-  def testGetStepMetadataFromLogDogSwarming(self, _):
-    step_metadata = logdog_util.GetLogForSwarmedBuild(
-    self.task_id, 'stream', self.http_client)
+    step_metadata = logdog_util._GetLogForPath(
+        'host', 'project', 'path', self.http_client)
     self.assertEqual(json.loads(step_metadata),
                      wf_testcase.SAMPLE_STEP_METADATA)
 
   @mock.patch.object(rpc_util, 'DownloadJsonData',
                      return_value=None)
   def testGetStepMetadataFromLogDogNoResponse(self, _):
-    step_metadata = logdog_util.GetLogForBuild(
-      self.master_name, self.builder_name, self.build_number,
-      'stream', self.http_client)
+    step_metadata = logdog_util._GetLogForPath(
+        'host', 'project', 'path', self.http_client)
     self.assertIsNone(step_metadata)
 
   @mock.patch.object(rpc_util, 'DownloadJsonData',
                      return_value=json.dumps({'a': 'a'}))
   def testGetStepMetadataFromLogDogNoJson(self, _):
-    step_metadata = logdog_util.GetLogForBuild(
-      self.master_name, self.builder_name, self.build_number,
-      'stream', self.http_client)
+    step_metadata = logdog_util._GetLogForPath(
+        'host', 'project', 'path', self.http_client)
     self.assertIsNone(step_metadata)
 
   def testProcessAnnotationsToGetStreamForStepMetadata(self):
     step_proto = _CreateProtobufMessage(
       self.step_name, self.stdout_stream, self.step_metadata_stream)
-    log_stream = logdog_util.GetStreamForStep(
+    log_stream = logdog_util._GetStreamForStep(
       self.step_name, step_proto, 'step_metadata')
     self.assertEqual(log_stream, self.step_metadata_stream)
 
   def testProcessAnnotationsToGetStreamForStdout(self):
     step_proto = _CreateProtobufMessage(
       self.step_name, self.stdout_stream, self.step_metadata_stream)
-    log_stream = logdog_util.GetStreamForStep(
+    log_stream = logdog_util._GetStreamForStep(
       self.step_name, step_proto)
     self.assertEqual(log_stream, self.stdout_stream)
 
   def testProcessAnnotationsToGetStreamNoStep(self):
     step = _CreateProtobufMessage(
       'step', self.stdout_stream, self.step_metadata_stream)
-    log_stream = logdog_util.GetStreamForStep(
+    log_stream = logdog_util._GetStreamForStep(
       self.step_name, step, 'step_metadata')
     self.assertIsNone(log_stream)
 
   def testProcessAnnotationsToGetStreamNoStepMetadta(self):
     step = _CreateProtobufMessage(
       self.step_name, self.stdout_stream, self.step_metadata_stream, 'step')
-    log_stream = logdog_util.GetStreamForStep(
+    log_stream = logdog_util._GetStreamForStep(
       self.step_name, step, 'step_metadata')
     self.assertIsNone(log_stream)
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetAnnotationsProto(self, mock_fn):
     mock_fn.return_value = self._GenerateTailRes()
-    step = logdog_util.GetAnnotationsProtoForBuild(
-      self.master_name, self.builder_name, self.build_number,
-      self.http_client)
+    step = logdog_util._GetAnnotationsProtoForPath(
+      'host', 'project', 'path', self.http_client)
     self.assertIsNotNone(step)
 
   @mock.patch.object(rpc_util, 'DownloadJsonData', return_value=None)
   def testGetAnnotationsProtoNoResponse(self, _):
-    step = logdog_util.GetAnnotationsProtoForBuild(
-      self.master_name, self.builder_name, self.build_number,
-      self.http_client)
+    step = logdog_util._GetAnnotationsProtoForPath(
+         'host', 'project', 'path', self.http_client)
     self.assertIsNone(step)
 
   @mock.patch.object(rpc_util, 'DownloadJsonData',
                      return_value=json.dumps({'a': 'a'}))
   def testGetAnnotationsProtoNoLogs(self, _):
-    step = logdog_util.GetAnnotationsProtoForBuild(
-      self.master_name, self.builder_name, self.build_number,
-      self.http_client)
-    self.assertIsNone(step)
-
-  @mock.patch.object(rpc_util, 'DownloadJsonData',
-                     return_value=json.dumps({'a': 'a'}))
-  def testGetAnnotationsProtoNoLogsSwarming(self, _):
-    step = logdog_util.GetAnnotationsProtoForSwarmedBuild(
-      self.task_id, self.http_client)
+    step = logdog_util._GetAnnotationsProtoForPath(
+         'host', 'project', 'path', self.http_client)
     self.assertIsNone(step)
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
@@ -193,9 +177,8 @@ class LogDogUtilTest(unittest.TestCase):
         ]
     }
     mock_fn.return_value = json.dumps(data)
-    step = logdog_util.GetAnnotationsProtoForBuild(
-      self.master_name, self.builder_name, self.build_number,
-      self.http_client)
+    step = logdog_util._GetAnnotationsProtoForPath(
+         'host', 'project', 'path', self.http_client)
     self.assertIsNone(step)
 
   @mock.patch.object(rpc_util, 'DownloadJsonData')
@@ -210,7 +193,84 @@ class LogDogUtilTest(unittest.TestCase):
         ]
     }
     mock_fn.return_value = json.dumps(data)
-    step = logdog_util.GetAnnotationsProtoForBuild(
-      self.master_name, self.builder_name, self.build_number,
-      self.http_client)
+    step = logdog_util._GetAnnotationsProtoForPath(
+        'host', 'project', 'path', self.http_client)
     self.assertIsNone(step)
+
+  def testGetLogLocationFromBuildbucketBuildSwarming(self):
+    build = {
+        'tags': [
+            'build_type:test',
+            'swarming_tag:log_location:logdog://logdog.com/project/path'],
+        'result_details_json': json.dumps(
+            {'swarming': {'task_result':{'run_id': 'some_run_id'}}}),
+    }
+    host, project, path = logdog_util._GetLogLocationFromBuildbucketBuild(build)
+    self.assertEqual('logdog.com', host)
+    self.assertEqual('project', project)
+    self.assertEqual('path', path)
+
+  def testGetLogLocationFromBuildbucketBuildBuildbot(self):
+    build = {
+        'result_details_json': json.dumps(
+            {'properties': {
+                'log_location': 'logdog://logdog.com/project/path'}}),
+    }
+    host, project, path = logdog_util._GetLogLocationFromBuildbucketBuild(build)
+    self.assertEqual('logdog.com', host)
+    self.assertEqual('project', project)
+    self.assertEqual('path', path)
+
+  def testGetLogLocationFromBuildbucketBuildNone(self):
+    host, project, path = logdog_util._GetLogLocationFromBuildbucketBuild({})
+    self.assertIsNone(host)
+    self.assertIsNone(project)
+    self.assertIsNone(path)
+
+  @mock.patch.object(rpc_util, 'DownloadJsonData')
+  @mock.patch.object(logdog_util, '_GetLog')
+  @mock.patch.object(logdog_util, '_GetLogLocationFromBuildbucketBuild')
+  def testGetStepLogForBuild(self, mock_location, mock_log, mock_data):
+    mock_location.return_value = 'host', 'project', 'path'
+    mock_data.return_value = self._GenerateTailRes()
+    logdog_util.GetStepLogForBuild({}, 'step', 'stdout', self.http_client)
+    mock_log.assert_called()
+
+  @mock.patch.object(rpc_util, 'DownloadJsonData')
+  @mock.patch.object(logdog_util, '_GetLog')
+  def testGetStepLogLegacy(self, mock_log, mock_data):
+    mock_data.return_value = self._GenerateTailRes()
+    logdog_util.GetStepLogLegacy(
+        self.master_name, self.builder_name, self.build_number, 'step',
+        'stdout', self.http_client)
+    mock_log.assert_called()
+
+  def testGetLogNoAnnotations(self):
+    self.assertIsNone(logdog_util._GetLog(
+        None, self.step_name, 'stdout', self.http_client))
+
+  def testGetLogNoStream(self):
+    annotations = _CreateProtobufMessage(
+      self.step_name, self.stdout_stream, self.step_metadata_stream)
+    self.assertIsNone(logdog_util._GetLog(
+        annotations, 'NOT' + self.step_name, 'stdout', self.http_client))
+
+  def testGetLogNoHost(self):
+    annotations = _CreateProtobufMessage(
+      self.step_name, self.stdout_stream, self.step_metadata_stream)
+    env = annotations.command.environ
+    env['LOGDOG_STREAM_PREFIX'] = 'path'
+    env['LOGDOG_COORDINATOR_HOST'] = 'logdog.com'
+    self.assertIsNone(logdog_util._GetLog(
+        annotations, self.step_name, 'stdout', self.http_client))
+
+  @mock.patch.object(logdog_util, '_GetLogForPath')
+  def testGetLog(self, *_):
+    annotations = _CreateProtobufMessage(
+      self.step_name, self.stdout_stream, self.step_metadata_stream)
+    env = annotations.command.environ
+    env['LOGDOG_STREAM_PREFIX'] = 'path'
+    env['LOGDOG_COORDINATOR_HOST'] = 'logdog.com'
+    env['LOGDOG_STREAM_PROJECT'] = 'project'
+    self.assertIsNotNone(logdog_util._GetLog(
+        annotations, self.step_name, 'stdout', self.http_client))
