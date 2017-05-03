@@ -13,8 +13,6 @@ import time
 
 from google.appengine.api import search
 
-from services import fulltext_helpers
-
 from proto import ast_pb2
 from proto import tracker_pb2
 
@@ -154,6 +152,14 @@ BUILTIN_ISSUE_FIELDS = {
     for f_name, f_type in _ISSUE_FIELDS_LIST}
 
 
+# Do not treat strings that start with the below as key:value search terms.
+# See bugs.chromium.org/p/monorail/issues/detail?id=419 for more detail.
+NON_OP_PREFIXES = (
+    'http:',
+    'https:',
+)
+
+
 def ParseUserQuery(
     query, scope, builtin_fields, harmonized_config, warnings=None,
     now=None):
@@ -240,7 +246,7 @@ def _ParseCond(cond_str, fields, warnings, now=None):
   op_match = OP_RE.match(cond_str)
   # Do not treat as key:value search terms if any of the special prefixes match.
   special_prefixes_match = any(
-      cond_str.startswith(p) for p in fulltext_helpers.NON_OP_PREFIXES)
+      cond_str.startswith(p) for p in NON_OP_PREFIXES)
   if op_match and not special_prefixes_match:
     prefix = op_match.group('prefix')
     op = op_match.group('op')
@@ -365,7 +371,7 @@ def _ExtractConds(query, warnings):
     # Case 2: Comparisons
     elif word_label:
       special_prefixes_match = any(
-          word_label.startswith(p) for p in fulltext_helpers.NON_OP_PREFIXES)
+          word_label.startswith(p) for p in NON_OP_PREFIXES)
       match = OP_RE.match(word_label)
       if match and not special_prefixes_match:
         label = match.group('prefix')

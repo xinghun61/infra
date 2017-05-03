@@ -12,16 +12,10 @@ from google.appengine.api import search
 import settings
 from proto import ast_pb2
 from proto import tracker_pb2
+from search import query2ast
 
 # GAE search API can only respond with 500 results per call.
 _SEARCH_RESULT_CHUNK_SIZE = 500
-
-# Do not treat strings that start with the below as key:value search terms.
-# See bugs.chromium.org/p/monorail/issues/detail?id=419 for more detail.
-NON_OP_PREFIXES = (
-    'http:',
-    'https:',
-)
 
 
 def BuildFTSQuery(query_ast_conj, fulltext_fields):
@@ -73,7 +67,8 @@ def _BuildFTSCondition(cond, fulltext_fields):
     for value in cond.str_values:
       # Strip out quotes around the value.
       value = value.strip('"')
-      special_prefixes_match = any(value.startswith(p) for p in NON_OP_PREFIXES)
+      special_prefixes_match = any(
+          value.startswith(p) for p in query2ast.NON_OP_PREFIXES)
       if not special_prefixes_match:
         value = value.replace(':', ' ')
         assert ('"' not in value), 'Value %r has a quote in it' % value
@@ -97,11 +92,15 @@ def ComprehensiveSearch(fulltext_query, index_name):
   """
   search_index = search.Index(name=index_name)
 
-  response = search_index.search(search.Query(
-      fulltext_query,
-      options=search.QueryOptions(
-          limit=_SEARCH_RESULT_CHUNK_SIZE, returned_fields=[], ids_only=True,
-          cursor=search.Cursor())))
+  try:
+    response = search_index.search(search.Query(
+        fulltext_query,
+        options=search.QueryOptions(
+            limit=_SEARCH_RESULT_CHUNK_SIZE, returned_fields=[], ids_only=True,
+            cursor=search.Cursor())))
+  except ValueError as e:
+    raise query2ast.InvalidQueryError(e.message)
+
   logging.info('got %d initial results', len(response.results))
   ids = [int(result.doc_id) for result in response]
 

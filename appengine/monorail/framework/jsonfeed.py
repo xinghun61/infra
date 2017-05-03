@@ -21,6 +21,7 @@ from framework import framework_constants
 from framework import permissions
 from framework import servlet
 from framework import xsrf
+from search import query2ast
 
 # This causes a JS error for a hacker trying to do a cross-site inclusion.
 XSSI_PREFIX = ")]}'\n"
@@ -77,6 +78,11 @@ class JsonFeed(servlet.Servlet):
       self._RenderJsonResponse(json_data)
       raise servlet.AlreadySentResponseException()
 
+    except query2ast.InvalidQueryError as e:
+      logging.warning('Trapped InvalidQueryError: %s', e)
+      logging.exception(e)
+      msg = e.message if e.message else 'invalid query'
+      self.abort(400, msg)
     except permissions.PermissionException as e:
       logging.info('Trapped PermissionException %s', e)
       self.response.status = httplib.FORBIDDEN

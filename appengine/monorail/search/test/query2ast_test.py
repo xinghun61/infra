@@ -12,7 +12,6 @@ import unittest
 from proto import ast_pb2
 from proto import tracker_pb2
 from search import query2ast
-from services import fulltext_helpers
 from tracker import tracker_bizobj
 
 BOOL = query2ast.BOOL
@@ -107,7 +106,7 @@ class QueryParsingUnitTest(unittest.TestCase):
         MakeCond(TEXT_HAS, [ANY_FIELD], ['fancy'], []), ft_cond2)
 
     # Use word with non-operator prefix.
-    word_with_non_op_prefix = '%stest' % fulltext_helpers.NON_OP_PREFIXES[0]
+    word_with_non_op_prefix = '%stest' % query2ast.NON_OP_PREFIXES[0]
     ast = query2ast.ParseUserQuery(
         word_with_non_op_prefix, '', BUILTIN_ISSUE_FIELDS, self.default_config)
     fulltext_cond = ast.conjunctions[0].conds[0]

@@ -13,6 +13,7 @@ from google.appengine.api import search
 
 from proto import ast_pb2
 from proto import tracker_pb2
+from search import query2ast
 from services import fulltext_helpers
 
 
@@ -121,7 +122,7 @@ class FulltextHelpersTest(unittest.TestCase):
           query_ast_conj, self.fulltext_fields)
 
   def testBuildFTSQuery_SpecialPrefixQuery(self):
-    special_prefix = fulltext_helpers.NON_OP_PREFIXES[0]
+    special_prefix = query2ast.NON_OP_PREFIXES[0]
 
     # Test with summary field.
     query_ast_conj = ast_pb2.Conjunction(conds=[
