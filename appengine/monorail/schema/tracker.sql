@@ -352,6 +352,7 @@ CREATE TABLE Comment (
   PRIMARY KEY(id),
   INDEX (is_spam, project_id, created),
   INDEX (commenter_id, created),
+  INDEX (commenter_id, deleted_by, issue_id),
 
   FOREIGN KEY (project_id) REFERENCES Project(project_id),
   FOREIGN KEY (issue_id) REFERENCES Issue(id),

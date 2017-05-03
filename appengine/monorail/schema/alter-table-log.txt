@@ -1093,3 +1093,9 @@ ALTER TABLE FieldDef ADD COLUMN is_niche BOOLEAN;
 
 ALTER TABLE FieldDef
   ADD COLUMN date_action ENUM ('no_action', 'ping_owner_only', 'ping_participants');
+
+
+================================================================
+2017-05-02: Add index to make commentby: query term faster.
+
+ALTER TABLE Comment ADD INDEX (commenter_id, deleted_by, issue_id);
