@@ -24,6 +24,7 @@ from recipe_engine import recipe_api
 PROJECTS = [
   'depot_tools',
   'build',
+  'franky',
   'infra',
   'skia',
   'skiabuildbot',
