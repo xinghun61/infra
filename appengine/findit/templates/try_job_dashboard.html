@@ -44,7 +44,7 @@
           var lastBuildbucketResponseRawText = $(this).attr('data-text');
           var lastBuildbucketResponseJson = JSON.parse(lastBuildbucketResponseRawText);
           var lastBuildbucketResponseFormattedString = JSON.stringify(lastBuildbucketResponseJson, null, 2);
-          $('#buildbucket-response-dialog').html("Note: json fields have been converted to dicts for display purposes." + "<pre>" + lastBuildbucketResponseFormattedString + "</pre>")
+          $('#buildbucket-response').text(lastBuildbucketResponseFormattedString);
           $('#buildbucket-response-dialog').dialog('open');
         })
       });
@@ -221,5 +221,7 @@
       No try-jobs have completed within the time range requested
     {% endif %}
   </div>
-  <div id="buildbucket-response-dialog" title="Buildbucket response"></div>
+  <div id="buildbucket-response-dialog" title="Buildbucket response">
+    <pre id="buildbucket-response"></pre>
+  </div>
 </body>
