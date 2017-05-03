@@ -63,6 +63,13 @@ message ProjectDetails {
   // Details of the repository connected to the project. This should be the
   // repository hosting the files that should be analyzed for this project.
   RepoDetails repo_details = 4;
+
+  // Gerrit details for a project.
+  //
+  // This field should only be included if there is a Gerrit host for a
+  // project and that host should be polled for changes and used for
+  // reporting of analyzer progress and results.
+  GerritDetails gerrit_details = 5;
 }
 
 // Tricium project configuration.
@@ -105,6 +112,15 @@ message GitRepoDetails {
 
   // Default ref to use to get files to analyze.
   string ref = 2;
+}
+
+// Gerrit details for a project.
+message GerritDetails {
+  // The Gerrit host to connect to.
+  string host = 1;
+
+  // Gerrit project name.
+  string project = 2;
 }
 
 // Access control rules.
