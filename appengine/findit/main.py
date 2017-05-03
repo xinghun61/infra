@@ -29,7 +29,6 @@ from handlers import swarming_push
 from handlers import triage_suspected_cl
 from handlers import try_job_dashboard
 from handlers import try_job_push
-from handlers import verify_analysis
 from handlers import version
 from handlers.crash import crash_config
 from handlers.crash import crash_handler
@@ -107,7 +106,6 @@ waterfall_frontend_web_pages_handler_mappings = [
      triage_flake_analysis.TriageFlakeAnalysis),
     ('/waterfall/triage-suspected-cl', triage_suspected_cl.TriageSuspectedCl),
     ('/waterfall/try-job-dashboard', try_job_dashboard.TryJobDashboard),
-    ('/waterfall/verify-analysis', verify_analysis.VerifyAnalysis),
 ]
 waterfall_frontend_web_application = webapp2.WSGIApplication(
     waterfall_frontend_web_pages_handler_mappings, debug=False)
