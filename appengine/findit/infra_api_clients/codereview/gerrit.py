@@ -5,11 +5,10 @@
 import json
 import logging
 import re
-from urlparse import urlparse
 
 from gae_libs.http.http_client_appengine import HttpClientAppengine
-from infra_api_clients.codereview import codereview
 from infra_api_clients.codereview import cl_info
+from infra_api_clients.codereview import codereview
 from libs import time_util
 
 
@@ -114,7 +113,6 @@ class Gerrit(codereview.CodeReview):
   def _ParseClInfo(self, change_info, change_id):
     if not change_info:  # pragma: no cover
       return None
-
     result = cl_info.ClInfo(self._server_hostname, change_id)
 
     result.reviewers = [x['email'] for x in change_info['reviewers'].get(
@@ -137,6 +135,10 @@ class Gerrit(codereview.CodeReview):
       committer = revision_info['commit']['committer']['email']
       if committer not in self.commit_bot_emails:
         result.AddCqAttempt(patchset_id, committer, commit_timestamp)
+
+      # Checks for if the culprit owner has turned off auto revert.
+      result.auto_revert_off = codereview.IsAutoRevertOff(
+          revision_info['commit']['message'])
 
     # TO FIND COMMIT ATTEMPTS:
     # In messages look for "Patch Set 1: Commit-Queue+2"

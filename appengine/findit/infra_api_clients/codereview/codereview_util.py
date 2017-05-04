@@ -8,6 +8,7 @@ from infra_api_clients.codereview.gerrit import Gerrit
 
 HTTP_CLIENT = HttpClientAppengine()
 
+
 def GetCodeReviewForReview(review_server_host, code_review_settings=None):
   """Returns an instance of CodeReview implementation or None if unknown."""
   if not review_server_host:

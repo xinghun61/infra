@@ -18,7 +18,7 @@
     "landed_days_ago": 17,
     "issue": 123456001,
     "offer_cq": true,
-    "description": "Dummy: dummy change dummy explanation. dummy details..\n\nBUG=999999\n\nReview-Url: https://test/123456001\nCr-Original-Commit-Position: refs/heads/master@{#012355}\nCommitted: https://chromium.googlesource.com/chromium/src/+/c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb\nReview-Url: https://test/123456001\nCr-Commit-Position: refs/heads/master@{#012667}\nCommitted: https://chromium.googlesource.com/chromium/src/+/deadbeefdeadbeefc001c001c001ce120ce120aa",
+    "description": "Dummy: dummy change dummy explanation. dummy details..\n\nNOAUTOREVERT= True\n\nBUG=999999\n\nReview-Url: https://test/123456001\nCr-Original-Commit-Position: refs/heads/master@{#012355}\nCommitted: https://chromium.googlesource.com/chromium/src/+/c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb\nReview-Url: https://test/123456001\nCr-Commit-Position: refs/heads/master@{#012667}\nCommitted: https://chromium.googlesource.com/chromium/src/+/deadbeefdeadbeefc001c001c001ce120ce120aa",
     "cq_dry_run_last_triggered_by": "",
     "patchsets": [
         1,

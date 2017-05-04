@@ -2,6 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import re
+
+
+AUTO_REVERT_OFF_PATTERN = re.compile(r'(NOAUTOREVERT)\s*=\s*true',
+                                     re.IGNORECASE)
+
+
+def IsAutoRevertOff(message):
+  match = AUTO_REVERT_OFF_PATTERN.search(message)
+  if match:
+    flag_name = match.group(1)
+    if flag_name.isupper():
+      return True
+  return False
+
 
 class CodeReview(object):  # pragma: no cover.
   """Abstract class to interact with code review."""

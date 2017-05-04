@@ -18,8 +18,8 @@ import re
 import urlparse
 
 from libs import time_util
-from infra_api_clients.codereview import codereview
 from infra_api_clients.codereview import cl_info
+from infra_api_clients.codereview import codereview
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 
@@ -196,6 +196,7 @@ class Rietveld(codereview.CodeReview):
     cl.closed = data['closed']
     cl.cc = data['cc']
     cl.reviewers = data['reviewers']
+    cl.auto_revert_off = codereview.IsAutoRevertOff(data['description'])
     cl.owner_email = data['owner_email']
     return cl
 
