@@ -82,7 +82,8 @@ var cmdCook = &subcommands.Command{
 			"Add this forward-slash-delimited filesystem path to the beginning of the PATH "+
 				"environment. The path value will be made absolute relative to the current working directory. "+
 				"Can be specified multiple times, in which case values will appear at the beginning "+
-				"of PATH in the order that they are supplied.")
+				"of PATH in the order that they are supplied. Elements specified here will be forcefully "+
+				"prefixed to the PATH of step commands by the recipe engine.")
 
 		fs.StringVar(
 			&c.CheckoutDir,
@@ -314,6 +315,23 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) (reci
 	return 0, fmt.Errorf("failed to run recipe: %s", err)
 }
 
+// stepModuleProperties are constructed properties for the "recipe_engine/step"
+// recipe module.
+type stepModuleProperties struct {
+	PrefixPATH []string `json:"prefix_path,omitempty"`
+}
+
+// stepModuleProperties returns properties for the "recipe_engine/step" module.
+func (c *cookRun) stepModuleProperties() *stepModuleProperties {
+	if len(c.PrefixPathENV) == 0 {
+		return nil
+	}
+
+	return &stepModuleProperties{
+		PrefixPATH: []string(c.PrefixPathENV),
+	}
+}
+
 // pathModuleProperties returns properties for the "recipe_engine/path" module.
 func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 	recipeTempDir := filepath.Join(c.TempDir, "rt")
@@ -356,6 +374,7 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	// Reject reserved properties.
 	rejectProperties := []string{
 		"$recipe_engine/path",
+		"$recipe_engine/step",
 		"bot_id",
 		// not specifying path_config means that all paths must be passed
 		// explicitly. We do that below.
@@ -373,6 +392,10 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 		return nil, err
 	}
 	props["$recipe_engine/path"] = pathProps
+
+	if p := c.stepModuleProperties(); p != nil {
+		props["$recipe_engine/step"] = p
+	}
 
 	// Use "generic" infra path config. See
 	// https://chromium.googlesource.com/chromium/tools/depot_tools/+/master/recipes/recipe_modules/infra_paths/
