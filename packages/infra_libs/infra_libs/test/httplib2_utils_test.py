@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import base64
+import httplib
 import json
 import os
 import socket
@@ -263,6 +264,30 @@ class InstrumentedHttplib2Test(unittest.TestCase):
     self.assertEqual(1, http_metrics.response_status.get(
         {'name': 'test', 'client': 'httplib2',
          'status': http_metrics.STATUS_EXCEPTION}))
+
+  def test_httplib_exception(self):
+    self.http._request.side_effect = httplib.HTTPException
+
+    with self.assertRaises(httplib.HTTPException):
+      self.http.request('http://foo/')
+    self.assertIsNone(http_metrics.response_status.get(
+        {'name': 'test', 'client': 'httplib2', 'status': 200}))
+    self.assertEqual(1, http_metrics.response_status.get(
+        {'name': 'test', 'client': 'httplib2',
+         'status': http_metrics.STATUS_EXCEPTION}))
+
+  def test_gae_httplib_timeout_exception(self):
+    self.http._request.side_effect = httplib.HTTPException(
+        'Deadline exceeded while waiting for HTTP response from URL: '
+        'http://foo/')
+
+    with self.assertRaises(httplib.HTTPException):
+      self.http.request('http://foo/')
+    self.assertIsNone(http_metrics.response_status.get(
+        {'name': 'test', 'client': 'httplib2', 'status': 200}))
+    self.assertEqual(1, http_metrics.response_status.get(
+        {'name': 'test', 'client': 'httplib2',
+         'status': http_metrics.STATUS_TIMEOUT}))
 
   def test_response_bytes(self):
     self.http._request.return_value = (
