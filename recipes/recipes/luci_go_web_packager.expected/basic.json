@@ -82,7 +82,7 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/web/web.py",
+      "[START_DIR]/infra/go/src/github.com/luci/luci-go/web/web.py",
       "install"
     ],
     "env": {
@@ -99,7 +99,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[START_DIR]/infra/web/bower.json",
+      "[START_DIR]/infra/go/src/github.com/luci/luci-go/web/bower.json",
       "/path/to/tmp/"
     ],
     "name": "bower.js.read",
@@ -132,7 +132,7 @@
       "cipd",
       "create",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \"\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"infra/luci/web/bower-deps\", \"root\": \"[START_DIR]/infra/web/inc/bower_components\"}",
+      "{\"data\": [{\"dir\": \"\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"infra/luci/web/bower-deps\", \"root\": \"[START_DIR]/infra/go/src/github.com/luci/luci-go/web/inc/bower_components\"}",
       "-json-output",
       "/path/to/tmp/json",
       "-tag",
@@ -160,7 +160,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "[START_DIR]/infra/web/package.json",
+      "[START_DIR]/infra/go/src/github.com/luci/luci-go/web/package.json",
       "/path/to/tmp/"
     ],
     "name": "node.js.read",
@@ -193,7 +193,7 @@
       "cipd",
       "create",
       "-pkg-def",
-      "{\"data\": [{\"dir\": \"\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"infra/luci/web/node-deps\", \"root\": \"[START_DIR]/infra/web/node_modules\"}",
+      "{\"data\": [{\"dir\": \"\", \"exclude\": []}], \"install_mode\": \"copy\", \"package\": \"infra/luci/web/node-deps\", \"root\": \"[START_DIR]/infra/go/src/github.com/luci/luci-go/web/node_modules\"}",
       "-json-output",
       "/path/to/tmp/json",
       "-tag",

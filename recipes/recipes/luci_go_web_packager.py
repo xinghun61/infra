@@ -51,7 +51,8 @@ def _hash_content(content):
 def RunSteps(api):
   api.gclient.set_config('luci_go')
   api.bot_update.ensure_checkout()
-  web_path = api.path['checkout'].join('web')
+  web_path = api.path['checkout'].join(
+      'go', 'src', 'github.com', 'luci', 'luci-go', 'web')
 
   # Install "Node.js" package from CIPD.
   prereq_dir = api.path['start_dir'].join('cipd')
