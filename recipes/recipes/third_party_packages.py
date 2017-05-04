@@ -161,7 +161,7 @@ def PackageGitForWindows(api, workdir):
     api.step(
       'post-install',
       [
-        'git-bash.exe',
+        package_dir.join('git-bash.exe'),
         '--no-needs-console',
         '--hide',
         '--no-cd',

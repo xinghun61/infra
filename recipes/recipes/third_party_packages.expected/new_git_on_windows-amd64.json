@@ -133,7 +133,7 @@
   },
   {
     "cmd": [
-      "git-bash.exe",
+      "[START_DIR]\\git\\package\\git-bash.exe",
       "--no-needs-console",
       "--hide",
       "--no-cd",
