@@ -452,11 +452,11 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(
       438538, buildbot._GetCommitPosition('refs/heads/master@{#438538}'))
 
-  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
+  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
                      return_value='step')
-  @mock.patch.object(logdog_util, 'GetStreamForStep',
+  @mock.patch.object(logdog_util, '_GetStreamForStep',
                      return_value='log_stream')
-  @mock.patch.object(logdog_util, 'GetLogForBuild',
+  @mock.patch.object(logdog_util, 'GetStepLogLegacy',
                      return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
   def testGetStepMetadata(self, *_):
     step_metadata = buildbot.GetStepLog(
@@ -464,7 +464,7 @@ class BuildBotTest(unittest.TestCase):
       self.http_client, 'step_metadata')
     self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
 
-  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
+  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
                      return_value=None)
   def testGetStepMetadataStepNone(self, _):
     step_metadata = buildbot.GetStepLog(
@@ -472,9 +472,9 @@ class BuildBotTest(unittest.TestCase):
       self.http_client, 'step_metadata')
     self.assertIsNone(step_metadata)
 
-  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
+  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
                      return_value='step')
-  @mock.patch.object(logdog_util, 'GetStreamForStep',
+  @mock.patch.object(logdog_util, '_GetStreamForStep',
                      return_value=None)
   def testGetStepMetadataStreamNone(self, *_):
     step_metadata = buildbot.GetStepLog(
@@ -524,18 +524,18 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(1, len(http_client.requests))
     self.assertEqual(expected_url, http_client.requests[0])
 
-  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
+  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
                      return_value='step')
-  @mock.patch.object(logdog_util, 'GetStreamForStep',
+  @mock.patch.object(logdog_util, '_GetStreamForStep',
                      return_value='stream')
-  @mock.patch.object(logdog_util, 'GetLogForBuild', return_value='log1/nlog2')
+  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log1/nlog2')
   def testGetStepLogStdio(self, *_):
     self.assertEqual('log1/nlog2', buildbot.GetStepLog(
         self.master_name, self.builder_name, self.build_number, self.step_name,
         self.http_client))
 
 
-  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
+  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
                      return_value=None)
   @mock.patch.object(buildbot, '_GetStepStdioFromBuildBot',
                      return_value='log1/nlog2')
@@ -544,9 +544,9 @@ class BuildBotTest(unittest.TestCase):
         self.master_name, self.builder_name, self.build_number, self.step_name,
         self.http_client))
 
-  @mock.patch.object(logdog_util, 'GetAnnotationsProtoForBuild',
+  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
                      return_value='step')
-  @mock.patch.object(logdog_util, 'GetStreamForStep',
+  @mock.patch.object(logdog_util, '_GetStreamForStep',
                      return_value=None)
   @mock.patch.object(buildbot, '_GetStepStdioFromBuildBot',
                      return_value='log1/nlog2')
