@@ -58,6 +58,8 @@ based on the flakiness trend in the config "%s / %s":""".lstrip()
                            + '\n\n' + _LINK
                            + '\n\n' + _COMMENT_FOOTER)
 
+_FINDIT_ANALYZED_LABEL_TEXT = 'Test-Findit-Analyzed'
+
 
 def _GenerateComment(analysis):
   """Generates a comment based on the analysis result."""
@@ -92,6 +94,45 @@ def _GenerateComment(analysis):
     )
 
 
+def _LogBugNotUpdated(reason):
+  logging.info('Bug not updated: %s', reason)
+
+
+def _ShouldUpdateBugForAnalysis(analysis):
+  if analysis.error:
+    _LogBugNotUpdated('error in analysis: %s' % analysis.error.get('message'))
+    return False
+
+  if not analysis.completed:
+    _LogBugNotUpdated('completed=%s' % analysis.completed)
+    return False
+
+  if not analysis.bug_id:
+    _LogBugNotUpdated('bug=%s' % analysis.bug_id)
+    return False
+
+  if len(analysis.data_points) < 2:
+    _LogBugNotUpdated('%d data points' % len(analysis.data_points))
+    return False
+
+  if analysis.suspected_flake_build_number is None:
+    _LogBugNotUpdated('no regression range identifed')
+    return False
+
+  if not analysis.algorithm_parameters.get('update_monorail_bug'):
+    _LogBugNotUpdated('update_monorail_bug not set or is False')
+    return False
+
+  if (not analysis.culprit and
+      analysis.confidence_in_suspected_build <
+      analysis.algorithm_parameters.get(
+          'minimum_confidence_score_to_run_tryjobs')):
+    _LogBugNotUpdated('insufficient confidence in suspected build')
+    return False
+
+  return True
+
+
 class UpdateFlakeBugPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
@@ -105,12 +146,7 @@ class UpdateFlakeBugPipeline(BasePipeline):
     analysis = ndb.Key(urlsafe=urlsafe_flake_analysis_key).get()
     assert analysis
 
-    if (not analysis.completed or not analysis.bug_id or
-        not analysis.algorithm_parameters.get('update_monorail_bug') or
-        len(analysis.data_points) < 2):
-      logging.info('Bug not updated: completed=%s, bug=%s, %d data points'
-                   % (analysis.completed, analysis.bug_id,
-                      len(analysis.data_points)))
+    if not _ShouldUpdateBugForAnalysis(analysis):
       return False
 
     project_name = 'chromium'
@@ -122,7 +158,12 @@ class UpdateFlakeBugPipeline(BasePipeline):
       return False
 
     comment = _GenerateComment(analysis)
-    issue.labels.append('Test-Findit-Analyzed')
+
+    # Since a flake bug may be updated twice, once when the regression range
+    # is identified and again when a culprit is identified, ensure the
+    # 'Test-Findit-Analyzed' label is only present once.
+    if _FINDIT_ANALYZED_LABEL_TEXT not in issue.labels:  # pragma: no branch
+      issue.labels.append(_FINDIT_ANALYZED_LABEL_TEXT)
 
     monitoring.issues.increment({'operation': 'update', 'category': 'flake'})
 

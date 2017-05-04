@@ -91,6 +91,50 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     comment = update_flake_bug_pipeline._GenerateComment(analysis)
     self.assertTrue('longstanding one' in comment, comment)
 
+  def testShouldUpdateBugForAnalysisError(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.error = {'error': 'error', 'message': 'message'}
+    self.assertFalse(
+        update_flake_bug_pipeline._ShouldUpdateBugForAnalysis(analysis))
+
+  def testShouldUpdateBugForAnalysisFalse(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.bug_id = 123
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    analysis.suspected_flake_build_number = 1
+    analysis.algorithm_parameters = {'update_monorail_bug': False}
+    self.assertFalse(
+        update_flake_bug_pipeline._ShouldUpdateBugForAnalysis(analysis))
+
+  def testShouldUpdateBugForAnalysisInsufficientConfidence(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.bug_id = 123
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    analysis.suspected_flake_build_number = 1
+    analysis.algorithm_parameters = {
+        'update_monorail_bug': True,
+        'minimum_confidence_score_to_run_tryjobs': 0.6
+    }
+    analysis.confidence_in_suspected_build = 0.5
+    self.assertFalse(
+        update_flake_bug_pipeline._ShouldUpdateBugForAnalysis(analysis))
+
+  def testShouldUpdateBugForAnalysis(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.bug_id = 123
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    analysis.suspected_flake_build_number = 1
+    analysis.algorithm_parameters = {
+        'update_monorail_bug': True,
+        'minimum_confidence_score_to_run_tryjobs': 0.6
+    }
+    analysis.confidence_in_suspected_build = 0.7
+    self.assertTrue(
+        update_flake_bug_pipeline._ShouldUpdateBugForAnalysis(analysis))
+
   @mock.patch('waterfall.flake.update_flake_bug_pipeline.IssueTrackerAPI')
   def testNotUpdateBug(self, issue_tracker):
     analysis_not_completed = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
@@ -101,6 +145,8 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
         'm', 'b', 1, 's', 't')
     analysis_config_not_to_update.status = analysis_status.COMPLETED
     analysis_config_not_to_update.bug_id = 123
+    analysis_config_not_to_update.data_points = [
+        DataPoint(), DataPoint(), DataPoint()]
     analysis_config_not_to_update.algorithm_parameters = {
         'update_monorail_bug': False,
     }
@@ -114,6 +160,7 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     analysis_without_enough_data_points.data_points = [DataPoint()]
 
     analyses = [
+        analysis_not_completed,
         analysis_without_bug,
         analysis_config_not_to_update,
         analysis_without_enough_data_points
@@ -128,6 +175,8 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
   def testNoUpdateIfBugDeleted(self, issue_tracker):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.status = analysis_status.COMPLETED
+    analysis.suspected_flake_build_number = 1
+    analysis.confidence_in_suspected_build = 0.7
     analysis.bug_id = 123
     analysis.algorithm_parameters = {'update_monorail_bug': True}
     analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
@@ -146,6 +195,8 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.status = analysis_status.COMPLETED
     analysis.bug_id = 123
+    analysis.suspected_flake_build_number = 1
+    analysis.confidence_in_suspected_build = 0.7
     analysis.algorithm_parameters = {'update_monorail_bug': True}
     analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
     analysis.put()
