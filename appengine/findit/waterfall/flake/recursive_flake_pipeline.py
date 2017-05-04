@@ -16,7 +16,6 @@ from libs import time_util
 from model import result_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from model.wf_build import WfBuild
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import build_util
 from waterfall import swarming_util
@@ -54,24 +53,36 @@ _ONE_HOUR_IN_SECONDS = 60 * 60
 _MAX_TIMEOUT_SECONDS = 3 * _ONE_HOUR_IN_SECONDS
 
 
-def _UpdateAnalysisStatusUponCompletion(
-    analysis, suspected_build, status, error, build_confidence_score=None,
-    try_job_status=analysis_status.SKIPPED):
-  if suspected_build is None:
-    analysis.end_time = time_util.GetUTCNow()
-    analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
-  else:
-    analysis.suspected_flake_build_number = suspected_build
+def _HasSufficientConfidenceToRunTryJobs(analysis):
+  minimum_confidence_score = analysis.algorithm_parameters.get(
+      'minimum_confidence_score_to_run_tryjobs',
+      _DEFAULT_MINIMUM_CONFIDENCE_SCORE)
+  return analysis.confidence_in_suspected_build >= minimum_confidence_score
 
-  if not error:
+
+def _UpdateAnalysisStatusUponCompletion(
+    analysis, suspected_build, status, error, build_confidence_score=None):
+  analysis.end_time = time_util.GetUTCNow()
+  analysis.status = status
+  analysis.confidence_in_suspected_build = build_confidence_score
+  analysis.try_job_status = analysis_status.SKIPPED
+  analysis.suspected_flake_build_number = suspected_build
+  analysis.result_status = (
+      result_status.NOT_FOUND_UNTRIAGED if suspected_build is None else
+      result_status.FOUND_UNTRIAGED)
+
+  if error:
+    analysis.error = error
+  else:
     # Clear the last attempted swarming task id since it will be stored in
     # the data point.
     analysis.last_attempted_swarming_task_id = None
 
-  analysis.error = error
-  analysis.status = status
-  analysis.try_job_status = try_job_status
-  analysis.confidence_in_suspected_build = build_confidence_score
+    if _HasSufficientConfidenceToRunTryJobs(analysis):
+      # Analysis is not finished yet: try jobs are about to be run.
+      analysis.try_job_status = None
+      analysis.end_time = None
+
   analysis.put()
 
 
@@ -578,22 +589,15 @@ class NextBuildNumberPipeline(BasePipeline):
           analysis, suspected_build, analysis_status.COMPLETED,
           None, build_confidence_score=build_confidence_score)
 
-      minimum_confidence_score_to_run_tryjobs = (
-          analysis.algorithm_parameters.get(
-              'minimum_confidence_score_to_run_tryjobs',
-              _DEFAULT_MINIMUM_CONFIDENCE_SCORE))
-
       if build_confidence_score is None:
         logging.info(('Skipping try jobs due to no suspected flake build being '
                       'identified'))
-      elif build_confidence_score < minimum_confidence_score_to_run_tryjobs:
-        # If confidence is too low, bail out on try jobs. Based on analysis of
-        # historical data, 60% confidence could filter out almost all false
-        # positives.
-        analysis.result_status = result_status.FOUND_UNTRIAGED
-        analysis.put()
+      elif not _HasSufficientConfidenceToRunTryJobs(analysis):
+        logging.info(('Skipping try jobs due to insufficient confidence in '
+                      'suspected build'))
       else:
-        # Hook up with try-jobs.
+        # Hook up with try-jobs. Based on analysis of historical data, 60%
+        # confidence could filter out almost all false positives.
         suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
         assert suspected_build_point
 

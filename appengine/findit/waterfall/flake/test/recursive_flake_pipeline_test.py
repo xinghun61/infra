@@ -278,7 +278,10 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, master_build_number, step_name, test_name)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
-  def testUpdateAnalysisUponCompletion(self):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_HasSufficientConfidenceToRunTryJobs',
+      return_value=True)
+  def testUpdateAnalysisUponCompletion(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.last_attempted_swarming_task_id = '12345'
     recursive_flake_pipeline._UpdateAnalysisStatusUponCompletion(
@@ -286,7 +289,10 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis.suspected_flake_build_number, 100)
     self.assertIsNone(analysis.last_attempted_swarming_task_id)
 
-  def testUpdateAnalysisUponCompletionError(self):
+  @mock.patch.object(
+      recursive_flake_pipeline, '_HasSufficientConfidenceToRunTryJobs',
+      return_value=True)
+  def testUpdateAnalysisUponCompletionError(self, _):
     expected_error = {
         'code': 1,
         'message': 'some error message'
@@ -725,7 +731,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(0.8, analysis.culprit.confidence)
     self.assertEqual(analysis_status.COMPLETED, analysis.try_job_status)
 
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value = MOCK_INFO)
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=MOCK_INFO)
   @mock.patch.object(
       lookback_algorithm, 'GetNextRunPointNumber',
       return_value=(None, 100, None))
@@ -767,7 +773,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
                       '',
                       expected_args=[analysis.key.urlsafe(), 9, 'r2', 8,
-                                     _DEFAULT_CACHE_NAME, None ],
+                                     _DEFAULT_CACHE_NAME, None],
                       expected_kwargs={})
 
     pipeline = NextBuildNumberPipeline(
@@ -1002,7 +1008,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value = MOCK_INFO)
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=MOCK_INFO)
   @mock.patch.object(
       lookback_algorithm, 'GetNextRunPointNumber',
       return_value=(None, 100, None))
@@ -1067,7 +1073,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(0.7, analysis.confidence_in_suspected_build)
     self.assertIsNone(analysis.culprit)
 
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value = MOCK_INFO)
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=MOCK_INFO)
   @mock.patch.object(
       lookback_algorithm, 'GetNextRunPointNumber',
       return_value=(None, 98, None))

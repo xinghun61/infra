@@ -107,6 +107,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
         'error': 'RecursiveFlakeTryJobPipeline was aborted unexpectedly',
         'message': 'RecursiveFlakeTryJobPipeline was aborted unexpectedly'
     }
+    flake_analysis.end_time = time_util.GetUTCNow()
     flake_analysis.put()
 
     try_job = FlakeTryJob.Get(
