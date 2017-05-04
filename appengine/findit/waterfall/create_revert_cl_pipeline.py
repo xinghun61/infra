@@ -30,6 +30,7 @@ SKIPPED = 3
 
 NEWEST_BUILD_GREEN = 'Newest build is green.'
 CULPRIT_OWNED_BY_FINDIT = 'Culprit is a revert created by Findit.'
+AUTO_REVERT_OFF = 'Author of the culprit revision has turned off auto-revert.'
 
 
 @ndb.transactional
@@ -113,6 +114,11 @@ def _RevertCulprit(
   if _IsOwnerFindit(culprit_cl_info.owner_email):
     _UpdateCulprit(repo_name, revision, status.SKIPPED,
                    skip_revert_reason=CULPRIT_OWNED_BY_FINDIT)
+    return SKIPPED
+
+  if culprit_cl_info.auto_revert_off:
+    _UpdateCulprit(repo_name, revision, status.SKIPPED,
+                   skip_revert_reason=AUTO_REVERT_OFF)
     return SKIPPED
 
   # 1. Checks if a revert CL by sheriff has been created.

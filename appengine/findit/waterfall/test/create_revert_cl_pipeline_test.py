@@ -241,6 +241,33 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(culprit.skip_revert_reason,
                      create_revert_cl_pipeline.CULPRIT_OWNED_BY_FINDIT)
 
+  @mock.patch.object(codereview_util, 'GetCodeReviewForReview',
+                     return_value=_CODEREVIEW)
+  @mock.patch.object(_CODEREVIEW, 'GetClDetails')
+  def testAutoRevertOff(self, mock_fn, _):
+    repo_name = 'chromium'
+    revision = 'rev1'
+
+    cl_info = ClInfo(self.review_server_host, self.review_change_id)
+    cl_info.auto_revert_off = True
+    cl_info.commits.append(
+      Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
+    mock_fn.return_value = cl_info
+
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    culprit.put()
+    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
+    revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
+
+    self.assertEquals(
+        revert_status, create_revert_cl_pipeline.SKIPPED)
+
+    culprit = WfSuspectedCL.Get(repo_name, revision)
+    self.assertEqual(culprit.revert_status, status.SKIPPED)
+    self.assertIsNone(culprit.revert_cl)
+    self.assertEqual(culprit.skip_revert_reason,
+                     create_revert_cl_pipeline.AUTO_REVERT_OFF)
+
   @mock.patch.object(waterfall_config, 'GetActionSettings',
                      return_value={})
   def testRevertTurnedOff(self, _):
