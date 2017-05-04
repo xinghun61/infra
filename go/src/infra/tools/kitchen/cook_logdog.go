@@ -39,6 +39,10 @@ import (
 const (
 	// defaultRPCTimeout is the default LogDog RPC timeout to apply.
 	defaultRPCTimeout = 30 * time.Second
+
+	// logDogViewerURLTag is a special LogDog tag that is recognized by the LogDog
+	// viewer as a link to the log stream's build page.
+	logDogViewerURLTag = "logdog.viewer_url"
 )
 
 // disableGRPCLogging routes gRPC log messages that are emitted through our
@@ -166,7 +170,10 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 	// Construct our global tags. We will prefer user-supplied tags to our
 	// generated ones.
-	globalTags := make(map[string]string, len(c.logdog.globalTags))
+	globalTags := make(map[string]string, len(c.logdog.globalTags)+1)
+	if c.BuildURL != "" {
+		globalTags[logDogViewerURLTag] = c.BuildURL
+	}
 	if err := c.mode.addLogDogGlobalTags(globalTags, rr.properties, env); err != nil {
 		return 0, errors.Annotate(err).Reason("failed to add global tags").Err()
 	}

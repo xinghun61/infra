@@ -126,6 +126,12 @@ var cmdCook = &subcommands.Command{
 			"",
 			"Temporary directory to use. Forward slashes will be converted into OS-native separators.")
 
+		fs.StringVar(
+			&c.BuildURL,
+			"build-url",
+			"",
+			"An optional URL to the build, which can be used to link to the build in LogDog.")
+
 		c.logdog.addFlags(fs)
 
 		return &c
@@ -147,6 +153,7 @@ type cookRun struct {
 	PrefixPathENV  stringlistflag.Flag
 	CacheDir       string
 	TempDir        string
+	BuildURL       string
 
 	mode   cookModeFlag
 	rr     recipeRun
