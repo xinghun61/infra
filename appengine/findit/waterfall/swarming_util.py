@@ -17,7 +17,6 @@ from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.api.urlfetch_errors import ConnectionClosedError
 from google.appengine.ext import ndb
 
-from common.waterfall import buildbucket_client
 from gae_libs.http import auth_util
 from infra_api_clients import logdog_util
 from model.wf_step import WfStep
@@ -612,19 +611,26 @@ def GetSwarmingBotCounts(dimensions, http_client):
 
   return bot_counts
 
-def GetStepLog(try_job_id, full_step_name, http_client,
+
+def GetStepLog(swarming_task_id, full_step_name, http_client,
                log_type='stdout'):
-  """Returns specific log of the specified step."""
+  """Returns sepcific log of the specified step."""
 
-  error, build = buildbucket_client.GetTryJobs([try_job_id])[0]
-  if error:
-    logging.exception('Error retrieving buildbucket build id: %s' %
-                      try_job_id)
-    return None
+  # 1. Get annotations proto for the build.
+  annotations = logdog_util.GetAnnotationsProtoForSwarmedBuild(
+      swarming_task_id, http_client)
+  if not annotations:
+      return None
 
-  # 1. Get log.
-  data = logdog_util.GetStepLogForBuild(build.response, full_step_name,
-                                        log_type, http_client)
+  # 2. Find the log stream info for the log.
+  logdog_stream = logdog_util.GetStreamForStep(
+      full_step_name, annotations, log_type)
+  if not logdog_stream:
+      return None
+
+  # 3. Get the log.
+  data = logdog_util.GetLogForSwarmedBuild(swarming_task_id, logdog_stream,
+                                           http_client)
 
   if log_type.lower() == 'step_metadata':  # pragma: no branch
     return json.loads(data) if data else None
