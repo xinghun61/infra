@@ -37,13 +37,13 @@
       "search",
       "infra/git/windows-386",
       "-tag",
-      "version:2.12.2.2",
+      "version:2.12.2.2.chromium1",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/windows-386 version:2.12.2.2",
+    "name": "git.cipd search infra/git/windows-386 version:2.12.2.2.chromium1",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -147,6 +147,80 @@
   },
   {
     "cmd": [
+      "[START_DIR]\\git\\package\\cmd\\git.exe",
+      "config",
+      "-f",
+      "[START_DIR]\\git\\package\\mingw32\\etc\\gitconfig",
+      "core.autocrlf",
+      "false"
+    ],
+    "cwd": "[START_DIR]\\git\\package",
+    "name": "git.tweak core.autocrlf=false",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]\\git\\package\\cmd\\git.exe",
+      "config",
+      "-f",
+      "[START_DIR]\\git\\package\\mingw32\\etc\\gitconfig",
+      "core.filemode",
+      "false"
+    ],
+    "cwd": "[START_DIR]\\git\\package",
+    "name": "git.tweak core.filemode=false",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]\\git\\package\\cmd\\git.exe",
+      "config",
+      "-f",
+      "[START_DIR]\\git\\package\\mingw32\\etc\\gitconfig",
+      "core.preloadindex",
+      "true"
+    ],
+    "cwd": "[START_DIR]\\git\\package",
+    "name": "git.tweak core.preloadindex=true",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]\\git\\package\\cmd\\git.exe",
+      "config",
+      "-f",
+      "[START_DIR]\\git\\package\\mingw32\\etc\\gitconfig",
+      "core.fscache",
+      "true"
+    ],
+    "cwd": "[START_DIR]\\git\\package",
+    "name": "git.tweak core.fscache=true",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE[infra::third_party_packages].resources\\profile.d.python.sh",
+      "[START_DIR]\\git\\package\\etc\\profile.d\\python.sh"
+    ],
+    "cwd": "[START_DIR]\\git\\package",
+    "name": "git.install etc/profile.d/python.sh",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
       "cipd.bat",
       "pkg-build",
       "-in",
@@ -180,7 +254,7 @@
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json",
       "-tag",
-      "version:2.12.2.2"
+      "version:2.12.2.2.chromium1"
     ],
     "name": "git.register infra/git/windows-386",
     "~followup_annotations": [

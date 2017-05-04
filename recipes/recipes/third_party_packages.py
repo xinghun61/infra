@@ -31,8 +31,14 @@ GIT_REPO_URL = (
 GIT_PACKAGE_PREFIX = 'infra/git/'
 # A regex for a name of the release asset to package, available at
 # https://github.com/git-for-windows/git/releases
-GIT_FOR_WINDOWS_ASSET_RE = re.compile(
-    r'^PortableGit-(\d+(\.\d+)*)-32-bit\.7z\.exe$')
+GIT_FOR_WINDOWS_ASSET_RES = {
+  32: re.compile(r'^PortableGit-(\d+(\.\d+)*)-32-bit\.7z\.exe$'),
+  64: re.compile(r'^PortableGit-(\d+(\.\d+)*)-64-bit\.7z\.exe$'),
+}
+
+# This version suffix serves to distinguish different revisions of git built
+# with this recipe.
+GIT_PACKAGE_VERSION_SUFFIX = '.chromium1'
 
 
 def RunSteps(api):
@@ -100,7 +106,7 @@ def PackageGitForUnix(api, workdir):
       api.step('make install', ['make', 'install', 'prefix=%s' % target_dir])
 
   tag = GetLatestReleaseTag(api, GIT_REPO_URL, 'v')
-  version = tag.lstrip('v')
+  version = tag.lstrip('v') + GIT_PACKAGE_VERSION_SUFFIX
   EnsurePackage(
       api,
       workdir,
@@ -151,6 +157,9 @@ def PackageGitForWindows(api, workdir):
         '-y',  # Yes to all questions.
       ])
 
+  # TODO(iannucci): move this whole extraction/packaging logic to a separate
+  # resource script so that it can be run locally.
+
   # 7z.exe does not support "RunProgram" installation header, which specifies
   # the script to run after extraction. If the downloaded exe worked, it would
   # run the post-install script. Here we hard-code the name of the file to run
@@ -178,6 +187,33 @@ def PackageGitForWindows(api, workdir):
       # BUG: https://github.com/git-for-windows/git/issues/1147
       ok_ret=(1,))
 
+    # Change the package gitconfig defaults to match what chromium expects, and
+    # enable various performance tweaks.
+    settings = [
+      ('core.autocrlf', 'false'),
+      ('core.filemode', 'false'),
+      ('core.preloadindex', 'true'),
+      ('core.fscache', 'true'),
+    ]
+    # e.g. mingw32/etc/gitconfig
+    unpacked_gitconfig = package_dir.join(
+      'mingw%d' % api.platform.bits, 'etc', 'gitconfig')
+    for setting, value in settings:
+      api.step(
+        'tweak %s=%s' % (setting, value),
+        [
+          package_dir.join('cmd', 'git.exe'),
+          'config',
+          '-f', unpacked_gitconfig,
+          setting, value,
+        ]
+      )
+
+    api.file.copy(
+      'install etc/profile.d/python.sh',
+      api.resource('profile.d.python.sh'),
+      package_dir.join('etc', 'profile.d', 'python.sh'))
+
   CreatePackage(api, package_name, workdir, package_dir, version)
 
 
@@ -197,7 +233,7 @@ def GetLatestGitForWindowsRelease(api):
   asset = None
   version = None
   for a in latest_release['assets']:
-    m = GIT_FOR_WINDOWS_ASSET_RE.match(str(a['name']))
+    m = GIT_FOR_WINDOWS_ASSET_RES[api.platform.bits].match(str(a['name']))
     if not m:
       continue
     if asset is not None:  # pragma: no cover
@@ -208,6 +244,7 @@ def GetLatestGitForWindowsRelease(api):
     version = m.group(1)
   if not asset:  # pragma: no cover
     raise api.step.StepFailure('could not find suitable asset')
+  version += GIT_PACKAGE_VERSION_SUFFIX
   return version, asset['url']
 
 
@@ -319,7 +356,8 @@ def GenTests(api):
           api.platform.name(platform_name) +
           api.platform.bits(bits) +
           api.override_step_data(
-              'git.cipd search %s version:2.12.2.2' % git_package_name,
+              'git.cipd search %s version:2.12.2.2%s' % (
+                git_package_name, GIT_PACKAGE_VERSION_SUFFIX),
               api.cipd.example_search(
                   git_package_name,
                   instances=bool(new_package != 'git')))
