@@ -37,13 +37,13 @@
       "search",
       "infra/git/windows-386",
       "-tag",
-      "version:2.12.2.2.chromium1",
+      "version:2.12.2.2.chromium2",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/windows-386 version:2.12.2.2.chromium1",
+    "name": "git.cipd search infra/git/windows-386 version:2.12.2.2.chromium2",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -221,6 +221,20 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE[infra::third_party_packages].resources\\profile.d.vpython.sh",
+      "[START_DIR]\\git\\package\\etc\\profile.d\\vpython.sh"
+    ],
+    "cwd": "[START_DIR]\\git\\package",
+    "name": "git.install etc/profile.d/vpython.sh",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
       "cipd.bat",
       "pkg-build",
       "-in",
@@ -254,7 +268,7 @@
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json",
       "-tag",
-      "version:2.12.2.2.chromium1"
+      "version:2.12.2.2.chromium2"
     ],
     "name": "git.register infra/git/windows-386",
     "~followup_annotations": [

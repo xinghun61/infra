@@ -149,13 +149,13 @@
       "search",
       "infra/git/linux-amd64",
       "-tag",
-      "version:2.12.2.2.chromium1",
+      "version:2.12.2.2.chromium2",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/linux-amd64 version:2.12.2.2.chromium1",
+    "name": "git.cipd search infra/git/linux-amd64 version:2.12.2.2.chromium2",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -318,7 +318,7 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
       "-tag",
-      "version:2.12.2.2.chromium1"
+      "version:2.12.2.2.chromium2"
     ],
     "name": "git.register infra/git/linux-amd64",
     "~followup_annotations": [

@@ -38,7 +38,7 @@ GIT_FOR_WINDOWS_ASSET_RES = {
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-GIT_PACKAGE_VERSION_SUFFIX = '.chromium1'
+GIT_PACKAGE_VERSION_SUFFIX = '.chromium2'
 
 
 def RunSteps(api):
@@ -213,6 +213,11 @@ def PackageGitForWindows(api, workdir):
       'install etc/profile.d/python.sh',
       api.resource('profile.d.python.sh'),
       package_dir.join('etc', 'profile.d', 'python.sh'))
+
+    api.file.copy(
+      'install etc/profile.d/vpython.sh',
+      api.resource('profile.d.vpython.sh'),
+      package_dir.join('etc', 'profile.d', 'vpython.sh'))
 
   CreatePackage(api, package_name, workdir, package_dir, version)
 
