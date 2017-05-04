@@ -28,6 +28,14 @@
       font-size: 16px;
       line-height: 1.2em;
     }
+    .data-point-detail {
+      position: absolute;
+      display: none;
+      border: 1px solid #fdd;
+      padding: 2px;
+      background-color: #fee;
+      opacity: 0.80;
+    }
     .triage-table, .triage-header, .triage-cell {
       border: 1px solid;
       border-collapse: collapse;
@@ -50,15 +58,15 @@
   <script src="/js/flot/jquery.flot.symbol.min.js"></script>
   <script type="text/javascript">
     var findit = {};
-    findit.masterName = "{{ master_name }}";
-    findit.builderName = "{{ builder_name }}";
+    findit.masterName = '{{ master_name }}';
+    findit.builderName = '{{ builder_name }}';
     findit.regressedBuildNumber = {{ suspected_flake.build_number or -1 }};
     findit.passRates = {{ pass_rates | tojson | safe }};
-    findit.culpritGitHash = "{{ culprit.git_hash }}";
+    findit.culpritGitHash = '{{ culprit.git_hash }}';
 
     function getTriageParameters(triageResult) {
       parameters = {}
-      parameters['key'] = "{{ key }}";
+      parameters['key'] = '{{ key }}';
       parameters['triage_result'] = triageResult;
       return parameters
     }
@@ -74,6 +82,7 @@
       if (params.length == 0) {
         return '/waterfall/triage-flake-analysis'
       } else {
+        params.push('format=json');
         return '/waterfall/triage-flake-analysis?' + params.join('&');
       }
     };
@@ -91,7 +100,7 @@
 
     function DrawFlakeTrend() {
       if (findit.passRates.length == 0) {
-        $('#flake-data').html('No data available yet.');
+        $('#flake-data').text('No data available yet.');
         return;
       }
 
@@ -219,15 +228,6 @@
           minHeight: 300
       });
 
-      $("<div id='tooltip'></div>").css({
-        position: "absolute",
-        display: "none",
-        border: "1px solid #fdd",
-        padding: "2px",
-        "background-color": "#fee",
-        opacity: 0.80
-      }).appendTo("body");
-
       function showTooltipForDataPoint(item) {
         var itemData = item.series.data[item.dataIndex];
         var thisBuildCommitPosition = itemData[0];
@@ -240,46 +240,59 @@
         var lowerBoundRegressionRange = dataPoint.lower_bound_git_hash;
         var tryJobUrl = dataPoint.try_job_url;
 
-        var tooltipStr = 'Pass Rate: ' + passRate + '%';
+        $('#pass-rate').text(passRate);
 
-        if (lowerBoundCommitPosition && lowerBoundRegressionRange && thisBuildCommitPosition && thisBuildGitHash) {
-          tooltipStr += '<br>Range: <a href="https://crrev.com/' + lowerBoundRegressionRange + '..' + thisBuildGitHash + '?pretty=fuller" target="_blank">' + lowerBoundCommitPosition + ':' + thisBuildCommitPosition + '</a>';
+        if (lowerBoundCommitPosition && thisBuildCommitPosition) {
+          $('#range-link').attr('href', 'https://crrev.com/' + lowerBoundCommitPosition+ '..' + thisBuildCommitPosition + '?pretty=fuller');
+          $('#range-link').text(lowerBoundCommitPosition + ':' + thisBuildCommitPosition);
+          $('#range-container').show();
+        } else {
+          $('#range-container').hide();
         }
 
         if (swarmingTaskId) {
-          tooltipStr += '<br>Swarming: <a href="https://chromium-swarm.appspot.com/task?id=' + swarmingTaskId + '" target="_blank">' + swarmingTaskId +'</a>';
+          $('#swarming-task-link').attr('href', 'https://chromium-swarm.appspot.com/task?id=' + swarmingTaskId);
+          $('#swarming-task-link').text(swarmingTaskId);
+          $('#swarming-task-container').show();
         } else {
-          tooltipStr += '<br>Swarming: N/A';
+          $('#swarming-task-container').hide();
         }
 
         if (buildNumber) {
-          tooltipStr += '<br>Build #: <a href="https://luci-milo.appspot.com/buildbot/' + findit.masterName + '/' + findit.builderName + '/' + buildNumber + '" target="_blank">' + buildNumber + '</a>';
+          $('#build-link').attr('href', 'https://luci-milo.appspot.com/buildbot/' + findit.masterName + '/' + findit.builderName + '/' + buildNumber);
+          $('#build-link').text(buildNumber);
+          $('#build-container').show();
+        } else {
+          $('#build-container').hide();
         }
         if (tryJobUrl) {
-          tooltipStr += '<br>Try Job: <a href="' + tryJobUrl + '" target="_blank">link</a>';
+          $('#try-job-link').attr('href', tryJobUrl);
+          $('#try-job-container').show();
+        } else {
+          $('#try-job-container').hide();
         }
 
-        $("#tooltip").html(tooltipStr).css({top: item.pageY + 5, left: item.pageX + 5}).show();
+        $('#data-point-tooltip').css({top: item.pageY + 5, left: item.pageX + 5}).show();
       }
 
       var dataPointSelected = false;
-      $("#flake-data").bind("plothover", function(event, pos, item) {
+      $('#flake-data').bind('plothover', function(event, pos, item) {
         if (dataPointSelected)
           return;  // A data point is selected due to a click.
 
         if (item) {
           showTooltipForDataPoint(item);
         } else {
-          $("#tooltip").hide();
+          $('#data-point-tooltip').hide();
         }
       });
-      $("#flake-data").bind("plotclick", function(event, pos, item) {
+      $('#flake-data').bind('plotclick', function(event, pos, item) {
         if (item) {
           dataPointSelected = true;  // Set selected data point upon click.
           showTooltipForDataPoint(item);
         } else {
           dataPointSelected = false;  // Unselect the data point.
-          $("#tooltip").hide();
+          $('#data-point-tooltip').hide();
         }
       });
 
@@ -300,20 +313,28 @@
       });
     }
 
-    function triageSuspectedFlake(e) {
-      $.getJSON(createTriageUrl(getTriageParameters(e.value)), function(data) {
+    function triageSuspectedFlake(triageResult) {
+      $.getJSON(createTriageUrl(getTriageParameters(triageResult)), function(data) {
         if (! data['success']) {
           alert('Failed to update datastore. Please refresh and try again.');
         } else {
-          $('#flake_result_triaged').html('Result has been recorded. Thank you.')
+          $('#flake_result_triaged').text('Result has been recorded. Thank you!');
         }
       }).error(function(xhr) {
-        // Replace the whole page with errors from server side.
-        document.body.outerHTML = xhr.responseText;
+        var response = xhr.responseJSON;
+        if (xhr.status == 401 && response.login_url) {
+          alert(response.error_message || 'Please login with your Google account first.');
+          window.location.href = response.login_url;
+        }
       });
     }
 
-    $(document).ready(DrawFlakeTrend);
+    $(document).ready(function(){
+      DrawFlakeTrend();
+      $('input[name=triage-radio-button]').on('change', function() {
+        triageSuspectedFlake($(this).val());
+      });
+    });
   </script>
 </head>
 <body>
@@ -378,6 +399,13 @@
     <div class="container">
       <div id="flake-data" class="flake-trend"></div>
     </div>
+    <div id="data-point-tooltip" class="data-point-detail">
+      <div>Pass Rate: <span id="pass-rate"></span>%</div>
+      <div id="range-container">Range: <a id="range-link" target="_blank"></a></div>
+      <div id="swarming-task-container">Swarming: <a id="swarming-task-link" target="_blank"></a></div>
+      <div id="try-job-container">Try-Job: <a id="try-job-link" target="_blank">link</a></div>
+      <div id="build-container">Build: <a id="build-link" target="_blank"></a></div>
+    </div>
   </div>
   <br>
   <div>
@@ -406,7 +434,7 @@
           <th class="triage-header">Feedback</th>
         </tr>
         <tr>
-          {% if (culprit.commit_position or culprit.revision) and culprit.url %}
+          {% if (culprit.commit_position or culprit.git_hash) and culprit.url %}
             <td class="triage-cell">Culprit</td>
             <td class="triage-cell"><a href="{{culprit.url}}">{{culprit.commit_position or culprit.git_hash}}</a></td>
           {% else %}
@@ -414,16 +442,8 @@
             <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a></a></td>
           {% endif %}
           <td class="triage-cell">
-            {% if suspected_flake.triage_result == 1 %}
-              <input type="radio" name="triage-radio-button" value="2" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
-              <input type="radio" name="triage-radio-button" value="1" checked="checked" onchange= "triageSuspectedFlake(this)">Incorrect
-            {% elif suspected_flake.triage_result == 2 %}
-              <input type="radio" name="triage-radio-button" value="2" checked="checked" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
-              <input type="radio" name="triage-radio-button" value="1" onchange="triageSuspectedFlake(this)">Incorrect
-            {% else %}
-              <input type="radio" name="triage-radio-button" value="2" onchange="triageSuspectedFlake(this)">Correct &nbsp;&nbsp;
-              <input type="radio" name="triage-radio-button" value="1" onchange="triageSuspectedFlake(this)">Incorrect
-            {% endif %}
+            <input type="radio" name="triage-radio-button" value="2" {{ "checked" if suspected_flake.triage_result == 2 else ""}} >Correct &nbsp;&nbsp;
+            <input type="radio" name="triage-radio-button" value="1" {{ "checked" if suspected_flake.triage_result == 1 else ""}}>Incorrect
           </td>
         </tr>
       </table>
