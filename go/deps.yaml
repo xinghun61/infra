@@ -235,7 +235,7 @@ import:
   subpackages:
   - gerrit
 - package: github.com/shirou/gopsutil
-  version: v2.0.0
+  version: v2.17.04
   repo: https://chromium.googlesource.com/external/github.com/shirou/gopsutil.git
 - package: github.com/shirou/w32
   version: master
@@ -272,7 +272,7 @@ import:
   - query
 - package: github.com/Microsoft/go-winio
   repo: https://chromium.googlesource.com/external/github.com/Microsoft/go-winio.git
-  version: master
+  version: tags/v0.3.9  # Later versions add a cgo dependency.
 - package: github.com/docker/docker
   version: tags/v1.13.0
   repo: https://chromium.googlesource.com/external/github.com/docker/docker.git
