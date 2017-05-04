@@ -20,6 +20,9 @@
       background-color: #e98080;
       border-color: #a77272;
     }
+    .hidden {
+      display: none;
+    }
     {% block style %}{% endblock style %}
   </style>
   <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
@@ -31,55 +34,58 @@
     findit.analysisFailed = '{{analysis_failed}}' == 'True';
     findit.builderUrl = 'https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}';
     findit.buildUrl = findit.builderUrl + '/{{build_number}}';
-    findit.triageReferenceAnalysisUrl = '/waterfall/build-failure?url=https://luci-milo.appspot.com/buildbot/{{triage_reference_analysis_master_name}}/{{triage_reference_analysis_builder_name}}/{{triage_reference_analysis_build_number}}';
     findit.analysisCorrect = '{{analysis_correct}}';  // Possible values: 'None', 'True', or 'False'.
-    findit.analysisIsDuplicate = '{{analysis_is_duplicate}}' == 'True';
-    findit.showTriageHelpButton = '{{show_triage_help_button}}' == 'True';
     findit.showDebugInfo = '{{show_debug_info}}' == 'True';
 
     {% block constant %}{% endblock constant %}
 
+    function handleLogin(httpStatus, response) {
+      if (httpStatus == 401 && response.login_url) {
+        alert(response.error_message || 'Please login with your Google account first.');
+        window.location.href = response.login_url;
+      } else {
+        alert('Unknown error. Please refresh the page and try again!');
+      }
+    }
+
     function triageSuspectedCL(e) {
-      $.getJSON('/waterfall/triage-suspected-cl?cl_info=' + e.name +'&status=' + e.value + '&url=' + findit.buildUrl, function(data) {
+      $.getJSON('/waterfall/triage-suspected-cl?format=json&cl_info=' + e.name +'&status=' + e.value + '&url=' + findit.buildUrl, function(data) {
         if (! data['success']) {
           alert('Failed to update datastore. Please refresh and try again.');
         } else {
-          $('#cl_result_triaged').html('Result has been recorded. Thank you.')
+          $('#cl-result-triaged').text('Result has been recorded. Thank you!')
         }
       }).error(function(xhr) {
-        // Replace the whole page with errors from server side.
-        document.body.outerHTML = xhr.responseText;
+        handleLogin(xhr.status, xhr.responseJSON);
       });
     }
 
-    function triageHelp(e) {
-      $('#triage_help_button').prop('disabled', true);
-      $('#triage_help_result').html("Checking...");
-      $.getJSON('/waterfall/help-triage?url=' + findit.buildUrl, function(data) {
+    function triageHelp() {
+      $('#triage-help-button').prop('disabled', true);
+      $('#triage-help-running').show();
+      $.getJSON('/waterfall/help-triage?format=json&url=' + findit.buildUrl, function(data) {
+        $('#triage-help-running').hide();
         if (! jQuery.isEmptyObject(data)) {
-          tableString = '<table><tr><th width="150">Build Number</th><th width="150">Culprit CL</th>'
-          tableString += '<th width="150">Fix Build Number</th><th width="150">Possible Fixing CL</th><th width="100">Action</th></tr>';
+          var tbody = $(document.createElement('tbody'));
           $.each(data, function(key, value) {
-            tableString += '<tr>';
-            tableString += '<td><a href="' + value.fixed_build_url + '" target="_blank">' + value.fixed_build_number +'</a></td>';
-            tableString += '<td><a href="' + value.fixed_cl_review_url + '" target="_blank">' + value.fixed_cl_commit_position +'</a></td>';
-            tableString += '<td><a href="' + value.fixing_build_url + '" target="_blank">' + value.fixing_build_number +'</a></td>';
-            tableString += '<td><a href="' + value.fixing_cl_review_url + '" target="_blank">' + value.fixing_cl_commit_position +'</a></td>';
-            tableString += '<td>' + value.action + '</td>';
-            tableString += '</tr>';
+            var tr = $(document.createElement('tr'));
+            tr.append($(document.createElement('td')).append($(document.createElement('a')).attr('href', value.fixed_build_url).attr('target', '_blank').text(value.fixed_build_number)));
+            tr.append($(document.createElement('td')).append($(document.createElement('a')).attr('href', value.fixed_cl_review_url).attr('target', '_blank').text(value.fixed_cl_commit_position)));
+            tr.append($(document.createElement('td')).append($(document.createElement('a')).attr('href', value.fixing_build_url).attr('target', '_blank').text(value.fixing_build_number)));
+            tr.append($(document.createElement('td')).append($(document.createElement('a')).attr('href', value.fixing_cl_review_url).attr('target', '_blank').text(value.fixing_cl_commit_position)));
+            tr.append($(document.createElement('td')).text(value.action));
+            tbody.append(tr);
           });
-          tableString += '</table>';
-          $('#triage_help_result').html(tableString);
+          $('#triage-help-result-table').append(tbody);
+          $('#triage-help-result-container').show();
         } else {
-          $('#triage_help_result').html('No results found.');
+          $('#triage-help-no-result').show();
         }
-        $('#triage_help_button').prop('disabled', false);
+        $('#triage-help-button').prop('disabled', false);
       }).error(function(xhr) {
-        // Replace the whole page with errors from server side.
-        document.body.outerHTML = xhr.responseText;
+        $('#triage-help-running').hide();
+        handleLogin(xhr.status, xhr.responseJSON);
       });
-
-      e.preventDefault();
     }
 
     {% block functions %}{% endblock functions %}
@@ -100,23 +106,12 @@
           $('#status_message').text('error');
           $('#status_message').attr('class', 'error');
         } else {
-          // TODO: use another style when no culprit CL is found.
           $('#status_message').text('completed');
           $('#status_message').attr('class', 'completed');
 
           {% block failure_classification %}{% endblock failure_classification %}
 
-          {% if show_debug_info %}
-            if (findit.analysisIsDuplicate) {
-              $('#duplicate_reference').html('This analysis was automatically triaged as a duplicate because of another build analysis: ' +
-                                             '<a href="' + findit.triageReferenceAnalysisUrl + '">{{triage_reference_analysis_master_name}}/' +
-                                             '{{triage_reference_analysis_builder_name}}/{{triage_reference_analysis_build_number}}</a>');
-            }
-          {% endif %}
-
-          if (findit.showTriageHelpButton) {
-            $('#triage_help_button').click(triageHelp);
-          }
+          $('#triage-help-button').click(triageHelp);
         }
       }
 
@@ -134,7 +129,7 @@
   </script>
 </head>
 <body>
-  Findit now provides results from both heuristics and try-jobs. (<a href="https://code.google.com/p/chromium/issues/entry?status=Unconfirmed&labels=Pri-2,findit&summary=Findit%20bug%20or%20reature%20request&comment=Url%20to%20the%20build%20Failure:%0Ahttps://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}%0A%0AWhat%20is%20the%20bug%20or%20feature:%0A" target="_blank">File a Findit bug</a>)
+  Findit now provides results from both heuristics and try-jobs. (<a href="https://code.google.com/p/chromium/issues/entry?status=Unconfirmed&labels=Pri-2&components=Tools>Test>FindIt>Waterfall&summary=Findit%20bug%20or%20reature%20request&comment=Url%20to%20the%20build%20Failure:%0Ahttps://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}%0A%0AWhat%20is%20the%20bug%20or%20feature:%0A" target="_blank">File a Findit bug</a>)
   <br>
   <br>
 
@@ -201,11 +196,12 @@
           {% endfor %}
         </table>
       {% endif %}
-      <div id="cl_result_triaged"></div>
+      <div id="cl-result-triaged"></div>
     </div>
-    {% if show_debug_info %}
-      <div id="duplicates_marked"></div>
-      <div id="duplicate_reference"></div>
+    {% if show_debug_info and analysis_is_duplicate %}
+      <div>
+        This analysis was automatically triaged as a duplicate of another build analysis: <a href="/waterfall/build-failure?url=https://luci-milo.appspot.com/buildbot/{{triage_reference_analysis_master_name}}/{{triage_reference_analysis_builder_name}}/{{triage_reference_analysis_build_number}}">{{triage_reference_analysis_master_name}}/{{triage_reference_analysis_builder_name}}/{{triage_reference_analysis_build_number}}</a>
+      </div>
     {% endif %}
   </div>
   {% endif %}
@@ -213,9 +209,26 @@
   {% if show_triage_help_button %}
     <br><br>
     <div id="triage_help">
-      <button id="triage_help_button">Triage help</button>
+      <button id="triage-help-button">Triage help</button>
       <br>
-      <div id="triage_help_result">
+      <div id="triage-help-running" class="hidden">
+        Checking...
+      </div>
+      <div id="triage-help-result-container" class="hidden">
+        <table id="triage-help-result-table">
+          <thead>
+            <tr>
+              <th width="150">Build Number</th>
+              <th width="150">Culprit/Suspect</th>
+              <th width="150">Fix Build Number</th>
+              <th width="150">Possible Fixing CL</th>
+              <th width="100">Action</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+      <div id="triage-help-no-result" class="hidden">
+        No results found.
       </div>
     </div>
   {% endif %}
