@@ -24,6 +24,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
                 'step_name': 'a',
                 'first_failure': 98,
                 'last_pass': None,
+                'supported': True,
                 'suspected_cls': [
                     {
                         'build_number': 99,
@@ -42,6 +43,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
                 'step_name': 'b',
                 'first_failure': 98,
                 'last_pass': None,
+                'supported': True,
                 'suspected_cls': [
                     {
                         'build_number': 99,
@@ -63,6 +65,30 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
                      identify_culprit_pipeline._GetResultAnalysisStatus(
                          dummy_result))
 
+  def testGetResultAnalysisStatusUnsupported(self):
+    dummy_result = {
+        'failures': [
+            {
+                'step_name': 'a',
+                'first_failure': 98,
+                'last_pass': None,
+                'supported': False,
+                'suspected_cls': [],
+            },
+            {
+                'step_name': 'b',
+                'first_failure': 98,
+                'last_pass': None,
+                'supported': False,
+                'suspected_cls': [],
+            }
+        ]
+    }
+
+    self.assertEqual(result_status.UNSUPPORTED,
+                     identify_culprit_pipeline._GetResultAnalysisStatus(
+                         dummy_result))
+
   def testGetResultAnalysisStatusNotFoundUntriaged(self):
     dummy_result = {
         'failures': [
@@ -70,12 +96,14 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
                 'step_name': 'a',
                 'first_failure': 98,
                 'last_pass': None,
+                'supported': True,
                 'suspected_cls': [],
             },
             {
                 'step_name': 'b',
                 'first_failure': 98,
                 'last_pass': None,
+                'supported': False,
                 'suspected_cls': [],
             }
         ]

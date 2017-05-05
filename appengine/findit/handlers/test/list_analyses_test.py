@@ -89,6 +89,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                'step_name': 'b',
                'first_failure': 1,
                'last_pass': None,
+               'supported': True,
                'suspected_cls': [
                    {
                        'build_number': 1,
@@ -112,12 +113,14 @@ class ListAnalysesTest(testing.AppengineTestCase):
                'step_name': 'a',
                'first_failure': 2,
                'last_pass': None,
+               'supported': True,
                'suspected_cls': [],
            },
            {
                'step_name': 'b',
                'first_failure': 1,
                'last_pass': None,
+               'supported': True,
                'suspected_cls': [],
            }
        ]
@@ -129,12 +132,14 @@ class ListAnalysesTest(testing.AppengineTestCase):
                'step_name': 'a',
                'first_failure': 3,
                'last_pass': None,
+               'supported': True,
                'suspected_cls': [],
            },
            {
                'step_name': 'b',
                'first_failure': 2,
                'last_pass': None,
+               'supported': True,
                'suspected_cls': [],
            }
        ]
@@ -146,6 +151,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                'step_name': 'a',
                'first_failure': 7,
                'last_pass': None,
+               'supported': True,
                'suspected_cls': [
                    {
                        'build_number': 7,
@@ -175,6 +181,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                'step_name': 'b',
                'first_failure': 7,
                'last_pass': None,
+               'supported': True,
                'suspected_cls': [
                    {
                        'build_number': 7,
@@ -199,12 +206,14 @@ class ListAnalysesTest(testing.AppengineTestCase):
                'step_name': 'a',
                'first_failure': 9,
                'last_pass': None,
+               'supported': True,
                'suspected_cls': [],
            },
            {
                'step_name': 'b',
                'first_failure': 9,
                'last_pass': None,
+               'supported': True,
                'suspected_cls': [
                    {
                        'build_number': 9,
@@ -228,6 +237,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                'step_name': 'a',
                'first_failure': 10,
                'last_pass': None,
+               'supported': True,
                'suspected_cls': [
                    {
                        'build_number': 10,
@@ -246,6 +256,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
                'step_name': 'b',
                'first_failure': 10,
                'last_pass': None,
+               'supported': True,
                'suspected_cls': [{
                        'build_number': 10,
                        'repo_name': 'chromium',

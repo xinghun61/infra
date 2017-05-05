@@ -25,11 +25,16 @@ def _GetResultAnalysisStatus(analysis_result):
   if not analysis_result or not analysis_result['failures']:
     return None
 
+  any_supported = False
   for failure in analysis_result['failures']:
     if failure['suspected_cls']:
       return result_status.FOUND_UNTRIAGED
 
-  return result_status.NOT_FOUND_UNTRIAGED
+    if failure['supported']:
+      any_supported = True
+
+  return (result_status.NOT_FOUND_UNTRIAGED if any_supported else
+          result_status.UNSUPPORTED)
 
 
 def _SaveSuspectedCLs(
