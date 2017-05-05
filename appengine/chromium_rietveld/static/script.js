@@ -577,6 +577,8 @@ function M_createRevertPatchset() {
 }
 
 function M_triggerCQDryRun(issue) {
+  event.preventDefault();
+
   var confirmed = confirm(
       'Send this patchset to the project\'s CQ to run all of its checks without submitting the ' +
       'change.\n\nNote: The LGTM check is skipped during the dry run ' +
