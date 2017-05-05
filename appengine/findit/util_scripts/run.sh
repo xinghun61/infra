@@ -18,7 +18,7 @@ if [[ has_realpath == "0" ]]; then
   GOOGLE_APP_ENGINE_DIR="$(realpath ${GOOGLE_APP_ENGINE_DIR})"
 fi
 APP_CFG="${GOOGLE_APP_ENGINE_DIR}/appcfg.py"
-FINDIT_MODULES="${FINDIT_DIR}/app.yaml ${FINDIT_DIR}/waterfall-frontend.yaml ${FINDIT_DIR}/waterfall-backend.yaml ${FINDIT_DIR}/crash-frontend.yaml ${FINDIT_DIR}/crash-backend-fracas.yaml"
+FINDIT_MODULES="${FINDIT_DIR}/app.yaml ${FINDIT_DIR}/waterfall-frontend.yaml ${FINDIT_DIR}/waterfall-backend.yaml"
 
 if [[ -z "${USER}" ]]; then
   echo "Cannot identify who is deploying Findit. Please set USER."

@@ -30,16 +30,8 @@ from handlers import triage_suspected_cl
 from handlers import try_job_dashboard
 from handlers import try_job_push
 from handlers import version
-from handlers.crash import crash_config
-from handlers.crash import crash_handler
-from handlers.crash import cracas_dashboard
-from handlers.crash import cracas_result_feedback
-from handlers.crash import fracas_dashboard
-from handlers.crash import fracas_result_feedback
-from handlers.crash import update_component_config
 from handlers.flake import check_flake
 from handlers.flake import list_flakes
-from handlers.crash import triage_analysis
 from handlers.flake import triage_flake_analysis
 
 # Default module.
@@ -122,25 +114,3 @@ waterfall_backend_web_pages_handler_mappings = [
 waterfall_backend_web_application = webapp2.WSGIApplication(
     waterfall_backend_web_pages_handler_mappings, debug=False)
 gae_ts_mon.initialize(waterfall_backend_web_application)
-
-
-# "crash-frontend" module.
-crash_frontend_web_pages_handler_mappings = [
-    ('/crash/config', crash_config.CrashConfig),
-    ('/crash/update-component-config',
-     update_component_config.UpdateComponentConfig),
-    ('/crash/cracas-dashboard', cracas_dashboard.CracasDashBoard),
-    ('/crash/cracas-result-feedback',
-     cracas_result_feedback.CracasResultFeedback),
-    ('/crash/fracas-dashboard', fracas_dashboard.FracasDashBoard),
-    ('/crash/fracas-result-feedback',
-     fracas_result_feedback.FracasResultFeedback),
-    ('/crash/triage-analysis',
-     triage_analysis.TriageAnalysis),
-    ('/_ah/push-handlers/crash/fracas', crash_handler.CrashHandler),
-    ('/_ah/push-handlers/crash/cracas', crash_handler.CrashHandler),
-    ('/_ah/push-handlers/crash/clusterfuzz', crash_handler.CrashHandler),
-]
-crash_frontend_web_application = webapp2.WSGIApplication(
-    crash_frontend_web_pages_handler_mappings, debug=False)
-gae_ts_mon.initialize(crash_frontend_web_application)

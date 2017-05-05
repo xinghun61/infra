@@ -13,6 +13,3 @@ dispatch:
 
   - url: "*/waterfall/*"
     module: waterfall-frontend
-
-  - url: "*/crash/*"
-    module: crash-frontend
