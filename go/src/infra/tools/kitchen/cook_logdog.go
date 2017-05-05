@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
 	"infra/libs/infraenv"
@@ -382,12 +381,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	defer func() {
 		as := annoteeProcessor.Finish()
 		build = as.RootStep().Proto()
-
-		// Dump the annotations on completion, unless we're already dumping them
-		// to a file (debug), in which case this is redundant.
-		if c.logdog.filePath == "" {
-			log.Infof(ctx, "Annotations finished:\n%s", proto.MarshalTextString(as.RootStep().Proto()))
-		}
 	}()
 
 	// Run STDOUT/STDERR streams through the processor. This will block until
