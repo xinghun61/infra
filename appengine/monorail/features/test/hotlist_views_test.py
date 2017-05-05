@@ -84,6 +84,7 @@ class HotlistViewTest(unittest.TestCase):
     hotlist_view = hotlist_views.HotlistView(
         hotlist, self.user_auth, 1, self.users_by_id)
     self.assertFalse(hotlist_view.visible)
+    self.assertEqual(hotlist_view.url, '/u/1/hotlists/private')
 
   def testFriendlyURL(self):
     # owner with obscure_email:false
