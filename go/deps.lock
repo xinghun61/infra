@@ -1,8 +1,8 @@
 hash: 541cb70ce4d2317a93111a9bfa0d2c485b6e3fa271c72dfb1f940f805b1a4703
-updated: 2017-05-04T13:46:46.468949719+10:00
+updated: 2017-05-05T10:48:38.570248474-07:00
 imports:
 - name: cloud.google.com/go
-  version: 085c05ca074a8de9107005f9baa6308eae7eaf41
+  version: 3c8d9080f03b236321fa5054747cd310cba50edd
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -18,7 +18,7 @@ imports:
   subpackages:
   - memcache
 - name: github.com/danjacques/gofslock
-  version: 680376e31408bf9a43fb39cbceeeb9012728d081
+  version: 050ea99730c49ae86f0137abada228c5f5a78bd9
   repo: https://chromium.googlesource.com/external/github.com/danjacques/gofslock.git
   subpackages:
   - fslock
@@ -205,7 +205,7 @@ imports:
   - google
   - jwt
 - name: golang.org/x/sync
-  version: de49d9dcd27d4f764488181bea099dfe6179bcf0
+  version: 305c7b3edb4364a58141b30686a61a87bdb79a3a
   repo: https://go.googlesource.com/sync.git
   subpackages:
   - errgroup
@@ -218,7 +218,7 @@ imports:
   version: 470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 2382e3994d48b1d22acc2c86bcad0a2aff028e32
+  version: 15b145e4e3bee8ae65bfd262016b9fa6e144f40b
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -264,7 +264,7 @@ imports:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: 68a5d50f4517bae2b44b18092410fe248d153f1e
+  version: 844f573616520565fdc6fb4db242321b5456fd6d
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
