@@ -10,6 +10,7 @@ See: //docs/testing/web_platform_tests.md in chromium/src.
 import contextlib
 
 DEPS = [
+  'build/chromium',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
