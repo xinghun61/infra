@@ -18,6 +18,7 @@ More details in the script at third_party/WebKit/Tools/Scripts/wpt-export.
 import contextlib
 
 DEPS = [
+  'build/chromium',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
