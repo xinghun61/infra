@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
 
@@ -26,6 +28,7 @@ import (
 
 	"infra/tools/kitchen/migration"
 	"infra/tools/kitchen/proto"
+	"infra/tools/kitchen/third_party/recipe_engine"
 )
 
 // BootstrapStepName is the name of kitchen's step where it makes preparations
@@ -42,9 +45,7 @@ var cmdCook = &subcommands.Command{
 
 		// Initialize our AnnotationFlags operational argument.
 		c.rr.opArgs.AnnotationFlags = &recipe_engine.Arguments_AnnotationFlags{}
-		c.rr.opArgs.EngineFlags = &recipe_engine.Arguments_EngineFlags{
-			UseResultProto: true,
-		}
+		c.rr.opArgs.EngineFlags = &recipe_engine.Arguments_EngineFlags{}
 
 		fs := &c.Flags
 		fs.Var(&c.mode,
@@ -109,10 +110,10 @@ var cmdCook = &subcommands.Command{
 			"A file containing a JSON string of properties. Mutually exclusive with -properties.")
 
 		fs.StringVar(
-			&c.rr.outputResultJSONFile,
+			&c.OutputResultJSONPath,
 			"output-result-json",
 			"",
-			"The file to write the JSON serialized returned value of the recipe to")
+			"The file to write the result to as a JSONPB-formatted CookResult proto message")
 
 		fs.StringVar(
 			&c.CacheDir,
@@ -156,6 +157,8 @@ type cookRun struct {
 	TempDir        string
 	BuildURL       string
 
+	OutputResultJSONPath string
+
 	mode   cookModeFlag
 	rr     recipeRun
 	logdog cookLogDogParams
@@ -183,11 +186,11 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	}
 
 	if c.RepositoryURL != "" && !validRevisionRe.MatchString(c.Revision) {
-		return fmt.Errorf("invalid revision %q", c.Revision)
+		return inputError("invalid revision %q", c.Revision)
 	}
 
 	if c.CheckoutDir == "" {
-		return fmt.Errorf("empty -checkout-dir")
+		return inputError("empty -checkout-dir")
 	}
 	switch st, err := os.Stat(c.CheckoutDir); {
 	case os.IsNotExist(err) && c.RepositoryURL == "":
@@ -253,32 +256,46 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 		}
 	}
 
+	c.OutputResultJSONPath = filepath.FromSlash(c.OutputResultJSONPath)
 	return nil
 }
 
 // ensureAndRunRecipe ensures that we have the recipe (according to -repository,
 // -revision and -checkout-dir) and runs it.
-func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) (recipeExitCode int, err error) {
+func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *kitchen.CookResult {
+	result := &kitchen.CookResult{}
+
+	fail := func(err error) *kitchen.CookResult {
+		if err == nil {
+			panic("do not call fail with nil err")
+		}
+		if result.KitchenError != nil {
+			panic("bug! forgot to return the result on previous error")
+		}
+		result.KitchenError = kitchenError(err)
+		return result
+	}
+
 	if c.RepositoryURL == "" {
 		// The ready-to-run recipe is already present on the file system.
 		recipesPath, err := exec.LookPath(filepath.Join(c.CheckoutDir, "recipes"))
 		if err != nil {
-			return 0, errors.Annotate(err).Reason("could not find bundled recipes").Err()
+			return fail(errors.Annotate(err).Reason("could not find bundled recipes").Err())
 		}
 		c.rr.cmdPrefix = []string{recipesPath}
 	} else {
-		// Fetch the repo.
+		// Fetch the recipe.
 		if err := checkoutRepository(ctx, c.CheckoutDir, c.RepositoryURL, c.Revision); err != nil {
-			return 0, errors.Annotate(err).Reason("could not checkout %(repo)q at %(rev)q to %(path)q").
+			return fail(errors.Annotate(err).Reason("could not checkout %(repo)q at %(rev)q to %(path)q").
 				D("repo", c.RepositoryURL).
 				D("rev", c.Revision).
 				D("path", c.CheckoutDir).
-				Err()
+				Err())
 		}
 		// Read the path to the recipes.py within the fetched repo.
 		recipesPath, err := getRecipesPath(c.CheckoutDir)
 		if err != nil {
-			return 0, errors.Annotate(err).Reason("could not recipes.cfg").Err()
+			return fail(errors.Annotate(err).Reason("could not read recipes.cfg").Err())
 		}
 		c.rr.cmdPrefix = []string{
 			"python",
@@ -287,32 +304,70 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) (reci
 	}
 
 	// Setup our working directory.
+	var err error
 	c.rr.workDir, err = prepareRecipeRunWorkDir(c.rr.workDir)
 	if err != nil {
-		return 0, errors.Annotate(err).Reason("failed to prepare workdir").Err()
+		return fail(errors.Annotate(err).Reason("failed to prepare workdir").Err())
 	}
 
-	// Bootstrap through LogDog Butler?
+	// Tell the recipe to write the result protobuf message to a file and read
+	// it below.
+	c.rr.opArgs.EngineFlags.UseResultProto = true
+	c.rr.outputResultJSONFile = filepath.Join(c.TempDir, "recipe-result.json")
+
+	rv := 0
 	if c.logdog.active() {
-		return c.runWithLogdogButler(ctx, &c.rr, env)
+		rv, result.Build, err = c.runWithLogdogButler(ctx, &c.rr, env)
+		if err != nil {
+			return fail(errors.Annotate(err).Reason("failed to run recipe").Err())
+		}
+	} else {
+		// This code is reachable only in buildbot mode.
+		recipeCmd, err := c.rr.command(ctx, filepath.Join(c.TempDir, "rr"), env)
+		if err != nil {
+			return fail(errors.Annotate(err).Reason("failed to build recipe command").Err())
+		}
+		printCommand(ctx, recipeCmd)
+
+		recipeCmd.Stdout = os.Stdout
+		recipeCmd.Stderr = os.Stderr
+
+		err = recipeCmd.Run()
+		var hasRV bool
+		rv, hasRV = exitcode.Get(err)
+		if !hasRV {
+			return fail(errors.Annotate(err).Reason("failed to run recipe").Err())
+		}
 	}
+	result.RecipeExitCode = &kitchen.OptionalInt32{Value: int32(rv)}
 
-	// This code is reachable only in buildbot mode.
-
-	recipeCmd, err := c.rr.command(ctx, filepath.Join(c.TempDir, "rr"), env)
+	// Now read the recipe result file.
+	recipeResultFile, err := os.Open(c.rr.outputResultJSONFile)
 	if err != nil {
-		return 0, fmt.Errorf("failed to build recipe command: %s", err)
+		// The recipe result file must exist and be readable.
+		// If it is not, it is a fatal error.
+		return fail(errors.Annotate(err).Reason("could not read recipe result file at %(path)q").
+			D("path", c.rr.outputResultJSONFile).
+			Err())
 	}
-	printCommand(ctx, recipeCmd)
-
-	recipeCmd.Stdout = os.Stdout
-	recipeCmd.Stderr = os.Stderr
-
-	err = recipeCmd.Run()
-	if rv, has := exitcode.Get(err); has {
-		return rv, nil
+	defer recipeResultFile.Close()
+	result.RecipeResult = &recipe_engine.Result{}
+	if err := jsonpb.Unmarshal(recipeResultFile, result.RecipeResult); err != nil {
+		return fail(errors.Annotate(err).Reason("could not parse recipe result").Err())
 	}
-	return 0, fmt.Errorf("failed to run recipe: %s", err)
+
+	// TODO(nodir): verify consistency between result.Build and result.RecipeResult.
+
+	if result.RecipeResult.GetFailure() != nil && result.RecipeResult.GetFailure().GetFailure() == nil {
+		// The recipe run has failed and the failure type is not step failure.
+		result.KitchenError = &kitchen.KitchenError{
+			Text: fmt.Sprintf("recipe infra failure: %s", result.RecipeResult.GetFailure().HumanReason),
+			Type: kitchen.KitchenError_RECIPE_INFRA_FAILURE,
+		}
+		return result
+	}
+
+	return result
 }
 
 // stepModuleProperties are constructed properties for the "recipe_engine/step"
@@ -418,41 +473,61 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	return props, nil
 }
 
-func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.Env) (exitCode int) {
+func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+	// The first thing we do is write a result file in case we crash or get killed.
+	// Note that this code is not reachable if subcommands package could not
+	// parse flags.
+	result := &kitchen.CookResult{
+		KitchenError: &kitchen.KitchenError{
+			Type: kitchen.KitchenError_INTERNAL_ERROR,
+			Text: "kitchen crashed or got killed",
+		},
+	}
+	if err := c.flushResult(result); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 1
+	}
 	ctx := cli.GetContext(a, c, env)
 	sysEnv := environ.System()
 
-	rc, err := getReturnCode(c.run(ctx, args, sysEnv))
-	switch {
-	case errors.Unwrap(err) == context.Canceled:
-		log.Warningf(ctx, "Process was cancelled.")
-	case err != nil:
-		if userError, ok := errors.Unwrap(err).(InputError); ok {
-			fmt.Fprintln(os.Stderr, string(userError))
-		} else {
-			logAnnotatedErr(ctx, err)
-		}
+	result = c.run(ctx, args, sysEnv)
+	fmt.Println(strings.Repeat("-", 35), "RESULTS", strings.Repeat("-", 36))
+	proto.MarshalText(os.Stdout, result)
+	fmt.Println(strings.Repeat("-", 80))
+
+	if err := c.flushResult(result); err != nil {
+		fmt.Fprintf(os.Stderr, "could not flush result to a file: %s\n", err)
+		return 1
 	}
-	return rc
+
+	if result.KitchenError != nil {
+		fmt.Fprintln(os.Stderr, "run failed because of the kitchen error")
+		return 1
+	}
+	return 0
 }
 
-func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) error {
+// run runs the cook subcommmand and returns cook result.
+func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *kitchen.CookResult {
+	fail := func(err error) *kitchen.CookResult {
+		return &kitchen.CookResult{KitchenError: kitchenError(err)}
+	}
 	// Process input.
 	if len(args) != 0 {
-		return inputError("unexpected arguments: %v", args)
+		return fail(inputError("unexpected arguments: %v", args))
 	}
 	if _, err := os.Getwd(); err != nil {
-		return inputError("failed to resolve CWD: %s", err)
+		return fail(inputError("failed to resolve CWD: %s", err))
 	}
 	if err := c.normalizeFlags(env); err != nil {
-		return err
+		return fail(err)
 	}
 
 	// initialize temp dir.
 	if c.TempDir == "" {
 		tdir, err := ioutil.TempDir("", "kitchen")
 		if err != nil {
-			return errors.Annotate(err).Reason("failed to create temporary directory").Err()
+			return fail(errors.Annotate(err).Reason("failed to create temporary directory").Err())
 		}
 		c.TempDir = tdir
 		defer func() {
@@ -462,13 +537,14 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) error
 		}()
 	}
 
+	// Prepare recipe properties. Print them too.
 	var err error
 	if c.rr.properties, err = c.prepareProperties(env); err != nil {
-		return err
+		return fail(err)
 	}
 	propsJSON, err := json.MarshalIndent(c.rr.properties, "", "  ")
 	if err != nil {
-		return errors.Annotate(err).Reason("could not marshal properties to JSON").Err()
+		return fail(errors.Annotate(err).Reason("could not marshal properties to JSON").Err())
 	}
 	log.Infof(ctx, "using properties:\n%s", propsJSON)
 
@@ -496,7 +572,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) error
 			// Order is not stable, but that is okay.
 			jv, err := json.Marshal(v)
 			if err != nil {
-				return errors.Annotate(err).Err()
+				return fail(errors.Annotate(err).Err())
 			}
 			annotate("SET_BUILD_PROPERTY", k, string(jv))
 		}
@@ -507,19 +583,45 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) error
 	// In practice, we do it so that kitchen uses the installed git wrapper.
 	path, _ := env.Get("PATH")
 	if err := os.Setenv("PATH", path); err != nil {
-		return errors.Annotate(err).Reason("failed to update process PATH").Err()
+		return fail(errors.Annotate(err).Reason("failed to update process PATH").Err())
 	}
+
 	// Run the recipe.
-	recipeExitCode, err := c.ensureAndRunRecipe(ctx, env)
+	result := c.ensureAndRunRecipe(ctx, env)
+	bootstrapSuccess = result.KitchenError == nil
+	return result
+}
+
+// flushResult writes the result to c.OutputResultJSOPath file
+// if the path is specified.
+func (c *cookRun) flushResult(result *kitchen.CookResult) (err error) {
+	if c.OutputResultJSONPath == "" {
+		return nil
+	}
+
+	defer func() {
+		if err != nil {
+			err = errors.Annotate(err).Reason("could not write result file at %(path)q").
+				D("path", c.OutputResultJSONPath).
+				Err()
+		}
+	}()
+
+	f, err := os.Create(c.OutputResultJSONPath)
 	if err != nil {
 		return err
 	}
-	bootstrapSuccess = true
-	return returnCodeError(recipeExitCode)
+	defer func() {
+		err = f.Close()
+		if err != nil {
+			err = errors.Annotate(err).Reason("could not close file").Err()
+		}
+	}()
+	m := jsonpb.Marshaler{EmitDefaults: true}
+	return m.Marshal(f, result)
 }
 
 // updateEnv updates $PATH, $PYTHONPATH and temp path env variables in env.
-// It does not change env of the current process.
 func (c *cookRun) updateEnv(env environ.Env) {
 	addPaths := func(key string, paths []string) {
 		if len(paths) == 0 {
@@ -569,36 +671,3 @@ func parseProperties(properties, propertiesFile string) (result map[string]inter
 	}
 	return
 }
-
-// printCommand prints cmd description to stdout and that it will be ran.
-// panics if cannot read current directory or cannot make a command's current
-// directory absolute.
-func printCommand(ctx context.Context, cmd *exec.Cmd) {
-	log.Infof(ctx, "running %q", cmd.Args)
-	log.Infof(ctx, "command path: %s", cmd.Path)
-
-	cd := cmd.Dir
-	if cd == "" {
-		var err error
-		cd, err = os.Getwd()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not read working directory: %s\n", err)
-			cd = ""
-		}
-	}
-	if cd != "" {
-		abs, err := filepath.Abs(cd)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "could not make path %q absolute: %s\n", cd, err)
-		} else {
-			log.Infof(ctx, "current directory: %s", abs)
-		}
-	}
-
-	log.Infof(ctx, "env:\n%s", strings.Join(cmd.Env, "\n"))
-}
-
-// returnCodeError is a special error type that contains a process return code.
-type returnCodeError int
-
-func (err returnCodeError) Error() string { return fmt.Sprintf("return code: %d", err) }

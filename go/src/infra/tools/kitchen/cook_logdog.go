@@ -19,6 +19,7 @@ import (
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/proto/milo"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/system/exitcode"
 	grpcLogging "github.com/luci/luci-go/grpc/logging"
@@ -149,7 +150,7 @@ func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) erro
 	return nil
 }
 
-// runWithLogdogButler rus the supplied command through the a LogDog Butler
+// runWithLogdogButler runs the supplied command through the a LogDog Butler
 // engine instance. This involves:
 //	- Configuring / setting up the Butler.
 //	- Initiating a LogDog Pub/Sub Output, registering with remote server.
@@ -157,7 +158,8 @@ func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) erro
 //	  - Optionally, hook its output streams up through an Annotee processor.
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
-func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env environ.Env) (rc int, err error) {
+// If recipe engine returns non-zero value, the returned err is nil.
+func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env environ.Env) (rc int, build *milo.Step, err error) {
 	log.Infof(ctx, "Using LogDog URL: %s", c.logdog.annotationAddr.URL().String())
 
 	// Install a global gRPC logger adapter. This routes gRPC log messages that
@@ -175,7 +177,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 		globalTags[logDogViewerURLTag] = c.BuildURL
 	}
 	if err := c.mode.addLogDogGlobalTags(globalTags, rr.properties, env); err != nil {
-		return 0, errors.Annotate(err).Reason("failed to add global tags").Err()
+		return 0, nil, errors.Annotate(err).Reason("failed to add global tags").Err()
 	}
 	for k, v := range c.logdog.globalTags {
 		globalTags[k] = v
@@ -184,11 +186,11 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	// Create our stream server instance.
 	streamServer, err := c.getLogDogStreamServer(withNonCancel(ctx))
 	if err != nil {
-		return 0, errors.Annotate(err).Reason("failed to generate stream server").Err()
+		return 0, nil, errors.Annotate(err).Reason("failed to generate stream server").Err()
 	}
 
 	if err := streamServer.Listen(); err != nil {
-		return 0, errors.Annotate(err).Reason("failed to listen on stream server").Err()
+		return 0, nil, errors.Annotate(err).Reason("failed to listen on stream server").Err()
 	}
 	defer func() {
 		if streamServer != nil {
@@ -224,7 +226,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 	proc, err := rr.command(procCtx, filepath.Join(c.TempDir, "rr"), env)
 	if err != nil {
-		return 0, errors.Annotate(err).Reason("failed to build recipe comamnd").Err()
+		return 0, nil, errors.Annotate(err).Reason("failed to build recipe comamnd").Err()
 	}
 
 	// Register and instantiate our LogDog Output.
@@ -247,7 +249,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 			// local bot deployment.
 			credPath, err := infraenv.GetLogDogServiceAccountJSON()
 			if err != nil {
-				return 0, errors.Annotate(err).Reason("failed to get LogDog service account JSON path").Err()
+				return 0, nil, errors.Annotate(err).Reason("failed to get LogDog service account JSON path").Err()
 			}
 			authOpts.ServiceAccountJSONPath = credPath
 			authOpts.Method = auth.ServiceAccountMethod
@@ -268,7 +270,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 		var err error
 		if o, err = ocfg.Register(ctx); err != nil {
-			return 0, errors.Annotate(err).Reason("failed to create LogDog Output instance").Err()
+			return 0, nil, errors.Annotate(err).Reason("failed to create LogDog Output instance").Err()
 		}
 	} else {
 		// Debug: Use a file output.
@@ -297,7 +299,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	ncCtx := withNonCancel(ctx)
 	b, err := butler.New(ncCtx, butlerCfg)
 	if err != nil {
-		return 0, errors.Annotate(err).Reason("failed to create Butler instance").Err()
+		return 0, nil, errors.Annotate(err).Reason("failed to create Butler instance").Err()
 	}
 	defer func() {
 		b.Activate()
@@ -379,6 +381,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	annoteeProcessor := annotee.New(ncCtx, annoteeOpts)
 	defer func() {
 		as := annoteeProcessor.Finish()
+		build = as.RootStep().Proto()
 
 		// Dump the annotations on completion, unless we're already dumping them
 		// to a file (debug), in which case this is redundant.

@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"infra/tools/kitchen/proto"
+	"infra/tools/kitchen/third_party/recipe_engine"
 
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"

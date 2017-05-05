@@ -19,6 +19,8 @@ import (
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
+
+	"infra/tools/kitchen/proto"
 )
 
 var logConfig = log.Config{
@@ -81,14 +83,35 @@ func logAnnotatedErr(ctx context.Context, err error) {
 	log.Errorf(ctx, "Annotated error stack:\n%s", buf.String())
 }
 
+// InputError indicates an error in the kitchen's input, e.g. command line flag
+// or env variable.
+// It is converted to KitchenError.INVALID_INPUT defined in the result.proto.
 type InputError string
 
 func (e InputError) Error() string { return string(e) }
 
-// inputError returns an error that will be printed to stderr without a stack
-// trace.
+// inputError returns an error that will be converted to a KitchenError with
+// type INVALID_INPUT.
 func inputError(format string, args ...interface{}) error {
 	// We don't use D to keep signature of this function simple
 	// and to keep UserError as a leaf.
 	return errors.Annotate(InputError(fmt.Sprintf(format, args...))).Err()
+}
+
+// kitchenError converts an error to a kitchen.KitchenError protobuf message.
+func kitchenError(err error) *kitchen.KitchenError {
+	res := &kitchen.KitchenError{
+		Text: err.Error(),
+	}
+	switch _, isInputError := errors.Unwrap(err).(InputError); {
+	case isInputError:
+		res.Type = kitchen.KitchenError_INVALID_INPUT
+	case errors.Unwrap(err) == context.Canceled:
+		res.Type = kitchen.KitchenError_CANCELED
+	default:
+		res.Type = kitchen.KitchenError_INTERNAL_ERROR
+		res.CallStack = errors.RenderStack(err).ToLines()
+	}
+
+	return res
 }

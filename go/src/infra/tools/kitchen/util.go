@@ -7,10 +7,17 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+
+	"golang.org/x/net/context"
 
 	"github.com/luci/luci-go/common/errors"
+	log "github.com/luci/luci-go/common/logging"
 )
 
 func encodeJSONToPath(path string, obj interface{}) (err error) {
@@ -68,20 +75,30 @@ func dirHasFiles(path string) (bool, error) {
 	return len(names) > 0, nil
 }
 
-// getReturnCode returns a return code value for a given error. It handles the
-// returnCodeError type specially, returning its integer value verbatim.
-//
-// The error returned by getReturnCode is the same as the input error, unless
-// the input error was a zero return code, in which case it will be nil.
-func getReturnCode(err error) (int, error) {
-	if err == nil {
-		return 0, nil
-	}
-	if rc, ok := errors.Unwrap(err).(returnCodeError); ok {
-		if rc == 0 {
-			return 0, nil
+// printCommand prints cmd description to stdout and that it will be ran.
+// panics if cannot read current directory or cannot make a command's current
+// directory absolute.
+func printCommand(ctx context.Context, cmd *exec.Cmd) {
+	log.Infof(ctx, "running %q", cmd.Args)
+	log.Infof(ctx, "command path: %s", cmd.Path)
+
+	cd := cmd.Dir
+	if cd == "" {
+		var err error
+		cd, err = os.Getwd()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not read working directory: %s\n", err)
+			cd = ""
 		}
-		return int(rc), err
 	}
-	return 1, err
+	if cd != "" {
+		abs, err := filepath.Abs(cd)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "could not make path %q absolute: %s\n", cd, err)
+		} else {
+			log.Infof(ctx, "current directory: %s", abs)
+		}
+	}
+
+	log.Infof(ctx, "env:\n%s", strings.Join(cmd.Env, "\n"))
 }
