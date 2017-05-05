@@ -9,7 +9,7 @@
 infra/tools/protoc/linux-amd64    protobuf_version:v3.2.0
 
 # Node.js deployment.
-infra/nodejs/nodejs/linux-amd64   node_version:4.5.0
+infra/nodejs/nodejs/linux-amd64   node_version:6.10.3
 
 # TODO: move this to depot_tools eventually?
 infra/tools/authutil/linux-amd64  git_revision:92db82258d3a6ea6f35f80588038372297b03eaf

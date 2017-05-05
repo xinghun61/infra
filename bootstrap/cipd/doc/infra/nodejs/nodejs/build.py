@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -14,15 +14,15 @@ import argparse
 import collections
 import contextlib
 import hashlib
+import io
 import logging
 import os
 import shutil
-import StringIO
 import subprocess
 import sys
 import tarfile
 import tempfile
-import urllib2
+import urllib.request
 
 
 # The common application logger.
@@ -31,20 +31,27 @@ LOGGER = logging.getLogger('cipd-nodejs-build')
 # Base package name. Platform names will be appended to this for each platform.
 CIPD_PACKAGE_BASE = 'infra/nodejs/nodejs'
 
-NodePackage = collections.namedtuple('NodePackage', ('url', 'sha256'))
+NodeParams = collections.namedtuple('NodeParams', ('version',))
+NodePackage = collections.namedtuple('NodePackage', ('filename', 'sha256'))
 
-# The Node.js version.
-NODE_VERSION = '4.5.0'
+# Node parameter dictionary.
+NODE_PARAMS = NodeParams(
+    # The Node.js version.
+    version='6.10.3',
+)
+
+# URL template for a Node.js package.
+NODE_URL_TEMPLATE = 'https://nodejs.org/dist/v%(version)s/%(filename)s'
 
 # A map of platform to (URL, SHA256) for each supported package.
 PLATFORMS = collections.OrderedDict({
   'linux-amd64': NodePackage(
-      url='https://nodejs.org/dist/v4.5.0/node-v4.5.0-linux-x64.tar.gz',
-      sha256='5678ad94ee35e40fc3a2c545e136a0dc946ac4c039fca5898e1ea51ecf9e7c39',
+      filename = 'node-v%(version)s-linux-x64.tar.xz',
+      sha256='00d0aea8e47a68da6e3278d7c2fc1504de46a34d97b4b2fa5610b04a64fce04c',
   ),
   'mac-amd64': NodePackage(
-      url='https://nodejs.org/dist/v4.5.0/node-v4.5.0-darwin-x64.tar.gz',
-      sha256='d171f0c859e3895b2430c317001b817866c4de45211ad540c59658ee6a2f689f',
+      filename = 'node-v%(version)s-darwin-x64.tar.gz',
+      sha256='c09b2e60b7c12d88199d773f7ce046a6890e7c5d3be0cf68312ae3da474f32a2',
   ),
 })
 
@@ -65,38 +72,42 @@ def _upload_cipd_package_from(name, root):
       '-in', root,
       '-install-mode', 'copy',
       '-ref', 'latest',
-      '-tag', 'node_version:%s' % (NODE_VERSION,),
+      '-tag', 'node_version:%s' % (NODE_PARAMS.version,),
   ]
   LOGGER.debug('Running command: %s', cmd)
   subprocess.check_call(cmd)
 
 
-def _strip_suffix(v, s):
-  if v.endswith(s):
-    v = v[:-len(s)]
+def _strip_extension(v):
+  for ext in ('.tar.gz', '.tar.xz'):
+    if v.endswith(ext):
+      return v[:-len(ext)]
   return v
 
 
 def _build_cipd_package(pkg_name, package):
-  LOGGER.info('Downloading package for [%s] from: %s', pkg_name, package.url)
-  conn = urllib2.urlopen(package.url)
-  try:
+  params = NODE_PARAMS._asdict()
+  params.update({
+    'filename': package.filename % params,
+  })
+  url = NODE_URL_TEMPLATE % params
+
+  LOGGER.info('Downloading package for [%s] from: %s', pkg_name, url)
+  with urllib.request.urlopen(url) as conn:
     data = conn.read()
-  finally:
-    conn.close()
 
   # Compare hashes.
   h = hashlib.sha256(data)
-  if h.digest() != package.sha256.decode('hex'):
+  if h.hexdigest().lower() != package.sha256.lower():
     LOGGER.error('SHA256 of package [%s] (%s) does not match expected (%s)',
-        package.url, h.hexdigest(), package.sha256)
+        url, h.hexdigest(), package.sha256)
     raise ValueError('SHA256 mismatch')
 
-  basedir = _strip_suffix(package.url.split('/')[-1], '.tar.gz')
+  basedir = _strip_extension(url.split('/')[-1])
 
   # Unpack the file.
-  sio = StringIO.StringIO(data)
-  tf = tarfile.open(fileobj=sio, mode='r:gz')
+  bio = io.BytesIO(data)
+  tf = tarfile.open(fileobj=bio, mode='r:*')
   try:
     # Our 'basedir' must be a member.
     if not tf.getmember(basedir):
@@ -124,7 +135,7 @@ def _build_cipd_package(pkg_name, package):
 
 
 def main():
-  for platform, package in PLATFORMS.iteritems():
+  for platform, package in PLATFORMS.items():
     package_name = '/'.join((CIPD_PACKAGE_BASE, platform))
     _build_cipd_package(package_name, package)
   return 0
