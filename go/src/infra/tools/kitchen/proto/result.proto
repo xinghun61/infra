@@ -16,8 +16,11 @@ message CookResult {
   OptionalInt32 recipe_exit_code = 2;
   // Results returned by recipe engine.
   recipe_engine.Result recipe_result = 3;
-  // Final state of the build.
-  milo.Step build = 5;
+  // Final state of the annotation proto.
+  milo.Step annotations = 5;
+  // URL where the build proto (above) can be fetched from.
+  // In practice, a LogDog URL.
+  string annotation_url = 6;
 }
 
 // An int32 that can be distinguished from absence of the value.

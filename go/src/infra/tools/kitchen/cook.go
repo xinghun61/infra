@@ -115,6 +115,12 @@ var cmdCook = &subcommands.Command{
 			"",
 			"The file to write the result to as a JSONPB-formatted CookResult proto message")
 
+		fs.IntVar(
+			&c.RecipeResultByteLimit,
+			"recipe-result-byte-limit",
+			0,
+			"If positive, a limit, in bytes, for the result file contents written by recipe engine")
+
 		fs.StringVar(
 			&c.CacheDir,
 			"cache-dir",
@@ -148,6 +154,8 @@ type cookRun struct {
 	RepositoryURL string
 	Revision      string
 	CheckoutDir   string
+
+	RecipeResultByteLimit int
 
 	Properties     string
 	PropertiesFile string
@@ -317,7 +325,8 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *kitc
 
 	rv := 0
 	if c.logdog.active() {
-		rv, result.Build, err = c.runWithLogdogButler(ctx, &c.rr, env)
+		result.AnnotationUrl = c.logdog.annotationURL
+		rv, result.Annotations, err = c.runWithLogdogButler(ctx, &c.rr, env)
 		if err != nil {
 			return fail(errors.Annotate(err).Reason("failed to run recipe").Err())
 		}
@@ -351,6 +360,23 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *kitc
 			Err())
 	}
 	defer recipeResultFile.Close()
+
+	if c.RecipeResultByteLimit > 0 {
+		st, err := recipeResultFile.Stat()
+		if err != nil {
+			return fail(errors.Annotate(err).Reason("could not stat recipe result file at %(path)q").
+				D("path", c.rr.outputResultJSONFile).
+				Err())
+		}
+
+		if sz := st.Size(); sz > int64(c.RecipeResultByteLimit) {
+			return fail(errors.Reason("recipe result file is %(size)d bytes which is more than %(limit)d").
+				D("size", sz).
+				D("limit", c.RecipeResultByteLimit).
+				Err())
+		}
+	}
+
 	result.RecipeResult = &recipe_engine.Result{}
 	if err := jsonpb.Unmarshal(recipeResultFile, result.RecipeResult); err != nil {
 		return fail(errors.Annotate(err).Reason("could not parse recipe result").Err())

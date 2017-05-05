@@ -114,6 +114,7 @@ func TestCook(t *testing.T) {
 					"-logdog-annotation-url", "logdog://logdog.example.com/chromium/prefix/+/annotations",
 					"-logdog-debug-out-file", logdogFilePath,
 					"-output-result-json", resultFilePath,
+					"-recipe-result-byte-limit", "500000",
 				}
 
 				// Cook.
@@ -176,10 +177,11 @@ func TestCook(t *testing.T) {
 						},
 					}
 					result := run(recipeResult, 0)
-					result.Build = nil
+					result.Annotations = nil
 					So(result, ShouldResemble, &kitchen.CookResult{
 						RecipeExitCode: &kitchen.OptionalInt32{Value: 0},
 						RecipeResult:   recipeResult,
+						AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
 					})
 				})
 				Convey("recipe step failed", func() {
@@ -196,10 +198,11 @@ func TestCook(t *testing.T) {
 						},
 					}
 					result := run(recipeResult, 1)
-					result.Build = nil
+					result.Annotations = nil
 					So(result, ShouldResemble, &kitchen.CookResult{
 						RecipeExitCode: &kitchen.OptionalInt32{Value: 1},
 						RecipeResult:   recipeResult,
+						AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
 					})
 				})
 			}
