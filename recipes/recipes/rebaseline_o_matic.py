@@ -13,6 +13,7 @@ patches with the new baselines.
 """
 
 DEPS = [
+  'build/chromium',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
