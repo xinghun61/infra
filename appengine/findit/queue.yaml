@@ -38,21 +38,3 @@ queue:
   max_concurrent_requests: 20
   retry_parameters:
     task_retry_limit: 0
-
-- name: crash-analysis-fracas-queue
-  mode: push
-  rate: 20/s
-  bucket_size: 100
-  max_concurrent_requests: 15
-  retry_parameters:
-    min_backoff_seconds: 15
-    task_retry_limit: 3
-
-- name: crash-analysis-cracas-queue
-  mode: push
-  rate: 20/s
-  bucket_size: 100
-  max_concurrent_requests: 15
-  retry_parameters:
-    min_backoff_seconds: 15
-    task_retry_limit: 3
