@@ -9,11 +9,6 @@ import os
 
 # Names of all modules.
 WATERFALL_BACKEND = 'waterfall-backend'
-CRASH_BACKEND = {
-    'fracas': 'crash-backend-fracas',
-    'cracas': 'crash-backend-cracas',
-    'clusterfuzz': 'crash-backend-clusterfuzz'
-}
 
 
 # Names of all queues.
@@ -22,11 +17,6 @@ WATERFALL_ANALYSIS_QUEUE = 'waterfall-analysis-queue'
 WATERFALL_TRY_JOB_QUEUE = 'waterfall-try-job-queue'
 WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE = 'waterfall-failure-analysis-request'
 WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE = 'waterfall-flake-analysis-request'
-CRASH_ANALYSIS_QUEUE = {
-    'fracas': 'crash-analysis-fracas-queue',
-    'cracas': 'crash-analysis-cracas-queue',
-    'clusterfuzz': 'crash-analysis-clusterfuzz-queue'
-}
 
 
 # Waterfall-related.
