@@ -41,6 +41,9 @@ class BaseHandler(webapp2.RequestHandler):
   # By default, redirect to destination page after login for GET requests.
   LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = True
 
+  # By default, not include user email in response.
+  INCLUDE_LOGIN_USER_EMAIL = False
+
   def _HasPermission(self):
     if (self.request.headers.get('X-AppEngine-QueueName') or
         self.request.headers.get('X-AppEngine-Cron')):
@@ -179,9 +182,7 @@ class BaseHandler(webapp2.RequestHandler):
         return_code = 401
         cache_expiry = None
       else:
-        result = handler_func()
-        if result is None:
-          return
+        result = handler_func() or {}
 
         template = result.get('template', None)
         data = result.get('data', {})
@@ -196,6 +197,10 @@ class BaseHandler(webapp2.RequestHandler):
       }
       return_code = 500
       cache_expiry = None
+
+    user_email = auth_util.GetUserEmail()
+    if user_email and self.INCLUDE_LOGIN_USER_EMAIL:
+      data['user_email'] = user_email
 
     self._SendResponse(template, data, return_code, cache_expiry)
 

@@ -19,6 +19,7 @@ from gae_libs.handlers.base_handler import BaseHandler, Permission
 
 class PermissionLevelHandler(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
+  INCLUDE_LOGIN_USER_EMAIL = False
 
   def HandleGet(self):
     pass
@@ -156,6 +157,22 @@ class PermissionTest(testing.AppengineTestCase):
                    re.MULTILINE | re.DOTALL),
         self.test_app.post, '/permission', headers={'referer': referer_url})
 
+  def testIncludeUserEmail(self):
+    PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
+    PermissionLevelHandler.INCLUDE_LOGIN_USER_EMAIL = True
+    self.mock_current_user(user_email='test@google.com')
+    response = self.test_app.get('/permission?format=json')
+    self.assertEquals(200, response.status_int)
+    self.assertEquals({ 'user_email': 'test@google.com' }, response.json_body)
+
+  def testNotIncludeUserEmail(self):
+    PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
+    PermissionLevelHandler.INCLUDE_LOGIN_USER_EMAIL = False
+    self.mock_current_user(user_email='test@google.com')
+    response = self.test_app.get('/permission?format=json')
+    self.assertEquals(200, response.status_int)
+    self.assertEquals({}, response.json_body)
+
 
 class UnImplementedHandler(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
@@ -191,10 +208,9 @@ class ResultTest(testing.AppengineTestCase):
 
   def testNoResult(self):
     SetResultHandler.RESULT = None
-    response = self.test_app.get('/result')
+    response = self.test_app.get('/result?format=json')
     self.assertEquals(200, response.status_int)
-    self.assertEquals('text/html', response.content_type)
-    self.assertEquals('', response.body)
+    self.assertEquals({}, response.json_body)
 
   def testNoCacheControl(self):
     SetResultHandler.RESULT = {}

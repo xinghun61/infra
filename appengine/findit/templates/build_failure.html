@@ -53,7 +53,7 @@
         if (! data['success']) {
           alert('Failed to update datastore. Please refresh and try again.');
         } else {
-          $('#cl-result-triaged').text('Result has been recorded. Thank you!')
+          $('#cl-result-triaged').text('Feedback has been recorded. Thank you!')
         }
       }).error(function(xhr) {
         handleLogin(xhr.status, xhr.responseJSON);
@@ -170,9 +170,12 @@
   {% if analysis_completed %}
   <br>
   <div>
-    <div id="triage_cls">
+    <div>
       {% if suspected_cls %}
-        <b>Feedback on Findit result:</b>
+        <b>Feedback appreciated:</b>
+        {% if user_email %}
+          (if provided, it connects to your email {{ user_email }} for 30 days)
+        {% endif %}
         <table>
           <tr><th>CL</th><th>Confidence</th><th>Feedback</th></tr>
           {% for suspected_cl in suspected_cls %}

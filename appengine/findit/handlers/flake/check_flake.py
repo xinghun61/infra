@@ -159,6 +159,7 @@ def _GetLastAttemptedTryJobDetails(analysis):
 
 class CheckFlake(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
+  INCLUDE_LOGIN_USER_EMAIL = True
 
   def _ValidateInput(self, step_name, test_name, bug_id):
     """Ensures the input is valid and generates an error otherwise.

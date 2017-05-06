@@ -318,7 +318,7 @@
         if (! data['success']) {
           alert('Failed to update datastore. Please refresh and try again.');
         } else {
-          $('#flake_result_triaged').text('Result has been recorded. Thank you!');
+          $('#flake_result_triaged').text('Feedback has been recorded. Thank you!');
         }
       }).error(function(xhr) {
         var response = xhr.responseJSON;
@@ -426,7 +426,10 @@
   <br>
   <div id="triage_flake">
     {% if suspected_flake %}
-      <b>Feedback:</b>
+      <b>Feedback appreciated:</b>
+        {% if user_email %}
+          (if provided, it connects to your email {{ user_email }} for 30 days)
+        {% endif %}
       <table class="triage-table">
         <tr>
           <th class="triage-header" title="Type of Findit's result: Suspected Build or Culprit">Suspect Type</th>

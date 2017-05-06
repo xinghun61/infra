@@ -106,6 +106,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.algorithm_parameters = {'iterations_to_rerun': 100}
     analysis.Save()
 
+    self.mock_current_user(user_email='test@example.com')
+
     response = self.test_app.get('/waterfall/flake', params={
         'key': analysis.key.urlsafe(),
         'format': 'json'})
@@ -138,7 +140,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'culprit': {},
         'try_job_status': None,
         'last_attempted_swarming_task_id': None,
-        'last_attempted_try_job': {}
+        'last_attempted_try_job': {},
+        'user_email': 'test@example.com',
     }
 
     self.assertEquals(200, response.status_int)
@@ -207,6 +210,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     previous_request.analyses.append(previous_analysis.key)
     previous_request.Save()
 
+    self.mock_current_user(user_email='test@google.com')
+
     response = self.test_app.get('/waterfall/flake', params={
         'url': buildbot.CreateBuildUrl(master_name, builder_name, build_number),
         'step_name': step_name,
@@ -241,7 +246,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'culprit': {},
         'try_job_status': None,
         'last_attempted_swarming_task_id': None,
-        'last_attempted_try_job': {}
+        'last_attempted_try_job': {},
+        'user_email': 'test@google.com',
     }
 
     self.assertEqual(200, response.status_int)
