@@ -52,7 +52,7 @@ def get_container_name(device):
 
 def get_container_hostname(device):
   """Maps a device to its container hostname."""
-  this_host = socket.gethostname()
+  this_host = socket.gethostname().split('.')[0]
   if device.physical_port is not None:
     return '%s--device%d' % (this_host, device.physical_port)
   else:
