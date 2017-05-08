@@ -109,3 +109,7 @@ blacklist:
 
   - subnet: 62.76.185.68
     description: attempted SQL injection
+  - subnet: 115.99.3.167
+    description: someone trying to fuzz our server 2017-05-08
+  - subnet: 203.205.144.172
+    description: someone crawling our issues 2017-05-08
