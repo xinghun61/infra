@@ -14,3 +14,7 @@ cron:
 - description: Every day collect tree closures
   url: /waterfall/collect-tree-closures
   schedule: every day 00:00
+
+- description: Every day obscure emails
+  url: /waterfall/obscure-emails
+  schedule: every day 00:00
