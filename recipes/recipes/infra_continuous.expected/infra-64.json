@@ -78,8 +78,7 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
+      "vpython",
       "[START_DIR]/infra/glyco/tests/run_all_tests.py"
     ],
     "cwd": "[START_DIR]/infra",

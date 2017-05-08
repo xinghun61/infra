@@ -145,10 +145,12 @@ def RunSteps(api, mastername, buildername, buildnumber):
 
       # Run Glyco tests only on public Linux\Mac CI.
       if project_name == 'infra' and not api.platform.is_win:
-        api.python(
+        api.step(
             'Glyco tests',
-            api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
-            [])
+            [
+              'vpython',
+              api.path['checkout'].join('glyco', 'tests', 'run_all_tests.py'),
+            ])
 
     # This downloads Go third parties, so that the next step doesn't have junk
     # output in it.
