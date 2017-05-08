@@ -166,11 +166,17 @@ type Parser struct {
 		lit string
 		n   int
 	}
+	original string
 }
 
-// NewParser returns a new instance of Parser.
+// NewParser returns a new instance of Parser for io.Reader input.
 func NewParser(r io.Reader) *Parser {
 	return &Parser{s: newScanner(r)}
+}
+
+// NewStringParser returns a new instance of Parser for string input.
+func NewStringParser(str string) *Parser {
+	return &Parser{s: newScanner(bytes.NewBufferString(str)), original: str}
 }
 
 func (p *Parser) scan() (tok token, lit string) {
@@ -202,7 +208,7 @@ func isBug(s string) bool {
 
 // Parse parses a *line* of input to produce an ExpectationStatement, or error.
 func (p *Parser) Parse() (*ExpectationStatement, error) {
-	stmt := &ExpectationStatement{}
+	stmt := &ExpectationStatement{Original: p.original}
 	tok, lit := p.scanIgnoreWhitespace()
 
 	// Exit early for a blank line.
@@ -285,7 +291,6 @@ func (p *Parser) Parse() (*ExpectationStatement, error) {
 	}
 
 	tok, lit = p.scanIgnoreWhitespace()
-
 	if tok != tokLB && tok != tokIDENT && tok != tokWS {
 		return nil, fmt.Errorf("expected tokLB, tokIDENT or tokWS but found %q", lit)
 	}

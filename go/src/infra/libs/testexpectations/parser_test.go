@@ -158,7 +158,7 @@ func ExampleParser_Parse() {
 
 	for _, name := range names {
 		path := LayoutTestExpectations[name]
-		URL := fmt.Sprintf("https://chromium.googlesource.com/chromium/src/+/master%s?format=TEXT", path)
+		URL := fmt.Sprintf("https://chromium.googlesource.com/chromium/src/+/master/%s?format=TEXT", path)
 		resp, err := http.Get(URL)
 		if err != nil {
 			fmt.Printf("Error fetching: %s\n", err)
@@ -202,7 +202,7 @@ func ExampleParser_Parse() {
 		}
 	}
 
-	// -Output:
+	// Output:
 	// ASANExpectations line count match? true
 	// LeakExpectations line count match? true
 	// MSANExpectations line count match? true
