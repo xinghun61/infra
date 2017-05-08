@@ -20,6 +20,8 @@ from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import buildbot
 from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
+from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
+from waterfall.trigger_base_swarming_task_pipeline import NO_TASK_EXCEPTION
 
 
 def _GetSuspectedFlakeInfo(analysis):
@@ -132,6 +134,20 @@ def _GetNumbersOfDataPointGroups(data_points):
       build_level_number += 1
 
   return build_level_number, revision_level_number
+
+
+def _GetLastAttemptedSwarmingTaskDetails(analysis):
+  swarming_task_id = analysis.last_attempted_swarming_task_id
+  build_number = analysis.last_attempted_build_number
+
+  task_id = (swarming_task_id if swarming_task_id and
+             swarming_task_id.lower() not in (NO_TASK, NO_TASK_EXCEPTION) else
+             None)
+
+  return {
+      'task_id': task_id,
+      'build_number': build_number
+  }
 
 
 def _GetLastAttemptedTryJobDetails(analysis):
@@ -283,8 +299,8 @@ class CheckFlake(BaseHandler):
         'analysis_status': analysis.status_description,
         'try_job_status': analysis_status.STATUS_TO_DESCRIPTION.get(
             analysis.try_job_status),
-        'last_attempted_swarming_task_id': (
-            analysis.last_attempted_swarming_task_id),
+        'last_attempted_swarming_task': _GetLastAttemptedSwarmingTaskDetails(
+            analysis),
         'last_attempted_try_job': _GetLastAttemptedTryJobDetails(analysis),
         'version_number': analysis.version_number,
         'suspected_flake': suspected_flake,

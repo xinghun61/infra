@@ -74,9 +74,10 @@ def _UpdateAnalysisStatusUponCompletion(
   if error:
     analysis.error = error
   else:
-    # Clear the last attempted swarming task id since it will be stored in
-    # the data point.
+    # Clear info about the last attempted swarming task since it will be stored
+    # in the data point.
     analysis.last_attempted_swarming_task_id = None
+    analysis.last_attempted_build_number = None
 
     if _HasSufficientConfidenceToRunTryJobs(analysis):
       # Analysis is not finished yet: try jobs are about to be run.

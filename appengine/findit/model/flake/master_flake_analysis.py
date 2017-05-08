@@ -207,6 +207,7 @@ class MasterFlakeAnalysis(
     self.try_job_status = None
     self.data_points = []
     self.result_status = None
+    self.last_attempted_build_number = None
     self.last_attempted_swarming_task_id = None
     self.last_attempted_revision = None
 
@@ -283,6 +284,9 @@ class MasterFlakeAnalysis(
   # Overall conclusion of analysis result for the flake. Found untriaged, Found
   # Correct, etc. used to filter what is displayed on the check flake dashboard.
   result_status = ndb.IntegerProperty(indexed=True)
+
+  # The build number corresponding to the last attempted swarming task.
+  last_attempted_build_number = ndb.IntegerProperty(indexed=False)
 
   # The task id of the last-attempted swarming task.
   last_attempted_swarming_task_id = ndb.StringProperty(indexed=False)

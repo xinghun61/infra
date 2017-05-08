@@ -139,9 +139,12 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'show_debug_info': False,
         'culprit': {},
         'try_job_status': None,
-        'last_attempted_swarming_task_id': None,
+        'last_attempted_swarming_task': {
+            'task_id': None,
+            'build_number': None
+        },
         'last_attempted_try_job': {},
-        'user_email': 'test@example.com',
+        'user_email': 'test@example.com'
     }
 
     self.assertEquals(200, response.status_int)
@@ -245,9 +248,12 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'show_debug_info': False,
         'culprit': {},
         'try_job_status': None,
-        'last_attempted_swarming_task_id': None,
+        'last_attempted_swarming_task': {
+            'task_id': None,
+            'build_number': None
+        },
         'last_attempted_try_job': {},
-        'user_email': 'test@google.com',
+        'user_email': 'test@google.com'
     }
 
     self.assertEqual(200, response.status_int)
@@ -449,6 +455,18 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_points = [data_point1, data_point2]
     self.assertEqual((1, 1),
                      check_flake._GetNumbersOfDataPointGroups(data_points))
+
+  def testGetLastAttemptedSwarmingTask(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.last_attempted_swarming_task_id = 'a1b2c3d4'
+    analysis.last_attempted_build_number = 122
+    expected_result = {
+        'task_id': 'a1b2c3d4',
+        'build_number': 122
+    }
+    self.assertEqual(
+        expected_result,
+        check_flake._GetLastAttemptedSwarmingTaskDetails(analysis))
 
   def testGetLastAttemptedTryJobDetailsNoRevision(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

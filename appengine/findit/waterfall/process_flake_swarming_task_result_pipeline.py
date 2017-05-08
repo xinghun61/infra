@@ -149,20 +149,21 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     return FlakeSwarmingTask.Get(master_name, builder_name, build_number,
                                  step_name, test_name)
 
-  def _SaveLastAttemptedSwarmingTaskId(
+  def _SaveLastAttemptedSwarmingTask(
       self, master_name, builder_name, build_number, step_name, task_id, *args):
     # Saves the last-attempted swarming task id to the corresponding analysis.
     master_build_number, test_name, version_number = args
-    master_flake_analysis = MasterFlakeAnalysis.GetVersion(
+    analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, master_build_number, step_name, test_name,
         version=version_number)
-    master_flake_analysis.last_attempted_swarming_task_id = task_id
-    master_flake_analysis.put()
+    analysis.last_attempted_build_number = build_number
+    analysis.last_attempted_swarming_task_id = task_id
+    analysis.put()
 
    # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number, step_name,
           task_id=None, *args):
-    self._SaveLastAttemptedSwarmingTaskId(
+    self._SaveLastAttemptedSwarmingTask(
         master_name, builder_name, build_number, step_name, task_id, *args)
     super(ProcessFlakeSwarmingTaskResultPipeline, self).run(
         master_name, builder_name, build_number, step_name, task_id, *args)

@@ -349,10 +349,14 @@
   <div>
     <b>Analysis Result:</b><br>
     Regression range analysis:  {{ analysis_status }}<br>
-
-    {% if last_attempted_swarming_task_id %}
-      <br>
-      Last-attempted swarming task: <a href="https://chromium-swarm.appspot.com/task?id={{ last_attempted_swarming_task_id }}" target="_blank">{{ last_attempted_swarming_task_id }}</a>
+    <br>
+    {% if last_attempted_swarming_task.task_id %}
+      Last-attempted swarming task: <a href="https://chromium-swarm.appspot.com/task?id={{ last_attempted_swarming_task.task_id }}" target="_blank">{{ last_attempted_swarming_task.task_id }}</a>
+      {% if last_attempted_swarming_task.build_number %}
+         on build <a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ last_attempted_swarming_task.build_number }}" target="_blank">{{ last_attempted_swarming_task.build_number }}</a>
+      {% endif %}
+    {% elif last_attempted_swarming_task.build_number %}
+      Last-attempted build to run a swarming task: <a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ last_attempted_swarming_task.build_number }}" target="_blank">{{ last_attempted_swarming_task.build_number }}</a>
       <br>
     {% endif %}
     {% if suspected_flake.commit_position and suspected_flake.git_hash %}
