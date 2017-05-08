@@ -15,6 +15,13 @@ indexes:
   - name: build_start_time
     direction: desc
 
+- kind: WfAnalysis
+  properties:
+  - name: triage_email_obscured
+    direction: asc
+  - name: triage_record_last_add
+    direction: desc
+
 - kind: WfFailureGroup
   properties:
   - name: build_failure_type
@@ -40,6 +47,13 @@ indexes:
   - name: status
     direction: asc
   - name: updated_time
+    direction: desc
+
+- kind: FlakeAnalysisRequest
+  properties:
+  - name: user_emails_obscured
+    direction: asc
+  - name: user_emails_last_edit
     direction: desc
 
 # For MasterFlakeAnalysis
@@ -105,6 +119,20 @@ indexes:
   - name: test_name
     direction: asc
   - name: result_status
+    direction: asc
+  - name: request_time
+    direction: desc
+
+- kind: MasterFlakeAnalysis
+  properties:
+  - name: triage_email_obscured
+    direction: asc
+  - name: triage_record_last_add
+    direction: desc
+
+- kind: MasterFlakeAnalysis
+  properties:
+  - name: triggering_user_email_obscured
     direction: asc
   - name: request_time
     direction: desc

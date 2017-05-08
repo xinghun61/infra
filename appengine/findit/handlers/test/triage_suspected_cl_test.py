@@ -6,7 +6,6 @@ import calendar
 from datetime import datetime
 import mock
 
-from testing_utils import testing
 import webapp2
 
 from handlers import triage_suspected_cl
@@ -17,9 +16,10 @@ from model import suspected_cl_status
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import buildbot
+from waterfall.test import wf_testcase
 
 
-class TriageSuspectedClTest(testing.AppengineTestCase):
+class TriageSuspectedClTest(wf_testcase.WaterfallTestCase):
   app_module = webapp2.WSGIApplication([
       ('/triage-suspected-cl', triage_suspected_cl.TriageSuspectedCl),
       ], debug=True)
@@ -304,16 +304,17 @@ class TriageSuspectedClTest(testing.AppengineTestCase):
     self.assertEqual(
         analysis.result_status, result_status.PARTIALLY_CORRECT_FOUND)
 
-  @mock.patch.object(time_util, 'GetUTCNowTimestamp')
-  def testAppendTriageHistoryRecordWithHistory(self, mock_fn):
+  def testAppendTriageHistoryRecordWithHistory(self):
     analysis = WfAnalysis.Create(
         self.master_name, self.builder_name, self.build_number_1)
     analysis.version = 'version'
     analysis.triage_history = [{'some_info': True}]
     analysis.put()
     cl_info = '%s/%s' % (self.repo_name, self.revision_1)
-    mocked_timestamp = calendar.timegm(datetime(2016, 7, 1, 00, 00).timetuple())
-    mock_fn.return_value = mocked_timestamp
+
+    mocked_now = datetime(2017, 05, 01, 10, 10, 10)
+    mocked_timestamp = calendar.timegm(mocked_now.timetuple())
+    self.MockUTCNow(mocked_now)
 
     triage_suspected_cl._AppendTriageHistoryRecord(
         self.master_name, self.builder_name, self.build_number_1,
@@ -332,6 +333,8 @@ class TriageSuspectedClTest(testing.AppengineTestCase):
         }
     ]
     self.assertEqual(analysis.triage_history, expected_history)
+    self.assertFalse(analysis.triage_email_obscured)
+    self.assertEqual(mocked_now, analysis.triage_record_last_add)
 
   @mock.patch.object(time_util, 'GetUTCNowTimestamp')
   def testUpdateSuspectedCLAndAnalysis(self, mock_fn):

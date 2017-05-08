@@ -55,6 +55,7 @@ def _NeedANewAnalysis(
     analysis.algorithm_parameters = flake_settings
     analysis.version = appengine_util.GetCurrentVersion()
     analysis.triggering_user_email = user_email
+    analysis.triggering_user_email_obscured = False
     analysis.triggering_source = triggering_source
     analysis.original_master_name = original_test.master_name
     analysis.original_builder_name = original_test.builder_name

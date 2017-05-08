@@ -281,6 +281,10 @@ class MasterFlakeAnalysis(
   # automatic runs, and determining the most active users to gather feedback.
   triggering_user_email = ndb.StringProperty(default=None, indexed=False)
 
+  # Whether the user email is obscured.
+  triggering_user_email_obscured = ndb.BooleanProperty(
+      default=False, indexed=True)
+
   # Overall conclusion of analysis result for the flake. Found untriaged, Found
   # Correct, etc. used to filter what is displayed on the check flake dashboard.
   result_status = ndb.IntegerProperty(indexed=True)

@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
 
 from common import constants
@@ -45,13 +46,18 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
+    mocked_now = datetime(2017, 05, 01, 10, 10, 10)
+    self.MockUTCNow(mocked_now)
+
     test = TestInfo(
         master_name, builder_name, build_number, step_name, test_name)
     need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
-        test, test, None, allow_new_analysis=True)
+        test, test, None, user_email='test@google.com', allow_new_analysis=True)
 
     self.assertTrue(need_analysis)
     self.assertIsNotNone(analysis)
+    self.assertFalse(analysis.triggering_user_email_obscured)
+    self.assertEqual(mocked_now, analysis.request_time)
 
   def testAnalysisIsNeededForCrashedAnalysisWithForce(self):
     master_name = 'm'
@@ -63,13 +69,19 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.ERROR)
 
+    mocked_now = datetime(2017, 05, 01, 10, 10, 10)
+    self.MockUTCNow(mocked_now)
+
     test = TestInfo(
         master_name, builder_name, build_number, step_name, test_name)
     need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
-        test, test, None, allow_new_analysis=True, force=True)
+        test, test, None, user_email='test@google.com', allow_new_analysis=True,
+        force=True)
 
     self.assertTrue(need_analysis)
     self.assertIsNotNone(analysis)
+    self.assertFalse(analysis.triggering_user_email_obscured)
+    self.assertEqual(mocked_now, analysis.request_time)
     self.assertTrue(analysis.version_number > 1)
 
   def testAnalysisIsNotNeededForIncompletedAnalysis(self):

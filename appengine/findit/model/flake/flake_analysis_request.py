@@ -91,6 +91,12 @@ class FlakeAnalysisRequest(VersionedModel):
   # The emails of users who request analysis of this flake.
   user_emails = ndb.StringProperty(indexed=False, repeated=True)
 
+  # Whether the user emails have been obscured.
+  user_emails_obscured = ndb.BooleanProperty(indexed=True, default=False)
+
+  # When was the last edit of the email list.
+  user_emails_last_edit = ndb.DateTimeProperty(indexed=True)
+
   # The build steps in which the flake occurred.
   build_steps = ndb.LocalStructuredProperty(
       BuildStep, compressed=True, repeated=True)

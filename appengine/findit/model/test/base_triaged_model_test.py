@@ -2,22 +2,26 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import unittest
+from datetime import datetime
 
 from model.base_triaged_model import TriagedModel
 from model.base_triaged_model import TriageResult
+from waterfall.test import wf_testcase
 
 
 class _DummyModel(TriagedModel):
   completed = True
 
 
-class TriagedModelTest(unittest.TestCase):
+class TriagedModelTest(wf_testcase.WaterfallTestCase):
 
   def testUpdateTriageResult(self):
     triage_result = 1
     suspect_info = 'abcd'
     user_name = 'test'
+
+    mocked_now = datetime(2017, 05, 01, 10, 10, 10)
+    self.MockUTCNow(mocked_now)
 
     model = _DummyModel()
     model.UpdateTriageResult(1, suspect_info, user_name)
@@ -25,6 +29,8 @@ class TriagedModelTest(unittest.TestCase):
     self.assertEqual(model.triage_history[0].triage_result, triage_result)
     self.assertEqual(model.triage_history[0].suspect_info, suspect_info)
     self.assertEqual(model.triage_history[0].user_name, user_name)
+    self.assertFalse(model.triage_email_obscured)
+    self.assertEqual(mocked_now, model.triage_record_last_add)
 
   def testGetTriageHistory(self):
     suspect_info = {

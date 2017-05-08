@@ -169,6 +169,10 @@ class WfAnalysis(BaseBuildModel):
   result_status = ndb.IntegerProperty(indexed=True)
   # Record the history of triage.
   triage_history = ndb.JsonProperty(indexed=False, compressed=True)
+  # Whether the triage history was obscured.
+  triage_email_obscured = ndb.BooleanProperty(indexed=True, default=False)
+  # When was the last addition of triage record.
+  triage_record_last_add = ndb.DateTimeProperty(indexed=True)
   # Master name of the analysis the result status might be derived from.
   triage_reference_analysis_master_name = ndb.StringProperty(indexed=False)
   # Builder name of the analysis the result status might be derived from.

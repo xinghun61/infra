@@ -35,7 +35,15 @@ class TriageResult(ndb.Model):
 
 
 class TriagedModel(ndb.Model):
-  """The parent class for models that can have triage results."""
+  """The base class for models that can have triage results."""
+
+  # Record the triage result history.
+  triage_history = ndb.LocalStructuredProperty(
+      TriageResult, repeated=True, indexed=False, compressed=True)
+  # Whether the user names in the triage history were obscured.
+  triage_email_obscured = ndb.BooleanProperty(indexed=True, default=False)
+  # When was the last addition of triage record.
+  triage_record_last_add = ndb.DateTimeProperty(indexed=True)
 
   def UpdateTriageResult(self, triage_result, suspect_info, user_name,
                          version_number=None):
@@ -46,6 +54,8 @@ class TriagedModel(ndb.Model):
     result.version_number = version_number
     result.suspect_info = suspect_info
     self.triage_history.append(result)
+    self.triage_email_obscured = False
+    self.triage_record_last_add = time_util.GetUTCNow()
 
   def GetTriageHistory(self):
     # Gets the triage history of a triaged model as a list of dicts.
@@ -63,7 +73,3 @@ class TriagedModel(ndb.Model):
       })
 
     return triage_history
-
-  # Record the triage result history.
-  triage_history = ndb.LocalStructuredProperty(
-      TriageResult, repeated=True, indexed=False, compressed=True)

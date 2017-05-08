@@ -118,6 +118,8 @@ def _AppendTriageHistoryRecord(
   if not analysis.triage_history:
     analysis.triage_history = []
   analysis.triage_history.append(triage_record)
+  analysis.triage_email_obscured = False
+  analysis.triage_record_last_add = time_util.GetUTCNow()
 
   analysis.put()
 

@@ -39,16 +39,26 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     step2.swarmed = True
     step2.supported = True
     request.build_steps = [step1, step2]
+    request.user_emails = ['test@google.com']
+
+    mocked_now = datetime(2017, 05, 01, 10, 10, 10)
+    self.MockUTCNow(mocked_now)
 
     version, step = flake_analysis_service._CheckForNewAnalysis(request)
 
     self.assertEqual(1, version)
+    new_request = FlakeAnalysisRequest.GetVersion(key='flake', version=version)
+    self.assertEqual(['test@google.com'], new_request.user_emails)
+    self.assertFalse(new_request.user_emails_obscured)
+    self.assertEqual(mocked_now, new_request.user_emails_last_edit)
+
     self.assertIsNotNone(step)
     self.assertTrue(step.scheduled)
 
   def testNeedNewAnalysisWhenPreviousOneWasForAnotherBug(self):
-    previous_request = FlakeAnalysisRequest.Create('flake', False, 123)
-    previous_request.Save()
+    existing_request = FlakeAnalysisRequest.Create('flake', False, 123)
+    existing_request.user_emails = ['test1@google.com']
+    existing_request.Save()
 
     request = FlakeAnalysisRequest.Create('flake', False, 456)
     step1 = BuildStep.Create('m', 'b1', 10, 's', datetime(2016, 10, 01))
@@ -58,10 +68,20 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     step2.swarmed = True
     step2.supported = True
     request.build_steps = [step1, step2]
+    request.user_emails = ['test2@google.com']
+
+    mocked_now = datetime(2017, 05, 01, 10, 10, 10)
+    self.MockUTCNow(mocked_now)
 
     version, step = flake_analysis_service._CheckForNewAnalysis(request)
 
     self.assertEqual(2, version)
+    new_request = FlakeAnalysisRequest.GetVersion(key='flake', version=version)
+    self.assertEqual(['xxxxx@google.com', 'test2@google.com'],
+                     new_request.user_emails)
+    self.assertFalse(new_request.user_emails_obscured)
+    self.assertEqual(mocked_now, new_request.user_emails_last_edit)
+
     self.assertIsNotNone(step)
     self.assertTrue(step.scheduled)
     self.assertTrue(step.swarmed)
@@ -80,7 +100,7 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(step)
 
   def testNeedNewAnalysisWithADifferentNewStep(self):
-    previous_request = FlakeAnalysisRequest.Create('flake', False, 123)
+    existing_request = FlakeAnalysisRequest.Create('flake', False, 123)
     step1 = BuildStep.Create('m', 'b1', 11, 's', datetime(2016, 10, 01))
     step1.swarmed = True
     step1.supported = True
@@ -89,26 +109,37 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     step2.swarmed = True
     step2.supported = True
     step2.scheduled = False
-    previous_request.supported = True
-    previous_request.swarmed = True
-    previous_request.build_steps = [step1, step2]
-    previous_request.Save()
+    existing_request.supported = True
+    existing_request.swarmed = True
+    existing_request.build_steps = [step1, step2]
+    existing_request.user_emails = ['test1@google.com']
+    existing_request.Save()
 
     request = FlakeAnalysisRequest.Create('flake', False, 123)
     step3 = BuildStep.Create('m', 'b3', 13, 's', datetime(2016, 10, 01))
     step3.swarmed = True
     step3.supported = True
     request.build_steps = [step3]
+    request.user_emails = ['test2@google.com']
+
+    mocked_now = datetime(2017, 05, 01, 10, 10, 10)
+    self.MockUTCNow(mocked_now)
 
     version, step = flake_analysis_service._CheckForNewAnalysis(request)
 
     self.assertEqual(1, version)
+    new_request = FlakeAnalysisRequest.GetVersion(key='flake', version=version)
+    self.assertEqual(['xxxxx@google.com', 'test2@google.com'],
+                     new_request.user_emails)
+    self.assertFalse(new_request.user_emails_obscured)
+    self.assertEqual(mocked_now, new_request.user_emails_last_edit)
+
     self.assertIsNotNone(step)
     self.assertTrue(step.scheduled)
     self.assertEqual('b3', step.builder_name)
 
   def testNeedNewAnalysisWithADifferentFormerReportedStep(self):
-    previous_request = FlakeAnalysisRequest.Create('flake', False, 123)
+    existing_request = FlakeAnalysisRequest.Create('flake', False, 123)
     step1 = BuildStep.Create('m', 'b1', 11, 's', datetime(2016, 10, 01))
     step1.swarmed = True
     step1.supported = True
@@ -117,10 +148,10 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     step2.swarmed = True
     step2.supported = True
     step2.scheduled = False
-    previous_request.supported = True
-    previous_request.swarmed = True
-    previous_request.build_steps = [step1, step2]
-    previous_request.Save()
+    existing_request.supported = True
+    existing_request.swarmed = True
+    existing_request.build_steps = [step1, step2]
+    existing_request.Save()
 
     request = FlakeAnalysisRequest.Create('flake', False, 123)
     step3 = BuildStep.Create('m', 'b3', 13, 's', datetime(2016, 10, 01))
@@ -136,7 +167,7 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('b2', step.builder_name)
 
   def testNotNeedNewAnalysisWithFreshEnoughPreviousAnalysis(self):
-    previous_request = FlakeAnalysisRequest.Create('flake', False, 123)
+    existing_request = FlakeAnalysisRequest.Create('flake', False, 123)
     step1 = BuildStep.Create('m', 'b1', 11, 's', datetime(2016, 10, 01))
     step1.swarmed = True
     step1.supported = True
@@ -145,10 +176,10 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     step2.swarmed = True
     step2.supported = True
     step2.scheduled = True
-    previous_request.supported = True
-    previous_request.swarmed = True
-    previous_request.build_steps = [step1, step2]
-    previous_request.Save()
+    existing_request.supported = True
+    existing_request.swarmed = True
+    existing_request.build_steps = [step1, step2]
+    existing_request.Save()
 
     request = FlakeAnalysisRequest.Create('flake', False, 123)
     step3 = BuildStep.Create('m', 'b2', 20, 's', datetime(2016, 10, 03))
@@ -162,7 +193,7 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(step)
 
   def testNeedNewAnalysisWithTooOldPreviousAnalysis(self):
-    previous_request = FlakeAnalysisRequest.Create('flake', False, None)
+    existing_request = FlakeAnalysisRequest.Create('flake', False, None)
     step1 = BuildStep.Create('m', 'b1', 11, 's', datetime(2016, 10, 01))
     step1.swarmed = True
     step1.supported = True
@@ -171,22 +202,28 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     step2.swarmed = True
     step2.supported = True
     step2.scheduled = True
-    previous_request.supported = True
-    previous_request.swarmed = True
-    previous_request.build_steps = [step1, step2]
-    previous_request.Save()
+    existing_request.supported = True
+    existing_request.swarmed = True
+    existing_request.user_emails = ['test@google.com']
+    existing_request.build_steps = [step1, step2]
+    existing_request.Save()
 
     request = FlakeAnalysisRequest.Create('flake', False, 123)
     step3 = BuildStep.Create('m', 'b2', 80, 's', datetime(2016, 10, 20))
     step3.swarmed = True
     step3.supported = True
     request.build_steps = [step3]
+    request.user_emails = ['test@google.com']
 
     version, step = flake_analysis_service._CheckForNewAnalysis(request)
 
     self.assertEqual(1, version)
     self.assertIsNotNone(step)
     self.assertEqual(80, step.build_number)
+
+    request = FlakeAnalysisRequest.GetVersion(key='flake')
+    self.assertEqual(['xxxx@google.com', 'test@google.com'],
+                     request.user_emails)
 
   def testUnauthorizedAccess(self):
     request = FlakeAnalysisRequest.Create('flake', False, 123)
