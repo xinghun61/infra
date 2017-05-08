@@ -431,7 +431,7 @@ class Gerrit(object):
   @_not_read_only
   def set_review(self, change_id, revision_id, message=None, labels=None,
                  notify=NOTIFY_NONE, max_message=300, tag=None,
-                 on_behalf_of=None):
+                 on_behalf_of=None, notify_details=None):
     """Uses the Set Review endpoint of the Gerrit API to add messages and/or set
     labels for a patchset.
 
@@ -448,6 +448,8 @@ class Gerrit(object):
         https://gerrit-review.googlesource.com/Documentation/rest-api-changes.html#review-input
       on_behalf_of: (str) The account_id of the user on whose behalf to set
         labels.
+      notify_details: (dict) The mapping from either of 3 keys "TO", "CC", "BCC"
+        to structure {"accounts": [account_id, "email", "or even name"]}.
     """
     if message:
       tail = u'\n(message too large)'
@@ -457,7 +459,8 @@ class Gerrit(object):
     payload = {}
     for var, attr in [(message, 'message'), (notify, 'notify'),
                      (labels, 'labels'), (tag, 'tag'),
-                     (on_behalf_of, 'on_behalf_of')]:
+                     (on_behalf_of, 'on_behalf_of'),
+                     (notify_details, 'notify_details')]:
       if var is not None:
         payload[attr] = var
     code, body = self._request(

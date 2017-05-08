@@ -34,6 +34,7 @@ TEST_PAYLOAD = {
     'notify': 'NONE',
     'tag': 'cq',
     'on_behalf_of': 'john@doe.net',
+    'notify_details': {'TO': {'accounts': [123]}},
 }
 
 TEST_PAYLOAD_LABELS_ONLY = {
@@ -504,7 +505,8 @@ class GerritAgentTestCase(unittest.TestCase):
                   json.dumps({'labels':{'Code-Review':1}})), 200)
     self.gerrit.set_review('change_id', 'revision_id', 'Test message.',
                            { 'Code-Review': 1 }, tag='cq',
-                           on_behalf_of='john@doe.net')
+                           on_behalf_of='john@doe.net',
+                           notify_details={'TO': {'accounts': [123]}})
     mock_method.assert_called_once_with(
         data=json.dumps(TEST_PAYLOAD),
         method='POST',
