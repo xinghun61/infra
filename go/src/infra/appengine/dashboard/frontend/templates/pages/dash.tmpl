@@ -25,17 +25,11 @@
     height: 100px;
     width: 100%;
   }
-  .light {
-    height: 11px;
-    padding-right: 4px;
-    padding-left: 12px;
-    width: 11px;
-  }
   .logo {
     height: 95px;
     width: 95px;
   }
-  .right {
+  .right-align {
     text-align: right;
   }
   .subtext {
@@ -62,7 +56,6 @@
 <link rel="stylesheet" type="text/css" href="/static/icons.css">
 <div class="container">
   <header>
-    <img class="logo" src="/static/chops-logo.png">
     Chrome Operations
   </header>
   <main>
@@ -137,7 +130,7 @@
       </table>
     {{end}}
 
-    <p class="subtext right">
+    <p class="subtext right-align">
       <i class="green circle"></i>No issues
       <i class="yellow circle"></i>Service disruption
       <i class="red circle"></i>Service outage
