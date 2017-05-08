@@ -15,11 +15,14 @@ DEPS = [
   'recipe_engine/step',
 ]
 
+LUCI_GAE_PATH_IN_INFRA = 'infra/go/src/github.com/luci/gae'
+
 
 def _run_presubmit(api, patch_root, bot_update_step):
+  got_revision_properties = api.bot_update.get_project_revision_properties(
+      LUCI_GAE_PATH_IN_INFRA)
   upstream = bot_update_step.json.output['properties'].get(
-      api.gclient.c.got_revision_mapping[
-      'infra/go/src/github.com/luci/gae'])
+      got_revision_properties[0])
   # The presubmit must be run with proper Go environment.
   # infra/go/env.py takes care of this.
   presubmit_cmd = [
@@ -54,10 +57,7 @@ def _commit_change(api, patch_root):
 def RunSteps(api):
   api.gclient.set_config('luci_gae')
   # patch_root must match the luci/gae repo, not infra checkout.
-  for path in api.gclient.c.got_revision_mapping:
-    if 'github.com/luci/gae' in path:
-      patch_root = path
-      break
+  patch_root = LUCI_GAE_PATH_IN_INFRA
   bot_update_step = api.bot_update.ensure_checkout(patch_root=patch_root)
 
   is_presubmit = 'presubmit' in api.properties.get('buildername', '').lower()
