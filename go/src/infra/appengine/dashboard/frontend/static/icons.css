@@ -7,13 +7,17 @@
 .green {
   background-color: green;
 }
+.incident {
+  display: table;
+  position: relative;
+}
 .red {
   background-color: red;
 }
 .center,
 .right,
 .left {
-  display: inline-block;
+  display: table-cell;
   height: 12px;
   width: 6px;
 }

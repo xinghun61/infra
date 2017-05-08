@@ -21,6 +21,8 @@
   alertColorClass.set(Alert.RED, 'red');
   alertColorClass.set(Alert.YELLOW, 'yellow');
 
+  const CELL_WIDTH_PX = 120;
+
   // TODO(jojwang): Make pageData object follow js naming guidelines.
   function addIncidents(pageData) {
     renderIncidents(
@@ -46,26 +48,63 @@
 
   function addIncident(incident, serviceName, firstDate, lastDate) {
     let startDateCell = getDateCell(incident['StartTime'], serviceName);
+    let startPosition;
+    let leftEndIcon;
     if (!startDateCell) {
       startDateCell = getDateCell(firstDate, serviceName);
-      startDateCell.appendChild(
-	  createIcon(incident['Severity'], IconClass.CENTER));
+      startPosition = 0;
+      leftEndIcon = createIcon(incident['Severity'], IconClass.CENTER);
     } else {
-      startDateCell.appendChild(
-	  createIcon(incident['Severity'], IconClass.LEFT));
+      startPosition = getTimePosition(incident['StartTime']);
+      leftEndIcon = createIcon(incident['Severity'], IconClass.LEFT);
     }
 
     let endDateCell = getDateCell(incident['EndTime'], serviceName);
+    let endPosition;
+    let rightEndIcon;
     if (!endDateCell) {
       endDateCell = getDateCell(lastDate, serviceName);
-      endDateCell.appendChild(
-	  createIcon(incident['Severity'], IconClass.CENTER));
+      endPosition = CELL_WIDTH_PX;
+      rightEndIcon = createIcon(incident['Severity'], IconClass.CENTER);
     } else {
-      endDateCell.appendChild(
-	  createIcon(incident['Severity'], IconClass.RIGHT));
+      endPosition = getTimePosition(incident['EndTime']);
+      rightEndIcon = createIcon(incident['Severity'], IconClass.RIGHT);
     }
-    // TODO(jojwang): Add red_rect/yellow_rect to fill in
-    // space between startDateCell and endDateCell.
+    positionIcons(
+	incident['Severity'],
+	startDateCell, leftEndIcon, startPosition,
+	endDateCell, rightEndIcon, endPosition);
+  }
+
+  function positionIcons(
+      severity, startDateCell, leftEndIcon, startPos, endDateCell, rightEndIcon, endPos) {
+    if (startDateCell != endDateCell) {
+      positionIcons(
+	  severity,
+	  startDateCell.nextElementSibling, createIcon(severity, IconClass.CENTER), 0,
+	  endDateCell, rightEndIcon, endPos);
+      endPos = CELL_WIDTH_PX;
+      rightEndIcon = createIcon(severity, IconClass.CENTER);
+    }
+    startDateCell.appendChild(
+        buildIncidentIcon(severity, leftEndIcon, startPos, rightEndIcon, endPos));
+  }
+
+  function buildIncidentIcon(severity, leftEndIcon, startPos, rightEndIcon, endPos) {
+    let incIcon = document.createElement('i');
+    incIcon.classList.add('incident');
+    incIcon.style.left = startPos + 'px';
+    incIcon.style.width = endPos - startPos + 'px';
+    incIcon.appendChild(leftEndIcon);
+    let middle = createIcon(severity, IconClass.CENTER);
+    incIcon.appendChild(middle);
+    incIcon.appendChild(rightEndIcon);
+    return incIcon;
+  }
+
+  function getTimePosition(rawTime) {
+    let time = new Date(rawTime);
+    return 5 * time.getHours();
   }
 
   function getDateCell(date, serviceName) {
