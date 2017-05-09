@@ -129,7 +129,7 @@ deploy_findit_for_prod() {
   fi
 
   # Check current deployed version.
-  local current_version=`curl -s https://${app_id}.appspot.com/version`
+  local current_version=`curl -s "https://${app_id}.appspot.com/version?format=json&pretty=1" | grep "version" | cut -d \" -f 4`
   if ! [[ ${current_version} =~ ^[0-9a-fA-F]+$ ]]; then
     echo "Failed to retrieve current version of Findit from the live app."
     echo "Please input the current version, followed by [ENTER]:"

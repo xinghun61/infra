@@ -11,4 +11,8 @@ class Version(BaseHandler):
 
   def HandleGet(self):
     """Responses the deployed version of this app."""
-    self.response.write(appengine_util.GetCurrentVersion())
+    return {
+        'data': {
+            'version': appengine_util.GetCurrentVersion(),
+        }
+    }
