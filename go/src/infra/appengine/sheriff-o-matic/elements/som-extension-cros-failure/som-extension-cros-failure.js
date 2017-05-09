@@ -25,6 +25,10 @@
       return classes.join(' ');
     },
 
+    _haveNotes: function(extension) {
+      return extension && extension.notes && extension.notes.length > 0;
+    },
+
     _haveStages: function(extension) {
       return extension && extension.stages && extension.stages.length > 0;
     },

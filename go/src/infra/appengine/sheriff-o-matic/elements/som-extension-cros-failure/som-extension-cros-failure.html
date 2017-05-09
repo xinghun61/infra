@@ -5,6 +5,7 @@
 <link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
 
 <link rel="import" href="../../elements/som-rev-range/som-rev-range.html">
+<link rel="import" href="../../elements/som-marked-element/som-marked-element.html">
 
 <dom-module id="som-extension-cros-failure">
   <template>
@@ -57,6 +58,10 @@
        padding: .3em 0.5em;
        flex-grow: 1;
      }
+     .notes {
+       font-size: smaller;
+       margin: .1em;
+     }
      paper-tabs {
        color: white;
        height: 15px;
@@ -71,6 +76,18 @@
     </style>
     <template is="dom-if" if="[[_isCrosFailure(type)]]">
       <div>
+        <template is="dom-if" if="[[_haveNotes(extension)]]">
+          <div id="notes" class="notes">
+            <ul>
+              <template is="dom-repeat" items="[[extension.notes]]" as="note">
+                <li>
+                  <som-marked-element markdown="[[note]]">
+                  </som-marked-element>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
         <div id="stages" class="section">
           <template is="dom-if" if="[[_haveStages(extension)]]">
             <div class="header">
