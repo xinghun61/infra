@@ -1,8 +1,8 @@
 hash: 9f8b5b05b9fb00f96ec26381dd637c29d07d8cd239c69a1b83842593905b2d4b
-updated: 2017-05-08T14:37:10.650005985-07:00
+updated: 2017-05-08T19:39:05.82190315-07:00
 imports:
 - name: cloud.google.com/go
-  version: dca61c42b0f8f1ef5c5ca4ccbb6792708f326bec
+  version: b1538c424762057a3044fa551802efe088fdf477
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -231,7 +231,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 855cf877ae3202e012c45d0e3b4b152c075a2c27
+  version: e3824ed33c72bf7e81da0286772c34b987520914
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
