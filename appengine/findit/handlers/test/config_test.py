@@ -504,6 +504,39 @@ class ConfigTest(testing.AppengineTestCase):
             }
         }
     }))
+    self.assertTrue(config._ValidateTrybotMapping({
+        'master1': {
+            'builder1': {
+                'swarmbucket_mastername': 'tryserver1',
+                'swarmbucket_trybot': 'trybot1',
+            }
+        }
+    }))
+    self.assertFalse(config._ValidateTrybotMapping({
+        'master1': {
+            'builder1': {
+                'swarmbucket_mastername': 'tryserver1',
+                'waterfall_trybot': 'trybot1',
+            }
+        }
+    }))
+    self.assertFalse(config._ValidateTrybotMapping({
+        'master1': {
+            'builder1': {
+                'swarmbucket_mastername': 'tryserver1',
+                'swarmbucket_trybot': ['trybot1'],
+            }
+        }
+    }))
+    self.assertFalse(config._ValidateTrybotMapping({
+        'master1': {
+            'builder1': {
+                'swarmbucket_trybot': 'trybot2',
+                'mastername': 'tryserver1',
+                'waterfall_trybot': 'trybot1',
+            }
+        }
+    }))
     self.assertFalse(config._ValidateTrybotMapping({
         'master1': {
             'builder1': {

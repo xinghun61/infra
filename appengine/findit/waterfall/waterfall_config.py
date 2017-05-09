@@ -203,7 +203,10 @@ def GetWaterfallTrybot(wf_mastername, wf_buildername):
     is returned.
   """
   bot_dict = _GetTrybotConfig(wf_mastername, wf_buildername)
-  return bot_dict.get('mastername'), bot_dict.get('waterfall_trybot')
+  mastername = bot_dict.get('swarmbucket_mastername',
+                            bot_dict.get('mastername'))
+  trybot = bot_dict.get('swarmbucket_trybot', bot_dict.get('waterfall_trybot'))
+  return mastername, trybot
 
 
 def EnableStrictRegexForCompileLinkFailures(wf_mastername, wf_buildername):

@@ -127,6 +127,9 @@ def _ValidateMastersAndStepsRulesMapping(steps_for_masters_rules):
 
 
 def _ValidateTrybotMapping(builders_to_trybots):
+  def xor(a, b):
+    return bool(a) != bool(b)
+
   if not isinstance(builders_to_trybots, dict):
     return False
   for builders in builders_to_trybots.values():
@@ -135,10 +138,20 @@ def _ValidateTrybotMapping(builders_to_trybots):
     for trybot_config in builders.values():
       if not isinstance(trybot_config, dict):
         return False
-      if (not trybot_config.get('mastername') or
-          not trybot_config.get('waterfall_trybot') or
-          not isinstance(trybot_config['waterfall_trybot'], basestring)):
+      if xor(trybot_config.get('swarmbucket_mastername'),
+             trybot_config.get('swarmbucket_trybot')):
         return False
+      if (not isinstance(trybot_config.get('swarmbucket_mastername', ''),
+                         basestring) or
+          not isinstance(trybot_config.get('swarmbucket_trybot', ''),
+                         basestring)):
+        return False
+      if not trybot_config.get('swarmbucket_mastername'):
+        # Validate buildbucket style config. (Not swarmbucket).
+        if (not trybot_config.get('mastername') or
+            not trybot_config.get('waterfall_trybot') or
+            not isinstance(trybot_config['waterfall_trybot'], basestring)):
+          return False
       if (trybot_config.get('flake_trybot') is not None and not
           isinstance(trybot_config['flake_trybot'], basestring)):
         # Specifying a flake_trybot is optional in case flake analysis is not
