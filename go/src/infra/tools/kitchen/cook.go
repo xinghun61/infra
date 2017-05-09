@@ -530,6 +530,9 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 		fmt.Fprintln(os.Stderr, "run failed because of the kitchen error")
 		return 1
 	}
+	if exitCode := result.RecipeExitCode; exitCode != nil {
+		return int(exitCode.Value)
+	}
 	return 0
 }
 
