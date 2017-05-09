@@ -410,7 +410,7 @@ type masterState struct {
 
 func getRestartingMasters(c context.Context, treeName string) (map[string]masterState, error) {
 	// Chrome OS does not use master-manager to handle restarts.
-	if treeName == "chromeos" {
+	if treeName == "chromeos" || treeName == "gardener" {
 		return nil, nil
 	}
 
