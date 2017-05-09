@@ -1,3 +1,29 @@
+# Release Notes sheriff-o-matic 2017-05-09
+
+- 4 commits, 3 bugs affected since 886ce0f (2017-05-02T20:53:49Z)
+- 3 Authors:
+  - davidriley@chromium.org
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [[som] Add Chrome OS alert-level notes.](https://chromium-review.googlesource.com/501328) (davidriley@chromium.org)
+- [[som] Hide master restart notices for /gardener](https://chromium-review.googlesource.com/500568) (seanmccullough@chromium.org)
+- [SoM: Change compact view option into collapse alerts by default.](https://chromium-review.googlesource.com/490693) (zhangtiff@google.com)
+- [SoM: Update release notes.](https://chromium-review.googlesource.com/494166) (zhangtiff@google.com)
+
+
+## Bugs updated, by author
+- davidriley@chromium.org:
+  -  [https://crbug.com/717673](https://crbug.com/717673)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/719616](https://crbug.com/719616)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/712085](https://crbug.com/712085)
+
 # Release Notes sheriff-o-matic 2017-05-02
 
 - 11 commits, 5 bugs affected since 6009331 (2017-04-25T22:31:34Z)
