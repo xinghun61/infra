@@ -17,6 +17,7 @@ from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from waterfall import swarming_util
 from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     _GetNormalizedTryJobDataPoints)
@@ -27,7 +28,6 @@ from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     UpdateAnalysisUponCompletion)
-from waterfall import swarming_util
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
@@ -97,9 +97,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         recursive_flake_try_job_pipeline.ScheduleFlakeTryJobPipeline,
         try_job_id,
-        expected_args=[master_name, builder_name, build_number,
-                       step_name, test_name, revision, analysis.key.urlsafe(),
-                       iterations_to_rerun, _DEFAULT_CACHE_NAME, None])
+        expected_args=[master_name, builder_name, step_name, test_name,
+                       revision, analysis.key.urlsafe(), _DEFAULT_CACHE_NAME,
+                       None, iterations_to_rerun])
     self.MockPipeline(
         recursive_flake_try_job_pipeline.MonitorTryJobPipeline,
         try_job_result,

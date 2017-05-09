@@ -64,6 +64,10 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
       git_hash (str): The git hash of the revision to run the try job against.
       urlsafe_analysis_key (str): The urlsafe key of the original
           MasterFlakeAnalysis that triggered this try job.
+      cache_name (str): A string to identify separate directories for different
+          waterfall bots on the trybots.
+      dimensions (list): A list of strings in the format
+          ["key1:value1", "key2:value2"].
       iterations_to_rerun (int): The number of iterations to rerun.
 
     Returns:

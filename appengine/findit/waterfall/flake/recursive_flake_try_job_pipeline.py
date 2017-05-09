@@ -146,6 +146,10 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
           |commit_position|.
       lower_boundary_commit_position (int): The lower bound of commit position
           that can run a try job.
+      cache_name (str): A string to identify separate directories for different
+          waterfall bots on the trybots.
+      dimensions (list): A list of strings in the format
+          ["key1:value1", "key2:value2"].
     """
     analysis = ndb.Key(urlsafe=urlsafe_flake_analysis_key).get()
     assert analysis
@@ -172,9 +176,9 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
       iterations_to_rerun = analysis.algorithm_parameters.get(
           'try_job_rerun', {}).get('iterations_to_rerun')
       try_job_id = yield ScheduleFlakeTryJobPipeline(
-          analysis.master_name, analysis.builder_name, analysis.build_number,
+          analysis.master_name, analysis.builder_name,
           analysis.canonical_step_name, analysis.test_name, revision,
-          analysis.key.urlsafe(), iterations_to_rerun, cache_name, dimensions)
+          analysis.key.urlsafe(), cache_name, dimensions, iterations_to_rerun)
 
       try_job_result = yield MonitorTryJobPipeline(
           try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)

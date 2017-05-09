@@ -60,6 +60,10 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
       bad__revision (str): the revision of the first failed build.
       try_job_type (int): type of the try job: TEST in this case.
       suspected_revisions (list): a list of suspected revisions from heuristic.
+      cache_name (str): A string to identify separate directories for different
+          waterfall bots on the trybots.
+      dimensions (list): A list of strings in the format
+          ["key1:value1", "key2:value2"].
       task_results (list): a list of reliable failed tests.
 
     Returns:
