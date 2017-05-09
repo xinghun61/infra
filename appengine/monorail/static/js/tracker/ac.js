@@ -872,7 +872,8 @@ function ac_updateCompletionList(show) {
         }
         var docCellEl = document.createElement('td');
         rowEl.appendChild(docCellEl);
-        if (ac_completions[i].docSpan) {
+        if (ac_completions[i].docSpan &&
+            ac_completions[i].docSpan.textContent) {
           docCellEl.appendChild(document.createTextNode(' = '));
           docCellEl.appendChild(ac_completions[i].docSpan);
         }
