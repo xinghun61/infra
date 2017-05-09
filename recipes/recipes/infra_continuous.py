@@ -30,6 +30,11 @@ CROSS_COMPILING_BUILDERS = {
 }
 
 
+# A builder responsible for calling "deps.py bundle" to generate cipd bundles
+# with vendored go code. We need only one.
+GO_DEPS_BUNDLING_BUILDER = 'infra-continuous-trusty-64'
+
+
 def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber,
                         goos, goarch):
   # 'goos' and 'goarch' used for cross-compilation of Go code.
@@ -158,7 +163,26 @@ def RunSteps(api, mastername, buildername, buildnumber):
         'go third parties',
         api.path['checkout'].join('go', 'env.py'),
         ['go', 'version'])
-    # Note: env.py knows how to expand 'python' into sys.executable.
+
+    # Call 'deps.py bundle' to package dependencies specified in deps.lock into
+    # a CIPD package. This is not strictly necessary, but it significantly
+    # reduces time it takes to run 'env.py'. Note that 'deps.py' requires
+    # environment produced by 'env.py' (for things like glide and go itself).
+    # When the recipe runs with outdated deps bundle, 'env.py' call above falls
+    # back to fetching dependencies from git directly. When the bundle is
+    # up-to-date, 'deps.py bundle' finishes right away not doing anything.
+    if buildername == GO_DEPS_BUNDLING_BUILDER:
+      api.python(
+          'bundle go deps',
+          api.path['checkout'].join('go', 'env.py'),
+          [
+            'python',  # env.py knows how to expand 'python' into sys.executable
+            api.path['checkout'].join('go', 'deps.py'),
+            'bundle',
+            '--service-account-json',
+            api.cipd.default_bot_service_account_credentials,
+          ])
+
     api.python(
         'infra go tests',
         api.path['checkout'].join('go', 'env.py'),
@@ -257,6 +281,17 @@ def GenTests(api):
     api.override_step_data(
         'cipd - upload packages [GOOS:android GOARCH:arm]',
         api.json.output(cipd_json_output))
+  )
+
+  yield (
+    api.test('infra-go-deps-bundle') +
+    api.properties.git_scheduled(
+        path_config='kitchen',
+        buildername='infra-continuous-trusty-64',
+        buildnumber=123,
+        mastername='chromium.infra',
+        repository='https://chromium.googlesource.com/infra/infra',
+    )
   )
 
   yield (

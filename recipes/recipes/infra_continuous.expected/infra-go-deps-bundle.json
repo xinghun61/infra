@@ -1,0 +1,254 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
+      "--spec",
+      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "--patch_root",
+      "infra",
+      "--revision_mapping_file",
+      "{\"got_revision\": \"infra\"}",
+      "--git-cache-dir",
+      "[GIT_CACHE]",
+      "--output_json",
+      "/path/to/tmp/json",
+      "--revision",
+      "infra@c14d891d44f0afff64e56ed7c9702df1d807b1ee"
+    ],
+    "env": {
+      "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
+      "GIT_HTTP_LOW_SPEED_TIME": "300",
+      "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
+    },
+    "infra_step": true,
+    "name": "bot_update",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Some step text@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra\": \"c14d891d44f0afff64e56ed7c9702df1d807b1ee\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/infra.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"5e03a58dc0850e5137a8ebbce29610670c756aed\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"5e03a58dc0850e5137a8ebbce29610670c756aed\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#197293}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"root\": \"infra\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision@\"5e03a58dc0850e5137a8ebbce29610670c756aed\"@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#197293}\"@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
+      "runhooks"
+    ],
+    "cwd": "[START_DIR]/infra",
+    "env": {
+      "PATH": "%(PATH)s:RECIPE_PACKAGE_REPO[depot_tools]"
+    },
+    "name": "gclient runhooks"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "test.py",
+      "test",
+      "--jobs",
+      "1"
+    ],
+    "cwd": "[START_DIR]/infra",
+    "name": "infra python tests"
+  },
+  {
+    "cmd": [
+      "vpython",
+      "[START_DIR]/infra/glyco/tests/run_all_tests.py"
+    ],
+    "cwd": "[START_DIR]/infra",
+    "name": "Glyco tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/go/env.py",
+      "go",
+      "version"
+    ],
+    "name": "go third parties"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/go/env.py",
+      "python",
+      "[START_DIR]/infra/go/deps.py",
+      "bundle",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "bundle go deps"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/go/env.py",
+      "python",
+      "[START_DIR]/infra/go/test.py"
+    ],
+    "name": "infra go tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/build/build.py",
+      "--builder",
+      "infra-continuous-trusty-64"
+    ],
+    "name": "cipd - build packages"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/build/test_packages.py"
+    ],
+    "name": "cipd - test packages integrity"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/build/build.py",
+      "--no-rebuild",
+      "--upload",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--builder",
+      "infra-continuous-trusty-64",
+      "--tags",
+      "buildbot_build:chromium.infra/infra-continuous-trusty-64/123",
+      "git_repository:https://chromium.googlesource.com/infra/infra",
+      "git_revision:5e03a58dc0850e5137a8ebbce29610670c756aed"
+    ],
+    "name": "cipd - upload packages",
+    "~followup_annotations": [
+      "@@@STEP_LOG_END@json.output (invalid)@@@",
+      "@@@STEP_LOG_LINE@json.output (exception)@No JSON object could be decoded@@@",
+      "@@@STEP_LOG_END@json.output (exception)@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "rmcontents",
+      "[START_DIR]/infra/go/bin"
+    ],
+    "infra_step": true,
+    "name": "rmcontents clean go bin"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/go/env.py",
+      "go",
+      "install",
+      "github.com/luci/luci-go/client/cmd/..."
+    ],
+    "name": "build luci-go"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport json, os, sys\nif os.path.exists(sys.argv[1]) and os.path.isdir(sys.argv[1]):\n  with open(sys.argv[2], 'w') as f:\n    json.dump(os.listdir(sys.argv[1]), f)\n",
+      "[START_DIR]/infra/go/bin",
+      "/path/to/tmp/json"
+    ],
+    "name": "listdir listing go bin",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@[@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"file 1\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"file 2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@]@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import json, os, sys@@@",
+      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(sys.argv[1]) and os.path.isdir(sys.argv[1]):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  with open(sys.argv[2], 'w') as f:@@@",
+      "@@@STEP_LOG_LINE@python.inline@    json.dump(os.listdir(sys.argv[1]), f)@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_PACKAGE_REPO[depot_tools]/upload_to_google_storage.py",
+      "-b",
+      "chromium-luci",
+      "[START_DIR]/infra/go/bin/file 1",
+      "[START_DIR]/infra/go/bin/file 2"
+    ],
+    "env": {
+      "DEPOT_TOOLS_GSUTIL_BIN_DIR": "[CACHE]/gsutil"
+    },
+    "name": "upload go bin"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "[START_DIR]/infra/go/bin/file 1.sha1",
+      "/path/to/tmp/"
+    ],
+    "name": "file 1 sha1",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@0123456789abcdeffedcba987654321012345678@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "[START_DIR]/infra/go/bin/file 2.sha1",
+      "/path/to/tmp/"
+    ],
+    "name": "file 2 sha1",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@0123456789abcdeffedcba987654321012345678@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
