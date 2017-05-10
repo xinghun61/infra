@@ -282,7 +282,6 @@ class SwarmingTest(testing.AppengineTestCase):
         net.json_request_async.call_args[0][0],
         'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new')
     actual_task_def = net.json_request_async.call_args[1]['payload']
-    del actual_task_def['pubsub_auth_token']
     expected_task_def = {
       'name': 'buildbucket:bucket:linux_chromium_rel_ng',
       'priority': '108',
@@ -472,7 +471,6 @@ class SwarmingTest(testing.AppengineTestCase):
         net.json_request_async.call_args[0][0],
         'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new')
     actual_task_def = net.json_request_async.call_args[1]['payload']
-    del actual_task_def['pubsub_auth_token']
     expected_task_def = {
       'name': 'buildbucket:bucket:linux_chromium_rel_ng-canary',
       'priority': '108',
@@ -989,9 +987,6 @@ class SubNotifyTest(testing.AppengineTestCase):
 
     self.handler.request = mock.Mock(json={
       'message': {
-        'attributes': {
-          'auth_token': swarming.TaskToken.generate(),
-        },
         'data': b64json({
           'task_id': 'deadbeef',
           'userdata': json.dumps({
@@ -1028,9 +1023,6 @@ class SubNotifyTest(testing.AppengineTestCase):
 
     self.handler.request = mock.Mock(json={
       'message': {
-        'attributes': {
-          'auth_token': swarming.TaskToken.generate(),
-        },
         'data': b64json({
           'task_id': 'deadbeef',
           'userdata': json.dumps({
@@ -1060,9 +1052,6 @@ class SubNotifyTest(testing.AppengineTestCase):
 
     self.handler.request = mock.Mock(json={
       'message': {
-        'attributes': {
-          'auth_token': swarming.TaskToken.generate(),
-        },
         'data': b64json({
           'task_id': 'deadbeefffffffffff',
           'userdata': json.dumps({
@@ -1093,9 +1082,6 @@ class SubNotifyTest(testing.AppengineTestCase):
 
     self.handler.request = mock.Mock(json={
       'message': {
-        'attributes': {
-          'auth_token': swarming.TaskToken.generate(),
-        },
         'data': b64json({
           'task_id': 'deadbeef',
           'userdata': json.dumps({
@@ -1116,20 +1102,6 @@ class SubNotifyTest(testing.AppengineTestCase):
     self.assertEqual(build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(build.result, model.BuildResult.SUCCESS)
 
-  def test_post_without_valid_auth_token(self):
-    self.handler.request = mock.Mock(json={
-      'message': {
-        'attributes': {},
-      },
-    })
-
-    with self.assert_bad_message():
-      self.handler.post()
-
-    self.handler.request.json['message']['attributes']['auth_token'] = 'blah'
-    with self.assert_bad_message():
-      self.handler.post()
-
   def test_post_without_build(self):
     userdata = {
       'created_ts': 1448841600000000,
@@ -1142,9 +1114,6 @@ class SubNotifyTest(testing.AppengineTestCase):
     }
     self.handler.request = mock.Mock(json={
       'message': {
-        'attributes': {
-          'auth_token': swarming.TaskToken.generate(),
-        },
         'data': b64json(msg_data)
       }
     })
@@ -1169,9 +1138,6 @@ class SubNotifyTest(testing.AppengineTestCase):
     }
     self.handler.request = mock.Mock(json={
       'message': {
-        'attributes': {
-          'auth_token': swarming.TaskToken.generate(),
-        },
         'data': b64json(msg_data)
       }
     })

@@ -40,7 +40,6 @@ from components import config as component_config
 from components import decorators
 from components import net
 from components import utils
-from components.auth import tokens
 from components.config import validation
 from google.appengine.api import app_identity
 from google.appengine.ext import ndb
@@ -399,7 +398,6 @@ def _create_task_def_async(
     task['pubsub_topic'] = (
       'projects/%s/topics/%s' %
       (app_identity.get_application_id(), PUBSUB_TOPIC))
-    task['pubsub_auth_token'] = TaskToken.generate()
     task['pubsub_userdata'] = json.dumps({
       'build_id': build.key.id(),
       'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
@@ -650,7 +648,10 @@ def _update_build(build, result):
 
 
 class SubNotify(webapp2.RequestHandler):
-  """Handles PubSub messages from swarming."""
+  """Handles PubSub messages from swarming.
+
+  Assumes unprivileged users cannot send requests to this handler.
+  """
 
   bad_message = False
 
@@ -694,13 +695,6 @@ class SubNotify(webapp2.RequestHandler):
   def post(self):
     msg = (self.request.json or {}).get('message', {})
     logging.info('Received message: %r', msg)
-
-    # Check auth token.
-    try:
-      auth_token = msg.get('attributes', {}).get('auth_token', '')
-      TaskToken.validate(auth_token)
-    except tokens.InvalidTokenError as ex:
-      self.stop('invalid auth_token: %s', ex.message)
 
     hostname, created_time, task_id, build_id = self.unpack_msg(msg)
     task_url = '%s/task?id=%s' % (hostname, task_id)
@@ -842,13 +836,13 @@ class CronUpdateBuilds(webapp2.RequestHandler):
     q.map_async(self.update_build_async).get_result()
 
 
-def get_routes():  # pragma: no cover
+def get_backend_routes():  # pragma: no cover
   return [
     webapp2.Route(
         r'/internal/cron/swarming/update_builds',
         CronUpdateBuilds),
     webapp2.Route(
-        r'/swarming/notify',
+        r'/_ah/push-handlers/swarming/notify',
         SubNotify),
   ]
 
@@ -910,9 +904,3 @@ def _extend_unique(target, items):
   for x in items:
     if x not in target:  # pragma: no branch
       target.append(x)
-
-
-class TaskToken(tokens.TokenKind):
-  expiration_sec = 60 * 60 * 24  # 24 hours.
-  secret_key = auth.SecretKey('swarming_task_token', scope='local')
-  version = 1

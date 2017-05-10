@@ -11,6 +11,12 @@ handlers:
   secure: always
   login: admin
 
+# Enforce login:admin on PubSub handlers.
+- url: /_ah/push-handlers/.*
+  script: apps.backend
+  secure: always
+  login: admin
+
 - url: /.*
   script: apps.backend
 

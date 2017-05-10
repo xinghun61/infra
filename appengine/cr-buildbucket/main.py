@@ -40,7 +40,7 @@ def create_endpoints_app():  # pragma: no cover
 
 def create_backend_app():  # pragma: no cover
   """Returns WSGI app for backend."""
-  routes = handlers.get_backend_routes() + swarming.get_routes()
+  routes = handlers.get_backend_routes() + swarming.get_backend_routes()
   app = webapp2.WSGIApplication(routes, debug=utils.is_local_dev_server())
   gae_ts_mon.initialize(app, cron_module='backend')
   gae_ts_mon.register_global_metrics(metrics.GLOBAL_METRICS)
