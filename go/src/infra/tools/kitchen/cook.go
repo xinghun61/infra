@@ -558,10 +558,10 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 		fmt.Fprintln(os.Stderr, "run failed because of the kitchen error")
 		return 1
 	}
-	if exitCode := result.RecipeExitCode; exitCode != nil {
-		return int(exitCode.Value)
+	if result.RecipeExitCode == nil {
+		panic("impossible: KitchenError is not nil, but there is no recipe exit code")
 	}
-	return 0
+	return int(result.RecipeExitCode.Value)
 }
 
 // run runs the cook subcommmand and returns cook result.
