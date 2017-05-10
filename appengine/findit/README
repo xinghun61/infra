@@ -9,6 +9,11 @@ Mac. Note:
 2. For Windows, you may have to read script util_scripts/run.sh to learn how
    to run all of the commands manually.
 
+# How to set up Polymer?
+  sudo apt-get install npm
+  npm install -g bower
+  cd $SRC_ROOT/infra/appengine/findit/third_party && bower install && cd -
+
 # How to run Findit locally?
 
 From command line, run:

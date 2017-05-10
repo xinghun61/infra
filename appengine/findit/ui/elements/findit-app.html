@@ -1,0 +1,50 @@
+<link rel="import" href="/bower_components/app-layout/app-layout.html">
+<link rel="import" href="/bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+
+<dom-module id="findit-app">
+  <template>
+    <style>
+      app-toolbar {
+        background-color: #1F78B4;
+        color: #fff;
+      }
+      paper-menu {
+        background-color: #1F78B4;
+        color: #fff;
+      }
+      paper-item a {
+        color: #fff;
+      }
+    </style>
+
+    <app-header-layout>
+      <app-header fixed>
+        <app-toolbar>
+          <paper-menu>
+            <paper-item><a href="https://sites.google.com/a/chromium.org/cr-culprit-finder/findit/">Findit</a></paper-item>
+            <paper-item><a href="/">Home</a></paper-item>
+            <paper-item><a href="/waterfall/list-failures">Failures</a></paper-item>
+            <paper-item><a href="/waterfall/list-flakes">Flakes</a></paper-item>
+          </paper-menu>
+        </app-toolbar>
+      </app-header>
+      <div id="main-content">
+        <slot></slot>
+      <div>
+    </app-header-layout>
+  </template>
+
+  <script>
+   (function() {
+     'use strict';
+
+     Polymer({
+       is: 'findit-app',
+
+       properties: {
+       },
+     });
+   })();
+  </script>
+</dom-module>

@@ -3,3 +3,6 @@
 
 # no file in util_scripts/tmp
 util_scripts/tmp
+
+# Polymer
+third_party/bower_components
