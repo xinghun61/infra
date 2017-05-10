@@ -15,11 +15,11 @@ import (
 )
 
 func TestTableDefs(t *testing.T) {
-	s := []JSONSchema{
+	s := []JSONTableDef{
 		{
 			DatasetID: "test_dataset",
 			TableID:   "test_table",
-			Fields: []JSONField{
+			Fields: []FieldSchema{
 				{
 					Name:        "test_field",
 					Description: "test description",
@@ -50,7 +50,7 @@ func TestTableDefs(t *testing.T) {
 }
 
 func TestBQSchema(t *testing.T) {
-	f := []JSONField{
+	f := []FieldSchema{
 		{
 			Name:        "test_field",
 			Description: "test description",
@@ -71,7 +71,7 @@ func TestBQSchema(t *testing.T) {
 }
 
 func TestBQField(t *testing.T) {
-	f := JSONField{
+	f := FieldSchema{
 		Name:        "test_field",
 		Description: "test description",
 		Type:        "STRING",
@@ -87,12 +87,12 @@ func TestBQField(t *testing.T) {
 	}
 }
 
-func TestSchemasFromFile(t *testing.T) {
-	s := []JSONSchema{
+func TestJSONTableDefs(t *testing.T) {
+	s := []JSONTableDef{
 		{
 			DatasetID: "test_dataset",
 			TableID:   "test_table",
-			Fields: []JSONField{
+			Fields: []FieldSchema{
 				{
 					Name:        "field1",
 					Type:        "STRING",
@@ -110,7 +110,7 @@ func TestSchemasFromFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := jsonSchemas(strings.NewReader(string(j)))
+	got := jsonTableDefs(strings.NewReader(string(j)))
 	want := s
 	if !(reflect.DeepEqual(got, want)) {
 		t.Errorf("got: %v; want: %v", got, want)

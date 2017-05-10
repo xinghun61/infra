@@ -15,17 +15,17 @@ import (
 	"golang.org/x/net/context"
 )
 
-// JSONSchema is used for loading the necessary information for constructing a
+// JSONTableDef is used for loading the necessary information for constructing a
 // bigquery.Schema from JSON schema files
-type JSONSchema struct {
-	DatasetID string      `json:"datasetID"`
-	TableID   string      `json:"tableID"`
-	Fields    []JSONField `json:"fields"`
+type JSONTableDef struct {
+	DatasetID string        `json:"datasetID"`
+	TableID   string        `json:"tableID"`
+	Fields    []FieldSchema `json:"schema"`
 }
 
-// JSONField is used for loading the necessary information for constructing a
-// bigquery.FieldSchema from JSON schema files
-type JSONField struct {
+// FieldSchema exactly mirrors bigquery.FieldSchema, and exists to provide json
+// tags that are not present in bigquery.FieldSchema
+type FieldSchema struct {
 	Name        string `json:"name"`
 	Type        string `json:"type"`
 	Description string `json:"description"`
@@ -37,9 +37,9 @@ type tableDef struct {
 	toUpdate  bigquery.TableMetadataToUpdate
 }
 
-func tableDefs(schemas []JSONSchema) []tableDef {
+func tableDefs(j []JSONTableDef) []tableDef {
 	var defs []tableDef
-	for _, s := range schemas {
+	for _, s := range j {
 		def := tableDef{
 			datasetID: s.DatasetID,
 			tableID:   s.TableID,
@@ -52,7 +52,7 @@ func tableDefs(schemas []JSONSchema) []tableDef {
 	return defs
 }
 
-func bqSchema(fields []JSONField) bigquery.Schema {
+func bqSchema(fields []FieldSchema) bigquery.Schema {
 	var s []*bigquery.FieldSchema
 	for _, f := range fields {
 		s = append(s, bqField(f))
@@ -60,7 +60,7 @@ func bqSchema(fields []JSONField) bigquery.Schema {
 	return bigquery.Schema(s)
 }
 
-func bqField(f JSONField) *bigquery.FieldSchema {
+func bqField(f FieldSchema) *bigquery.FieldSchema {
 	return &bigquery.FieldSchema{
 		Name:        f.Name,
 		Description: f.Description,
@@ -68,8 +68,8 @@ func bqField(f JSONField) *bigquery.FieldSchema {
 	}
 }
 
-func jsonSchemas(r io.Reader) []JSONSchema {
-	var s []JSONSchema
+func jsonTableDefs(r io.Reader) []JSONTableDef {
+	var s []JSONTableDef
 	d := json.NewDecoder(r)
 	err := d.Decode(&s)
 	if err != nil {
@@ -102,7 +102,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	tds := tableDefs(jsonSchemas(r))
+	tds := tableDefs(jsonTableDefs(r))
 
 	ctx := context.Background()
 	c, err := bigquery.NewClient(ctx, "chrome-infra-events")
