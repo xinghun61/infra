@@ -12,12 +12,6 @@ import (
 	"google.golang.org/api/googleapi"
 )
 
-type tableDef struct {
-	datasetID string
-	tableID   string
-	toUpdate  bigquery.TableMetadataToUpdate
-}
-
 type tableStore interface {
 	getTableMetadata(ctx context.Context, datasetID, tableID string) (*bigquery.TableMetadata, error)
 	createTable(ctx context.Context, datasetID, tableID string, option ...bigquery.CreateTableOption) error

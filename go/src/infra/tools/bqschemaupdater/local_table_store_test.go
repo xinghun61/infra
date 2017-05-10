@@ -10,16 +10,16 @@ import (
 	"google.golang.org/api/googleapi"
 )
 
-type testSchema struct {
+type testSchemaA struct {
 	testField string
 }
 
-type otherTestSchema struct {
+type testSchemaB struct {
 	testField int
 }
 
 func newTestSchema(t *testing.T) bigquery.Schema {
-	s, err := bigquery.InferSchema(testSchema{})
+	s, err := bigquery.InferSchema(testSchemaA{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestUpdateTable(t *testing.T) {
 	datasetID := "test_dataset"
 	s := newTestSchema(t)
 	o := bigquery.CreateTableOption(s)
-	otherS, err := bigquery.InferSchema(otherTestSchema{})
+	otherS, err := bigquery.InferSchema(testSchemaB{})
 	if err != nil {
 		t.Fatal(err)
 	}
