@@ -48,6 +48,11 @@ def RunSteps(api, buildername):
     '--post',
   ]
 
+  # Forcing builds with a revision property set is used to manually override
+  # the lkgr.
+  if api.properties.get('revision'):
+    args.append('--manual=%s' % api.properties['revision'])
+
   if botconfig.get('allowed_lag') is not None:
     args.append('--allowed-lag=%d' % botconfig['allowed_lag'])
 
@@ -80,5 +85,12 @@ def GenTests(api):
         api.test(botconfig['project']) +
         api.properties.generic(
             buildername=buildername,
+        )
+    )
+    yield (
+        api.test(botconfig['project'] + '_manual') +
+        api.properties.generic(
+            buildername=buildername,
+            revision='deadbeef',
         )
     )
