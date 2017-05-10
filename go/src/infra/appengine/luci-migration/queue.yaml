@@ -1,0 +1,3 @@
+queue:
+- name: analyze-builders
+  rate: 100/s
