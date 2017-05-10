@@ -7,6 +7,7 @@
 
 import unittest
 
+from google.appengine.api import memcache
 from google.appengine.ext import testbed
 
 from services import caches
@@ -113,25 +114,28 @@ class AbstractTwoLevelCacheTest(unittest.TestCase):
     self.cache_manager = fake.CacheManager()
     self.testable_cache = TestableTwoLevelCache(self.cache_manager, 'issue')
 
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def testCacheItem(self):
-    self.testable_cache.CacheItem(123, 'foo')
-    self.assertEqual('foo', self.testable_cache.cache.cache[123])
+    self.testable_cache.CacheItem(123, 12300)
+    self.assertEqual(12300, self.testable_cache.cache.cache[123])
 
   def testHasItem(self):
-    self.testable_cache.CacheItem(123, 'foo')
+    self.testable_cache.CacheItem(123, 12300)
     self.assertTrue(self.testable_cache.HasItem(123))
     self.assertFalse(self.testable_cache.HasItem(444))
     self.assertFalse(self.testable_cache.HasItem(999))
 
   def testGetAll_FetchGetsItFromMemcache(self):
-    self.testable_cache.CacheItem(123, 'foo')
-    self.testable_cache.CacheItem(124, 'bar')
+    self.testable_cache.CacheItem(123, 12300)
+    self.testable_cache.CacheItem(124, 12400)
     # Clear the RAM cache so that we find items in memcache.
     self.testable_cache.cache.LocalInvalidateAll()
-    self.testable_cache.CacheItem(125, 'baz')
+    self.testable_cache.CacheItem(125, 12500)
     hits, misses = self.testable_cache.GetAll(
         self.cnxn, [123, 124, 333, 444])
-    self.assertEqual({123: 'foo', 124: 'bar', 333: 333, 444: 444}, hits)
+    self.assertEqual({123: 12300, 124: 12400, 333: 333, 444: 444}, hits)
     self.assertEqual([], misses)
     # The RAM cache now has items found in memcache and DB.
     self.assertItemsEqual(
@@ -139,25 +143,45 @@ class AbstractTwoLevelCacheTest(unittest.TestCase):
         self.testable_cache.cache.cache.keys())
 
   def testGetAll_FetchGetsItFromDB(self):
-    self.testable_cache.CacheItem(123, 'foo')
-    self.testable_cache.CacheItem(124, 'bar')
+    self.testable_cache.CacheItem(123, 12300)
+    self.testable_cache.CacheItem(124, 12400)
     hits, misses = self.testable_cache.GetAll(
         self.cnxn, [123, 124, 333, 444])
-    self.assertEqual({123: 'foo', 124: 'bar', 333: 333, 444: 444}, hits)
+    self.assertEqual({123: 12300, 124: 12400, 333: 333, 444: 444}, hits)
     self.assertEqual([], misses)
 
   def testGetAll_FetchDoesNotFindIt(self):
-    self.testable_cache.CacheItem(123, 'foo')
-    self.testable_cache.CacheItem(124, 'bar')
+    self.testable_cache.CacheItem(123, 12300)
+    self.testable_cache.CacheItem(124, 12400)
     hits, misses = self.testable_cache.GetAll(
         self.cnxn, [123, 124, 999])
-    self.assertEqual({123: 'foo', 124: 'bar'}, hits)
+    self.assertEqual({123: 12300, 124: 12400}, hits)
     self.assertEqual([999], misses)
 
+  def testWriteToMemcache_Normal(self):
+    retrieved_dict = {123: 12300, 124: 12400}
+    self.testable_cache._WriteToMemcache(retrieved_dict)
+    actual_123 = memcache.get('testable:123')
+    self.assertEqual(12300, actual_123)
+    actual_124 = memcache.get('testable:124')
+    self.assertEqual(12400, actual_124)
+
+  def testWriteToMemcache_HugeValue(self):
+    """If memcache refuses to store a huge value, we don't store any."""
+    self.testable_cache._WriteToMemcache({124: 124999})  # Gets deleted.
+
+    huge_str = 'huge' * 260000
+    retrieved_dict = {123: huge_str, 124: 12400}
+    self.testable_cache._WriteToMemcache(retrieved_dict)
+    actual_123 = memcache.get('testable:123')
+    self.assertEqual(None, actual_123)
+    actual_124 = memcache.get('testable:124')
+    self.assertEqual(None, actual_124)
+
   def testInvalidateKeys(self):
-    self.testable_cache.CacheItem(123, 'a')
-    self.testable_cache.CacheItem(124, 'b')
-    self.testable_cache.CacheItem(125, 'c')
+    self.testable_cache.CacheItem(123, 12300)
+    self.testable_cache.CacheItem(124, 12400)
+    self.testable_cache.CacheItem(125, 12500)
     self.testable_cache.InvalidateKeys(self.cnxn, [124])
     self.assertEqual(2, len(self.testable_cache.cache.cache))
     self.assertNotIn(124, self.testable_cache.cache.cache)
@@ -165,16 +189,16 @@ class AbstractTwoLevelCacheTest(unittest.TestCase):
                      ('StoreInvalidateRows', self.cnxn, 'issue', [124]))
 
   def testGetAllAlreadyInRam(self):
-    self.testable_cache.CacheItem(123, 'foo')
-    self.testable_cache.CacheItem(124, 'bar')
+    self.testable_cache.CacheItem(123, 12300)
+    self.testable_cache.CacheItem(124, 12400)
     hits, misses = self.testable_cache.GetAllAlreadyInRam(
         [123, 124, 333, 444, 999])
-    self.assertEqual({123: 'foo', 124: 'bar'}, hits)
+    self.assertEqual({123: 12300, 124: 12400}, hits)
     self.assertEqual([333, 444, 999], misses)
 
   def testInvalidateAllRamEntries(self):
-    self.testable_cache.CacheItem(123, 'foo')
-    self.testable_cache.CacheItem(124, 'bar')
+    self.testable_cache.CacheItem(123, 12300)
+    self.testable_cache.CacheItem(124, 12400)
     self.testable_cache.InvalidateAllRamEntries(self.cnxn)
     self.assertFalse(self.testable_cache.HasItem(123))
     self.assertFalse(self.testable_cache.HasItem(124))

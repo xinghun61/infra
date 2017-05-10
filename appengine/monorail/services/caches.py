@@ -252,9 +252,20 @@ class AbstractTwoLevelCache(object):
     strs_to_cache = {
         self._KeyToStr(key): self._ValueToStr(value)
         for key, value in retrieved_dict.iteritems()}
-    memcache.add_multi(
-        strs_to_cache, key_prefix=self.memcache_prefix,
-        time=framework_constants.MEMCACHE_EXPIRATION)
+
+    try:
+      memcache.add_multi(
+          strs_to_cache, key_prefix=self.memcache_prefix,
+          time=framework_constants.MEMCACHE_EXPIRATION)
+    except ValueError as e:
+      # If memcache does not accept the values, ensure that no stale
+      # values are left, then bail out.
+      logging.error('Got memcache error: %r', e)
+      memcache.delete_multi(
+          strs_to_cache.keys(), seconds=5,
+          key_prefix=self.memcache_prefix)
+      return
+
     logging.info('cached batch of %d values in memcache %s',
                  len(retrieved_dict), self.memcache_prefix)
     logging.info('_WriteToMemcache wrote %r', retrieved_dict)
