@@ -23,6 +23,8 @@ type Run struct {
 	State tricium.State
 	// The project of the request.
 	Project string
+	// Reporter to use for progress updates and results.
+	Reporter tricium.Reporter
 }
 
 // ServiceRequest lists the fields included in a request to the Tricium service.

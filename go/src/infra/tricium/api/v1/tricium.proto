@@ -41,6 +41,16 @@ message AnalyzeRequest {
   // repository.
   // TODO(emso): document path separators or add listing of path segments.
   repeated string paths = 3;
+
+  // Reporter to use for progress updates and results.
+  //
+  // This field is optional. If included it will push progress and result
+  // updates to the selected reporter. The selected reporter must be
+  // configured for the project of the request.
+  //
+  // Note that progress and results can be accessed via the Tricium
+  // API regardless of whether a reporter has been included in the request.
+  Reporter reporter = 4;
 }
 
 message AnalyzeResponse {
@@ -171,4 +181,18 @@ enum State {
   // Timed out is for workers where the triggered swarming task timed out.
   // NB! Not supported yet.
   TIMED_OUT = 5;
+}
+
+enum Reporter {
+  // No reporter means progress and results can be pulled from the Tricium service API.
+  //
+  // This is the default reporter used when no reporter is configured for a project.
+  NONE = 0;
+
+  // A Gerrit reporter means the Tricium service polls Gerrit for changes and reports
+  // progress updates and results to Gerrit.
+  //
+  // Gerrit details need to be configured for a project before the Gerrit reporter
+  // option is enabled.
+  GERRIT = 1;
 }

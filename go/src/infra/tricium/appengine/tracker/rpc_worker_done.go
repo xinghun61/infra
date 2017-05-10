@@ -141,68 +141,68 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		}
 	}
 	return ds.RunInTransaction(c, func(c context.Context) (err error) {
-		// Run the below four operations in parallel, make room for three errors.
-		errors := 3
-		done := make(chan error, errors)
-		defer func() {
-			for i := 0; i < errors; i++ {
-				if err2 := <-done; err2 != nil {
-					err = err2
-					break // stop after the first error.
+		ops := []func() error{
+			// Notify reporter.
+			func() error {
+				switch run.Reporter {
+				case tricium.Reporter_GERRIT:
+					// TOOD(emso): push notification to the Gerrit reporter
+				default:
+					// Do nothing.
 				}
-			}
-		}()
-		go func() {
+				return nil
+			},
 			// Add result comments.
-			if err := ds.Put(c, comments); err != nil {
-				done <- fmt.Errorf("failed to add result comments: %v", err)
-			}
-			done <- nil
-		}()
-		go func() {
-			// Update worker state, isolated output, and number of result comments.
-			if err := ds.Get(c, worker); err != nil {
-				done <- fmt.Errorf("failed to retrieve worker: %v", err)
-				return
-			}
-			if worker.State != workerState {
-				worker.State = workerState
-			}
-			worker.IsolateServerURL = req.IsolateServerUrl
-			worker.IsolatedOutput = req.IsolatedOutputHash
-			worker.NumResultComments = len(results.Comments)
-			if err := ds.Put(c, worker); err != nil {
-				done <- fmt.Errorf("failed to mark worker as done-*: %v", err)
-				return
-			}
-			done <- nil
-		}()
-		go func() {
-			// Update analyzer state.
-			if err := ds.Get(c, analyzer); err != nil {
-				done <- fmt.Errorf("failed to retrieve analyzer: %v", err)
-				return
-			}
-			if analyzer.State != analyzerState {
-				analyzer.State = analyzerState
-				if err := ds.Put(c, analyzer); err != nil {
-					done <- fmt.Errorf("failed to mark analyzer as done-*: %v", err)
-					return
+			func() error {
+				if err := ds.Put(c, comments); err != nil {
+					return fmt.Errorf("failed to add result comments: %v", err)
 				}
-			}
-			done <- nil
-		}()
-		// Update run state. Stay in the main thread for this fourth operation.
-		if err := ds.Get(c, run); err != nil {
-			return fmt.Errorf("failed to retrieve run: %v", err)
+				return nil
+			},
+			// Update worker state, isolated output, and number of result comments.
+			func() error {
+				if err := ds.Get(c, worker); err != nil {
+					return fmt.Errorf("failed to retrieve worker: %v", err)
+				}
+				if worker.State != workerState {
+					worker.State = workerState
+				}
+				worker.IsolateServerURL = req.IsolateServerUrl
+				worker.IsolatedOutput = req.IsolatedOutputHash
+				worker.NumResultComments = len(results.Comments)
+				if err := ds.Put(c, worker); err != nil {
+					return fmt.Errorf("failed to mark worker as done-*: %v", err)
+				}
+				return nil
+			},
+			// Update analyzer state.
+			func() error {
+				if err := ds.Get(c, analyzer); err != nil {
+					return fmt.Errorf("failed to retrieve analyzer: %v", err)
+				}
+				if analyzer.State != analyzerState {
+					analyzer.State = analyzerState
+					if err := ds.Put(c, analyzer); err != nil {
+						return fmt.Errorf("failed to mark analyzer as done-*: %v", err)
+					}
+				}
+				return nil
+			},
+			// Update run state. Stay in the main thread for this fourth operation.
+			func() error {
+				if err := ds.Get(c, run); err != nil {
+					return fmt.Errorf("failed to retrieve run: %v", err)
+				}
+				if run.State != runState {
+					run.State = runState
+					if err := ds.Put(c, run); err != nil {
+						return fmt.Errorf("failed to mark run as done-*: %v", err)
+					}
+				}
+				return nil
+			},
 		}
-		if run.State != runState {
-			run.State = runState
-			if err := ds.Put(c, run); err != nil {
-				return fmt.Errorf("failed to mark run as done-*: %v", err)
-			}
-		}
-		return nil
+		return common.RunInParallel(ops)
 	}, nil)
 }
 

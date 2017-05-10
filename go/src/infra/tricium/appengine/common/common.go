@@ -162,3 +162,20 @@ func prepareTemplates() *templates.Bundle {
 		},
 	}
 }
+
+// RunInParallel runs all the provided functions in parallel.
+//
+// If there are errors, one error is returned.
+func RunInParallel(ops []func() error) error {
+	errs := make(chan error, len(ops))
+	for _, f := range ops {
+		go func(j func() error) { errs <- j() }(f)
+	}
+	var err error
+	for i := 0; i < len(ops); i++ {
+		if err2 := <-errs; err2 != nil {
+			err = err2
+		}
+	}
+	return err
+}

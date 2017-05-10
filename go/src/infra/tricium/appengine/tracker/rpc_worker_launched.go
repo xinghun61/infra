@@ -16,6 +16,7 @@ import (
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
+	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/track"
 )
 
@@ -49,48 +50,59 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 	logging.Infof(c, "[tracker] Worker launched (run ID: %d, worker: %s, taskID: %s, IsolatedInput: %s)", req.RunId, req.Worker, req.TaskId, req.IsolatedInputHash)
 	_, analyzerKey, workerKey := createKeys(c, req.RunId, req.Worker)
 	logging.Infof(c, "[tracker] Looking up worker, key: %s", workerKey)
+	run := &track.Run{ID: req.RunId}
+	if err := ds.Get(c, run); err != nil {
+		return fmt.Errorf("failed to retrieve run entry (run ID: %d): %v", run.ID, err)
+	}
 	return ds.RunInTransaction(c, func(c context.Context) (err error) {
-		done := make(chan error)
-		defer func() {
-			if err2 := <-done; err == nil {
-				err = err2
-			}
-		}()
-		// Update worker state, set to launched.
-		go func() {
-			w := &track.WorkerInvocation{
-				ID:     workerKey.StringID(),
-				Parent: workerKey.Parent(),
-			}
-			if err := ds.Get(c, w); err != nil {
-				done <- fmt.Errorf("failed to retrieve worker: %v", err)
-				return
-			}
-			w.State = tricium.State_RUNNING
-			w.IsolateServerURL = req.IsolateServerUrl
-			w.IsolatedInput = req.IsolatedInputHash
-			w.TaskID = req.TaskId
-			w.SwarmingURL = req.SwarmingServerUrl
-			if err := ds.Put(c, w); err != nil {
-				done <- fmt.Errorf("failed to mark worker as launched: %v", err)
-				return
-			}
-			done <- nil
-		}()
-		// Maybe update analyzer state, set to launched.
-		a := &track.AnalyzerInvocation{
-			ID:     analyzerKey.StringID(),
-			Parent: analyzerKey.Parent(),
+		ops := []func() error{
+			// Notify reporter.
+			func() error {
+				switch run.Reporter {
+				case tricium.Reporter_GERRIT:
+					// TOOD(emso): push notification to the Gerrit reporter
+				default:
+					// Do nothing.
+				}
+				return nil
+			},
+			// Update worker state to launched.
+			func() error {
+				w := &track.WorkerInvocation{
+					ID:     workerKey.StringID(),
+					Parent: workerKey.Parent(),
+				}
+				if err := ds.Get(c, w); err != nil {
+					return fmt.Errorf("failed to retrieve worker: %v", err)
+				}
+				w.State = tricium.State_RUNNING
+				w.IsolateServerURL = req.IsolateServerUrl
+				w.IsolatedInput = req.IsolatedInputHash
+				w.TaskID = req.TaskId
+				w.SwarmingURL = req.SwarmingServerUrl
+				if err := ds.Put(c, w); err != nil {
+					return fmt.Errorf("failed to mark worker as launched: %v", err)
+				}
+				return nil
+			},
+			// Maybe update analyzer state to launched.
+			func() error {
+				a := &track.AnalyzerInvocation{
+					ID:     analyzerKey.StringID(),
+					Parent: analyzerKey.Parent(),
+				}
+				if err := ds.Get(c, a); err != nil {
+					return fmt.Errorf("failed to retrieve analyzer: %v", err)
+				}
+				if a.State == tricium.State_PENDING {
+					a.State = tricium.State_RUNNING
+					if err := ds.Put(c, a); err != nil {
+						return fmt.Errorf("failed to mark analyzer as launched: %v", err)
+					}
+				}
+				return nil
+			},
 		}
-		if err := ds.Get(c, a); err != nil {
-			return fmt.Errorf("failed to retrieve analyzer: %v", err)
-		}
-		if a.State == tricium.State_PENDING {
-			a.State = tricium.State_RUNNING
-			if err := ds.Put(c, a); err != nil {
-				return fmt.Errorf("failed to mark analyzer as launched: %v", err)
-			}
-		}
-		return nil
+		return common.RunInParallel(ops)
 	}, nil)
 }

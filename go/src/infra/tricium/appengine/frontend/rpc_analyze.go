@@ -72,10 +72,12 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	}
 	// TODO(emso): Verify that there is no current run for this request (map hashed requests to run IDs).
 	// TODO(emso): Read Git repo info from the configuration projects/ endpoint.
+	// TODO(emso): Verify that a project has Gerrit details if a Gerrit reporter has been selected.
 	run := &track.Run{
 		Received: clock.Now(c).UTC(),
 		State:    tricium.State_PENDING,
 		Project:  req.Project,
+		Reporter: req.Reporter,
 	}
 	sr := &track.ServiceRequest{
 		Project: req.Project,

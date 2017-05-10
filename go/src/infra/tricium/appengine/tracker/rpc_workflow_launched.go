@@ -17,6 +17,7 @@ import (
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"
+	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/config"
 	"infra/tricium/appengine/common/track"
 )
@@ -50,37 +51,45 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 		if err := ds.Get(c, run); err != nil {
 			return fmt.Errorf("failed to retrieve run entry (run ID: %d): %v", run.ID, err)
 		}
-		// Run the below operations in parallel.
-		done := make(chan error)
-		defer func() {
-			if err2 := <-done; err2 != nil {
-				err = err2
-			}
-		}()
-		go func() {
+		ops := []func() error{
+			// Notify reporter.
+			func() error {
+				switch run.Reporter {
+				case tricium.Reporter_GERRIT:
+					// TOOD(emso): push notification to the Gerrit reporter
+				default:
+					// Do nothing.
+				}
+				return nil
+			},
 			// Update Run state to launched.
-			run.State = tricium.State_RUNNING
-			if err := ds.Put(c, run); err != nil {
-				done <- fmt.Errorf("failed to mark workflow as launched: %v", err)
-			}
-			done <- nil
-		}()
-		// Store analyzer and worker invocation entries for tracking.
-		entities := make([]interface{}, 0, len(aw))
-		for _, v := range aw {
-			v.Analyzer.Parent = ds.KeyForObj(c, run)
-			entities = append(entities, v.Analyzer)
+			func() error {
+				run.State = tricium.State_RUNNING
+				if err := ds.Put(c, run); err != nil {
+					return fmt.Errorf("failed to mark workflow as launched: %v", err)
+				}
+				return nil
+			},
+			// Store analyzer and worker invocation entries for tracking.
+			func() error {
+				entities := make([]interface{}, 0, len(aw))
+				for _, v := range aw {
+					v.Analyzer.Parent = ds.KeyForObj(c, run)
+					entities = append(entities, v.Analyzer)
+				}
+				for _, v := range aw {
+					for _, vv := range v.Workers {
+						vv.Parent = ds.KeyForObj(c, v.Analyzer)
+						entities = append(entities, vv)
+					}
+				}
+				if err := ds.Put(c, entities); err != nil {
+					return fmt.Errorf("failed to store analyzer and worker entries: %v", err)
+				}
+				return nil
+			},
 		}
-		for _, v := range aw {
-			for _, vv := range v.Workers {
-				vv.Parent = ds.KeyForObj(c, v.Analyzer)
-				entities = append(entities, vv)
-			}
-		}
-		if err := ds.Put(c, entities); err != nil {
-			return fmt.Errorf("failed to store analyzer and worker entries: %v", err)
-		}
-		return nil
+		return common.RunInParallel(ops)
 	}, nil)
 }
 
