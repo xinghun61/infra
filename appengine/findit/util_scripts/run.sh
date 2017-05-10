@@ -17,6 +17,7 @@ if [[ has_realpath == "0" ]]; then
   INFRA_DIR="$(realpath ${INFRA_DIR})"
   GOOGLE_APP_ENGINE_DIR="$(realpath ${GOOGLE_APP_ENGINE_DIR})"
 fi
+INFRA_PYTHON="${INFRA_DIR}/ENV/bin/python"
 APP_CFG="${GOOGLE_APP_ENGINE_DIR}/appcfg.py"
 FINDIT_MODULES="${FINDIT_DIR}/app.yaml ${FINDIT_DIR}/waterfall-frontend.yaml ${FINDIT_DIR}/waterfall-backend.yaml"
 
@@ -61,7 +62,7 @@ run_unittests() {
   local coverage_report_parent_dir="${TMP_DIR}/coverage"
   # TODO: move this directory autovivification to test.py itself
   mkdir -p ${coverage_report_parent_dir}
-  python ${INFRA_DIR}/test.py test ${findit} --html-report ${coverage_report_parent_dir}
+  ${INFRA_PYTHON} ${INFRA_DIR}/test.py test ${findit} --html-report ${coverage_report_parent_dir}
   echo "Code coverage report file://${coverage_report_parent_dir}/${findit}/index.html"
 }
 
@@ -70,7 +71,7 @@ run_findit_locally() {
   local options="--storage_path ${storage_path}"
   # TODO: move this directory autovivification to dev_appserver.py itself
   mkdir -p "${storage_path}"
-  python ${GOOGLE_APP_ENGINE_DIR}/dev_appserver.py ${options} ${FINDIT_DIR}/dispatch.yaml ${FINDIT_MODULES}
+  ${INFRA_PYTHON} ${GOOGLE_APP_ENGINE_DIR}/dev_appserver.py ${options} ${FINDIT_DIR}/dispatch.yaml ${FINDIT_MODULES}
 }
 
 deploy_findit_for_test() {

@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 from datetime import timedelta
 import logging
-import numpy
 
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
@@ -18,6 +17,8 @@ _DEFAULT_PAGE_SIZE = 1000
 
 
 def _CalculateMetrics(numbers):
+  # (https://crbug.com/720186) Workaround the error in running Findit locally.
+  import numpy
   return {
       'average': (
           time_util.SecondsToHMS(numpy.average(numbers)) if numbers else
