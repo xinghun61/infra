@@ -34,6 +34,7 @@ BUILDERS = freeze({
 def RunSteps(api, buildername):
   botconfig = BUILDERS[buildername]
   api.gclient.set_config('infra')
+  api.gclient.c.revisions['infra'] = 'HEAD'
   api.bot_update.ensure_checkout()
   api.gclient.runhooks()
 
