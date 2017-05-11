@@ -75,7 +75,7 @@ def respond(request, template, params=None):
   params['special_banner'] = getattr(django_settings, 'SPECIAL_BANNER', None)
   full_path = request.get_full_path().encode('utf-8')
   if request.user is None:
-    params['sign_in'] = users.create_login_url(full_path)
+    params['sign_in'] = library.create_login_url(full_path)
   else:
     params['sign_out'] = users.create_logout_url(full_path)
     account = models.Account.current_user_account

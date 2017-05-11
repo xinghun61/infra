@@ -19,6 +19,7 @@ import mimetypes
 import urllib
 import json
 
+from . import library
 from . import models
 from .responses import HttpTextResponse, respond
 
@@ -53,7 +54,7 @@ def admin_required(func):
   def admin_wrapper(request, *args, **kwds):
     if request.user is None:
       return HttpResponseRedirect(
-          users.create_login_url(request.get_full_path().encode('utf-8')))
+          library.create_login_url(request.get_full_path().encode('utf-8')))
     if not request.user_is_admin:
       return HttpTextResponse(
           'You must be admin in for this function', status=403)
@@ -154,7 +155,7 @@ def issue_required(func):
     if issue.private:
       if request.user is None:
         return HttpResponseRedirect(
-            users.create_login_url(request.get_full_path().encode('utf-8')))
+            library.create_login_url(request.get_full_path().encode('utf-8')))
       if not issue.view_allowed:
         return HttpTextResponse(
             'You do not have permission to view this issue', status=403)
@@ -200,7 +201,7 @@ def login_required(func):
   def login_wrapper(request, *args, **kwds):
     if request.user is None:
       return HttpResponseRedirect(
-          users.create_login_url(request.get_full_path().encode('utf-8')))
+          library.create_login_url(request.get_full_path().encode('utf-8')))
     return func(request, *args, **kwds)
 
   return login_wrapper

@@ -25,7 +25,7 @@ User.EMAIL_SUFFIX_PATTERN = /(\+[^@]+)?@.*/;
 User.ISSUES_OPEN_PATTERN = /issues created: (\d+)/;
 User.ISSUES_REVIEW_PATTERN = /issues reviewed: (\d+)/;
 User.XSRF_TOKEN_PATTERN = /xsrfToken = '([^']+)';/;
-User.LOGIN_REDIRECT_URL = "https://www.google.com/accounts/ServiceLogin?service=ah&passive=true&continue=https://appengine.google.com/_ah/conflogin%3Fcontinue%3D{1}&ltmpl=gm";
+User.LOGIN_REDIRECT_URL = "https://www.google.com/accounts/ServiceLogin?service=ah&passive=false&continue=https://appengine.google.com/_ah/conflogin%3Fcontinue%3D{1}&ltmpl=gm";
 User.LOGOUT_REDIRECT_URL = "{1}/_ah/logout?continue=https://www.google.com/accounts/Logout%3Fcontinue%3Dhttps://appengine.google.com/_ah/logout%253Fcontinue%253D{2}";
 
 User.current = null;

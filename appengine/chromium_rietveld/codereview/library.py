@@ -86,6 +86,16 @@ def get_link_for_user(email):
   return links[email]
 
 
+def create_login_url(redirect):
+  """Create a login url.
+
+  Basically just a wrapper around the built-in users.create_login_url,
+  except that it changes the 'passive' query parameter to force appengine
+  to display the account picker.
+  """
+  return users.create_login_url(redirect).replace(
+      'passive=true', 'passive=false')
+
 @register.filter
 def show_user(email, arg=None, _autoescape=None, _memcache_results=None):
   """Render a link to the user's dashboard, with text being the nickname."""
