@@ -14,47 +14,13 @@ import (
 	"golang.org/x/net/context"
 )
 
-func TestTableDefs(t *testing.T) {
-	s := []JSONTableDef{
-		{
-			DatasetID: "test_dataset",
-			TableID:   "test_table",
-			Fields: []FieldSchema{
-				{
-					Name:        "test_field",
-					Description: "test description",
-					Type:        "STRING",
-				},
-			},
-		},
-	}
-	got := tableDefs(s)
-	want := []tableDef{
-		{
-			datasetID: "test_dataset",
-			tableID:   "test_table",
-			toUpdate: bigquery.TableMetadataToUpdate{
-				Schema: bigquery.Schema{
-					&bigquery.FieldSchema{
-						Name:        "test_field",
-						Description: "test description",
-						Type:        bigquery.StringFieldType,
-					},
-				},
-			},
-		},
-	}
-	if !(reflect.DeepEqual(got, want)) {
-		t.Errorf("got: %v; want: %v", got, want)
-	}
-}
-
 func TestBQSchema(t *testing.T) {
 	f := []FieldSchema{
 		{
 			Name:        "test_field",
 			Description: "test description",
 			Type:        "STRING",
+			Repeated:    true,
 		},
 	}
 	got := bqSchema(f)
@@ -63,6 +29,7 @@ func TestBQSchema(t *testing.T) {
 			Name:        "test_field",
 			Description: "test description",
 			Type:        bigquery.StringFieldType,
+			Repeated:    true,
 		},
 	}
 	if !(reflect.DeepEqual(got, want)) {
@@ -74,29 +41,54 @@ func TestBQField(t *testing.T) {
 	f := FieldSchema{
 		Name:        "test_field",
 		Description: "test description",
-		Type:        "STRING",
+		Type:        "RECORD",
+		Repeated:    true,
+		Schema: []FieldSchema{
+			{
+				Name:        "nested_field",
+				Description: "i am nested",
+				Type:        "STRING",
+				Required:    true,
+			},
+		},
 	}
 	got := bqField(f)
 	want := &bigquery.FieldSchema{
 		Name:        "test_field",
 		Description: "test description",
-		Type:        bigquery.StringFieldType,
+		Type:        bigquery.RecordFieldType,
+		Repeated:    true,
+		Schema: []*bigquery.FieldSchema{
+			{
+				Name:        "nested_field",
+				Description: "i am nested",
+				Type:        "STRING",
+				Required:    true,
+			},
+		},
 	}
 	if !(reflect.DeepEqual(got, want)) {
 		t.Errorf("got: %v; want: %v", got, want)
 	}
 }
 
-func TestJSONTableDefs(t *testing.T) {
-	s := []JSONTableDef{
+func TestTableDefs(t *testing.T) {
+	s := []TableDef{
 		{
 			DatasetID: "test_dataset",
 			TableID:   "test_table",
 			Fields: []FieldSchema{
 				{
 					Name:        "field1",
-					Type:        "STRING",
+					Type:        "RECORD",
 					Description: "test field",
+					Schema: []FieldSchema{
+						{
+							Name:        "nested",
+							Type:        "STRING",
+							Description: "nested",
+						},
+					},
 				},
 				{
 					Name:        "field2",
@@ -110,7 +102,7 @@ func TestJSONTableDefs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := jsonTableDefs(strings.NewReader(string(j)))
+	got := tableDefs(strings.NewReader(string(j)))
 	want := s
 	if !(reflect.DeepEqual(got, want)) {
 		t.Errorf("got: %v; want: %v", got, want)
@@ -123,27 +115,25 @@ func TestUpdateFromTableDef(t *testing.T) {
 	datasetID := "test_dataset"
 	tableID := "test_table"
 
-	field := &bigquery.FieldSchema{
+	field := FieldSchema{
 		Name:        "test_field",
 		Description: "test description",
-		Type:        bigquery.StringFieldType,
+		Type:        "STRING",
 	}
-	anotherField := &bigquery.FieldSchema{
+	anotherField := FieldSchema{
 		Name:        "field_2",
 		Description: "another field",
-		Type:        bigquery.StringFieldType,
+		Type:        "STRING",
 	}
-	tcs := [][]*bigquery.FieldSchema{
+	tcs := [][]FieldSchema{
 		{field},
 		{field, anotherField},
 	}
 	for _, tc := range tcs {
-		td := tableDef{
-			datasetID: datasetID,
-			tableID:   tableID,
-			toUpdate: bigquery.TableMetadataToUpdate{
-				Schema: bigquery.Schema(tc),
-			},
+		td := TableDef{
+			DatasetID: datasetID,
+			TableID:   tableID,
+			Fields:    tc,
 		}
 		err := updateFromTableDef(ctx, ts, td)
 		if err != nil {
@@ -153,7 +143,7 @@ func TestUpdateFromTableDef(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		want := &bigquery.TableMetadata{Schema: bigquery.Schema(tc)}
+		want := &bigquery.TableMetadata{Schema: bqSchema(tc)}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got: %v; want: %v", got, want)
 		}

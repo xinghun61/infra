@@ -15,61 +15,51 @@ import (
 	"golang.org/x/net/context"
 )
 
-// JSONTableDef is used for loading the necessary information for constructing a
-// bigquery.Schema from JSON schema files
-type JSONTableDef struct {
-	DatasetID string        `json:"datasetID"`
-	TableID   string        `json:"tableID"`
-	Fields    []FieldSchema `json:"schema"`
+// TableDef contains all the necessary information needed to create a BigQuery
+// table. It is designed to be populated from a JSON config.
+type TableDef struct {
+	DatasetID   string        `json:"datasetID"`
+	TableID     string        `json:"tableID"`
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Fields      []FieldSchema `json:"schema"`
 }
 
 // FieldSchema exactly mirrors bigquery.FieldSchema, and exists to provide json
-// tags that are not present in bigquery.FieldSchema
+// tags that are not present in bigquery.FieldSchema.
 type FieldSchema struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
-}
-
-type tableDef struct {
-	datasetID string
-	tableID   string
-	toUpdate  bigquery.TableMetadataToUpdate
-}
-
-func tableDefs(j []JSONTableDef) []tableDef {
-	var defs []tableDef
-	for _, s := range j {
-		def := tableDef{
-			datasetID: s.DatasetID,
-			tableID:   s.TableID,
-			toUpdate: bigquery.TableMetadataToUpdate{
-				Schema: bqSchema(s.Fields),
-			},
-		}
-		defs = append(defs, def)
-	}
-	return defs
+	Name        string        `json:"name"`
+	Description string        `json:"description"`
+	Repeated    bool          `json:"repeated"`
+	Required    bool          `json:"required"`
+	Type        string        `json:"type"`
+	Schema      []FieldSchema `json:"schema"`
 }
 
 func bqSchema(fields []FieldSchema) bigquery.Schema {
-	var s []*bigquery.FieldSchema
+	var s bigquery.Schema
 	for _, f := range fields {
 		s = append(s, bqField(f))
 	}
-	return bigquery.Schema(s)
+	return s
 }
 
 func bqField(f FieldSchema) *bigquery.FieldSchema {
-	return &bigquery.FieldSchema{
+	fs := &bigquery.FieldSchema{
 		Name:        f.Name,
 		Description: f.Description,
 		Type:        bigquery.FieldType(f.Type),
+		Repeated:    f.Repeated,
+		Required:    f.Required,
 	}
+	if fs.Type == bigquery.RecordFieldType {
+		fs.Schema = bqSchema(f.Schema)
+	}
+	return fs
 }
 
-func jsonTableDefs(r io.Reader) []JSONTableDef {
-	var s []JSONTableDef
+func tableDefs(r io.Reader) []TableDef {
+	var s []TableDef
 	d := json.NewDecoder(r)
 	err := d.Decode(&s)
 	if err != nil {
@@ -78,19 +68,23 @@ func jsonTableDefs(r io.Reader) []JSONTableDef {
 	return s
 }
 
-func updateFromTableDef(ctx context.Context, ts tableStore, td tableDef) error {
-	_, err := ts.getTableMetadata(ctx, td.datasetID, td.tableID)
+func updateFromTableDef(ctx context.Context, ts tableStore, td TableDef) error {
+	_, err := ts.getTableMetadata(ctx, td.DatasetID, td.TableID)
 	if errNotFound(err) {
-		err = ts.createTable(ctx, td.datasetID, td.tableID)
+		err = ts.createTable(ctx, td.DatasetID, td.TableID)
 		if err != nil {
 			return err
 		}
 	}
-	err = ts.updateTable(ctx, td.datasetID, td.tableID, td.toUpdate)
+	md := bigquery.TableMetadataToUpdate{
+		Name:        td.Name,
+		Description: td.Description,
+		Schema:      bqSchema(td.Fields),
+	}
+	err = ts.updateTable(ctx, td.DatasetID, td.TableID, md)
 	return err
 }
 
-// TODO: Handle repeated fields, record fields
 func main() {
 	dry := flag.Bool("dry-run", false, "Only performs non-mutating operations; logs what would happen otherwise")
 	flag.Parse()
@@ -102,7 +96,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	tds := tableDefs(jsonTableDefs(r))
+	tds := tableDefs(r)
 
 	ctx := context.Background()
 	c, err := bigquery.NewClient(ctx, "chrome-infra-events")
