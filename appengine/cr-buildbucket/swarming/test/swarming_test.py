@@ -1066,20 +1066,22 @@ class SubNotifyTest(testing.AppengineTestCase):
     with self.assert_bad_message(expect_redelivery=False):
       self.handler.post()
 
-  @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
-  def test_post_without_build_id(self, load_task_result_async):
-    build = model.Build(
-      id=1,
-      bucket='chromium',
-      parameters={
-        'builder_name': 'release'
-      },
-      status=model.BuildStatus.SCHEDULED,
-      swarming_hostname='chromium-swarm.appspot.com',
-      swarming_task_id='deadbeef',
-    )
-    build.put()
+  def test_post_without_task_id(self):
+    self.handler.request = mock.Mock(json={
+      'message': {
+        'data': b64json({
+          'userdata': json.dumps({
+            'build_id': 1,
+            'created_ts': 1448841600000000,
+            'swarming_hostname': 'chromium-swarm.appspot.com',
+          })
+        })
+      }
+    })
+    with self.assert_bad_message(expect_redelivery=False):
+      self.handler.post()
 
+  def test_post_without_build_id(self):
     self.handler.request = mock.Mock(json={
       'message': {
         'data': b64json({
@@ -1091,16 +1093,8 @@ class SubNotifyTest(testing.AppengineTestCase):
         })
       }
     })
-    load_task_result_async.return_value = future({
-      'task_id': 'deadbeef',
-      'state': 'COMPLETED',
-    })
-
-    self.handler.post()
-
-    build = build.key.get()
-    self.assertEqual(build.status, model.BuildStatus.COMPLETED)
-    self.assertEqual(build.result, model.BuildResult.SUCCESS)
+    with self.assert_bad_message(expect_redelivery=False):
+      self.handler.post()
 
   def test_post_without_build(self):
     userdata = {
@@ -1118,29 +1112,6 @@ class SubNotifyTest(testing.AppengineTestCase):
       }
     })
 
-    with self.assert_bad_message(expect_redelivery=True):
-      self.handler.post()
-
-    userdata['created_ts'] = 1438841600000000
-    msg_data['userdata'] = json.dumps(userdata)
-    self.handler.request.json['message']['data'] = b64json(msg_data)
-    with self.assert_bad_message(expect_redelivery=False):
-      self.handler.post()
-
-  def test_post_without_build_id_without_build(self):
-    userdata = {
-      'created_ts': 1448841600000000,
-      'swarming_hostname': 'chromium-swarm.appspot.com',
-    }
-    msg_data = {
-      'task_id': 'deadbeef',
-      'userdata': json.dumps(userdata)
-    }
-    self.handler.request = mock.Mock(json={
-      'message': {
-        'data': b64json(msg_data)
-      }
-    })
     with self.assert_bad_message(expect_redelivery=True):
       self.handler.post()
 

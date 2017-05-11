@@ -685,6 +685,8 @@ class SubNotify(webapp2.RequestHandler):
       self.stop('created_ts in userdata is invalid: %s', ex)
 
     build_id = userdata.get('build_id')
+    if not isinstance(build_id, int):
+      self.stop('invalid build_id %r', build_id)
 
     task_id = data.get('task_id')
     if not task_id:
@@ -698,43 +700,28 @@ class SubNotify(webapp2.RequestHandler):
 
     hostname, created_time, task_id, build_id = self.unpack_msg(msg)
     task_url = '%s/task?id=%s' % (hostname, task_id)
+
     # Load build.
-    build = None
-    if build_id is not None:
-      logging.info('Build id: %s', build_id)
-      build = model.Build.get_by_id(build_id)
-      if not build:
-        if utils.utcnow() < created_time + datetime.timedelta(minutes=1):
-          self.stop(
-              'Build for a swarming task not found yet\nBuild: %s\nTask: %s',
-              build_id, task_url, redeliver=True)
-        else:
-          self.stop(
-              'Build for a swarming task not found\nBuild: %s\nTask: %s',
-              build_id, task_url)
-      elif build.swarming_hostname != hostname:
+    logging.info('Build id: %s', build_id)
+    build = model.Build.get_by_id(build_id)
+    if not build:
+      if utils.utcnow() < created_time + datetime.timedelta(minutes=1):
         self.stop(
-            'swarming_hostname %s of build %s does not match %s',
-            build.swarming_hostname, build_id, hostname)
-      elif build.swarming_task_id != task_id:
-        self.stop(
-            'swarming_task_id %s of build %s does not match %s',
-            build.swarming_task_id, build_id, task_id)
-    else:
-      # TODO(nodir): delete this code path
-      build_q = model.Build.query(
-          model.Build.swarming_hostname == hostname,
-          model.Build.swarming_task_id == task_id,
-      )
-      builds = build_q.fetch(1)
-      if not builds:
-        if utils.utcnow() < created_time + datetime.timedelta(minutes=20):
-          self.stop(
-              'Build for task %s not found yet.', task_url, redeliver=True)
-        else:
-          self.stop('Build for task %s not found.', task_url)
-      build = builds[0]
-      logging.info('Build id: %s', build.key.id())
+            'Build for a swarming task not found yet\nBuild: %s\nTask: %s',
+            build_id, task_url, redeliver=True)
+      self.stop(
+          'Build for a swarming task not found\nBuild: %s\nTask: %s',
+          build_id, task_url)
+
+    # Ensure the loaded build is associated with the task.
+    if build.swarming_hostname != hostname:
+      self.stop(
+          'swarming_hostname %s of build %s does not match %s',
+          build.swarming_hostname, build_id, hostname)
+    if build.swarming_task_id != task_id:
+      self.stop(
+          'swarming_task_id %s of build %s does not match %s',
+          build.swarming_task_id, build_id, task_id)
     assert build.parameters
 
     # Update build.
@@ -754,7 +741,7 @@ class SubNotify(webapp2.RequestHandler):
     txn(build.key)
 
   def stop(self, msg, *args, **kwargs):
-    """Logs error, responds with HTTP 200 and stops request processing.
+    """Logs error and stops request processing.
 
     Args:
       msg: error message
