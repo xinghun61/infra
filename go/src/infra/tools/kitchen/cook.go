@@ -72,9 +72,15 @@ var cmdCook = &subcommands.Command{
 			"",
 			"Name of the recipe to run")
 
+		// TODO(dnj): Remove this flag once all usages have been eliminated.
 		fs.Var(
 			&c.PythonPaths,
 			"python-path",
+			"(Deprecated, use -pythonpath).")
+
+		fs.Var(
+			&c.PythonPaths,
+			"pythonpath",
 			"Python path to include. Can be specified multiple times.")
 
 		fs.Var(
