@@ -380,6 +380,9 @@
                         'Could not connect to the server. ' + error;
                   })
               .then((json) => {
+                // Ignore old requests that finished after tree switch.
+                if (!this._alertsGroups.includes(group)) return;
+
                 if (json) {
                   this.set('_swarmingAlerts', json.swarming);
                   this.set(

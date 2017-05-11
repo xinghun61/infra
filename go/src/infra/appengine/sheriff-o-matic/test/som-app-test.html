@@ -196,6 +196,56 @@
       assert.equal('a', sortedAlerts[0].extension.builders[0].name);
     });
 
+    test('ignores requests sent from stale trees', function(done) {
+      let oldRes = new window.Response('{"alerts": ["oldtreealert"]}', {
+        status: 200,
+        headers: {
+          'Content-type': 'application/json',
+        }
+      });
+      let resolveOldPromise;
+      let oldPromise = new Promise((resolve, reject) => {
+        resolveOldPromise = resolve;
+      });
+
+      let newRes = new window.Response('{"alerts": ["newtreealert"]}', {
+        status: 200,
+        headers: {
+          'Content-type': 'application/json',
+        }
+      });
+      let resolveNewPromise;
+      let newPromise = new Promise((resolve, reject) => {
+        resolveNewPromise = resolve;
+      });
+
+      element._path = '/';
+      element._trees = ['oldtree', 'newtree'];
+
+      window.fetch.returns(oldPromise);
+      element._path = '/oldtree';
+      assert.deepEqual(element._tree, 'oldtree');
+      assert.deepEqual(element._alertsGroups, ['oldtree']);
+      assert.isTrue(window.fetch.calledOnce);
+
+      window.fetch.returns(newPromise);
+      element._path = '/newtree';
+      assert.deepEqual(element._tree, 'newtree');
+      assert.deepEqual(element._alertsGroups, ['newtree']);
+      assert.isTrue(window.fetch.calledTwice);
+
+      resolveNewPromise(newRes);
+      flush(() => {
+        assert.deepEqual(element._alertsData, {'newtree': ['newtreealert']});
+
+        resolveOldPromise(oldRes);
+        flush(() => {
+          assert.deepEqual(element._alertsData, {'newtree': ['newtreealert']});
+          done();
+        });
+      });
+    });
+
     test('sort works correctly', function() {
       let alertsData = {
         test: [

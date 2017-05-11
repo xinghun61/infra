@@ -9,21 +9,15 @@
     properties: {
       bugQueueLabel: {
         type: String,
-        observer: '_changeBugQueueLabel',
-      },
-      _uncachedBugsJson: {
-        type: Object,
-        value: null,
-      },
-      _uncachedBugsJsonError: {
-        type: Object,
-        value: null,
+        observer: '_bugQueueLabelChanged',
       },
       bugs: {
         type: Array,
         notify: true,
         computed: '_computeBugs(_bugQueueJson, _uncachedBugsJson)',
       },
+      treeDisplayName: String,
+      _activeRequests: Object,
       _bugsByPriority: {
         type: Array,
         computed: '_computeBugsByPriority(bugs)',
@@ -59,7 +53,14 @@
         value: false,
         computed: '_computeShowNoBugs(bugs, _bugsLoaded, _bugQueueJsonError)',
       },
-      treeDisplayName: String,
+      _uncachedBugsJson: {
+        type: Object,
+        value: null,
+      },
+      _uncachedBugsJsonError: {
+        type: Object,
+        value: null,
+      },
     },
 
     ready: function() {
@@ -72,14 +73,37 @@
         return;
       }
 
-      let promises = [this.$.bugQueueAjax.generateRequest().completes];
-      if (this._isTrooperQueue) {
-        promises.push(this.$.uncachedBugsAjax.generateRequest().completes);
+      if (this._activeRequests) {
+        this._activeRequests.forEach((req) => {
+          req.abort();
+        });
       }
 
-      Promise.all(promises).then((reponse) => {
+      let requests = [this.$.bugQueueAjax.generateRequest()];
+      if (this._isTrooperQueue) {
+        requests.push(this.$.uncachedBugsAjax.generateRequest());
+      }
+
+      let promises = requests.map((r) => {
+        return r.completes;
+      });
+
+      this._activeRequests = requests;
+      Promise.all(promises).then(() => {
         this._bugsLoaded = true;
       });
+    },
+
+    _bugQueueLabelChanged: function() {
+      this._bugQueueJson = null;
+      this._bugQueueJsonError = null;
+
+      this._uncachedBugsJson = null;
+      this._uncachedBugsJsonError = null;
+
+      this._bugsLoaded = false;
+
+      this.refresh();
     },
 
     _computeBugs: function(bugQueueJson, uncachedBugsJson) {
@@ -140,18 +164,6 @@
     _computeShowNoBugs: function(bugs, bugsLoaded, error) {
       // Show the "No bugs" message only when the queue is done loading
       return bugsLoaded && this._haveNoBugs(bugs) && this._haveNoErrors(error);
-    },
-
-    _changeBugQueueLabel: function() {
-      this._bugQueueJson = null;
-      this._bugQueueJsonError = null;
-
-      this._uncachedBugsJson = null;
-      this._uncachedBugsJsonError = null;
-
-      this._bugsLoaded = false;
-
-      this.refresh();
     },
 
     _filterBugLabels: function(labels, bugQueueLabel) {
