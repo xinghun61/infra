@@ -1,7 +1,11 @@
 [ping_comment_content]
 [detail_url]
 
-[# TODO(jrobbins): field descriptions]
+[for fields][if-any fields.docstring]
+[fields.field_name] field description:
+  [fields.docstring]
+[end][end]
+
 [# TODO(jrobbins): component triage notes]
 [# TODO(jrobbins): hotlist triage notes]
 [# TODO(jrobbins): context comment that set the date value]

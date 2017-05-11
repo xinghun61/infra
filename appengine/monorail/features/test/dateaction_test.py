@@ -118,7 +118,8 @@ class IssueDateActionTaskTest(unittest.TestCase):
         tracker_bizobj.MakeFieldDef(
             123, 789, 'NextAction', tracker_pb2.FieldTypes.DATE_TYPE,
             '', '', False, False, False, None, None, None, False, '',
-            None, None, tracker_pb2.DateAction.PING_OWNER_ONLY, 'doc', False),
+            None, None, tracker_pb2.DateAction.PING_OWNER_ONLY, 
+            'Date of next expected progress update', False),
         tracker_bizobj.MakeFieldDef(
             124, 789, 'EoL', tracker_pb2.FieldTypes.DATE_TYPE,
             '', '', False, False, False, None, None, None, False, '',
@@ -225,17 +226,21 @@ class IssueDateActionTaskTest(unittest.TestCase):
     comment.project_id = self.project.project_id
     comment.user_id = self.date_action_user.user_id
     comment.content = 'Some date(s) arrived...'
-    config = self.services.config.GetProjectConfig('fake cnxn', 789)
+    next_action_field_def = self.config.field_defs[0]
+    pings = [(next_action_field_def, now)]
     users_by_id = framework_views.MakeAllUserViews(
         'fake cnxn', self.services.user,
         [self.owner.user_id, self.date_action_user.user_id])
 
     tasks = self.servlet._MakeEmailTasks(
-        'fake cnxn', issue, self.project, config, comment,
-        'example-app.appspot.com', users_by_id)
+        'fake cnxn', issue, self.project, self.config, comment,
+        'example-app.appspot.com', users_by_id, pings)
     self.assertEqual(1, len(tasks))
     notify_owner_task = tasks[0]
     self.assertEqual('owner@example.com', notify_owner_task['to'])
     self.assertEqual(
         'Follow up on issue 1 in proj: summary',
         notify_owner_task['subject'])
+    body = notify_owner_task['body']
+    self.assertIn(comment.content, body)
+    self.assertIn(next_action_field_def.docstring, body)
