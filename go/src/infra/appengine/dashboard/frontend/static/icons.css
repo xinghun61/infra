@@ -4,6 +4,9 @@
   height: 12px;
   width: 12px;
 }
+.container {
+    padding: .5px 0px;
+}
 .green {
   background-color: green;
 }

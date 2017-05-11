@@ -1,15 +1,30 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<meta name=viewport content="width=device-width, user-scalable=no">
 <title>Chops Status Dashboard</title>
 <style>
-  .dash-summary {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: arial, sans-serif;
+  }
+  .center-align {
     text-align: center;
+  }
+  .current {
+    width: 20%;
   }
   .date-header {
     font-size: .8em;
     padding-right: 10px;
     padding-left: 10px;
     text-align: center;
+  }
+  .key {
+    padding: 10px 5px;
   }
   .table-footer {
     height: 20px;
@@ -21,13 +36,14 @@
     background-color: rgb(205, 223, 250);
   }
   header {
-    font-size: 2em;
-    height: 100px;
+    font-size: 1.5em;
+    height: 60px;
+    padding: 10px;
+    text-align: left;
     width: 100%;
   }
-  .logo {
-    height: 95px;
-    width: 95px;
+  .left-align {
+    text-align: left;
   }
   .right-align {
     text-align: right;
@@ -43,11 +59,12 @@
   th {
     border: 1px solid rgb(205, 223, 250);
   }
-  td {
-    width: 120px;
-  }
   th {
     background-color: rgb(205, 223, 250);
+    font-size: .8em;
+    padding-right: 10px;
+    padding-left: 10px;
+    text-align: center;
   }
   tr {
     height: 30px;
@@ -56,29 +73,25 @@
 <link rel="stylesheet" type="text/css" href="/static/icons.css">
 <div class="container">
   <header>
-    Chrome Operations
+    Chrome Operations Status Dashboard
   </header>
   <main>
-    <h2>Chrome Operations Status Dashboard</h2>
-    <p class="subtext dash-summary">
-      This page shows performace information for Chrome Operations Services.
-    </p>
-    <p class="subtext dash-summary">
-      Check this page any time to view the current status of the services listed below.
-    </p>
-    <p class="subtext dash-summary">
-      Dates displayed on dashboard are using UTC timezone.
+    <p class="left-align subtext">All dates shown are using the local timezone</p>
+    <p class="key subtext left-align">
+      <i class="green circle"></i>No issues<br/>
+      <i class="yellow circle"></i>Service disruption<br/>
+      <i class="red circle"></i>Service outage<br/>
     </p>
     {{$dates := .Dates}}
     {{$older := .OlderDate}}
     {{$newer := .NewerDate}}
     {{if .ChopsServices}}
-      <p class="subtext">Projects covered by a Service Level Agreement</p>
+      <p class="subtext">Covered by a Service Level Agreement</p>
       <table>
         <tr>
-          <th>Current Status</th>
+          <th class="current">Current Status</th>
           {{range $dates}}
-            <th class="date-header">{{ . | fmtDate}}</th>
+            <th class="js-date"></th>
           {{end}}
         </tr>
         {{range .ChopsServices}}
@@ -87,13 +100,11 @@
             <td class="js-{{$name}}">
               <a href={{.Service.SLA}}>{{.Service.Name}}</a>
             </td>
-            {{range $dates}}
-              <td class="js-{{$name}}-{{ . | fmtDate}}"></td>
-            {{end}}
+            <td class="table-body js-{{$name}}-incidents" colspan="7"></td>
           </tr>
         {{end}}
-        <tr class="table-footer">
-          <td colspan="8">
+        <tr class="table-footer subtext">
+          <td colspan="8" class="center-align">
             <span>
               <a href="?upto={{$older}}">Older</a>
             </span>
@@ -129,13 +140,6 @@
         {{end}}
       </table>
     {{end}}
-
-    <p class="subtext right-align">
-      <i class="green circle"></i>No issues
-      <i class="yellow circle"></i>Service disruption
-      <i class="red circle"></i>Service outage
-    </p>
-
   </main>
 </div>
 <script src="/static/add-incidents.js"></script>

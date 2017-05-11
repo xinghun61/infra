@@ -8,6 +8,7 @@
   const Alert = {
     RED: 0,
     YELLOW: 1,
+    GREEN: 2,
   };
 
   const IconClass = {
@@ -20,96 +21,98 @@
   const alertColorClass = new Map();
   alertColorClass.set(Alert.RED, 'red');
   alertColorClass.set(Alert.YELLOW, 'yellow');
+  alertColorClass.set(Alert.GREEN, 'green');
 
-  const CELL_WIDTH_PX = 120;
+  const RIGHT_BORDER_LIMIT_PCNT = 100;
 
   // TODO(jojwang): Make pageData object follow js naming guidelines.
   function addIncidents(pageData) {
+    let dateHeaders = document.querySelectorAll('.js-date');
+    let dateStrings = pageData['Dates'].map((date) => {return fmtDate(date);});
+    setHeaderDates(dateHeaders, dateStrings)
     renderIncidents(
 	pageData['ChopsServices'],
-	pageData['Dates'][0],
-	pageData['Dates'][6]);
+	dateStrings);
   }
 
-  function renderIncidents(services, firstDate, lastDate) {
+  function setHeaderDates(dateHeaders, dateStrings) {
+    dateStrings.forEach((date, index) => {
+      dateHeaders[index].textContent = date;
+    });
+  }
+
+  function renderIncidents(services, dateStrings) {
     services.forEach((service) => {
       let serviceName = service['Service']['Name'];
+      let noIssues = true;
       service['Incidents'].forEach((incident) => {
 	if (incident['Open']) {
+	  noIssues = false;
 	  let statusCell = document.querySelector('.js-' + serviceName);
 	  statusCell.appendChild(
 	      createIcon(incident['Severity'], IconClass.CIRCLE));
 	} else {
-	  addIncident(incident, serviceName, firstDate, lastDate);
+	  let incidentCell = document.querySelector('.js-' + serviceName + '-incidents');
+	  incidentCell.appendChild(addIncident(incident, dateStrings));
 	}
       });
+      if (noIssues) {
+	let statusCell = document.querySelector('.js-' + serviceName);
+	statusCell.appendChild(createIcon(Alert.GREEN, IconClass.CIRCLE));
+      }
     });
   }
 
-  function addIncident(incident, serviceName, firstDate, lastDate) {
-    let startDateCell = getDateCell(incident['StartTime'], serviceName);
-    let startPosition;
+  function getDatePosition(rawDate, dateStrings) {
+    let position;
+    dateStrings.forEach((str, i) => {
+      if (fmtDate(rawDate) === str) {
+	position = i / 7;
+	let time = new Date(rawDate).getHours();
+	position = (position + time / 168) * 100;
+      }
+    });
+    return position;
+  }
+
+  function addIncident(incident, dateStrings) {
+    let startPosition = getDatePosition(incident['StartTime'], dateStrings);
     let leftEndIcon;
-    if (!startDateCell) {
-      startDateCell = getDateCell(firstDate, serviceName);
+    if (!startPosition) {
       startPosition = 0;
       leftEndIcon = createIcon(incident['Severity'], IconClass.CENTER);
     } else {
-      startPosition = getTimePosition(incident['StartTime']);
       leftEndIcon = createIcon(incident['Severity'], IconClass.LEFT);
     }
 
-    let endDateCell = getDateCell(incident['EndTime'], serviceName);
-    let endPosition;
+    let endPosition = getDatePosition(incident['EndTime'], dateStrings);
     let rightEndIcon;
-    if (!endDateCell) {
-      endDateCell = getDateCell(lastDate, serviceName);
-      endPosition = CELL_WIDTH_PX;
+    if (!endPosition) {
+      endPosition = RIGHT_BORDER_LIMIT_PCNT;
       rightEndIcon = createIcon(incident['Severity'], IconClass.CENTER);
     } else {
-      endPosition = getTimePosition(incident['EndTime']);
       rightEndIcon = createIcon(incident['Severity'], IconClass.RIGHT);
     }
-    positionIcons(
-	incident['Severity'],
-	startDateCell, leftEndIcon, startPosition,
-	endDateCell, rightEndIcon, endPosition);
-  }
 
-  function positionIcons(
-      severity, startDateCell, leftEndIcon, startPos, endDateCell, rightEndIcon, endPos) {
-    if (startDateCell != endDateCell) {
-      positionIcons(
-	  severity,
-	  startDateCell.nextElementSibling, createIcon(severity, IconClass.CENTER), 0,
-	  endDateCell, rightEndIcon, endPos);
-      endPos = CELL_WIDTH_PX;
-      rightEndIcon = createIcon(severity, IconClass.CENTER);
-    }
-    startDateCell.appendChild(
-        buildIncidentIcon(severity, leftEndIcon, startPos, rightEndIcon, endPos));
+    let container = document.createElement('div');
+    container.classList.add('container');
+    container.appendChild(buildIncidentIcon(
+	incident['Severity'],
+	leftEndIcon, startPosition,
+	rightEndIcon, endPosition));
+    return container;
   }
 
   function buildIncidentIcon(severity, leftEndIcon, startPos, rightEndIcon, endPos) {
     let incIcon = document.createElement('i');
     incIcon.classList.add('incident');
-    incIcon.style.left = startPos + 'px';
-    incIcon.style.width = endPos - startPos + 'px';
+    incIcon.style.left = startPos + '%';
+    incIcon.style.width = endPos - startPos + '%';
     incIcon.appendChild(leftEndIcon);
     let middle = createIcon(severity, IconClass.CENTER);
     incIcon.appendChild(middle);
     incIcon.appendChild(rightEndIcon);
     return incIcon;
-  }
-
-  function getTimePosition(rawTime) {
-    let time = new Date(rawTime);
-    return 5 * time.getHours();
-  }
-
-  function getDateCell(date, serviceName) {
-    let className = '.js-' + serviceName + '-' + fmtDate(date);
-    return document.querySelector(className);
   }
 
   function createIcon(severity, iconClass) {
@@ -121,8 +124,7 @@
 
   function fmtDate(rawDate) {
     let date = new Date(rawDate);
-    return (date.getMonth()+1) + '-' +
-	date.getDate() + '-' + date.getFullYear();
+    return date.getFullYear() + '-' + (date.getMonth()+1) + '-' + date.getDate();
   }
 
   window.__addIncidents = window.__addIncidents || addIncidents;
