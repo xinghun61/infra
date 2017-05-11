@@ -138,21 +138,28 @@ class AutolinkTest(unittest.TestCase):
 
 class URLAutolinkTest(unittest.TestCase):
 
-  def DoLinkify(self, content):
+  def DoLinkify(self, content, shortlink=False):
     """Calls the linkify method and returns the result.
 
     Args:
       content: string with a hyperlink.
+      shortlink: set to True to test shortlinks.
 
     Returns:
       A list of TextRuns with some runs will have the embedded URL hyperlinked.
       Or, None if no link was detected.
     """
-    match = autolink._IS_A_LINK_RE.search(content)
+    if shortlink:
+      match = autolink._IS_A_SHORT_LINK_RE.search(content)
+    else:
+      match = autolink._IS_A_LINK_RE.search(content)
     if not match:
       return None
 
-    replacement_runs = autolink.Linkify(None, match, None)
+    if shortlink:
+      replacement_runs = autolink.LinkifyShortLink(None, match, None)
+    else:
+      replacement_runs = autolink.LinkifyFullLink(None, match, None)
     return replacement_runs
 
   def testLinkify(self):
@@ -186,6 +193,18 @@ class URLAutolinkTest(unittest.TestCase):
     test = 'ftp://ftp.example.com'
     result = self.DoLinkify('%s' % test)
     self.assertEqual(test, result[0].href)
+    self.assertEqual(test, result[0].content)
+
+  def testLinkifyShortLink(self):
+    """Test that shortlinks are linked."""
+    test = 'http://go/monorail'
+    result = self.DoLinkify('%s' % test, shortlink=True)
+    self.assertEqual(test, result[0].href)
+    self.assertEqual(test, result[0].content)
+
+    test = 'go/monorail'
+    result = self.DoLinkify('%s' % test, shortlink=True)
+    self.assertEqual('http://' + test, result[0].href)
     self.assertEqual(test, result[0].content)
 
   def testLinkify_Context(self):

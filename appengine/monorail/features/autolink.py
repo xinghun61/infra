@@ -7,7 +7,7 @@
 
 This class maintains a registry of artifact autolink syntax specs and
 callbacks. The structure of that registry is:
-  { component_name: (lookup_callback,
+  { component_name: (lookup_callback, match_to_reference_function,
                      { regex: substitution_callback, ...}),
     ...
   }
@@ -45,7 +45,12 @@ _CLOSING_TAG_RE = re.compile('</[a-z0-9]+>$', re.IGNORECASE)
 _LINKIFY_SCHEMES = r'(https?://|ftp://|mailto:)'
 # Also count a start-tag '<' as a url delimeter, since the autolinker
 # is sometimes run against html fragments.
-_IS_A_LINK_RE = re.compile(r'(%s)([^\s<]+)' % _LINKIFY_SCHEMES, re.UNICODE)
+_IS_A_LINK_RE = re.compile(r'\b(%s)([^\s<]+)' % _LINKIFY_SCHEMES, re.UNICODE)
+
+_IS_A_SHORT_LINK_RE = re.compile(
+    r'\b(%s)?\b(%s)/([^\s<]+)' % (
+        _LINKIFY_SCHEMES, '|'.join(settings.autolink_shorthand_hosts)),
+    re.UNICODE)
 
 # These are allowed in links, but if any of closing delimiters appear
 # at the end of the link, and the opening one is not part of the link,
@@ -63,16 +68,14 @@ _LINK_TRAILING_CHARS = [
     ]
 
 
-def Linkify(_mr, autolink_regex_match,
-            _component_ref_artifacts):
+def _Linkify(autolink_regex_match, shorthand=False):
   """Examine a textual reference and replace it with a hyperlink or not.
 
   This is a callback for use with the autolink feature.
 
   Args:
-    _mr: common info parsed from the user HTTP request.
     autolink_regex_match: regex match for the textual reference.
-    _component_ref_artifacts: unused value
+    shorthand: Set to True to allow shorthand links without "http".
 
   Returns:
     A list of TextRuns with tag=a for all matched ftp, http, https and mailto
@@ -92,15 +95,30 @@ def Linkify(_mr, autolink_regex_match,
     trailing = hyperlink[tag_match.start(0):] + trailing
     hyperlink = hyperlink[:tag_match.start(0)]
 
-  if (not validate.IsValidURL(hyperlink) and
-      not validate.IsValidEmail(hyperlink)):
+  href = hyperlink
+  if shorthand and not href.lower().startswith('http'):
+    # We use http because redirects for https are not all set up.
+    href = 'http://' + href
+
+  if (not validate.IsValidURL(href) and
+      not validate.IsValidEmail(href)):
     return [template_helpers.TextRun(autolink_regex_match.group(0))]
 
-  result = [template_helpers.TextRun(hyperlink, tag='a', href=hyperlink)]
+  result = [template_helpers.TextRun(hyperlink, tag='a', href=href)]
   if trailing:
     result.append(template_helpers.TextRun(trailing))
 
   return result
+
+
+def LinkifyFullLink(_mr, autolink_regex_match, _component_ref_artifacts):
+  """Consider linking a fully-specified URL. E.g., http://google.com/."""
+  return _Linkify(autolink_regex_match)
+
+
+def LinkifyShortLink(_mr, autolink_regex_match, _component_ref_artifacts):
+  """Consider linking a shorthand URL. E.g., go/monorail."""
+  return _Linkify(autolink_regex_match, shorthand=True)
 
 
 # Regular expression to detect git hashes.
@@ -500,7 +518,9 @@ def RegisterAutolink(services):
       '02-linkify',
       lambda request, mr: None,
       lambda mr, match: None,
-      {_IS_A_LINK_RE: Linkify})
+      {_IS_A_LINK_RE: LinkifyFullLink,
+       _IS_A_SHORT_LINK_RE: LinkifyShortLink,
+       })
 
   services.autolink.RegisterComponent(
       '03-versioncontrol',

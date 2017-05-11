@@ -84,6 +84,14 @@ group_creation_restriction = site_pb2.UserTypeRestriction.ADMIN_ONLY
 # Who is allowed to create hotlists? Set to ANYONE or ADMIN_ONLY.
 hotlist_creation_restriction = site_pb2.UserTypeRestriction.ANYONE
 
+# Text that mentions these words as shorthand host names will be autolinked
+# regardless of the lack of "https://" or ".com".
+autolink_shorthand_hosts = [
+    'go', 'g', 'b', 't', 'o', 'omg', 'cl', 'cr',
+    'shortn', 'who', 'teams',
+    ]
+
+
 ####
 # Part 2: Settings you would edit on certain occasions.
 
