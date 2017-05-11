@@ -136,7 +136,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'triage_result': 0
         },
         'version_number': 1,
-        'show_debug_info': False,
+        'show_input_ui': False,
         'culprit': {},
         'try_job_status': None,
         'last_attempted_swarming_task': {
@@ -245,7 +245,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'triage_result': 0
         },
         'version_number': 1,
-        'show_debug_info': False,
+        'show_input_ui': False,
         'culprit': {},
         'try_job_status': None,
         'last_attempted_swarming_task': {

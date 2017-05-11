@@ -177,6 +177,15 @@ class CheckFlake(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
   INCLUDE_LOGIN_USER_EMAIL = True
 
+  def _ShowInputUI(self, analysis):
+    # TODO(lijeffrey): Remove checks for admin and debug flag once analyze
+    # manual input for a regression range is implemented.
+    return (users.is_current_user_admin() and
+            self.request.get('debug') == '1' and
+            analysis.status != analysis_status.RUNNING and
+            analysis.try_job_status != analysis_status.RUNNING)
+
+
   def _ValidateInput(self, step_name, test_name, bug_id):
     """Ensures the input is valid and generates an error otherwise.
 
@@ -311,7 +320,7 @@ class CheckFlake(BaseHandler):
         'revision_level_number': revision_level_number,
         'error': analysis.error_message,
         'iterations_to_rerun': analysis.iterations_to_rerun,
-        'show_debug_info': self._ShowDebugInfo()
+        'show_input_ui': self._ShowInputUI(analysis)
     }
 
     if (users.is_current_user_admin() and analysis.completed and

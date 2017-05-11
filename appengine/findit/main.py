@@ -31,6 +31,7 @@ from handlers import triage_suspected_cl
 from handlers import try_job_dashboard
 from handlers import try_job_push
 from handlers import version
+from handlers.flake import analyze_regression_range
 from handlers.flake import check_flake
 from handlers.flake import list_flakes
 from handlers.flake import triage_flake_analysis
@@ -89,6 +90,8 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/failure', build_failure.BuildFailure),
     ('/waterfall/failure-log', failure_log.FailureLog),
     ('/waterfall/flake', check_flake.CheckFlake),
+    ('/waterfall/flake/analyze_regression_range',
+        analyze_regression_range.AnalyzeRegressionRange),
     ('/waterfall/help-triage', help_triage.HelpTriage),
     ('/waterfall/list-failures', list_analyses.ListAnalyses),
     ('/waterfall/list-flakes', list_flakes.ListFlakes),

@@ -58,6 +58,7 @@
   <script src="/js/flot/jquery.flot.symbol.min.js"></script>
   <script type="text/javascript">
     var findit = {};
+    findit.analysisKey = '{{ key }}';
     findit.masterName = '{{ master_name }}';
     findit.builderName = '{{ builder_name }}';
     findit.regressedBuildNumber = {{ suspected_flake.build_number or -1 }};
@@ -329,11 +330,43 @@
       });
     }
 
+    function handleLogin(httpStatus, response) {
+      if (httpStatus == 401 && response.login_url) {
+        alert(response.error_message || 'Please login with your Google account first.');
+        window.location.href = response.login_url;
+      } else {
+        alert('Unknown error.');
+      }
+    }
+
+    function analyzeRegressionRange() {
+      var lowerBoundCommitPosition = $('#lower-bound-commit-position').val();
+      var upperBoundCommitPosition = $('#upper-bound-commit-position').val();
+      var iterationsToRerun = $('#iterations-to-rerun').val();
+      alert('Analyze regression range is not yet implemented.');
+      $.getJSON('/waterfall/flake/analyze_regression_range?format=json&lower_bound_commit_position=' + lowerBoundCommitPosition +'&upper_bound_commit_position=' + upperBoundCommitPosition + '&iterations_to_rerun=' + iterationsToRerun + '&key=' + findit.analysisKey, function(data) {
+      }).error(function(xhr) {
+        handleLogin(xhr.status, xhr.responseJSON);
+      });
+    }
+
     $(document).ready(function(){
       DrawFlakeTrend();
       $('input[name=triage-radio-button]').on('change', function() {
         triageSuspectedFlake($(this).val());
       });
+
+      $('#range-help-explanation-dialog').dialog({
+        autoOpen: false,
+        modal: true,
+        width: 600,
+      });
+
+      $('.range-help-info').click(function() {
+        $('#range-help-explanation-dialog').dialog('open');
+      });
+
+      $('#analyze-regression-range-button').click(analyzeRegressionRange);
     });
   </script>
 </head>
@@ -411,6 +444,19 @@
       <div id="build-container">Build: <a id="build-link" target="_blank"></a></div>
     </div>
   </div>
+  {% if show_input_ui %}
+    <div>
+      <table>
+        <tr>
+          <td>Analyze a commit position range (<a class="range-help-info" href="javascript:">?</a>):</td>
+          <td><input type="text" id="lower-bound-commit-position" placeholder="Lower bound" size="10"</td>
+          <td><input type="text" id="upper-bound-commit-position" placeholder="Upper bound" size="10"</td>
+          <td> # Iterations:<input type="text" id="iterations-to-rerun" value={{ iterations_to_rerun }} size="1"<td>
+          <td><button id="analyze-regression-range-button">Analyze</button></td>
+        </tr>
+      </table>
+    </div>
+  {% endif %}
   <br>
   <div>
     <b>Metadata:</b><br>
@@ -491,5 +537,15 @@
       </table>
     </div>
   {% endif %}
+  <div id="range-help-explanation-dialog" title="Choose a range or point to analyze">
+    Want to analyze a specific range?<br>
+    <ul>
+      <li>Choose a commit position range and enter it into the Lower bound/Upper bound text fields</li>
+      <li>To specify a single point, enter a commit position in either lower/upper bound, or enter the same commit position for both</li>
+      <li>Optional: specify the number of iterations to rerun swarming. Findit tasks have a maximum of three hours to complete, so please use values below 800 to ensure the task completes successfully
+      <li>Press Analyze range</li>
+      <li>If the lower bound is found to be stable and upper bound flaky, Findit will attempt to identify the culprit CL that caused the flakiness</li>
+    </ul>
+  </div>
 </body>
 </html>
