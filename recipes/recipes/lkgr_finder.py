@@ -6,6 +6,8 @@ from recipe_engine.recipe_api import Property
 from recipe_engine.types import freeze
 
 DEPS = [
+  'build/gitiles',
+  'build/url',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/gsutil',
@@ -27,6 +29,8 @@ BUILDERS = freeze({
     'project': 'v8',
     'allowed_lag': 4,
     'lkgr_status_gs_path': 'chromium-v8/lkgr-status',
+    'repo': 'https://chromium.googlesource.com/v8/v8',
+    'ref': 'refs/heads/lkgr',
   },
 })
 
@@ -49,10 +53,22 @@ def RunSteps(api, buildername):
     '--post',
   ]
 
-  # Forcing builds with a revision property set is used to manually override
-  # the lkgr.
-  if api.properties.get('revision'):
-    args.append('--manual=%s' % api.properties['revision'])
+  # Check if somebody manually pushed a newer lkgr to the lkgr ref.
+  # In this case manually override the lkgr in the app. This can be used
+  # to manually advance the lkgr when backing services are down.
+  if botconfig.get('ref'):
+    lkgr_from_ref = api.gitiles.commit_log(
+        botconfig['repo'], botconfig['ref'],
+        step_name='lkgr from ref')['commit']
+    lkgr_from_app = api.url.fetch(
+        'https://%s-status.appspot.com/lkgr' % botconfig['project'],
+        step_name='lkgr from app'
+    )
+    commits, _ = api.gitiles.log(
+        botconfig['repo'], '%s..%s' % (lkgr_from_app, lkgr_from_ref),
+        step_name='check lkgr override')
+    if commits:
+      args.append('--manual=%s' % lkgr_from_ref)
 
   if botconfig.get('allowed_lag') is not None:
     args.append('--allowed-lag=%d' % botconfig['allowed_lag'])
@@ -81,11 +97,28 @@ def RunSteps(api, buildername):
 
 
 def GenTests(api):
+  def lkgr_test_data():
+    return (
+        api.step_data(
+            'lkgr from ref',
+            api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
+        ) +
+        api.step_data(
+            'lkgr from app',
+            api.raw_io.stream_output('deadbeef2'),
+        )
+    )
+
   for buildername, botconfig in BUILDERS.iteritems():
     yield (
         api.test(botconfig['project']) +
         api.properties.generic(
             buildername=buildername,
+        ) +
+        lkgr_test_data() +
+        api.step_data(
+            'check lkgr override',
+            api.gitiles.make_log_test_data('A', n=0),
         )
     )
     yield (
@@ -93,5 +126,10 @@ def GenTests(api):
         api.properties.generic(
             buildername=buildername,
             revision='deadbeef',
+        ) +
+        lkgr_test_data() +
+        api.step_data(
+            'check lkgr override',
+            api.gitiles.make_log_test_data('A'),
         )
     )
