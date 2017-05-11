@@ -92,6 +92,12 @@ var cmdCook = &subcommands.Command{
 				"of PATH in the order that they are supplied. Elements specified here will be forcefully "+
 				"prefixed to the PATH of step commands by the recipe engine.")
 
+		fs.Var(
+			&c.SetEnvAbspath,
+			"set-env-abspath",
+			"Accepts a KEY=PATH environment variable. PATH is a filesystem path that will be exported "+
+				"to the environment as an absolute path.")
+
 		fs.StringVar(
 			&c.CheckoutDir,
 			"checkout-dir",
@@ -167,6 +173,7 @@ type cookRun struct {
 	PropertiesFile string
 	PythonPaths    stringlistflag.Flag
 	PrefixPathENV  stringlistflag.Flag
+	SetEnvAbspath  stringlistflag.Flag
 	CacheDir       string
 	TempDir        string
 	BuildURL       string
@@ -261,6 +268,18 @@ func (c *cookRun) normalizeFlags(env environ.Env) error {
 	// Normalize c.PrefixPathENV
 	if err := normalizePathSlice(&c.PrefixPathENV); err != nil {
 		return err
+	}
+
+	// Normalize c.SetEnvAbspath
+	for i, entry := range c.SetEnvAbspath {
+		key, value := environ.Split(entry)
+		if value == "" {
+			return inputError("-set-env-abspath requires a PATH value")
+		}
+		if err := filesystem.AbsPath(&value); err != nil {
+			return err
+		}
+		c.SetEnvAbspath[i] = environ.Join(key, value)
 	}
 
 	if c.TempDir != "" {
@@ -673,6 +692,10 @@ func (c *cookRun) updateEnv(env environ.Env) {
 
 	addPaths("PATH", c.PrefixPathENV)
 	addPaths("PYTHONPATH", c.PythonPaths)
+
+	for _, entry := range c.SetEnvAbspath {
+		env.SetEntry(entry)
+	}
 
 	// Tell subprocesses to use Kitchen's temp dir.
 	if c.TempDir == "" {

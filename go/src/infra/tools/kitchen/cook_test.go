@@ -36,12 +36,16 @@ func TestCook(t *testing.T) {
 			cook.TempDir = "/tmp"
 			cook.PrefixPathENV = stringlistflag.Flag{"/path2", "/path3"}
 			cook.PythonPaths = stringlistflag.Flag{"/python2", "/python3"}
+			cook.SetEnvAbspath = stringlistflag.Flag{"FOO=/bar", "BAZ=/qux"}
 
 			env := environ.New([]string{"PATH=/path", "PYTHONPATH=/python"})
 			cook.updateEnv(env)
 			So(env.Map(), ShouldResemble, map[string]string{
 				"PATH":       strings.Join([]string{"/path2", "/path3", "/path"}, string(os.PathListSeparator)),
 				"PYTHONPATH": strings.Join([]string{"/python2", "/python3", "/python"}, string(os.PathListSeparator)),
+
+				"BAZ": "/qux",
+				"FOO": "/bar",
 
 				"TEMPDIR": "/tmp",
 				"TMPDIR":  "/tmp",
@@ -54,8 +58,10 @@ func TestCook(t *testing.T) {
 		Convey("run", func() {
 			// Setup context.
 			c := context.Background()
-			cfg := gologger.StdConfig
-			cfg.Format = "[%{level:.1s} %{time:2006-01-02 15:04:05}] %{message}"
+			cfg := gologger.LoggerConfig{
+				Format: "[%{level:.0s} %{time:2006-01-02 15:04:05}] %{message}",
+				Out:    os.Stderr,
+			}
 			c = cfg.Use(c)
 			logCfg := log.Config{
 				Level: log.Info,
