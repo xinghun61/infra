@@ -27,12 +27,15 @@
 
   // TODO(jojwang): Make pageData object follow js naming guidelines.
   function addIncidents(pageData) {
-    let dateHeaders = document.querySelectorAll('.js-date');
     let dateStrings = pageData['Dates'].map((date) => {return fmtDate(date);});
-    setHeaderDates(dateHeaders, dateStrings)
-    renderIncidents(
-	pageData['ChopsServices'],
-	dateStrings);
+    if (pageData['ChopsServices'].length > 0) {
+      setHeaderDates(document.querySelectorAll('.js-date'), dateStrings);
+      renderIncidents(pageData['ChopsServices'], dateStrings);
+    }
+    if (pageData['NonSLAServices'].length > 0) {
+      setHeaderDates(document.querySelectorAll('.js-date-nonsla'), dateStrings);
+      renderIncidents(pageData['NonSLAServices'], dateStrings);
+    }
   }
 
   function setHeaderDates(dateHeaders, dateStrings) {

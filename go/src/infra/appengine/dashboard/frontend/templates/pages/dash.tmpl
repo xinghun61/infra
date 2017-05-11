@@ -17,21 +17,18 @@
   .current {
     width: 20%;
   }
-  .date-header {
-    font-size: .8em;
-    padding-right: 10px;
-    padding-left: 10px;
-    text-align: center;
-  }
   .key {
     padding: 10px 5px;
+  }
+  .table-container {
+    padding: 20px 5px;
   }
   .table-footer {
     height: 20px;
     font-size: .7em;
-    text-align: right;
   }
   .table-footer,
+  th,
   header {
     background-color: rgb(205, 223, 250);
   }
@@ -45,9 +42,6 @@
   .left-align {
     text-align: left;
   }
-  .right-align {
-    text-align: right;
-  }
   .subtext {
     font-size: .8em;
   }
@@ -60,10 +54,8 @@
     border: 1px solid rgb(205, 223, 250);
   }
   th {
-    background-color: rgb(205, 223, 250);
     font-size: .8em;
-    padding-right: 10px;
-    padding-left: 10px;
+    padding: 3px 10px;
     text-align: center;
   }
   tr {
@@ -85,61 +77,64 @@
     {{$dates := .Dates}}
     {{$older := .OlderDate}}
     {{$newer := .NewerDate}}
+
     {{if .ChopsServices}}
-      <p class="subtext">Covered by a Service Level Agreement</p>
-      <table>
-        <tr>
-          <th class="current">Current Status</th>
-          {{range $dates}}
-            <th class="js-date"></th>
-          {{end}}
-        </tr>
-        {{range .ChopsServices}}
-        {{$name := .Service.Name}}
+      <div class="table-container">
+        <p class="subtext">Covered by a Service Level Agreement</p>
+        <table>
           <tr>
-            <td class="js-{{$name}}">
-              <a href={{.Service.SLA}}>{{.Service.Name}}</a>
-            </td>
-            <td class="table-body js-{{$name}}-incidents" colspan="7"></td>
-          </tr>
-        {{end}}
-        <tr class="table-footer subtext">
-          <td colspan="8" class="center-align">
-            <span>
-              <a href="?upto={{$older}}">Older</a>
-            </span>
-            {{if $newer}}
-              <span>
-                <a href="?upto={{$newer}}">Newer</a>
-              </span>
+            <th class="current">Current Status</th>
+            {{range $dates}}
+              <th class="js-date"></th>
             {{end}}
-          </td>
-        </tr>
-      </table>
+          </tr>
+          {{range .ChopsServices}}
+          {{$name := .Service.Name}}
+            <tr>
+              <td class="js-{{$name}}"><a href={{.Service.SLA}}>{{.Service.Name}}</a></td>
+              <td class="table-body js-{{$name}}-incidents" colspan="7"></td>
+            </tr>
+          {{end}}
+          <tr class="table-footer subtext">
+            <td colspan="8" class="center-align">
+              <span><a href="?upto={{$older}}">Older</a></span>
+              {{if $newer}}
+                <span><a href="?upto={{$newer}}">Newer</a></span>
+              {{end}}
+            </td>
+          </tr>
+        </table>
+      </div>
     {{end}}
 
     {{if .NonSLAServices}}
-      <p class="subtext">Projects not covered by a Service Level Agreement</p>
-      <table>
-        <tr>
-          <th>Current Status</th>
-          {{range .Dates}}
-            <th class="date-header">{{ . | fmtDate}}</th>
-          {{end}}
-        </tr>
-        {{range .NonSLAServices}}
-        {{$name := .Service.Name}}
+      <div class="table-container">
+        <p class="subtext">Not covered by a Service Level Agreement</p>
+        <table>
           <tr>
-            <td class="js-{{$name}}">
-              {{.Service.Name}}
-            </td>
-            {{range $dates}}
-              <td class="js-{{$name}}-{{ . | fmtDate}}"></td>
+            <th class="current">Current Status</th>
+            {{range .Dates}}
+              <th class="js-date-nonsla"></th>
             {{end}}
           </tr>
-        {{end}}
-      </table>
-    {{end}}
+          {{range .NonSLAServices}}
+          {{$name := .Service.Name}}
+            <tr>
+              <td class="js-{{$name}}">{{.Service.Name}}</td>
+              <td class="table-body js-{{$name}}-incidents" colspan="7"></td>
+            </tr>
+          {{end}}
+          <tr class="table-footer subtext">
+            <td colspan="8" class="center-align">
+              <span><a href="?upto={{$older}}">Older</a></span>
+              {{if $newer}}
+                <span><a href="?upto={{$newer}}">Newer</a></span>
+              {{end}}
+            </td>
+          </tr>
+        </table>
+      {{end}}
+    </div>
   </main>
 </div>
 <script src="/static/add-incidents.js"></script>
