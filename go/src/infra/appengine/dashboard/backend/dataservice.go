@@ -61,6 +61,32 @@ type QueryOptions struct {
 	Status IncidentStatus // indicates the status the fetched incidents should have
 }
 
+// BuildQuery builds a datastore Query from the values of this QueryOptions.
+// If this QueryOptions has a non-zero After or a non-zero Before and a timeField
+// is not provided, an error will be thrown.
+//
+// It returns (query, nil) on success or (nil, err) if the timeField is empty while
+// either After or Before is non-zero.
+func (q *QueryOptions) BuildQuery(query *datastore.Query, timeField string) (*datastore.Query, error) {
+	switch q.Status {
+	case IncidentStatusOpen:
+		query = query.Eq("Open", true)
+	case IncidentStatusClosed:
+		query = query.Eq("Open", false)
+	}
+	if !q.After.IsZero() {
+		query = query.Gte(timeField, q.After)
+	}
+	if !q.Before.IsZero() {
+		query = query.Lte(timeField, q.Before)
+	}
+	_, err := query.Finalize()
+	if err != nil {
+		return nil, err
+	}
+	return query, nil
+}
+
 // GetIncident gets the specified ServiceIncident from datastore.
 //
 // It returns (incident, nil) on success, (nil, nil) if such incident is not found
@@ -75,11 +101,11 @@ func GetIncident(c context.Context, id string, serviceID string) (*ServiceIncide
 		return &incident, nil
 	case err == datastore.ErrNoSuchEntity:
 		logging.Errorf(
-			c, "Entity not found. Using serviceID: %v and incident id: %v",
+			c, "entity not found, using serviceID: %s and incident id: %s",
 			serviceID, id)
 		return nil, nil
 	default:
-		logging.Errorf(c, "Error getting Service entity: %v", err)
+		logging.Errorf(c, "error getting Service entity: %s", err)
 		return nil, err
 	}
 }
@@ -94,23 +120,25 @@ func GetServiceIncidents(c context.Context, serviceID string, queryOpts *QueryOp
 	serviceKey := datastore.NewKey(c, "Service", serviceID, 0, nil)
 	query := datastore.NewQuery("ServiceIncident").Ancestor(serviceKey)
 	if queryOpts != nil {
-		switch statusType := queryOpts.Status; statusType {
-		case IncidentStatusOpen:
-			query = query.Eq("Open", true)
-		case IncidentStatusClosed:
-			query = query.Eq("Open", false)
-		}
-
-		if !queryOpts.After.IsZero() {
-			query = query.Gte("StartTime", queryOpts.After)
-		}
-		if !queryOpts.Before.IsZero() {
-			query = query.Lte("StartTime", queryOpts.Before)
+		var err error
+		if !queryOpts.After.IsZero() || !queryOpts.Before.IsZero() {
+			query, err = queryOpts.BuildQuery(query, "StartTime")
+			if err != nil {
+				logging.Errorf(c, "error building query from queryOpts: %s", err)
+				return nil, err
+			}
+			// TODO(jojwang): create another query with "EndTime" and consolidate
+			// the incidents returned by the two queries
+		} else {
+			query, err = queryOpts.BuildQuery(query, "")
+			if err != nil {
+				logging.Errorf(c, "error building query from queryOpts: %s", err)
+			}
 		}
 	}
 	incidents := []ServiceIncident{}
 	if err := datastore.GetAll(c, query, &incidents); err != nil {
-		logging.Errorf(c, "Error getting ServiceIncident entities: %v", err)
+		logging.Errorf(c, "error getting ServiceIncident entities: %s", err)
 		return nil, err
 	}
 	return incidents, nil
@@ -119,17 +147,17 @@ func GetServiceIncidents(c context.Context, serviceID string, queryOpts *QueryOp
 // GetService gets the specified Service from datastore.
 //
 // It returns (service, nil) on success, (nil, nil) if such service is not found
-// or (nil, err) on datstore errors.
+// or (nil, err) on datastore errors.
 func GetService(c context.Context, serviceID string) (*Service, error) {
 	service := Service{ID: serviceID}
 	switch err := datastore.Get(c, &service); {
 	case err == nil:
 		return &service, nil
 	case err == datastore.ErrNoSuchEntity:
-		logging.Errorf(c, "Entity not found: %v", err)
+		logging.Errorf(c, "entity not found: %s", err)
 		return nil, nil
 	default:
-		logging.Errorf(c, "Error getting Service entity: %v", err)
+		logging.Errorf(c, "error getting Service entity: %s", err)
 		return nil, err
 	}
 }
@@ -141,7 +169,7 @@ func GetAllServices(c context.Context) ([]Service, error) {
 	query := datastore.NewQuery("Service")
 	services := []Service{}
 	if err := datastore.GetAll(c, query, &services); err != nil {
-		logging.Errorf(c, "Error getting Service entities: %v", err)
+		logging.Errorf(c, "error getting Service entities: %s", err)
 		return nil, err
 	}
 	return services, nil
@@ -156,7 +184,7 @@ func AddIncident(c context.Context, id string, serviceID string, severity Severi
 	serviceKey := datastore.NewKey(c, "Service", serviceID, 0, nil)
 	existsResults, err := datastore.Exists(c, serviceKey)
 	if err != nil {
-		logging.Errorf(c, "encountered datastore error: %v", err)
+		logging.Errorf(c, "encountered datastore error: %s", err)
 		return err
 	}
 	if !existsResults.All() {
@@ -166,7 +194,7 @@ func AddIncident(c context.Context, id string, serviceID string, severity Severi
 		incidentKey := datastore.NewKey(c, "ServiceIncident", id, 0, serviceKey)
 		existsResults, err = datastore.Exists(c, incidentKey)
 		if err != nil {
-			logging.Errorf(c, "encountered datastore error: %v", err)
+			logging.Errorf(c, "encountered datastore error: %s", err)
 			return err
 		}
 		if existsResults.All() {
@@ -180,7 +208,7 @@ func AddIncident(c context.Context, id string, serviceID string, severity Severi
 			Severity:   severity,
 		}
 		if err := datastore.Put(c, &incident); err != nil {
-			logging.Errorf(c, "error writing incident to datastore: %v", err)
+			logging.Errorf(c, "error writing incident to datastore: %s", err)
 			return err
 		}
 		return nil
@@ -192,13 +220,13 @@ func AddIncident(c context.Context, id string, serviceID string, severity Severi
 //
 // It returns nil on success. If there is an error getting the Incident or updating the Incident,
 // or the Incident was never found, err will be returned.
-func CloseIncident(c context.Context, id string, serviceID string) error {
+func CloseIncident(c context.Context, id, serviceID string) error {
 	return datastore.RunInTransaction(c, func(c context.Context) error {
 		incident, err := GetIncident(c, id, serviceID)
 		if incident == nil {
 			if err == nil {
 				return fmt.Errorf(
-					"incident with ServiceID: %v and incident id: %v not found in datastore",
+					"incident with ServiceID: %s and incident id: %s not found in datastore",
 					serviceID, id)
 			}
 			return err
@@ -206,7 +234,7 @@ func CloseIncident(c context.Context, id string, serviceID string) error {
 		incident.EndTime = time.Now().UTC()
 		incident.Open = false
 		if err := datastore.Put(c, incident); err != nil {
-			logging.Errorf(c, "error writing updated incident to datastore: %v", err)
+			logging.Errorf(c, "error writing updated incident to datastore: %s", err)
 			return err
 		}
 		return nil

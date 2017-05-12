@@ -108,6 +108,62 @@ func newTestContext() context.Context {
 	return ctx
 }
 
+func TestBuildQuery(t *testing.T) {
+	baseQuery := datastore.NewQuery("ServiceIncident")
+	before := time.Now().UTC()
+	after := before.AddDate(0, 0, -2).UTC()
+
+	testCases := []struct {
+		wantQuery *datastore.Query
+		queryOpts QueryOptions
+		timeField string
+		wantErr   bool
+	}{
+		{
+			wantQuery: baseQuery.Eq("Open", true),
+			queryOpts: QueryOptions{Status: IncidentStatusOpen},
+			timeField: "",
+			wantErr:   false,
+		},
+		{
+			wantQuery: baseQuery.Eq("Open", false).Gte("StartTime", after).Lte("StartTime", before),
+			queryOpts: QueryOptions{
+				After:  after,
+				Before: before,
+				Status: IncidentStatusClosed,
+			},
+			timeField: "StartTime",
+			wantErr:   false,
+		},
+		{
+			wantQuery: nil,
+			queryOpts: QueryOptions{
+				After:  after,
+				Before: before,
+				Status: IncidentStatusClosed,
+			},
+			timeField: "",
+			wantErr:   true,
+		},
+	}
+	for i, tc := range testCases {
+		query, err := tc.queryOpts.BuildQuery(baseQuery, tc.timeField)
+		if tc.wantErr {
+			if err == nil {
+				t.Errorf("%d: expected error, found: %s", i, err)
+			}
+		} else {
+			_, _ = tc.wantQuery.Finalize()
+			if err != nil {
+				t.Errorf("%d: expected no error, found: %s", i, err)
+			}
+			if !reflect.DeepEqual(query, tc.wantQuery) {
+				t.Errorf("%d: expected query: %+v, found: %+v", i, tc.wantQuery, query)
+			}
+		}
+	}
+}
+
 func TestGetIncident(t *testing.T) {
 	ctx := newTestContext()
 	datastore.Put(ctx, &testService)
