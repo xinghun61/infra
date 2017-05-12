@@ -30,6 +30,7 @@ HOTLISTVISITHISTORY_TABLE_NAME = 'HotlistVisitHistory'
 USER_COLS = [
     'user_id', 'email', 'is_site_admin', 'notify_issue_change',
     'notify_starred_issue_change', 'email_compact_subject', 'email_view_widget',
+    'notify_starred_ping',
     'banned', 'after_issue_update', 'keep_people_perms_open',
     'preview_on_hover', 'ignore_action_limits', 'obscure_email',
     'last_visit_timestamp', 'email_bounce_timestamp', 'vacation_message']
@@ -74,7 +75,7 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
     for row in user_rows:
       (user_id, email, is_site_admin,
        notify_issue_change, notify_starred_issue_change,
-       email_compact_subject, email_view_widget, banned,
+       email_compact_subject, email_view_widget, notify_starred_ping, banned,
        after_issue_update, keep_people_perms_open, preview_on_hover,
        ignore_action_limits, obscure_email, last_visit_timestamp,
        email_bounce_timestamp, vacation_message) = row
@@ -85,6 +86,7 @@ class UserTwoLevelCache(caches.AbstractTwoLevelCache):
       user.notify_starred_issue_change = bool(notify_starred_issue_change)
       user.email_compact_subject = bool(email_compact_subject)
       user.email_view_widget = bool(email_view_widget)
+      user.notify_starred_ping = bool(notify_starred_ping)
       if banned:
         user.banned = banned
       if after_issue_update:
@@ -392,6 +394,7 @@ class UserService(object):
         'notify_starred_issue_change': user.notify_starred_issue_change,
         'email_compact_subject': user.email_compact_subject,
         'email_view_widget': user.email_view_widget,
+        'notify_starred_ping': user.notify_starred_ping,
         'banned': user.banned,
         'after_issue_update': str(user.after_issue_update or 'UP_TO_LIST'),
         'keep_people_perms_open': user.keep_people_perms_open,
@@ -484,6 +487,7 @@ class UserService(object):
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,
       email_compact_subject=None, email_view_widget=None,
+      notify_starred_ping=None,
       obscure_email=None, after_issue_update=None,
       is_site_admin=None, ignore_action_limits=None,
       is_banned=None, banned_reason=None, action_limit_updates=None,
@@ -505,6 +509,8 @@ class UserService(object):
       user.notify_issue_change = notify
     if notify_starred is not None:
       user.notify_starred_issue_change = notify_starred
+    if notify_starred_ping is not None:
+      user.notify_starred_ping = notify_starred_ping
     if email_compact_subject is not None:
       user.email_compact_subject = email_compact_subject
     if email_view_widget is not None:

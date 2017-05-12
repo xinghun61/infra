@@ -590,6 +590,7 @@ class UserSettings(object):
         notify_starred='notify_starred' in post_data,
         email_compact_subject='email_compact_subject' in post_data,
         email_view_widget='email_view_widget' in post_data,
+        notify_starred_ping='notify_starred_ping' in post_data,
         preview_on_hover='preview_on_hover' in post_data,
         obscure_email=obscure_email,
         vacation_message=post_data.get('vacation_message', ''),

@@ -78,6 +78,8 @@ class User(messages.Message):
   email_compact_subject = messages.BooleanField(14, default=False)
   # Opt-out of "View Issue" button in Gmail inbox.
   email_view_widget = messages.BooleanField(15, default=True)
+  # Opt-in to ping emails from issues that the user starred.
+  notify_starred_ping = messages.BooleanField(16, default=False)
 
   # This user has been banned, and this string describes why. All access
   # to Monorail pages should be disabled.

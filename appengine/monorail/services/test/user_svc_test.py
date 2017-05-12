@@ -22,7 +22,8 @@ def SetUpGetUsers(user_service, cnxn):
   """Set up expected calls to SQL tables."""
   user_service.user_tbl.Select(
       cnxn, cols=user_svc.USER_COLS, user_id=[333L]).AndReturn(
-          [(333L, 'c@example.com', False, False, False, False, True, 'Spammer',
+          [(333L, 'c@example.com', False, False, False, False, True,
+            False, 'Spammer',
             'stay_same_issue', False, False, False, True, 0, 0, None)])
   user_service.actionlimit_tbl.Select(
       cnxn, cols=user_svc.ACTIONLIMIT_COLS, user_id=[333L]).AndReturn([])
@@ -53,9 +54,9 @@ class UserTwoLevelCacheTest(unittest.TestCase):
 
   def testDeserializeUsersByID(self):
     user_rows = [
-        (111L, 'a@example.com', False, False, False, False, True, '',
+        (111L, 'a@example.com', False, False, False, False, True, False, '',
          'stay_same_issue', False, False, False, True, 0, 0, None),
-        (222L, 'b@example.com', False, False, False, False, True, '',
+        (222L, 'b@example.com', False, False, False, False, True, False, '',
          'next_in_list', False, False, False, True, 0, 0, None),
         ]
     actionlimit_rows = []
@@ -202,6 +203,7 @@ class UserServiceTest(unittest.TestCase):
         'notify_issue_change': True,
         'after_issue_update': 'STAY_SAME_ISSUE',
         'notify_starred_issue_change': True,
+        'notify_starred_ping': False,
         'is_site_admin': False,
         'banned': 'Turned spammer',
         'obscure_email': True,

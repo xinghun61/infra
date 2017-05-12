@@ -39,6 +39,17 @@
  </label>
 
  <p>
+  When a date specified in an issue arrives, and that date field is configured to notify
+  issue participants:
+ </p>
+ <input type="checkbox" name="notify_starred_ping" id="notify_starred_ping" value="1"
+        [if-any read_only]disabled="disabled"[end]
+        [if-any settings_user_pb.notify_starred_ping_bool]checked="checked"[end] >
+ <label for="notify_starred_ping">
+   Also send a notification if [if-any self]I[else]this user[end] <b>starred</b> the issue.
+ </label><br>
+
+ <p>
   Email notifications sent to me should:
  </p>
  <input type="checkbox" name="email_compact_subject" id="email_compact_subject" value="1"

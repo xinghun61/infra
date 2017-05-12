@@ -498,6 +498,7 @@ class UserService(object):
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,
       email_compact_subject=None, email_view_widget=None,
+      notify_starred_ping=None,
       obscure_email=None, after_issue_update=None,
       is_site_admin=None, ignore_action_limits=None,
       is_banned=None, banned_reason=None, action_limit_updates=None,
