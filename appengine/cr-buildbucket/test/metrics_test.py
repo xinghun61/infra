@@ -28,12 +28,12 @@ class MetricsTest(testing.AppengineTestCase):
       model.Build(bucket='chromium', status=model.BuildStatus.STARTED),
     ])
     metrics.set_build_status_metric(
-      metrics.CURRENTLY_PENDING,
-      'chromium',
-      model.BuildStatus.SCHEDULED).get_result()
+        metrics.CURRENTLY_PENDING,
+        'chromium',
+        model.BuildStatus.SCHEDULED).get_result()
     self.assertEqual(2, metrics.CURRENTLY_PENDING.get(
-      {metrics.FIELD_BUCKET: 'chromium'},
-      target_fields=metrics.GLOBAL_TARGET_FIELDS))
+        {'bucket': 'chromium'},
+        target_fields=metrics.GLOBAL_TARGET_FIELDS))
 
   @mock.patch('components.utils.utcnow', autospec=True)
   def test_set_build_lease_latency(self, utcnow):
@@ -41,38 +41,38 @@ class MetricsTest(testing.AppengineTestCase):
 
     ndb.put_multi([
       model.Build(
-        bucket='chromium',
-        status=model.BuildStatus.SCHEDULED,
-        never_leased=True,
-        create_time=datetime.datetime(2015, 1, 1)
+          bucket='chromium',
+          status=model.BuildStatus.SCHEDULED,
+          never_leased=True,
+          create_time=datetime.datetime(2015, 1, 1)
       ),
       model.Build(
-        bucket='chromium',
-        status=model.BuildStatus.SCHEDULED,
-        never_leased=True,
-        create_time=datetime.datetime(2015, 1, 3)
+          bucket='chromium',
+          status=model.BuildStatus.SCHEDULED,
+          never_leased=True,
+          create_time=datetime.datetime(2015, 1, 3)
       ),
       model.Build(
-        bucket='chromium',
-        status=model.BuildStatus.COMPLETED,
-        result=model.BuildResult.CANCELED,
-        cancelation_reason=model.CancelationReason.TIMEOUT,
-        never_leased=True,
-        create_time=datetime.datetime(2015, 1, 3)
+          bucket='chromium',
+          status=model.BuildStatus.COMPLETED,
+          result=model.BuildResult.CANCELED,
+          cancelation_reason=model.CancelationReason.TIMEOUT,
+          never_leased=True,
+          create_time=datetime.datetime(2015, 1, 3)
       ),
       model.Build(bucket='chromium', status=model.BuildStatus.SCHEDULED),
       model.Build(
-        bucket='v8',
-        status=model.BuildStatus.SCHEDULED,
-        never_leased=True,
-        create_time=datetime.datetime(2015, 1, 3)
+          bucket='v8',
+          status=model.BuildStatus.SCHEDULED,
+          never_leased=True,
+          create_time=datetime.datetime(2015, 1, 3)
       ),
     ])
     metrics.set_build_latency(
       metrics.LEASE_LATENCY, 'chromium', True).get_result()
     dist = metrics.LEASE_LATENCY.get(
-      {metrics.FIELD_BUCKET: 'chromium'},
-      target_fields=metrics.GLOBAL_TARGET_FIELDS)
+        {'bucket': 'chromium'},
+        target_fields=metrics.GLOBAL_TARGET_FIELDS)
     self.assertEquals(dist.sum, 4.0 * 24 * 3600)  # 4 days
 
   @mock.patch('config.get_buckets_async', autospec=True)
@@ -86,30 +86,34 @@ class MetricsTest(testing.AppengineTestCase):
     metrics.update_global_metrics()
 
     set_build_status_metric.assert_any_call(
-      metrics.CURRENTLY_PENDING, 'x', model.BuildStatus.SCHEDULED)
+        metrics.CURRENTLY_PENDING, 'x', model.BuildStatus.SCHEDULED)
     set_build_status_metric.assert_any_call(
-      metrics.CURRENTLY_RUNNING, 'x', model.BuildStatus.STARTED)
+        metrics.CURRENTLY_RUNNING, 'x', model.BuildStatus.STARTED)
 
   def test_fields_for(self):
-    self.assertEqual(
-      metrics.fields_for(
-        model.Build(
-          bucket='master.x',
-          tags=['builder:release', 'user_agent:cq', 'something:else']),
-        result='SUCCESS'),
-      {
-        'bucket': 'master.x',
-        'builder': 'release',
-        'user_agent': 'cq',
-        'result': 'SUCCESS',
-      }
+    build = model.Build(
+        bucket='master.x',
+        tags=['builder:release', 'user_agent:cq', 'something:else'],
+        status=model.BuildStatus.COMPLETED,
+        result=model.BuildResult.FAILURE,
+        failure_reason=model.FailureReason.BUILD_FAILURE,
     )
+    expected = {
+      'bucket': 'master.x',
+      'builder': 'release',
+      'user_agent': 'cq',
+      'status': 'COMPLETED',
+      'result': 'FAILURE',
+      'failure_reason': 'BUILD_FAILURE',
+      'cancelation_reason': '',
+    }
+    self.assertEqual(set(expected), set(metrics._ALL_FIELD_NAMES))
+    actual = metrics._fields_for(build, expected.keys())
+    self.assertEqual(expected, actual)
+
     self.assertEqual(
-      metrics.fields_for(None, result='SUCCESS'),
-      {
-        'bucket': '<no bucket>',
-        'builder': '',
-        'user_agent': '',
-        'result': 'SUCCESS',
-      }
-    )
+        {k: '' for k in expected},
+        metrics._fields_for(None, expected.keys()))
+
+    with self.assertRaises(ValueError):
+      metrics._fields_for(build, ['wrong field'])
