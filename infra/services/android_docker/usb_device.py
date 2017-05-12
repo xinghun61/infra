@@ -13,7 +13,12 @@ import os
 import sys
 import libusb1
 import logging
+import subprocess
+import time
 import usb1
+
+from battor import battor_error
+from devil.utils import battor_device_mapping
 
 
 if sys.platform != 'linux2':
@@ -64,6 +69,23 @@ def get_android_devices(filter_devices):
   # assigned.
   if filter_devices:
     android_devices = [d for d in android_devices if d.serial in filter_devices]
+
+  # Scan for connected battors and link each one to its android device if any
+  # are present.
+  try:
+    battor_serial_map = battor_device_mapping.GenerateSerialMap()
+    # This loop may take several seconds, so log the performance.
+    # TODO(bpastene): Maybe parallelize?
+    start = time.time()
+    for device in android_devices:
+      battor_tty_path = battor_device_mapping.GetBattOrPathFromPhoneSerial(
+          device.serial, serial_map=battor_serial_map)
+      device.battor = BattorTTYDevice(
+          battor_tty_path, battor_serial_map.get(device.serial, 'unknown'))
+    logging.debug('Fetched battor serials in %.2fs.', time.time() - start)
+  except battor_error.BattOrError:
+    # No battors connected. Exit quietly since this is the case on most bots.
+    pass
 
   return android_devices
 
@@ -145,6 +167,8 @@ class USBDevice(object):
     except OSError:
       pass
 
+    self.battor = None
+
   def __str__(self):
     return self.serial or self.port_list
 
@@ -170,3 +194,49 @@ class USBDevice(object):
   def interfaces(self):
     for setting in self._libusb_device.iterSettings():
       yield (setting.getClass(), setting.getSubClass(), setting.getProtocol())
+
+
+class BattorTTYDevice(object):
+  """Represents the virtual tty character device file of a battor.
+
+  This differs from an android device because communication with it is done via
+  its virtual tty device (/dev/tty*) and not its bus device (/dev/bus/usb/*),
+  which seems to go unused.
+  """
+  def __init__(self, tty_path, serial):
+    self.tty_path = tty_path
+    self.serial = serial
+
+    self.major = None
+    self.minor = None
+    try:
+      st = os.stat(self.tty_path)
+      self.major = os.major(st.st_rdev)
+      self.minor = os.minor(st.st_rdev)
+    except OSError:
+      pass
+
+    self._syspath = None
+
+  @property
+  def syspath(self):
+    """Fetches the sysfs path of the battor by querying udev via udevadm.
+
+    Expected output of udevadm resembles the following:
+    E: DEVNAME=/dev/ttyUSB0
+    E: DEVPATH=/devices/pci0000:00/0000:00:1c.7/0000:08:00.0/usb3/.../ttyUSB0
+    E: ID_BUS=usb
+
+    This extracts and returns the DEVPATH string.
+    """
+    if self._syspath is not None:
+      return self._syspath
+    try:
+      out = subprocess.check_output(['/sbin/udevadm', 'info', self.tty_path])
+    except subprocess.CalledProcessError:
+      logging.exception('Unable to fetch syspath of battor %s', self.tty_path)
+      return None
+    for line in out.splitlines():
+      if 'DEVPATH=' in line:
+        self._syspath = line.split('DEVPATH=')[1]
+        return self._syspath

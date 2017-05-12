@@ -6,10 +6,14 @@ import copy
 from datetime import datetime
 import docker
 import mock
+import subprocess
 import unittest
 import usb1
 
 from infra.services.android_docker import usb_device
+
+from battor import battor_error
+from devil.utils import battor_device_mapping
 
 
 class FakeUSBContext(object):
@@ -115,6 +119,87 @@ class TestDevice(unittest.TestCase):
     self.assertEquals(device.port_list, [1, 2, 3])
 
 
+class TestBattorTTYDevice(unittest.TestCase):
+  def setUp(self):
+    self.tty_path = '/dev/ttyBattor'
+    self.serial = 'battor_serial'
+
+  @mock.patch('os.stat')
+  @mock.patch('os.major')
+  @mock.patch('os.minor')
+  def test_dev_file_stat(self, mock_minor, mock_major, _):
+    mock_major.return_value = 123
+    mock_minor.return_value = 987
+    battor = usb_device.BattorTTYDevice(self.tty_path, self.serial)
+    self.assertEquals(battor.minor, 987)
+    self.assertEquals(battor.major, 123)
+
+  @mock.patch('os.stat')
+  def test_dev_file_stat_error(self, mock_stat):
+    mock_stat.side_effect = OSError('omg error')
+    battor = usb_device.BattorTTYDevice(self.tty_path, self.serial)
+    self.assertEquals(battor.minor, None)
+    self.assertEquals(battor.major, None)
+
+  @mock.patch('subprocess.check_output')
+  def test_get_syspath(self, mock_subprocess):
+    udevadm_output = """
+    P: /devices/pci0000:00/0000:00:1c.7/0000:08:00.0/usb3/3-1/3-1.4/3-1.4.4/3-1.4.4:1.0/ttyUSB1/tty/ttyUSB1
+    N: ttyUSB1
+    S: serial/by-id/usb-Mellow_Research_LLC_BattOr_v3.3_MABA-AABL-if00-port0
+    S: serial/by-path/pci-0000:08:00.0-usb-0:1.4.4:1.0-port0
+    E: DEVNAME=/dev/ttyUSB1
+    E: DEVPATH=/devices/pci0000:00/0000:00:1c.7/0000:08:00.0/usb3/3-1/3-1.4/3-1.4.4/3-1.4.4:1.0/ttyUSB1/tty/ttyUSB1
+    E: ID_BUS=usb
+    E: ID_MODEL=BattOr_v3.3
+    E: ID_MODEL_ENC=BattOr\x20v3.3
+    E: ID_MODEL_FROM_DATABASE=FT232 USB-Serial (UART) IC
+    E: ID_MODEL_ID=6001
+    E: ID_PATH=pci-0000:08:00.0-usb-0:1.4.4:1.0
+    E: ID_PATH_TAG=pci-0000_08_00_0-usb-0_1_4_4_1_0
+    E: ID_REVISION=0600
+    E: ID_SERIAL=Mellow_Research_LLC_BattOr_v3.3_MABA-AABL
+    E: ID_SERIAL_SHORT=MABA-AABL
+    E: ID_TYPE=generic
+    E: SUBSYSTEM=tty
+    E: USEC_INITIALIZED=247076153791
+    """
+    mock_subprocess.return_value = udevadm_output
+    battor = usb_device.BattorTTYDevice(self.tty_path, self.serial)
+    syspath = battor.syspath
+    self.assertEquals(
+        syspath,
+        '/devices/pci0000:00/0000:00:1c.7/0000:08:00.0/usb3/3-1/3-1.4/3-1.4.4/'
+        '3-1.4.4:1.0/ttyUSB1/tty/ttyUSB1')
+    mock_subprocess.assert_called_with(
+        ['/sbin/udevadm', 'info', battor.tty_path])
+    # Fetch the path again to test caching.
+    syspath = battor.syspath
+    self.assertEquals(
+        syspath,
+        '/devices/pci0000:00/0000:00:1c.7/0000:08:00.0/usb3/3-1/3-1.4/3-1.4.4/'
+        '3-1.4.4:1.0/ttyUSB1/tty/ttyUSB1')
+
+  @mock.patch('subprocess.check_output')
+  def test_get_syspath_no_output(self, mock_subprocess):
+    udevadm_output = """
+    blah blah blah
+    bla bla
+    blahhhhh
+    """
+    mock_subprocess.return_value = udevadm_output
+    battor = usb_device.BattorTTYDevice(self.tty_path, self.serial)
+    syspath = battor.syspath
+    self.assertEquals(syspath, None)
+
+  @mock.patch('subprocess.check_output')
+  def test_get_syspath_error(self, mock_subprocess):
+    mock_subprocess.side_effect = subprocess.CalledProcessError(1, 'omg error')
+    battor = usb_device.BattorTTYDevice(self.tty_path, self.serial)
+    syspath = battor.syspath
+    self.assertEquals(syspath, None)
+
+
 class TestGetDevices(TestDevice):
   def setUp(self):
     super(TestGetDevices, self).setUp()
@@ -179,6 +264,54 @@ class TestGetDevices(TestDevice):
     self.assertEquals(len(devices), 2)
     self.assertEquals(devices[0].serial, 'serial2')
     self.assertEquals(devices[1].serial, 'serial3')
+
+  @mock.patch('devil.utils.battor_device_mapping.GetBattOrPathFromPhoneSerial')
+  @mock.patch('devil.utils.battor_device_mapping.GenerateSerialMap')
+  @mock.patch('usb1.USBContext')
+  def test_get_devices_with_battors(self, mock_usb_context, mock_generate_map,
+                                    mock_get_battor_path):
+    d1 = self.libusb_device
+    d1.serial = 'serial1'
+    d2 = copy.copy(self.libusb_device)
+    d2.serial = 'serial2'
+    self.usb_context = FakeUSBContext([d1, d2])
+    mock_usb_context.return_value = self.usb_context
+    mock_generate_map.return_value = {
+        'serial1': 'battorSerial1', 'serial2': 'battorSerial2'}
+    def map_battor_serial_to_tty(device_serial, **kwargs):  # pragma: no cover
+      # pylint: disable=unused-argument
+      if device_serial == 'serial1':
+        return '/dev/ttyBattor1'
+      elif device_serial == 'serial2':
+        return '/dev/ttyBattor2'
+      raise Exception('Unexpected device serial: %s', device_serial)
+    mock_get_battor_path.side_effect = map_battor_serial_to_tty
+    devices = usb_device.get_android_devices(None)
+
+    self.assertEquals(devices[0].serial, 'serial1')
+    self.assertEquals(devices[0].battor.serial, 'battorSerial1')
+    self.assertEquals(devices[0].battor.tty_path, '/dev/ttyBattor1')
+    self.assertEquals(devices[1].serial, 'serial2')
+    self.assertEquals(devices[1].battor.serial, 'battorSerial2')
+    self.assertEquals(devices[1].battor.tty_path, '/dev/ttyBattor2')
+
+  @mock.patch('devil.utils.battor_device_mapping.GenerateSerialMap')
+  @mock.patch('usb1.USBContext')
+  def test_get_devices_with_no_battors(self, mock_usb_context,
+                                       mock_generate_map):
+    d1 = self.libusb_device
+    d1.serial = 'serial1'
+    d2 = copy.copy(self.libusb_device)
+    d2.serial = 'serial2'
+    self.usb_context = FakeUSBContext([d1, d2])
+    mock_usb_context.return_value = self.usb_context
+    mock_generate_map.side_effect = battor_error.BattOrError('omg no battor')
+    devices = usb_device.get_android_devices(None)
+
+    self.assertEquals(devices[0].serial, 'serial1')
+    self.assertEquals(devices[0].battor, None)
+    self.assertEquals(devices[1].serial, 'serial2')
+    self.assertEquals(devices[1].battor, None)
 
 
 class TestGetPhysicalPorts(TestDevice):
