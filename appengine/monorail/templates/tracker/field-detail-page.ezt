@@ -184,13 +184,19 @@
     <tr id="date_row">
       <th>Action:</th>
       <td>
-        <select name="date_action">
-          <option value="no_action" [is field_def.date_action_str "no_action"]selected="selected"[end]
-                  >No action</option>
+        [if-any allow_edit]
+          <select name="date_action">
+            <option value="no_action" [is field_def.date_action_str "no_action"]selected="selected"[end]
+                    >No action</option>
+            [# TODO(jrobbins): owner-only option.]
+            <option value="ping_participants" [is field_def.date_action_str "ping_participants"]selected="selected"[end]
+                    >Post a comment and notify all issue participants</option>
+          </select>
+        [else]
+          [is field_def.date_action_str "no_action"]No action[end]
           [# TODO(jrobbins): owner-only option.]
-          <option value="ping_participants" [is field_def.date_action_str "ping_participants"]selected="selected"[end]
-                  >Post a "ping" comment and notify all issue participants</option>
-        </select>
+          [is field_def.date_action_str "ping_participants"]Post a comment and notify all issue participants[end]
+        [end]
       </td>
     </tr>
   [end]
