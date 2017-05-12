@@ -292,6 +292,11 @@ class TestContainer(unittest.TestCase):
     self.container_backend = FakeContainerBackend('container1')
     self.container = containers.Container(self.container_backend)
 
+  def test_get_state(self):
+    self.container_backend.attrs = {'State': {'Status': 'running'}}
+    status = self.container.state
+    self.assertEquals(status, 'running')
+
   def test_get_container_uptime(self):
     now = datetime.strptime(
         '2000-01-01T01:30:00.000000', '%Y-%m-%dT%H:%M:%S.%f')

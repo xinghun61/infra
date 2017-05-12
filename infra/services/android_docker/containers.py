@@ -211,7 +211,7 @@ class Container(object):
       # will exit as well.
       try:
         self._container.exec_run('kill -15 %d' % pid)
-      except docker.errors.APIError:
+      except docker.errors.APIError:  # pragma: no cover
         logging.exception('Unable to send SIGTERM to swarming bot.')
       else:
         logging.info('Sent SIGTERM to swarming bot of %s.', self.name)
