@@ -130,7 +130,7 @@ class NotFoundError(Exception):
 class UploadIdSignature(auth.TokenKind):
   """Token to use to generate and validate signed upload_session_id."""
   expiration_sec = SESSION_EXPIRATION_TIME_SEC
-  secret_key = auth.SecretKey('upload_session_id_signing', scope='local')
+  secret_key = auth.SecretKey('upload_session_id_signing')
   version = 1
 
 
