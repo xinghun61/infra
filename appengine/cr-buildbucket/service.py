@@ -1169,11 +1169,15 @@ def fail(
       failure_reason, url=url, new_tags=new_tags)
 
 
-def cancel(build_id):
+def cancel(build_id, result_details=None):
   """Cancels build. Does not require a lease key.
 
   The current user has to have a permission to cancel a build in the
   bucket.
+
+  Args:
+    build_id: id of the build to cancel.
+    result_details (dict): build result description.
 
   Returns:
     Canceled Build.
@@ -1194,6 +1198,7 @@ def cancel(build_id):
     build.status = model.BuildStatus.COMPLETED
     build.status_changed_time = now
     build.result = model.BuildResult.CANCELED
+    build.result_details = result_details
     build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
     build.complete_time = now
     build.clear_lease()

@@ -546,28 +546,54 @@ class ApiTests(object):
       'id': self.test_build.key.id(),
     }
     res = self.call_api('cancel', req).json_body
-    cancel.assert_called_once_with(req['id'])
+    cancel.assert_called_once_with(req['id'], result_details=None)
     self.assertEqual(int(res['build']['id']), req['id'])
+
+  @mock.patch('service.cancel', autospec=True)
+  def test_cancel_with_details(self, cancel):
+    self.test_build.result_details = {'message': 'bye bye build'}
+    cancel.return_value = self.test_build
+    req = {
+      'id': self.test_build.key.id(),
+      'result_details_json': '{"message": "bye bye build"}',
+    }
+    res = self.call_api('cancel', req).json_body
+    cancel.assert_called_once_with(
+        req['id'], result_details=self.test_build.result_details)
+    self.assertEqual(
+        res['build']['result_details_json'], req['result_details_json'])
+
+  def test_cancel_bad_details(self):
+    req = {
+      'id': self.test_build.key.id(),
+      'result_details_json': '["no", "lists"]',
+    }
+    res = self.call_api('cancel', req).json_body
+    self.assertEqual(res['error']['reason'], 'INVALID_INPUT')
 
   ####### CANCEL_BATCH #########################################################
 
   @mock.patch('service.cancel')
   def test_cancel_batch(self, cancel):
+    self.test_build.result_details = {'message': 'bye bye build'}
     cancel.side_effect = [self.test_build, errors.BuildIsCompletedError]
     req = {
       'build_ids': [self.test_build.key.id(), 2],
+      'result_details_json': '{"message": "bye bye build"}',
     }
     res = self.call_api('cancel_batch', req).json_body
 
     res0 = res['results'][0]
     self.assertEqual(int(res0['build_id']), self.test_build.key.id())
     self.assertEqual(int(res0['build']['id']), self.test_build.key.id())
-    cancel.assert_any_call(self.test_build.key.id())
+    cancel.assert_any_call(
+        self.test_build.key.id(), result_details=self.test_build.result_details)
 
     res1 = res['results'][1]
     self.assertEqual(int(res1['build_id']), 2)
     self.assertEqual(res1['error']['reason'], 'BUILD_IS_COMPLETED')
-    cancel.assert_any_call(2)
+    cancel.assert_any_call(
+        2, result_details=self.test_build.result_details)
 
   ####### DELETE_MANY_BUILDS ###################################################
 

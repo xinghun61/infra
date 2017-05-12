@@ -503,6 +503,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         'deadbeef',
         _transactional=True)
 
+  def test_cancel_result_details(self):
+    self.test_build.put()
+    result_details = {'message': 'bye bye build'}
+    build = service.cancel(
+        self.test_build.key.id(), result_details=result_details)
+    self.assertEqual(build.result_details, result_details)
+
   #################################### SEARCH ##################################
 
   def test_search(self):

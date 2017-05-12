@@ -121,7 +121,7 @@ def put_request_message_to_build_request(request):
   return service.BuildRequest(
       bucket=request.bucket,
       tags=request.tags,
-      parameters=parse_json(request.parameters_json, 'parameters_json'),
+      parameters=parse_json_object(request.parameters_json, 'parameters_json'),
       lease_expiration_date=parse_datetime(request.lease_expiration_ts),
       client_operation_id=request.client_operation_id,
       pubsub_callback=pubsub_callback_from_message(request.pubsub_callback),
@@ -211,13 +211,17 @@ def buildbucket_api_method(
   return decorator
 
 
-def parse_json(json_data, param_name):
+def parse_json_object(json_data, param_name):
   if not json_data:
     return None
   try:
-    return json.loads(json_data)
+    rv = json.loads(json_data)
   except ValueError as ex:
     raise errors.InvalidInputError('Could not parse %s: %s' % (param_name, ex))
+  if rv is not None and not isinstance(rv, dict):
+    raise errors.InvalidInputError(
+        'Invalid %s: not a JSON object or null' % param_name)
+  return rv
 
 
 def parse_datetime(timestamp):
@@ -527,7 +531,7 @@ class BuildBucketApi(remote.Service):
     """Marks a build as succeeded."""
     build = service.succeed(
         request.id, request.lease_key,
-        result_details=parse_json(
+        result_details=parse_json_object(
             request.result_details_json, 'result_details_json'),
         url=request.url,
         new_tags=request.new_tags)
@@ -550,7 +554,7 @@ class BuildBucketApi(remote.Service):
     """Marks a build as failed."""
     build = service.fail(
         request.id, request.lease_key,
-        result_details=parse_json(
+        result_details=parse_json_object(
             request.result_details_json, 'result_details_json'),
         failure_reason=request.failure_reason,
         url=request.url,
@@ -560,19 +564,27 @@ class BuildBucketApi(remote.Service):
 
   ####### CANCEL ###############################################################
 
+  class CancelRequestBodyMessage(messages.Message):
+    result_details_json = messages.StringField(1)
+
   @buildbucket_api_method(
-      id_resource_container(), BuildResponseMessage,
+      id_resource_container(CancelRequestBodyMessage), BuildResponseMessage,
       path='builds/{id}/cancel', http_method='POST')
   @auth.public
   def cancel(self, request):
     """Cancels a build."""
-    build = service.cancel(request.id)
+    build = service.cancel(
+        request.id,
+        result_details=parse_json_object(
+            request.result_details_json, 'result_details_json'),
+    )
     return build_to_response_message(build)
 
   ####### CANCEL_BATCH #########################################################
 
   class CancelBatchRequestMessage(messages.Message):
     build_ids = messages.IntegerField(1, repeated=True)
+    result_details_json = messages.StringField(2)
 
   class CancelBatchResponseMessage(messages.Message):
     class OneResult(messages.Message):
@@ -589,10 +601,12 @@ class BuildBucketApi(remote.Service):
   def cancel_batch(self, request):
     """Cancels builds."""
     res = self.CancelBatchResponseMessage()
+    result_details = parse_json_object(
+        request.result_details_json, 'result_details_json')
     for build_id in request.build_ids:
       one_res = res.OneResult(build_id=build_id)
       try:
-        build = service.cancel(build_id)
+        build = service.cancel(build_id, result_details=result_details)
         one_res.build = build_to_message(build)
       except errors.Error as ex:
         one_res.error = exception_to_error_message(ex)
