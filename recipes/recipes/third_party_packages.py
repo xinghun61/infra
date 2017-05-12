@@ -7,6 +7,8 @@
 import json
 import re
 
+from recipe_engine import recipe_api
+
 
 DEPS = [
   'depot_tools/cipd',
@@ -44,13 +46,15 @@ GIT_PACKAGE_VERSION_SUFFIX = '.chromium2'
 def RunSteps(api):
   api.cipd.set_service_account_credentials(
       api.cipd.default_bot_service_account_credentials)
-  if not api.platform.is_win:
-    with api.step.nest('python'):
-      PackagePythonForUnix(api)
-  with api.step.nest('git'):
-    PackageGit(api)
+  with api.step.defer_results():
+    if not api.platform.is_win:
+      with api.step.nest('python'):
+        PackagePythonForUnix(api)
+    with api.step.nest('git'):
+      PackageGit(api)
 
 
+@recipe_api.composite_step
 def PackagePythonForUnix(api):
   """Builds Python for Unix and uploads it to CIPD."""
 
@@ -74,6 +78,7 @@ def PackagePythonForUnix(api):
   )
 
 
+@recipe_api.composite_step
 def PackageGit(api):
   workdir = api.path['start_dir'].join('git')
   api.file.rmtree('rmtree workdir', workdir)
@@ -352,34 +357,43 @@ def GenTests(api):
     ('win', 64, 'windows-amd64'),
     ('win', 32, 'windows-386'),
   )
+  def GenTest(platform_name, bits, platform_suffix, new_package):
+    cpython_package_name = CPYTHON_PACKAGE_PREFIX + platform_suffix
+    git_package_name = GIT_PACKAGE_PREFIX + platform_suffix
+    test = (
+        api.test('new_%s_on_%s' % (new_package, platform_suffix)) +
+        api.platform.name(platform_name) +
+        api.platform.bits(bits) +
+        api.override_step_data(
+            'git.cipd search %s version:2.12.2.2%s' % (
+              git_package_name, GIT_PACKAGE_VERSION_SUFFIX),
+            api.cipd.example_search(
+                git_package_name,
+                instances=bool(new_package != 'git')))
+    )
+    if platform_name != 'win':
+      test += api.step_data('git.refs', git_test_refs)
+      test += api.step_data('python.refs', python_test_refs)
+      test += api.override_step_data(
+          'python.cipd search %s version:2.1.2' % cpython_package_name,
+          api.cipd.example_search(
+              cpython_package_name,
+              instances=bool(new_package != 'python')))
+    else:
+      test += api.step_data(
+          'git.get latest release',
+          api.raw_io.output_text(
+              json.dumps(git_for_windows_release, sort_keys=True)))
+      if new_package == 'git':
+        test += api.step_data('git.post-install', retcode=1)
+    return test
+
   for (platform_name, bits, platform_suffix) in platforms:
     for new_package in ('python', 'git'):
-      cpython_package_name = CPYTHON_PACKAGE_PREFIX + platform_suffix
-      git_package_name = GIT_PACKAGE_PREFIX + platform_suffix
-      test = (
-          api.test('new_%s_on_%s' % (new_package, platform_suffix)) +
-          api.platform.name(platform_name) +
-          api.platform.bits(bits) +
-          api.override_step_data(
-              'git.cipd search %s version:2.12.2.2%s' % (
-                git_package_name, GIT_PACKAGE_VERSION_SUFFIX),
-              api.cipd.example_search(
-                  git_package_name,
-                  instances=bool(new_package != 'git')))
-      )
-      if platform_name != 'win':
-        test += api.step_data('git.refs', git_test_refs)
-        test += api.step_data('python.refs', python_test_refs)
-        test += api.override_step_data(
-            'python.cipd search %s version:2.1.2' % cpython_package_name,
-            api.cipd.example_search(
-                cpython_package_name,
-                instances=bool(new_package != 'python')))
-      else:
-        test += api.step_data(
-            'git.get latest release',
-            api.raw_io.output_text(
-                json.dumps(git_for_windows_release, sort_keys=True)))
-        if new_package == 'git':
-          test += api.step_data('git.post-install', retcode=1)
-      yield test
+      yield GenTest(platform_name, bits, platform_suffix, new_package)
+
+  yield (
+      api.test('mac_failure') +
+      GenTest('mac', 64, 'mac-amd64', 'python') +
+      api.step_data('python.make', retcode=1)
+  )
