@@ -403,7 +403,10 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *kitc
 	}
 
 	result.RecipeResult = &recipe_engine.Result{}
-	if err := jsonpb.Unmarshal(recipeResultFile, result.RecipeResult); err != nil {
+	err = (&jsonpb.Unmarshaler{
+		AllowUnknownFields: true,
+	}).Unmarshal(recipeResultFile, result.RecipeResult)
+	if err != nil {
 		return fail(errors.Annotate(err).Reason("could not parse recipe result").Err())
 	}
 

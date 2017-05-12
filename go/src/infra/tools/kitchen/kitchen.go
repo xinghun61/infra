@@ -31,8 +31,10 @@ var application = cli.Application{
 	Name:  "kitchen",
 	Title: "Kitchen. It can run a recipe.",
 	Context: func(ctx context.Context) context.Context {
-		cfg := gologger.StdConfig
-		cfg.Format = "[%{level:.1s} %{time:2006-01-02 15:04:05}] %{message}"
+		cfg := gologger.LoggerConfig{
+			Out:    os.Stderr,
+			Format: "[%{level:.1s} %{time:2006-01-02 15:04:05}] %{message}",
+		}
 		ctx = cfg.Use(ctx)
 		ctx = logConfig.Set(ctx)
 		return handleInterruption(ctx)
