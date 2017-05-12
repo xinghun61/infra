@@ -60,7 +60,7 @@ class SwarmingTest(testing.AppengineTestCase):
           swarming_tags: "buildertag:yes"
           swarming_tags: "commontag:yes"
           dimensions: "cores:8"
-          dimensions: "os:Linux"
+          dimensions: "os:Ubuntu"
           dimensions: "pool:Chrome"
           priority: 108
           build_numbers: true
@@ -257,7 +257,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'properties': {
           'dimensions': [
             {'key': 'cores', 'value': '8'},
-            {'key': 'os', 'value': 'Linux'},
+            {'key': 'os', 'value': 'Ubuntu'},
             {'key': 'pool', 'value': 'Chrome'},
           ],
         },
@@ -332,7 +332,7 @@ class SwarmingTest(testing.AppengineTestCase):
         ],
         'dimensions': sorted([
           {'key': 'cores', 'value': '8'},
-          {'key': 'os', 'value': 'Linux'},
+          {'key': 'os', 'value': 'Ubuntu'},
           {'key': 'pool', 'value': 'Chrome'},
         ]),
         'caches': [
@@ -370,7 +370,7 @@ class SwarmingTest(testing.AppengineTestCase):
       'build_address:bucket/linux_chromium_rel_ng/1',
       'builder:linux_chromium_rel_ng',
       'swarming_dimension:cores:8',
-      'swarming_dimension:os:Linux',
+      'swarming_dimension:os:Ubuntu',
       'swarming_dimension:pool:Chrome',
       'swarming_hostname:chromium-swarm.appspot.com',
       'swarming_tag:build_address:bucket/linux_chromium_rel_ng/1',
@@ -447,7 +447,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'properties': {
           'dimensions': [
             {'key': 'cores', 'value': '8'},
-            {'key': 'os', 'value': 'Linux'},
+            {'key': 'os', 'value': 'Ubuntu'},
             {'key': 'pool', 'value': 'Chrome'},
           ],
         },
@@ -518,7 +518,7 @@ class SwarmingTest(testing.AppengineTestCase):
         ],
         'dimensions': sorted([
           {'key': 'cores', 'value': '8'},
-          {'key': 'os', 'value': 'Linux'},
+          {'key': 'os', 'value': 'Ubuntu'},
           {'key': 'pool', 'value': 'Chrome'},
         ]),
         'caches': [
@@ -556,7 +556,7 @@ class SwarmingTest(testing.AppengineTestCase):
       'build_address:bucket/linux_chromium_rel_ng/1',
       'builder:linux_chromium_rel_ng',
       'swarming_dimension:cores:8',
-      'swarming_dimension:os:Linux',
+      'swarming_dimension:os:Ubuntu',
       'swarming_dimension:pool:Chrome',
       'swarming_hostname:chromium-swarm.appspot.com',
       'swarming_tag:build_address:bucket/linux_chromium_rel_ng/1',
@@ -603,7 +603,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'properties': {
           'dimensions': [
             {'key': 'cores', 'value': '8'},
-            {'key': 'os', 'value': 'Linux'},
+            {'key': 'os', 'value': 'Ubuntu'},
             {'key': 'pool', 'value': 'Chrome'},
           ],
         },
@@ -658,7 +658,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'properties': {
           'dimensions': [
             {'key': 'cores', 'value': '16'},
-            {'key': 'os', 'value': 'Linux'},
+            {'key': 'os', 'value': 'Ubuntu'},
             {'key': 'pool', 'value': 'Chrome'},
           ],
         },
