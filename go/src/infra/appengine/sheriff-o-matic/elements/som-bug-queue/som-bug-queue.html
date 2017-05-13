@@ -29,7 +29,6 @@
         padding: 0.25em 16px;
         line-height: 160%;
         border-bottom: 1px solid #ddd;
-        margin: 0 1em;
       }
       .bug-label {
         padding-left: 4px;
@@ -66,8 +65,8 @@
         last-response="{{_uncachedBugsJson}}"
         debounce-duration="300"></iron-ajax>
     <div id="main" hidden$="[[_hideBugQueue]]">
-      <h2 class="layout horizontal justified">
-        <div>
+      <h2>
+        <span>
           <span hidden$="[[_isTrooperQueue]]">
             [[treeDisplayName]] Bug Queue
             (<a href="https://sites.google.com/a/chromium.org/dev/developers/tree-sheriffs/sheriffing-bug-queues" target="_blank">Help?</a>)
@@ -76,9 +75,9 @@
             Trooper Queue (<a href="http://go/trooper-queue" target="_blank">View in Monorail</a>)
           </span>
           (<a href$="https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=[[bugQueueLabel]]" target="_blank">Add Bug</a>)
-        </div>
+        </span>
 
-        <div class="self-center end header-buttons">
+        <div class="header-buttons">
           <span class="collapse-button" on-tap="_collapseAll">
             <iron-icon icon="remove"></iron-icon> Collapse all
           </span>
@@ -106,7 +105,7 @@
             id$="toggleIconPri[[bucket.priority]]"></iron-icon>
           [[_priorityText(bucket.priority)]] ([[bucket.bugs.length]] total)
         </h4>
-        <iron-collapse id$="[[_computeCollapseId(bucket.priority)]]" opened="[[_defaultOpenState]]">
+        <iron-collapse id$="[[_computeCollapseId(bucket.priority)]]" opened="[[_defaultOpenState]]" no-animation>
           <template is="dom-repeat" items="[[bucket.bugs]]" as="bug">
             <div class="bug">
               <div class="summary-box">

@@ -55,7 +55,6 @@
         margin: 1em;
       }
       #mainView {
-        padding: 0;
         padding-bottom: 5em;
       }
       #noAlerts {
@@ -66,7 +65,7 @@
       #notifications {
         border-bottom: 1px solid #ddd;
         padding-bottom: 0.5em;
-        margin: 1em 16px;
+        margin-bottom: 1em;
       }
       #refresh {
         max-width: 30px;
@@ -80,7 +79,7 @@
         box-sizing: border-box;
         float: left;
         width: 100%;
-        padding: 0.5em 16px;
+        padding: 0.5em 0;
       }
       .error {
         color: #c00;
@@ -107,7 +106,7 @@
         justify-content: flex-start;
         background: white;
         border-left: 1px solid #ddd;
-        padding: 1em;
+        padding: 1em 16px;
         min-height: 100%;
         flex-grow: 1;
       }
@@ -221,7 +220,6 @@
             </div>
             <div id="swarmingBots" class="page-section">
               <template is="dom-if" if="[[_showSwarmingAlerts]]">
-                <h2>Swarming Bots (<a target="_blank" href="https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/troopers/playbook.md#Swarming">Help?</a>)</h2>
                 <som-swarming-bots bots="[[_swarmingAlerts]]"></som-swarming-bots>
               </template>
             </div>
@@ -235,14 +233,14 @@
                 </div>
               </template>
               <template is="dom-repeat" items="[[_computeCategories(_alerts, _isTrooperPage)]]" as="cat">
-                <h2 class="category-title layout horizontal justified">
+                <h2 class="category-title">
                   <span>
                     <span class="category-title-text">
                       [[_getCategoryTitle(cat, _isTrooperPage)]] ([[_getCategoryCount(_alerts, cat, _isTrooperPage)]] total)
                     </span>
                     (<a href="/help-som" target="_blank">Help?</a>)
                   </span>
-                  <div class="self-center end header-buttons">
+                  <div class="header-buttons">
                     <span class="collapse-button" on-tap="_collapseAll">
                       <iron-icon icon="remove"></iron-icon> Collapse all
                     </span>

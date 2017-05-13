@@ -1,3 +1,5 @@
+<link rel="import" href="../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+
 <dom-module id="som-header-styles">
   <template>
     <style>
@@ -5,12 +7,14 @@
         font-weight: bold;
         background-color: #eee;
         border-bottom: 1px solid #ddd;
-        margin: 0.25em 16px;
+        margin: 0.25em 0;
       }
       h2 {
         font-size: 18px;
         line-height: 180%;
         padding: 0.5em 8px 0.25em;
+        @apply(--layout-horizontal);
+        @apply(--layout-justified);
       }
       h4 {
         cursor: pointer;
@@ -27,7 +31,7 @@
         font-size: 0.85em;
         padding: 0.25em 8px;
         margin: 0 4px;
-        border-radius: 10px;
+        border-radius: 5px;
         -webkit-transition: background .3s ease;
         transition: background .3s ease;
         border: #ddd 1px solid;
@@ -37,6 +41,8 @@
       }
       .header-buttons {
         font-weight: normal;
+        @apply(--layout-self-center);
+        @apply(--layout-end);
       }
     </style>
   </template>

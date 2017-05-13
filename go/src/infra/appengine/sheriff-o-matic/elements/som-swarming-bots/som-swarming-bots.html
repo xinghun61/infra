@@ -1,31 +1,41 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
 
+<link rel="import" href="../../elements/som-header-styles.html">
+
 <dom-module id="som-swarming-bots">
   <template>
+    <style include="som-header-styles"></style>
     <style>
     .botsList {
-      margin: 1em;
+      margin: 1em 0;
     }
     #deadBotsList, #quarantinedBotsList {
       box-sizing: border-box;
       width: 100%;
-      padding: 10px 16px;
+      padding: 1em 16px;
       border: 1px solid #dcdcdc;
       border-radius: 5px;
     }
-    button {
-      padding: 10px 16px;
-      background-color: #f3f3f3;
-      border: 1px solid #dedede;
-      cursor: pointer;
-      width: 100%;
-      text-align: left;
-    }
     </style>
+    <h2>
+      <span>
+        Swarming Bots (<a target="_blank" href="https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/troopers/playbook.md#Swarming">Help?</a>)
+      </span>
+      <div class="header-buttons">
+        <span class="collapse-button" on-tap="_collapseAll">
+          <iron-icon icon="remove"></iron-icon> Collapse all
+        </span>
+        /
+        <span class="collapse-button" on-tap="_expandAll">
+          <iron-icon icon="add"></iron-icon> Expand all
+        </span>
+      </div>
+    </h2>
+
     <div id="dead" class="botsList" hidden$="[[_hideDeadBots]]">
-      <button on-click="toggleDead">💀 Dead ([[bots.dead.length]])</button>
-      <iron-collapse id="deadBotsList">
+      <h4 on-click="toggleDead"><iron-icon icon="[[_toggleDeadIcon]]"></iron-icon> 💀 Dead ([[bots.dead.length]])</h4>
+      <iron-collapse id="deadBotsList" no-animation opened>
         <div><a target="_blank" href="https://chromium-swarm.appspot.com/botlist?f=status%3Adead">Complete list</a></div><br>
         <template is="dom-repeat" items="[[bots.dead]]" as="bot">
           <span class="dead">
@@ -36,8 +46,8 @@
     </div>
 
     <div id="quarantined" class="botsList" hidden$="[[_hideQuarantinedBots]]">
-      <button on-click="toggleQuarantined">😷 Quarantined ([[bots.quarantined.length]])</button>
-      <iron-collapse id="quarantinedBotsList">
+      <h4 on-click="toggleQuarantined"><iron-icon icon="[[_toggleQuarantinedIcon]]"></iron-icon> 😷 Quarantined ([[bots.quarantined.length]])</h4>
+      <iron-collapse id="quarantinedBotsList"  no-animation opened>
         <div><a target="_blank" href="https://chromium-swarm.appspot.com/botlist?f=status%3Aquarantined">Complete list</a></div><br>
         <template is="dom-repeat" items="[[bots.quarantined]]" as="bot">
           <span class="quarantined">
