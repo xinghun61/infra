@@ -105,24 +105,27 @@ CURRENTLY_RUNNING = gae_ts_mon.GaugeMetric(
     'buildbucket/builds/running',
     'Number of running builds',
     _string_fields('bucket'))
-LEASE_LATENCY = gae_ts_mon.NonCumulativeDistributionMetric(
+LEASE_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/builds/never_leased_duration',
     'Duration between a build is created and it is leased for the first time',
     _string_fields('bucket'),
     # Bucketer for 1s..24h range
-    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.05))
-SCHEDULING_LATENCY = gae_ts_mon.NonCumulativeDistributionMetric(
+    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.05),
+    units=gae_ts_mon.MetricsDataUnits.SECONDS)
+SCHEDULING_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/builds/scheduling_duration',
     'Duration of a build remaining in SCHEDULED state',
     _string_fields('bucket'),
     # Bucketer for 1s..48h range
-    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10**0.053))
+    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10**0.053),
+    units=gae_ts_mon.MetricsDataUnits.SECONDS)
 SEQUENCE_NUMBER_GEN_DURATION_MS = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/sequence_number/gen_duration',
     'Duration of a sequence number generation in ms',
     _string_fields('sequence'),
     # Bucketer for 1ms..5s range
-    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10**0.0374))
+    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10**0.0374),
+    units=gae_ts_mon.MetricsDataUnits.MILLISECONDS)
 TAG_INDEX_INCONSISTENT_ENTRIES = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/tag_index/inconsistent_entries',
     'Number of inconsistent entries encountered during build search',
@@ -149,7 +152,7 @@ def set_build_status_metric(metric, bucket, status):
 
 
 @ndb.tasklet
-def set_build_latency(metric, bucket, must_be_never_leased):
+def set_build_latency(metric_sec, bucket, must_be_never_leased):
   q = model.Build.query(
       model.Build.bucket == bucket,
       model.Build.status == model.BuildStatus.SCHEDULED,
@@ -167,15 +170,15 @@ def set_build_latency(metric, bucket, must_be_never_leased):
     dist.add(latency)
   if dist.count == 0:
     dist.add(0)
-  metric.set(dist, {'bucket': bucket}, target_fields=GLOBAL_TARGET_FIELDS)
+  metric_sec.set(dist, {'bucket': bucket}, target_fields=GLOBAL_TARGET_FIELDS)
 
 
 # Metrics that are per-app rather than per-instance.
 GLOBAL_METRICS = [
   CURRENTLY_PENDING,
   CURRENTLY_RUNNING,
-  LEASE_LATENCY,
-  SCHEDULING_LATENCY,
+  LEASE_LATENCY_SEC,
+  SCHEDULING_LATENCY_SEC,
 ]
 
 
@@ -188,8 +191,8 @@ def update_global_metrics():
           CURRENTLY_PENDING, b.name, model.BuildStatus.SCHEDULED),
       set_build_status_metric(
           CURRENTLY_RUNNING, b.name, model.BuildStatus.STARTED),
-      set_build_latency(LEASE_LATENCY, b.name, True),
-      set_build_latency(SCHEDULING_LATENCY, b.name, False),
+      set_build_latency(LEASE_LATENCY_SEC, b.name, True),
+      set_build_latency(SCHEDULING_LATENCY_SEC, b.name, False),
     ])
   for f in futures:
     f.check_success()

@@ -69,8 +69,8 @@ class MetricsTest(testing.AppengineTestCase):
       ),
     ])
     metrics.set_build_latency(
-      metrics.LEASE_LATENCY, 'chromium', True).get_result()
-    dist = metrics.LEASE_LATENCY.get(
+      metrics.LEASE_LATENCY_SEC, 'chromium', True).get_result()
+    dist = metrics.LEASE_LATENCY_SEC.get(
         {'bucket': 'chromium'},
         target_fields=metrics.GLOBAL_TARGET_FIELDS)
     self.assertEquals(dist.sum, 4.0 * 24 * 3600)  # 4 days

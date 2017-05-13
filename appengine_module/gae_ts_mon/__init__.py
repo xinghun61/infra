@@ -72,6 +72,7 @@ from infra_libs.ts_mon.common.metrics import CumulativeDistributionMetric
 from infra_libs.ts_mon.common.metrics import CumulativeMetric
 from infra_libs.ts_mon.common.metrics import FloatMetric
 from infra_libs.ts_mon.common.metrics import GaugeMetric
+from infra_libs.ts_mon.common.metrics import MetricsDataUnits
 from infra_libs.ts_mon.common.metrics import NonCumulativeDistributionMetric
 from infra_libs.ts_mon.common.metrics import StringMetric
 
