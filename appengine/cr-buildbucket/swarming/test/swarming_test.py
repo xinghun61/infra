@@ -804,23 +804,19 @@ class SwarmingTest(testing.AppengineTestCase):
   def test_update_build_success(self):
     cases = [
       {
-        'task_result': None,
-        'status': model.BuildStatus.COMPLETED,
-        'result': model.BuildResult.FAILURE,
-        'failure_reason': model.FailureReason.INFRA_FAILURE,
-      },
-      {
         'task_result': {
           'state': 'PENDING',
         },
         'status': model.BuildStatus.STARTED,
       },
+
       {
         'task_result': {
           'state': 'RUNNING',
         },
         'status': model.BuildStatus.STARTED,
       },
+
       {
         'task_result': {
           'state': 'COMPLETED',
@@ -828,6 +824,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.SUCCESS,
       },
+
       {
         'task_result': {
           'state': 'COMPLETED',
@@ -837,6 +834,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.BUILD_FAILURE,
       },
+
       {
         'task_result': {
           'state': 'COMPLETED',
@@ -847,6 +845,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
       },
+
       {
         'task_result': {
           'state': 'BOT_DIED',
@@ -855,6 +854,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
       },
+
       {
         'task_result': {
           'state': 'TIMED_OUT',
@@ -863,6 +863,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
       },
+
       {
         'task_result': {
           'state': 'EXPIRED',
@@ -871,6 +872,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'result': model.BuildResult.FAILURE,
         'failure_reason': model.FailureReason.INFRA_FAILURE,
       },
+
       {
         'task_result': {
           'state': 'CANCELED',
@@ -884,9 +886,7 @@ class SwarmingTest(testing.AppengineTestCase):
     for case in cases:
       build = model.Build(id=1, bucket='bucket')
       build.put()
-      swarming._sync_build_async(
-          build.key.id(), case['task_result']).get_result()
-      build = build.key.get()
+      swarming._update_build(build, case['task_result'])
       self.assertEqual(build.status, case['status'])
       self.assertEqual(build.result, case.get('result'))
       self.assertEqual(build.failure_reason, case.get('failure_reason'))
@@ -1141,7 +1141,7 @@ class CronUpdateTest(testing.AppengineTestCase):
       },
       swarming_hostname='chromium-swarm.appsot.com',
       swarming_task_id='deadeef',
-      status=model.BuildStatus.SCHEDULED,
+      status=model.BuildStatus.STARTED,
       lease_key=123,
       lease_expiration_date=utils.utcnow() + datetime.timedelta(minutes=5),
       leasee=auth.Anonymous,
@@ -1149,17 +1149,13 @@ class CronUpdateTest(testing.AppengineTestCase):
     self.build.put()
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
-  def test_sync_build_async(self, load_task_result_async):
-    build = self.build
-    cron = swarming.CronUpdateBuilds()
-    sync = lambda: cron.update_build_async(build).get_result()
-
-    self.assertEqual(build.status, model.BuildStatus.SCHEDULED)
+  def test_update_build_async(self, load_task_result_async):
     load_task_result_async.return_value = future({
       'state': 'RUNNING',
     })
-    sync()
-    sync()
+
+    build = self.build
+    swarming.CronUpdateBuilds().update_build_async(build).get_result()
     build = build.key.get()
     self.assertEqual(build.status, model.BuildStatus.STARTED)
     self.assertIsNotNone(build.lease_key)
@@ -1168,8 +1164,8 @@ class CronUpdateTest(testing.AppengineTestCase):
     load_task_result_async.return_value = future({
       'state': 'COMPLETED',
     })
-    sync()
-    sync()
+
+    swarming.CronUpdateBuilds().update_build_async(build).get_result()
     build = build.key.get()
     self.assertEqual(build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(build.result, model.BuildResult.SUCCESS)
@@ -1177,7 +1173,7 @@ class CronUpdateTest(testing.AppengineTestCase):
     self.assertIsNotNone(build.complete_time)
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
-  def test_sync_build_async_no_task(self, load_task_result_async):
+  def test_update_build_async_no_task(self, load_task_result_async):
     load_task_result_async.return_value = future(None)
 
     build = self.build
