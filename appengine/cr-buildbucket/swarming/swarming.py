@@ -604,8 +604,6 @@ def _sync_build_in_memory(build, result):
   state = None if result is None else result.get('state')
   if state is None:
     build.status = model.BuildStatus.COMPLETED
-    build.status_changed_time = now
-    build.complete_time = now
     build.result = model.BuildResult.FAILURE
     build.failure_reason = model.FailureReason.INFRA_FAILURE
     build.result_details = {
@@ -618,7 +616,6 @@ def _sync_build_in_memory(build, result):
   elif state == 'PENDING':
     build.status = model.BuildStatus.SCHEDULED
   elif state == 'RUNNING':
-    build.start_time = now
     build.status = model.BuildStatus.STARTED
   elif state in terminal_states:
     build.status = model.BuildStatus.COMPLETED
@@ -647,17 +644,20 @@ def _sync_build_in_memory(build, result):
 
   if build.status == old_status:  # pragma: no cover
     return False
+
   logging.info(
       'Build %s status: %s -> %s', build.key.id(), old_status, build.status)
   build.status_changed_time = now
-  if build.status == model.BuildStatus.COMPLETED:
+  if build.status == model.BuildStatus.STARTED:
+    build.start_time = now
+  elif build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
     logging.info('Build %s result: %s', build.key.id(), build.result)
     build.clear_lease()
     build.complete_time = now
     build.result_details = {
       'swarming': {
         'task_result': result,
-      }
+      },
     }
   return True
 

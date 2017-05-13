@@ -22,10 +22,27 @@ class MetricsTest(testing.AppengineTestCase):
 
   def test_set_build_status_metric(self):
     ndb.put_multi([
-      model.Build(bucket='chromium', status=model.BuildStatus.SCHEDULED),
-      model.Build(bucket='chromium', status=model.BuildStatus.SCHEDULED),
-      model.Build(bucket='v8', status=model.BuildStatus.SCHEDULED),
-      model.Build(bucket='chromium', status=model.BuildStatus.STARTED),
+      model.Build(
+          bucket='chromium',
+          status=model.BuildStatus.SCHEDULED,
+          create_time=datetime.datetime(2015, 1, 1),
+      ),
+      model.Build(
+          bucket='chromium',
+          status=model.BuildStatus.SCHEDULED,
+          create_time=datetime.datetime(2015, 1, 1),
+      ),
+      model.Build(
+          bucket='v8',
+          status=model.BuildStatus.SCHEDULED,
+          create_time=datetime.datetime(2015, 1, 1),
+      ),
+      model.Build(
+          bucket='chromium',
+          status=model.BuildStatus.STARTED,
+          create_time=datetime.datetime(2015, 1, 1),
+          start_time=datetime.datetime(2015, 1, 1),
+      ),
     ])
     metrics.set_build_status_metric(
         metrics.CURRENTLY_PENDING,
@@ -44,13 +61,13 @@ class MetricsTest(testing.AppengineTestCase):
           bucket='chromium',
           status=model.BuildStatus.SCHEDULED,
           never_leased=True,
-          create_time=datetime.datetime(2015, 1, 1)
+          create_time=datetime.datetime(2015, 1, 1),
       ),
       model.Build(
           bucket='chromium',
           status=model.BuildStatus.SCHEDULED,
           never_leased=True,
-          create_time=datetime.datetime(2015, 1, 3)
+          create_time=datetime.datetime(2015, 1, 3),
       ),
       model.Build(
           bucket='chromium',
@@ -58,9 +75,14 @@ class MetricsTest(testing.AppengineTestCase):
           result=model.BuildResult.CANCELED,
           cancelation_reason=model.CancelationReason.TIMEOUT,
           never_leased=True,
-          create_time=datetime.datetime(2015, 1, 3)
+          create_time=datetime.datetime(2015, 1, 3),
+          complete_time=datetime.datetime(2015, 1, 4),
       ),
-      model.Build(bucket='chromium', status=model.BuildStatus.SCHEDULED),
+      model.Build(
+          bucket='chromium',
+          status=model.BuildStatus.SCHEDULED,
+          create_time=datetime.datetime(2015, 1, 3),
+      ),
       model.Build(
           bucket='v8',
           status=model.BuildStatus.SCHEDULED,
@@ -69,7 +91,7 @@ class MetricsTest(testing.AppengineTestCase):
       ),
     ])
     metrics.set_build_latency(
-      metrics.LEASE_LATENCY_SEC, 'chromium', True).get_result()
+        metrics.LEASE_LATENCY_SEC, 'chromium', True).get_result()
     dist = metrics.LEASE_LATENCY_SEC.get(
         {'bucket': 'chromium'},
         target_fields=metrics.GLOBAL_TARGET_FIELDS)

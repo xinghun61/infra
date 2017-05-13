@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import json
-import os
 
 from google.appengine.ext import ndb
 
@@ -20,6 +20,7 @@ class NotificationsTest(testing.AppengineTestCase):
     build = model.Build(
         id=1,
         bucket='chromium',
+        create_time=datetime.datetime(2017, 1, 1),
         pubsub_callback=model.PubSubCallback(
             topic='projects/example/topic/buildbucket',
             user_data='hello',

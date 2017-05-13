@@ -882,7 +882,7 @@ class SwarmingTest(testing.AppengineTestCase):
     ]
 
     for case in cases:
-      build = model.Build(id=1, bucket='bucket')
+      build = model.Build(id=1, bucket='bucket', create_time=utils.utcnow())
       build.put()
       swarming._sync_build_async(1, case['task_result']).get_result()
       build = build.key.get()
@@ -975,6 +975,7 @@ class SubNotifyTest(testing.AppengineTestCase):
     build = model.Build(
         id=1,
         bucket='chromium',
+        create_time=utils.utcnow(),
         parameters={
           'builder_name': 'release'
         },
@@ -1135,6 +1136,8 @@ class CronUpdateTest(testing.AppengineTestCase):
     self.build = model.Build(
       id=1,
       bucket='bucket',
+      create_time=datetime.datetime(2017, 1, 1),
+      start_time=datetime.datetime(2017, 1, 1),
       parameters={
         'builder_name': 'release',
       },

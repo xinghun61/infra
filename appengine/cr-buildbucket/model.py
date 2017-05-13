@@ -156,18 +156,26 @@ class Build(ndb.Model):
   def _pre_put_hook(self):
     """Checks Build invariants before putting."""
     super(Build, self)._pre_put_hook()
+    is_started = self.status == BuildStatus.STARTED
     is_completed = self.status == BuildStatus.COMPLETED
-    assert (self.result is not None) == is_completed
     is_canceled = self.result == BuildResult.CANCELED
     is_failure = self.result == BuildResult.FAILURE
+    is_leased = self.lease_key is not None
+    assert (self.result is not None) == is_completed
     assert (self.cancelation_reason is not None) == is_canceled
     assert (self.failure_reason is not None) == is_failure
-    is_leased = self.lease_key is not None
     assert not (is_completed and is_leased)
     assert (self.lease_expiration_date is not None) == is_leased
     assert (self.leasee is not None) == is_leased
     # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
     assert not self.tags or all(':' in t for t in self.tags)  # pragma: no cover
+    assert self.create_time
+    assert (self.complete_time is not None) == is_completed
+    assert not is_started or self.start_time
+    assert not self.start_time or self.start_time >= self.create_time
+    assert not self.complete_time or self.complete_time >= self.create_time
+    assert (not self.complete_time or not self.start_time or
+            self.complete_time >= self.start_time)
 
   def regenerate_lease_key(self):
     """Changes lease key to a different random int."""

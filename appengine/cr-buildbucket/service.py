@@ -1252,9 +1252,11 @@ def _timeout_async(build_id):
     if not build or build.status == model.BuildStatus.COMPLETED:
       raise ndb.Return(False, build)  # pragma: no cover
 
+    now = utils.utcnow()
     build.clear_lease()
     build.status = model.BuildStatus.COMPLETED
-    build.status_changed_time = utils.utcnow()
+    build.complete_time = now
+    build.status_changed_time = now
     build.result = model.BuildResult.CANCELED
     build.cancelation_reason = model.CancelationReason.TIMEOUT
     yield build.put_async(), events.on_build_completing_async(build)
