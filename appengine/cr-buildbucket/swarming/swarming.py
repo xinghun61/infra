@@ -49,8 +49,8 @@ from proto import project_config_pb2
 from . import swarmingcfg as swarmingcfg_module
 import config
 import errors
+import events
 import model
-import notifications
 import protoutil
 import sequence
 
@@ -669,13 +669,25 @@ def _sync_build_async(build_id, result):
   @ndb.transactional_tasklet
   def txn_async():
     build = yield model.Build.get_by_id_async(build_id)
-    if build and _sync_build_in_memory(build, result):
-      yield build.put_async()
-      if build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
-        yield notifications.enqueue_callback_task_if_needed_async(build)
-      raise ndb.Return(build)
+    if build is None or not _sync_build_in_memory(build, result):
+      raise ndb.Return(None)
 
-  yield txn_async()
+    futures = [build.put_async()]
+
+    if build.status == model.BuildStatus.STARTED:
+      futures.append(events.on_build_starting_async(build))
+    elif build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
+      futures.append(events.on_build_completing_async(build))
+
+    yield futures
+    raise ndb.Return(build)
+
+  build = yield txn_async()
+  if build:
+    if build.status == model.BuildStatus.STARTED:
+      events.on_build_started(build)
+    elif build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
+      events.on_build_completed(build)
 
 
 class SubNotify(webapp2.RequestHandler):

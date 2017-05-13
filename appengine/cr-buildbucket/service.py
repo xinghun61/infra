@@ -23,9 +23,9 @@ from components import utils
 import acl
 import config
 import errors
+import events
 import metrics
 import model
-import notifications
 import swarming
 
 MAX_RETURN_BUILDS = 100
@@ -399,10 +399,7 @@ def add_many_async(build_request_list):
     yield ndb.put_multi_async(new_builds.values())
     memcache_sets = []
     for i, b in new_builds.iteritems():
-      logging.info(
-          'Build %s for bucket %s was created by %s',
-          b.key.id(), b.bucket, identity.to_bytes())
-      metrics.inc_created_builds(b)
+      events.on_build_created(b)
       results[i] = (b, None)
 
       r = build_request_list[i]
@@ -917,12 +914,10 @@ def lease(build_id, lease_expiration_date=None):
     build.put()
     return True, build
 
-  leased, build = try_lease()
-  if leased:
-    logging.info(
-        'Build %s was leased by %s', build.key.id(), build.leasee.to_bytes())
-    metrics.inc_leases(build)
-  return leased, build
+  updated, build = try_lease()
+  if updated:
+    events.on_build_leased(build)
+  return updated, build
 
 
 def _check_lease(build, lease_key):
@@ -932,29 +927,30 @@ def _check_lease(build, lease_key):
         build.key.id())
 
 
-@ndb.transactional
 def reset(build_id):
-  """Forcibly unleases the build and resets its state. Idempotent.
+  """Forcibly unleases the build and resets its state.
 
   Resets status, url and lease_key.
 
   Returns:
     The reset Build.
   """
-  build = _get_leasable_build(build_id)
-  if not acl.can_reset_build(build):
-    raise acl.current_identity_cannot('reset build %s', build.key.id())
-  if build.status == model.BuildStatus.COMPLETED:
-    raise errors.BuildIsCompletedError('Cannot reset a completed build')
-  build.status = model.BuildStatus.SCHEDULED
-  build.status_changed_time = utils.utcnow()
-  build.clear_lease()
-  build.url = None
-  build.put()
-  notifications.enqueue_callback_task_if_needed(build)
-  logging.info(
-      'Build %s was reset by %s',
-      build.key.id(), auth.get_current_identity().to_bytes())
+  @ndb.transactional
+  def txn():
+    build = _get_leasable_build(build_id)
+    if not acl.can_reset_build(build):
+      raise acl.current_identity_cannot('reset build %s', build.key.id())
+    if build.status == model.BuildStatus.COMPLETED:
+      raise errors.BuildIsCompletedError('Cannot reset a completed build')
+    build.status = model.BuildStatus.SCHEDULED
+    build.status_changed_time = utils.utcnow()
+    build.clear_lease()
+    build.url = None
+    _fut_results(build.put_async(), events.on_build_resetting_async(build))
+    return build
+
+  build = txn()
+  events.on_build_reset(build)
   return build
 
 
@@ -994,14 +990,12 @@ def start(build_id, lease_key, url=None):
     build.status = model.BuildStatus.STARTED
     build.status_changed_time = build.start_time
     build.url = url
-    build.put()
-    notifications.enqueue_callback_task_if_needed(build)
+    _fut_results(build.put_async(), events.on_build_starting_async(build))
     return True, build
 
   updated, build = txn()
   if updated:
-    logging.info('Build %s was started. URL: %s', build.key.id(), url)
-    metrics.inc_started_builds(build)
+    events.on_build_started(build)
   return build
 
 
@@ -1057,8 +1051,7 @@ def heartbeat_async(build_id, lease_key, lease_expiration_date):
   try:
     build = yield txn()
   except Exception as ex:
-    logging.warning('Heartbeat for build %s failed: %s', build_id, ex)
-    metrics.inc_heartbeat_failures(build)
+    events.on_heartbeat_failure(build_id, build, ex)
     raise
   raise ndb.Return(build)
 
@@ -1128,16 +1121,12 @@ def _complete(
       build.tags.extend(new_tags)
       build.tags = sorted(set(build.tags))
     build.clear_lease()
-    build.put()
-    notifications.enqueue_callback_task_if_needed(build)
+    _fut_results(build.put_async(), events.on_build_completing_async(build))
     return True, build
 
   updated, build = txn()
   if updated:
-    logging.info(
-        'Build %s was completed. Status: %s. Result: %s',
-        build.key.id(), build.status, build.result)
-    metrics.inc_completed_builds(build)
+    events.on_build_completed(build)
   return build
 
 
@@ -1208,8 +1197,7 @@ def cancel(build_id):
     build.cancelation_reason = model.CancelationReason.CANCELED_EXPLICITLY
     build.complete_time = now
     build.clear_lease()
-    build.put()
-    notifications.enqueue_callback_task_if_needed(build)
+    _fut_results(build.put_async(), events.on_build_completing_async(build))
     if build.swarming_hostname and build.swarming_task_id is not None:
       deferred.defer(
           swarming.cancel_task,
@@ -1221,17 +1209,14 @@ def cancel(build_id):
 
   updated, build = txn()
   if updated:
-    logging.info(
-        'Build %s was cancelled by %s', build.key.id(),
-        auth.get_current_identity().to_bytes())
-    metrics.inc_completed_builds(build)
+    events.on_build_completed(build)
   return build
 
 
 @ndb.tasklet
 def _reset_expired_build_async(build_id):
   @ndb.transactional_tasklet
-  def txn():
+  def txn_async():
     build = yield model.Build.get_by_id_async(build_id)
     if not build or build.lease_expiration_date is None:  # pragma: no cover
       raise ndb.Return(False, build)
@@ -1240,18 +1225,17 @@ def _reset_expired_build_async(build_id):
       raise ndb.Return(False, build)
 
     assert build.status != model.BuildStatus.COMPLETED, (
-      'Completed build is leased')
+        'Completed build is leased')
     build.clear_lease()
     build.status = model.BuildStatus.SCHEDULED
     build.status_changed_time = utils.utcnow()
     build.url = None
-    yield build.put_async()
+    yield build.put_async(), events.on_build_resetting_async(build)
     raise ndb.Return(True, build)
 
-  updated, build = yield txn()
+  updated, build = yield txn_async()
   if updated:  # pragma: no branch
-    logging.info('Expired build %s was reset', build_id)
-    metrics.inc_lease_expirations(build)
+    events.on_expired_build_reset(build)
 
 
 @ndb.tasklet
@@ -1268,16 +1252,13 @@ def _timeout_async(build_id):
     build.status_changed_time = utils.utcnow()
     build.result = model.BuildResult.CANCELED
     build.cancelation_reason = model.CancelationReason.TIMEOUT
-    yield (
-        build.put_async(),
-        notifications.enqueue_callback_task_if_needed_async(build))
+    yield build.put_async(), events.on_build_completing_async(build)
     raise ndb.Return(True, build)
 
   # This is the only yield in this function, but it is not performance-critical.
   updated, build = yield txn_async()
   if updated :  # pragma: no branch
-    logging.info('Build %s: timeout', build_id)
-    metrics.inc_completed_builds(build)
+    events.on_build_completed(build)
 
 
 def reset_expired_builds():
@@ -1301,7 +1282,7 @@ def reset_expired_builds():
   for key in q.iter(keys_only=True):
     futures.append(_timeout_async(key.id()))
 
-  ndb.Future.wait_all(futures)
+  _fut_results(*futures)
 
 
 def delete_many_builds(bucket, status, tags=None, created_by=None):
@@ -1462,3 +1443,7 @@ def _indexed_tags(tags):
       t for t in tags
       if t.startswith(('buildset:', 'build_address:'))
   ))
+
+
+def _fut_results(*futures):
+  return [f.get_result() for f in futures]

@@ -4,6 +4,7 @@
 
 import contextlib
 import datetime
+import json
 
 from components import auth
 from components import net
@@ -18,7 +19,6 @@ import acl
 import config
 import errors
 import model
-import notifications
 import service
 import swarming
 
@@ -1095,16 +1095,31 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   @contextlib.contextmanager
   def callback_test(self):
+    self.test_build.key = ndb.Key(model.Build, 1)
     self.test_build.pubsub_callback = model.PubSubCallback(
-      topic='projects/example/topic/buildbucket',
-      user_data='hello',
-      auth_token='secret',
+        topic='projects/example/topic/buildbucket',
+        user_data='hello',
+        auth_token='secret',
     )
     self.test_build.put()
     with mock.patch(
-        'notifications.enqueue_callback_task_if_needed', autospec=True) as enq:
+        'events.enqueue_task_async', autospec=True) as enq:
       yield
-      self.assertTrue(enq.called)
+      enq.assert_called_with(
+          'backend-default',
+          '/internal/task/buildbucket/notify/1',
+          json.dumps({
+            'topic': 'projects/example/topic/buildbucket',
+            'message': {
+              'build_id': '1',
+              'user_data': 'hello',
+            },
+            'attrs': {
+              'build_id': '1',
+              'auth_token': 'secret',
+            },
+          }, sort_keys=True),
+          model.BUILD_TIMEOUT.total_seconds())
 
   def test_start_creates_notification_task(self):
     self.lease()
