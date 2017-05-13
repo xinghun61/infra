@@ -615,7 +615,9 @@ def _sync_build_in_memory(build, result):
           (build.swarming_task_id, build.swarming_task_id)),
       }
     }
-  elif state in ('PENDING', 'RUNNING'):
+  elif state == 'PENDING':
+    build.status = model.BuildStatus.SCHEDULED
+  elif state == 'RUNNING':
     build.start_time = now
     build.status = model.BuildStatus.STARTED
   elif state in terminal_states:

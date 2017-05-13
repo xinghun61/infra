@@ -813,7 +813,7 @@ class SwarmingTest(testing.AppengineTestCase):
         'task_result': {
           'state': 'PENDING',
         },
-        'status': model.BuildStatus.STARTED,
+        'status': model.BuildStatus.SCHEDULED,
       },
       {
         'task_result': {
