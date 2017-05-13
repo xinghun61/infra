@@ -10,6 +10,7 @@ DEPS = [
   'depot_tools/gclient',
   'depot_tools/git',
   'depot_tools/gsutil',
+  'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/platform',
   'recipe_engine/properties',
@@ -52,7 +53,7 @@ def RunSteps(api):
   ).stdout.strip().split()
 
   start = api.time.time()
-  with api.step.context({'cwd': test_dir}):
+  with api.context(cwd=test_dir):
     step_result = api.step('isolate perf',
         [isolate, 'archive', '--verbose',
          # Fake server is listening on localhost in the same process and keeps
@@ -85,8 +86,8 @@ def build_isolate(api):
 
 
 def upload_isolate(api, isolate):
-  with api.step.context({'env': {
-      'DEPOT_TOOLS_GSUTIL_BIN_DIR': api.path['cache'].join('gsutil')}}):
+  with api.context(env={
+      'DEPOT_TOOLS_GSUTIL_BIN_DIR': api.path['cache'].join('gsutil')}):
     api.python(
         'upload go bin',
         api.depot_tools.upload_to_google_storage_path,

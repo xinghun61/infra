@@ -98,7 +98,7 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
     ]
     for extra_submodule in extra_submodules:
       deps2submodules_cmd.extend(['--extra-submodule', extra_submodule])
-    with self.m.step.context({'cwd': overlay_repo_dir}):
+    with self.m.context(cwd=overlay_repo_dir):
       self.m.step('deps2submodules', deps2submodules_cmd)
 
       # Check whether deps2submodules changed anything.

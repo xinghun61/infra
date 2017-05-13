@@ -11,6 +11,7 @@ DEPS = [
   'depot_tools/depot_tools',
   'depot_tools/gclient',
   'depot_tools/infra_paths',
+  'recipe_engine/context',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -46,7 +47,7 @@ def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber,
     env = {'GOOS': goos, 'GOARCH': goarch}
 
   # Build packages (don't upload them yet).
-  with api.step.context({'env': env}):
+  with api.context(env=env):
     api.python(
         'cipd - build packages' + step_suffix,
         api.path['checkout'].join('build', 'build.py'),
@@ -67,7 +68,7 @@ def build_cipd_packages(api, repo, rev, mastername, buildername, buildnumber,
     'git_revision:%s' % rev,
   ]
   try:
-    with api.step.context({'env': env}):
+    with api.context(env=env):
       return api.python(
           'cipd - upload packages' + step_suffix,
           api.path['checkout'].join('build', 'build.py'),
@@ -100,8 +101,8 @@ def build_luci(api):
 
   files = sorted(api.file.listdir('listing go bin', go_bin))
   absfiles = [api.path.join(go_bin, i) for i in files]
-  with api.step.context({'env': {
-      'DEPOT_TOOLS_GSUTIL_BIN_DIR': api.path['cache'].join('gsutil')}}):
+  with api.context(env={
+      'DEPOT_TOOLS_GSUTIL_BIN_DIR': api.path['cache'].join('gsutil')}):
     api.python(
         'upload go bin',
         api.depot_tools.upload_to_google_storage_path,
@@ -140,7 +141,7 @@ def RunSteps(api, mastername, buildername, buildnumber):
   rev = bot_update_step.presentation.properties['got_revision']
 
   with api.step.defer_results():
-    with api.step.context({'cwd': api.path['checkout']}):
+    with api.context(cwd=api.path['checkout']):
       # Run Linux tests everywhere, Windows tests only on public CI.
       if api.platform.is_linux or project_name == 'infra':
         api.python(

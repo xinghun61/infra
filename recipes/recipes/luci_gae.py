@@ -8,6 +8,7 @@ DEPS = [
   'depot_tools/git',
   'depot_tools/presubmit',
   'depot_tools/tryserver',
+  'recipe_engine/context',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
@@ -41,13 +42,13 @@ def _run_presubmit(api, patch_root, bot_update_step):
     '--upstream', upstream,
     '--rietveld_email', ''
   ]
-  with api.step.context({'env': {'PRESUBMIT_BUILDER': '1'}}):
+  with api.context(env={'PRESUBMIT_BUILDER': '1'}):
     api.python('presubmit', api.path['checkout'].join('go', 'env.py'),
                presubmit_cmd)
 
 
 def _commit_change(api, patch_root):
-  with api.step.context({'cwd': api.path['start_dir'].join(patch_root)}):
+  with api.context(cwd=api.path['start_dir'].join(patch_root)):
     api.git('-c', 'user.email=commit-bot@chromium.org',
             '-c', 'user.name=The Commit Bot',
             'commit', '-a', '-m', 'Committed patch',

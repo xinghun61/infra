@@ -16,6 +16,7 @@ DEPS = [
   'depot_tools/gitiles',
   'depot_tools/url',
   'build/file',
+  'recipe_engine/context',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -105,7 +106,7 @@ def PackageGitForUnix(api, workdir):
     # Set NO_INSTALL_HARDLINKS to avoid hard links in
     # <target_dir>/libexec/git-core/git-*
     # because CIPD does not support them. Use symlinks instead.
-    with api.step.context({'env': {'NO_INSTALL_HARDLINKS': 'VAR_PRESENT'}}):
+    with api.context(env={'NO_INSTALL_HARDLINKS': 'VAR_PRESENT'}):
       api.step('make configure', ['make', 'configure'])
       api.step('configure', ['./configure'])
       api.step('make install', ['make', 'install', 'prefix=%s' % target_dir])
@@ -171,7 +172,7 @@ def PackageGitForWindows(api, workdir):
   # instead of extracting it from the downloaded archive because we already have
   # to know too much about it (see below), so we have to break the API boundary
   # anyway.
-  with api.step.context({'cwd': package_dir}):
+  with api.context(cwd=package_dir):
     api.step(
       'post-install',
       [
@@ -274,7 +275,7 @@ def EnsurePackage(
   api.git.checkout(
       repo_url, ref='refs/tags/' + tag, dir_path=checkout_dir,
       submodules=False)
-  with api.step.context({'cwd': checkout_dir}):
+  with api.context(cwd=checkout_dir):
     install(package_dir)
 
   CreatePackage(api, package_name, workdir, package_dir, version)

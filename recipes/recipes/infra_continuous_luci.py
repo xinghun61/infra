@@ -12,6 +12,7 @@ staging and prod environments.
 DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
+  'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
@@ -25,7 +26,7 @@ def RunSteps(api):
   api.gclient.runhooks()
 
   with api.step.defer_results():
-    with api.step.context({'cwd': api.path['checkout']}):
+    with api.context(cwd=api.path['checkout']):
       api.python(
           'infra python tests',
           'test.py',

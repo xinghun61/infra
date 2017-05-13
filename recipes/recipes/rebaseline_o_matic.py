@@ -17,6 +17,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
+  'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
@@ -47,7 +48,7 @@ def RunSteps(api):
   api.git('config', 'user.name', 'Rebaseline Bot')
   api.git('config', 'user.email', 'blink-rebaseline-bot@chromium.org')
 
-  with api.step.context({'cwd': cwd}):
+  with api.context(cwd=cwd):
     api.python('webkit-patch auto-rebaseline',
                cwd.join('Tools', 'Scripts', 'webkit-patch'),
                ['auto-rebaseline', '--verbose',

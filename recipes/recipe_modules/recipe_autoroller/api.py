@@ -168,7 +168,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     self.m.git.checkout(
         project_data['repo_url'], dir_path=workdir, submodules=False)
 
-    with self.m.step.context({'cwd': workdir}):
+    with self.m.context(cwd=workdir):
       # Introduce ourselves to git - also needed for git cl upload to work.
       self.m.git('config', 'user.email', 'recipe-roller@chromium.org')
       self.m.git('config', 'user.name', 'recipe-roller')
@@ -215,7 +215,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
       # We're about to upload a new CL, so close the old one.
       # Pass --gerrit flag to match upload args below.
-      with self.m.step.context({'cwd': workdir}):
+      with self.m.context(cwd=workdir):
         self.m.git('cl', 'set-close',
                    '--issue', repo_data.issue,
                    '--gerrit',
@@ -325,6 +325,9 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       for commit in commits:
         cc_list.add(commit['author_email'])
     upload_args.append('--cc=%s' % ','.join(sorted(cc_list)))
+    upload_args.extend(['--bypass-hooks', '-f'])
+    upload_args.extend(['--gerrit'])
+    upload_args.extend([_AUTH_REFRESH_TOKEN_FLAG])
 
     commit_message = get_commit_message(roll_result)
 
@@ -334,13 +337,8 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     else:
       roll_step.presentation.status = self.m.step.FAILURE
 
-    with self.m.step.context({'cwd': workdir}):
+    with self.m.context(cwd=workdir):
       self.m.git('commit', '-a', '-m', 'roll recipes.cfg')
-
-    upload_args.extend(['--bypass-hooks', '-f'])
-    upload_args.extend(['--gerrit'])
-    upload_args.extend([_AUTH_REFRESH_TOKEN_FLAG])
-    with self.m.step.context({'cwd': workdir}):
       self.m.git_cl.upload(
           commit_message, upload_args, name='git cl upload')
       issue_step = self.m.git(
@@ -399,7 +397,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
     if repo_data.trivial:
       cat_result.presentation.step_text += ' (trivial)'
 
-    with self.m.step.context({'cwd': workdir}):
+    with self.m.context(cwd=workdir):
       # We need to explicitly pass --gerrit for git cl status --issue .
       # To keep things concistent, we also pass --gerrit for all other
       # git cl calls in the autoroller.

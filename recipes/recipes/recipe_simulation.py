@@ -9,6 +9,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
 
+  'recipe_engine/context',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
@@ -43,7 +44,7 @@ def RunSteps(api, project_under_test, auth_with_account):
       project_under_test)['repo_url']
   soln.revision = 'HEAD'
 
-  with api.step.context({'cwd': root_dir}):
+  with api.context(cwd=root_dir):
     api.bot_update.ensure_checkout(gclient_config=c)
 
   # TODO(martiniss): allow recipes.cfg patches to take affect

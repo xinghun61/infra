@@ -195,7 +195,7 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
     else:
       kwargs['patch'] = False
 
-    with self.m.step.context({'cwd': checkout_path}):
+    with self.m.context(cwd=checkout_path):
       self.m.bot_update.ensure_checkout(**kwargs)
     return checkout_path.join(proj)
 

@@ -6,6 +6,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
+  'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/platform',
   'recipe_engine/properties',
@@ -27,7 +28,7 @@ def RunSteps(api):
   api.bot_update.ensure_checkout(
     patch_root=project, patch_oauth2=internal, use_site_config_creds=False)
 
-  with api.step.context({'cwd': api.path['checkout']}):
+  with api.context(cwd=api.path['checkout']):
     api.git('-c', 'user.email=commit-bot@chromium.org',
             '-c', 'user.name=The Commit Bot',
             'commit', '-a', '-m', 'Committed patch',
@@ -36,7 +37,7 @@ def RunSteps(api):
   api.gclient.runhooks()
 
   # Grab a list of changed files.
-  with api.step.context({'cwd': api.path['checkout']}):
+  with api.context(cwd=api.path['checkout']):
     result = api.git(
         'diff', '--name-only', 'HEAD', 'HEAD~',
         name='get change list',
@@ -47,7 +48,7 @@ def RunSteps(api):
   is_deps_roll = 'DEPS' in files
 
   with api.step.defer_results():
-    with api.step.context({'cwd': api.path['checkout']}):
+    with api.context(cwd=api.path['checkout']):
       api.python('python tests', 'test.py', ['test', '--jobs', 1])
 
     if not internal:
@@ -82,7 +83,7 @@ def RunSteps(api):
 
     if api.platform.is_linux and (is_deps_roll or
         any(f.startswith('appengine/chromium_rietveld') for f in files)):
-      with api.step.context({'cwd': api.path['checkout']}):
+      with api.context(cwd=api.path['checkout']):
         api.step('rietveld tests',
                  ['make', '-C', 'appengine/chromium_rietveld', 'test'])
 

@@ -17,6 +17,7 @@ DEPS = [
   'depot_tools/gclient',
   'depot_tools/git',
   'depot_tools/gsutil',
+  'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/platform',
   'recipe_engine/properties',
@@ -35,7 +36,7 @@ def gsutil_upload(api, source, bucket, dest, args):
 def export_tarball(api, args, source, destination):
   try:
     temp_dir = api.path.mkdtemp('export_tarball')
-    with api.step.context({'cwd': temp_dir}):
+    with api.context(cwd=temp_dir):
       api.python(
           'export_tarball',
           api.chromium.resource('export_tarball.py'),
@@ -190,7 +191,7 @@ def RunSteps(api):
       with_branch_heads=True, with_tags=True, suffix=version)
 
   api.git('clean', '-dffx')
-  with api.step.context({'cwd': api.path['checkout']}):
+  with api.context(cwd=api.path['checkout']):
     api.gclient('sync', ['sync', '-D', '--nohooks'])
 
   api.step(

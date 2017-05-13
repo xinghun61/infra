@@ -22,6 +22,7 @@ DEPS = [
     'depot_tools/bot_update',
     'depot_tools/cipd',
     'build/file',
+    'recipe_engine/context',
     'recipe_engine/path',
     'recipe_engine/python',
     'recipe_engine/step',
@@ -64,7 +65,7 @@ def RunSteps(api):
   env = {
       'PATH': api.path.pathsep.join([str(prereq_dir), '%(PATH)s']),
   }
-  with api.step.context({'env': env}):
+  with api.context(env=env):
     api.python(
         'provision web deps',
         web_path.join('web.py'),

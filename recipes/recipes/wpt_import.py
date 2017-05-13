@@ -14,6 +14,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
+  'recipe_engine/context',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
@@ -52,7 +53,7 @@ def RunSteps(api):
       '/creds/refresh_tokens/blink-w3c-test-autoroller',
     ]
     try:
-      with api.step.context({'cwd': blink_dir}):
+      with api.context(cwd=blink_dir):
         api.python('update wpt', script, args)
     finally:
       git_cl_issue_link(api)
