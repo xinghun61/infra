@@ -578,7 +578,7 @@ def _load_task_result_async(
       impersonated_identity, hostname, 'task/%s/result' % task_id)
 
 
-def _update_build(build, result):
+def _sync_build_in_memory(build, result):
   """Syncs |build| state with swarming task |result|."""
   # Task result docs:
   # https://github.com/luci/luci-py/blob/985821e9f13da2c93cb149d9e1159c68c72d58da/appengine/swarming/server/task_result.py#L239
@@ -594,15 +594,28 @@ def _update_build(build, result):
   build.failure_reason = None
   build.cancelation_reason = None
 
-  state = result.get('state')
   terminal_states = (
     'EXPIRED',
     'TIMED_OUT',
     'BOT_DIED',
     'CANCELED',
-    'COMPLETED'
+    'COMPLETED',
   )
-  if state in ('PENDING', 'RUNNING'):
+  state = None if result is None else result.get('state')
+  if state is None:
+    build.status = model.BuildStatus.COMPLETED
+    build.status_changed_time = now
+    build.complete_time = now
+    build.result = model.BuildResult.FAILURE
+    build.failure_reason = model.FailureReason.INFRA_FAILURE
+    build.result_details = {
+      'error': {
+        'message': (
+          'Swarming task %s on %s unexpectedly disappeared' %
+          (build.swarming_task_id, build.swarming_task_id)),
+      }
+    }
+  elif state in ('PENDING', 'RUNNING'):
     build.start_time = now
     build.status = model.BuildStatus.STARTED
   elif state in terminal_states:
@@ -645,6 +658,22 @@ def _update_build(build, result):
       }
     }
   return True
+
+
+@ndb.tasklet
+def _sync_build_async(build_id, result):
+  """Syncs Build entity in the datastore with the task result."""
+
+  @ndb.transactional_tasklet
+  def txn_async():
+    build = yield model.Build.get_by_id_async(build_id)
+    if build and _sync_build_in_memory(build, result):
+      yield build.put_async()
+      if build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
+        yield notifications.enqueue_callback_task_if_needed_async(build)
+      raise ndb.Return(build)
+
+  yield txn_async()
 
 
 class SubNotify(webapp2.RequestHandler):
@@ -725,20 +754,8 @@ class SubNotify(webapp2.RequestHandler):
     assert build.parameters
 
     # Update build.
-    result = _load_task_result_async(
-        None, hostname, task_id).get_result()
-
-    @ndb.transactional
-    def txn(build_key):
-      build = build_key.get()
-      if build is None:  # pragma: no cover
-        return
-      if _update_build(build, result):  # pragma: no branch
-        build.put()
-        if build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
-          notifications.enqueue_callback_task_if_needed(build)
-
-    txn(build.key)
+    result = _load_task_result_async(None, hostname, task_id).get_result()
+    _sync_build_async(build_id, result).get_result()
 
   def stop(self, msg, *args, **kwargs):
     """Logs error and stops request processing.
@@ -775,42 +792,11 @@ class CronUpdateBuilds(webapp2.RequestHandler):
   def update_build_async(self, build):
     result = yield _load_task_result_async(
         None, build.swarming_hostname, build.swarming_task_id)
-
-    @ndb.transactional_tasklet
-    def txn(build_key):
-      build = yield build_key.get_async()
-      if build.status == model.BuildStatus.COMPLETED:  # pragma: no cover
-        return
-
-      need_put = False
-      if not result:
-        logging.error(
-            'Task %s/%s referenced by build %s is not found',
-            build.swarming_hostname, build.swarming_task_id, build.key.id())
-        build.status = model.BuildStatus.COMPLETED
-        now = utils.utcnow()
-        build.status_changed_time = now
-        build.complete_time = now
-        build.result = model.BuildResult.FAILURE
-        build.failure_reason = model.FailureReason.INFRA_FAILURE
-        build.result_details = {
-          'error': {
-            'message': (
-              'Swarming task %s on server %s unexpectedly disappeared' %
-              (build.swarming_task_id, build.swarming_task_id)),
-          }
-        }
-        build.clear_lease()
-        need_put = True
-      else:
-        need_put = _update_build(build, result)
-
-      if need_put:  # pragma: no branch
-        yield build.put_async()
-        if build.status == model.BuildStatus.COMPLETED:  # pragma: no branch
-          yield notifications.enqueue_callback_task_if_needed_async(build)
-
-    yield txn(build.key)
+    if not result:
+      logging.error(
+          'Task %s/%s referenced by build %s is not found',
+          build.swarming_hostname, build.swarming_task_id, build.key.id())
+    yield _sync_build_async(build.key.id(), result)
 
   @decorators.require_cronjob
   def get(self):  # pragma: no cover
