@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from recipe_engine.recipe_api import Property, context
+from recipe_engine.recipe_api import Property
 
 DEPS = [
   'depot_tools/bot_update',
@@ -86,7 +86,7 @@ def RunSteps(api, presubmit, GOARCH):
   if GOARCH is not None:
     env['GOARCH'] = GOARCH
 
-  with context({'env': env}):
+  with api.context(env=env):
     # This downloads the third parties, so that the next step doesn't have junk
     # output in it.
     api.python(
