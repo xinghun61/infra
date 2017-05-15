@@ -762,6 +762,7 @@ def _tag_index_search(
   last_considered_entry = None
   skipped_entries = 0
   inconsistent_entries = 0
+  eof = False
   while len(result) < max_builds and entry_index >= 0:
     fetch_count = max_builds - len(result)
     entries_to_fetch = [] # ordered by build id by ascending.
@@ -784,7 +785,8 @@ def _tag_index_search(
         break
 
     if not entries_to_fetch:
-      break # EOF
+      eof = True
+      break
 
     build_keys = [ndb.Key(model.Build, e.build_id) for e in entries_to_fetch]
     for e, b in zip(entries_to_fetch, ndb.get_multi(build_keys)):
@@ -801,6 +803,7 @@ def _tag_index_search(
         skipped_entries += 1
         continue
       result.append(b)
+
   metrics.TAG_INDEX_SEARCH_SKIPPED_BUILDS.add(
       skipped_entries, fields={'tag': indexed_tag_key})
   metrics.TAG_INDEX_INCONSISTENT_ENTRIES.add(
@@ -808,7 +811,7 @@ def _tag_index_search(
 
   # Return the results.
   next_cursor = None
-  if last_considered_entry:  # pragma: no branch
+  if not eof and last_considered_entry:
     next_cursor = 'id>%d' % last_considered_entry.build_id
   return result, next_cursor
 
