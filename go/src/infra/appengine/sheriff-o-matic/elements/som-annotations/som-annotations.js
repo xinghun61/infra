@@ -332,7 +332,7 @@
 
     _saveBug: function() {
       // TODO(add proper error handling)
-      let data = {bugs: [this.$.bug.value]};
+      let data = {bugs: [this.$.bug.value.trim()]};
       if (this.$.autosnooze.checked) {
         data.snoozeTime = Date.now() + ONE_MIN_MS * this._defaultSnoozeTime;
       }
