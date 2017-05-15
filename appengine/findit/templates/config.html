@@ -31,7 +31,7 @@
       <a href="/waterfall/config?version={{ version - 1 }}">Previous</a>
     {% endif %}
     {% if version != latest_version %}
-      <a href="/waterfall/config?version={{ version - 1 }}">Next</a>
+      <a href="/waterfall/config?version={{ version + 1 }}">Next</a>
       <a href="/waterfall/config">Latest</a>
       <div style="color:red;font-weight:bold">Note: not latest version!</div>
     {% endif %}
