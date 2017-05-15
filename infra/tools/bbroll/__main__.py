@@ -13,11 +13,15 @@ To roll canary kitchen to the latest:
 """
 
 import argparse
+import collections
+import contextlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 
 THIS_DIR = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
 INFRA_REPO_ROOT = os.path.abspath(os.path.join(THIS_DIR, '..', '..', '..'))
@@ -25,11 +29,42 @@ INFRA_REPO_ROOT = os.path.abspath(os.path.join(THIS_DIR, '..', '..', '..'))
 PROD_TEMPLATE_FILENAME = 'swarming_task_template.json'
 CANARY_TEMPLATE_FILENAME = 'swarming_task_template_canary.json'
 
-KITCHEN_CIPD_PACKAGE_PREFIX = 'infra/tools/luci/kitchen/'
-KITCHEN_PIN_NAME = KITCHEN_CIPD_PACKAGE_PREFIX + '${platform}'
-INFRA_CHANGES_UNKNOWN = 'infra.git changes are unknown'
+_PinConfig = collections.namedtuple('_PinConfig', (
+    'package_base', 'platform', 'infra_relpath'))
 
-FNULL = open(os.devnull, 'w')
+_PINS = collections.OrderedDict()
+_PINS['kitchen'] = _PinConfig(
+    package_base='infra/tools/luci/kitchen/',
+    platform=True,
+    infra_relpath='go/src/infra/tools/kitchen',
+)
+_PINS['vpython'] = _PinConfig(
+    package_base='infra/tools/luci/vpython/',
+    platform=True,
+    infra_relpath='go/src/infra/tools/vpython',
+)
+_PINS['git'] = _PinConfig(
+    package_base='infra/tools/git/',
+    platform=True,
+    infra_relpath='go/src/infra/tools/git',
+)
+
+# NOTE: This should be kept in sync with "cipd_all_targets" from:
+# https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/infra_platform.py
+#
+# Current version was cut from: df3fabbcf94016a8a37b74014bb4604e55faa577
+VERIFY_PLATFORMS = set('%s-%s' % parts for parts in (
+    ('linux', '386'),
+    ('linux', 'amd64'),
+    ('linux', 'arm64'),
+    ('linux', 'armv6l'),
+    ('linux', 'mips64'),
+    ('mac', 'amd64'),
+    ('windows', '386'),
+    ('windows', 'amd64'),
+))
+
+INFRA_CHANGES_UNKNOWN = 'infra.git changes are unknown'
 
 # Most of this code expects CWD to be the git directory containing
 # swarmbucket template files.
@@ -46,19 +81,26 @@ def roll_prod(_args):
     print('prod and canary template files are identical')
     return 1
 
-  canary_kitchen_ver = get_kitchen_version(json.loads(canary_template_contents))
-  prod_kitchen_ver = get_kitchen_version(json.loads(prod_template_contents))
-  if canary_kitchen_ver == prod_kitchen_ver:
-    kitchen_changes = 'kitchen version is the same'
-  else:
-    kitchen_changes = 'kitchen version %s -> %s\n\n%s\n' % (
-        prod_kitchen_ver,
-        canary_kitchen_ver,
-        get_kitchen_changes(prod_kitchen_ver, canary_kitchen_ver))
+  canary_template = json.loads(canary_template_contents)
+  prod_template = json.loads(prod_template_contents)
+
+  changes = []
+  for pin_name, pin in _PINS.iteritems():
+    canary_ver = get_version(pin, canary_template)
+    prod_ver = get_version(pin, prod_template)
+    if canary_ver == prod_ver:
+      changes += ['%s version is the same' % (pin_name,)]
+    else:
+      changes += ['%s version %s -> %s\n\n%s\n' % (
+          pin_name,
+          prod_ver,
+          canary_ver,
+          get_changes(pin, prod_ver, canary_ver))]
 
   # Talk to user.
   print('rolling canary to prod')
-  print(kitchen_changes)
+  for change in changes:
+    print(change)
   print(
       'canary was committed %s' %
       git('log', '-1', '--format=%cr', CANARY_TEMPLATE_FILENAME))
@@ -80,36 +122,39 @@ def roll_prod(_args):
        '\n'
        'Promote current canary template @ %s to production\n'
        '\n'
-       '%s') % (cur_commit, kitchen_changes))
+       '%s') % (cur_commit, '\n'.join(changes)))
   return 0
 
 
-def roll_canary_kitchen(args):
-  """Changes kitchen version in the canary template."""
+def roll_canary(args):
+  """Changes pin version in the canary template."""
+  pin_name = args.pin
+  pin = _PINS[pin_name]
+
   # Read current version.
   with open(CANARY_TEMPLATE_FILENAME) as f:
     contents = f.read()
   template = json.loads(contents)
-  cur_ver = get_kitchen_version(template)
+  cur_ver = get_version(pin, template)
   if not cur_ver:
-    print('could not find kitchen pin in the template!')
+    print('could not find %s pin in the template!' % (pin_name,))
     return 1
 
   # Read new version.
   new_rev = args.git_revision
   if new_rev:
-    err = validate_kitchen_git_revision(new_rev)
+    err = validate_git_revision(new_rev, pin)
     if err:
       print('git revision %s is bad. CIPD output:' % new_rev)
       print(err)
       return 1
   else:
-    print('looking for built kitchen packages for recent commits...')
-    new_rev = get_latest_kitchen_package_git_revision()
+    print('looking for built %s packages for recent commits...' % (pin_name,))
+    new_rev = get_latest_package_git_revision(pin)
     if not new_rev:
       print('could not find a good candidate')
       return 1
-    print('latest kitchen package version is git_revision:%s' % new_rev)
+    print('latest %s package version is git_revision:%s' % (pin_name, new_rev))
 
   new_ver = 'git_revision:' + new_rev
   if cur_ver == new_ver:
@@ -117,13 +162,15 @@ def roll_canary_kitchen(args):
     return 1
 
   # Read changes.
-  kitchen_changes = get_kitchen_changes(cur_ver, new_ver)
-  assert kitchen_changes
+  changes = get_changes(pin, cur_ver, new_ver)
+  if not changes:
+    print 'no changes detected between %s and %s' % (cur_ver, new_ver)
+    return 1
 
   # Talk to the user.
-  print('rolling canary kitchen version %s -> %s' % (cur_ver, new_ver))
+  print('rolling canary %s version %s -> %s' % (pin_name, cur_ver, new_ver))
   print
-  print kitchen_changes
+  print changes
   print
   # TODO(nodir): replace builder URLs with a monitoring link.
   print(
@@ -132,7 +179,9 @@ def roll_canary_kitchen(args):
   print(
       'check builds in https://luci-milo-dev.appspot.com/buildbucket/'
       'luci.infra.continuous/infra-continuous-trusty-64')
-  if raw_input('does kitchen at TOT look good? [N/y]: ').lower() != 'y':
+
+  message = 'does %s at TOT look good? [N/y]: ' % (pin_name,)
+  if raw_input(message).lower() != 'y':
     print('please fix it first')
     return 1
 
@@ -141,7 +190,7 @@ def roll_canary_kitchen(args):
   # Assume package name goes before version.
   pattern = (
     r'(package_name": "%s[^}]+version": ")[^"]+(")' %
-    re.escape(KITCHEN_PIN_NAME))
+    re.escape(get_package_name(pin)))
   match_count = len(re.findall(pattern, contents))
   if match_count != 1:
     print(
@@ -160,26 +209,40 @@ def roll_canary_kitchen(args):
     f.write(updated_contents)
 
   make_commit(
-      ('cr-buildbucket: roll canary kitchen @ %s\n'
+      ('cr-buildbucket: roll canary %(pin_name)s @ %(new_rev_short)s\n'
        '\n'
-       'Roll canary kitchen to %s\n'
+       'Roll canary %(pin_name)s to %(new_rev)s\n'
        '\n'
-       'Kitchen change log:\n'
-       '%s') % (new_rev[:9], new_rev, kitchen_changes)
+       '%(pin_name)s change log:\n'
+       '%(changes)s') % {
+         'pin_name': pin_name,
+         'new_rev_short': new_rev[:9],
+         'new_rev': new_rev,
+         'changes': changes,
+      }
   )
   return 0
 
 
-def get_kitchen_version(template):
-  """Retrieves version of the kitchen pin in the task template."""
+def get_package_name(pin, platform=None):
+  """Returns the CIPD package name for a pin."""
+  name = pin.package_base
+  if pin.platform:
+    name += platform or '${platform}'
+  return name
+
+
+def get_version(pin, template):
+  """Retrieves version of the pin in the task template."""
+  package_name = get_package_name(pin)
   for pkg in template['properties']['cipd_input']['packages']:
-    if pkg['package_name'] == KITCHEN_PIN_NAME:
+    if pkg['package_name'] == package_name:
       return pkg['version']
   return None
 
 
-def get_latest_kitchen_package_git_revision():
-  """Returns a value of git_revision tag of the latest kitchen packages."""
+def get_latest_package_git_revision(pin):
+  """Returns a value of git_revision tag of the latest pin packages."""
   git('-C', INFRA_REPO_ROOT, 'fetch', 'origin')
   print  # Print empty line after git-fetch output
 
@@ -187,13 +250,12 @@ def get_latest_kitchen_package_git_revision():
   # CIPD packages further than 100 commits ago.
   log = git('-C', INFRA_REPO_ROOT, 'log', '-100', '--format=%H')
   for commit in log.splitlines():
-    err = validate_kitchen_git_revision(commit)
-    if not err:
+    if not validate_git_revision(commit, pin):
       return commit
   return None
 
 
-def get_kitchen_changes(ver1, ver2):
+def get_changes(pin, ver1, ver2):
   """Returns a description of changes between two versions.
 
   If there were no changes, returns None.
@@ -211,31 +273,68 @@ def get_kitchen_changes(ver1, ver2):
     '--no-merges',
     '--format=%ad %ae %s',
     '%s..%s' % (rev1, rev2),
-    # Here we assume that kitchen binary contents changes when files in these
-    # directories changes.
+    # Here we assume that binary contents changes when files in these
+    # directories change.
     # This avoids most of unrelated changes in the change log.
     'DEPS',
     'go/deps.lock',
-    'go/src/infra/tools/kitchen',
   ]
+  if pin.infra_relpath:
+    args += [pin.infra_relpath]
+
   changes = git('-C', INFRA_REPO_ROOT, *args)
   if not changes:
     return None
   return '$ git %s\n%s' % (' '.join(args), changes)
 
 
-def validate_kitchen_git_revision(git_revision):
-  """Returns CIPD output if git_revision is invalid, otherwise returns ''."""
+@contextlib.contextmanager
+def tempdir():
+  """Creates and returns a temporary directory, deleting it on exit."""
+  path = tempfile.mkdtemp(suffix='bbroll')
   try:
+    yield path
+  finally:
+    shutil.rmtree(path)
+
+
+def validate_git_revision(git_revision, pin):
+  """
+  Returns a non-empty string of error text if git_revision is invalid,
+  otherwise returns None.
+  """
+
+  with tempdir() as tdir:
+    resolved_path = os.path.join(tdir, 'resolve.json')
+
+    # Since this process will return a non-zero exit code if the resolution
+    # was incomplete, we determine correctness by examining the output JSON,
+    # not the exit code.
     cmdline = [
       'cipd',
-      'resolve', KITCHEN_CIPD_PACKAGE_PREFIX,
+      'resolve', pin.package_base,
       '-version', 'git_revision:' + git_revision,
+      '-json-output', resolved_path,
     ]
-    subprocess.check_call(cmdline, stdout=FNULL, stderr=FNULL)
-    return ''
-  except subprocess.CalledProcessError as ex:
-    return ex.output
+    proc = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+    stdout, _ = proc.communicate()
+
+    try:
+      with open(resolved_path, 'r') as fd:
+        resolved = json.load(fd)
+    except IOError:
+      return 'CIPD did not produce a JSON:\n%s' % (stdout,)
+
+  resolved = resolved.get('result', {}).get('') or []
+  resolved = set(entry['package'] for entry in resolved
+                 if entry.get('pin'))
+  packages = set([pin.package_base + plat for plat in VERIFY_PLATFORMS]
+                 if pin.platform else [pin.package_base])
+  missing = packages.difference(resolved)
+  if missing:
+    return 'unresolved packages: %s' % (', '.join(sorted(missing)),)
+  return ''
 
 
 def make_commit(commit_message):
@@ -269,13 +368,14 @@ def main(argv):
   canary = subparsers.add_parser(
       'canary',
       help='Roll swarming_task_template_canary.json')
-  canary_kitchen = canary.add_subparsers().add_parser(
-      'kitchen',
-      help='Roll kitchen version in swarming_task_template_canary.json')
-  canary_kitchen.add_argument(
+  canary.add_argument(
+      'pin',
+      choices=_PINS.keys(),
+      help='The name of the pin to roll.')
+  canary.add_argument(
       '--git-revision',
-      help='git revision of kitchen. Defaults to latest.')
-  canary_kitchen.set_defaults(func=roll_canary_kitchen)
+      help='git revision of the pin. Defaults to latest.')
+  canary.set_defaults(func=roll_canary)
 
   args = parser.parse_args(argv)
 
