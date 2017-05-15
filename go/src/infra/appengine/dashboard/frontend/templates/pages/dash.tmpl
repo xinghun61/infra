@@ -61,6 +61,15 @@
   tr {
     height: 30px;
   }
+  .tree-banner{
+    padding: 5px;
+  }
+  .tree-open {
+    background-color: #8FDF5F;
+  }
+  .tree-closed {
+    background-color: #E98080;
+  }
 </style>
 <link rel="stylesheet" type="text/css" href="/static/icons.css">
 <div class="container">
@@ -68,6 +77,10 @@
     Chrome Operations Status Dashboard
   </header>
   <main>
+    <div class="tree-banner js-tree">
+      <p class="js-tree-status"></p>
+      <a class="js-tree-message" href="https://infra-status.appspot.com"></a>
+    </div>
     <p class="left-align subtext">All dates shown are using the local timezone</p>
     <p class="key subtext left-align">
       <i class="green circle"></i>No issues<br/>
@@ -138,9 +151,12 @@
   </main>
 </div>
 <script src="/static/add-incidents.js"></script>
+<script src="/static/tree-status.js"></script>
 <script>
   (function() {
     const RELOAD_TIME_MS = 5*60*1000;
+    let status = new window.__StatusFetcher();
+    status.fetch();
     window.__addIncidents({{.}});
     window.setTimeout(() => {
       window.location.reload();
