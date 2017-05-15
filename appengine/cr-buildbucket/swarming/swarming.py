@@ -728,7 +728,7 @@ class SubNotify(webapp2.RequestHandler):
       self.stop('created_ts in userdata is invalid: %s', ex)
 
     build_id = userdata.get('build_id')
-    if not isinstance(build_id, int):
+    if not isinstance(build_id, (int, long)):
       self.stop('invalid build_id %r', build_id)
 
     task_id = data.get('task_id')

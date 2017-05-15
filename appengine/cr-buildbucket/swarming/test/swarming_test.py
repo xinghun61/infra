@@ -360,7 +360,7 @@ class SwarmingTest(testing.AppengineTestCase):
       'pubsub_userdata': json.dumps({
         'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
         'swarming_hostname': 'chromium-swarm.appspot.com',
-        'build_id': 1,
+        'build_id': 1L,
       }, sort_keys=True),
       'numerical_value_for_coverage_in_format_obj': 42,
     }
@@ -546,7 +546,7 @@ class SwarmingTest(testing.AppengineTestCase):
       'pubsub_userdata': json.dumps({
         'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
         'swarming_hostname': 'chromium-swarm.appspot.com',
-        'build_id': 1,
+        'build_id': 1L,
       }, sort_keys=True),
       'numerical_value_for_coverage_in_format_obj': 42,
     }
@@ -909,7 +909,7 @@ class SubNotifyTest(testing.AppengineTestCase):
           'userdata': json.dumps({
             'created_ts': 1448841600000000,
             'swarming_hostname': 'chromium-swarm.appspot.com',
-            'build_id': 1,
+            'build_id': 1L,
           })
         })
       }),
@@ -989,7 +989,7 @@ class SubNotifyTest(testing.AppengineTestCase):
         'data': b64json({
           'task_id': 'deadbeef',
           'userdata': json.dumps({
-            'build_id': 1,
+            'build_id': 1L,
             'created_ts': 1448841600000000,
             'swarming_hostname': 'chromium-swarm.appspot.com',
           })
@@ -1025,7 +1025,7 @@ class SubNotifyTest(testing.AppengineTestCase):
         'data': b64json({
           'task_id': 'deadbeef',
           'userdata': json.dumps({
-            'build_id': 1,
+            'build_id': 1L,
             'created_ts': 1448841600000000,
             'swarming_hostname': 'chromium-swarm.appspot.com.au',
           })
@@ -1054,7 +1054,7 @@ class SubNotifyTest(testing.AppengineTestCase):
         'data': b64json({
           'task_id': 'deadbeefffffffffff',
           'userdata': json.dumps({
-            'build_id': 1,
+            'build_id': 1L,
             'created_ts': 1448841600000000,
             'swarming_hostname': 'chromium-swarm.appspot.com',
           })
@@ -1070,7 +1070,7 @@ class SubNotifyTest(testing.AppengineTestCase):
       'message': {
         'data': b64json({
           'userdata': json.dumps({
-            'build_id': 1,
+            'build_id': 1L,
             'created_ts': 1448841600000000,
             'swarming_hostname': 'chromium-swarm.appspot.com',
           })
@@ -1099,7 +1099,7 @@ class SubNotifyTest(testing.AppengineTestCase):
     userdata = {
       'created_ts': 1448841600000000,
       'swarming_hostname': 'chromium-swarm.appspot.com',
-      'build_id': 1,
+      'build_id': 1L,
     }
     msg_data = {
       'task_id': 'deadbeef',
