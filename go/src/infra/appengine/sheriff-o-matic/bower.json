@@ -39,7 +39,6 @@
     "paper-checkbox": "PolymerElements/paper-checkbox#^1.2.0",
     "iron-a11y-keys": "^1.0.6",
     "iron-localstorage": "^1.0.6",
-    "paper-ripple": "PolymerElements/paper-ripple#^1.0.9",
     "paper-radio-group": "PolymerElements/paper-radio-group#^1.2.1",
     "paper-radio-button": "PolymerElements/paper-radio-button#^1.2.1",
     "moment": "^2.17.1",

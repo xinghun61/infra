@@ -4,7 +4,6 @@
 <link rel="import" href="../../bower_components/iron-icons/editor-icons.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/paper-button/paper-button.html">
-<link rel="import" href="../../bower_components/paper-ripple/paper-ripple.html">
 <link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 
 <link rel="import" href="../../elements/som-extension-build-failure/som-extension-build-failure.html">
@@ -85,6 +84,9 @@
      .alert-radio paper-radio-button {
        --paper-radio-button-size: 12px;
        padding: 4px;
+     }
+     .no-toggle {
+       cursor: default;
      }
      .file-bug-icon,
      .snooze-icon,
@@ -175,14 +177,12 @@
     </style>
     <div id="root" class$="[[_cssClass]]">
       <div class="alert-title-bar horizontal layout justified" on-tap="toggle">
-        <paper-ripple>
-        </paper-ripple>
         <div class="horizontal layout wrap">
           <div class="layout horizontal flex-child">
             <div class="alert-title self-center">
-              <template is="dom-if" if="[[_hasUngroup]]">
+              <template is="dom-if" if="[[_hasUngroup]]" >
                 <iron-a11y-keys target="[[_groupNameInput]]" keys="enter" on-keys-pressed="_updateGroupName"></iron-a11y-keys>
-                <paper-input id="groupName" value="[[alert.title]]"></paper-input>
+                <paper-input id="groupName" value="[[alert.title]]" class="no-toggle"></paper-input>
               </template>
               <template is="dom-if" if="[[!_hasUngroup]]">
                 <span id="snoozeTitle" hidden="[[!annotation.snoozed]]">Snoozed ([[_snoozeTimeLeft]]): </span>
@@ -195,7 +195,7 @@
           </div>
           <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links self-center flex">
             <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
-              <div class="bug">
+              <div class="bug no-toggle">
                 <a target="_blank" href="[[_bugUrl(bug)]]">[[_bugLabel(bug)]]</a>
                 [[_bugSummary(bug, annotation.bugData)]]
                 <paper-icon-button icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></paper-icon-button>

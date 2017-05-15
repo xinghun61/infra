@@ -318,7 +318,7 @@
       let path = evt.path;
       for (let i = 0; i < path.length; i++) {
         let itm = path[i];
-        if (itm.classList && itm.classList.contains('bug')) {
+        if (itm.classList && itm.classList.contains('no-toggle')) {
           // Clicking on a bug shouldn't affect toggled state.
           return;
         }
