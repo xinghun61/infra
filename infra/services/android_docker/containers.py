@@ -216,10 +216,24 @@ class Container(object):
       else:
         logging.info('Sent SIGTERM to swarming bot of %s.', self.name)
 
+  def _make_dev_file_cmd(self, path, major, minor):
+    cmd = """
+        mknod %(path)s c %(major)d %(minor)d && \
+        chgrp chrome-bot %(path)s && \
+        chmod 664 %(path)s
+    """ % {
+        'major': major,
+        'minor': minor,
+        'path': path,
+    }
+    return cmd
+
   def add_device(self, device, sleep_time=1.0):
     # Remove the old dev file from the container and wait one second to
     # help ensure any wait-for-device threads inside notice its absence.
     self._container.exec_run('rm -rf /dev/bus')
+    if device.battor is not None:
+      self._container.exec_run('rm %s' % device.battor.tty_path)
     time.sleep(sleep_time)
 
     # Pause the container while modifications to its cgroup are made. This
@@ -245,10 +259,13 @@ class Container(object):
         return
       try:
         os.write(cgroup_fd, 'c %d:%d rwm' % (device.major, device.minor))
+        if device.battor is not None:
+          os.write(cgroup_fd,
+                   'c %d:%d rwm' % (device.battor.major, device.battor.minor))
       except OSError:
         logging.exception(
-            'Unable to write device %s to cgroup whitelist %s.',
-            device, path_to_cgroup)
+            'Unable to write to cgroup %s of %s\'s container.',
+            path_to_cgroup, device)
         return
       finally:
         os.close(cgroup_fd)
@@ -261,19 +278,43 @@ class Container(object):
 
     # In-line these mutliple commands to help avoid a race condition in adb
     # that gets in a stuck state when polling for devices half-way through.
+    battor_cmd = "true"  # No-op default command.
+    if device.battor is not None:
+      # The following command creates the battor's dev file in the container.
+      # It also updates the device's entry in the udev database by simulating
+      # the ADD udev event for the device via the udevadm tool, populating all
+      # of its ID_* fields. This is needed because udev events of devices
+      # aren't propagated into the containers, and some tests scan for devices
+      # by looking up various udev properties (e.g. chromium's src/device/serial
+      # library.)
+      battor_mknod_cmd = self._make_dev_file_cmd(
+          device.battor.tty_path, device.battor.major, device.battor.minor)
+      battor_cmd = """
+          %(make_dev_file_cmd)s && \
+          udevadm test %(syspath)s
+      """ % {
+          'make_dev_file_cmd': battor_mknod_cmd,
+          'syspath': device.battor.syspath,
+      }
+
+    device_mknod_cmd = self._make_dev_file_cmd(
+        device.dev_file_path, device.major, device.minor)
     add_device_cmd = """
         /bin/bash -c "mkdir -p /dev/bus/usb/%(bus)03d && \
-                      mknod %(dev_file_path)s c %(major)d %(minor)d && \
-                      chgrp chrome-bot %(dev_file_path)s && \
-                      chmod 664 %(dev_file_path)s"
+                      %(make_dev_file_cmd)s && \
+                      %(battor_cmd)s"
     """ % {
         'bus': device.bus,
-        'dev_file_path': device.dev_file_path,
-        'major': device.major,
-        'minor': device.minor,
+        'battor_cmd': battor_cmd,
+        'make_dev_file_cmd': device_mknod_cmd,
     }
     self._container.exec_run(add_device_cmd)
 
     logging.debug('Successfully gave container %s access to device %s. '
                   '(major,minor): (%d,%d) at %s.', self._container.name, device,
                   device.major, device.minor, device.dev_file_path)
+    if device.battor is not None:
+      logging.debug(
+          'Also gave container %s access to battor %s. (major,minor): (%d,%d) '
+          'at %s.', self._container.name, device.battor.serial,
+          device.battor.major, device.battor.minor, device.battor.tty_path)

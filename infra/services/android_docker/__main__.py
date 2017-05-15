@@ -216,6 +216,10 @@ def main():
   stdout_handler = logging.StreamHandler(sys.stdout)
   logger.addHandler(stdout_handler)
 
+  # Quiet the cmd_helper module. It can be quite noisy.
+  cmd_helper_logger= logging.getLogger('devil.utils.cmd_helper')
+  cmd_helper_logger.setLevel(logging.ERROR)
+
   logging.debug('Killing any host-side ADB processes.')
   kill_adb()
 

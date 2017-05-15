@@ -19,6 +19,16 @@ class FakeDevice(object):
     self.minor = 0
     self.bus = 0
     self.dev_file_path = ''
+    self.battor = None
+
+
+class FakeBattor(object):
+  def __init__(self, tty_path, serial):
+    self.tty_path = tty_path
+    self.serial = serial
+    self.major = 0
+    self.minor = 0
+    self.syspath = ''
 
 
 class FakeClient(object):
@@ -419,4 +429,53 @@ class TestContainer(unittest.TestCase):
     self.assertEquals(mock_write.call_args[0][1], 'c 111:9 rwm')
     self.assertTrue(mock_close.called)
     self.assertEquals(len(self.container_backend.exec_inputs), 1)
+    self.assertFalse(self.container_backend.is_paused)
+
+  @mock.patch('time.sleep')
+  @mock.patch('os.open')
+  @mock.patch('os.write')
+  @mock.patch('os.close')
+  @mock.patch('os.path.exists')
+  def test_add_device_with_battor(self, mock_path_exists, mock_close,
+                                  mock_write, mock_open, mock_sleep):
+    mock_sleep.return_value = None
+    mock_path_exists.return_value = True
+    self.container_backend.attrs = {'Id': 'abc123'}
+    self.container_backend.exec_outputs = ['', '', '']
+    device = FakeDevice('serial1', 1)
+    device.major = 111
+    device.minor = 9
+    device.bus = 1
+    device.dev_file_path = '/dev/bus/usb/001/123'
+    battor = FakeBattor('/dev/ttyBattor', 'battorSerial1')
+    battor.major = 189
+    battor.minor = 0
+    battor.syspath = '/devices/usb/1/2/3/pci123/'
+    device.battor = battor
+    self.container.add_device(device)
+
+    self.assertTrue('abc123' in mock_open.call_args[0][0])
+    # Ensure the device's major and minor numbers were written to the
+    # cgroup file, followed by the battor's major and minor numbers.
+    self.assertEqual(
+        mock_write.call_args_list[0],
+        mock.call(mock_open.return_value, 'c 111:9 rwm'))
+    self.assertEqual(
+        mock_write.call_args_list[1],
+        mock.call(mock_open.return_value, 'c 189:0 rwm'))
+
+    # Ensure the device's and battor's dev files were removed then created and
+    # the battor's udevadm db entry was updated.
+    self.assertEquals(self.container_backend.exec_inputs[0], 'rm -rf /dev/bus')
+    self.assertEquals(
+        self.container_backend.exec_inputs[1], 'rm /dev/ttyBattor')
+    self.assertTrue(
+        'mknod /dev/bus/usb/001/123' in self.container_backend.exec_inputs[2])
+    self.assertTrue(
+        'mknod /dev/ttyBattor' in self.container_backend.exec_inputs[2])
+    self.assertTrue(
+        'udevadm test /devices/usb/1/2/3/pci123/' in
+        self.container_backend.exec_inputs[2])
+
+    self.assertTrue(mock_close.called)
     self.assertFalse(self.container_backend.is_paused)
