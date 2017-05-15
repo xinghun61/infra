@@ -96,7 +96,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
       task_id = self.kwargs.get('task_id')
       if not task_id and len(self.args) > 4:
         task_id = self.args[4]
-      if task_id:
+      if task_id and task_id.lower() not in (NO_TASK, NO_TASK_EXCEPTION):
         taskqueue.Queue(
             constants.WATERFALL_ANALYSIS_QUEUE).delete_tasks_by_name([
                 task_id + '_cleanup_task'])
