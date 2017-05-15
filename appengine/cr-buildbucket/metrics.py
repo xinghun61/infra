@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
+
 from google.appengine.ext import ndb
 
 from components import utils
@@ -33,6 +35,12 @@ _ATTR_FIELD_NAMES = {
 _ALL_FIELD_NAMES = _TAG_FIELD_NAMES | _ATTR_FIELD_NAMES
 
 
+BUCKETER_24_HR = gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.05)
+BUCKETER_48_HR = gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.053)
+BUCKETER_5_SEC = gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.0374)
+BUCKETER_1K = gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.031)
+
+
 def _fields_for(build, field_names):
   """Returns field values for a build"""
   if not build:
@@ -52,6 +60,13 @@ def _fields_for(build, field_names):
   return result
 
 
+def _fields_for_fn(fields):
+  assert all(isinstance(f, gae_ts_mon.StringField) for f in fields)
+  assert all(f.name in _ALL_FIELD_NAMES for f in fields)
+  field_names = [f.name for f in fields]
+  return lambda b: _fields_for(b, field_names)   # pragma: no cover
+
+
 def _string_fields(*names):
   return [gae_ts_mon.StringField(n) for n in names]
 
@@ -63,12 +78,20 @@ def _incrementer(metric):
 
   The returned function accepts a build.
   """
-  fields = metric.field_spec
-  assert all(isinstance(f, gae_ts_mon.StringField) for f in fields)
-  assert all(f.name in _ALL_FIELD_NAMES for f in fields)
-  field_names = [f.name for f in fields]
-  return lambda b: metric.increment(   # pragma: no cover
-      _fields_for(b, field_names))
+  fields_for = _fields_for_fn(metric.field_spec)
+  return lambda b: metric.increment(fields_for(b))   # pragma: no cover
+
+
+def _adder(metric, value_fn):
+  """Returns a function that adds a build value to the distribution metric.
+
+  Fields must be string and one of _ALL_FIELD_NAMES.
+  value_fn accepts a build.
+
+  The returned function accepts a build.
+  """
+  fields_for = _fields_for_fn(metric.field_spec)
+  return lambda b: metric.add(value_fn(b), fields_for(b))  # pragma: no cover
 
 
 inc_created_builds = _incrementer(gae_ts_mon.CounterMetric(
@@ -97,6 +120,32 @@ inc_leases = _incrementer(gae_ts_mon.CounterMetric(
     'Successful build leases or lease extensions',
     _string_fields('bucket', 'builder')))
 
+
+_BUILD_DURATION_FIELDS = _string_fields(
+    'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason')
+
+
+# requires the argument to have non-None create_time and complete_time.
+add_build_cycle_duration = _adder(  # pragma: no branch
+    gae_ts_mon.NonCumulativeDistributionMetric(
+        'buildbucket/builds/cycle_durations',
+        'Duration between build creation and completion',
+        _BUILD_DURATION_FIELDS,
+        bucketer=BUCKETER_48_HR,
+        units=gae_ts_mon.MetricsDataUnits.SECONDS),
+    lambda b: (b.complete_time - b.create_time).total_seconds())
+
+# requires the argument to have non-None start_time and complete_time.
+add_build_run_duration = _adder(  # pragma: no branch
+    gae_ts_mon.NonCumulativeDistributionMetric(
+        'buildbucket/builds/run_durations',
+        'Duration between build start and completion',
+        _BUILD_DURATION_FIELDS,
+        bucketer=BUCKETER_48_HR,
+        units=gae_ts_mon.MetricsDataUnits.SECONDS),
+    lambda b: (b.complete_time - b.start_time).total_seconds())
+
+
 CURRENTLY_PENDING = gae_ts_mon.GaugeMetric(
     'buildbucket/builds/pending',
     'Number of pending builds',
@@ -109,37 +158,33 @@ LEASE_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/builds/never_leased_duration',
     'Duration between a build is created and it is leased for the first time',
     _string_fields('bucket'),
-    # Bucketer for 1s..24h range
-    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.05),
+    bucketer=BUCKETER_24_HR,
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
 SCHEDULING_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/builds/scheduling_duration',
     'Duration of a build remaining in SCHEDULED state',
     _string_fields('bucket'),
-    # Bucketer for 1s..48h range
-    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10**0.053),
+    bucketer=BUCKETER_48_HR,
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
 SEQUENCE_NUMBER_GEN_DURATION_MS = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/sequence_number/gen_duration',
     'Duration of a sequence number generation in ms',
     _string_fields('sequence'),
     # Bucketer for 1ms..5s range
-    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10**0.0374),
+    bucketer=BUCKETER_5_SEC,
     units=gae_ts_mon.MetricsDataUnits.MILLISECONDS)
 TAG_INDEX_INCONSISTENT_ENTRIES = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/tag_index/inconsistent_entries',
     'Number of inconsistent entries encountered during build search',
     _string_fields('tag'),
-    # Bucketer for 0..1000 range, because we can't have more than 1000 entries
-    # in a tag index.
-    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.031))
+    # We can't have more than 1000 entries in a tag index.
+    bucketer=BUCKETER_1K)
 TAG_INDEX_SEARCH_SKIPPED_BUILDS = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/tag_index/skipped_builds',
     'Number of builds we fetched, but skipped',
     _string_fields('tag'),
-    # Bucketer for 0..1000 range, because we can't have more than 1000 entries
-    # in a tag index.
-    bucketer=gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.031))
+    # We can't have more than 1000 entries in a tag index.
+    bucketer=BUCKETER_1K)
 
 
 @ndb.tasklet

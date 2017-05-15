@@ -92,6 +92,9 @@ def on_build_completed(build):  # pragma: no cover
       auth.get_current_identity().to_bytes(),
       build.status, build.result)
   metrics.inc_completed_builds(build)
+  metrics.add_build_cycle_duration(build)
+  if build.start_time:
+    metrics.add_build_run_duration(build)
 
 
 def on_heartbeat_failure(build_id, build, ex):  # pragma: no cover
