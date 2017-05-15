@@ -8,6 +8,7 @@ import fcntl
 import docker
 import logging
 import logging.handlers
+import pipes
 import os
 import requests
 import socket
@@ -217,11 +218,9 @@ class Container(object):
         logging.info('Sent SIGTERM to swarming bot of %s.', self.name)
 
   def _make_dev_file_cmd(self, path, major, minor):
-    cmd = """
-        mknod %(path)s c %(major)d %(minor)d && \
-        chgrp chrome-bot %(path)s && \
-        chmod 664 %(path)s
-    """ % {
+    cmd = ('mknod %(path)s c %(major)d %(minor)d && '
+           'chgrp chrome-bot %(path)s && '
+           'chmod 664 %(path)s') % {
         'major': major,
         'minor': minor,
         'path': path,
@@ -289,26 +288,22 @@ class Container(object):
       # library.)
       battor_mknod_cmd = self._make_dev_file_cmd(
           device.battor.tty_path, device.battor.major, device.battor.minor)
-      battor_cmd = """
-          %(make_dev_file_cmd)s && \
-          udevadm test %(syspath)s
-      """ % {
+      battor_cmd = ('%(make_dev_file_cmd)s && '
+                    'udevadm test %(syspath)s') % {
           'make_dev_file_cmd': battor_mknod_cmd,
           'syspath': device.battor.syspath,
       }
 
     device_mknod_cmd = self._make_dev_file_cmd(
         device.dev_file_path, device.major, device.minor)
-    add_device_cmd = """
-        /bin/bash -c "mkdir -p /dev/bus/usb/%(bus)03d && \
-                      %(make_dev_file_cmd)s && \
-                      %(battor_cmd)s"
-    """ % {
+    add_device_cmd = ('mkdir -p /dev/bus/usb/%(bus)03d && '
+                      '%(make_dev_file_cmd)s && '
+                      '%(battor_cmd)s') % {
         'bus': device.bus,
         'battor_cmd': battor_cmd,
         'make_dev_file_cmd': device_mknod_cmd,
     }
-    self._container.exec_run(add_device_cmd)
+    self._container.exec_run('/bin/bash -c %s' % pipes.quote(add_device_cmd))
 
     logging.debug('Successfully gave container %s access to device %s. '
                   '(major,minor): (%d,%d) at %s.', self._container.name, device,
