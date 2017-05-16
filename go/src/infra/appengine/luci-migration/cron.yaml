@@ -1,0 +1,4 @@
+cron:
+- description: discover builders
+  url: /internal/cron/discover-builders
+  schedule: every 1 hours

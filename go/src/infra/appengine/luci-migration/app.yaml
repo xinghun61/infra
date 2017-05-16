@@ -1,4 +1,4 @@
-application: luci-migration
+application: luci-migration-dev
 version: 1
 module: default
 runtime: go

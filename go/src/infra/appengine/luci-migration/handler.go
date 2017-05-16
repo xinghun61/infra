@@ -7,18 +7,31 @@ package migration
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
+
+	"infra/monorail"
 
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
+	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/data/rand/mathrand"
+	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/grpc/prpc"
+	"github.com/luci/luci-go/milo/api/proto"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/identity"
 	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
+)
+
+const (
+	miloHost           = "luci-milo.appspot.com"
+	monorailAPIRootURL = "https://monorail-prod.appspot.com/_ah/api/monorail/v1"
 )
 
 //// Routes.
@@ -60,6 +73,34 @@ func indexPage(c *router.Context) {
 	templates.MustRender(c.Context, c.Writer, "pages/index.html", nil)
 }
 
+func cronDiscoverBuilders(c *router.Context) {
+	// Standard cron job timeout is 10min.
+	c.Context, _ = context.WithDeadline(c.Context, clock.Now(c.Context).Add(10*time.Minute))
+
+	transport, err := auth.GetRPCTransport(c.Context, auth.AsSelf)
+	if err != nil {
+		internalServerError(c, errors.Annotate(err).Reason("could not get RPC transport").Err())
+		return
+	}
+	httpClient := &http.Client{Transport: transport}
+
+	d := &builderDiscovery{
+		buildbot: milo.NewBuildbotPRPCClient(&prpc.Client{
+			C:    httpClient,
+			Host: miloHost,
+		}),
+		monorail: monorail.NewEndpointsClient(httpClient, monorailAPIRootURL),
+	}
+
+	err = d.discoverNewBuilders(c.Context)
+	if err != nil {
+		internalServerError(c, err)
+		return
+	}
+
+	ok(c)
+}
+
 func init() {
 	// Dev server likes to restart a lot, and upon a restart math/rand seed is
 	// always set to 1, resulting in lots of presumably "random" IDs not being
@@ -72,6 +113,7 @@ func init() {
 	r := router.New()
 
 	gaemiddleware.InstallHandlersWithMiddleware(r, base)
+	r.GET("/internal/cron/discover-builders", base, cronDiscoverBuilders)
 
 	m := base.Extend(
 		templates.WithTemplates(prepareTemplates()),
@@ -81,4 +123,17 @@ func init() {
 	r.GET("/", m, indexPage)
 
 	http.DefaultServeMux.Handle("/", r)
+}
+
+func internalServerError(c *router.Context, err error) {
+	logging.Errorf(c.Context, "Internal server error: %s", err.Error())
+	http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
+}
+
+func ok(c *router.Context) {
+	c.Writer.Write([]byte("OK"))
+}
+
+func isDevInstance(c context.Context) bool {
+	return strings.HasSuffix(info.AppID(c), "-dev")
 }
