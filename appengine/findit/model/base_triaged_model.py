@@ -41,7 +41,7 @@ class TriagedModel(ndb.Model):
   triage_history = ndb.LocalStructuredProperty(
       TriageResult, repeated=True, indexed=False, compressed=True)
   # Whether the user names in the triage history were obscured.
-  triage_email_obscured = ndb.BooleanProperty(indexed=True, default=False)
+  triage_email_obscured = ndb.BooleanProperty(indexed=True, default=True)
   # When was the last addition of triage record.
   triage_record_last_add = ndb.DateTimeProperty(indexed=True)
 

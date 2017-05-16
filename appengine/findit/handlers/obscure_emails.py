@@ -37,7 +37,7 @@ def _ObscureTriageRecordsInWfAnalysis():
   while more:
     entities, cursor, more = query.fetch_page(_PAGE_SIZE, start_cursor=cursor)
     for entity in entities:
-      for triage_record in entity.triage_history:
+      for triage_record in (entity.triage_history or []):
         triage_record['user_name'] = email_util.ObscureEmails(
             [triage_record['user_name']], ['google.com'])[0]
       entity.triage_email_obscured = True
@@ -58,7 +58,7 @@ def _ObscureTriageRecordsInMasterFlakeAnalysis():
   while more:
     entities, cursor, more = query.fetch_page(_PAGE_SIZE, start_cursor=cursor)
     for entity in entities:
-      for triage_record in entity.triage_history:
+      for triage_record in (entity.triage_history or []):
         triage_record.user_name = email_util.ObscureEmails(
             [triage_record.user_name], ['google.com'])[0]
       entity.triage_email_obscured = True
