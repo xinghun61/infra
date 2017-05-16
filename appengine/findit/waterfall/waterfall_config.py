@@ -18,6 +18,8 @@ _UNSUPPORTED_MASTERS = [
     'chromium.perf',
 ]
 
+_DEFAULT_DIMENSIONS = ['pool:Chrome.Findit']
+
 
 def _ConvertOldMastersFormatToNew(masters_to_blacklisted_steps):
   """Converts the old masters format to the new rules dict.
@@ -185,7 +187,21 @@ def GetTrybotDimensions(wf_mastername, wf_buildername):
     Colon-separated pairs of key:value identifying the swarming dimensions
     required to match the configuration of the main waterfall builer.
   """
-  return _GetTrybotConfig(wf_mastername, wf_buildername).get('dimensions')
+
+  bot_config = _GetTrybotConfig(wf_mastername, wf_buildername)
+  if 'dimensions' in bot_config:
+    return _MergeDimensions(_DEFAULT_DIMENSIONS, bot_config.get('dimensions'))
+  return None
+
+
+def _MergeDimensions(original, overrides):
+  original = original or []
+  overrides = overrides or []
+  # Dimensions is a list of colon separated strings.
+  original_dict = dict([x.split(':', 1) for x in original])
+  overrides_dict = dict([x.split(':', 1) for x in overrides])
+  original_dict.update(overrides_dict)
+  return ['%s:%s' % x for x in original_dict.items()]
 
 
 def GetWaterfallTrybot(wf_mastername, wf_buildername):

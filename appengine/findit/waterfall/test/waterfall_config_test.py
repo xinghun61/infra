@@ -292,6 +292,8 @@ class MastersTest(wf_testcase.WaterfallTestCase):
 
   def testGetTrybotDimensions(self):
     self.assertEqual(
-        ['os:Mac-10.9', 'cpu:x86-64'],
+        ['os:Mac-10.9', 'cpu:x86-64', 'pool:Chrome.Findit'],
         waterfall_config.GetTrybotDimensions('m', 'b')
     )
+    self.assertIsNone(
+        waterfall_config.GetTrybotDimensions('master1', 'builder1'))
