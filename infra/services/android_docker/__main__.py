@@ -220,8 +220,9 @@ def main():
   cmd_helper_logger= logging.getLogger('devil.utils.cmd_helper')
   cmd_helper_logger.setLevel(logging.ERROR)
 
-  logging.debug('Killing any host-side ADB processes.')
-  kill_adb()
+  if not os.path.exists(_SHUTDOWN_FILE):
+    logging.debug('Killing any host-side ADB processes.')
+    kill_adb()
 
   logging.debug('Running %s on devices: %s', args.name, args.devices or 'all')
 
