@@ -1102,6 +1102,6 @@ ALTER TABLE Comment ADD INDEX (commenter_id, deleted_by, issue_id);
 
 
 ================================================================
-2017-05012: Add user preference to ping issue starrers.
+2017-05-12: Add user preference to ping issue starrers.
 
-ALTER TABLE USER ADD COLUMN notify_starred_ping BOOLEAN DEFAULT FALSE;
+ALTER TABLE User ADD COLUMN notify_starred_ping BOOLEAN DEFAULT FALSE;
