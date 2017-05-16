@@ -92,8 +92,12 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
 
     step_name = flake_analysis.canonical_step_name
     test_name = flake_analysis.test_name
-    result = try_job_result['report']['result']
-    pass_fail_counts = result[revision][step_name].get('pass_fail_counts', {})
+    result = try_job_result['report']['result'][revision]
+
+    if isinstance(result, basestring):
+      # Result is a string 'infra failed'. Try job failed.
+      return
+    pass_fail_counts = result[step_name].get('pass_fail_counts', {})
 
     if pass_fail_counts:
       test_results = pass_fail_counts[test_name]

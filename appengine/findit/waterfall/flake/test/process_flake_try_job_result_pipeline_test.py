@@ -267,3 +267,37 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     self.assertEquals(
       process_flake_try_job_result_pipeline._GetSwarmingTaskIdForTryJob(
         report, revision, step_name, test_name), 'task1')
+
+  def testProcessFlakeTryJobResultPipelineTryJobFailed(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    revision = 'r4'
+    commit_position = 4
+    try_job_id = 'try_job_id'
+    url = 'url'
+    try_job_result = {
+        'report': {
+            'result': {
+                revision: 'infra failed'
+            }
+        }
+    }
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    analysis.Save()
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, revision)
+    try_job.flake_results = [{
+        'url': url,
+        'report': try_job_result,
+        'try_job_id': try_job_id
+    }]
+    try_job.try_job_ids = [try_job_id]
+    try_job.put()
+    ProcessFlakeTryJobResultPipeline().run(
+        revision, commit_position, try_job_result, try_job.key.urlsafe(),
+        analysis.key.urlsafe())
+    self.assertEqual([], analysis.data_points)
