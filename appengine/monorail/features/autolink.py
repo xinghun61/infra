@@ -40,16 +40,38 @@ from proto import project_pb2
 from tracker import tracker_helpers
 
 
+
 _CLOSING_TAG_RE = re.compile('</[a-z0-9]+>$', re.IGNORECASE)
 
-_LINKIFY_SCHEMES = r'(https?://|ftp://|mailto:)'
+# We linkify http, https, ftp, and mailto schemes only.
+_LINKIFY_SCHEMES = r'https?://|ftp://|mailto:'
+
+# This regex matches shorthand URLs that we know are valid.
+# Example: go/monorail
+# The scheme is optional, and if it is missing we add it to the link.
+_IS_A_SHORT_LINK_RE = re.compile(
+    r'\b(%s)?'     # Scheme is optional for short links.
+    r'(%s)'        # The list of know shorthand links from settings.py
+    r'/([^\s<]+)'  # Allow anything, checked with validation code.
+    % (_LINKIFY_SCHEMES, '|'.join(settings.autolink_shorthand_hosts)),
+    re.UNICODE)
+
+# This regex matches fully-formed URLs, starting with a scheme.
+# Example: http://chromium.org or mailto:user@example.com
+# We link to the specified URL without adding anything.
 # Also count a start-tag '<' as a url delimeter, since the autolinker
 # is sometimes run against html fragments.
-_IS_A_LINK_RE = re.compile(r'\b(%s)([^\s<]+)' % _LINKIFY_SCHEMES, re.UNICODE)
+_IS_A_LINK_RE = re.compile(
+    r'\b(%s)'    # Scheme must be a whole word.
+    r'([^\s<]+)' # Allow anything, checked with validation code.
+    % _LINKIFY_SCHEMES, re.UNICODE)
 
-_IS_A_SHORT_LINK_RE = re.compile(
-    r'\b(%s)?\b(%s)/([^\s<]+)' % (
-        _LINKIFY_SCHEMES, '|'.join(settings.autolink_shorthand_hosts)),
+# This regex matches text that looks like a URL despite lacking a scheme.
+# Example: crrev.com
+# Since the scheme is not specified, we prepend "http://".
+_IS_IMPLIED_LINK_RE = re.compile(
+    r'\b[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b'  # Domain.
+    r'(/[^\s<]*)?',  # Allow anything, check with validation code.
     re.UNICODE)
 
 # These are allowed in links, but if any of closing delimiters appear
@@ -68,14 +90,16 @@ _LINK_TRAILING_CHARS = [
     ]
 
 
-def _Linkify(autolink_regex_match, shorthand=False):
+def Linkify(_mr, autolink_regex_match, _component_ref_artifacts):
   """Examine a textual reference and replace it with a hyperlink or not.
 
-  This is a callback for use with the autolink feature.
+  This is a callback for use with the autolink feature.  The function
+  parameters are standard for this type of callback.
 
   Args:
+    _mr: unused information parsed from the HTTP request.
     autolink_regex_match: regex match for the textual reference.
-    shorthand: Set to True to allow shorthand links without "http".
+    _component_ref_artifacts: unused result of call to GetReferencedIssues.
 
   Returns:
     A list of TextRuns with tag=a for all matched ftp, http, https and mailto
@@ -96,12 +120,12 @@ def _Linkify(autolink_regex_match, shorthand=False):
     hyperlink = hyperlink[:tag_match.start(0)]
 
   href = hyperlink
-  if shorthand and not href.lower().startswith('http'):
+  if not href.lower().startswith(('http', 'ftp', 'mailto')):
     # We use http because redirects for https are not all set up.
     href = 'http://' + href
 
   if (not validate.IsValidURL(href) and
-      not validate.IsValidEmail(href)):
+      not (href.startswith('mailto') and validate.IsValidEmail(href[7:]))):
     return [template_helpers.TextRun(autolink_regex_match.group(0))]
 
   result = [template_helpers.TextRun(hyperlink, tag='a', href=href)]
@@ -109,16 +133,6 @@ def _Linkify(autolink_regex_match, shorthand=False):
     result.append(template_helpers.TextRun(trailing))
 
   return result
-
-
-def LinkifyFullLink(_mr, autolink_regex_match, _component_ref_artifacts):
-  """Consider linking a fully-specified URL. E.g., http://google.com/."""
-  return _Linkify(autolink_regex_match)
-
-
-def LinkifyShortLink(_mr, autolink_regex_match, _component_ref_artifacts):
-  """Consider linking a shorthand URL. E.g., go/monorail."""
-  return _Linkify(autolink_regex_match, shorthand=True)
 
 
 # Regular expression to detect git hashes.
@@ -518,8 +532,9 @@ def RegisterAutolink(services):
       '02-linkify',
       lambda request, mr: None,
       lambda mr, match: None,
-      {_IS_A_LINK_RE: LinkifyFullLink,
-       _IS_A_SHORT_LINK_RE: LinkifyShortLink,
+      {_IS_A_LINK_RE: Linkify,
+       _IS_A_SHORT_LINK_RE: Linkify,
+       _IS_IMPLIED_LINK_RE: Linkify,
        })
 
   services.autolink.RegisterComponent(

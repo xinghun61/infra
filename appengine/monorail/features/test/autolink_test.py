@@ -138,29 +138,22 @@ class AutolinkTest(unittest.TestCase):
 
 class URLAutolinkTest(unittest.TestCase):
 
-  def DoLinkify(self, content, shortlink=False):
+  def DoLinkify(self, content, filter_re=autolink._IS_A_LINK_RE):
     """Calls the linkify method and returns the result.
 
     Args:
       content: string with a hyperlink.
-      shortlink: set to True to test shortlinks.
 
     Returns:
       A list of TextRuns with some runs will have the embedded URL hyperlinked.
       Or, None if no link was detected.
     """
-    if shortlink:
-      match = autolink._IS_A_SHORT_LINK_RE.search(content)
-    else:
-      match = autolink._IS_A_LINK_RE.search(content)
+    match = filter_re.search(content)
     if not match:
       return None
 
-    if shortlink:
-      replacement_runs = autolink.LinkifyShortLink(None, match, None)
-    else:
-      replacement_runs = autolink.LinkifyFullLink(None, match, None)
-    return replacement_runs
+    return autolink.Linkify(None, match, None)
+
 
   def testLinkify(self):
     """Test that given url is autolinked when put in the given context."""
@@ -195,17 +188,48 @@ class URLAutolinkTest(unittest.TestCase):
     self.assertEqual(test, result[0].href)
     self.assertEqual(test, result[0].content)
 
-  def testLinkifyShortLink(self):
+  def testLinkify_Email(self):
+    """Test that mailto: urls are linked."""
+    test = 'mailto:user@example.com'
+    result = self.DoLinkify('%s' % test)
+    self.assertEqual(test, result[0].href)
+    self.assertEqual(test, result[0].content)
+
+  def testLinkify_ShortLink(self):
     """Test that shortlinks are linked."""
     test = 'http://go/monorail'
-    result = self.DoLinkify('%s' % test, shortlink=True)
+    result = self.DoLinkify('%s' % test, filter_re=autolink._IS_A_SHORT_LINK_RE)
     self.assertEqual(test, result[0].href)
     self.assertEqual(test, result[0].content)
 
     test = 'go/monorail'
-    result = self.DoLinkify('%s' % test, shortlink=True)
+    result = self.DoLinkify('%s' % test, filter_re=autolink._IS_A_SHORT_LINK_RE)
     self.assertEqual('http://' + test, result[0].href)
     self.assertEqual(test, result[0].content)
+
+  def testLinkify_ImpliedLink(self):
+    """Test that text with .com, .org, .net, and .edu are linked."""
+    test = 'google.org'
+    result = self.DoLinkify('%s' % test, filter_re=autolink._IS_IMPLIED_LINK_RE)
+    self.assertEqual('http://' + test, result[0].href)
+    self.assertEqual(test, result[0].content)
+
+    test = 'code.google.com/p/chromium'
+    result = self.DoLinkify('%s' % test, filter_re=autolink._IS_IMPLIED_LINK_RE)
+    self.assertEqual('http://' + test, result[0].href)
+    self.assertEqual(test, result[0].content)
+
+    # This is not a domain, it is a directory or something.
+    test = 'build.out/p/chromium'
+    result = self.DoLinkify('%s' % test, filter_re=autolink._IS_IMPLIED_LINK_RE)
+    self.assertEqual(None, result)
+
+    # We do not link the NNTP scheme, but the domain name part of it can be
+    # linked as an HTTP link.
+    test = 'nntp://news.google.com'
+    result = self.DoLinkify('%s' % test, filter_re=autolink._IS_IMPLIED_LINK_RE)
+    self.assertEqual('http://news.google.com', result[0].href)
+    self.assertEqual('news.google.com', result[0].content)
 
   def testLinkify_Context(self):
     """Test that surrounding syntax is not considered part of the url."""
