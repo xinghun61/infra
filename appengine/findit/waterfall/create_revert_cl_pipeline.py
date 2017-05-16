@@ -31,20 +31,41 @@ SKIPPED = 3
 NEWEST_BUILD_GREEN = 'Newest build is green.'
 CULPRIT_OWNED_BY_FINDIT = 'Culprit is a revert created by Findit.'
 AUTO_REVERT_OFF = 'Author of the culprit revision has turned off auto-revert.'
+REVERTED_BY_SHERIFF = 'Culprit has been reverted by a sheriff or the CL owner.'
 
 
 @ndb.transactional
-def _UpdateCulprit(
-    repo_name, revision, revert_status=None, revert_cl=None,
-    skip_revert_reason=None):
+def _ShouldRevert(repo_name, revision, pipeline_id):
   culprit = WfSuspectedCL.Get(repo_name, revision)
   assert culprit
+  if ((culprit.revert_cl and culprit.revert_status == status.COMPLETED) or
+      (culprit.revert_status == status.RUNNING and
+       culprit.revert_pipeline_id and
+       culprit.revert_pipeline_id != pipeline_id)):
+    # Revert of the culprit has been created or is being created by another
+    # analysis.
+    return False
+
+  # Update culprit to ensure only current analysis can revert the culprit.
+  culprit.revert_status = status.RUNNING
+  culprit.revert_pipeline_id = pipeline_id
+  culprit.put()
+  return True
+
+
+@ndb.transactional
+def _UpdateCulprit(repo_name, revision, revert_status=None, revert_cl=None,
+                   skip_revert_reason=None):
+  culprit = WfSuspectedCL.Get(repo_name, revision)
 
   culprit.should_be_reverted = True
 
   culprit.revert_status = revert_status or culprit.revert_status
   culprit.revert_cl = revert_cl or culprit.revert_cl
   culprit.skip_revert_reason = skip_revert_reason or culprit.skip_revert_reason
+
+  if culprit.revert_status != status.RUNNING:
+    culprit.revert_pipeline_id = None
 
   if revert_cl:
     culprit.cr_notification_status = status.COMPLETED
@@ -84,13 +105,12 @@ def _IsOwnerFindit(owner_email):
 
 
 def _RevertCulprit(
-    master_name, builder_name, build_number, repo_name, revision):
+    master_name, builder_name, build_number, repo_name, revision, pipeline_id):
 
-  culprit = _UpdateCulprit(repo_name, revision)
-
-  if culprit.revert_cl and culprit.revert_status == status.COMPLETED:
+  if not _ShouldRevert(repo_name, revision, pipeline_id):
     return CREATED_BY_FINDIT
 
+  culprit = _UpdateCulprit(repo_name, revision)
   # 0. Gets information about this culprit.
   culprit_info = (
       suspected_cl_util.GetCulpritInfo(repo_name, revision))
@@ -103,11 +123,13 @@ def _RevertCulprit(
 
   if not codereview or not culprit_change_id:  # pragma: no cover
     logging.error('Failed to get change id for %s/%s' % (repo_name, revision))
+    _UpdateCulprit(repo_name, revision, revert_status=status.ERROR)
     return ERROR
 
   culprit_cl_info = codereview.GetClDetails(culprit_change_id)
   if not culprit_cl_info:  # pragma: no cover
     logging.error('Failed to get cl_info for %s/%s' % (repo_name, revision))
+    _UpdateCulprit(repo_name, revision, revert_status=status.ERROR)
     return ERROR
 
   # Checks if the culprit is a revert created by Findit. If yes, bail out.
@@ -129,6 +151,7 @@ def _RevertCulprit(
     # be None.
     logging.error('Failed to find patchset_id for %s/%s' % (
         repo_name, revision))
+    _UpdateCulprit(repo_name, revision, revert_status=status.ERROR)
     return ERROR
 
   findit_revert = None
@@ -139,6 +162,8 @@ def _RevertCulprit(
 
   if reverts and not findit_revert:
     # Sheriff(s) created the revert CL(s).
+    _UpdateCulprit(repo_name, revision, revert_status=status.SKIPPED,
+                   skip_revert_reason=REVERTED_BY_SHERIFF)
     return CREATED_BY_SHERIFF
 
   # 2. Reverts the culprit.
@@ -155,7 +180,6 @@ def _RevertCulprit(
   # TODO (chanli): Better handle cases where 2 analyses are trying to revert
   # at the same time.
   if not revert_change_id:
-    _UpdateCulprit(repo_name, revision, status.RUNNING)
     revert_reason = textwrap.dedent("""
         Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
         culprit for failures in the build cycles as shown on:
@@ -169,7 +193,6 @@ def _RevertCulprit(
     if not revert_change_id:  # pragma: no cover
       _UpdateCulprit(repo_name, revision, status.ERROR)
       logging.error('Revert for culprit %s/%s failed.' % (repo_name, revision))
-      culprit.put()
       return ERROR
 
   # Save revert CL info and notification info to culprit.
@@ -218,11 +241,12 @@ class CreateRevertCLPipeline(BasePipeline):
     if not was_aborted:  # pragma: no cover
       return
 
-    culprit = WfSuspectedCL.Get(
-        self.repo_name, self.revision)
+    culprit = WfSuspectedCL.Get(self.repo_name, self.revision)
 
-    if culprit.revert_status and culprit.revert_status != status.COMPLETED:
-      culprit.revert_status = status.ERROR
+    if culprit.revert_pipeline_id == self.pipeline_id:
+      if culprit.revert_status and culprit.revert_status != status.COMPLETED:
+        culprit.revert_status = status.ERROR
+      culprit.revert_pipeline_id = None
       culprit.put()
 
   def finalized(self):  # pragma: no cover
@@ -233,5 +257,6 @@ class CreateRevertCLPipeline(BasePipeline):
     if waterfall_config.GetActionSettings().get(
         'revert_compile_culprit', False):
       return _RevertCulprit(
-          master_name, builder_name, build_number, repo_name, revision)
+          master_name, builder_name, build_number, repo_name, revision,
+          self.pipeline_id)
     return None

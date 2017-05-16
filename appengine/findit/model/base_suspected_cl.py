@@ -62,6 +62,10 @@ class BaseSuspectedCL(ndb.Model):
   # The reason why creating revert is skipped.
   skip_revert_reason = ndb.StringProperty(indexed=False)
 
+  # The ID of the pipeline that is reverting the culprit, if any. This value
+  # should be None if the culprit is not in the process of being reverted.
+  revert_pipeline_id = ndb.StringProperty(indexed=False)
+
   @property
   def revert_cl_url(self):
     return self.revert_cl.revert_cl_url if self.revert_cl else None
