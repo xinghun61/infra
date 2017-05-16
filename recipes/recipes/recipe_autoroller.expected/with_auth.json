@@ -11,16 +11,17 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
-      "RECIPE_MODULE[depot_tools::url]/resources/pycurl.py",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
       "https://luci-config.appspot.com/_ah/api/config/v1/projects",
+      "--status-json",
+      "/path/to/tmp/json",
       "--outfile",
-      "/path/to/tmp/",
+      "/path/to/tmp/json",
       "--headers-json",
-      "{\"Authorization\": \"Bearer ya29.foobar\"}",
-      "--attempts",
-      "3"
+      "{\"Authorization\": \"Bearer ya29.foobar\"}"
     ],
     "name": "Get luci-config projects"
   },

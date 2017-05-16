@@ -1,40 +1,43 @@
 [
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
-      "RECIPE_MODULE[depot_tools::url]/resources/pycurl.py",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
       "https://luci-config.appspot.com/_ah/api/config/v1/projects",
+      "--status-json",
+      "/path/to/tmp/json",
       "--outfile",
-      "/path/to/tmp/",
-      "--attempts",
-      "3"
+      "/path/to/tmp/json"
     ],
     "name": "Get luci-config projects"
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
-      "RECIPE_MODULE[depot_tools::url]/resources/pycurl.py",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
       "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Frecipe_engine%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
+      "--status-json",
+      "/path/to/tmp/json",
       "--outfile",
-      "/path/to/tmp/",
-      "--attempts",
-      "3"
+      "/path/to/tmp/json"
     ],
     "name": "Get project 'recipe_engine' config 'recipes.cfg'"
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
-      "RECIPE_MODULE[depot_tools::url]/resources/pycurl.py",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
       "https://luci-config.appspot.com//_ah/api/config/v1/config_sets/projects%2Fbuild%2Frefs%2Fheads%2Fmaster/config/recipes.cfg",
+      "--status-json",
+      "/path/to/tmp/json",
       "--outfile",
-      "/path/to/tmp/",
-      "--attempts",
-      "3"
+      "/path/to/tmp/json"
     ],
     "name": "Get project 'build' config 'recipes.cfg'"
   },
