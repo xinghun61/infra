@@ -17,6 +17,15 @@ from waterfall.test import wf_testcase
 
 class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
+  def setUp(self):
+    super(ScheduleCompileTryJobPipelineTest, self).setUp()
+    self.mock_select = mock.patch('waterfall.swarming_util.AssignWarmCacheHost')
+    self.mock_select.start()
+
+  def tearDown(self):
+    self.mock_select.stop()
+    super(ScheduleCompileTryJobPipelineTest, self).tearDown()
+
   def testGetBuildPropertiesWithCompileTargets(self):
     master_name = 'm'
     builder_name = 'b'

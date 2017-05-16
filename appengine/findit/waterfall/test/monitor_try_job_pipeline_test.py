@@ -936,6 +936,19 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'id': '1',
         'url': try_job_url,
         'status': 'COMPLETED',
+        'result_details_json': json.dumps({
+            'swarming': { 'task_result': {'bot_id': 'dummy_bot'}},
+        }),
+        'parameters_json': json.dumps({
+            'swarming': {
+                'override_builder_cfg': {
+                    'caches': [{
+                        'path': 'builder',
+                        'name': 'dummy_cache',
+                    }]
+                }
+            }
+        })
     }
     report = {
         'result': {
@@ -982,3 +995,133 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     try_job_data = WfTryJobData.Get(try_job_id)
     self.assertEqual(try_job_data.regression_range_size, regression_range_size)
+
+  @mock.patch.object(swarming_util, 'GetStepLog')
+  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
+  def testGetTryJobsForCompileSuccessSwarmingNoBot(
+      self, mock_buildbucket, mock_report):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+    try_job_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
+    regression_range_size = 2
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.try_job_url = try_job_url
+    try_job_data.put()
+    try_job.compile_results = [
+        {
+            'report': None,
+            'url': try_job_url,
+            'try_job_id': '1',
+        }
+    ]
+    try_job.status = analysis_status.RUNNING
+    try_job.put()
+
+    build_response = {
+        'id': '1',
+        'url': try_job_url,
+        'status': 'COMPLETED',
+        'parameters_json': json.dumps({
+            'swarming': {
+                'override_builder_cfg': {
+                    'caches': [{
+                        'path': 'builder',
+                        'name': 'dummy_cache',
+                    }]
+                }
+            }
+        })
+    }
+    report = {
+        'result': {
+            'rev1': 'passed',
+            'rev2': 'failed'
+        },
+        'metadata': {
+            'regression_range_size': 2
+        }
+    }
+    mock_buildbucket.GetTryJobs.return_value = [
+        (None, buildbucket_client.BuildbucketBuild(build_response))]
+    mock_report.return_value = json.dumps(report)
+
+    pipeline = MonitorTryJobPipeline()
+    pipeline.start_test()
+    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
+    pipeline.callback(callback_params=pipeline.last_params)
+
+    # Reload from ID to get all internal properties in sync.
+    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    pipeline.finalized()
+    compile_result = pipeline.outputs.default.value
+
+    expected_compile_result = {
+        'report': {
+            'result': {
+                'rev1': 'passed',
+                'rev2': 'failed'
+            },
+            'metadata': {
+                'regression_range_size': regression_range_size
+            }
+        },
+        'url': try_job_url,
+        'try_job_id': '1',
+    }
+
+    self.assertEqual(expected_compile_result, compile_result)
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(expected_compile_result, try_job.compile_results[-1])
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
+
+    try_job_data = WfTryJobData.Get(try_job_id)
+    self.assertEqual(try_job_data.regression_range_size, regression_range_size)
+
+  @mock.patch.object(swarming_util, 'GetStepLog')
+  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
+  def testGetTryJobsForCompileSuccessSwarmingNoReport(
+      self, mock_buildbucket, mock_report):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+    try_job_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.try_job_url = try_job_url
+    try_job_data.put()
+    try_job.compile_results = [
+        {
+            'report': None,
+            'url': try_job_url,
+            'try_job_id': '1',
+        }
+    ]
+    try_job.status = analysis_status.RUNNING
+    try_job.put()
+
+    build_response = {
+        'id': '1',
+        'url': try_job_url,
+        'status': 'COMPLETED',
+    }
+    mock_buildbucket.GetTryJobs.return_value = [
+        (None, buildbucket_client.BuildbucketBuild(build_response))]
+    mock_report.return_value = json.dumps({})
+
+    pipeline = MonitorTryJobPipeline()
+    pipeline.start_test()
+    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
+    pipeline.callback(callback_params=pipeline.last_params)
+
+    # Reload from ID to get all internal properties in sync.
+    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
+    pipeline.finalized()

@@ -21,6 +21,7 @@ from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from libs import time_util
 from model.flake.flake_try_job_data import FlakeTryJobData
+from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_try_job_data import WfTryJobData
 from waterfall import buildbot
 from waterfall import monitoring
@@ -197,6 +198,17 @@ def _UpdateLastBuildbucketResponse(try_job_data, build):
                         build.response, exclude_keys=['utcnow_ts']):
     try_job_data.last_buildbucket_response = build.response
     try_job_data.put()
+
+
+def _RecordCacheStats(build):
+  bot = swarming_util.GetBot(build)
+  cache_name = swarming_util.GetBuilderCacheName(build)
+  if bot and cache_name:
+    cache_stats = WfTryBotCache.Get(cache_name)
+    cache_stats.AddBot(bot)
+    # TODO(robertocn): Record the time it took to complete the task
+    # with a cold or warm cache.
+    cache_stats.put()
 
 
 class MonitorTryJobPipeline(BasePipeline):
@@ -440,6 +452,8 @@ class MonitorTryJobPipeline(BasePipeline):
         try:
           report = json.loads(swarming_util.GetStepLog(
               try_job_id, 'report', HttpClientAppengine(), 'report'))
+          if report:
+            _RecordCacheStats(build)
         except (ValueError, TypeError) as e:  # pragma: no cover
           report = {}
           logging.exception(

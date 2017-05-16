@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import base64
+import copy
 from collections import defaultdict
 import hashlib
 import json
@@ -20,6 +21,7 @@ from google.appengine.ext import ndb
 from common.waterfall import buildbucket_client
 from gae_libs.http import auth_util
 from infra_api_clients import logdog_util
+from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_step import WfStep
 from waterfall import monitoring
 from waterfall import waterfall_config
@@ -660,3 +662,49 @@ def UpdateAnalysisResult(analysis_result, flaky_failures):
 def GetCacheName(master, builder):
   hash_part = hashlib.sha256('%s:%s' % (master, builder)).hexdigest()
   return 'builder_' + hash_part
+
+
+def GetBot(build):
+  """Parses the swarming bot from the buildbucket response"""
+  assert build
+  if build.response:
+    details = json.loads(
+        build.response.get('result_details_json', '{}'))
+    if details:
+      return details.get('swarming', {}).get('task_result', {}).get('bot_id')
+  return None
+
+
+def GetBuilderCacheName(build):
+  """Gets the named cache's name from the buildbucket response"""
+  assert build
+  parameters = json.loads(build.response.get('parameters_json', '{}'))
+  if parameters:
+    swarming_params = parameters.get('swarming', {}).get(
+        'override_builder_cfg', {})
+    for cache in swarming_params.get('caches', []):
+      if cache.get('path') == 'builder':
+        return cache.get('name')
+  return None
+
+
+def AssignWarmCacheHost(tryjob, cache_name, http_client):
+  """Choose a host that already posesses the named cache requested.
+
+  This applies if the job is being triggered on a swarming-backed builder and
+  a cache name is specified.
+
+  The strategy to select a host that has the cache is to try them in the order
+  of how recently they used the cache and see if they are available.
+  """
+  if not tryjob.is_swarmbucket_build:
+    return
+  recent_bots = WfTryBotCache.Get(cache_name).recent_bots
+  # TODO(robertocn): Optimize this selection strategy.
+  for bot_id in recent_bots:
+    request_dimensions = copy.deepcopy(tryjob.dimensions)
+    request_dimensions['id'] = bot_id
+    counts = GetSwarmingBotCounts(request_dimensions, http_client)
+    if counts['available']:
+      tryjob.dimensions = request_dimensions
+      return

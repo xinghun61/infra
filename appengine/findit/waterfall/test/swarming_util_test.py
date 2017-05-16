@@ -19,6 +19,7 @@ from infra_api_clients import logdog_util
 from libs.http.retry_http_client import RetryHttpClient
 from model.wf_config import FinditConfig
 from model.wf_step import WfStep
+from model.wf_try_bot_cache import WfTryBotCache
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.swarming_task_request import SwarmingTaskRequest
@@ -1023,3 +1024,110 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertNotEqual(cache_name_a, cache_name_b)
     self.assertNotEqual(cache_name_a, cache_name_c)
     self.assertNotEqual(cache_name_b, cache_name_c)
+
+
+  def testGetBot(self):
+    class MockBuildbucketBuild(object):
+      response = {
+          'result_details_json': json.dumps({
+              'swarming': {
+                  'task_result':{
+                      'bot_id': 'slave777-c4'
+                  }
+              }
+          })
+      }
+    self.assertEqual('slave777-c4', swarming_util.GetBot(MockBuildbucketBuild))
+
+  def testGetBotNotFound(self):
+    class MockBuildbucketBuild(object):
+      response = {
+          'result_details_json': json.dumps({})
+      }
+    self.assertIsNone(swarming_util.GetBot(MockBuildbucketBuild))
+    MockBuildbucketBuild.response = {}
+    self.assertIsNone(swarming_util.GetBot(MockBuildbucketBuild))
+
+  def testGetBuilderCacheName(self):
+    class MockBuildbucketBuild(object):
+      response = {
+          'parameters_json': json.dumps({
+              'swarming': {
+                  'override_builder_cfg': {
+                      'caches': [{
+                          'path': 'builder',
+                          'name':'builder_dummyhash'
+                      }]
+                  }
+              }
+          })
+      }
+    self.assertEqual('builder_dummyhash', swarming_util.GetBuilderCacheName(
+        MockBuildbucketBuild))
+
+  def testGetBuilderCacheNameNotFound(self):
+    class MockBuildbucketBuild(object):
+      response = {
+          'parameters_json': json.dumps({
+              'swarming': {}
+          })
+      }
+    self.assertIsNone(swarming_util.GetBuilderCacheName(MockBuildbucketBuild))
+    MockBuildbucketBuild.response = {
+        'parameters_json': json.dumps({
+            'swarming': {
+                'override_builder_cfg': {
+                    'caches': [{
+                        'path': 'other_cache',
+                        'name':'other_cache_name'
+                    }]
+                }
+            }
+        })
+    }
+    self.assertIsNone(swarming_util.GetBuilderCacheName(MockBuildbucketBuild))
+    MockBuildbucketBuild.response = {}
+    self.assertIsNone(swarming_util.GetBuilderCacheName(MockBuildbucketBuild))
+
+  @mock.patch.object(swarming_util, '_SendRequestToServer')
+  def testAssignWarmCacheHost(self, mock_fn):
+    class MockTryJob(object):
+      is_swarmbucket_build = True
+      dimensions = {}
+
+    cache_name = 'some_cache_name'
+    content_data = {
+        'count': '1',
+        'dead': '0',
+        'quarantined': '0',
+        'busy': '1'
+    }
+    mock_fn.return_value = (json.dumps(content_data), None)
+    WfTryBotCache.Get(cache_name).recent_bots = ['slave1']
+    try_job_1 = MockTryJob()
+    swarming_util.AssignWarmCacheHost(try_job_1, cache_name,
+                                      SwarmingHttpClient())
+    self.assertFalse(try_job_1.dimensions)
+
+    content_data = {
+        'count': '1',
+        'dead': '0',
+        'quarantined': '0',
+        'busy': '0'
+    }
+    mock_fn.return_value = (json.dumps(content_data), None)
+    try_job_2 = MockTryJob()
+    swarming_util.AssignWarmCacheHost(try_job_2, cache_name,
+                                      SwarmingHttpClient())
+    self.assertTrue(try_job_2.dimensions)
+
+  @mock.patch.object(swarming_util, '_SendRequestToServer')
+  def testSelectWarmCacheNoOp(self, mock_fn):
+    class MockTryJob(object):
+      is_swarmbucket_build = False
+    try_job_buildbot = MockTryJob()
+    cache_name = 'some_other_cache_name'
+    WfTryBotCache.Get(cache_name).recent_bots = ['slave1']
+    swarming_util.AssignWarmCacheHost(try_job_buildbot, cache_name,
+                                      SwarmingHttpClient())
+    self.assertFalse(mock_fn.called)

@@ -12,6 +12,7 @@ from gae_libs.http import auth_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 from common.waterfall.pubsub_callback import MakeTryJobPubsubCallback
+from model.wf_try_bot_cache import WfTryBotCache
 
 
 # TODO: save these settings in datastore and create a role account.
@@ -83,16 +84,21 @@ class TryJob(collections.namedtuple(
     tags = self.tags[:]
     tags.append('user_agent:findit')
 
-    bucket = _GetBucketName(self.master_name)
-    if bucket.startswith(_LUCI_PREFIX):
+    if self.is_swarmbucket_build:
       self._AddSwarmbucketOverrides(parameters_json)
 
     return {
-        'bucket': bucket,
+        'bucket': _GetBucketName(self.master_name),
         'parameters_json': json.dumps(parameters_json),
         'tags': tags,
         'pubsub_callback': MakeTryJobPubsubCallback(),
     }
+
+  @property
+  def is_swarmbucket_build(self):
+    bucket = _GetBucketName(self.master_name)
+    return bucket.startswith(_LUCI_PREFIX)
+
 # Make the last two members optional.
 TryJob.__new__.__defaults__ = (None, None)
 

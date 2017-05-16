@@ -18,6 +18,15 @@ from waterfall.test import wf_testcase
 
 class ScheduleTestTryjobPipelineTest(wf_testcase.WaterfallTestCase):
 
+  def setUp(self):
+    super(ScheduleTestTryjobPipelineTest, self).setUp()
+    self.mock_select = mock.patch('waterfall.swarming_util.AssignWarmCacheHost')
+    self.mock_select.start()
+
+  def tearDown(self):
+    self.mock_select.stop()
+    super(ScheduleTestTryjobPipelineTest, self).tearDown()
+
   def testGetTargetedTests(self):
     reliable_tests = {
         'a on platform': ('a', ['t1', 't2']),

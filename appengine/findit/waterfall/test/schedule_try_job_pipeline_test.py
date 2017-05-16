@@ -18,6 +18,15 @@ from waterfall.test import wf_testcase
 
 class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
 
+  def setUp(self):
+    super(ScheduleTryjobPipelineTest, self).setUp()
+    self.mock_select = mock.patch('waterfall.swarming_util.AssignWarmCacheHost')
+    self.mock_select.start()
+
+  def tearDown(self):
+    self.mock_select.stop()
+    super(ScheduleTryjobPipelineTest, self).tearDown()
+
   def testGetBuildPropertiesWithSuspectedRevision(self):
     master_name = 'm'
     builder_name = 'b'

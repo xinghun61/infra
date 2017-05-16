@@ -59,6 +59,9 @@ class ScheduleTryJobPipeline(BasePipeline):
     try_job = buildbucket_client.TryJob(
         tryserver_mastername, tryserver_buildername, None, properties, [],
         additional_parameters, cache_name, dimensions)
+    # This is a no-op if the tryjob is not on swarmbucket.
+    swarming_util.AssignWarmCacheHost(try_job, cache_name,
+                                      HttpClientAppengine())
     error, build = buildbucket_client.TriggerTryJobs([try_job])[0]
 
     self._OnTryJobTriggered(try_job_type, master_name, builder_name)
