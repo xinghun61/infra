@@ -8,6 +8,10 @@ import (
 	"encoding/json"
 	"flag"
 	"os"
+	"sync/atomic"
+	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/maruel/subcommands"
 
@@ -20,13 +24,15 @@ import (
 func editCmd() *subcommands.Command {
 	return &subcommands.Command{
 		UsageLine: "edit [options]",
-		ShortDesc: "Consumes a JobDescription on stdin, edits it, and emits it on stdout.",
-		LongDesc: `Allows common manipulations to a JobDescription. Example:
+		ShortDesc: "edits a JobDescription",
+		LongDesc: `Allows common manipulations to a JobDescription.
 
-		try-recipe builder-def ... |
-			try-recipe edit -d os=Linux -p something=[100] |
-			try-recipe launch
-		`,
+Example:
+
+try-recipe get-builder ... |
+  try-recipe edit -d os=Linux -p something=[100] |
+  try-recipe launch
+`,
 
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdEdit{}
@@ -55,36 +61,48 @@ type editFlags struct {
 }
 
 func (e *editFlags) register(fs *flag.FlagSet) {
-	fs.Var(&e.dimensions, "d", "shorthand for 'dimension'")
-	fs.Var(&e.dimensions, "dimension",
-		("override a dimension. This takes a parameter of dimension=value. " +
-			"Providing an empty value will remove that dimension."))
+	fs.Var(&e.dimensions, "d",
+		"(repeatable) override a dimension. This takes a parameter of `dimension=value`. "+
+			"Providing an empty value will remove that dimension.")
 
-	fs.Var(&e.properties, "p", "shorthand for 'property'")
-	fs.Var(&e.properties, "property",
-		("override a recipe property. This takes a parameter of property_name=json_value. " +
-			"Providing an empty json_value will remove that property."))
+	fs.Var(&e.properties, "p",
+		"(repeatable) override a recipe property. This takes a parameter of `property_name=json_value`. "+
+			"Providing an empty json_value will remove that property.")
 
-	fs.Var(&e.environment, "e", "shorthand for 'env'")
-	fs.Var(&e.environment, "env",
-		("override an environment. This takes a parameter of env_var=value. " +
-			"Providing an empty value will remove that envvar."))
+	fs.Var(&e.environment, "e",
+		"(repeatable) override an environment variable. This takes a parameter of `env_var=value`. "+
+			"Providing an empty value will remove that envvar.")
 
-	fs.StringVar(&e.recipeIsolate, "r", "", "shorthand for 'recipe'")
-	fs.StringVar(&e.recipeIsolate, "recipe", "", "override the recipe isolate hash.")
+	fs.StringVar(&e.recipeIsolate, "rbh", "",
+		"override the recipe bundle `hash` (such as you might get from the isolate command).")
 }
 
 func (e *editFlags) Edit(jd *JobDefinition) (*JobDefinition, error) {
 	return jd.Edit(e.dimensions, e.properties, e.environment, e.recipeIsolate)
 }
 
-func editMode(cb func(jd *JobDefinition) (*JobDefinition, error)) error {
+func decodeJobDefinition(ctx context.Context) (*JobDefinition, error) {
+	done := uint32(0)
+	go func() {
+		time.Sleep(time.Second)
+		if atomic.LoadUint32(&done) == 0 {
+			logging.Warningf(ctx, "waiting for JobDefinition on stdin...")
+		}
+	}()
+
 	jd := &JobDefinition{}
-	if err := json.NewDecoder(os.Stdin).Decode(jd); err != nil {
-		return errors.Annotate(err).Reason("decoding JobDefinition").Err()
+	err := json.NewDecoder(os.Stdin).Decode(jd)
+	atomic.StoreUint32(&done, 1)
+	return jd, errors.Annotate(err).Reason("decoding JobDefinition").Err()
+}
+
+func editMode(ctx context.Context, cb func(jd *JobDefinition) (*JobDefinition, error)) error {
+	jd, err := decodeJobDefinition(ctx)
+	if err != nil {
+		return err
 	}
 
-	jd, err := cb(jd)
+	jd, err = cb(jd)
 	if err != nil {
 		return err
 	}
@@ -101,7 +119,7 @@ func editMode(cb func(jd *JobDefinition) (*JobDefinition, error)) error {
 func (c *cmdEdit) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 
-	if err := editMode(c.editFlags.Edit); err != nil {
+	if err := editMode(ctx, c.editFlags.Edit); err != nil {
 		logging.WithError(err).Errorf(ctx, "fatal")
 		return 1
 	}

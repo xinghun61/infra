@@ -27,9 +27,10 @@ const defaultIsolateServer = "https://isolateserver.appspot.com"
 func isolateCmd(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
 		UsageLine: "isolate [-O project_id=/path/to/local/repo]*",
-		ShortDesc: "Isolates a bundle of recipes from the current working directory.",
+		ShortDesc: "adds isolated recipes to a JobDefinition",
 		LongDesc: `Takes recipes from the current repo (based on cwd), along with
-		any supplied overrides, and pushes them to the isolate service.`,
+any supplied overrides, and pushes them to the isolate service. The isolated
+hash for the recipes will be added to the JobDefinition.`,
 
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdIsolate{}
@@ -41,11 +42,6 @@ func isolateCmd(authOpts auth.Options) *subcommands.Command {
 
 			ret.Flags.Var(&ret.overrides, "O",
 				"override a repo dependency. Must be in the form of project_id=/path/to/local/repo. May be specified multiple times.")
-
-			ret.Flags.BoolVar(&ret.editMode, "em", false, "alias for `edit-mode`")
-			ret.Flags.BoolVar(&ret.editMode, "edit-mode", false,
-				("enables `edit mode`. This causes the command to read a JobDescription on stdin, add the isolate hash and print the " +
-					"new JobDescription to stdout."))
 			return ret
 		},
 	}
@@ -59,8 +55,6 @@ type cmdIsolate struct {
 	isolatedFlags isolatedclient.Flags
 
 	overrides stringmapflag.Value
-
-	editMode bool
 }
 
 func (c *cmdIsolate) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
@@ -128,26 +122,16 @@ func (c *cmdIsolate) Run(a subcommands.Application, args []string, env subcomman
 
 	logging.Infof(ctx, "isolating recipes")
 	hash, err := isolate(ctx, bundlePath, c.isolatedFlags, authOpts)
-	if err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
-		return 1
-	}
 	logging.Infof(ctx, "isolating recipes: done")
 
-	if c.editMode {
-		err := editMode(func(jd *JobDefinition) (*JobDefinition, error) {
-			ret := &(*jd)
-			ret.RecipeIsolatedHash = hash
-			return ret, nil
-		})
-		if err != nil {
-			logging.WithError(err).Errorf(ctx, "fatal")
-			return 1
-		}
-	} else {
-		logging.Infof(ctx, "isolated: %q", hash)
-		logging.Infof(ctx, "URL: %s/browse?namespace=%s&hash=%s",
-			c.isolatedFlags.ServerURL, c.isolatedFlags.Namespace, hash)
+	err = editMode(ctx, func(jd *JobDefinition) (*JobDefinition, error) {
+		ret := &(*jd)
+		ret.RecipeIsolatedHash = hash
+		return ret, nil
+	})
+	if err != nil {
+		logging.WithError(err).Errorf(ctx, "fatal")
+		return 1
 	}
 
 	return 0

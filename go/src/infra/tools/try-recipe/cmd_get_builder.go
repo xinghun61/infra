@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -24,10 +25,9 @@ const bbServerDefault = "https://cr-buildbucket.appspot.com"
 
 func getBuilderCmd(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
-		UsageLine: "get-builder -B bucket_name -builder builder_name [-recipes <hash>] [-d dimension=value]*",
-		ShortDesc: "Pulls a builder definition from buildbucket and prints a swarming task definition.",
-		LongDesc: `Obtains the builder definition from buildbucket and prints a modified
-		version of it as a JobDefinition.`,
+		UsageLine: "get-builder bucket_name:builder_name",
+		ShortDesc: "obtain a JobDefinition from a buildbucket builder",
+		LongDesc:  `Obtains the builder definition from buildbucket and produce a JobDefinition.`,
 
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdGetBuilder{}
@@ -36,10 +36,9 @@ func getBuilderCmd(authOpts auth.Options) *subcommands.Command {
 			ret.logCfg.AddFlags(&ret.Flags)
 			ret.authFlags.Register(&ret.Flags, authOpts)
 
-			ret.Flags.StringVar(&ret.bucket, "B", "", "The bucket to grab from.")
-			ret.Flags.StringVar(&ret.builder, "builder", "", "The builder to grab from.")
+			ret.Flags.StringVar(&ret.bbServer, "B", bbServerDefault,
+				"The buildbucket server to grab the definition from.")
 
-			ret.Flags.StringVar(&ret.bbServer, "bbserver", bbServerDefault, "The buildbucket server to grab the definition from.")
 			return ret
 		},
 	}
@@ -52,12 +51,10 @@ type cmdGetBuilder struct {
 	authFlags authcli.Flags
 
 	bbServer string
-	bucket   string
-	builder  string
 }
 
-func (c *cmdGetBuilder) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
-	if len(args) > 0 {
+func (c *cmdGetBuilder) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, bucket, builder string, err error) {
+	if len(args) != 1 {
 		err = errors.Reason("unexpected positional arguments: %(args)q").D("args", args).Err()
 		return
 	}
@@ -65,20 +62,28 @@ func (c *cmdGetBuilder) validateFlags(ctx context.Context, args []string) (authO
 		err = errors.New("empty server")
 		return
 	}
-	if c.bucket == "" {
+
+	toks := strings.SplitN(args[0], ":", 2)
+	if len(toks) != 2 {
+		err = errors.Reason("cannot parse bucket:builder: %(arg)q").D("arg", args[0]).Err()
+		return
+	}
+	bucket, builder = toks[0], toks[1]
+	if bucket == "" {
 		err = errors.New("empty bucket")
 		return
 	}
-	if c.builder == "" {
+	if builder == "" {
 		err = errors.New("empty builder")
 		return
 	}
-	return c.authFlags.Options()
+	authOpts, err = c.authFlags.Options()
+	return
 }
 
 func (c *cmdGetBuilder) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
-	authOpts, err := c.validateFlags(ctx, args)
+	authOpts, bucket, builder, err := c.validateFlags(ctx, args)
 	if err != nil {
 		logging.Errorf(ctx, "bad arguments: %s", err)
 		fmt.Fprintln(os.Stderr)
@@ -87,7 +92,7 @@ func (c *cmdGetBuilder) Run(a subcommands.Application, args []string, env subcom
 	}
 
 	logging.Infof(ctx, "getting builder definition")
-	jd, err := grabBuilderDefinition(ctx, c.bbServer, c.bucket, c.builder, authOpts)
+	jd, err := grabBuilderDefinition(ctx, c.bbServer, bucket, builder, authOpts)
 	if err != nil {
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1

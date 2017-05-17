@@ -44,8 +44,32 @@ func main() {
 	authDefaults := chromeinfra.DefaultAuthOptions()
 
 	var application = cli.Application{
-		Name:  "try-recipe",
-		Title: "Launches recipes into the cloud.",
+		Name: "try-recipe",
+		Title: `Launches recipes into the cloud.
+
+Allows local modifications to tasks to be launched directly in swarming. This is
+meant to aid in debugging and development for recipes on swarming.
+
+This command is meant to be used multiple times in a pipeline. The flow is
+generally:
+
+  get | isolate? | edit? | launch
+
+Where the isolate and edit steps are optional. The output of the commands on
+stdout is a JobDefinition JSON document, and the input to the commands is this
+same JobDefinition JSON document. At any stage in the pipeline, you may,
+of course, hand-edit the JobDefinition.
+
+Example:
+  try-recipe get-builder bucket_name:builder_name | \
+    try-recipe edit -env CHROME_HEADLESS=1 | \
+    try-recipe isolate -O recipe_engine=/path/to/recipe_engine | \
+    try-recipe launch
+
+This would pull the recipe job from the named swarming task, set the
+$CHROME_HEADLESS environment variable to 1, isolate the recipes from the
+current working directory (overriding the recipe engine to the one indicated
+by -O), and then launch the modified task on swarming.`,
 
 		Context: func(ctx context.Context) context.Context {
 			goLoggerCfg := gologger.LoggerConfig{Out: os.Stderr}
@@ -57,35 +81,34 @@ func main() {
 		},
 
 		Commands: []*subcommands.Command{
-			// commands to isolate recipe stuff. These all begin with `isolate`.
-			isolateCmd(authDefaults),
-			// TODO(iannucci): `isolate-single` to isolate one repo without deps.
-			// TODO(iannucci): `isolate-combine` to combine multiple singly-isolated
-			//		repos into a single isolate.
-
 			// commands to obtain JobDescriptions. These all begin with `get`.
 			// TODO(iannucci): `get` to scrape from any URL
 			// TODO(iannucci): `get-swarming` to scrape from swarming
 			// TODO(iannucci): `get-milo` to scrape from milo
+			// TODO(iannucci): `get-buildbot` to emulate/scrape from a buildbot
 			getBuilderCmd(authDefaults),
 
-			// commands to edit JobDescriptions. These all begin with `edit`.
-			editCmd(),
-			// TODO(iannucci): `edit-cl` to do cl-specific edits (i.e. knows about
-			//   current recipe conventions for handling CLs).
+			// commands to isolate recipes.
+			isolateCmd(authDefaults),
 
-			// commands to launch swarming tasks. These all begin with `launch`.
-			// TODO(iannucci): `launch` does the full flow; isolate, get, edit,
-			//   launch-raw.
-			// TODO(iannucci): `launch-raw` consumes JobDescription on stdin and just
-			//   pushes it so swarming.
+			// commands to edit JobDescriptions.
+			editCmd(),
+
+			// commands to launch swarming tasks.
+			// TODO(iannucci): launch to launch on swarming
+			// TODO(iannucci): launch-local to launch locally
+			// TODO(iannucci): launch-buildbucket to launch on buildbucket
+
+			{}, // spacer
+
+			subcommands.CmdHelp,
+			version.SubcommandVersion,
+
+			{}, // spacer
 
 			authcli.SubcommandLogin(authDefaults, "auth-login", false),
 			authcli.SubcommandLogout(authDefaults, "auth-logout", false),
 			authcli.SubcommandInfo(authDefaults, "auth-info", false),
-
-			subcommands.CmdHelp,
-			version.SubcommandVersion,
 		},
 	}
 
