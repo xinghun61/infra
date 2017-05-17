@@ -68,7 +68,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::gitiles]/resources/gerrit_client.py",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
       "--json-file",
       "/path/to/tmp/json",
       "--url",
@@ -115,7 +115,7 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::gitiles]/resources/gerrit_client.py",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
       "--json-file",
       "/path/to/tmp/json",
       "--url",

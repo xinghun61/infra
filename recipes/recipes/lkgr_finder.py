@@ -6,10 +6,10 @@ from recipe_engine.recipe_api import Property
 from recipe_engine.types import freeze
 
 DEPS = [
-  'build/gitiles',
   'build/url',
   'depot_tools/bot_update',
   'depot_tools/gclient',
+  'depot_tools/gitiles',
   'depot_tools/gsutil',
   'recipe_engine/path',
   'recipe_engine/properties',
