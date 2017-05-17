@@ -290,7 +290,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
 
     self.assertEquals(
-      revert_status, create_revert_cl_pipeline.CREATED_BY_FINDIT)
+      revert_status, create_revert_cl_pipeline.SKIPPED)
 
   def testLogUnexpectedAborting(self):
     repo_name = 'chromium'
@@ -359,8 +359,17 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
 
     self.assertEquals(
-        revert_status, create_revert_cl_pipeline.CREATED_BY_FINDIT)
+        revert_status, create_revert_cl_pipeline.SKIPPED)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.RUNNING)
     self.assertIsNone(culprit.revert_cl)
+
+  def testShouldNotRevertIfRevertIsSkipped(self):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    culprit.revert_status = status.SKIPPED
+    culprit.put()
+    self.assertFalse(create_revert_cl_pipeline._ShouldRevert(
+        repo_name, revision, None))

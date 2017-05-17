@@ -39,6 +39,7 @@ def _ShouldRevert(repo_name, revision, pipeline_id):
   culprit = WfSuspectedCL.Get(repo_name, revision)
   assert culprit
   if ((culprit.revert_cl and culprit.revert_status == status.COMPLETED) or
+      culprit.revert_status == status.SKIPPED or
       (culprit.revert_status == status.RUNNING and
        culprit.revert_pipeline_id and
        culprit.revert_pipeline_id != pipeline_id)):
@@ -108,7 +109,8 @@ def _RevertCulprit(
     master_name, builder_name, build_number, repo_name, revision, pipeline_id):
 
   if not _ShouldRevert(repo_name, revision, pipeline_id):
-    return CREATED_BY_FINDIT
+    # Either revert is done or skipped, use skipped as general case.
+    return SKIPPED
 
   culprit = _UpdateCulprit(repo_name, revision)
   # 0. Gets information about this culprit.
