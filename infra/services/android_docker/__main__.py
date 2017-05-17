@@ -23,6 +23,11 @@ _REGISTRY_URL = 'gcr.io'
 # Useful when draining a host in order to debug failures.
 _SHUTDOWN_FILE = '/b/shutdown.stamp'
 
+# Time to wait for swarming bots to gracefully shutdown before triggering a
+# host reboot. It should be at least as long as the longest expected task
+# run time.
+_REBOOT_GRACE_PERIOD_MIN = 240
+
 
 def get_host_uptime():
   """Returns host uptime in minutes."""
@@ -105,10 +110,11 @@ def launch(docker_client, android_devices, args):
     logging.debug('Host uptime over max uptime (%d > %d)',
                   host_uptime, args.max_host_uptime)
     if len(running_containers) > 0:
-      if host_uptime - args.max_host_uptime > 60:
+      if host_uptime - args.max_host_uptime > _REBOOT_GRACE_PERIOD_MIN:
         logging.warning(
-            'Host uptime exceeds grace period of 60 min. Rebooting host now '
-            'despite %d running containers.', len(running_containers))
+            'Host uptime exceeds grace period of %d min. Rebooting host now '
+            'despite %d running containers.', _REBOOT_GRACE_PERIOD_MIN,
+            len(running_containers))
         reboot_host()
       else:
         logging.debug(
