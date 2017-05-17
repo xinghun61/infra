@@ -25,9 +25,7 @@ DEPS = [
 CROSS_COMPILING_BUILDERS = {
   'infra-continuous-precise-64': [{'GOOS': 'linux', 'GOARCH': 'arm'},
                                   {'GOOS': 'linux', 'GOARCH': 'arm64'},
-                                  {'GOOS': 'linux', 'GOARCH': 'mips64'},
-                                  {'GOOS': 'android', 'GOARCH': 'arm'},
-                                  {'GOOS': 'android', 'GOARCH': 'amd64'}]
+                                  {'GOOS': 'linux', 'GOARCH': 'mips64'}]
 }
 
 
@@ -276,9 +274,6 @@ def GenTests(api):
         'cipd - upload packages', api.json.output(cipd_json_output)) +
     api.override_step_data(
         'cipd - upload packages [GOOS:linux GOARCH:arm]',
-        api.json.output(cipd_json_output)) +
-    api.override_step_data(
-        'cipd - upload packages [GOOS:android GOARCH:arm]',
         api.json.output(cipd_json_output))
   )
 
