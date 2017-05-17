@@ -21,7 +21,9 @@
     padding: 10px 5px;
   }
   .table-container {
+    float: left;
     padding: 20px 5px;
+    width: 100%;
   }
   .table-footer {
     height: 20px;
@@ -41,6 +43,16 @@
   }
   .left-align {
     text-align: left;
+    float: left;
+    width: 50%;
+  }
+  .refresh-message {
+    color: grey;
+  }
+  .right-align {
+    text-align: right;
+    float: right;
+    width: 50%;
   }
   .subtext {
     font-size: .8em;
@@ -82,6 +94,10 @@
       <a class="js-tree-message" href="https://infra-status.appspot.com"></a>
     </div>
     <p class="left-align subtext">All dates shown are using the local timezone</p>
+    <span class="right-align subtext">
+      <p class="refresh-message js-countdown"></p>
+      <a href="">(Refresh now)</a>
+    </span>
     <p class="key subtext left-align">
       <i class="green circle"></i> No issues<br/>
       <i class="yellow circle"></i> Service disruption<br/>
@@ -154,12 +170,19 @@
 <script src="/static/tree-status.js"></script>
 <script>
   (function() {
-    const RELOAD_TIME_MS = 5*60*1000;
+    const RELOAD_TIME_INC = 60 * 1000;
+    const RELOAD_TIME_MIN = 5;
     let status = new window.__StatusFetcher();
     status.fetch();
     window.__addIncidents({{.}});
-    window.setTimeout(() => {
-      window.location.reload();
-    }, RELOAD_TIME_MS);
+    let countdown = function(lastRefresh) {
+      if (lastRefresh === RELOAD_TIME_MIN) {
+        window.location.reload();
+      }
+      let message = document.querySelector('.js-countdown');
+      message.textContent = `Auto-refreshed ${lastRefresh} min ago `;
+      window.setTimeout(() => { countdown(lastRefresh + 1); }, RELOAD_TIME_INC);
+    };
+    countdown(0);
   })();
 </script>
