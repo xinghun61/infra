@@ -516,11 +516,10 @@ class Autolink(object):
 
 def RegisterAutolink(services):
   """Register all the autolink hooks."""
-  services.autolink.RegisterComponent(
-      '01-tracker',
-      CurryGetReferencedIssues(services),
-      ExtractProjectAndIssueIdsNormal,
-      {_ISSUE_REF_RE: ReplaceIssueRefNormal})
+  # The order of the RegisterComponent() calls does not matter so that we could
+  # do this registration from separate modules in the future if needed.
+  # Priority order of application is determined by the names of the registered
+  # handers, which are sorted in MarkupAutolinks().
 
   services.autolink.RegisterComponent(
       '01-tracker-crbug',
@@ -529,16 +528,27 @@ def RegisterAutolink(services):
       {_CRBUG_REF_RE: ReplaceIssueRefCrBug})
 
   services.autolink.RegisterComponent(
-      '02-linkify',
+      '02-linkify-full-urls',
       lambda request, mr: None,
       lambda mr, match: None,
-      {_IS_A_LINK_RE: Linkify,
-       _IS_A_SHORT_LINK_RE: Linkify,
+      {_IS_A_LINK_RE: Linkify})
+
+  services.autolink.RegisterComponent(
+      '03-tracker-regular',
+      CurryGetReferencedIssues(services),
+      ExtractProjectAndIssueIdsNormal,
+      {_ISSUE_REF_RE: ReplaceIssueRefNormal})
+
+  services.autolink.RegisterComponent(
+      '04-linkify-shorthand',
+      lambda request, mr: None,
+      lambda mr, match: None,
+      {_IS_A_SHORT_LINK_RE: Linkify,
        _IS_IMPLIED_LINK_RE: Linkify,
        })
 
   services.autolink.RegisterComponent(
-      '03-versioncontrol',
+      '05-versioncontrol',
       GetReferencedRevisions,
       ExtractRevNums,
       {_GIT_HASH_RE: ReplaceRevisionRef,
