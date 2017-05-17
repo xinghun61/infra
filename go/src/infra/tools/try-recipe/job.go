@@ -29,6 +29,8 @@ type RecipeIsolatedSource struct {
 // Additionally, RecipeProperties will replace any args in the swarming task's
 // command which are the string $RECIPE_PROPERTIES_JSON.
 type JobDefinition struct {
+	SwarmingServer string `json:"swarming_server"`
+
 	// Only one source may be defined at a time.
 	RecipeIsolatedSource *RecipeIsolatedSource `json:"recipe_isolated_source"`
 
@@ -156,6 +158,16 @@ func (ejd *EditJobDefinition) Properties(props map[string]string) {
 				ejd.jd.RecipeProperties[k] = obj
 			}
 		}
+		return nil
+	})
+}
+
+func (ejd *EditJobDefinition) SwarmingServer(host string) {
+	if host == "" {
+		return
+	}
+	ejd.tweak(func(ejd *EditJobDefinition) error {
+		ejd.jd.SwarmingServer = host
 		return nil
 	})
 }

@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/isolatedclient"
 	"github.com/luci/luci-go/common/logging"
 )
 
@@ -35,4 +36,17 @@ func cmdErr(err error, reason string) error {
 			D("outErr", outErr).Err()
 	}
 	return err
+}
+
+func getIsolatedFlagsForJobDef(jd *JobDefinition) isolatedclient.Flags {
+	// TODO(iannucci): get isolated flags from swarming server in job definition
+
+	server := "https://isolateserver.appspot.com"
+	if strings.Contains(jd.SwarmingServer, "-dev.") {
+		server = "https://isolateserver-dev.appspot.com"
+	}
+	return isolatedclient.Flags{
+		ServerURL: server,
+		Namespace: isolatedclient.DefaultNamespace,
+	}
 }

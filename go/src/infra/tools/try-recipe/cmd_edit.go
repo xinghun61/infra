@@ -58,6 +58,8 @@ type editFlags struct {
 	dimensions    stringmapflag.Value
 	properties    stringmapflag.Value
 	environment   stringmapflag.Value
+
+	swarmingServer string
 }
 
 func (e *editFlags) register(fs *flag.FlagSet) {
@@ -75,6 +77,9 @@ func (e *editFlags) register(fs *flag.FlagSet) {
 
 	fs.StringVar(&e.recipeIsolate, "rbh", "",
 		"override the recipe bundle `hash` (such as you might get from the isolate command).")
+
+	fs.StringVar(&e.swarmingServer, "S", "",
+		"override the swarming `server` to launch the task on.")
 }
 
 func (e *editFlags) Edit(jd *JobDefinition) (*JobDefinition, error) {
@@ -83,6 +88,7 @@ func (e *editFlags) Edit(jd *JobDefinition) (*JobDefinition, error) {
 	ejd.Dimensions(e.dimensions)
 	ejd.Properties(e.properties)
 	ejd.Env(e.environment)
+	ejd.SwarmingServer(e.swarmingServer)
 	return ejd.Finalize()
 }
 

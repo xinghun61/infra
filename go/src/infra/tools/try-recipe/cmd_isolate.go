@@ -18,11 +18,8 @@ import (
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/flag/stringmapflag"
-	"github.com/luci/luci-go/common/isolatedclient"
 	"github.com/luci/luci-go/common/logging"
 )
-
-const defaultIsolateServer = "https://isolateserver.appspot.com"
 
 func isolateCmd(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
@@ -38,7 +35,6 @@ hash for the recipes will be added to the JobDefinition.`,
 
 			ret.logCfg.AddFlags(&ret.Flags)
 			ret.authFlags.Register(&ret.Flags, authOpts)
-			ret.isolatedFlags.Init(&ret.Flags)
 
 			ret.Flags.Var(&ret.overrides, "O",
 				"override a repo dependency. Must be in the form of project_id=/path/to/local/repo. May be specified multiple times.")
@@ -50,9 +46,8 @@ hash for the recipes will be added to the JobDefinition.`,
 type cmdIsolate struct {
 	subcommands.CommandRunBase
 
-	logCfg        logging.Config
-	authFlags     authcli.Flags
-	isolatedFlags isolatedclient.Flags
+	logCfg    logging.Config
+	authFlags authcli.Flags
 
 	overrides stringmapflag.Value
 }
@@ -90,14 +85,6 @@ func (c *cmdIsolate) validateFlags(ctx context.Context, args []string) (authOpts
 		}
 	}
 
-	if c.isolatedFlags.ServerURL == "" {
-		c.isolatedFlags.ServerURL = defaultIsolateServer
-	}
-	if err = c.isolatedFlags.Parse(); err != nil {
-		err = errors.Annotate(err).Reason("bad isolate flags").Err()
-		return
-	}
-
 	return c.authFlags.Options()
 }
 
@@ -120,13 +107,16 @@ func (c *cmdIsolate) Run(a subcommands.Application, args []string, env subcomman
 	defer os.RemoveAll(bundlePath)
 	logging.Infof(ctx, "bundling recipes: done")
 
-	logging.Infof(ctx, "isolating recipes")
-	hash, err := isolate(ctx, bundlePath, c.isolatedFlags, authOpts)
-	logging.Infof(ctx, "isolating recipes: done")
-
 	err = editMode(ctx, func(jd *JobDefinition) (*JobDefinition, error) {
+		logging.Infof(ctx, "isolating recipes")
+		hash, err := isolate(ctx, bundlePath, getIsolatedFlagsForJobDef(jd), authOpts)
+		if err != nil {
+			return nil, err
+		}
+
 		ret := &(*jd)
 		ret.RecipeIsolatedSource = &RecipeIsolatedSource{string(hash)}
+		logging.Infof(ctx, "isolating recipes: done")
 		return ret, nil
 	})
 	if err != nil {

@@ -52,5 +52,14 @@ func grabBuilderDefinition(ctx context.Context, bbHost, bucket, builder string, 
 		return nil, err
 	}
 
-	return JobDefinitionFromNewTaskRequest(newTask)
+	jd, err := JobDefinitionFromNewTaskRequest(newTask)
+	if err != nil {
+		return nil, err
+	}
+	// TODO(iannucci): obtain swarming server from answer
+	jd.SwarmingServer = "https://chromium-swarm.appspot.com"
+	if strings.Contains(bbHost, "-dev.") {
+		jd.SwarmingServer = "https://chromium-swarm-dev.appspot.com"
+	}
+	return jd, nil
 }
