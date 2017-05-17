@@ -50,10 +50,6 @@
         computed: '_computeTroopers(_trooperRotations)',
         value: null,
       },
-      _treeIcon: {
-        type: String,
-        value: 'icons:unfold-less'
-      },
       trees: {
         type: Object,
         notify: true,
@@ -221,12 +217,16 @@
       }
     },
 
-    toggleTree: function() {
-      // Unfortunately, there's a Polymer bug that makes toggling the menu take
-      // two clicks the first time:
-      // https://github.com/PolymerElements/paper-menu/issues/88
-      let opened = this.$.treeMenu.opened;
-      this._treeIcon = opened ? 'icons:unfold-more' : 'icons:unfold-less';
+    toggleMenu: function(e) {
+      let target = e.target;
+      let collapseId = target.getAttribute('data-toggle-target');
+      let collapse = this.$[collapseId];
+      collapse.opened = !collapse.opened;
+
+      let icons = target.getElementsByClassName('toggle-icon');
+      for (let i = 0; i < icons.length; i++) {
+          icons[i].icon = collapse.opened ? 'remove' : 'add';
+      }
     },
   });
 })();

@@ -2,11 +2,11 @@
 
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-location/iron-location.html">
 <link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
 <link rel="import" href="../../bower_components/paper-drawer-panel/paper-drawer-panel.html">
 <link rel="import" href="../../bower_components/paper-header-panel/paper-header-panel.html">
-<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../../bower_components/paper-toolbar/paper-toolbar.html">
 
@@ -70,7 +70,7 @@
       #refresh {
         max-width: 30px;
       }
-      #refresh paper-icon-button {
+      #refresh iron-icon {
         width: 25px;
         height: 25px;
         padding: 0;
@@ -97,8 +97,8 @@
         width: 100%;
         padding: 0.5em 8px;
         margin: 0.5em auto;
-        border: 1px solid #666;
-        border-radius: 5px;
+        border: 1px solid #ccc;
+        background: #f8f8f8;
       }
       .page-body {
         @apply(--layout-vertical);
@@ -174,7 +174,7 @@
       <paper-header-panel main id="mainHeaderPanel">
         <paper-toolbar>
           <div class="layout horizontal flex">
-            <paper-icon-button icon="menu" paper-drawer-toggle></paper-icon-button>
+            <iron-icon icon="menu" paper-drawer-toggle></iron-icon>
             <div class="flex title" id="tree-title">[[_tree]]</div>
             <div class="flex last-updated">
               Last updated: <span hidden$="[[!_lastUpdated]]" id="lastUpdatedTime">
@@ -186,7 +186,7 @@
               [[user]] (<a href$="[[logoutUrl]]">Log Out </a>)
             </div>
             <div id="refresh" class="flex">
-              <paper-icon-button on-tap="_refresh" icon="refresh"></paper-icon-button>
+              <iron-icon on-tap="_refresh" icon="refresh"></iron-icon>
             </div>
           </div>
           <paper-spinner id="fetchingAlerts" active="[[_fetchingAlerts]]"></paper-spinner>

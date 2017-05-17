@@ -1,58 +1,58 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
-<link rel="import" href="../../bower_components/paper-item/paper-item.html">
-<link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
-<link rel="import" href="../../bower_components/paper-menu/paper-menu.html">
-<link rel="import" href="../../bower_components/paper-menu/paper-submenu.html">
 <link rel="import" href="../../bower_components/paper-radio-button/paper-radio-button.html">
 <link rel="import" href="../../bower_components/paper-radio-group/paper-radio-group.html">
 
+<link rel="import" href="../../elements/som-input-styles.html">
 <link rel="import" href="../../elements/som-settings/som-settings.html">
 
 <script src="../../bower_components/moment/min/moment.min.js"></script>
 <dom-module id="som-drawer">
   <template>
+    <style include="som-input-styles"></style>
     <style>
       h2 {
         box-sizing: border-box;
         font-size: 16px;
         font-weight: bold;
-        padding: 0 4px 0.25em;
+        padding: 0.5em 4px 0.25em;
         width: 95%;
         margin: 0.5em auto;
         border-bottom: 1px solid #bbb;
+        cursor: pointer;
       }
       h2 iron-icon {
         padding-right: 4px;
         width: 16px;
         height: 16px;
       }
-      paper-checkbox, paper-radio-button {
-        padding-left: 32px;
-        padding-bottom: 0.5em;
-      }
       label {
-        padding-top: 0.5em;
         padding-left: 16px;
       }
       ul {
         margin-top: 0.5em;
         padding-left: 48px;
       }
-      paper-item {
+      .menu-item {
+        padding: 0.75em;
         padding-left: 32px;
         font-size: 16px;
         -webkit-transition: background .3s ease;
         transition: background .3s ease;
       }
-      paper-item:hover {
+      .menu-item:hover {
         cursor: pointer;
         background-color: #eee;
       }
-      .menu-trigger {
-        cursor: pointer;
+      .settings-item {
+        padding-left: 32px;
+        padding-bottom: 1em;
+      }
+      .toggle-icon {
+        float: right;
       }
     </style>
     <iron-ajax
@@ -83,34 +83,36 @@
         default-tree="{{defaultTree}}"
     ></som-settings>
 
-    <paper-menu attr-for-selected="value" selected="[[tree]]" selectable="paper-item" id="menu">
-      <paper-submenu id="treeMenu" opened>
-        <h2 class="menu-trigger" on-tap="toggleTree">
-          <iron-icon icon="folder"></iron-icon>Trees
-          <iron-icon icon="[[_treeIcon]]"></iron-icon>
-        </h2>
-        <div class="menu-content">
-          <template is="dom-repeat" items="[[_treeList]]" as="tree">
-            <paper-item value="[[tree.name]]" on-tap="_onSelected">[[tree.display_name]]</paper-item>
-          </template>
+    <h2 on-tap="toggleMenu" data-toggle-target="treeMenu">
+      <iron-icon icon="folder"></iron-icon>Trees
+      <iron-icon icon="remove" class="toggle-icon"></iron-icon>
+    </h2>
+    <iron-collapse id="treeMenu" opened no-animation>
+      <template is="dom-repeat" items="[[_treeList]]" as="tree">
+        <div class="menu-item" value="[[tree.name]]" on-tap="_onSelected">
+          [[tree.display_name]]
         </div>
-      </paper-submenu>
+      </template>
+    </iron-collapse>
 
-      <paper-submenu id="helpMenu" opened>
-        <h2 class="menu-trigger">
-          <iron-icon icon="help"></iron-icon>Help
-        </h2>
-        <div class="menu-content">
-          <template is="dom-repeat" items="[[_staticPageList]]" as="page">
-            <paper-item value="[[page.name]]" on-tap="_onSelected">[[page.displayText]]</paper-item>
-          </template>
+    <h2 on-tap="toggleMenu" data-toggle-target="helpMenu">
+      <iron-icon icon="help"></iron-icon>Help
+      <iron-icon icon="remove" class="toggle-icon"></iron-icon>
+    </h2>
+    <iron-collapse id="helpMenu" opened no-animation>
+      <template is="dom-repeat" items="[[_staticPageList]]" as="page">
+        <div class="menu-item" value="[[page.name]]" on-tap="_onSelected">
+          [[page.displayText]]
         </div>
-      </paper-submenu>
-    </paper-menu>
+      </template>
+    </iron-collapse>
 
-    <h2><iron-icon icon="perm-phone-msg"></iron-icon>Current On Calls</h2>
+    <h2 on-tap="toggleMenu" data-toggle-target="onCallMenu">
+      <iron-icon icon="perm-phone-msg"></iron-icon>Current On Calls
+      <iron-icon icon="remove" class="toggle-icon"></iron-icon>
+    </h2>
 
-    <div class="vertical layout">
+    <iron-collapse id="onCallMenu" opened no-animation>
       <label>Trooper (<a href="http://go/bugatrooper" target="_blank">go/bugatrooper</a>)</label>
       <ul id="currentTroopers">
         <template is="dom-repeat" items="[[_troopers]]" as="trooper">
@@ -126,19 +128,30 @@
           </template>
         </ul>
       </template>
-    </div>
+    </iron-collapse>
 
-    <h2><iron-icon icon="settings"></iron-icon>Settings</h2>
-    <div class="vertical layout">
-      <paper-checkbox checked="{{showInfraFailures}}" hidden$=[[_isTrooperPage]]>Show infra step failures</paper-checkbox>
-      <paper-checkbox checked="{{collapseByDefault}}">Collapse alerts by default</paper-checkbox>
-      <label id="linkStyleLabel">Builder links:</label>
-      <paper-radio-group selected="{{linkStyle}}" aria-labeled-by="linkStyleLabel" selectedAttribute="name">
-        <paper-radio-button name="uber">Link to uberchromegw</paper-radio-button>
-        <paper-radio-button name="milo">Link to luci-milo</paper-radio-button>
-        <paper-radio-button name="buildbot">Link to buildbot</paper-radio-button>
-      </paper-radio-group>
-    </div>
+    <h2 on-tap="toggleMenu" data-toggle-target="settingsMenu">
+      <iron-icon icon="settings"></iron-icon>Settings
+      <iron-icon icon="remove" class="toggle-icon"></iron-icon>
+    </h2>
+    <iron-collapse id="settingsMenu" opened no-animation>
+      <label class="checkbox settings-item" hidden$=[[_isTrooperPage]]>
+        <input type="checkbox" checked="{{showInfraFailures::change}}" />
+        Show infra step failures
+      </label>
+      <label class="checkbox settings-item">
+        <input type="checkbox" checked="{{collapseByDefault::change}}" />
+        Collapse alerts by default
+      </label>
+      <label id="linkStyleLabel">Builder links</label>
+      <div class="settings-item">
+        <paper-radio-group selected="{{linkStyle}}" aria-labeled-by="linkStyleLabel" selectedAttribute="name">
+          <paper-radio-button name="uber">Link to uberchromegw</paper-radio-button>
+          <paper-radio-button name="milo">Link to luci-milo</paper-radio-button>
+          <paper-radio-button name="buildbot">Link to buildbot</paper-radio-button>
+        </paper-radio-group>
+      </div>
+    </iron-collapse>
 
   </template>
   <script src="som-drawer.js"></script>

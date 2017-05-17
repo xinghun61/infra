@@ -1,10 +1,11 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="../../bower_components/iron-icons/editor-icons.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
-<link rel="import" href="../../bower_components/paper-button/paper-button.html">
-<link rel="import" href="../../bower_components/paper-icon-button/paper-icon-button.html">
+
+<link rel="import" href="../../elements/som-input-styles.html">
 
 <link rel="import" href="../../elements/som-extension-build-failure/som-extension-build-failure.html">
 <link rel="import" href="../../elements/som-extension-cros-failure/som-extension-cros-failure.html">
@@ -16,15 +17,9 @@
 <script src="../../bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
 <dom-module id="som-alert-item">
   <template>
+    <style include="som-input-styles"></style>
     <style include="iron-flex iron-flex-alignment"></style>
     <style>
-      paper-button {
-        -webkit-transition: background .3s ease;
-        transition: background .3s ease;
-      }
-      paper-button:hover {
-        background-color: #eee;
-      }
      .alert-controls {
        text-align: center;
        min-width: 380px;
@@ -41,10 +36,8 @@
        padding: 8px;
        cursor: pointer;
      }
-     .alert-controls-buttons paper-button {
-       text-align: center;
-       min-width: 110px;
-       display: inline-block;
+     .alert-controls-buttons button {
+       min-width: 80px;
        font-size: 0.9em;
      }
      .alert-expanded {
@@ -126,7 +119,7 @@
        white-space: nowrap;
        overflow: hidden;
      }
-     #bugsList paper-icon-button {
+     #bugsList iron-icon {
        color: #666;
        padding: 0;
        margin: 0 2px;
@@ -136,7 +129,7 @@
        transition: all .3s ease;
        border-radius: 50%;
      }
-     #bugsList paper-icon-button:hover {
+     #bugsList iron-icon:hover {
        color: #222;
        background-color: #aaa;
      }
@@ -198,7 +191,7 @@
               <div class="bug no-toggle">
                 <a target="_blank" href="[[_bugUrl(bug)]]">[[_bugLabel(bug)]]</a>
                 [[_bugSummary(bug, annotation.bugData)]]
-                <paper-icon-button icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></paper-icon-button>
+                <iron-icon icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></iron-icon>
               </div>
             </template>
           </div>
@@ -222,27 +215,27 @@
             </span>
           </div>
           <div class="alert-controls-buttons layout horizontal center flex-child wrap">
-            <paper-button class="horizontal layout center" id="linkBug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, tree)]]" raised noink>
+            <button class="horizontal layout center" id="linkBug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, tree)]]">
               <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
               Link/File Bug
-            </paper-button>
-            <paper-button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" hidden$="[[_hideActions(alert.type, tree)]]" raised noink>
+            </button>
+            <button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" hidden$="[[_hideActions(alert.type, tree)]]">
               <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
               </iron-icon>
               [[_snoozeText]]
-            </paper-button>
-            <paper-button class="horizontal layout center" id="group" on-tap="_group" alt="Group" raised noink hidden$="[[!_hasGroup]]">
+            </button>
+            <button class="horizontal layout center" id="group" on-tap="_group" alt="Group" hidden$="[[!_hasGroup]]">
               <iron-icon class="group-icon" icon="editor:merge-type"></iron-icon>
               Group
-            </paper-button>
-            <paper-button class="horizontal layout center" id="ungroup" on-tap="_ungroup" alt="Ungroup" raised noink hidden$="[[!_hasUngroup]]">
+            </button>
+            <button class="horizontal layout center" id="ungroup" on-tap="_ungroup" alt="Ungroup" hidden$="[[!_hasUngroup]]">
               <iron-icon class="ungroup-icon" icon="close"></iron-icon>
               Ungroup
-            </paper-button>
-            <paper-button class="horizontal layout center" id="resolve" on-tap="_resolve" alt="Resolve" raised noink hidden$="[[!_hasResolve]]">
+            </button>
+            <button class="horizontal layout center" id="resolve" on-tap="_resolve" alt="Resolve" hidden$="[[!_hasResolve]]">
               <iron-icon class="ungroup-icon" icon="check"></iron-icon>
               Resolve
-            </paper-button>
+            </button>
           </div>
         </div>
         <div class="alert-info flex">
@@ -251,7 +244,7 @@
               [[alert.alerts.length]] alerts.
             </div>
           </template>
-          <iron-collapse id="alertCollapse" class="sub-alert-list" opened="more" hidden$="[[!_haveSubAlerts(alert)]]">
+          <iron-collapse id="alertCollapse" class="sub-alert-list" opened hidden$="[[!_haveSubAlerts(alert)]]">
             <paper-radio-group id="alertRadio" class="alert-radio" attr-for-selected="value" selected="{{selectedAlert}}">
               <template is="dom-repeat" items="[[alert.alerts]]" as="subalert">
                 <paper-radio-button value="[[subalert.key]]">

@@ -1,18 +1,19 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
-<link rel="import" href="../../bower_components/neon-animation/animations/scale-up-animation.html">
-<link rel="import" href="../../bower_components/neon-animation/animations/fade-out-animation.html">
-<link rel="import" href="../../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
+
+<link rel="import" href="../../elements/som-input-styles.html">
 
 <link rel="import" href="../../elements/som-annotation-manager-behavior.html">
 <link rel="import" href="../../elements/som-marked-element/som-marked-element.html">
 
 <dom-module id="som-annotations">
   <template>
+    <style include="som-input-styles"></style>
     <style>
       #bugDialog, #removeBugDialog, #snoozeDialog {
         width: 300px;
@@ -22,7 +23,7 @@
         min-width: 300px;
         max-width: 600px;
       }
-      #commentsDialog paper-icon-button {
+      #commentsDialog iron-icon {
         color: #666;
         padding: 0;
         margin-left: 4px;
@@ -33,7 +34,7 @@
         border-radius: 50%;
         float: right;
       }
-      #commentsDialog paper-icon-button:hover {
+      #commentsDialog iron-icon:hover {
         color: #222;
         background-color: #aaa;
       }
@@ -71,6 +72,9 @@
       .buttons {
         margin-top: 1em;
       }
+      .buttons button {
+        font-size: 1.1em;
+      }
       .header {
         padding: 0.5em 8px 0.25em;
         margin: 1em 4px;
@@ -94,12 +98,13 @@
     </template>
 
     <iron-a11y-keys target="[[_bugInput]]" keys="enter" on-keys-pressed="_saveBug"></iron-a11y-keys>
-    <paper-dialog id="bugDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+    <paper-dialog id="bugDialog" with-backdrop>
       <h2>Enter bug number</h2>
       <paper-input autofocus id="bug" label="Bug # or URL" auto-validate minlength="3"></paper-input>
-      <paper-checkbox id="autosnooze" checked>
+      <label class="checkbox">
+        <input type="checkbox" id="autosnooze" checked />
         Autosnooze this alert
-      </paper-checkbox>
+      </label>
       <div>
         <a hidden$="[[_filedBug]]" id="fileBugLink" target="_blank" on-tap="_fileBugClicked">
           File bug
@@ -110,16 +115,16 @@
       </div>
       <div class="error">[[_bugErrorMessage]]</div>
       <div class="buttons">
-        <paper-button dialog-dismiss raised>
+        <button dialog-dismiss>
           Close
-        </paper-button>
-        <paper-button raised on-tap="_saveBug">
+        </button>
+        <button on-tap="_saveBug" class="emphasized">
           Save Bug
-        </paper-button>
+        </button>
       </div>
     </paper-dialog>
 
-    <paper-dialog id="removeBugDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+    <paper-dialog id="removeBugDialog" with-backdrop>
       <h2>Unlinking bug from alert</h2>
       <div>
         <a target="_blank" href="[[_removeBugModel.url]]">Bug [[_removeBugModel.bug]]</a>
@@ -132,32 +137,32 @@
       </div>
       <div class="error">[[_removeBugErrorMessage]]</div>
       <div class="buttons">
-        <paper-button raised on-tap="_removeBug">
-          Yes, unlink this bug
-        </paper-button>
-        <paper-button dialog-dismiss raised>
+        <button dialog-dismiss>
           Cancel
-        </paper-button>
+        </button>
+        <button on-tap="_removeBug" class="emphasized">
+          Yes, unlink this bug
+        </button>
       </div>
     </paper-dialog>
 
     <iron-a11y-keys target="[[_snoozeTimeInput]]" keys="enter" on-keys-pressed="_snooze"></iron-a11y-keys>
-    <paper-dialog id="snoozeDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+    <paper-dialog id="snoozeDialog" with-backdrop>
       <h2>Snooze</h2>
       <paper-input autofocus label="Amount of time (minutes):" id="snoozeTime" auto-validate allowed-pattern="[0-9]"></paper-input>
       <div class="error">[[_snoozeErrorMessage]]</div>
       <div class="buttons">
-        <paper-button dialog-dismiss raised>
+        <button dialog-dismiss>
           Close
-        </paper-button>
-        <paper-button raised on-tap="_snooze">
+        </button>
+        <button on-tap="_snooze" class="emphasized">
           Snooze
-        </paper-button>
+        </button>
       </div>
     </paper-dialog>
 
     <iron-a11y-keys target="[[_commentTextInput]]" keys="enter" on-keys-pressed="_addComment"></iron-a11y-keys>
-    <paper-dialog id="commentsDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+    <paper-dialog id="commentsDialog" with-backdrop>
       <h2>Comments</h2>
       <ul id="commentsList" hidden$="[[_commentsHidden]]">
         <template is="dom-repeat" items="[[_commentsModelAnnotation.comments]]" as="comment">
@@ -166,8 +171,8 @@
               <a href="mailto:[[comment.user]]" class="user-info">
                 [[_computeUsername(comment.user)]]
               </a> on [[_formatTimestamp(comment.time)]]
-              <paper-icon-button icon="close" title="Remove" id="removeComment[[index]]"
-                hidden$="[[_computeHideDeleteComment(comment)]]" on-tap="_removeComment"></paper-icon-button>
+              <iron-icon icon="close" title="Remove" id="removeComment[[index]]"
+                hidden$="[[_computeHideDeleteComment(comment)]]" on-tap="_removeComment"></iron-icon>
             </span>
             <som-marked-element class="comment-text" markdown="[[comment.text]]"></som-marked-element>
           </li>
@@ -176,22 +181,23 @@
       <paper-textarea autofocus label="add comment" id="commentText" required></paper-textarea>
       <div class="error">[[_commentsErrorMessage]]</div>
       <div class="buttons">
-        <paper-button dialog-dismiss raised>
+        <button dialog-dismiss>
           Close
-        </paper-button>
-        <paper-button raised disabled="[[_commentInFlight]]" on-tap="_addComment">
+        </button>
+        <button disabled$="[[_commentInFlight]]" on-tap="_addComment" class="emphasized">
           Comment
-        </paper-button>
+        </button>
       </div>
     </paper-dialog>
 
     <iron-a11y-keys target="[[_groupInput]]" keys="enter" on-keys-pressed="_group"></iron-a11y-keys>
-    <paper-dialog id="groupDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+    <paper-dialog id="groupDialog" with-backdrop>
       <h2>Group</h2>
       <div id="groupList">
         <template is="dom-repeat" items="[[_groupModel.targets]]" as="target">
-          <div>
-            <paper-checkbox checked="{{target.checked}}">
+          <label class="checkbox">
+            <input type="checkbox" checked="{{target.checked::change}}" />
+            <div>
               [[target.title]]
               <template is="dom-if" if="[[_haveSubAlerts(target)]]">
                 <span>
@@ -207,40 +213,39 @@
                   </template>
                 </span>
               </template>
-            </paper-checkbox>
-          </div>
+            </div>
+          </label>
         </template>
       </div>
       <div class="error">[[_groupErrorMessage]]</div>
       <div class="buttons">
-        <paper-button dialog-dismiss raised>
+        <button dialog-dismiss>
           Close
-        </paper-button>
-        <paper-button raised on-tap="_group">
+        </button>
+        <button on-tap="_group" class="emphasized">
           Group
-        </paper-button>
+        </button>
       </div>
     </paper-dialog>
     <iron-a11y-keys target="[[_ungroupInput]]" keys="enter" on-keys-pressed="_ungroup"></iron-a11y-keys>
-    <paper-dialog id="ungroupDialog" with-backdrop entry-animation="scale-up-animation" exit-animation="fade-out-animation">
+    <paper-dialog id="ungroupDialog" with-backdrop>
       <h2>Ungroup</h2>
       <div id="groupList">
         <template is="dom-repeat" items="[[_ungroupModel.alerts]]" as="alert">
-          <div>
-            <paper-checkbox checked="{{alert.checked}}">
-              [[alert.title]]
-            </paper-checkbox>
-          </div>
+          <label class="checkbox">
+            <input type="checkbox" checked="{{alert.checked::change}}" />
+            [[alert.title]]
+          </label>
         </template>
       </div>
       <div class="error">[[_ungroupErrorMessage]]</div>
       <div class="buttons">
-        <paper-button dialog-dismiss raised>
+        <button dialog-dismiss>
           Close
-        </paper-button>
-        <paper-button raised on-tap="_ungroup">
+        </button>
+        <button on-tap="_ungroup" class="emphasized">
           Ungroup
-        </paper-button>
+        </button>
       </div>
     </paper-dialog>
   </template>
