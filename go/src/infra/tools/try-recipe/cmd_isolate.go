@@ -126,7 +126,7 @@ func (c *cmdIsolate) Run(a subcommands.Application, args []string, env subcomman
 
 	err = editMode(ctx, func(jd *JobDefinition) (*JobDefinition, error) {
 		ret := &(*jd)
-		ret.RecipeIsolatedHash = hash
+		ret.RecipeIsolatedSource = &RecipeIsolatedSource{string(hash)}
 		return ret, nil
 	})
 	if err != nil {

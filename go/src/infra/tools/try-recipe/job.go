@@ -14,6 +14,12 @@ import (
 
 const recipePropertiesJSON = "$RECIPE_PROPERTIES_JSON"
 
+// RecipeIsolatedSource instructs the JobDefinition to obtain its recipe from an
+// isolated recipe bundle.
+type RecipeIsolatedSource struct {
+	Isolated string `json:"isolated"`
+}
+
 // JobDefinition defines a 'try-recipe' job. It's like a normal Swarming
 // NewTaskRequest, but with some recipe-specific extras.
 //
@@ -23,7 +29,8 @@ const recipePropertiesJSON = "$RECIPE_PROPERTIES_JSON"
 // Additionally, RecipeProperties will replace any args in the swarming task's
 // command which are the string $RECIPE_PROPERTIES_JSON.
 type JobDefinition struct {
-	RecipeIsolatedHash string `json:"recipe_isolated_hash"`
+	// Only one source may be defined at a time.
+	RecipeIsolatedSource *RecipeIsolatedSource `json:"recipe_isolated_source"`
 
 	RecipeProperties map[string]interface{} `json:"recipe_properties"`
 
@@ -78,39 +85,77 @@ func updateMap(updates map[string]string, slc *[]*swarming.SwarmingRpcsStringPai
 	*slc = newSlice
 }
 
-func (jd *JobDefinition) Edit(dims, props, env map[string]string, recipe string) (*JobDefinition, error) {
-	if len(dims) == 0 && len(props) == 0 && len(env) == 0 && recipe == "" {
-		return jd, nil
+type EditJobDefinition struct {
+	jd  JobDefinition
+	err error
+}
+
+func (jd *JobDefinition) Edit() *EditJobDefinition {
+	return &EditJobDefinition{*jd, nil}
+}
+
+func (ejd *EditJobDefinition) Finalize() (*JobDefinition, error) {
+	if ejd.err != nil {
+		return nil, ejd.err
 	}
+	return &ejd.jd, nil
+}
 
-	ret := *jd
-	ret.SwarmingTask = &(*jd.SwarmingTask)
-
-	if recipe != "" {
-		ret.RecipeIsolatedHash = recipe
+func (ejd *EditJobDefinition) tweak(fn func(*EditJobDefinition) error) {
+	if ejd.err == nil {
+		ejd.err = fn(ejd)
 	}
+}
 
-	updateMap(dims, &ret.SwarmingTask.Properties.Dimensions)
-	updateMap(env, &ret.SwarmingTask.Properties.Env)
+func (ejd *EditJobDefinition) RecipeSource(isolated string) {
+	if isolated == "" {
+		return
+	}
+	ejd.tweak(func(ejd *EditJobDefinition) error {
+		ejd.jd.RecipeIsolatedSource = &RecipeIsolatedSource{isolated}
+		return nil
+	})
+}
 
-	if len(props) > 0 {
-		ret.RecipeProperties = make(map[string]interface{}, len(jd.RecipeProperties)+len(props))
+// Dimensions edits the swarming dimensions.
+func (ejd *EditJobDefinition) Dimensions(dims map[string]string) {
+	if len(dims) == 0 {
+		return
+	}
+	ejd.tweak(func(ejd *EditJobDefinition) error {
+		updateMap(dims, &ejd.jd.SwarmingTask.Properties.Dimensions)
+		return nil
+	})
+}
+
+// Env edits the swarming environment variables (i.e. before kitchen).
+func (ejd *EditJobDefinition) Env(env map[string]string) {
+	if len(env) == 0 {
+		return
+	}
+	ejd.tweak(func(ejd *EditJobDefinition) error {
+		updateMap(env, &ejd.jd.SwarmingTask.Properties.Env)
+		return nil
+	})
+}
+
+// Properties edits the recipe properties.
+func (ejd *EditJobDefinition) Properties(props map[string]string) {
+	if len(props) == 0 {
+		return
+	}
+	ejd.tweak(func(ejd *EditJobDefinition) error {
 		for k, v := range props {
-			if v != "" {
+			if v == "" {
+				delete(ejd.jd.RecipeProperties, v)
+			} else {
 				var obj interface{}
-				if err := json.NewDecoder(strings.NewReader(v)).Decode(&obj); err != nil {
-					return nil, err
+				if err := json.Unmarshal([]byte(v), &obj); err != nil {
+					return err
 				}
-				ret.RecipeProperties[k] = obj
+				ejd.jd.RecipeProperties[k] = obj
 			}
 		}
-		for k, v := range jd.RecipeProperties {
-			if new, ok := props[k]; ok && new == "" {
-				continue
-			}
-			ret.RecipeProperties[k] = v
-		}
-	}
-
-	return &ret, nil
+		return nil
+	})
 }

@@ -78,7 +78,12 @@ func (e *editFlags) register(fs *flag.FlagSet) {
 }
 
 func (e *editFlags) Edit(jd *JobDefinition) (*JobDefinition, error) {
-	return jd.Edit(e.dimensions, e.properties, e.environment, e.recipeIsolate)
+	ejd := jd.Edit()
+	ejd.RecipeSource(e.recipeIsolate)
+	ejd.Dimensions(e.dimensions)
+	ejd.Properties(e.properties)
+	ejd.Env(e.environment)
+	return ejd.Finalize()
 }
 
 func decodeJobDefinition(ctx context.Context) (*JobDefinition, error) {
