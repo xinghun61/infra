@@ -8,3 +8,6 @@ gae.py switch -A chopsdash
 
 To run a local instance:
 gae.py devserver -A chopsdash
+
+To run tests:
+go test

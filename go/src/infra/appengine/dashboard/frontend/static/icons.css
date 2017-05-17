@@ -3,6 +3,11 @@
   display: inline-block;
   height: 12px;
   width: 12px;
+  vertical-align: -1px;
+
+}
+.circle-container {
+    margin: .5px;
 }
 .container {
     padding: .5px 0px;

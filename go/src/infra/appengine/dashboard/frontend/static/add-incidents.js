@@ -52,8 +52,7 @@
 	if (incident['Open']) {
 	  noIssues = false;
 	  let statusCell = document.querySelector('.js-' + serviceName);
-	  statusCell.appendChild(
-	      createIcon(incident['Severity'], IconClass.CIRCLE));
+	  statusCell.appendChild(addCurrent(incident['Severity']));
 	} else {
 	  let incidentCell = document.querySelector('.js-' + serviceName + '-incidents');
 	  incidentCell.appendChild(addIncident(incident, dateStrings));
@@ -61,9 +60,16 @@
       });
       if (noIssues) {
 	let statusCell = document.querySelector('.js-' + serviceName);
-	statusCell.appendChild(createIcon(Alert.GREEN, IconClass.CIRCLE));
+	statusCell.appendChild(addCurrent(Alert.GREEN));
       }
     });
+  }
+
+  function addCurrent(severity) {
+    let container = document.createElement('span');
+    container.classList.add('circle-container');
+    container.appendChild(createIcon(severity, IconClass.CIRCLE));
+    return container;
   }
 
   function getDatePosition(rawDate, dateStrings) {
