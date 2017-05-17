@@ -65,6 +65,9 @@
 
         if (ann.opened !== undefined) {
           returnVal.opened = ann.opened;
+        } else if (returnVal.snoozed) {
+          // Snoozed annotations are collapsed unless otherwise specified.
+          returnVal.opened = false;
         }
       }
       return returnVal;

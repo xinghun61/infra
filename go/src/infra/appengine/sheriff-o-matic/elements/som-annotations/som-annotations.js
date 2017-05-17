@@ -225,9 +225,7 @@
       this.annotationError.action = 'Fetching all annotations';
       this.sendAnnotation(
               evt.target.alert.key, evt.detail.type, evt.detail.change)
-          .then((response) => {
-            this.setLocalStateKey(response.key, {opened: false});
-          })
+          .then((response) => {})
           .catch((error) => {
             let old = this.annotationError;
             this.annotationError.message = error;
@@ -387,7 +385,6 @@
               (response) => {
                 this.$.commentText.value = '';
                 this._commentsErrorMessage = '';
-                this.setLocalStateKey(response.key, {opened: false});
                 this._commentInFlight = false;
               },
               (error) => {
@@ -437,9 +434,7 @@
       });
       if (request) {
         request.then(
-            (response) => {
-              this.setLocalStateKey(response.key, {opened: false});
-            },
+            (response) => {},
             (error) => {
               this._commentsErrorMessage = error;
             });
@@ -487,8 +482,6 @@
                 (response) => {
                   this.$.groupDialog.close();
                   alerts[i].checked = false;
-
-                  this.setLocalStateKey(response.key, {opened: false});
                 },
                 (error) => {
                   this._groupErrorMessage = error;
