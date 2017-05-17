@@ -235,6 +235,18 @@ class TestGetDevices(TestDevice):
     devices = usb_device.get_android_devices(None)
     self.assertEquals(len(devices), 0)
 
+  @mock.patch('os.stat')
+  @mock.patch('usb1.USBContext')
+  def test_get_android_devices_os_error(self, mock_usb_context, mock_os_stat):
+    self.usb_context = FakeUSBContext([self.libusb_device])
+    mock_usb_context.return_value = self.usb_context
+    mock_os_stat.side_effect = OSError('omg can\'t stat')
+    devices = usb_device.get_android_devices(None)
+    self.assertEquals(len(devices), 1)
+    self.assertEquals(devices[0].serial, self.libusb_device.serial)
+    self.assertEquals(devices[0].major, None)
+    self.assertEquals(devices[0].minor, None)
+
   @mock.patch('usb1.USBContext')
   def test_filter_devices(self, mock_usb_context):
     d1 = self.libusb_device
