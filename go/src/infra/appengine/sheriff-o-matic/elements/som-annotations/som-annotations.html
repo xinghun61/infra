@@ -65,15 +65,25 @@
         width: 100%;
         font-style: italic;
       }
-      .error {
-        color: #c00;
-        margin-top: 0;
-      }
       .buttons {
         margin-top: 1em;
       }
       .buttons button {
         font-size: 1.1em;
+      }
+      .error {
+        color: #c00;
+        margin-top: 0;
+      }
+      .group-row,
+      .ungroup-row {
+        background: #fff;
+        border-bottom: 1px solid #ddd;
+        padding: 0.25em 4px;
+      }
+      .group-row:nth-child(even),
+      .ungroup-row:nth-child(even) {
+        background: #f2f2f2;
       }
       .header {
         padding: 0.5em 8px 0.25em;
@@ -194,9 +204,13 @@
     <paper-dialog id="groupDialog" with-backdrop>
       <h2>Group</h2>
       <div id="groupList">
+        <label class="checkbox group-row">
+          <input type="checkbox" on-change="_checkAll" data-checkbox-selector=".group-checkbox" />
+          Check/Uncheck All
+        </label>
         <template is="dom-repeat" items="[[_groupModel.targets]]" as="target">
-          <label class="checkbox">
-            <input type="checkbox" checked="{{target.checked::change}}" />
+          <label class="checkbox group-row">
+            <input type="checkbox" class="group-checkbox" checked="{{target.checked::change}}" />
             <div>
               [[target.title]]
               <template is="dom-if" if="[[_haveSubAlerts(target)]]">
@@ -231,9 +245,13 @@
     <paper-dialog id="ungroupDialog" with-backdrop>
       <h2>Ungroup</h2>
       <div id="groupList">
+        <label class="checkbox ungroup-row">
+          <input type="checkbox" on-change="_checkAll" data-checkbox-selector=".ungroup-checkbox" />
+          Check/Uncheck All
+        </label>
         <template is="dom-repeat" items="[[_ungroupModel.alerts]]" as="alert">
-          <label class="checkbox">
-            <input type="checkbox" checked="{{alert.checked::change}}" />
+          <label class="checkbox ungroup-row">
+            <input type="checkbox" class="ungroup-checkbox" checked="{{alert.checked::change}}" />
             [[alert.title]]
           </label>
         </template>

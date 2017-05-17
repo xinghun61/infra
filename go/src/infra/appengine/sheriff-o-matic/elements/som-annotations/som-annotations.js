@@ -537,5 +537,20 @@
         });
     },
 
+    ////////////////////// Misc UX ///////////////////////////
+
+    _checkAll: function(e) {
+      let target = e.target;
+      let checkboxSelector = target.getAttribute('data-checkbox-selector');
+      let checkboxes = this.querySelectorAll(checkboxSelector);
+      for (let i = 0; i < checkboxes.length; i++) {
+        // Note: We are using .click() because otherwise the checkbox's change
+        // event is not fired.
+        if (checkboxes[i].checked != target.checked) {
+          checkboxes[i].click();
+        }
+      }
+    },
+
   })
 })();
