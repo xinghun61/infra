@@ -330,22 +330,17 @@ class TestGetPhysicalPorts(TestDevice):
   def setUp(self):
     super(TestGetPhysicalPorts, self).setUp()
     self.libusb_devices = []
+    self.port_mappings = {}
     for i in xrange(1, 8):
       libusb_device = FakeLibusbDevice(
           serial='serial%d' % i, settings=[self.supported_setting])
+      self.port_mappings[i] = 'serial%d' % i
       self.libusb_devices.append(libusb_device)
 
-    self.libusb_devices[0].port_list = [1, 2, 1]
-    self.libusb_devices[1].port_list = [1, 2, 2]
-    self.libusb_devices[2].port_list = [1, 2, 3]
-    self.libusb_devices[3].port_list = [1, 2, 4, 1]
-    self.libusb_devices[4].port_list = [1, 2, 4, 2]
-    self.libusb_devices[5].port_list = [1, 2, 4, 3]
-    self.libusb_devices[6].port_list = [1, 2, 4, 4]
-
-  def test_full_hub(self):
+  @mock.patch('devil.utils.find_usb_devices.GetAllPhysicalPortToSerialMaps')
+  def test_known_hub(self, mock_physical_ports):
+    mock_physical_ports.return_value = [self.port_mappings]
     devices = [usb_device.USBDevice(d) for d in self.libusb_devices]
-
     usb_device.assign_physical_ports(devices)
 
     self.assertEquals(devices[0].physical_port, 1)
@@ -356,46 +351,10 @@ class TestGetPhysicalPorts(TestDevice):
     self.assertEquals(devices[5].physical_port, 6)
     self.assertEquals(devices[6].physical_port, 7)
 
-  def test_incomplete_hub_list_1(self):
-    # Skip the 5th device and make sure the physical ports stay the same.
-    devices = []
-    for i in range(0, 4) + range(5, 7):
-      devices.append(usb_device.USBDevice(self.libusb_devices[i]))
-
-    usb_device.assign_physical_ports(devices)
-
-    self.assertEquals(devices[0].physical_port, 1)
-    self.assertEquals(devices[1].physical_port, 2)
-    self.assertEquals(devices[2].physical_port, 3)
-    self.assertEquals(devices[3].physical_port, 4)
-    self.assertEquals(devices[4].physical_port, 6)
-    self.assertEquals(devices[5].physical_port, 7)
-
-  def test_incomplete_hub_list_2(self):
-    # Skip all but the first 2 devices.
-    devices = []
-    for i in range(0, 2):
-      devices.append(usb_device.USBDevice(self.libusb_devices[i]))
-
-    usb_device.assign_physical_ports(devices)
-    for d in devices:
-      self.assertEquals(d.physical_port, None)
-
-  def test_unexpected_hub_list(self):
-    # Give the 7th device a crazy port list.
-    self.libusb_devices[6].port_list = [1, 2, 4, 4, 1]
+  @mock.patch('devil.utils.find_usb_devices.GetAllPhysicalPortToSerialMaps')
+  def test_many_unknown_hubs(self, mock_physical_ports):
+    mock_physical_ports.return_value = [{}, {}, {}]
     devices = [usb_device.USBDevice(d) for d in self.libusb_devices]
-
-    usb_device.assign_physical_ports(devices)
-    for d in devices:
-      self.assertEquals(d.physical_port, None)
-
-  def test_duplicate_physical_ports(self):
-    # Give the 1st and 2nd devices the same port list.
-    self.libusb_devices[0].port_list = [1, 2, 1]
-    self.libusb_devices[1].port_list = [1, 2, 1]
-    devices = [usb_device.USBDevice(d) for d in self.libusb_devices]
-
     usb_device.assign_physical_ports(devices)
     for d in devices:
       self.assertEquals(d.physical_port, None)

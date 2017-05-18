@@ -19,6 +19,8 @@ import usb1
 
 from battor import battor_error
 from devil.utils import battor_device_mapping
+from devil.utils import find_usb_devices
+from devil.utils import usb_hubs
 
 
 if sys.platform != 'linux2':
@@ -94,50 +96,14 @@ def assign_physical_ports(devices):
   """Based on usbfs port list, try to assign each device its physical port num.
 
   This corresponds to the order in which they're plugged into an external hub.
-  The logic here depends on a certain port list scheme and is very brittle
-  to any potential changes.
-
-  Below is an example of what the port list might look like for a batch of 7.
-  [1, 2, 1]     =  physical port #1
-  [1, 2, 2]     =  physical port #2
-  [1, 2, 3]     =  physical port #3
-  [1, 2, 4, 1]  =  physical port #4
-  [1, 2, 4, 2]  =  physical port #5
-  [1, 2, 4, 3]  =  physical port #6
-  [1, 2, 4, 4]  =  physical port #7
-
-  The scheme here uses the last port num as its physical port and increments it
-  by 3 if it's in the set of devices with the longer port list. Note that the
-  port list can't simply be lexographically sorted because a missing device
-  could throw off the results.
   """
-  # TODO(bpastene): Also filter on whitelisted usb hubs if a different port
-  # list scheme is ever encountered.
-  port_lists = [d.port_list for d in devices]
-  min_port_len = min(len(port_list) for port_list in port_lists)
-  max_port_len = max(len(port_list) for port_list in port_lists)
-  if max_port_len - min_port_len == 1:
-    # If the length of any two port lists differ by only one (like the above
-    # example), assign each device its last port, and add 3 to those with the
-    # longer length.
-    for d in devices:
-      if len(d.port_list) == min_port_len:
-        d.physical_port = d.port_list[-1]
-      else:
-        d.physical_port = d.port_list[-1] + 3
-  else:
-    logging.error(
-        'Unable to assign physical ports based on port lists: %s',
-        str(port_lists))
-    return
-
-  # Ensure all physical ports that were assigned are unique.
-  if len(set(d.physical_port for d in devices)) < len(devices):
-    logging.error(
-        'Multiple devices were assigned the same physical port: %s',
-        str(port_lists))
-    for d in devices:
-      d.physical_port = None
+  port_mapping = {}
+  for hub in find_usb_devices.GetAllPhysicalPortToSerialMaps(
+      usb_hubs.ALL_HUBS, fast=True):
+    # Reverse the mapping.
+    port_mapping.update({device: port for port, device in hub.iteritems()})
+  for d in devices:
+    d.physical_port = port_mapping.get(d.serial)
 
 
 class USBDevice(object):
