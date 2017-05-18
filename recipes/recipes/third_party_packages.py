@@ -92,21 +92,41 @@ def PackageGit(api):
 def PackageGitForUnix(api, workdir):
   """Builds Git on Unix and uploads it to a CIPD server."""
 
+  def install_autoconf():
+    workdir = api.path['start_dir'].join('autoconf')
+    prefix = workdir.join('prefix')
+
+    source = workdir.join('source')
+    api.cipd.ensure(source, {
+        'infra/third_party/source/autoconf': 'version:2.69',
+    })
+
+    with api.context(cwd=source):
+      api.step(
+          'configure',
+          ['./configure', '--prefix', prefix])
+      api.step(
+          'install',
+          ['make', 'install'])
+    return prefix.join('bin')
+
+  # Note on OS X:
+  # `make configure` requires autoconf in $PATH, which is not available on
+  # OS X out of box. Unfortunately autoconf is not easy to make portable, so
+  # we cannot package it.
+  with api.step.nest('autoconf'):
+    autoconf_bin = install_autoconf()
+
   def install(target_dir):
     # cwd is source checkout
-
-    # Note on OS X:
-    # `make configure` requires autoconf in $PATH, which is not available on
-    # OS X out of box.Unfortunately autoconf is not easy to make portable, so
-    # we cannot package it. However, `make install` requires XCode to be
-    # present on the machine, so this installation is not hermetic anyway.
-    # We treat the dependency on autoconf the same way as the dependency
-    # on XCode.
-
-    # Set NO_INSTALL_HARDLINKS to avoid hard links in
-    # <target_dir>/libexec/git-core/git-*
-    # because CIPD does not support them. Use symlinks instead.
-    with api.context(env={'NO_INSTALL_HARDLINKS': 'VAR_PRESENT'}):
+    env = {
+        # Set NO_INSTALL_HARDLINKS to avoid hard links in
+        # <target_dir>/libexec/git-core/git-*
+        # because CIPD does not support them. Use symlinks instead.
+        'NO_INSTALL_HARDLINKS': 'VAR_PRESENT',
+        'PATH': api.path.pathsep.join([str(autoconf_bin), '%(PATH)s']),
+    }
+    with api.context(env=env):
       api.step('make configure', ['make', 'configure'])
       api.step('configure', ['./configure'])
       api.step('make install', ['make', 'install', 'prefix=%s' % target_dir])
