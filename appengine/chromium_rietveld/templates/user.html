@@ -5,7 +5,9 @@
 document.onkeydown = M_dashboardKeyDown;
 -->
 </script>
-<h2 style="display:inline">Issues for {{viewed_account.nickname}}</h2>
+<h2 style="text-align:left;float:left;">Issues for {{viewed_account.nickname}}</h2>
+<h2 style="text-align:right;float:right;"><a href="https://chromium-review.googlesource.com/dashboard/self?polygerrit=1">Gerrit Changes</a></h2>
+<span style="display:block;clear:both;">
 {%if show_block and viewed_account.blocked %}<a href="{%url codereview.views.block_user viewed_account.email%}">Unblock</a>{%endif%}
 {%if show_block and not viewed_account.blocked %}<a href="{%url codereview.views.block_user viewed_account.email%}">Block</a>{%endif%}
 <p>

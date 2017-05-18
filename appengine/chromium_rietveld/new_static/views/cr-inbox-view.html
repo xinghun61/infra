@@ -67,13 +67,15 @@ found in the LICENSE file. -->
                 }
             }
         </style>
-        <cr-butterbar message="{{ butterbarMessage }}"></cr-butterbar>
+        <cr-butterbar message="{{ butterbarMessage }}">
+        </cr-butterbar>
         <div class="login-prompt">
             <p><a is="cr-action" on-tap="{{ login }}">Login</a> to view your issues.</p>
         </div>
         <template if="{{ issues }}">
             <header>
                 <h1 class="app-header">My Issues</h1>
+                <h3 class="gerrit-link"><a href="https://chromium-review.googlesource.com/dashboard/self?polygerrit=1">My Gerrit Changes</a></h3>
                 <div class="filter-form">
                     <div class="form-field">
                         <label for="recent-activity">
