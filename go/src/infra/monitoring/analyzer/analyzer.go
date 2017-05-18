@@ -865,8 +865,9 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 	filteredFailures := []*messages.BuildStep{}
 
 	for _, failure := range failures {
-		if failure.Step.Name == "steps" {
-			// The actual breaking step will appear later.
+		if failure.Step.Name == "steps" || failure.Step.Name == "Failure reason" {
+			// for "steps", The actual breaking step will appear later.
+			// "Failure reason" is an extra step emitted by the recipe engine, when a build fails. It can be ignored.
 			continue
 		}
 
