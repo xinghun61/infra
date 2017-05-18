@@ -1,0 +1,67 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<dom-module id="test-list">
+  <template>
+    <style>
+      .test-failures {
+        max-width: 400px;
+        max-height: 120px;
+        overflow-y: auto;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      div {
+        text-align: left;
+      }
+    </style>
+
+    <template is="dom-if" if="[[!_empty]]">
+      <div>
+        [[tests.length]] test(s):
+      </div>
+      <div class="test-failures">
+        <ul>
+          <template is="dom-repeat" items="[[tests]]" as="test" sort="_sortTests">
+            <li>[[test]]</li>
+          </template>
+        </ul>
+      </div>
+    </template>
+    <template is="dom-if" if="[[_empty]]">
+      <div>
+          Test not swarmed or unknown output format.
+      </div>
+    </template>
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'test-list',
+
+        properties: {
+          tests: {
+            type: Array,
+            value: undefined,
+          },
+          _empty: {
+            type: Boolean,
+            value: true,
+            computed: '_isEmptyList(tests)',
+          },
+        },
+
+        _isEmptyList: function(tests) {
+          return !tests || tests.length == 0;
+        },
+
+        _sortTests: function(a, b) {
+          return a.localeCompare(b);
+        },
+
+      });
+    })();
+  </script>
+</dom-module>

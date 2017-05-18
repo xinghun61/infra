@@ -1,0 +1,60 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<dom-module id="heuristic-hints">
+  <template>
+    <style>
+      .hint-list {
+        width: 100%;
+        max-height: 120px;
+        overflow-y: auto;
+        text-align: left;
+      }
+      ul {
+        padding-left: 20px;
+      }
+    </style>
+
+    <template is="dom-if" if="[[!_empty]]">
+      <div class="hint-list">
+        <ul>
+          <template is="dom-repeat" items="[[_sortedHints(hints)]]" as="hint">
+            <li>[[hint]]</li>
+          </template>
+        </ul>
+      </div>
+    </template>
+    <template is="dom-if" if="[[_empty]]">
+      <div>No finding by heuristic rules.</div>
+    </template>
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'heuristic-hints',
+
+        properties: {
+          hints: {
+            type: Array,
+          },
+          _empty: {
+            type: Boolean,
+            value: true,
+            computed: '_isEmptyList(hints)',
+          },
+        },
+
+        _isEmptyList: function(hints) {
+          return !hints || Object.keys(hints).length == 0;
+        },
+
+        _sortedHints: function(hints) {
+          return Object.keys(hints).sort(function(a, b) {
+            return hints[b] - hints[a];
+          });
+        },
+      });
+    })();
+  </script>
+</dom-module>

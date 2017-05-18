@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Testing failure-group</title>
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="non-reliable-failures.html">
+<body>
+  <div>
+    <div>Empty failure list:</div>
+    <div style="border: 1px solid; width: 300px">
+    <non-reliable-failures id="no-flaky-failures" header="No tests"></non-reliable-failures>
+    </div>
+  </div>
+  <br>
+  <br>
+  <br>
+  <div>
+    <div>Flaky failure list:</div>
+    <div style="border: 1px solid;">
+      <non-reliable-failures id="flaky-failures" header="Flaky failures" builder-url="https://luci-milo.appspot.com/buildbot/chromium.memory/Linux%20TSan%20Tests"></non-reliable-failures>
+    </div>
+  </div>
+  <br>
+  <br>
+  <br>
+  <div>
+    <div>Unclassified failure list:</div>
+    <div style="border: 1px solid;">
+      <non-reliable-failures id="unclassified-failures" header="Unclassified failures" builder-url="https://luci-milo.appspot.com/buildbot/chromium.memory/Linux%20TSan%20Tests"></non-reliable-failures>
+    </div>
+  </div>
+</body>
+<script>
+  var tests = [];
+  tests.push('LongTestName.aaaaaaaaaaaaaaaaaaaaaaaaassssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+  for (var i = 0; i < 100; i ++) {
+    tests.push('TestSuite.Test_' + i);
+  }
+
+  var flakyFailures = [
+    {
+      'stepName': 'net_unittests',
+      'result': {
+        'supported': true,
+        'tests': tests,
+        'first_failure': 123,
+        'last_pass': 120,
+        'try_job': {
+          'culprit': {
+            'url': 'http://crrev.com/469228',
+            'review_url': 'http://crrev.com/469228',
+            'revision': '275c19ecdc32a7d1fc994f77b9972b041a86f7a7',
+          },
+          'task_id': '35e9fd18cff70610',
+          'try_job_url': 'http://build.chromium.org/p/tryserver.chromium.linux/builders/linux_chromium_tsan_variable/builds/10',
+        },
+        'heuristic_analysis': {
+          'suspected_cls': [
+            {
+              'commit_position': 500000,
+              'repo_name': 'chromium',
+              'url': 'https://codereview.chromium.org/2187403002',
+              'score': 10,
+              'build_number': 122,
+              'revision': 'b7a8f7678a999ba33e509e918e8e339956e3d150',
+              'hints': {
+                'hint_score_4': 4,
+                'hint_score_5': 5,
+                'hint_score_1': 1,
+              },
+            },
+            {
+              'commit_position': 500001,
+              'repo_name': 'chromium',
+              'url': 'https://codereview.chromium.org/2187403002',
+              'score': 8,
+              'build_number': 123,
+              'revision': 'b7a8f7678a999ba33e509e918e8e339956e3d150',
+              'hints': {
+                'hint_score_3': 3,
+                'hint_score_5': 5,
+              },
+            },
+          ],
+        },
+      },
+    },
+    {
+      'stepName': 'browser_tests',
+      'result': {
+        'supported': true,
+        'tests': ['PDFExtensionTest.TouchHandling'],
+        'first_failure': 123,
+        'last_pass': 120,
+        'try_job': {
+          'culprit': {
+            'url': 'http://crrev.com/469228',
+            'review_url': 'http://crrev.com/469228',
+            'revision': '275c19ecdc32a7d1fc994f77b9972b041a86f7a7',
+          },
+          'task_id': '35e9fd18cff70610',
+          'try_job_url': 'http://build.chromium.org/p/tryserver.chromium.linux/builders/linux_chromium_tsan_variable/builds/10',
+        },
+        'heuristic_analysis': {
+          'suspected_cls': [],
+        },
+      },
+    },
+  ];
+  document.getElementById('flaky-failures').failures = flakyFailures;
+
+  var unclassifiedFailures = [
+    {
+      'stepName': 'browser_tests',
+      'result': {
+        'supported': true,
+        'tests': ['PDFExtensionTest.TouchHandling'],
+        'first_failure': 123,
+        'last_pass': 120,
+        'try_job': {
+          'culprit': {
+            'url': 'http://crrev.com/469228',
+            'review_url': 'http://crrev.com/469228',
+            'revision': '275c19ecdc32a7d1fc994f77b9972b041a86f7a7',
+          },
+          'task_id': '35e9fd18cff70610',
+          'try_job_url': 'http://build.chromium.org/p/tryserver.chromium.linux/builders/linux_chromium_tsan_variable/builds/10',
+        },
+        'heuristic_analysis': {
+          'suspected_cls': [
+            {
+              'commit_position': 500000,
+              'repo_name': 'chromium',
+              'url': 'https://codereview.chromium.org/2187403002',
+              'score': 10,
+              'build_number': 122,
+              'revision': 'b7a8f7678a999ba33e509e918e8e339956e3d150',
+              'hints': {
+                'hint_score_4': 4,
+                'hint_score_5': 5,
+                'hint_score_1': 1,
+              },
+            },
+          ],
+        },
+      },
+    },
+    {
+      'stepName': 'webkit-tests',
+      'result': {
+        'supported': false,
+        'first_failure': 123,
+      },
+    },
+    {
+      'stepName': 'telemetry_unittests',
+      'result': {
+        'supported': false,
+        'first_failure': 1,
+        'last_pass': 0,
+      },
+    },
+  ];
+  document.getElementById('unclassified-failures').failures = unclassifiedFailures;
+</script>

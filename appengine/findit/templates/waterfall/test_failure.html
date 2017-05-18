@@ -2,6 +2,11 @@
 
 {% block title %}Test{% endblock title %}
 
+{% block head %}
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="/ui/elements/analysis/test/non-reliable-failures.html">
+{% endblock head %}
+
 {% block style %}
     .not-display, .hidden-row {
       display: none;
@@ -191,85 +196,12 @@
         $('#reliable_failures_sheriffs').removeClass('not-display');
       }
     }
-
-    function displayFlakyFailures(step_name, results) {
-      if (!jQuery.isEmptyObject(results)) {
-        var tableString = '';
-        $.each(results, function(index, result) {
-          tableString += '<tr>';
-          var rowspan = result.heuristic_analysis.suspected_cls.length > 0 ? result.heuristic_analysis.suspected_cls.length : 1;
-          tableString += generateCommonCellsForAllCategories(step_name, 'flaky', index, result.tests, result.first_failure, result.last_pass, rowspan);
-
-          tableString += '<td rowspan="' + rowspan + '"><a href="' + result.try_job.task_url + '" target="_blank">' + result.try_job.task_id + '</a></td>';
-
-          tableString += generateHeuristicCulpritCls(result.heuristic_analysis.suspected_cls, result.supported);
-
-          tableString += '</tr>';
-        });
-
-        $('#flaky_failures_table tbody').append(tableString);
-        $('#flaky_failures').removeClass('not-display');
-      }
-    }
-
-    function displayUnclassifiedFailures(step_name, results) {
-      if (!jQuery.isEmptyObject(results)) {
-        var tableString = '';
-        $.each(results, function(index, result) {
-          tableString += '<tr>';
-          var rowspan = result.heuristic_analysis.suspected_cls.length > 0 ? result.heuristic_analysis.suspected_cls.length : 1;
-          tableString += generateCommonCellsForAllCategories(step_name, 'undetermined', index, result.tests, result.first_failure, result.last_pass, rowspan);
-
-          tableString += generateHeuristicCulpritCls(result.heuristic_analysis.suspected_cls, result.supported);
-          tableString += '</tr>';
-        });
-
-        $('#unclassified_failures_table tbody').append(tableString);
-        $('#unclassified_failures').removeClass('not-display');
-      }
-    }
-
-    function displayUnclassifiedFailuresToAdmins(step_name, results) {
-      if (!jQuery.isEmptyObject(results)) {
-        var tableString = '';
-        $.each(results, function(index, result) {
-          tableString += '<tr>';
-          var rowspan = result.heuristic_analysis.suspected_cls.length > 0 ? result.heuristic_analysis.suspected_cls.length : 1;
-
-          tableString += generateCommonCellsForAllCategories(step_name, 'determined', index, result.tests, result.first_failure, result.last_pass, rowspan);
-
-          var tryJob = result.try_job;
-          var tryJobCulprit = tryJob.culprit;
-
-          if (! jQuery.isEmptyObject(tryJobCulprit)) {
-            var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '" target="_blank">' + build_number + '</a></td>';
-            var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '" target="_blank">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
-
-          } else {
-            tableString += '<td colspan="2" rowspan="' + rowspan + '">' + findit.tryjobStatusMessageMap[tryJob.status] + '</td>';
-          }
-
-          tableString += '<td rowspan="' + rowspan + '">';
-          tableString += '<li>Note: swarming tasks are skipped for forced reruns by admins.</li>';
-          if (tryJob.try_job_url) {
-            tableString += '<li>For try job details: <a href="' + tryJob.try_job_url+ '" target="_blank">' + tryJob.try_job_build_number + '</a></li>';
-          }
-          tableString += '</td>';
-
-          tableString += generateHeuristicCulpritCls(result.heuristic_analysis.suspected_cls, result.supported);
-          tableString += '</tr>';
-        });
-
-        $('#unclassified_failures_table tbody').append(tableString);
-        $('#unclassified_failures_admins').removeClass('not-display');
-      }
-    }
 {% endblock functions %}
 
 {% block failure_classification %}
           if (!jQuery.isEmptyObject(findit.analysisResult)) {
+            var flakyFailures = [];
+            var unclassifiedFailures = [];
             $.each(findit.analysisResult, function(step_name, step_results) {
               $.each(step_results.results, function(category, results) {
                 if (category == 'reliable_failures') {
@@ -279,18 +211,26 @@
                     displayReliableFailuresToSheriffs(step_name, results);
                   {% endif %}
                 } else if (category == 'unclassified_failures') {
-                  {% if show_debug_info %}
-                    displayUnclassifiedFailuresToAdmins(step_name, results);
-                  {% else %}
-                    displayUnclassifiedFailures(step_name, results);
-                  {% endif %}
+                  $.each(results, function(index, result) {
+                    unclassifiedFailures.push({
+                      'stepName': step_name,
+                      'result': result,
+                    });
+                  });
                 } else if (category == 'flaky_failures') {
-                  displayFlakyFailures(step_name, results);
+                  $.each(results, function(index, result) {
+                    flakyFailures.push({
+                      'stepName': step_name,
+                      'result': result,
+                    });
+                  });
                 } else {
                   alert('Unrecongnizable category of test results, please file a bug for it.');
                 }
               });
             });
+            document.getElementById('flaky-failures').failures = flakyFailures;
+            document.getElementById('unclassified-failures').failures = unclassifiedFailures;
           } else {
             $('#triage-and-table').text('no failure is found');
           }
@@ -374,91 +314,13 @@ Test Failure:
             <br>
           </div>
 
-          <div id="flaky_failures" class='not-display'>
-            <b>Flaky failures</b>
-            <table id="flaky_failures_table">
-              <thead>
-                <tr>
-                  <th rowspan="3" title="Failed step name" width="150px">Step</th>
-                  <th rowspan="3" title="Failed test name" width="300px">Test(s)</th>
-                  <th rowspan="3" title="The build cycle in which the step started to fail">First Failure</th>
-                  <th rowspan="3" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
-                  <th rowspan="3" title="link to swarming rerun">Swarming Rerun</th>
-                  <th colspan="4">Suspected CLs</th>
-                </tr>
-                <tr>
-                  <th colspan="4">Heuristic Analysis Result</th>
-                </tr>
-                <tr>
-                  <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
-                  <th title="Git commit position/hash">Commit</th>
-                  <th title="The higher score, the more suspected">Score (<a class="score-info" href="javascript:">?</a>)</th>
-                  <th title="Why this CL is related to the failure">Hints</th>
-                </tr>
-              </thead>
-              <tbody>
-              </tbody>
-            </table>
-            <br>
+          <div id="flaky-failure-container">
+            <non-reliable-failures id="flaky-failures" header="Flaky failures" builder-url="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}"></non-reliable-failures>
           </div>
 
-          <div id="unclassified_failures" class='not-display'>
-            <b>Unclassified failures</b>
-            <table id="unclassified_failures_table">
-              <thead>
-                <tr>
-                  <th rowspan="3" title="Failed step name" width="150px">Step</th>
-                  <th rowspan="3" title="Failed test name" width="300px">Test(s)</th>
-                  <th rowspan="3" title="The build cycle in which the step started to fail">First Failure</th>
-                  <th rowspan="3" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
-                  <th colspan="4">Suspected CLs</th>
-                </tr>
-                <tr>
-                  <th colspan="4">Heuristic Analysis Result</th>
-                </tr>
-                <tr>
-                  <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
-                  <th title="Git commit position/hash">Commit</th>
-                  <th title="The higher score, the more suspected">Score (<a class="score-info" href="javascript:">?</a>)</th>
-                  <th title="Why this CL is related to the failure">Hints</th>
-                </tr>
-              </thead>
-              <tbody>
-              </tbody>
-            </table>
-            <br>
+          <div id="unclassified-failure-container">
+            <non-reliable-failures id="unclassified-failures" header="Unclassified failures" builder-url="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}"></non-reliable-failures>
           </div>
-        </div>
-
-        <div id="unclassified_failures_admins" class='not-display'>
-          <b>Unclassified failures</b>
-          <table id="unclassified_failures_table">
-              <thead>
-                <tr>
-                  <th rowspan="3" title="Failed step name" width="150px">Step</th>
-                  <th rowspan="3" title="Failed test name" width="300px">Test(s)</th>
-                  <th rowspan="3" title="The build cycle in which the step started to fail">First Failure</th>
-                  <th rowspan="3" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
-                  <th colspan="8">Suspected CLs</th>
-                </tr>
-                <tr>
-                  <th colspan="3">Try Job Result</th>
-                  <th colspan="5">Heuristic Analysis Result</th>
-                </tr>
-                <tr>
-                  <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
-                  <th title="Git commit position/hash">Commit</th>
-                  <th title="Information about related swarming rerun and try job">Swarming rerun and<br>Try Job Info</th>
-                  <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
-                  <th title="Git commit position/hash">Commit</th>
-                  <th title="The higher score, the more suspected">Score (<a class="score-info" href="javascript:">?</a>)</th>
-                  <th title="Why this CL is related to the failure">Hints</th>
-                </tr>
-              </thead>
-              <tbody>
-              </tbody>
-            </table>
-          <br>
         </div>
     {% endif %}
 {% endblock result_tables %}

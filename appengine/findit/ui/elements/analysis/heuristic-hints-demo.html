@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Testing heuristic-hints</title>
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="/ui/elements/analysis/heuristic-hints.html">
+<body>
+  <div>
+    <div>No hints:</div>
+    <div style="border: 1px solid; width: 300px">
+      <heuristic-hints id="no-hints"></heuristic-hints>
+    </div>
+  </div>
+  <br>
+  <br>
+  <br>
+  <div>
+    <div>hints:</div>
+    <div style="border: 1px solid; width: 300px">
+      <heuristic-hints id="hints"></heuristic-hints>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('no-hints').hints = [];
+    document.getElementById('hints').hints = {
+      'hint_score_1': 1,
+      'hint_score_5 .....................................................................': 5,
+      'hint_score_2_0': 2,
+      'hint_score_2_1': 2,
+      'hint_score_2_2': 2,
+      'hint_score_2_3': 2,
+      'hint_score_2_4': 2,
+      'hint_score_2_5': 2,
+      'hint_score_2_6': 2,
+    };
+  </script>
+</body>

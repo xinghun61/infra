@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Testing test-list</title>
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="/ui/elements/analysis/test/test-list.html">
+<body>
+  <div>
+    <div>Empty test list:</div>
+    <div style="border: 1px solid; width: 300px">
+      <test-list id="empty-list"></test-list>
+    </div>
+  </div>
+  <br>
+  <br>
+  <br>
+  <div>
+    <div>Short test list:</div>
+    <div style="border: 1px solid; width: 300px">
+      <test-list id="short-list"></test-list>
+    </div>
+  </div>
+  <br>
+  <br>
+  <br>
+  <div>
+    <div>Long test list:</div>
+    <div style="border: 1px solid; width: 300px">
+      <test-list id="long-list"></test-list>
+    </div>
+  </div>
+
+  <script>
+    var emptyTestList = [];
+    document.getElementById('empty-list').tests = emptyTestList;
+
+    var shortTestList = [
+      'Suite.test1',
+      'Suite.test2',
+      'Suite.test3',
+    ];
+    document.getElementById('short-list').tests = shortTestList;
+
+    var longTestList = [];
+    longTestList.push('aaaaaaaaaaaaaaaaaaaaaaaaasssssssssssssssssssssssssssssssssss.sssssssssssssssssssssssssssssssssaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+    for (var i = 1; i < 100; i ++) {
+      longTestList.push('suite.test_' + i);
+    }
+    document.getElementById('long-list').tests = longTestList;
+  </script>
+</body>

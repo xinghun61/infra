@@ -1,0 +1,170 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="test-list.html">
+<link rel="import" href="../heuristic-hints.html">
+<dom-module id="non-reliable-failures">
+  <template>
+    <style>
+      ul {
+        padding-left: 20px;
+      }
+      .header {
+        font-weight: bold;
+      }
+      table {
+        border-collapse: collapse;
+        border: 1px solid gray;
+      }
+      table th, table td {
+        padding: 5px;
+        border: 1px solid gray;
+      }
+      .high-lighted {
+        color: red;
+        font-weight: bold;
+      }
+    </style>
+
+    <template is="dom-if" if="[[!_empty]]">
+      <div class="header">[[header]]</div>
+      <div>
+        <table style="text-align: center">
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Test Group</th>
+              <th title="The last known good and first known bad build cycles">Good &rarr; Bad Build</th>
+              <th title="The Swarming task to rerun the tests to distingush reliable and flaky failures">Swarming Rerun</th>
+              <th class="high-lighted" title="The suspected commit for the failures and in which build cycle it is">Suspected Commit</th>
+              <th title="The higher the score, the more suspected">Score</th>
+              <th title="How this suspected commit is related to the failures">Heuristic Hints</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template is="dom-repeat" items="[[failures]]" as="failure">
+              <tr>
+                <td rowspan$="[[_getRowspan(failure)]]">
+                  [[failure.stepName]]
+                </td>
+                <td rowspan$="[[_getRowspan(failure)]]">
+                  <test-list tests="[[failure.result.tests]]"></test-list>
+                </td>
+                <td rowspan$="[[_getRowspan(failure)]]">
+                  <template is="dom-if" if="[[_hasLastPass(failure.result.last_pass)]]">
+                    <a href="[[builderUrl]]/[[failure.result.last_pass]]" target="_blank">[[failure.result.last_pass]]</a>
+                  </template>
+                  <template is="dom-if" if="[[!_hasLastPass(failure.result.last_pass)]]">
+                    Unknown
+                  </template>
+                  &rarr;
+                  <a href="[[builderUrl]]/[[failure.result.first_failure]]" target="_blank">[[failure.result.first_failure]]</a>
+                </td>
+                <td rowspan$="[[_getRowspan(failure)]]">
+                  <template is="dom-if" if="[[failure.result.try_job.task_id)]]">
+                    <a href="https://chromium-swarm.appspot.com/task?id=[[failure.result.try_job.task_id]]" target="_blank">[[failure.result.try_job.task_id]]</a>
+                  </template>
+                </td>
+
+                <template is="dom-if" if="[[!failure.result.supported]]">
+                  <td colspan="4">Not Supported.</td>
+                </template>
+                <template is="dom-if" if="[[failure.result.supported]]">
+                  <template is="dom-if" if="[[_hasHeuristicFindings(failure)]]">
+                    <td>
+                      <a class="high-lighted" href="[[_getSuspectInfo(failure, 0, 'url')]]" target="_blank">[[_getSuspectInfo(failure, 0, 'commit_position')]]</a>
+                      <br>
+                      <br>
+                      (build# <a href="[[builderUrl]]/[[_getSuspectInfo(failure, 0, 'build_number')]]" target="_blank">[[_getSuspectInfo(failure, 0, 'build_number')]]</a>)
+                    </td>
+                    <td>
+                      [[_getSuspectInfo(failure, 0, 'score')]]
+                    </td>
+                    <td>
+                      <heuristic-hints hints="[[_getSuspectInfo(failure, 0, 'hints')]]"><heuristic-hints>
+                    </td>
+                  </template>
+                  <template is="dom-if" if="[[!_hasHeuristicFindings(failure)]]">
+                    <td colspan="4">No findings</td>
+                  </template>
+                </template>
+              </tr>
+              <template is="dom-repeat" items="[[_getIndexOfSuspectsFromSecond(failure)]]" as="i">
+                <tr>
+                    <td>
+                      <a class="high-lighted" href="[[_getSuspectInfo(failure, i, 'url')]]" target="_blank">[[_getSuspectInfo(failure, i, 'commit_position')]]</a>
+                      <br>
+                      <br>
+                      (build# <a href="[[builderUrl]]/[[_getSuspectInfo(failure, i, 'build_number')]]" target="_blank">[[_getSuspectInfo(failure, i, 'build_number')]]</a>)
+                    </td>
+                    <td>
+                      [[_getSuspectInfo(failure, i, 'score')]]
+                    </td>
+                    <td>
+                      <heuristic-hints hints="[[_getSuspectInfo(failure, i, 'hints')]]"><heuristic-hints>
+                    </td>
+                </tr>
+              </template>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </template>
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'non-reliable-failures',
+
+        properties: {
+          header: {
+            type: String,
+          },
+          failures: {
+            type: Array,
+            value: undefined,
+          },
+          builderUrl: {
+            type: String,
+          },
+          _empty: {
+            type: Boolean,
+            value: true,
+            computed: '_isEmptyList(failures)',
+          },
+        },
+
+        _isEmptyList: function(failures) {
+          return !failures || failures.length == 0;
+        },
+
+        _getRowspan: function(failure) {
+          if (!failure.result.heuristic_analysis || !failure.result.heuristic_analysis.suspected_cls)
+            return 1;
+          return Math.max(failure.result.heuristic_analysis.suspected_cls.length, 1);
+        },
+
+        _hasLastPass: function(buildNumber) {
+          return buildNumber || buildNumber == 0;
+        },
+
+        _hasHeuristicFindings: function(failure) {
+          return failure.result.heuristic_analysis && failure.result.heuristic_analysis.suspected_cls && failure.result.heuristic_analysis.suspected_cls.length > 0;
+        },
+
+        _getIndexOfSuspectsFromSecond: function(failure) {
+          var rowCount = this._getRowspan(failure);
+          var index = [];
+          for (var i = 1; i < rowCount; i ++)
+            index.push(i);
+          return index;
+        },
+
+        _getSuspectInfo: function(failure, index, path) {
+          return this.get(path, failure.result.heuristic_analysis.suspected_cls[index]);
+        },
+      });
+    })();
+  </script>
+</dom-module>

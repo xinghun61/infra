@@ -21,6 +21,14 @@ handlers:
   upload: static/robots.txt
   secure: always
 
+- url: /bower_components
+  static_dir: third_party/bower_components
+  secure: always
+
+- url: /ui
+  static_dir: ui
+  secure: always
+
 - url: /common.css
   static_files: static/common.css
   upload: static/common.css
