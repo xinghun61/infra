@@ -2,7 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package migration
+// Package discovery files bugs and registers builders in the storage.
+package discovery
 
 import (
 	"bytes"
@@ -21,50 +22,20 @@ import (
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/sync/parallel"
 	"github.com/luci/luci-go/milo/api/proto"
+
+	"infra/appengine/luci-migration/storage"
 )
 
-type buildbotMaster struct {
-	Name           string
-	SchedulingType schedulingType
-	LUCIBucket     string
-	Public         bool
-	OS             os
+// Builders finds and registers new builders.
+type Builders struct {
+	Monorail monorail.MonorailClient
+	Buildbot milo.BuildbotClient
 }
 
-var masters = map[string]*buildbotMaster{
-	"tryserver.chromium.linux": {
-		SchedulingType: tryScheduling,
-		LUCIBucket:     "luci.chromium.try",
-		Public:         true,
-		OS:             linux,
-	},
-	"tryserver.chromium.win": {
-		SchedulingType: tryScheduling,
-		LUCIBucket:     "luci.chromium.try",
-		Public:         true,
-		OS:             windows,
-	},
-	"tryserver.chromium.mac": {
-		SchedulingType: tryScheduling,
-		LUCIBucket:     "luci.chromium.try",
-		Public:         true,
-		OS:             mac,
-	},
-}
-
-func init() {
-	for name, master := range masters {
-		master.Name = name
-	}
-}
-
-type builderDiscovery struct {
-	monorail monorail.MonorailClient
-	buildbot milo.BuildbotClient
-}
-
-func (d *builderDiscovery) discoverNewBuilders(c context.Context) error {
-	for _, m := range masters {
+// Discover fetches builder names for all registered masters
+// and registers new builders in the storage.
+func (d *Builders) Discover(c context.Context) error {
+	for _, m := range storage.GetMasters() {
 		if err := d.discoverNewBuildersOf(c, m); err != nil {
 			return errors.Annotate(err).Reason("could not discover builders in master %(master)s").
 				D("master", m.Name).
@@ -74,7 +45,7 @@ func (d *builderDiscovery) discoverNewBuilders(c context.Context) error {
 	return nil
 }
 
-func (d *builderDiscovery) discoverNewBuildersOf(c context.Context, master *buildbotMaster) error {
+func (d *Builders) discoverNewBuildersOf(c context.Context, master *storage.Master) error {
 	logging.Infof(c, "%s: discovering new builders", master.Name)
 
 	// Fetch builder names of a master.
@@ -88,7 +59,7 @@ func (d *builderDiscovery) discoverNewBuildersOf(c context.Context, master *buil
 	// Check which builders we don't know about.
 	toCheck := make([]interface{}, len(names))
 	for i, b := range names {
-		toCheck[i] = &builder{ID: builderID{master.Name, b}}
+		toCheck[i] = &storage.Builder{ID: storage.BuilderID{master.Name, b}}
 	}
 
 	// NOTE: There is probably an upper-bound (~500) to the number of items we can Get.
@@ -113,7 +84,7 @@ func (d *builderDiscovery) discoverNewBuildersOf(c context.Context, master *buil
 				work <- func() error {
 					if err := d.registerBuilder(c, master, name); err != nil {
 						return errors.Annotate(err).Reason("could not register builder %(builder)q").
-							D("builder", &builderID{master.Name, name}).
+							D("builder", &storage.BuilderID{master.Name, name}).
 							Err()
 					}
 					return nil
@@ -123,9 +94,9 @@ func (d *builderDiscovery) discoverNewBuildersOf(c context.Context, master *buil
 	})
 }
 
-func (d *builderDiscovery) registerBuilder(c context.Context, master *buildbotMaster, name string) error {
-	builder := &builder{
-		ID:                     builderID{master.Name, name},
+func (d *Builders) registerBuilder(c context.Context, master *storage.Master, name string) error {
+	builder := &storage.Builder{
+		ID:                     storage.BuilderID{master.Name, name},
 		SchedulingType:         master.SchedulingType,
 		Public:                 master.Public,
 		LUCIBuildbucketBucket:  master.LUCIBucket,
@@ -142,7 +113,7 @@ func (d *builderDiscovery) registerBuilder(c context.Context, master *buildbotMa
 		}
 	}
 	var err error
-	if builder.IssueID, err = createBuilderBug(c, d.monorail, builder); err != nil {
+	if builder.IssueID, err = createBuilderBug(c, d.Monorail, builder); err != nil {
 		return errors.Annotate(err).Reason("could not create a monorail bug for builder %(ID)q").
 			D("ID", &builder.ID).
 			Err()
@@ -156,13 +127,13 @@ func (d *builderDiscovery) registerBuilder(c context.Context, master *buildbotMa
 	return nil
 }
 
-type buildbotMasterJSON struct {
+type masterJSON struct {
 	Builders map[string]struct{}
 }
 
-func (d *builderDiscovery) fetchBuilderNames(c context.Context, master *buildbotMaster) (names []string, err error) {
+func (d *Builders) fetchBuilderNames(c context.Context, master *storage.Master) (names []string, err error) {
 	// this is inefficient, but there is no better API
-	res, err := d.buildbot.GetCompressedMasterJSON(c, &milo.MasterRequest{Name: master.Name})
+	res, err := d.Buildbot.GetCompressedMasterJSON(c, &milo.MasterRequest{Name: master.Name})
 	if err != nil {
 		return nil, errors.Annotate(err).Reason("GetCompressedMasterJSON RPC failed").Err()
 	}
@@ -176,7 +147,7 @@ func (d *builderDiscovery) fetchBuilderNames(c context.Context, master *buildbot
 		}
 	}()
 
-	var masterJSON buildbotMasterJSON
+	var masterJSON masterJSON
 	if err := json.NewDecoder(ungzip).Decode(&masterJSON); err != nil {
 		return nil, err
 	}

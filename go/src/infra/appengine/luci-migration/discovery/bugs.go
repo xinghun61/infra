@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package migration
+package discovery
 
 import (
 	"bytes"
@@ -14,6 +14,9 @@ import (
 	"unicode"
 
 	"golang.org/x/net/context"
+
+	"infra/appengine/luci-migration/common"
+	"infra/appengine/luci-migration/storage"
 
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/common/errors"
@@ -39,7 +42,7 @@ https://{{.Hostname}}/masters/{{.Builder.ID.Master|pathEscape}}/builders/{{.Buil
 `)))
 
 // createBuilderBug creates a Monorail issue to migrate the builder to LUCI.
-func createBuilderBug(c context.Context, client monorail.MonorailClient, builder *builder) (issueID int, err error) {
+func createBuilderBug(c context.Context, client monorail.MonorailClient, builder *storage.Builder) (issueID int, err error) {
 	descArgs := map[string]interface{}{
 		"Builder":  builder,
 		"Hostname": info.DefaultVersionHostname(c),
@@ -59,7 +62,7 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 		}, s)
 	}
 
-	isDev := isDevInstance(c)
+	isDev := common.IsDevInstance(c)
 	sig := "Via-Luci-Migration"
 	if isDev {
 		sig = "Via-Luci-Migration-Dev"
@@ -81,7 +84,7 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 			},
 		},
 	}
-	if builder.OS != unknownOS {
+	if builder.OS != storage.UnknownOS {
 		req.Issue.Labels = append(req.Issue.Labels, "OS-"+builder.OS.String())
 	}
 

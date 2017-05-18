@@ -27,6 +27,8 @@ import (
 	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
+
+	"infra/appengine/luci-migration/discovery"
 )
 
 const (
@@ -73,32 +75,25 @@ func indexPage(c *router.Context) {
 	templates.MustRender(c.Context, c.Writer, "pages/index.html", nil)
 }
 
-func cronDiscoverBuilders(c *router.Context) {
+func cronDiscoverBuilders(c *router.Context) error {
 	// Standard cron job timeout is 10min.
 	c.Context, _ = context.WithDeadline(c.Context, clock.Now(c.Context).Add(10*time.Minute))
 
 	transport, err := auth.GetRPCTransport(c.Context, auth.AsSelf)
 	if err != nil {
-		internalServerError(c, errors.Annotate(err).Reason("could not get RPC transport").Err())
-		return
+		return errors.Annotate(err).Reason("could not get RPC transport").Err()
 	}
 	httpClient := &http.Client{Transport: transport}
 
-	d := &builderDiscovery{
-		buildbot: milo.NewBuildbotPRPCClient(&prpc.Client{
+	discoverer := &discovery.Builders{
+		Buildbot: milo.NewBuildbotPRPCClient(&prpc.Client{
 			C:    httpClient,
 			Host: miloHost,
 		}),
-		monorail: monorail.NewEndpointsClient(httpClient, monorailAPIRootURL),
+		Monorail: monorail.NewEndpointsClient(httpClient, monorailAPIRootURL),
 	}
 
-	err = d.discoverNewBuilders(c.Context)
-	if err != nil {
-		internalServerError(c, err)
-		return
-	}
-
-	ok(c)
+	return discoverer.Discover(c.Context)
 }
 
 func init() {
@@ -113,7 +108,7 @@ func init() {
 	r := router.New()
 
 	gaemiddleware.InstallHandlersWithMiddleware(r, base)
-	r.GET("/internal/cron/discover-builders", base, cronDiscoverBuilders)
+	r.GET("/internal/cron/discover-builders", base, errHandler(cronDiscoverBuilders))
 
 	m := base.Extend(
 		templates.WithTemplates(prepareTemplates()),
@@ -125,15 +120,14 @@ func init() {
 	http.DefaultServeMux.Handle("/", r)
 }
 
-func internalServerError(c *router.Context, err error) {
-	logging.Errorf(c.Context, "Internal server error: %s", err.Error())
-	http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
-}
-
-func ok(c *router.Context) {
-	c.Writer.Write([]byte("OK"))
-}
-
-func isDevInstance(c context.Context) bool {
-	return strings.HasSuffix(info.AppID(c), "-dev")
+func errHandler(f func(c *router.Context) error) router.Handler {
+	return func(c *router.Context) {
+		err := f(c)
+		if err != nil {
+			logging.Errorf(c.Context, "Internal server error: %s", err.Error())
+			http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
+		} else {
+			c.Writer.Write([]byte("OK"))
+		}
+	}
 }

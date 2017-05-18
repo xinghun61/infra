@@ -1,8 +1,8 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package migration
+package discovery
 
 import (
 	"bytes"
@@ -21,6 +21,8 @@ import (
 	"github.com/luci/luci-go/common/testing/prpctest"
 	"github.com/luci/luci-go/milo/api/proto"
 
+	"infra/appengine/luci-migration/storage"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -32,7 +34,10 @@ func TestDiscovery(t *testing.T) {
 		c = memory.Use(c)
 
 		// Make tryserver.chromium.linux:linux_chromium_rel_ng known.
-		chromiumRelNg := &builder{ID: builderID{"tryserver.chromium.linux", "linux_chromium_rel_ng"}, IssueID: 54}
+		chromiumRelNg := &storage.Builder{
+			ID:      storage.BuilderID{"tryserver.chromium.linux", "linux_chromium_rel_ng"},
+			IssueID: 54,
+		}
 		err := datastore.Put(c, chromiumRelNg)
 		So(err, ShouldBeNil)
 
@@ -59,11 +64,18 @@ func TestDiscovery(t *testing.T) {
 		}
 
 		// Discover tryserver.chromium.linux builders.
-		d := builderDiscovery{
-			buildbot: milo.NewBuildbotPRPCClient(buildbotPrpcClient),
-			monorail: monorailtest.NewTestClient(monorailServer),
+		d := Builders{
+			Buildbot: milo.NewBuildbotPRPCClient(buildbotPrpcClient),
+			Monorail: monorailtest.NewTestClient(monorailServer),
 		}
-		err = d.discoverNewBuildersOf(c, masters["tryserver.chromium.linux"])
+		linuxTryserver := &storage.Master{
+			Name:           "tryserver.chromium.linux",
+			SchedulingType: storage.TryScheduling,
+			LUCIBucket:     "luci.chromium.try",
+			Public:         true,
+			OS:             storage.Linux,
+		}
+		err = d.discoverNewBuildersOf(c, linuxTryserver)
 		So(err, ShouldBeNil)
 
 		// Verify the request to create a bug for asan.
@@ -79,14 +91,14 @@ https://app.example.com/masters/tryserver.chromium.linux/builders/linux_chromium
 `)
 		So(actualInsertIssueReq, ShouldResemble, &monorail.InsertIssueRequest{
 			ProjectId: "chromium",
-			SendEmail: true,
+			SendEmail: false,
 			Issue: &monorail.Issue{
 				Status:      "Untriaged",
 				Summary:     "Migrate \"linux_chromium_asan_rel_ng\" to LUCI",
 				Description: expectedBugDescription,
 				Components:  []string{"Infra>Platform"},
 				Labels: []string{
-					"Via-Luci-Migration",
+					"Via-Luci-Migration-Dev",
 					"Type-Task",
 					"Pri-3",
 					"Master-tryserver.chromium.linux",
@@ -97,17 +109,19 @@ https://app.example.com/masters/tryserver.chromium.linux/builders/linux_chromium
 		})
 
 		// Verify linux_chromium_asan_rel_ng was discovered.
-		chromiumAsanRelNg := &builder{ID: builderID{"tryserver.chromium.linux", "linux_chromium_asan_rel_ng"}}
+		chromiumAsanRelNg := &storage.Builder{
+			ID: storage.BuilderID{"tryserver.chromium.linux", "linux_chromium_asan_rel_ng"},
+		}
 		err = datastore.Get(c, chromiumAsanRelNg)
 		So(err, ShouldBeNil)
-		So(chromiumAsanRelNg, ShouldResemble, &builder{
+		So(chromiumAsanRelNg, ShouldResemble, &storage.Builder{
 			ID:                     chromiumAsanRelNg.ID,
-			SchedulingType:         tryScheduling,
+			SchedulingType:         storage.TryScheduling,
 			IssueID:                55,
 			Public:                 true,
 			LUCIBuildbucketBucket:  "luci.chromium.try",
 			LUCIBuildbucketBuilder: "LUCI linux_chromium_asan_rel_ng",
-			OS: linux,
+			OS: storage.Linux,
 		})
 
 		// Verify linux_chromium_rel_ng was notrediscovered.
@@ -123,7 +137,7 @@ type buildbotMock struct {
 }
 
 func (m *buildbotMock) GetCompressedMasterJSON(context.Context, *milo.MasterRequest) (*milo.CompressedMasterJSON, error) {
-	masterJSON := buildbotMasterJSON{
+	masterJSON := masterJSON{
 		Builders: m.builders,
 	}
 	buf := &bytes.Buffer{}
