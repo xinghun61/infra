@@ -112,15 +112,18 @@ func indexPage(ctx *router.Context) {
 	}
 
 	AnalyticsID := stagingAnalyticsID
+	isStaging := true
 	if !strings.HasSuffix(info.AppID(c), "-staging") {
 		logging.Debugf(c, "Using production GA ID for app %s", info.AppID(c))
 		AnalyticsID = productionAnalyticsID
+		isStaging = false
 	}
 
 	data := map[string]interface{}{
 		"User":           user.Email(),
 		"LogoutUrl":      logoutURL,
 		"IsDevAppServer": info.IsDevAppServer(c),
+		"IsStaging":      isStaging,
 		"XsrfToken":      tok,
 		"AnalyticsID":    AnalyticsID,
 	}
