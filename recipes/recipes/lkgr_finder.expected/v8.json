@@ -102,10 +102,13 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
-      "RECIPE_PACKAGE_REPO[build]/scripts/tools/pycurl.py",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
       "https://v8-status.appspot.com/lkgr",
+      "--status-json",
+      "/path/to/tmp/json",
       "--outfile",
       "/path/to/tmp/"
     ],
@@ -119,7 +122,7 @@
       "--json-file",
       "/path/to/tmp/json",
       "--url",
-      "https://chromium.googlesource.com/v8/v8/+log/..97ab2f7d6e7bab812309e05884bdeeaef11962f7",
+      "https://chromium.googlesource.com/v8/v8/+log/deadbeef2..97ab2f7d6e7bab812309e05884bdeeaef11962f7",
       "--format",
       "json",
       "--log-limit",

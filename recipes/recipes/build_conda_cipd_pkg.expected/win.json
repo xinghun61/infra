@@ -12,14 +12,15 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
-      "RECIPE_MODULE[depot_tools::url]\\resources\\pycurl.py",
+      "RECIPE_MODULE[recipe_engine::url]\\resources\\pycurl.py",
+      "--url",
       "https://repo.continuum.io/miniconda/Miniconda2-3.18.3-Windows-x86_64.exe",
+      "--status-json",
+      "/path/to/tmp/json",
       "--outfile",
-      "[TMP_BASE]\\conda_tmp_1\\Miniconda2-3.18.3-Windows-x86_64.exe",
-      "--attempts",
-      "5"
+      "[TMP_BASE]\\conda_tmp_1\\Miniconda2-3.18.3-Windows-x86_64.exe"
     ],
     "name": "fetch miniconda installer"
   },

@@ -101,11 +101,10 @@ class CondaApi(recipe_api.RecipeApi):
     tmp = self.m.path.mkdtemp('conda')
     installer = tmp.join(url[url.rfind('/')+1:])
     try:
-      self.m.url.fetch_to_file(
-          url=url,
-          path=installer,
-          step_name='fetch miniconda installer',
-          attempts=5)
+      self.m.url.get_file(
+          url,
+          installer,
+          step_name='fetch miniconda installer')
       # See http://conda.pydata.org/docs/help/silent.html
       if self.m.platform.is_win:
         install_cmd = [

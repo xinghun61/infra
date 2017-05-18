@@ -1,6 +1,6 @@
 DEPS = [
-  'depot_tools/url',
   'recipe_engine/raw_io',
+  'recipe_engine/url',
 ]
 
 

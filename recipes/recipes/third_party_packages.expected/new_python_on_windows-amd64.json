@@ -19,12 +19,15 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
-      "RECIPE_MODULE[depot_tools::url]\\resources\\pycurl.py",
+      "RECIPE_MODULE[recipe_engine::url]\\resources\\pycurl.py",
+      "--url",
       "https://api.github.com/repos/git-for-windows/git/releases/latest",
+      "--status-json",
+      "/path/to/tmp/json",
       "--outfile",
-      "/path/to/tmp/"
+      "/path/to/tmp/json"
     ],
     "name": "git.get latest release",
     "~followup_annotations": [

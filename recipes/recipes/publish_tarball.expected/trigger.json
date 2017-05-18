@@ -16,14 +16,17 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
-      "RECIPE_MODULE[depot_tools::url]/resources/pycurl.py",
+      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
+      "--url",
       "https://omahaproxy.appspot.com/history",
+      "--status-json",
+      "/path/to/tmp/json",
       "--outfile",
       "/path/to/tmp/"
     ],
-    "name": "fetch https://omahaproxy.appspot.com/history"
+    "name": "GET https://omahaproxy.appspot.com/history"
   },
   {
     "cmd": [],

@@ -6,7 +6,6 @@ from recipe_engine.recipe_api import Property
 from recipe_engine.types import freeze
 
 DEPS = [
-  'build/url',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/gitiles',
@@ -16,6 +15,7 @@ DEPS = [
   'recipe_engine/python',
   'recipe_engine/raw_io',
   'recipe_engine/step',
+  'recipe_engine/url',
 ]
 
 
@@ -60,10 +60,10 @@ def RunSteps(api, buildername):
     lkgr_from_ref = api.gitiles.commit_log(
         botconfig['repo'], botconfig['ref'],
         step_name='lkgr from ref')['commit']
-    lkgr_from_app = api.url.fetch(
+    lkgr_from_app = api.url.get_text(
         'https://%s-status.appspot.com/lkgr' % botconfig['project'],
         step_name='lkgr from app'
-    )
+    ).output
     commits, _ = api.gitiles.log(
         botconfig['repo'], '%s..%s' % (lkgr_from_app, lkgr_from_ref),
         step_name='check lkgr override')
@@ -103,9 +103,9 @@ def GenTests(api):
             'lkgr from ref',
             api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
         ) +
-        api.step_data(
+        api.url.text(
             'lkgr from app',
-            api.raw_io.stream_output('deadbeef2'),
+            'deadbeef2',
         )
     )
 

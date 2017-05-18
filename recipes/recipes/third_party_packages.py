@@ -14,7 +14,6 @@ DEPS = [
   'depot_tools/cipd',
   'depot_tools/git',
   'depot_tools/gitiles',
-  'depot_tools/url',
   'build/file',
   'recipe_engine/context',
   'recipe_engine/json',
@@ -23,6 +22,7 @@ DEPS = [
   'recipe_engine/python',
   'recipe_engine/raw_io',
   'recipe_engine/step',
+  'recipe_engine/url',
 ]
 
 CPYTHON_REPO_URL = (
@@ -138,7 +138,7 @@ def PackageGitForWindows(api, workdir):
   # Download the archive.
   api.file.makedirs('ensure workdir', workdir)
   archive_path = workdir.join('archive.sfx')
-  api.url.fetch_to_file(
+  api.url.get_file(
       archive_url,
       archive_path,
       step_name='fetch archive',
@@ -235,9 +235,9 @@ def GetLatestGitForWindowsRelease(api):
   """
   # API docs:
   # https://developer.github.com/v3/repos/releases/#get-the-latest-release
-  latest_release = json.loads(api.url.fetch(
+  latest_release = api.url.get_json(
       'https://api.github.com/repos/git-for-windows/git/releases/latest',
-      step_name='get latest release'))
+      step_name='get latest release').output
   if not latest_release:  # pragma: no cover
     raise api.step.StepFailure('latest release of Git for Windows is not found')
 
@@ -381,10 +381,9 @@ def GenTests(api):
               cpython_package_name,
               instances=bool(new_package != 'python')))
     else:
-      test += api.step_data(
+      test += api.url.json(
           'git.get latest release',
-          api.raw_io.output_text(
-              json.dumps(git_for_windows_release, sort_keys=True)))
+          git_for_windows_release)
       if new_package == 'git':
         test += api.step_data('git.post-install', retcode=1)
     return test
