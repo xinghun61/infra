@@ -410,6 +410,7 @@ func init() {
 	r.GET("/api/v1/bugqueue/:label", protected, getBugQueueHandler)
 	r.GET("/api/v1/bugqueue/:label/uncached/", protected, getUncachedBugsHandler)
 	r.GET("/api/v1/revrange/:start/:end", basemw, getRevRangeHandler)
+	r.GET("/api/v1/testexpectations", basemw, getLayoutTestsHandler)
 	r.GET("/logos/:tree", protected, getTreeLogoHandler)
 	r.GET("/alertdiff/:tree", protected, getMiloDiffHandler)
 
