@@ -215,30 +215,32 @@ def PackageGit(api):
 def PackageGitForUnix(api, workdir):
   """Builds Git on Unix and uploads it to a CIPD server."""
 
-  def install_autoconf():
-    workdir = api.path['start_dir'].join('autoconf')
-    prefix = workdir.join('prefix')
+  source = workdir.join('source')
+  api.cipd.ensure(source, {
+      'infra/third_party/source/autoconf': 'version:2.69',
+  })
 
-    source = workdir.join('source')
-    api.cipd.ensure(source, {
-        'infra/third_party/source/autoconf': 'version:2.69',
-    })
+  def install_autoconf(prefix):
+    with api.context(cwd=workdir):
+      api.step('extract', ['tar', '-xzf', source.join('autoconf-2.69.tar.gz')])
 
-    with api.context(cwd=source):
+    base = workdir.join('autoconf-2.69')
+    with api.context(cwd=base):
       api.step(
           'configure',
           ['./configure', '--prefix', prefix])
       api.step(
           'install',
           ['make', 'install'])
-    return prefix.join('bin')
 
   # Note on OS X:
   # `make configure` requires autoconf in $PATH, which is not available on
   # OS X out of box. Unfortunately autoconf is not easy to make portable, so
   # we cannot package it.
+  support_prefix = workdir.join('prefix')
   with api.step.nest('autoconf'):
-    autoconf_bin = install_autoconf()
+    install_autoconf(support_prefix)
+  support_bin = support_prefix.join('bin')
 
   def install(target_dir):
     # cwd is source checkout
@@ -247,7 +249,7 @@ def PackageGitForUnix(api, workdir):
         # <target_dir>/libexec/git-core/git-*
         # because CIPD does not support them. Use symlinks instead.
         'NO_INSTALL_HARDLINKS': 'VAR_PRESENT',
-        'PATH': api.path.pathsep.join([str(autoconf_bin), '%(PATH)s']),
+        'PATH': api.path.pathsep.join([str(support_bin), '%(PATH)s']),
     }
     with api.context(env=env):
       api.step('make configure', ['make', 'configure'])

@@ -551,18 +551,11 @@
     ]
   },
   {
-    "cmd": [],
-    "name": "git.autoconf",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
     "cmd": [
       "cipd",
       "ensure",
       "-root",
-      "[START_DIR]/autoconf/source",
+      "[START_DIR]/git/source",
       "-ensure-file",
       "infra/third_party/source/autoconf version:2.69",
       "-json-output",
@@ -570,9 +563,9 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "git.autoconf.ensure_installed",
+    "name": "git.ensure_installed",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@",
+      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
@@ -585,12 +578,31 @@
     ]
   },
   {
+    "cmd": [],
+    "name": "git.autoconf",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "tar",
+      "-xzf",
+      "[START_DIR]/git/source/autoconf-2.69.tar.gz"
+    ],
+    "cwd": "[START_DIR]/git",
+    "name": "git.autoconf.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
     "cmd": [
       "./configure",
       "--prefix",
-      "[START_DIR]/autoconf/prefix"
+      "[START_DIR]/git/prefix"
     ],
-    "cwd": "[START_DIR]/autoconf/source",
+    "cwd": "[START_DIR]/git/autoconf-2.69",
     "name": "git.autoconf.configure",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -601,7 +613,7 @@
       "make",
       "install"
     ],
-    "cwd": "[START_DIR]/autoconf/source",
+    "cwd": "[START_DIR]/git/autoconf-2.69",
     "name": "git.autoconf.install",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
