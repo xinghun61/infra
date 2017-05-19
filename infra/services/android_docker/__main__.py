@@ -20,8 +20,11 @@ from infra.services.android_docker import usb_device
 _REGISTRY_URL = 'gcr.io'
 
 # Location of file that will prevent this script from spawning new containers.
-# Useful when draining a host in order to debug failures.
-_SHUTDOWN_FILE = '/b/shutdown.stamp'
+# Useful when draining a host in order to debug failures. _BOT_SHUTDOWN_FILE
+# drains the entire bot while _DEVICE_SHUTDOWN_FILE drains only a specific
+# device.
+_BOT_SHUTDOWN_FILE = '/b/shutdown.stamp'
+_DEVICE_SHUTDOWN_FILE = '/b/%(device_id)s.shutdown.stamp'
 
 # Time to wait for swarming bots to gracefully shutdown before triggering a
 # host reboot. It should be at least as long as the longest expected task
@@ -97,16 +100,26 @@ def add_device(docker_client, android_devices, args):
 
 
 def launch(docker_client, android_devices, args):
-  draining = os.path.exists(_SHUTDOWN_FILE)
-  if draining:
+  draining_host = os.path.exists(_BOT_SHUTDOWN_FILE)
+  draining_devices = [
+      d for d in android_devices if os.path.exists(
+          _DEVICE_SHUTDOWN_FILE % {'device_id': d.serial})
+  ]
+  if draining_host:
     logging.info(
         'In draining state due to existence of %s. No new containers will be '
-        'created.', _SHUTDOWN_FILE)
+        'created.', _BOT_SHUTDOWN_FILE)
+  elif draining_devices:
+    logging.info(
+        'Draining devices %s due to existence of files: %s. They will not be '
+        'granted new containers.', draining_devices,
+        [_DEVICE_SHUTDOWN_FILE % {'device_id': d.serial}
+            for d in draining_devices])
   running_containers = docker_client.get_running_containers()
   # Reboot the host if needed. Will attempt to kill all running containers
   # gracefully before triggering reboot.
   host_uptime = get_host_uptime()
-  if host_uptime > args.max_host_uptime and not draining:
+  if host_uptime > args.max_host_uptime and not draining_host:
     logging.debug('Host uptime over max uptime (%d > %d)',
                   host_uptime, args.max_host_uptime)
     if len(running_containers) > 0:
@@ -141,17 +154,22 @@ def launch(docker_client, android_devices, args):
 
     # Send SIGTERM to bots in containers that have been running for too long,
     # or all of them regardless of uptime if draining.
-    if draining:
+    if draining_host:
       for c in running_containers:
         c.kill_swarming_bot()
     else:
+      for d in draining_devices:
+        c = docker_client.get_container(d)
+        if c is not None:
+          c.kill_swarming_bot()
       docker_client.stop_old_containers(
           running_containers, args.max_container_uptime)
 
     # Create a container for each device that doesn't already have one.
-    if not draining:
+    if not draining_host:
+      live_devices = [d for d in android_devices if d not in draining_devices]
       needs_cgroup_update = docker_client.create_missing_containers(
-          running_containers, android_devices, image_url, args.swarming_server)
+          running_containers, live_devices, image_url, args.swarming_server)
 
       # For each device that was granted a new container, add it to the
       # container's cgroup.
@@ -226,7 +244,7 @@ def main():
   cmd_helper_logger= logging.getLogger('devil.utils.cmd_helper')
   cmd_helper_logger.setLevel(logging.ERROR)
 
-  if not os.path.exists(_SHUTDOWN_FILE):
+  if not os.path.exists(_BOT_SHUTDOWN_FILE):
     logging.debug('Killing any host-side ADB processes.')
     kill_adb()
 
