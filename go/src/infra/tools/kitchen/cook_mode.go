@@ -8,44 +8,24 @@ import (
 	"encoding/json"
 	"net/url"
 
-	"github.com/luci/luci-go/common/flag/flagenum"
 	"github.com/luci/luci-go/common/system/environ"
-	"github.com/luci/luci-go/swarming/tasktemplate"
+
+	"infra/tools/kitchen/cookflags"
 )
 
-type cookModeFlag struct {
-	cookMode
-}
-
-var (
-	cookSwarming = cookModeFlag{swarmingCookMode{}}
-	cookBuildBot = cookModeFlag{buildBotCookMode{}}
-
-	cookModeFlagEnum = flagenum.Enum{
-		"swarming": cookSwarming,
-		"buildbot": cookBuildBot,
-	}
-)
-
-// String implements flag.Value.
-func (m *cookModeFlag) String() string {
-	return cookModeFlagEnum.FlagString(*m)
-}
-
-// Set implements flag.Value.
-func (m *cookModeFlag) Set(v string) error {
-	return cookModeFlagEnum.FlagSet(m, v)
+var cookModeSelector = map[cookflags.CookMode]cookMode{
+	cookflags.CookSwarming: swarmingCookMode{},
+	cookflags.CookBuildBot: buildBotCookMode{},
 }
 
 const (
-	// PropertyBotId must be added by cookMode.addProperties.
-	PropertyBotId = "bot_id"
+	// PropertyBotID must be added by cookMode.addProperties.
+	PropertyBotID = "bot_id"
 )
 
 // cookMode integrates environment-specific behaviors into Kitchen's "cook"
 // command.
 type cookMode interface {
-	fillTemplateParams(env environ.Env, params *tasktemplate.Params) error
 	needsIOKeepAlive() bool
 	alwaysForwardAnnotations() bool
 
@@ -54,49 +34,23 @@ type cookMode interface {
 
 	shouldEmitLogDogLinks() bool
 	addLogDogGlobalTags(tags map[string]string, props map[string]interface{}, env environ.Env) error
-	onlyLogDog() bool
 }
 
 type swarmingCookMode struct{}
-
-func (m swarmingCookMode) readSwarmingEnv(env environ.Env) (botId, runId string, err error) {
-	var ok bool
-	botId, ok = env.Get("SWARMING_BOT_ID")
-	if !ok {
-		err = inputError("no Swarming bot ID in $SWARMING_BOT_ID")
-		return
-	}
-
-	if runId, ok = env.Get("SWARMING_TASK_ID"); !ok {
-		err = inputError("no Swarming run ID in $SWARMING_TASK_ID")
-		return
-	}
-	return
-}
-
-func (m swarmingCookMode) fillTemplateParams(env environ.Env, params *tasktemplate.Params) error {
-	_, runId, err := m.readSwarmingEnv(env)
-	if err != nil {
-		return err
-	}
-	params.SwarmingRunID = runId
-	return nil
-}
 
 func (m swarmingCookMode) needsIOKeepAlive() bool         { return false }
 func (m swarmingCookMode) alwaysForwardAnnotations() bool { return false }
 
 func (m swarmingCookMode) addProperties(props map[string]interface{}, env environ.Env) error {
-	botId, runId, err := m.readSwarmingEnv(env)
+	botID, runID, err := cookflags.ReadSwarmingEnv(env)
 	if err != nil {
 		return err
 	}
-	props[PropertyBotId] = botId
-	props["swarming_run_id"] = runId
+	props[PropertyBotID] = botID
+	props["swarming_run_id"] = runID
 	return nil
 }
 func (m swarmingCookMode) shouldEmitLogDogLinks() bool { return false }
-func (m swarmingCookMode) onlyLogDog() bool            { return true }
 func (m swarmingCookMode) addLogDogGlobalTags(tags map[string]string, props map[string]interface{},
 	env environ.Env) error {
 
@@ -119,10 +73,6 @@ func (m swarmingCookMode) addLogDogGlobalTags(tags map[string]string, props map[
 
 type buildBotCookMode struct{}
 
-func (m buildBotCookMode) fillTemplateParams(env environ.Env, params *tasktemplate.Params) error {
-	return nil
-}
-
 func (m buildBotCookMode) needsIOKeepAlive() bool         { return true }
 func (m buildBotCookMode) alwaysForwardAnnotations() bool { return true }
 
@@ -131,11 +81,10 @@ func (m buildBotCookMode) addProperties(props map[string]interface{}, env enviro
 	if !ok {
 		return inputError("no slave name in $BUILDBOT_SLAVENAME")
 	}
-	props[PropertyBotId] = botID
+	props[PropertyBotID] = botID
 	return nil
 }
 
-func (m buildBotCookMode) onlyLogDog() bool            { return false }
 func (m buildBotCookMode) shouldEmitLogDogLinks() bool { return true }
 func (m buildBotCookMode) addLogDogGlobalTags(tags map[string]string, props map[string]interface{},
 	env environ.Env) error {

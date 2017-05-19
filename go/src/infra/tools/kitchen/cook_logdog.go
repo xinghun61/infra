@@ -5,7 +5,6 @@
 package main
 
 import (
-	"flag"
 	"io"
 	"os"
 	"path/filepath"
@@ -31,9 +30,6 @@ import (
 	out "github.com/luci/luci-go/logdog/client/butler/output/logdog"
 	"github.com/luci/luci-go/logdog/client/butler/streamserver"
 	"github.com/luci/luci-go/logdog/client/butler/streamserver/localclient"
-	"github.com/luci/luci-go/logdog/client/butlerlib/streamproto"
-	"github.com/luci/luci-go/logdog/common/types"
-	"github.com/luci/luci-go/swarming/tasktemplate"
 )
 
 const (
@@ -52,103 +48,6 @@ func disableGRPCLogging(ctx context.Context) {
 	grpcLogging.Install(log.Get(ctx), log.IsLogging(ctx, log.Debug))
 }
 
-type cookLogDogParams struct {
-	annotationURL          string
-	globalTags             streamproto.TagMap
-	logDogOnly             bool
-	logDogSendIOKeepAlives bool
-
-	filePath               string
-	serviceAccountJSONPath string
-
-	// annotationAddr is the address of the LogDog annotation stream. It is
-	// resolved from the "annotationURL" field during "setupAndValidate".
-	annotationAddr *types.StreamAddr
-}
-
-func (p *cookLogDogParams) addFlags(fs *flag.FlagSet) {
-	fs.StringVar(
-		&p.annotationURL,
-		"logdog-annotation-url",
-		"",
-		"The URL of the LogDog annotation stream to use (logdog://host/project/prefix/+/name). The LogDog "+
-			"project and prefix will be extracted from this URL. This can include Swarmbucket template parameters.")
-	fs.BoolVar(
-		&p.logDogOnly,
-		"logdog-only",
-		false,
-		"Send all output and annotations through LogDog. Implied by swarming mode.")
-	fs.BoolVar(
-		&p.logDogSendIOKeepAlives,
-		"logdog-send-io-keepalives",
-		false,
-		"When in LogDog-only mode (-logdog-only), send I/O keepalives.")
-	fs.StringVar(
-		&p.filePath,
-		"logdog-debug-out-file",
-		"",
-		"If specified, write all generated logs to this path instead of sending them.")
-	fs.StringVar(
-		&p.serviceAccountJSONPath,
-		"logdog-service-account-json-path",
-		"",
-		"If specified, use the service account JSON file at this path. Otherwise, autodetect.")
-	fs.Var(
-		&p.globalTags,
-		"logdog-tag",
-		"Specify key[=value] tags to be applied to all log streams. Individual streams may override. Can "+
-			"be specified multiple times.")
-}
-
-func (p *cookLogDogParams) active() bool {
-	return p.annotationURL != "" || p.filePath != ""
-}
-
-// shouldEmitAnnotations returns true if the cook command should emit additional
-// annotations.
-//
-// If we're streaming solely to LogDog, it makes no sense to emit extra
-// annotations, since nothing will consume them; however, if we're tee-ing, we
-// will continue to emit additional annotations in case something is looking
-// at the tee'd output.
-//
-// Note that this could create an incongruity between the LogDog-emitted
-// annotations and the annotations in the STDOUT stream.
-func (p *cookLogDogParams) shouldEmitAnnotations() bool {
-	return !(p.logDogOnly && p.active())
-}
-
-func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) error {
-	if !p.active() {
-		if p.logDogOnly {
-			return inputError("LogDog flag (-logdog-only) requires -logdog-annotation-url or -logdog-debug-out-file")
-		}
-		return nil
-	}
-	if p.annotationURL == "" {
-		return inputError("-logdog-debug-out-file requires -logdog-annotation-url")
-	}
-
-	// Resolve templating parameters.
-	var params tasktemplate.Params
-	if err := mode.fillTemplateParams(env, &params); err != nil {
-		return errors.Annotate(err).Reason("failed to populate template parameters").Err()
-	}
-
-	// Parse/resolve annotation URL.
-	annotationURL, err := params.Resolve(p.annotationURL)
-	if err != nil {
-		return errors.Annotate(err).Reason("failed to resolve LogDog annotation URL (-logdog-annotation-url)").
-			D("value", p.annotationURL).
-			Err()
-	}
-	if p.annotationAddr, err = types.ParseURL(annotationURL); err != nil {
-		return inputError("invalid LogDog annotation URL (-logdog-annotation-url) %q: %s", annotationURL, err)
-	}
-
-	return nil
-}
-
 // runWithLogdogButler runs the supplied command through the a LogDog Butler
 // engine instance. This involves:
 //	- Configuring / setting up the Butler.
@@ -159,7 +58,9 @@ func (p *cookLogDogParams) setupAndValidate(mode cookMode, env environ.Env) erro
 //	- Shut down the Butler instance.
 // If recipe engine returns non-zero value, the returned err is nil.
 func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env environ.Env) (rc int, build *milo.Step, err error) {
-	log.Infof(ctx, "Using LogDog URL: %s", c.logdog.annotationAddr.URL().String())
+	flags := c.CookFlags.LogDogFlags
+
+	log.Infof(ctx, "Using LogDog URL: %s", flags.AnnotationAddr.URL().String())
 
 	// Install a global gRPC logger adapter. This routes gRPC log messages that
 	// are emitted through our logger. We only log gRPC prints if our logger is
@@ -171,14 +72,14 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 	// Construct our global tags. We will prefer user-supplied tags to our
 	// generated ones.
-	globalTags := make(map[string]string, len(c.logdog.globalTags)+1)
+	globalTags := make(map[string]string, len(flags.GlobalTags)+1)
 	if c.BuildURL != "" {
 		globalTags[logDogViewerURLTag] = c.BuildURL
 	}
 	if err := c.mode.addLogDogGlobalTags(globalTags, rr.properties, env); err != nil {
 		return 0, nil, errors.Annotate(err).Reason("failed to add global tags").Err()
 	}
-	for k, v := range c.logdog.globalTags {
+	for k, v := range flags.GlobalTags {
 		globalTags[k] = v
 	}
 
@@ -200,16 +101,16 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	log.Debugf(ctx, "Generated stream server at: %s", streamServer.Address())
 
 	// Use the annotation stream's prefix component for our Butler run.
-	prefix, annoName := c.logdog.annotationAddr.Path.Split()
+	prefix, annoName := flags.AnnotationAddr.Path.Split()
 	// Determine our base path and annotation subpath.
 	basePath, annoSubpath := annoName.Split()
 
 	// Augment our environment with Butler parameters.
 	bsEnv := bootstrap.Environment{
-		Project:         c.logdog.annotationAddr.Project,
+		Project:         flags.AnnotationAddr.Project,
 		Prefix:          prefix,
 		StreamServerURI: streamServer.Address(),
-		CoordinatorHost: c.logdog.annotationAddr.Host,
+		CoordinatorHost: flags.AnnotationAddr.Host,
 	}
 	bsEnv.Augment(env)
 
@@ -230,13 +131,13 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 	// Register and instantiate our LogDog Output.
 	var o output.Output
-	if c.logdog.filePath == "" {
+	if flags.FilePath == "" {
 		// Set up authentication.
 		authOpts := infraenv.DefaultAuthOptions()
 		authOpts.Scopes = out.Scopes()
 		switch {
-		case c.logdog.serviceAccountJSONPath != "":
-			authOpts.ServiceAccountJSONPath = c.logdog.serviceAccountJSONPath
+		case flags.ServiceAccountJSONPath != "":
+			authOpts.ServiceAccountJSONPath = flags.ServiceAccountJSONPath
 			authOpts.Method = auth.ServiceAccountMethod
 
 		case infraenv.OnGCE():
@@ -257,8 +158,8 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 		ocfg := out.Config{
 			Auth:    authenticator,
-			Host:    c.logdog.annotationAddr.Host,
-			Project: c.logdog.annotationAddr.Project,
+			Host:    flags.AnnotationAddr.Host,
+			Project: flags.AnnotationAddr.Project,
 			Prefix:  prefix,
 			SourceInfo: []string{
 				"Kitchen",
@@ -274,7 +175,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	} else {
 		// Debug: Use a file output.
 		ocfg := fileOut.Options{
-			Path: c.logdog.filePath,
+			Path: flags.FilePath,
 		}
 		o = ocfg.New(ctx)
 	}
@@ -282,13 +183,13 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 	butlerCfg := butler.Config{
 		Output:       o,
-		Project:      c.logdog.annotationAddr.Project,
+		Project:      flags.AnnotationAddr.Project,
 		Prefix:       prefix,
 		BufferLogs:   true,
 		MaxBufferAge: butler.DefaultMaxBufferAge,
 		GlobalTags:   globalTags,
 	}
-	if c.logdog.logDogOnly && (c.logdog.logDogSendIOKeepAlives || c.mode.needsIOKeepAlive()) {
+	if flags.LogDogOnly && (flags.LogDogSendIOKeepAlives || c.mode.needsIOKeepAlive()) {
 		// If we're not teeing, we need to issue keepalives so our executor doesn't
 		// kill us due to lack of I/O.
 		butlerCfg.IOKeepAliveInterval = 5 * time.Minute
@@ -364,16 +265,16 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 		AnnotationSubpath:      annoSubpath,
 		Client:                 localclient.New(b),
 		Execution:              annotation.ProbeExecution(proc.Args, proc.Env, proc.Dir),
-		TeeText:                !c.logdog.logDogOnly,
-		TeeAnnotations:         !c.logdog.logDogOnly || c.mode.alwaysForwardAnnotations(),
+		TeeText:                !flags.LogDogOnly,
+		TeeAnnotations:         !flags.LogDogOnly || c.mode.alwaysForwardAnnotations(),
 		MetadataUpdateInterval: 30 * time.Second,
 		Offline:                false,
 		CloseSteps:             true,
 	}
 	if c.mode.shouldEmitLogDogLinks() {
 		annoteeOpts.LinkGenerator = &annotee.CoordinatorLinkGenerator{
-			Host:    c.logdog.annotationAddr.Host,
-			Project: c.logdog.annotationAddr.Project,
+			Host:    flags.AnnotationAddr.Host,
+			Project: flags.AnnotationAddr.Project,
 			Prefix:  prefix,
 		}
 	}
@@ -392,13 +293,13 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 			Reader:           stdout,
 			Name:             annotee.STDOUT,
 			Annotate:         true,
-			StripAnnotations: !c.logdog.logDogOnly,
+			StripAnnotations: !flags.LogDogOnly,
 		},
 		{
 			Reader:           stderr,
 			Name:             annotee.STDERR,
 			Annotate:         true,
-			StripAnnotations: !c.logdog.logDogOnly,
+			StripAnnotations: !flags.LogDogOnly,
 		},
 	}
 	if annoteeOpts.TeeText || annoteeOpts.TeeAnnotations {

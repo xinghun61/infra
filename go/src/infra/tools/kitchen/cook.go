@@ -20,12 +20,12 @@ import (
 
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/flag/stringlistflag"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/system/exitcode"
 	"github.com/luci/luci-go/common/system/filesystem"
 
+	"infra/tools/kitchen/cookflags"
 	"infra/tools/kitchen/migration"
 	"infra/tools/kitchen/proto"
 	"infra/tools/kitchen/third_party/recipe_engine"
@@ -47,112 +47,7 @@ var cmdCook = &subcommands.Command{
 		c.rr.opArgs.AnnotationFlags = &recipe_engine.Arguments_AnnotationFlags{}
 		c.rr.opArgs.EngineFlags = &recipe_engine.Arguments_EngineFlags{}
 
-		fs := &c.Flags
-		fs.Var(&c.mode,
-			"mode",
-			"Build environment mode for Kitchen. Options are ["+cookModeFlagEnum.Choices()+"].")
-
-		fs.StringVar(
-			&c.RepositoryURL,
-			"repository",
-			"",
-			"URL of a git repository with the recipe to run. Must have a recipe configuration at infra/config/recipes.cfg. "+
-				"If unspecified will look for bundled recipes at -checkout-dir.")
-
-		fs.StringVar(
-			&c.Revision,
-			"revision",
-			"",
-			"Revison of the recipe to run (if -repository is specified). It can be HEAD, a commit hash or a fully-qualified "+
-				"ref. (defaults to HEAD)")
-
-		fs.StringVar(
-			&c.rr.recipeName,
-			"recipe",
-			"",
-			"Name of the recipe to run")
-
-		// TODO(dnj): Remove this flag once all usages have been eliminated.
-		fs.Var(
-			&c.PythonPaths,
-			"python-path",
-			"(Deprecated, use -pythonpath).")
-
-		fs.Var(
-			&c.PythonPaths,
-			"pythonpath",
-			"Python path to include. Can be specified multiple times.")
-
-		fs.Var(
-			&c.PrefixPathENV,
-			"prefix-path-env",
-			"Add this forward-slash-delimited filesystem path to the beginning of the PATH "+
-				"environment. The path value will be made absolute relative to the current working directory. "+
-				"Can be specified multiple times, in which case values will appear at the beginning "+
-				"of PATH in the order that they are supplied. Elements specified here will be forcefully "+
-				"prefixed to the PATH of step commands by the recipe engine.")
-
-		fs.Var(
-			&c.SetEnvAbspath,
-			"set-env-abspath",
-			"Accepts a KEY=PATH environment variable. PATH is a filesystem path that will be exported "+
-				"to the environment as an absolute path.")
-
-		fs.StringVar(
-			&c.CheckoutDir,
-			"checkout-dir",
-			"kitchen-checkout",
-			"The directory to check out the repository to or to look for bundled recipes. It must either: not exist, be empty, "+
-				"be a valid Git repository, or be a recipe bundle.")
-
-		fs.StringVar(
-			&c.rr.workDir,
-			"workdir",
-			"kitchen-workdir",
-			`The working directory for recipe execution. It must not exist or be empty. Defaults to "./kitchen-workdir."`)
-
-		fs.StringVar(
-			&c.Properties,
-			"properties", "",
-			"A JSON string containing the properties. Mutually exclusive with -properties-file.")
-
-		fs.StringVar(
-			&c.PropertiesFile,
-			"properties-file", "",
-			"A file containing a JSON string of properties. Mutually exclusive with -properties.")
-
-		fs.StringVar(
-			&c.OutputResultJSONPath,
-			"output-result-json",
-			"",
-			"The file to write the result to as a JSONPB-formatted CookResult proto message")
-
-		fs.IntVar(
-			&c.RecipeResultByteLimit,
-			"recipe-result-byte-limit",
-			0,
-			"If positive, a limit, in bytes, for the result file contents written by recipe engine")
-
-		fs.StringVar(
-			&c.CacheDir,
-			"cache-dir",
-			"",
-			"Directory with caches. If not empty, slashes will be converted to OS-native separators, "+
-				"it will be made absolute and passed to the recipe.")
-
-		fs.StringVar(
-			&c.TempDir,
-			"temp-dir",
-			"",
-			"Temporary directory to use. Forward slashes will be converted into OS-native separators.")
-
-		fs.StringVar(
-			&c.BuildURL,
-			"build-url",
-			"",
-			"An optional URL to the build, which can be used to link to the build in LogDog.")
-
-		c.logdog.addFlags(fs)
+		c.CookFlags.Register(&c.Flags)
 
 		return &c
 	},
@@ -161,135 +56,22 @@ var cmdCook = &subcommands.Command{
 type cookRun struct {
 	subcommands.CommandRunBase
 
-	// For field documentation see the flags that these flags are bound to.
+	cookflags.CookFlags
 
-	RepositoryURL string
-	Revision      string
-	CheckoutDir   string
-
-	RecipeResultByteLimit int
-
-	Properties     string
-	PropertiesFile string
-	PythonPaths    stringlistflag.Flag
-	PrefixPathENV  stringlistflag.Flag
-	SetEnvAbspath  stringlistflag.Flag
-	CacheDir       string
-	TempDir        string
-	BuildURL       string
-
-	OutputResultJSONPath string
-
-	mode   cookModeFlag
-	rr     recipeRun
-	logdog cookLogDogParams
+	mode cookMode
+	rr   recipeRun
 }
 
 // normalizeFlags validates and normalizes flags.
 func (c *cookRun) normalizeFlags(env environ.Env) error {
-	if c.mode.cookMode == nil {
-		return inputError("missing mode (-mode)")
-	}
-
-	// Adjust some flags according to the chosen mode.
-	if c.mode.onlyLogDog() {
-		c.logdog.logDogOnly = true
-	}
-
-	if c.rr.workDir == "" {
-		return inputError("-workdir is required")
-	}
-
-	if c.RepositoryURL != "" && c.Revision == "" {
-		c.Revision = "HEAD"
-	} else if c.RepositoryURL == "" && c.Revision != "" {
-		return inputError("if -repository is unspecified -revision must also be unspecified.")
-	}
-
-	if c.RepositoryURL != "" && !validRevisionRe.MatchString(c.Revision) {
-		return inputError("invalid revision %q", c.Revision)
-	}
-
-	if c.CheckoutDir == "" {
-		return inputError("empty -checkout-dir")
-	}
-	switch st, err := os.Stat(c.CheckoutDir); {
-	case os.IsNotExist(err) && c.RepositoryURL == "":
-		return inputError("-repository not specified and -checkout-dir doesn't exist")
-	case !os.IsNotExist(err) && err != nil:
-		return err
-	case err == nil && !st.IsDir():
-		return inputError("--checkout-dir is not a directory")
-	}
-
-	if c.rr.recipeName == "" {
-		return inputError("-recipe is required")
-	}
-
-	if c.Properties != "" && c.PropertiesFile != "" {
-		return inputError("only one of -properties or -properties-file is allowed")
-	}
-
-	// If LogDog is enabled, all required LogDog flags must be supplied.
-	if err := c.logdog.setupAndValidate(c.mode.cookMode, env); err != nil {
+	if err := c.CookFlags.Normalize(env); err != nil {
 		return err
 	}
 
-	// normalizePathSlice normalizes a slice of forward-slash-delimited path
-	// strings.
-	//
-	// This operation is destructive, as the normalized result uses the same
-	// backing array as the initial path slice.
-	normalizePathSlice := func(sp *stringlistflag.Flag) error {
-		s := *sp
-		seen := make(map[string]struct{}, len(s))
-		normalized := s[:0]
-		for _, p := range s {
-			p := filepath.FromSlash(p)
-			if err := filesystem.AbsPath(&p); err != nil {
-				return err
-			}
-			if _, ok := seen[p]; ok {
-				continue
-			}
-			seen[p] = struct{}{}
-			normalized = append(normalized, p)
-		}
+	c.mode = cookModeSelector[c.Mode]
+	c.rr.workDir = c.WorkDir
+	c.rr.recipeName = c.RecipeName
 
-		*sp = normalized
-		return nil
-	}
-
-	// Normalize c.PythonPaths
-	if err := normalizePathSlice(&c.PythonPaths); err != nil {
-		return err
-	}
-
-	// Normalize c.PrefixPathENV
-	if err := normalizePathSlice(&c.PrefixPathENV); err != nil {
-		return err
-	}
-
-	// Normalize c.SetEnvAbspath
-	for i, entry := range c.SetEnvAbspath {
-		key, value := environ.Split(entry)
-		if value == "" {
-			return inputError("-set-env-abspath requires a PATH value")
-		}
-		if err := filesystem.AbsPath(&value); err != nil {
-			return err
-		}
-		c.SetEnvAbspath[i] = environ.Join(key, value)
-	}
-
-	if c.TempDir != "" {
-		c.TempDir = filepath.FromSlash(c.TempDir)
-		if err := filesystem.AbsPath(&c.TempDir); err != nil {
-			return err
-		}
-	}
-
-	c.OutputResultJSONPath = filepath.FromSlash(c.OutputResultJSONPath)
 	return nil
 }
 
@@ -349,8 +131,8 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *kitc
 	c.rr.outputResultJSONFile = filepath.Join(c.TempDir, "recipe-result.json")
 
 	rv := 0
-	if c.logdog.active() {
-		result.AnnotationUrl = c.logdog.annotationURL
+	if c.CookFlags.LogDogFlags.Active() {
+		result.AnnotationUrl = c.CookFlags.LogDogFlags.AnnotationURL
 		rv, result.Annotations, err = c.runWithLogdogButler(ctx, &c.rr, env)
 		if err != nil {
 			return fail(errors.Annotate(err).Reason("failed to run recipe").Err())
@@ -513,9 +295,9 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	if err := c.mode.addProperties(props, env); err != nil {
 		return nil, errors.Annotate(err).Reason("chosen mode could not add properties").Err()
 	}
-	if _, ok := props[PropertyBotId]; !ok {
+	if _, ok := props[PropertyBotID]; !ok {
 		return nil, errors.Reason("chosen mode didn't add %(p)s property").
-			D("p", PropertyBotId).
+			D("p", PropertyBotID).
 			Err()
 	}
 
@@ -607,7 +389,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *kitc
 
 	// If we're not using LogDog, send out annotations.
 	bootstrapSuccess := false
-	if c.logdog.shouldEmitAnnotations() {
+	if c.CookFlags.LogDogFlags.ShouldEmitAnnotations() {
 		// This code is reachable only in buildbot mode.
 
 		annotate := func(args ...string) {
