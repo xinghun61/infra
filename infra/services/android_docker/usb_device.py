@@ -172,6 +172,9 @@ class USBDevice(object):
   def __str__(self):
     return self.serial or self.port_list
 
+  def __repr__(self):
+    return self.serial or self.port_list
+
   @property
   def serial(self):
     if not self._serial:
