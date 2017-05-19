@@ -110,7 +110,7 @@ func botAnalyzer(ctx context.Context, failures []*messages.BuildStep) ([]message
 		// fully implemented on all builders. This is currently blocked on some work
 		// in the test runners though, so have to do this hack for now :(
 		// See https://crbug.com/680729
-		if strings.HasPrefix(step.Name, "[trigger]") {
+		if strings.Contains(step.Name, "[trigger]") {
 			continue
 		}
 
