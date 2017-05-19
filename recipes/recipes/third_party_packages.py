@@ -20,7 +20,7 @@ DEPS = [
   'recipe_engine/path',
   'recipe_engine/platform',
   'recipe_engine/python',
-  'recipe_engine/raw_io',
+  'recipe_engine/shutil',
   'recipe_engine/step',
   'recipe_engine/url',
 ]
@@ -28,6 +28,10 @@ DEPS = [
 CPYTHON_REPO_URL = (
     'https://chromium.googlesource.com/external/github.com/python/cpython')
 CPYTHON_PACKAGE_PREFIX = 'infra/python/cpython/'
+
+# This version suffix serves to distinguish different revisions of Python built
+# with this recipe.
+CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium'
 
 GIT_REPO_URL = (
     'https://chromium.googlesource.com/external/github.com/git/git')
@@ -59,24 +63,143 @@ def RunSteps(api):
 def PackagePythonForUnix(api):
   """Builds Python for Unix and uploads it to CIPD."""
 
-  def install(target_dir):
-    # cwd is source checkout
-    api.step('configure', ['./configure'])
-    api.step('make', ['make', 'install', 'prefix=%s' % target_dir])
+  workdir = api.path['start_dir'].join('python')
+
+  def install_openssl(workdir, sources, prefix):
+    archive = sources.join('openssl-1.1.0e.tar.gz')
+    with api.context(cwd=workdir):
+      api.step('extract', ['tar', '-xzf', archive])
+
+    build = workdir.join('openssl-1.1.0e')
+    with api.context(cwd=build):
+      target = {
+        ('mac', 'intel', 64): 'darwin64-x86_64-cc',
+        ('linux', 'intel', 32): 'linux-x86',
+        ('linux', 'intel', 64): 'linux-x86_64',
+      }[(api.platform.name, api.platform.arch, api.platform.bits)]
+
+      api.step('configure', [
+        build.join('Configure'),
+        '--prefix=%s' % (prefix,),
+        target,
+      ])
+      api.step('make', ['make', 'install'])
+
+  def install_generic(name, workdir, archive, prefix):
+    with api.context(cwd=workdir):
+      api.step('extract', ['tar', '-xzf', archive])
+
+    build = workdir.join(name)
+    with api.context(cwd=build):
+      api.step('configure', [
+        build.join('configure'),
+        '--prefix=%s' % (prefix,),
+      ])
+      api.step('make', ['make', 'install'])
 
   tag = GetLatestReleaseTag(api, CPYTHON_REPO_URL, 'v2.')
-  version = tag.lstrip('v')
+  version = tag.lstrip('v') + CPYTHON_PACKAGE_VERSION_SUFFIX
   workdir = api.path['start_dir'].join('python')
   api.file.rmtree('rmtree workdir', workdir)
-  EnsurePackage(
-      api,
-      workdir,
-      CPYTHON_REPO_URL,
-      CPYTHON_PACKAGE_PREFIX,
-      install,
-      tag,
-      version,
-  )
+
+  def install(target_dir):
+    # cwd is Python checkout.
+    sources = workdir.join('sources')
+    api.cipd.ensure(sources, {
+      'infra/third_party/source/openssl': 'version:1.1.0e',
+      'infra/third_party/source/readline': 'version:7.0',
+      'infra/third_party/source/termcap': 'version:1.3.1',
+      'infra/third_party/source/zlib': 'version:1.2.11',
+    })
+
+    # Some systems (e.g., Mac OSX) don't actually offer these libraries by
+    # default, or have incorrect or inconsistent library versions. We explicitly
+    # install and use controlled versions of these libraries for a more
+    # controlled, consistent, and (in case of OpenSSL) secure Python build.
+    support_prefix = workdir.join('support_prefix')
+    with api.step.nest('openssl'):
+      install_openssl(workdir, sources, support_prefix)
+    for name in ('readline-7.0', 'termcap-1.3.1', 'zlib-1.2.11'):
+      with api.step.nest(name):
+        install_generic(
+            name,
+            workdir,
+            sources.join('%s.tar.gz' % (name,)),
+            support_prefix)
+
+    support_lib = support_prefix.join('lib')
+    support_include = support_prefix.join('include')
+
+    cflags = [
+      '-I%s' % (support_include,),
+    ]
+    ldflags = [
+      '-L%s' % (support_lib,),
+    ]
+
+    configure_env = {
+      'CPPFLAGS': ' '.join(cflags),
+      'LDFLAGS':  ' '.join(ldflags)
+    }
+    configure_flags = [
+      '--disable-shared',
+      '--enable-optimizations',
+      '--prefix', target_dir,
+    ]
+
+    if api.platform.is_mac:
+      configure_env.update({
+        # The "getentropy" function is declared in Mac headers, but is not
+        # actually available. This confuses the configuration script. Override
+        # its automatic detection and force this to no ("n").
+        'ac_cv_func_getentropy': 'n',
+      })
+
+    # cwd is source checkout
+    with api.context(env=configure_env):
+      api.step('configure', ['./configure'] + configure_flags)
+
+    # Edit the modules configuration to statically compile all Python modules.
+    #
+    # We do this by identifying the line '#*shared*' in "/Modules/Setup.dist"
+    # and replacing it with '*static*'.
+    api.shutil.write(
+        'Configure static modules',
+        api.context.cwd.join('Modules', 'Setup.local'),
+        '\n'.join([
+            '*static*',
+            'SP=%s' % (support_prefix,),
+            '_hashlib _hashopenssl.c -I$(SP)/include -I$(SP)/include/openssl '
+                '$(SP)/lib/libssl.a $(SP)/lib/libcrypto.a',
+            '_ssl _ssl.c -DUSE_SSL -I$(SP)/include -I$(SP)/include/openssl '
+                '$(SP)/lib/libssl.a $(SP)/lib/libcrypto.a',
+            'binascii binascii.c -I$(SP)/include $(SP)/lib/libz.a',
+            'zlib zlibmodule.c -I$(SP)/include $(SP)/lib/libz.a',
+            'readline readline.c -I$(SP)/include '
+                '$(SP)/lib/libreadline.a $(SP)/lib/libtermcap.a',
+
+            # Required: terminal newline.
+            '',
+        ]),
+    )
+
+    # Build Python.
+    api.step('make', ['make', 'install'])
+
+  base_env = {}
+  if api.platform.is_mac:
+    base_env['MACOSX_DEPLOYMENT_TARGET'] = '10.6'
+
+  with api.context(env=base_env):
+    EnsurePackage(
+        api,
+        workdir,
+        CPYTHON_REPO_URL,
+        CPYTHON_PACKAGE_PREFIX,
+        install,
+        tag,
+        version,
+    )
 
 
 @recipe_api.composite_step
@@ -128,8 +251,8 @@ def PackageGitForUnix(api, workdir):
     }
     with api.context(env=env):
       api.step('make configure', ['make', 'configure'])
-      api.step('configure', ['./configure'])
-      api.step('make install', ['make', 'install', 'prefix=%s' % target_dir])
+      api.step('configure', ['./configure', '--prefix', target_dir])
+      api.step('make install', ['make', 'install'])
 
   tag = GetLatestReleaseTag(api, GIT_REPO_URL, 'v')
   version = tag.lstrip('v') + GIT_PACKAGE_VERSION_SUFFIX
@@ -396,7 +519,8 @@ def GenTests(api):
       test += api.step_data('git.refs', git_test_refs)
       test += api.step_data('python.refs', python_test_refs)
       test += api.override_step_data(
-          'python.cipd search %s version:2.1.2' % cpython_package_name,
+          'python.cipd search %s version:2.1.2%s' % (
+            cpython_package_name, CPYTHON_PACKAGE_VERSION_SUFFIX),
           api.cipd.example_search(
               cpython_package_name,
               instances=bool(new_package != 'python')))

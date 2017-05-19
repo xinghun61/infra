@@ -58,13 +58,16 @@
       "search",
       "infra/python/cpython/mac-amd64",
       "-tag",
-      "version:2.1.2",
+      "version:2.1.2.chromium",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "python.cipd search infra/python/cpython/mac-amd64 version:2.1.2",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "name": "python.cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -84,6 +87,9 @@
       "-u",
       "import sys; sys.exit(0)"
     ],
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
     "name": "python.Synced",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -315,7 +321,9 @@
   },
   {
     "cmd": [
-      "./configure"
+      "./configure",
+      "--prefix",
+      "[START_DIR]/git/package"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
@@ -330,8 +338,7 @@
   {
     "cmd": [
       "make",
-      "install",
-      "prefix=[START_DIR]/git/package"
+      "install"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {

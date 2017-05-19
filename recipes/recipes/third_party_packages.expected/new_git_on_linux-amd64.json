@@ -58,13 +58,13 @@
       "search",
       "infra/python/cpython/linux-amd64",
       "-tag",
-      "version:2.1.2",
+      "version:2.1.2.chromium",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2",
+    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -315,7 +315,9 @@
   },
   {
     "cmd": [
-      "./configure"
+      "./configure",
+      "--prefix",
+      "[START_DIR]/git/package"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
@@ -330,8 +332,7 @@
   {
     "cmd": [
       "make",
-      "install",
-      "prefix=[START_DIR]/git/package"
+      "install"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
