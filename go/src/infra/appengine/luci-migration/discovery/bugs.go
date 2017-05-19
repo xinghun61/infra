@@ -15,12 +15,14 @@ import (
 
 	"golang.org/x/net/context"
 
-	"infra/appengine/luci-migration/common"
+	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/common/errors"
 )
+
+const monorailProject = "chromium"
 
 var builderBugDescriptionTmpl = template.Must(template.New("").
 	Funcs(template.FuncMap{
@@ -62,21 +64,16 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 		}, s)
 	}
 
-	isDev := common.IsDevInstance(c)
-	sig := "Via-Luci-Migration"
-	if isDev {
-		sig = "Via-Luci-Migration-Dev"
-	}
 	req := &monorail.InsertIssueRequest{
-		ProjectId: "chromium",
-		SendEmail: !isDev,
+		ProjectId: monorailProject,
+		SendEmail: true,
 		Issue: &monorail.Issue{
 			Status:      "Untriaged",
 			Summary:     fmt.Sprintf("Migrate %q to LUCI", builder.ID.Builder),
 			Description: descBuf.String(),
 			Components:  []string{"Infra>Platform"},
 			Labels: []string{
-				sig,
+				"Via-Luci-Migration",
 				"Type-Task",
 				"Pri-3",
 				"Master-" + excludeInvalid(builder.ID.Master),
@@ -84,7 +81,8 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 			},
 		},
 	}
-	if builder.OS != storage.UnknownOS {
+	if builder.OS != config.OS_UNSET {
+		// Monorail tolerates all-caps OS names.
 		req.Issue.Labels = append(req.Issue.Labels, "OS-"+builder.OS.String())
 	}
 

@@ -1,0 +1,57 @@
+// Copyright 2015 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
+syntax = "proto3";
+
+package luci.migration;
+
+option go_package = "config";
+
+message Config {
+    Monorail monorail = 1;
+    Milo milo = 2;
+    Buildbot buildbot = 3;
+}
+
+message Monorail {
+    string hostname = 1;
+}
+
+message Milo {
+    string hostname = 1;
+}
+
+message Buildbot {
+
+    message Master {
+        string name = 1;
+        bool public = 2;
+        SchedulingType scheduling_type = 3;
+        OS os = 4;
+
+        string luci_bucket = 5;
+    }
+
+    repeated Master masters = 1;
+}
+
+enum SchedulingType {
+    // TRYJOBS builds are scheduled for uncommitted CLs.
+    TRYJOBS = 0;
+    // CONTINUOUS builds are scheduled for landed CLs.
+    CONTINUOUS = 1;
+    // PERIODIC builds are scheduled every X time-units.
+    PERIODIC = 2;
+}
+
+// OS is an Operating System.
+// OS names must match built-in "OS-<value>" Monorail labels.
+enum OS {
+    UNSET = 0;
+    LINUX = 1;
+    MAC = 2;
+    WINDOWS = 3;
+    ANDROID = 4;
+    IOS = 5;
+}

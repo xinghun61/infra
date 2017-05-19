@@ -10,18 +10,29 @@ import (
 
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/errors"
+
+	"infra/appengine/luci-migration/config"
 )
 
 // Builder is a Buildbot builder that needs to be migrated to LUCI.
 type Builder struct {
-	Kind                   string    `gae:"$kind,Builder"`
-	ID                     BuilderID `gae:"$id"`
-	SchedulingType         SchedulingType
-	Public                 bool
-	IssueID                int
+	Kind           string    `gae:"$kind,Builder"`
+	ID             BuilderID `gae:"$id"`
+	SchedulingType config.SchedulingType
+	Public         bool
+	OS             config.OS
+
+	IssueID IssueID
+
 	LUCIBuildbucketBucket  string
 	LUCIBuildbucketBuilder string
-	OS                     OS
+}
+
+// IssueID globally identifies a Monorail issue.
+type IssueID struct {
+	Hostname string
+	Project  string
+	ID       int
 }
 
 // BuilderID is a combination of a Buildbot master and builder.
@@ -54,47 +65,4 @@ func (b *BuilderID) FromProperty(p datastore.Property) error {
 	b.Master = parts[0]
 	b.Builder = parts[1]
 	return nil
-}
-
-// SchedulingType specifies how builds are scheduled on a builder.
-type SchedulingType int
-
-const (
-	// TryScheduling means builds are scheduled for CLs.
-	TryScheduling SchedulingType = iota
-	// ContinuousScheduling means builds are scheduled periodically or
-	// for landed commits.
-	ContinuousScheduling
-)
-
-// OS is an operating system that we care about.
-type OS int
-
-const (
-	UnknownOS OS = iota
-	Linux
-	Mac
-	Windows
-	Android
-	IOS
-)
-
-// String returns a valid value for OS monorail label.
-func (os OS) String() string {
-	switch os {
-	case UnknownOS:
-		return ""
-	case Linux:
-		return "Linux"
-	case Mac:
-		return "Mac"
-	case Windows:
-		return "Windows"
-	case Android:
-		return "Android"
-	case IOS:
-		return "iOS"
-	default:
-		return fmt.Sprintf("invalid os %d", os)
-	}
 }

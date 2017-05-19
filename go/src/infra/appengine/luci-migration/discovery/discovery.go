@@ -23,30 +23,24 @@ import (
 	"github.com/luci/luci-go/common/sync/parallel"
 	"github.com/luci/luci-go/milo/api/proto"
 
+	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 )
 
 // Builders finds and registers new builders.
 type Builders struct {
-	Monorail monorail.MonorailClient
+	Monorail         monorail.MonorailClient
+	MonorailHostname string
+
 	Buildbot milo.BuildbotClient
+
+	RegistrationSemaphore parallel.Semaphore // bounds parallel builder registration
 }
 
-// Discover fetches builder names for all registered masters
-// and registers new builders in the storage.
-func (d *Builders) Discover(c context.Context) error {
-	for _, m := range storage.GetMasters() {
-		if err := d.discoverNewBuildersOf(c, m); err != nil {
-			return errors.Annotate(err).Reason("could not discover builders in master %(master)s").
-				D("master", m.Name).
-				Err()
-		}
-	}
-	return nil
-}
-
-func (d *Builders) discoverNewBuildersOf(c context.Context, master *storage.Master) error {
-	logging.Infof(c, "%s: discovering new builders", master.Name)
+// Discover fetches builder names of the master and registers new ones in the
+// storage.
+func (d *Builders) Discover(c context.Context, master *config.Buildbot_Master) error {
+	logging.Infof(c, "discovering new builders")
 
 	// Fetch builder names of a master.
 	names, err := d.fetchBuilderNames(c, master)
@@ -59,7 +53,7 @@ func (d *Builders) discoverNewBuildersOf(c context.Context, master *storage.Mast
 	// Check which builders we don't know about.
 	toCheck := make([]interface{}, len(names))
 	for i, b := range names {
-		toCheck[i] = &storage.Builder{ID: storage.BuilderID{master.Name, b}}
+		toCheck[i] = &storage.Builder{ID: bid(master.Name, b)}
 	}
 
 	// NOTE: There is probably an upper-bound (~500) to the number of items we can Get.
@@ -77,15 +71,19 @@ func (d *Builders) discoverNewBuildersOf(c context.Context, master *storage.Mast
 	}
 
 	// New builders are discovered. Register them.
-	return parallel.WorkPool(10, func(work chan<- func() error) {
+	return parallel.FanOutIn(func(work chan<- func() error) {
 		for i, name := range names {
 			if !exists.Get(i) {
 				name := name
+				c := logging.SetField(c, "builder", name)
 				work <- func() error {
+					if d.RegistrationSemaphore != nil {
+						d.RegistrationSemaphore.Lock()
+						defer d.RegistrationSemaphore.Unlock()
+					}
+					logging.Infof(c, "registering builder")
 					if err := d.registerBuilder(c, master, name); err != nil {
-						return errors.Annotate(err).Reason("could not register builder %(builder)q").
-							D("builder", &storage.BuilderID{master.Name, name}).
-							Err()
+						logging.WithError(err).Errorf(c, "could not register builder")
 					}
 					return nil
 				}
@@ -94,16 +92,15 @@ func (d *Builders) discoverNewBuildersOf(c context.Context, master *storage.Mast
 	})
 }
 
-func (d *Builders) registerBuilder(c context.Context, master *storage.Master, name string) error {
+func (d *Builders) registerBuilder(c context.Context, master *config.Buildbot_Master, name string) error {
 	builder := &storage.Builder{
-		ID:                     storage.BuilderID{master.Name, name},
+		ID:                     bid(master.Name, name),
 		SchedulingType:         master.SchedulingType,
 		Public:                 master.Public,
-		LUCIBuildbucketBucket:  master.LUCIBucket,
+		LUCIBuildbucketBucket:  master.LuciBucket,
 		LUCIBuildbucketBuilder: "LUCI " + name, // hardcode for now
-		OS: master.OS,
+		OS: master.Os,
 	}
-	logging.Infof(c, "registering builder %s", &builder.ID)
 
 	// Create a Monorail issue.
 	if deadline, ok := c.Deadline(); ok {
@@ -111,9 +108,12 @@ func (d *Builders) registerBuilder(c context.Context, master *storage.Master, na
 			// Do not start creating a bug if we don't have much time
 			return fmt.Errorf("too close to deadline")
 		}
+
 	}
+	builder.IssueID.Hostname = d.MonorailHostname
+	builder.IssueID.Project = monorailProject
 	var err error
-	if builder.IssueID, err = createBuilderBug(c, d.Monorail, builder); err != nil {
+	if builder.IssueID.ID, err = createBuilderBug(c, d.Monorail, builder); err != nil {
 		return errors.Annotate(err).Reason("could not create a monorail bug for builder %(ID)q").
 			D("ID", &builder.ID).
 			Err()
@@ -131,7 +131,7 @@ type masterJSON struct {
 	Builders map[string]struct{}
 }
 
-func (d *Builders) fetchBuilderNames(c context.Context, master *storage.Master) (names []string, err error) {
+func (d *Builders) fetchBuilderNames(c context.Context, master *config.Buildbot_Master) (names []string, err error) {
 	// this is inefficient, but there is no better API
 	res, err := d.Buildbot.GetCompressedMasterJSON(c, &milo.MasterRequest{Name: master.Name})
 	if err != nil {
@@ -158,4 +158,8 @@ func (d *Builders) fetchBuilderNames(c context.Context, master *storage.Master) 
 	}
 	sort.Strings(builders)
 	return builders, nil
+}
+
+func bid(master, builder string) storage.BuilderID {
+	return storage.BuilderID{Master: master, Builder: builder}
 }

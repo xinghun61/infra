@@ -5,13 +5,12 @@
 package app
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"golang.org/x/net/context"
-
-	"infra/monorail"
 
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/appengine/gaeauth/server"
@@ -20,6 +19,7 @@ import (
 	"github.com/luci/luci-go/common/data/rand/mathrand"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/sync/parallel"
 	"github.com/luci/luci-go/grpc/prpc"
 	"github.com/luci/luci-go/milo/api/proto"
 	"github.com/luci/luci-go/server/auth"
@@ -28,12 +28,10 @@ import (
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 
-	"infra/appengine/luci-migration/discovery"
-)
+	"infra/monorail"
 
-const (
-	miloHost           = "luci-milo.appspot.com"
-	monorailAPIRootURL = "https://monorail-prod.appspot.com/_ah/api/monorail/v1"
+	"infra/appengine/luci-migration/config"
+	"infra/appengine/luci-migration/discovery"
 )
 
 //// Routes.
@@ -85,15 +83,41 @@ func cronDiscoverBuilders(c *router.Context) error {
 	}
 	httpClient := &http.Client{Transport: transport}
 
-	discoverer := &discovery.Builders{
-		Buildbot: milo.NewBuildbotPRPCClient(&prpc.Client{
-			C:    httpClient,
-			Host: miloHost,
-		}),
-		Monorail: monorail.NewEndpointsClient(httpClient, monorailAPIRootURL),
+	cfg, err := config.Get(c.Context)
+	switch {
+	case err != nil:
+		return err
+	case cfg.Milo.Hostname == "":
+		return errors.New("invalid config: milo host unspecified")
+	case cfg.Monorail.Hostname == "":
+		return errors.New("invalid config: monorail host unspecified")
 	}
 
-	return discoverer.Discover(c.Context)
+	discoverer := &discovery.Builders{
+		RegistrationSemaphore: make(parallel.Semaphore, 10),
+		Buildbot: milo.NewBuildbotPRPCClient(&prpc.Client{
+			C:    httpClient,
+			Host: cfg.Milo.Hostname,
+		}),
+		Monorail: monorail.NewEndpointsClient(
+			httpClient,
+			fmt.Sprintf("https://%s/_ah/api/monorail/v1", cfg.Monorail.Hostname),
+		),
+		MonorailHostname: cfg.Monorail.Hostname,
+	}
+
+	return parallel.FanOutIn(func(work chan<- func() error) {
+		for _, m := range cfg.Buildbot.Masters {
+			m := m
+			work <- func() error {
+				masterCtx := logging.SetField(c.Context, "master", m.Name)
+				if err := discoverer.Discover(masterCtx, m); err != nil {
+					logging.WithError(err).Errorf(masterCtx, "could not discover builders")
+				}
+				return nil
+			}
+		}
+	})
 }
 
 func init() {
