@@ -1,0 +1,111 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/vaadin-grid/all-imports.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
+
+<link rel="import" href="../../elements/som-header-styles.html">
+
+<dom-module id="som-test-expectations">
+  <template>
+    <style include="som-header-styles"></style>
+    <style is="custom-style">
+      #main {
+        display: flex;
+        flex-grow: 1;
+        flex-direction: column;
+      }
+      vaadin-grid {
+        display: flex;
+        flex-grow: 1;
+        flex-direction: column;
+        --vaadin-grid-header-cell: {
+          font-size:10pt;
+          padding:2pt;
+        };
+        --vaadin-grid-body-cell: {
+          font-size:10pt;
+        };
+        --vaadin-grid-body-row-hover-cell: {
+          background-color: var(--paper-grey-200);
+        };
+      }
+      vaadin-grid::shadow vaadin-grid-table {
+        display: flex;
+        flex-grow: 1;
+      }
+      .testNameCell {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-family: monospace;
+        font-size: 9pt;
+      }
+    </style>
+    <iron-ajax
+        id="testExpectationsAjax"
+        url="/api/v1/testexpectations"
+        handle-as="json"
+        last-error="{{_testExpectationsJsonError}}"
+        last-response="{{_testExpectationsJson}}"
+        debounce-duration="300"></iron-ajax>
+    <div id="main">
+      <vaadin-grid items="[[_testExpectationsJson]]">
+        <vaadin-grid-column width="100px">
+          <template class="header">
+            <vaadin-grid-sorter path="FileName">Expectations File</vaadin-grid-sorter>
+            <vaadin-grid-filter aria-label="File Name" path="FileName" value="[[_filterFileName]]">
+              <input placeholder="Filter" value="{{_filterFileName::input}}" focus-target>
+            </vaadin-grid-filter>
+          </template>
+          <template><a href="https://chromium.googlesource.com/chromium/src/+/master/[[item.FileName]]#[[item.LineNumber]]">[[_shortFileName(item.FileName)]]</a></template>
+        </vaadin-grid-column>
+        <vaadin-grid-column width="400px" flex>
+          <template class="header">
+            <vaadin-grid-sorter path="TestName">Test Name</vaadin-grid-sorter>
+            <vaadin-grid-filter aria-label="Test Name" path="TestName" value="[[_filterTestName]]">
+              <input placeholder="Filter" value="{{_filterTestName::input}}" focus-target>
+            </vaadin-grid-filter>
+          </template>
+          <template>
+            <div class="testNameCell">
+            <a target="_blank" title="[[item.TestName]]" href="https://chromium.googlesource.com/chromium/src/+/master/third_party/WebKit/LayoutTests/[[item.TestName]]">[[item.TestName]]</a>
+            </div>
+          </template>
+        </vaadin-grid-column>
+        <vaadin-grid-column flex>
+          <template class="header">
+            <vaadin-grid-sorter path="Expectations">Expected</vaadin-grid-sorter>
+            <vaadin-grid-filter aria-label="Expected Results" path="Expectations" value="[[_filterExpectations]]">
+              <input placeholder="Filter" value="{{_filterExpectations::input}}" focus-target>
+            </vaadin-grid-filter>
+          </template>
+          <template>[[item.Expectations]]</template>
+        </vaadin-grid-column>
+        <vaadin-grid-column flex>
+          <template class="header">
+            <vaadin-grid-sorter path="Modifiers">Modifiers</vaadin-grid-sorter>
+            <vaadin-grid-filter aria-label="Modifiers" path="Modifiers" value="[[_filterModifiers]]">
+              <input placeholder="Filter" value="{{_filterModifiers::input}}" focus-target>
+            </vaadin-grid-filter>
+          </template>
+          <template>[[item.Modifiers]]</template>
+        </vaadin-grid-column>
+        <vaadin-grid-column flex>
+          <template class="header">
+            <vaadin-grid-sorter path="Bugs">Bugs</vaadin-grid-sorter>
+            <vaadin-grid-filter aria-label="Bugs" path="Bugs" value="[[_filterBugs]]">
+              <input placeholder="Filter" value="{{_filterBugs::input}}" focus-target>
+            </vaadin-grid-filter>
+          </template>
+          <template>
+          <template is="dom-repeat" items="[[item.Bugs]]" as="bug">
+            <a href="http://[[bug]]" target="_blank">[[bug]]</a>
+         </template>
+         </template>
+        </vaadin-grid-column>
+      </vaadin-grid>
+    </div>
+  </template>
+  <script src="som-test-expectations.js"></script>
+</dom-module>

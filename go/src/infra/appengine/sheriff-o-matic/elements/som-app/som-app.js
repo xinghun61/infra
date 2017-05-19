@@ -94,6 +94,10 @@
         type: Boolean,
         value: false,
       },
+      _showTestExpectations: {
+        type: Boolean,
+        value: false,
+      },
       _showSwarmingAlerts: {
         type: Boolean,
         computed: '_computeShowSwarmingAlerts(_swarmingAlerts, _isTrooperPage)',
@@ -137,7 +141,11 @@
           'calendar': {
             pageId: 'rotationCalendar',
             displayText: 'Rotation Calendar',
-          }
+          },
+          'test-expectations': {
+            pageId: 'testExpectations',
+            displayText: 'Layout Test Expectations',
+          },
         },
       },
       _examinedAlert: {
@@ -226,7 +234,11 @@
         return '';
       }
 
-      return pathParts[1];
+      let name = pathParts[1];
+      if (this._staticPages[name]) {
+        return this._staticPages[name].displayText;
+      }
+      return name;
     },
 
     _computeTreeLogo: function(tree, trees, errored) {
@@ -282,6 +294,10 @@
           if (pathParts[1] === 'calendar') {
             // Hide rotation calendar until visited because it's really big.
             this._showRotationCalendar = true;
+          }
+          if (pathParts[1] === 'test-expectations') {
+            // Hide test expectations until visited because it's really big.
+            this._showTestExpectations = true;
           }
           return this._staticPages[pathParts[1]].pageId;
         } else {

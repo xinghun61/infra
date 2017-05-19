@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/som-test-expectations/som-test-expectations.html">
+<test-fixture id="basic">
+  <template>
+    <som-test-expectations></som-test-expectations>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+    var server;
+
+    setup(function() {
+      element = fixture('basic');
+      server = sinon.fakeServer.create();
+    });
+
+    teardown(function() {
+      server.restore();
+    });
+
+    test('renders empty', function() {
+      assert.equal('', element.textContent.trim());
+    });
+
+    test('renders basic', function(done) {
+      element.$.testExpectationsAjax.auto = false;
+      server.respondWith(
+        'GET',
+        '/api/v1/testexpectations', [
+          200,
+          {'Content-Type': 'application/json'},
+          '[{"FileName":"third_party/WebKit/LayoutTests/TestExpectations","LineNumber":2171,"TestName":"accessibility/aria-activedescendant.html","Bugs":["crbug.com/620432"],"Modifiers":null,"Expectations":["Failure"]},{"FileName":"third_party/WebKit/LayoutTests/SmokeTests","LineNumber":1,"TestName":"accessibility/aria-labelledby-on-input.html","Bugs":null,"Modifiers":null,"Expectations":null},{"FileName":"third_party/WebKit/LayoutTests/SmokeTests","LineNumber":2,"TestName":"accessibility/aria-link-supports-press.html","Bugs":null,"Modifiers":null,"Expectations":null}]'
+        ]
+      );
+      element.refresh();
+      server.respond();
+      flush(function() {
+        assert.notEqual('', element.$.main.textContent.trim());
+        done();
+      });
+    });
+
+ });
+})();
+</script>

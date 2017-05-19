@@ -21,6 +21,7 @@
 <link rel="import" href="../../elements/som-master-restarts/som-master-restarts.html">
 <link rel="import" href="../../elements/som-examine/som-examine.html">
 <link rel="import" href="../../elements/som-swarming-bots/som-swarming-bots.html">
+<link rel="import" href="../../elements/som-test-expectations/som-test-expectations.html">
 <link rel="import" href="../../elements/som-tree-status/som-tree-status.html">
 
 <link rel="import" href="../../elements/pages/som-help.html">
@@ -147,6 +148,12 @@
         #tree-title {
           display: none;
         }
+      }
+      #testExpectations {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-height: 100%;
       }
     </style>
     <iron-location id="url" path="{{_path}}" url-space-regex="^(?!(/_ah/|/auth/))"></iron-location>
@@ -300,6 +307,9 @@
           <som-help id="helpSOM" class="page-body"></som-help>
           <template is="dom-if" if="[[_showRotationCalendar]]">
             <som-rotation-calendar id="rotationCalendar" class="page-body"></som-rotation-calendar>
+          </template>
+          <template is="dom-if" if="[[_showTestExpectations]]">
+            <som-test-expectations class="page-body" id="testExpectations"></som-test-expectations>
           </template>
         </iron-pages>
       </paper-header-panel>
