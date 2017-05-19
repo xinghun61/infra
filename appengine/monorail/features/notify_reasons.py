@@ -29,6 +29,20 @@ REPLY_NOT_ALLOWED = 'REPLY_NOT_ALLOWED'
 REPLY_MAY_COMMENT = 'REPLY_MAY_COMMENT'
 REPLY_MAY_UPDATE = 'REPLY_MAY_UPDATE'
 
+# These are strings describing the various reasons that we send notifications.
+REASON_REPORTER = 'You reported this issue'
+REASON_OWNER = 'You are the owner of the issue'
+REASON_OLD_OWNER = 'You were the issue owner before this change'
+REASON_DEFAULT_OWNER = 'A rule made you owner of the issue'
+REASON_CCD = 'You were specifically CC\'d on the issue'
+REASON_DEFAULT_CCD = 'A rule CC\'d you on the issue'
+REASON_STARRER = 'You starred the issue'
+REASON_SUBSCRIBER = 'Your saved query matched the issue'
+REASON_ALSO_NOTIFY = 'A rule was set up to notify you'
+REASON_ALL_NOTIFICATIONS = (
+    'The project was configured to send all issue notifications '
+    'to this address')
+
 
 def ComputeIssueChangeAddressPermList(
     cnxn, ids_to_consider, project, issue, services, omit_addrs,
@@ -41,7 +55,7 @@ def ComputeIssueChangeAddressPermList(
   Args:
     cnxn: connection to SQL database.
     ids_to_consider: list of user IDs for users interested in this issue.
-    project: Project PB for the project contianing containing this issue.
+    project: Project PB for the project containing this issue.
     issue: Issue PB for the issue that was updated.
     services: Services.
     omit_addrs: set of strings for email addresses to not notify because
@@ -216,7 +230,6 @@ def GetNonOmittedSubscriptions(cnxn, services, project_ids, omit_addrs):
   for user_id, email in user_emails.iteritems():
     if email in omit_addrs:
       del users_to_queries[user_id]
-
   return users_to_queries
 
 
@@ -267,7 +280,8 @@ def ComputeComponentFieldAddrPerms(
 def ComputeGroupReasonList(
     cnxn, services, project, issue, config, users_by_id, omit_addrs,
     contributor_could_view, starrer_ids=None, noisy=False,
-    old_owner_id=None, commenter_in_project=True):
+    old_owner_id=None, commenter_in_project=True, include_subscribers=True,
+    include_notify_all=True):
   """Return a list [(addr_perm_list, reason),...] of addrs to notify."""
   # Get the transitive set of owners and Cc'd users, and their UserViews.
   starrer_ids = starrer_ids or []
@@ -334,25 +348,27 @@ def ComputeGroupReasonList(
             services, omit_addrs, users_by_id,
             pref_check_function=lambda u: u.notify_starred_issue_change))
 
-    sub_addr_perm_list = _GetSubscribersAddrPermList(
-        cnxn, services, issue, project, config, omit_addrs,
-        users_by_id)
+    if include_subscribers:
+      sub_addr_perm_list = _GetSubscribersAddrPermList(
+          cnxn, services, issue, project, config, omit_addrs,
+          users_by_id)
 
   # Get the list of addresses to notify based on filter rules.
   issue_notify_addr_list = ComputeIssueNotificationAddrList(
       issue, omit_addrs)
   # Get the list of addresses to notify based on project settings.
-  proj_notify_addr_list = ComputeProjectNotificationAddrList(
-      project, contributor_could_view, omit_addrs)
+  proj_notify_addr_list = []
+  if include_notify_all:
+    proj_notify_addr_list = ComputeProjectNotificationAddrList(
+        project, contributor_could_view, omit_addrs)
 
   group_reason_list = [
-    (reporter_addr_perm_list, 'You reported this issue'),
-    (owner_addr_perm_list, 'You are the owner of the issue'),
-    (old_owner_addr_perm_list,
-     'You were the issue owner before this change'),
-    (der_owner_addr_perm_list, 'A rule made you owner of the issue'),
-    (cc_addr_perm_list, 'You were specifically CC\'d on the issue'),
-    (der_cc_addr_perm_list, 'A rule CC\'d you on the issue'),
+    (reporter_addr_perm_list, REASON_REPORTER),
+    (owner_addr_perm_list, REASON_OWNER),
+    (old_owner_addr_perm_list, REASON_OLD_OWNER),
+    (der_owner_addr_perm_list, REASON_DEFAULT_OWNER),
+    (cc_addr_perm_list, REASON_CCD),
+    (der_cc_addr_perm_list, REASON_DEFAULT_CCD),
     ]
   group_reason_list.extend(ComputeComponentFieldAddrPerms(
       cnxn, config, issue, project, services, omit_addrs,
@@ -361,12 +377,9 @@ def ComputeGroupReasonList(
       cnxn, config, issue, project, services, omit_addrs,
       users_by_id))
   group_reason_list.extend([
-      (starrer_addr_perm_list, 'You starred the issue'),
-      (sub_addr_perm_list, 'Your saved query matched the issue'),
-      (issue_notify_addr_list,
-       'A rule was set up to notify you'),
-      (proj_notify_addr_list,
-       'The project was configured to send all issue notifications '
-       'to this address'),
+      (starrer_addr_perm_list, REASON_STARRER),
+      (sub_addr_perm_list, REASON_SUBSCRIBER),
+      (issue_notify_addr_list, REASON_ALSO_NOTIFY),
+      (proj_notify_addr_list, REASON_ALL_NOTIFICATIONS),
       ])
   return group_reason_list

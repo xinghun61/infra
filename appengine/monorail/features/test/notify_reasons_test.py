@@ -17,6 +17,7 @@ from framework import framework_views
 from framework import urls
 from services import service_manager
 from testing import fake
+from tracker import tracker_bizobj
 
 
 REPLY_NOT_ALLOWED = notify_reasons.REPLY_NOT_ALLOWED
@@ -119,3 +120,137 @@ class ComputeProjectAndIssueNotificationAddrListTest(unittest.TestCase):
         issue, {'notify@domain.com'})
     self.assertListEqual([], addr_perm_list)
 
+
+class ComputeGroupReasonListTest(unittest.TestCase):
+
+  def setUp(self):
+    self.services = service_manager.Services(
+        project=fake.ProjectService(),
+        config=fake.ConfigService(),
+        issue=fake.IssueService(),
+        features=fake.FeaturesService(),
+        user=fake.UserService(),
+        usergroup=fake.UserGroupService())
+    self.project = self.services.project.TestAddProject(
+      'project', project_id=789)
+    self.config = self.services.config.GetProjectConfig('cnxn', 789)
+    self.alice = self.services.user.TestAddUser('alice@example.com', 111L)
+    self.bob = self.services.user.TestAddUser('bob@example.com', 222L)
+    self.fred = self.services.user.TestAddUser('fred@example.com', 555L)
+    self.users_by_id = framework_views.MakeAllUserViews(
+        'cnxn', self.services.user, [111L, 222L, 555L])
+    self.issue = fake.MakeTestIssue(
+        self.project.project_id, 1, 'summary', 'New', 555L)
+
+  def CheckGroupReasonList(
+      self, actual, reporter_apl=None, owner_apl=None, old_owner_apl=None,
+      default_owner_apl=None, ccd_apl=None, default_ccd_apl=None,
+      starrer_apl=None, subscriber_apl=None, also_notified_apl=None,
+      all_notifications_apl=None):
+    (you_report, you_own, you_old_owner, you_default_owner,
+     you_ccd, you_default_ccd, you_star, you_subscribe, you_also_notify,
+     all_notifications) = actual
+    self.assertEqual(
+        (reporter_apl or [], notify_reasons.REASON_REPORTER),
+        you_report)
+    self.assertEqual(
+        (owner_apl or [], notify_reasons.REASON_OWNER),
+        you_own)
+    self.assertEqual(
+        (old_owner_apl or [], notify_reasons.REASON_OLD_OWNER),
+        you_old_owner)
+    self.assertEqual(
+        (default_owner_apl or [], notify_reasons.REASON_DEFAULT_OWNER),
+        you_default_owner)
+    self.assertEqual(
+        (ccd_apl or [], notify_reasons.REASON_CCD),
+        you_ccd)
+    self.assertEqual(
+        (default_ccd_apl or [], notify_reasons.REASON_DEFAULT_CCD),
+        you_default_ccd)
+    self.assertEqual(
+        (starrer_apl or [], notify_reasons.REASON_STARRER),
+        you_star)
+    self.assertEqual(
+        (subscriber_apl or [], notify_reasons.REASON_SUBSCRIBER),
+        you_subscribe)
+    self.assertEqual(
+        (also_notified_apl or [], notify_reasons.REASON_ALSO_NOTIFY),
+        you_also_notify)
+    self.assertEqual(
+        (all_notifications_apl or [], notify_reasons.REASON_ALL_NOTIFICATIONS),
+        all_notifications)
+
+  def testComputeGroupReasonList_OwnerAndCC(self):
+    """Fred owns the issue, Alice is CC'd."""
+    self.issue.cc_ids = [self.alice.user_id]
+    actual = notify_reasons.ComputeGroupReasonList(
+        'cnxn', self.services, self.project, self.issue, self.config,
+        self.users_by_id, [], True)
+    self.CheckGroupReasonList(
+        actual,
+        owner_apl=[(False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)],
+        ccd_apl=[(False, self.alice.email, self.alice, REPLY_NOT_ALLOWED)])
+
+  def testComputeGroupReasonList_Starrers(self):
+    """Bob and Alice starred it, but Alice opts out of notifications."""
+    self.alice.notify_starred_issue_change = False
+    actual = notify_reasons.ComputeGroupReasonList(
+        'cnxn', self.services, self.project, self.issue, self.config,
+        self.users_by_id, [], True,
+        starrer_ids=[self.alice.user_id, self.bob.user_id])
+    self.CheckGroupReasonList(
+        actual,
+        owner_apl=[(False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)],
+        starrer_apl=[(False, self.bob.email, self.bob, REPLY_NOT_ALLOWED)])
+
+  def testComputeGroupReasonList_Subscribers(self):
+    """Bob subscribed."""
+    sq = tracker_bizobj.MakeSavedQuery(
+          1, 'freds issues', 1, 'owner:fred@example.com',
+          subscription_mode='immediate', executes_in_project_ids=[789])
+    self.services.features.UpdateUserSavedQueries(
+        'cnxn', self.bob.user_id, [sq])
+    actual = notify_reasons.ComputeGroupReasonList(
+        'cnxn', self.services, self.project, self.issue, self.config,
+        self.users_by_id, [], True)
+    self.CheckGroupReasonList(
+        actual,
+        owner_apl=[(False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)],
+        subscriber_apl=[(False, self.bob.email, self.bob, REPLY_NOT_ALLOWED)])
+
+    # Now with subscriber notifications disabled.
+    actual = notify_reasons.ComputeGroupReasonList(
+        'cnxn', self.services, self.project, self.issue, self.config,
+        self.users_by_id, [], True, include_subscribers=False)
+    self.CheckGroupReasonList(
+        actual,
+        owner_apl=[(False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)])
+
+  def testComputeGroupReasonList_NotifyAll(self):
+    """Project is configured to always notify issues@example.com."""
+    self.project.issue_notify_address = 'issues@example.com'
+    actual = notify_reasons.ComputeGroupReasonList(
+        'cnxn', self.services, self.project, self.issue, self.config,
+        self.users_by_id, [], True)
+    self.CheckGroupReasonList(
+        actual,
+        owner_apl=[(False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)],
+        all_notifications_apl=[
+            (False, 'issues@example.com', None, REPLY_NOT_ALLOWED)])
+
+    # We don't use the notify-all address when the issue is not public.
+    actual = notify_reasons.ComputeGroupReasonList(
+        'cnxn', self.services, self.project, self.issue, self.config,
+        self.users_by_id, [], False)
+    self.CheckGroupReasonList(
+        actual,
+        owner_apl=[(False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)])
+
+    # Now with the notify-all address disabled.
+    actual = notify_reasons.ComputeGroupReasonList(
+        'cnxn', self.services, self.project, self.issue, self.config,
+        self.users_by_id, [], True, include_notify_all=False)
+    self.CheckGroupReasonList(
+        actual,
+        owner_apl=[(False, self.fred.email, self.fred, REPLY_NOT_ALLOWED)])

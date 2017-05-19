@@ -1600,6 +1600,9 @@ class FeaturesService(object):
     self.hotlists_id_by_user = {}  # user_id => [hotlist_id, hotlist_id, ...]
     self.hotlists_id_by_issue = {}  # issue_id => [hotlist_id, hotlist_id, ...]
 
+    # saved queries
+    self.saved_queries = []  # [(pid, uid, sq), ...]
+
   def TestAddHotlist(self, name, summary='', owner_ids=None, editor_ids=None,
                      follower_ids=None, description=None, hotlist_id=None,
                      is_private=False, hotlist_item_fields=None):
@@ -1877,8 +1880,24 @@ class FeaturesService(object):
   def UpdateCannedQueries(self, cnxn, project_id, canned_queries):
     pass
 
+  def UpdateUserSavedQueries(self, cnxn, user_id, saved_queries):
+    self.saved_queries = [
+      (pid, uid, sq) for (pid, uid, sq) in self.saved_queries
+      if uid != user_id]
+    for sq in saved_queries:
+      self.saved_queries.extend(
+        [(eipid, user_id, sq) for eipid in sq.executes_in_project_ids])
+
   def GetSubscriptionsInProjects(self, cnxn, project_ids):
-    return {}
+    sq_by_uid = {}
+    for pid, uid, sq in self.saved_queries:
+      if pid in project_ids:
+        if uid in sq_by_uid:
+          sq_by_uid[uid].append(sq)
+        else:
+          sq_by_uid[uid] = [sq]
+
+    return sq_by_uid
 
   def GetSavedQuery(self, cnxn, query_id):
     return tracker_pb2.SavedQuery()

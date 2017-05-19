@@ -172,7 +172,8 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
     group_reason_list = notify_reasons.ComputeGroupReasonList(
         cnxn, self.services, project, issue, config, users_by_id,
         [], contributor_could_view, starrer_ids=starrer_ids,
-        commenter_in_project=True)
+        commenter_in_project=True, include_subscribers=False,
+        include_notify_all=False)
 
     commenter_view = users_by_id[comment.user_id]
     email_tasks = notify_helpers.MakeBulletedEmailWorkItems(
