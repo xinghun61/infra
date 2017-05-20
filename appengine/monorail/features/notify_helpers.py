@@ -130,7 +130,7 @@ def MakeBulletedEmailWorkItems(
   """Make a list of dicts describing email-sending tasks to notify users.
 
   Args:
-    group_reason_list: list of (is_memb, addr_perm, reason) tuples.
+    group_reason_list: list of (addr_perm_list, reason) tuples.
     issue: Issue that was updated.
     body_for_non_members: string body of email to send to non-members.
     body_for_members: string body of email to send to members.
@@ -173,14 +173,14 @@ def _TruncateBody(body):
 
 
 def _MakeEmailWorkItem(
-    (recipient_is_member, to_addr, user, reply_perm), reasons, issue,
+    addr_perm, reasons, issue,
     body_for_non_members, body_for_members, project, hostport, commenter_view,
     detail_url, seq_num=None, subject_prefix=None, compact_subject_prefix=None):
   """Make one email task dict for one user, includes a detailed reason."""
   subject_format = (
       (subject_prefix or 'Issue ') +
       '%(local_id)d in %(project_name)s: %(summary)s')
-  if user and user.email_compact_subject:
+  if addr_perm.user and addr_perm.user.email_compact_subject:
     subject_format = (
         (compact_subject_prefix or '') +
         '%(project_name)s:%(local_id)d: %(summary)s')
@@ -191,29 +191,30 @@ def _MakeEmailWorkItem(
     'summary': issue.summary,
     }
 
-  footer = _MakeNotificationFooter(reasons, reply_perm, hostport)
+  footer = _MakeNotificationFooter(reasons, addr_perm.reply_perm, hostport)
   if isinstance(footer, unicode):
     footer = footer.encode('utf-8')
-  if recipient_is_member:
-    logging.info('got member %r, sending body for members', to_addr)
+  if addr_perm.is_member:
+    logging.info('got member %r, sending body for members', addr_perm.address)
     body = _TruncateBody(body_for_members) + footer
   else:
-    logging.info('got non-member %r, sending body for non-members', to_addr)
+    logging.info(
+        'got non-member %r, sending body for non-members', addr_perm.address)
     body = _TruncateBody(body_for_non_members) + footer
   logging.info('sending message footer:\n%r', footer)
 
   can_reply_to = (
-      reply_perm != notify_reasons.REPLY_NOT_ALLOWED and
+      addr_perm.reply_perm != notify_reasons.REPLY_NOT_ALLOWED and
       project.process_inbound_email)
   from_addr = emailfmt.FormatFromAddr(
-    project, commenter_view=commenter_view, reveal_addr=recipient_is_member,
+    project, commenter_view=commenter_view, reveal_addr=addr_perm.is_member,
     can_reply_to=can_reply_to)
   if can_reply_to:
     reply_to = '%s@%s' % (project.project_name, emailfmt.MailDomain())
   else:
     reply_to = emailfmt.NoReplyAddress()
   refs = emailfmt.GetReferences(
-    to_addr, subject, seq_num,
+    addr_perm.address, subject, seq_num,
     '%s@%s' % (project.project_name, emailfmt.MailDomain()))
   # We use markup to display a convenient link that takes users directly to the
   # issue without clicking on the email.
@@ -223,14 +224,15 @@ def _MakeEmailWorkItem(
   # definitions.
   html_escaped_body = cgi.escape(body, quote=1).replace("'", '&#39;')
   template = HTML_BODY_WITH_GMAIL_ACTION_TEMPLATE
-  if user and not user.email_view_widget:
+  if addr_perm.user and not addr_perm.user.email_view_widget:
     template = HTML_BODY_WITHOUT_GMAIL_ACTION_TEMPLATE
   html_body = template % {
       'url': detail_url,
       'body': _AddHTMLTags(html_escaped_body.decode('utf-8')),
       }
-  return dict(to=to_addr, subject=subject, body=body, html_body=html_body,
-              from_addr=from_addr, reply_to=reply_to, references=refs)
+  return dict(
+    to=addr_perm.address, subject=subject, body=body, html_body=html_body,
+    from_addr=from_addr, reply_to=reply_to, references=refs)
 
 
 def _AddHTMLTags(body):

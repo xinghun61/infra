@@ -5,6 +5,7 @@
 
 """Helper functions for deciding who to notify and why.."""
 
+import collections
 import logging
 
 import settings
@@ -44,6 +45,20 @@ REASON_ALL_NOTIFICATIONS = (
     'to this address')
 
 
+# An AddrPerm is how we represent our decision to notify a given
+# email address, which version of the email body to send to them, and
+# whether to offer them the option to reply to the notification.  Many
+# of the functions in this file pass around AddrPerm lists (an "APL").
+# is_member is a boolean
+# address is a string email address
+# user is a User PB, including user preference fields.
+# reply_perm is one of REPLY_NOT_ALLOWED, REPLY_MAY_COMMENT,
+# REPLY_MAY_UPDATE.
+AddrPerm = collections.namedtuple(
+    'AddrPerm', 'is_member, address, user, reply_perm')
+
+
+
 def ComputeIssueChangeAddressPermList(
     cnxn, ids_to_consider, project, issue, services, omit_addrs,
     users_by_id, pref_check_function=lambda u: u.notify_issue_change):
@@ -67,9 +82,7 @@ def ComputeIssueChangeAddressPermList(
         can be set to check "If I starred the issue."
 
   Returns:
-    A list of tuples: [(recipient_is_member, address, user, reply_perm), ...]
-    where reply_perm is one of REPLY_NOT_ALLOWED, REPLY_MAY_COMMENT,
-    REPLY_MAY_UPDATE.
+    A list of AddrPerm objects.
   """
   memb_addr_perm_list = []
   logging.info('Considering %r ', ids_to_consider)
@@ -111,7 +124,8 @@ def ComputeIssueChangeAddressPermList(
           auth.effective_ids, perms, project, issue):
         reply_perm = REPLY_MAY_COMMENT
 
-    memb_addr_perm_list.append((recipient_is_member, addr, user, reply_perm))
+    memb_addr_perm_list.append(
+      AddrPerm(recipient_is_member, addr, user, reply_perm))
 
   logging.info('For %s %s, will notify: %r',
                project.project_name, issue.local_id, memb_addr_perm_list)
@@ -142,7 +156,8 @@ def ComputeProjectNotificationAddrList(
   if contributor_could_view:
     ml_addr = project.issue_notify_address
     if ml_addr and ml_addr not in omit_addrs:
-      memb_addr_perm_list.append((False, ml_addr, None, REPLY_NOT_ALLOWED))
+      memb_addr_perm_list.append(
+          AddrPerm(False, ml_addr, None, REPLY_NOT_ALLOWED))
 
   return memb_addr_perm_list
 
@@ -167,7 +182,8 @@ def ComputeIssueNotificationAddrList(issue, omit_addrs):
   addr_perm_list = []
   for addr in issue.derived_notify_addrs:
     if addr not in omit_addrs:
-      addr_perm_list.append((False, addr, None, REPLY_NOT_ALLOWED))
+      addr_perm_list.append(
+          AddrPerm(False, addr, None, REPLY_NOT_ALLOWED))
 
   return addr_perm_list
 
@@ -261,7 +277,7 @@ def ComputeNamedUserIDsToNotify(issue, fd):
 
 def ComputeComponentFieldAddrPerms(
     cnxn, config, issue, project, services, omit_addrs, users_by_id):
-  """Return [(addr_perm, reason), ...] for users auto-cc'd by components."""
+  """Return [(addr_perm_list, reason),...] for users auto-cc'd by components."""
   component_ids = set(issue.component_ids)
   group_reason_list = []
   for cd in config.component_defs:
