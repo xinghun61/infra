@@ -37,12 +37,13 @@ message Buildbot {
 }
 
 enum SchedulingType {
+    UNSET = 0;
     // TRYJOBS builds are scheduled for uncommitted CLs.
-    TRYJOBS = 0;
+    TRYJOBS = 1;
     // CONTINUOUS builds are scheduled for landed CLs.
-    CONTINUOUS = 1;
+    CONTINUOUS = 2;
     // PERIODIC builds are scheduled every X time-units.
-    PERIODIC = 2;
+    PERIODIC = 3;
 }
 
 // OS is an Operating System.
