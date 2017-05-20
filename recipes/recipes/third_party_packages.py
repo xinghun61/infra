@@ -19,6 +19,7 @@ DEPS = [
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
+  'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/shutil',
   'recipe_engine/step',
@@ -256,7 +257,9 @@ def PackageGitForUnix(api, workdir):
       api.step('configure', ['./configure', '--prefix', target_dir])
       api.step('make install', ['make', 'install'])
 
-  tag = GetLatestReleaseTag(api, GIT_REPO_URL, 'v')
+  tag = api.properties.get('git_release_tag')
+  if not tag:
+    tag = GetLatestReleaseTag(api, GIT_REPO_URL, 'v')
   version = tag.lstrip('v') + GIT_PACKAGE_VERSION_SUFFIX
   EnsurePackage(
       api,
@@ -542,4 +545,12 @@ def GenTests(api):
       api.test('mac_failure') +
       GenTest('mac', 64, 'mac-amd64', 'python') +
       api.step_data('python.make', retcode=1)
+  )
+
+  yield (
+      api.test('mac_specific_git_tag') +
+      api.platform.name('mac') +
+      api.platform.bits(64) +
+      api.properties(git_release_tag='v2.12.2') +
+      api.step_data('python.refs', python_test_refs)
   )
