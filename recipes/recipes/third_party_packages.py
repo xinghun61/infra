@@ -144,7 +144,6 @@ def PackagePythonForUnix(api):
     }
     configure_flags = [
       '--disable-shared',
-      '--enable-optimizations',
       '--prefix', target_dir,
     ]
 
@@ -155,6 +154,17 @@ def PackagePythonForUnix(api):
         # its automatic detection and force this to no ("n").
         'ac_cv_func_getentropy': 'n',
       })
+    else:
+      configure_flags += [
+        # TODO: This breaks building on Mac builder, producing:
+        #
+        # *** WARNING: renaming "_struct" since importing it failed:
+        # dlopen(build/lib.macosx-10.6-x86_64-2.7/_struct.so, 2): Symbol not
+        # found: _PyExc_DeprecationWarning
+        #
+        # Maybe look into this if we have time later.
+        '--enable-optimizations',
+      ]
 
     # cwd is source checkout
     with api.context(env=configure_env):
@@ -164,25 +174,27 @@ def PackagePythonForUnix(api):
     #
     # We do this by identifying the line '#*shared*' in "/Modules/Setup.dist"
     # and replacing it with '*static*'.
+    setup_local = [
+      '*static*',
+      'SP=%s' % (support_prefix,),
+      '_hashlib _hashopenssl.c -I$(SP)/include -I$(SP)/include/openssl '
+          '$(SP)/lib/libssl.a $(SP)/lib/libcrypto.a',
+      '_ssl _ssl.c -DUSE_SSL -I$(SP)/include -I$(SP)/include/openssl '
+          '$(SP)/lib/libssl.a $(SP)/lib/libcrypto.a',
+      'binascii binascii.c -I$(SP)/include $(SP)/lib/libz.a',
+      'zlib zlibmodule.c -I$(SP)/include $(SP)/lib/libz.a',
+      'readline readline.c -I$(SP)/include '
+          '$(SP)/lib/libreadline.a $(SP)/lib/libtermcap.a',
+
+      # Required: terminal newline.
+      '',
+    ]
     api.shutil.write(
         'Configure static modules',
         api.context.cwd.join('Modules', 'Setup.local'),
-        '\n'.join([
-            '*static*',
-            'SP=%s' % (support_prefix,),
-            '_hashlib _hashopenssl.c -I$(SP)/include -I$(SP)/include/openssl '
-                '$(SP)/lib/libssl.a $(SP)/lib/libcrypto.a',
-            '_ssl _ssl.c -DUSE_SSL -I$(SP)/include -I$(SP)/include/openssl '
-                '$(SP)/lib/libssl.a $(SP)/lib/libcrypto.a',
-            'binascii binascii.c -I$(SP)/include $(SP)/lib/libz.a',
-            'zlib zlibmodule.c -I$(SP)/include $(SP)/lib/libz.a',
-            'readline readline.c -I$(SP)/include '
-                '$(SP)/lib/libreadline.a $(SP)/lib/libtermcap.a',
-
-            # Required: terminal newline.
-            '',
-        ]),
+        '\n'.join(setup_local),
     )
+    api.step.active_result.presentation.logs['Setup.local'] = setup_local
 
     # Build Python.
     api.step('make', ['make', 'install'])
@@ -216,12 +228,7 @@ def PackageGit(api):
 def PackageGitForUnix(api, workdir):
   """Builds Git on Unix and uploads it to a CIPD server."""
 
-  source = workdir.join('source')
-  api.cipd.ensure(source, {
-      'infra/third_party/source/autoconf': 'version:2.69',
-  })
-
-  def install_autoconf(prefix):
+  def install_autoconf(source, prefix):
     with api.context(cwd=workdir):
       api.step('extract', ['tar', '-xzf', source.join('autoconf-2.69.tar.gz')])
 
@@ -234,16 +241,21 @@ def PackageGitForUnix(api, workdir):
           'install',
           ['make', 'install'])
 
-  # Note on OS X:
-  # `make configure` requires autoconf in $PATH, which is not available on
-  # OS X out of box. Unfortunately autoconf is not easy to make portable, so
-  # we cannot package it.
-  support_prefix = workdir.join('prefix')
-  with api.step.nest('autoconf'):
-    install_autoconf(support_prefix)
-  support_bin = support_prefix.join('bin')
-
   def install(target_dir):
+    source = workdir.join('source')
+    api.cipd.ensure(source, {
+        'infra/third_party/source/autoconf': 'version:2.69',
+    })
+
+    # Note on OS X:
+    # `make configure` requires autoconf in $PATH, which is not available on
+    # OS X out of box. Unfortunately autoconf is not easy to make portable, so
+    # we cannot package it.
+    support_prefix = workdir.join('prefix')
+    with api.step.nest('autoconf'):
+      install_autoconf(source, support_prefix)
+    support_bin = support_prefix.join('bin')
+
     # cwd is source checkout
     env = {
         # Set NO_INSTALL_HARDLINKS to avoid hard links in

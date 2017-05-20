@@ -363,9 +363,9 @@
     "cmd": [
       "./configure",
       "--disable-shared",
-      "--enable-optimizations",
       "--prefix",
-      "[START_DIR]/python/package"
+      "[START_DIR]/python/package",
+      "--enable-optimizations"
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
@@ -388,7 +388,16 @@
     "cwd": "[START_DIR]/python/checkout",
     "name": "python.Configure static modules",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@Setup.local@*static*@@@",
+      "@@@STEP_LOG_LINE@Setup.local@SP=[START_DIR]/python/support_prefix@@@",
+      "@@@STEP_LOG_LINE@Setup.local@_hashlib _hashopenssl.c -I$(SP)/include -I$(SP)/include/openssl $(SP)/lib/libssl.a $(SP)/lib/libcrypto.a@@@",
+      "@@@STEP_LOG_LINE@Setup.local@_ssl _ssl.c -DUSE_SSL -I$(SP)/include -I$(SP)/include/openssl $(SP)/lib/libssl.a $(SP)/lib/libcrypto.a@@@",
+      "@@@STEP_LOG_LINE@Setup.local@binascii binascii.c -I$(SP)/include $(SP)/lib/libz.a@@@",
+      "@@@STEP_LOG_LINE@Setup.local@zlib zlibmodule.c -I$(SP)/include $(SP)/lib/libz.a@@@",
+      "@@@STEP_LOG_LINE@Setup.local@readline readline.c -I$(SP)/include $(SP)/lib/libreadline.a $(SP)/lib/libtermcap.a@@@",
+      "@@@STEP_LOG_LINE@Setup.local@@@@",
+      "@@@STEP_LOG_END@Setup.local@@@"
     ]
   },
   {
@@ -467,75 +476,6 @@
     "name": "git.rmtree rmtree workdir",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "cipd",
-      "ensure",
-      "-root",
-      "[START_DIR]/git/source",
-      "-ensure-file",
-      "infra/third_party/source/autoconf version:2.69",
-      "-json-output",
-      "/path/to/tmp/json",
-      "-service-account-json",
-      "/creds/service_accounts/service-account-cipd-builder.json"
-    ],
-    "name": "git.ensure_installed",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.69----\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/autoconf\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [],
-    "name": "git.autoconf",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "tar",
-      "-xzf",
-      "[START_DIR]/git/source/autoconf-2.69.tar.gz"
-    ],
-    "cwd": "[START_DIR]/git",
-    "name": "git.autoconf.extract",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "./configure",
-      "--prefix",
-      "[START_DIR]/git/prefix"
-    ],
-    "cwd": "[START_DIR]/git/autoconf-2.69",
-    "name": "git.autoconf.configure",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "make",
-      "install"
-    ],
-    "cwd": "[START_DIR]/git/autoconf-2.69",
-    "name": "git.autoconf.install",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
     ]
   },
   {
