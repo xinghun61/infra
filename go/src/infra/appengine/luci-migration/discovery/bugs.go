@@ -85,6 +85,9 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 		// Monorail tolerates all-caps OS names.
 		req.Issue.Labels = append(req.Issue.Labels, "OS-"+builder.OS.String())
 	}
+	if !builder.Public {
+		req.Issue.Labels = append(req.Issue.Labels, "Restrict-View-Google")
+	}
 
 	res, err := client.InsertIssue(c, req)
 	if err != nil {

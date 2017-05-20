@@ -74,7 +74,7 @@ func TestDiscovery(t *testing.T) {
 		}
 		linuxTryserver := &config.Buildbot_Master{
 			Name:           "tryserver.chromium.linux",
-			Public:         true,
+			Public:         false,
 			SchedulingType: config.SchedulingType_TRYJOBS,
 			Os:             config.OS_LINUX,
 
@@ -109,6 +109,7 @@ https://app.example.com/masters/tryserver.chromium.linux/builders/linux_chromium
 					"Master-tryserver.chromium.linux",
 					"Builder-linux_chromium_asan_rel_ng",
 					"OS-LINUX",
+					"Restrict-View-Google",
 				},
 			},
 		})
@@ -121,7 +122,7 @@ https://app.example.com/masters/tryserver.chromium.linux/builders/linux_chromium
 		So(err, ShouldBeNil)
 		So(chromiumAsanRelNg, ShouldResemble, &storage.Builder{
 			ID:             chromiumAsanRelNg.ID,
-			Public:         true,
+			Public:         false,
 			SchedulingType: config.SchedulingType_TRYJOBS,
 			OS:             config.OS_LINUX,
 
