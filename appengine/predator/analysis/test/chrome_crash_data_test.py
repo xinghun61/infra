@@ -166,3 +166,15 @@ class ChromeCrashDataTest(AnalysisTestCase):
       crash_data._stacktrace = stacktrace
 
       self.assertEqual(crash_data.dependency_rolls, {dep_roll.path: dep_roll})
+
+  def testIdentifiers(self):
+    crash_data = ChromeCrashData(
+        self.GetDummyChromeCrashData(),
+        ChromeDependencyFetcher(self.GetMockRepoFactory()))
+
+    self.assertDictEqual(
+        crash_data.identifiers,
+        {'signature': crash_data.signature,
+         'platform': crash_data.platform,
+         'channel': crash_data.channel,
+         'regression_range': crash_data.regression_range})

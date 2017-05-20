@@ -22,8 +22,6 @@ class CrashDataTest(AnalysisTestCase):
     raw_crash_data = self.GetDummyChromeCrashData()
     crash_data = CrashData(raw_crash_data)
 
-    self.assertEqual(crash_data.identifiers,
-                     raw_crash_data['crash_identifiers'])
     self.assertEqual(crash_data.crashed_version,
                      raw_crash_data['chrome_version'])
     self.assertEqual(crash_data.signature,

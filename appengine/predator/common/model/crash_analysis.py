@@ -185,6 +185,12 @@ class CrashAnalysis(ndb.Model):
     self.crashed_version = crash_data.crashed_version
 
     # Set (other) common properties.
+    try:
+      self.stack_trace = crash_data.stacktrace_str
+    except Exception:  # pragma: no cover
+      # The ``stack_trace``s of some data are broken.
+      pass
+
     self.stacktrace = crash_data.stacktrace
     self.signature = crash_data.signature
     self.platform = crash_data.platform
@@ -214,4 +220,22 @@ class CrashAnalysis(ndb.Model):
 
   @property
   def crash_url(self):
+    raise NotImplementedError()
+
+  def ToJson(self):
+    return {
+        'chrome_version': self.crashed_version,
+        'signature': self.signature,
+        'platform': self.platform,
+        'stack_trace': self.stack_trace
+    }
+
+  def ReInitialize(self, client):
+    crash_json = self.ToJson()
+    crash_data = client.GetCrashData(crash_json)
+
+    self.Initialize(crash_data)
+
+  @property
+  def identifiers(self):
     raise NotImplementedError()

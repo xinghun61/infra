@@ -215,3 +215,10 @@ class ChromeCrashData(CrashData):
     }
 
     return self._dependency_rolls
+
+  @property
+  def identifiers(self):
+    return {'signature': self.signature,
+            'platform': self.platform,
+            'regression_range': self.regression_range,
+            'channel': self.channel}

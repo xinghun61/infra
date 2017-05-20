@@ -65,7 +65,7 @@ run_unittests() {
   local coverage_report_parent_dir="${TMP_DIR}/coverage"
   mkdir -p ${coverage_report_parent_dir}
   python ${INFRA_DIR}/test.py test ${predator} --html-report ${coverage_report_parent_dir}
-  [ $? -ne 0 ] || echo "Code coverage report file://${coverage_report_parent_dir}/${predator}/index.html"
+  echo "Code coverage report file://${coverage_report_parent_dir}/${predator}/index.html"
 }
 
 run_locally() {

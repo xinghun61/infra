@@ -23,6 +23,7 @@ class CracasCrashAnalysis(ChromeCrashAnalysis):
   def client_id(self):  # pragma: no cover
     return CrashClient.CRACAS
 
+  @property
   def crash_url(self):  # pragma: no cover
     product_name = _PLATFORM_TO_PRODUCT_NAME.get(self.platform)
     query = ('product.name=\'%s\' AND custom_data.ChromeCrashProto.'

@@ -180,3 +180,7 @@ class ClusterfuzzData(CrashData):
         for roll in self._raw_dependency_rolls
     }
     return self._dependency_rolls
+
+  @property
+  def identifiers(self):
+    return self.testcase

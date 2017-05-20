@@ -79,3 +79,35 @@ class ChromeCrashAnalysisTest(AppengineTestCase):
     self.assertDictEqual(analysis.customized_data,
                          {'channel': analysis.channel,
                           'historical_metadata': analysis.historical_metadata})
+
+  def testProperties(self):
+    identifiers = {'signature': 'sig',
+                   'platform': 'win',
+                   'channel': 'canary',
+                   'regression_range': ('50.0.1234.0', '50.0.1234.1')}
+
+    analysis = ChromeCrashAnalysis.Create(identifiers)
+    analysis.signature = identifiers['signature']
+    analysis.platform = identifiers['platform']
+    analysis.channel = identifiers['channel']
+    analysis.regression_range = identifiers['regression_range']
+
+    self.assertDictEqual(analysis.identifiers, identifiers)
+
+  def testToJson(self):
+    historical_metadata = [{'chrome_version': '1'}, {'chrome_version': '2'}]
+    channel = 'win'
+    expected_json = {
+        'channel': channel,
+        'historical_metadata': historical_metadata
+    }
+    analysis = ChromeCrashAnalysis.Create(expected_json)
+    analysis.channel = channel
+    analysis.historical_metadata = historical_metadata
+
+    self.assertDictEqual(analysis.ToJson(),
+                         {'customized_data': expected_json,
+                          'platform': None,
+                          'stack_trace': None,
+                          'chrome_version': None,
+                          'signature': None})

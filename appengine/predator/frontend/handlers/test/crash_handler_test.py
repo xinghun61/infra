@@ -6,6 +6,7 @@ import base64
 import copy
 import json
 import logging
+import mock
 
 from google.appengine.api import app_identity
 from google.appengine.ext import ndb
@@ -31,16 +32,22 @@ class CrashHandlerTest(AppengineTestCase):
   ], debug=True)
 
   def testNeedNewAnalysisIfIsARedo(self):
-    self.assertTrue(crash_handler.NeedNewAnalysis(
-        self.GetDummyClusterfuzzData(redo=True)))
+    mock_findit = self.GetMockFindit()
+    with mock.patch('common.crash_pipeline.FinditForClientID') as mock_func:
+      mock_func.return_value = mock_findit
+      need_new_analysis, _ = crash_handler.NeedNewAnalysis(
+          self.GetDummyClusterfuzzData(redo=True))
+
+      self.assertTrue(need_new_analysis)
 
   def testDoNotNeedNewAnalysisIfNeedsNewAnalysisReturnsFalse(self):
     mock_findit = self.GetMockFindit()
     self.mock(mock_findit, 'NeedsNewAnalysis', lambda _: False)
     self.mock(crash_pipeline, 'FinditForClientID', lambda *_: mock_findit)
+    need_new_analysis, _ = crash_handler.NeedNewAnalysis(
+        self.GetDummyChromeCrashData())
     # Check policy failed due to empty client config.
-    self.assertFalse(crash_handler.NeedNewAnalysis(
-        self.GetDummyChromeCrashData()))
+    self.assertFalse(need_new_analysis)
 
   def testNeedNewAnalysisIfNeedsNewAnalysisReturnsTrue(self):
     mock_findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
@@ -57,37 +64,47 @@ class CrashHandlerTest(AppengineTestCase):
     self.mock(CrashWrapperPipeline, 'start', lambda *args, **kwargs: None)
     crash_handler.StartNewAnalysis(client_id, crash_identifiers)
 
-  def testHandlePostDoesNotStartNewAnalysis(self):
-    crash_data = self.GetDummyClusterfuzzData(redo=True)
-    self.assertTrue(crash_handler.NeedNewAnalysis(crash_data))
+  @mock.patch('common.findit.Findit._CheckPolicy')
+  def testHandlePostDoesNotStartNewAnalysis(self, mock_check_policy):
+    mock_check_policy.return_value = False
+    json_crash_data = self.GetDummyClusterfuzzData()
+    mock_findit = self.GetMockFindit()
+    with mock.patch('common.crash_pipeline.FinditForClientID') as mock_func:
+      mock_func.return_value = mock_findit
+      need_new_analysis, _ = crash_handler.NeedNewAnalysis(
+          json_crash_data)
+      self.assertFalse(need_new_analysis)
 
-    request_json_data = {
-        'message': {
-            'data': base64.b64encode(json.dumps(crash_data)),
-            'message_id': 'id',
-        },
-        'subscription': 'subscription',
-    }
-
-    self.mock(crash_handler, 'NeedNewAnalysis', lambda *_: False)
-    self.test_app.post_json('/_ah/push-handlers/crash/fracas',
-                            request_json_data)
+      request_json_data = {
+          'message': {
+              'data': base64.b64encode(json.dumps(json_crash_data)),
+              'message_id': 'id',
+          },
+          'subscription': 'subscription',
+      }
+      self.test_app.post_json('/_ah/push-handlers/crash/fracas',
+                              request_json_data)
 
   def testHandlePostStartNewAnalysis(self):
-    crash_data = self.GetDummyClusterfuzzData(redo=True)
-    self.assertTrue(crash_handler.NeedNewAnalysis(crash_data))
+    json_crash_data = self.GetDummyClusterfuzzData(redo=True)
 
-    request_json_data = {
-        'message': {
-            'data': base64.b64encode(json.dumps(crash_data)),
-            'message_id': 'id',
-        },
-        'subscription': 'subscription',
-    }
+    mock_findit = self.GetMockFindit()
+    with mock.patch(
+        'common.crash_pipeline.FinditForClientID') as mock_findit_for_client:
 
-    self.MockPipeline(
-        CrashWrapperPipeline, None,
-        (crash_data['client_id'], crash_data['crash_identifiers']))
+      mock_findit_for_client.return_value = mock_findit
+      _, crash_data = crash_handler.NeedNewAnalysis(json_crash_data)
 
-    self.test_app.post_json('/_ah/push-handlers/crash/fracas',
-                            request_json_data)
+      request_json_data = {
+          'message': {
+              'data': base64.b64encode(json.dumps(json_crash_data)),
+              'message_id': 'id',
+          },
+          'subscription': 'subscription',
+      }
+      self.MockPipeline(
+          CrashWrapperPipeline, None,
+          (json_crash_data['client_id'], crash_data.identifiers))
+
+      self.test_app.post_json('/_ah/push-handlers/crash/fracas',
+                              request_json_data)

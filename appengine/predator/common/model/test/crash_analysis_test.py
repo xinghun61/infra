@@ -26,6 +26,10 @@ class MockCrashAnalysis(CrashAnalysis):  # pragma: no cover
   def crash_url(self):
     return ''
 
+  @property
+  def identifiers(self):
+    return 'crash_identifiers'
+
 
 class CrashAnalysisTest(AppengineTestCase):
   def testCrashAnalysisStatusIsCompleted(self):
@@ -177,3 +181,37 @@ class CrashAnalysisTest(AppengineTestCase):
     self.assertEqual(mock_analysis.feedback_url,
                      crash_analysis._FEEDBACK_URL_TEMPLATE % (
                          mock_host, mock_analysis.client_id, mock_key))
+
+  def testToJson(self):
+    """Tests ``ToJson`` method."""
+    analysis = CrashAnalysis()
+    analysis.crashed_version = '50.0.1234.0'
+    analysis.signature = 'sig'
+    analysis.platform = 'win'
+    analysis.stack_trace = 'stack trace'
+
+    self.assertDictEqual(analysis.ToJson(),
+                         {'chrome_version': analysis.crashed_version,
+                          'signature': analysis.signature,
+                          'platform': analysis.platform,
+                          'stack_trace': analysis.stack_trace})
+
+  def testReInitialize(self):
+    """Tests ``ReInitialize`` method."""
+    analysis = CrashAnalysis()
+    crashed_version = '50.0.1234.0'
+    signature = 'sig'
+    platform = 'win'
+    channel = 'canary'
+
+    raw_crash_data = self.GetDummyChromeCrashData(
+        client_id=CrashClient.FRACAS,
+        channel=channel, platform=platform,
+        signature=signature, version=crashed_version,
+        process_type='renderer')
+    findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
+    crash_data = findit.GetCrashData(raw_crash_data)
+    self.mock(findit, 'GetCrashData', lambda *_: crash_data)
+
+    analysis.ReInitialize(findit)
+    self.assertEqual(analysis.signature, crash_data.signature)

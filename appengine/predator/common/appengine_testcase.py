@@ -114,6 +114,10 @@ class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
           def dependency_rolls(self):
             return {}
 
+          @property
+          def identifiers(self):
+            return crash_data.get('crash_identifiers')
+
         return MockCrashData(crash_data)
 
       def GetAnalysis(self, crash_identifiers):
@@ -121,5 +125,9 @@ class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
 
       def CreateAnalysis(self, crash_identifiers):
         return CrashAnalysis.Create(crash_identifiers)
+
+      @property
+      def identifiers(self):
+        return 'crash_identifiers'
 
     return MockFindit()

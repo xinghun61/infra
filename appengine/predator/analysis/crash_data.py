@@ -50,15 +50,10 @@ class CrashData(object):
           }
       }
     """
-    self._identifiers = crash_data['crash_identifiers']
     self._crashed_version = crash_data['chrome_version']
     self._signature = crash_data['signature']
     self._platform = crash_data['platform']
     self._stacktrace_str = crash_data['stack_trace'] or ''
-
-  @property
-  def identifiers(self):
-    return self._identifiers
 
   @property
   def crashed_version(self):
@@ -90,4 +85,8 @@ class CrashData(object):
 
   @property
   def dependency_rolls(self):
+    raise NotImplementedError()
+
+  @property
+  def identifiers(self):
     raise NotImplementedError()

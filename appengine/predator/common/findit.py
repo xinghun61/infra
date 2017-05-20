@@ -122,7 +122,7 @@ class Findit(object):
   # something like that.
   def RenamePlatform(self, platform):
     """Remap the platform to a different one, based on the config."""
-    return self.client_config['platform_rename'].get(platform, platform)
+    return self.client_config.get('platform_rename', {}).get(platform, platform)
 
   # TODO(http://crbug.com/644476): rename this to something like
   # _NewAnalysis, since it only does the "allocation" and needs to/will

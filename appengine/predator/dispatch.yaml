@@ -1,0 +1,9 @@
+dispatch:
+  - url: "*/robots.txt"
+    module: default
+
+  - url: "*/internal/*"
+    module: internal
+
+  - url: "*/process/*"
+    module: backend-process

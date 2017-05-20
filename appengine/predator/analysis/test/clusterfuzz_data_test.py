@@ -109,3 +109,10 @@ class CusterfuzzDataTest(AnalysisTestCase):
                      dep_roll.old_revision)
     self.assertEqual(crash_data.dependency_rolls[dep_roll.path].new_revision,
                      dep_roll.new_revision)
+
+  def testIdentifiers(self):
+    crash_data = ClusterfuzzData(
+        self.GetDummyClusterfuzzData(),
+        ChromeDependencyFetcher(self.GetMockRepoFactory()))
+
+    self.assertEqual(crash_data.identifiers, crash_data.testcase)

@@ -1,0 +1,34 @@
+application: predator-for-me-staging
+module: default
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+instance_class: F1
+automatic_scaling:
+  min_idle_instances: 1
+  max_concurrent_requests: 40
+
+handlers:
+- url: /internal/.*
+  script: frontend.main.frontend_app
+  secure: always
+
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*_test\.py$
+- ^(.*/)?tests\.py$
+- ^(.*/)?\..*$
+- ^(.*/)?.*\.md$
+- __init__.py
+- backend/.*
+
+libraries:
+- name: webapp2
+  version: latest
+- name: jinja2
+  version: latest
+- name: numpy
+  version: 1.6.1

@@ -105,9 +105,10 @@ class CrashHandler(BaseHandler):
                    received_message['subscription'])
       logging.info('Crash data is %s', json.dumps(json_crash_data))
 
-      if NeedNewAnalysis(json_crash_data):
+      need_analysis, crash_data = NeedNewAnalysis(json_crash_data)
+      if need_analysis:
         StartNewAnalysis(json_crash_data['client_id'],
-                         json_crash_data['crash_identifiers'])
+                         crash_data.identifiers)
 
     except (KeyError, ValueError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.
@@ -122,21 +123,24 @@ def NeedNewAnalysis(json_crash_data):
     json_crash_data (dict): Crash information from clients.
 
   Returns:
-    True if a new analysis is needed; False otherwise.
+    (need_analysis, crash_data)
+    need_analysis: True if a new analysis is needed; False otherwise.
+    crash_data: CrashData of this crash.
   """
-  if json_crash_data.get('redo'):
-    logging.info('Force redo crash %s',
-                 repr(json_crash_data['crash_identifiers']))
-    return True
-
   # N.B., must call FinditForClientID indirectly, for mock testing.
   findit_client = crash_pipeline.FinditForClientID(
       json_crash_data['client_id'],
-      CachedGitilesRepository.Factory(HttpClientAppengine()), CrashConfig.Get())
+      CachedGitilesRepository.Factory(HttpClientAppengine()),
+      CrashConfig.Get())
   crash_data = findit_client.GetCrashData(json_crash_data)
   # Detect the regression range, and decide if we actually need to
   # run a new analysis or not.
-  return findit_client.NeedsNewAnalysis(crash_data)
+  if json_crash_data.get('redo'):
+    logging.info('Force redo crash %s',
+                 repr(json_crash_data['crash_identifiers']))
+    return True, crash_data
+
+  return findit_client.NeedsNewAnalysis(crash_data), crash_data
 
 
 # TODO(http://crbug.com/659346): we don't cover anything after the

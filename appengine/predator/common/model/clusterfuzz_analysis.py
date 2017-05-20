@@ -45,3 +45,25 @@ class ClusterfuzzAnalysis(CrashAnalysis):
   def crash_url(self):  # pragma: no cover
     return (_CLUSTERFUZZ_TESTCASE_URL_TEMPLATE % self.testcase
             if self.testcase else '')
+
+  @property
+  def customized_data(self):
+    return {
+        'regression_range': self.regression_range,
+        'dependencies': self.dependencies,
+        'dependency_rolls': self.dependency_rolls,
+        'crashed_type': self.crashed_type,
+        'crashed_address': self.crashed_address,
+        'sanitizer': self.sanitizer,
+        'job_type': self.job_type,
+        'testcase': self.testcase
+    }
+
+  def ToJson(self):
+    crash_json = super(ClusterfuzzAnalysis, self).ToJson()
+    crash_json['customized_data'] = self.customized_data
+    return crash_json
+
+  @property
+  def identifiers(self):  # pragma: no cover
+    return self.testcase
