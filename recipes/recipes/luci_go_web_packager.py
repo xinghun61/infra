@@ -58,12 +58,15 @@ def RunSteps(api):
   # Install "Node.js" package from CIPD.
   prereq_dir = api.path['start_dir'].join('cipd')
   api.cipd.ensure(prereq_dir, {
-      'infra/nodejs/nodejs/${platform}': 'node_version:4.5.0',
+      'infra/nodejs/nodejs/${platform}': 'node_version:6.10.3',
   })
 
   # Always run "build.py" to ensure that "web/" can be provisioned.
   env = {
-      'PATH': api.path.pathsep.join([str(prereq_dir), '%(PATH)s']),
+      'PATH': api.path.pathsep.join([
+          str(prereq_dir.join('bin')),
+          '%(PATH)s',
+      ]),
   }
   with api.context(env=env):
     api.python(

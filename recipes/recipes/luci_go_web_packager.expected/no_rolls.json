@@ -61,7 +61,7 @@
       "-root",
       "[START_DIR]/cipd",
       "-ensure-file",
-      "infra/nodejs/nodejs/${platform} node_version:4.5.0",
+      "infra/nodejs/nodejs/${platform} node_version:6.10.3",
       "-json-output",
       "/path/to/tmp/json"
     ],
@@ -70,7 +70,7 @@
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-node_version:4.5\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-node_version:6.1\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/nodejs/nodejs/${platform}\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
       "@@@STEP_LOG_LINE@json.output@  ]@@@",
@@ -86,7 +86,7 @@
       "install"
     ],
     "env": {
-      "PATH": "[START_DIR]/cipd:%(PATH)s"
+      "PATH": "[START_DIR]/cipd/bin:%(PATH)s"
     },
     "name": "provision web deps"
   },
