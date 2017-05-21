@@ -253,7 +253,7 @@
   {
     "cmd": [
       "make",
-      "install"
+      "install_sw"
     ],
     "cwd": "[START_DIR]/python/openssl-1.1.0e",
     "env": {
@@ -428,25 +428,6 @@
   },
   {
     "cmd": [
-      "./configure",
-      "--disable-shared",
-      "--prefix",
-      "[START_DIR]/python/package"
-    ],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "CPPFLAGS": "-I[START_DIR]/python/support_prefix/include",
-      "LDFLAGS": "-L[START_DIR]/python/support_prefix/lib",
-      "MACOSX_DEPLOYMENT_TARGET": "10.6",
-      "ac_cv_func_getentropy": "n"
-    },
-    "name": "python.configure",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
@@ -469,6 +450,25 @@
       "@@@STEP_LOG_LINE@Setup.local@readline readline.c -I$(SP)/include $(SP)/lib/libreadline.a $(SP)/lib/libtermcap.a@@@",
       "@@@STEP_LOG_LINE@Setup.local@@@@",
       "@@@STEP_LOG_END@Setup.local@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--disable-shared",
+      "--prefix",
+      "[START_DIR]/python/package"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "CPPFLAGS": "-I[START_DIR]/python/support_prefix/include",
+      "LDFLAGS": "-L[START_DIR]/python/support_prefix/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "10.6",
+      "ac_cv_func_getentropy": "n"
+    },
+    "name": "python.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {

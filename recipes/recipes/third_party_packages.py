@@ -84,7 +84,7 @@ def PackagePythonForUnix(api):
         '--prefix=%s' % (prefix,),
         target,
       ])
-      api.step('make', ['make', 'install'])
+      api.step('make', ['make', 'install_sw'])
 
   def install_generic(name, workdir, archive, prefix):
     with api.context(cwd=workdir):
@@ -166,15 +166,11 @@ def PackagePythonForUnix(api):
         '--enable-optimizations',
       ]
 
-    # cwd is source checkout
-    with api.context(env=configure_env):
-      api.step('configure', ['./configure'] + configure_flags)
-
     # Edit the modules configuration to statically compile all Python modules.
     #
     # We do this by identifying the line '#*shared*' in "/Modules/Setup.dist"
     # and replacing it with '*static*'.
-    setup_local = [
+    setup_local_content = [
       '*static*',
       'SP=%s' % (support_prefix,),
       '_hashlib _hashopenssl.c -I$(SP)/include -I$(SP)/include/openssl '
@@ -189,12 +185,18 @@ def PackagePythonForUnix(api):
       # Required: terminal newline.
       '',
     ]
+    setup_local = api.context.cwd.join('Modules', 'Setup.local')
     api.shutil.write(
         'Configure static modules',
-        api.context.cwd.join('Modules', 'Setup.local'),
-        '\n'.join(setup_local),
+        setup_local,
+        '\n'.join(setup_local_content),
     )
-    api.step.active_result.presentation.logs['Setup.local'] = setup_local
+    api.step.active_result.presentation.logs['Setup.local'] = (
+        setup_local_content)
+
+    # cwd is source checkout
+    with api.context(env=configure_env):
+      api.step('configure', ['./configure'] + configure_flags)
 
     # Build Python.
     api.step('make', ['make', 'install'])
