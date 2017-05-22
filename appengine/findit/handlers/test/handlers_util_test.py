@@ -385,6 +385,36 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(expected_result, result)
 
+  def testGetTryJobResultForCompileNonBuildbot(self):
+    try_job = WfTryJob.Create(
+        self.master_name, self.builder_name, self.build_number)
+    try_job.status = analysis_status.RUNNING
+    try_job.compile_results = [
+        {
+            'result': None,
+            'url': 'https://luci-milo.appspot.com/swarming/task/3639e',
+            'try_job_id': '12341234'
+        }
+    ]
+    try_job.put()
+
+    result = handlers_util._GetTryJobResultForCompile({'compile': 'm/b/121'})
+
+    expected_result = {
+        'compile': {
+            'try_jobs': [
+                {
+                    'try_job_key': 'm/b/121',
+                    'status': analysis_status.RUNNING,
+                    'try_job_build_number': '12341234',
+                    'try_job_url':
+                        'https://luci-milo.appspot.com/swarming/task/3639e',
+                }
+            ]
+        }
+    }
+    self.assertEqual(expected_result, result)
+
   def testGetTryJobResultForCompileOnlyReturnStatusIfError(self):
     try_job = WfTryJob.Create(
         self.master_name, self.builder_name, self.build_number)

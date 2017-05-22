@@ -4,6 +4,7 @@
 
 from collections import defaultdict
 import copy
+import logging
 
 from handlers import result_status
 from libs import analysis_status
@@ -149,9 +150,16 @@ def GetSwarmingTaskInfo(master_name, builder_name, build_number):
       if failure_result_map else {})
 
 
-def _GetTryJobBuildNumber(url):
-  build_keys = buildbot.ParseBuildUrl(url)
-  return build_keys[2]
+def _GetTryJobBuildNumber(try_job_result):
+  build_keys = buildbot.ParseBuildUrl(try_job_result.get('url'))
+  if build_keys and len(build_keys) > 2:
+    return build_keys[2]
+  if 'try_job_id' in try_job_result:
+    return try_job_result['try_job_id']
+  else:  # pragma: no cover
+    # This will almost certainly not happen.
+    logging.error('Cannot find id or url for: ' + try_job_result)
+    return 'unknown'
 
 
 def _OrganizeTryJobResultByCulprits(try_job_culprits):
@@ -230,7 +238,7 @@ def _GetCulpritInfoForTryJobResultForTest(try_job_key, culprits_info):
         if try_job_result.get('url'):  # pragma: no cover
           try_job_info['try_job_url'] = try_job_result['url']
           try_job_info['try_job_build_number'] = (
-              _GetTryJobBuildNumber(try_job_result['url']))
+              _GetTryJobBuildNumber(try_job_result))
 
         if (try_job_result.get('culprit') and
             try_job_result['culprit'].get(ref_name)):
@@ -423,7 +431,7 @@ def _GetTryJobResultForCompile(failure_result_map):
     if try_job_result.get('url'):
       compile_try_job['try_job_url'] = try_job_result['url']
       compile_try_job['try_job_build_number'] = (
-          _GetTryJobBuildNumber(try_job_result['url']))
+          _GetTryJobBuildNumber(try_job_result))
     if try_job_result.get('culprit', {}).get('compile'):
       compile_try_job['culprit'] = try_job_result['culprit']['compile']
 
