@@ -37,7 +37,7 @@ message Buildbot {
 }
 
 enum SchedulingType {
-    UNSET = 0;
+    UNSET_SCHEDULING_TYPE = 0;
     // TRYJOBS builds are scheduled for uncommitted CLs.
     TRYJOBS = 1;
     // CONTINUOUS builds are scheduled for landed CLs.
@@ -49,7 +49,7 @@ enum SchedulingType {
 // OS is an Operating System.
 // OS names must match built-in "OS-<value>" Monorail labels.
 enum OS {
-    UNSET = 0;
+    UNSET_OS = 0;
     LINUX = 1;
     MAC = 2;
     WINDOWS = 3;

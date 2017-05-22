@@ -81,7 +81,7 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 			},
 		},
 	}
-	if builder.OS != config.OS_UNSET {
+	if builder.OS != config.OS_UNSET_OS {
 		// Monorail tolerates all-caps OS names.
 		req.Issue.Labels = append(req.Issue.Labels, "OS-"+builder.OS.String())
 	}
