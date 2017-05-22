@@ -54,6 +54,12 @@ The proper way to check out the non-GitHub repositories is to run:
     cd chrome_infra
     fetch infra   # or `fetch infra_internal` if you are a Googler
 
+## Packaging
+
+Some Infra tooling requires manual operations to be performed in order to
+package it for distribution. See [Packaging](packaging/index.md) for more
+information.
+
 ## Make changes
 
 See [Contributing](contributing.md).
