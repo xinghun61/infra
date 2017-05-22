@@ -25,6 +25,13 @@ type SystemProbe struct {
 	// searching for.
 	Target string
 
+	// RelativePathOverride is a series of forward-slash-delimited paths to
+	// directories relative to the Git wrapper executable that will be checked
+	// prior to checking PATH. This allows bundles (e.g., CIPD) that include both
+	// the Git wrapper and a Git implementation, to force the Git wrapper to use
+	// the bundled Git.
+	RelativePathOverride []string
+
 	// testRunCommand is a testing stub that, if not nil, will be used
 	// to run the wrapper check command instead of actually running it.
 	testRunCommand func(cmd *exec.Cmd) (int, error)
@@ -33,9 +40,9 @@ type SystemProbe struct {
 // Locate attempts to locate the system's Target by traversing the available
 // PATH.
 //
-// self is the path of the currently-running executable. It cannot be empty, but
-// may be invalid if the current executable is no longer available at that
-// location.
+// self is the path of the currently-running executable. It may be empty or
+// invalid if the current executable could not be identified, or if it is no
+// longer available at that location.
 //
 // cached is the cached path, passed from wrapper to wrapper through the a
 // State struct in the environment. This may be empty, if there was no cached
@@ -49,8 +56,11 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 	//
 	// This may fail if we have been deleted since running. If so, we will skip
 	// the SameFile check.
+	var selfDir string
 	var selfStat os.FileInfo
 	if self != "" {
+		selfDir = filepath.Dir(self)
+
 		var err error
 		if selfStat, err = os.Stat(self); err != nil {
 			logging.Debugf(c, "Failed to stat self [%s]: %s", self, err)
@@ -83,34 +93,43 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 	// Get stats on our parent directory. This may fail; if so, we'll skip the
 	// SameFile check.
 	var selfDirStat os.FileInfo
-	if self != "" {
-		selfDir := filepath.Dir(self)
-
+	if selfDir != "" {
 		var err error
 		if selfDirStat, err = os.Stat(selfDir); err != nil {
 			logging.Debugf(c, "Failed to stat self directory [%s]: %s", selfDir, err)
 		}
 	}
 
-	// Walk through PATH. Our goal is to find the first program named Target that
-	// isn't self and doesn't identify as a wrapper.
-	//
 	// We determine if it is a wrapper by executing it with a State that has
 	// "checkWrapper" set to true. Since we will do this repeatedly, we will
 	// generate the "check enabled" environment once and reuse it for each check.
-	envWithCheckEnabled := env.Clone()
-	envWithCheckEnabled.Set(gitWrapperCheckENV, "1")
+	checkEnv := env.Clone()
+	checkEnv.Set(gitWrapperCheckENV, "1")
 
+	// Walk through PATH. Our goal is to find the first program named Target that
+	// isn't self and doesn't identify as a wrapper.
 	origPATH, _ := env.Get("PATH")
 	pathParts := strings.Split(origPATH, string(os.PathListSeparator))
-	checked := make(map[string]struct{}, len(pathParts))
-	for _, dir := range pathParts {
+
+	// Build our list of directories to check for Git.
+	checkDirs := make([]string, 0, len(pathParts)+len(p.RelativePathOverride))
+	if selfDir != "" {
+		for _, rpo := range p.RelativePathOverride {
+			checkDirs = append(checkDirs, filepath.Join(selfDir, filepath.FromSlash(rpo)))
+		}
+	}
+	checkDirs = append(checkDirs, pathParts...)
+
+	// Iterate through each check directory and look for a Git candidate within
+	// it.
+	checked := make(map[string]struct{}, len(checkDirs))
+	for _, dir := range checkDirs {
 		if _, ok := checked[dir]; ok {
 			continue
 		}
 		checked[dir] = struct{}{}
 
-		path := p.checkDir(c, dir, selfStat, selfDirStat, envWithCheckEnabled)
+		path := p.checkDir(c, dir, selfStat, selfDirStat, checkEnv)
 		if path != "" {
 			return path, nil
 		}
@@ -125,7 +144,7 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 // checkDir checks "checkDir" for our Target executable. It ignores
 // executables whose target is the same file or shares the same parent directory
 // as "self".
-func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.FileInfo, env environ.Env) string {
+func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.FileInfo, checkEnv environ.Env) string {
 	// If we have a self directory defined, ensure that "dir" isn't the same
 	// directory. If it is, we will ignore this option, since we are looking for
 	// something outside of the wrapper directory.
@@ -148,7 +167,7 @@ func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.F
 		}
 	}
 
-	t, err := findInDir(p.Target, dir, env)
+	t, err := findInDir(p.Target, dir, checkEnv)
 	if err != nil {
 		return ""
 	}
@@ -177,7 +196,7 @@ func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.F
 	}
 
 	// Try running the candidate command and confirm that it is not a wrapper.
-	switch isWrapper, err := p.checkForWrapper(c, t, env); {
+	switch isWrapper, err := p.checkForWrapper(c, t, checkEnv); {
 	case err != nil:
 		logging.Debugf(c, "Failed to check if [%s] is a wrapper: %s", t, err)
 		return ""
@@ -199,9 +218,9 @@ func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.F
 // We will run the "version" command, which should be very safe and return
 // a "0". If, for whatever, reason, "path" fails returns a non-zero even if it
 // isn't a wrapper, we dismiss it as unsuitable.
-func (p *SystemProbe) checkForWrapper(c context.Context, path string, env environ.Env) (bool, error) {
+func (p *SystemProbe) checkForWrapper(c context.Context, path string, checkEnv environ.Env) (bool, error) {
 	cmd := exec.CommandContext(c, path, "version")
-	cmd.Env = env.Sorted()
+	cmd.Env = checkEnv.Sorted()
 
 	runCommand := p.testRunCommand
 	if runCommand == nil {
@@ -212,7 +231,7 @@ func (p *SystemProbe) checkForWrapper(c context.Context, path string, env enviro
 					return rc, nil
 				}
 
-				logging.Warningf(c, "Failed to run check command [%s] with environment: %s", path, strings.Join(env.Sorted(), " "))
+				logging.Warningf(c, "Failed to run check command [%s] with environment: %s", path, strings.Join(checkEnv.Sorted(), " "))
 				return 0, errors.Annotate(err).Reason("failed to run check command").Err()
 			}
 			return 0, nil

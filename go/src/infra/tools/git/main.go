@@ -52,7 +52,8 @@ const gitWrapperTraceENV = "INFRA_GIT_WRAPPER_TRACE"
 
 // gitProbe is the SystemProbe used by the main application to locate Git.
 var gitProbe = SystemProbe{
-	Target: "git",
+	Target:               "git",
+	RelativePathOverride: []string{"bin"},
 }
 
 // probeVersionString attempts to identify the version string for the current

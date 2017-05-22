@@ -54,6 +54,7 @@ func TestSystemProbe(t *testing.T) {
 		// Construct a fake filesystem rooted in "tdir".
 		var (
 			selfDir, selfGit = createExecutable("self/git" + selfEXESuffix)
+			_, overrideGit   = createExecutable("self/override/reldir/git" + otherEXESuffix)
 			fooDir, fooGit   = createExecutable("foo/git" + otherEXESuffix)
 			wrapperDir, _    = createExecutable("wrapper/git" + otherEXESuffix)
 			brokenDir, _     = createExecutable("broken/git" + otherEXESuffix)
@@ -94,13 +95,26 @@ func TestSystemProbe(t *testing.T) {
 			So(wrapperChecks, ShouldEqual, 1)
 		})
 
-		Convey(`Can identify the next Git when it precedes self in PATH.`, func() {
+		Convey(`When Git precedes self in PATH`, func() {
 			setPATH(fooDir, selfDir, wrapperDir, otherDir, nonexistDir)
 
-			git, err := probe.Locate(c, selfGit, "", env)
-			So(err, ShouldBeNil)
-			So(git, shouldBeSameFileAs, fooGit)
-			So(wrapperChecks, ShouldEqual, 1)
+			Convey(`Will identify Git`, func() {
+				git, err := probe.Locate(c, selfGit, "", env)
+				So(err, ShouldBeNil)
+				So(git, shouldBeSameFileAs, fooGit)
+				So(wrapperChecks, ShouldEqual, 1)
+			})
+
+			Convey(`Will prefer an override Git`, func() {
+				probe.RelativePathOverride = []string{
+					"override/reldir", // (see "overrideGit")
+				}
+
+				git, err := probe.Locate(c, selfGit, "", env)
+				So(err, ShouldBeNil)
+				So(git, shouldBeSameFileAs, overrideGit)
+				So(wrapperChecks, ShouldEqual, 1)
+			})
 		})
 
 		Convey(`Can identify the next Git when self does not exist.`, func() {
