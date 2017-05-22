@@ -4,6 +4,7 @@
 
 import datetime
 import json
+import mock
 import re
 import webapp2
 import webtest
@@ -148,6 +149,7 @@ class ConfigTest(testing.AppengineTestCase):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
     wf_config.FinditConfig.Get().Update(users.GetCurrentUser(), True,
+                                        message='message',
                                         **config_data)
 
     response = self.test_app.get('/config', params={'format': 'json'})
@@ -165,7 +167,9 @@ class ConfigTest(testing.AppengineTestCase):
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
-        'updated_ts': response.json_body.get('updated_ts')
+        'updated_ts': response.json_body.get('updated_ts'),
+        'message': 'message',
+        'xsrf_token': response.json_body['xsrf_token'],
     }
 
     self.assertEquals(expected_response, response.json_body)
@@ -184,6 +188,7 @@ class ConfigTest(testing.AppengineTestCase):
         'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
     }
     wf_config.FinditConfig.Get().Update(users.GetCurrentUser(), True,
+                                        message='message',
                                         **config_data)
 
     response = self.test_app.get(
@@ -202,7 +207,9 @@ class ConfigTest(testing.AppengineTestCase):
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
-        'updated_ts': response.json_body.get('updated_ts')
+        'updated_ts': response.json_body.get('updated_ts'),
+        'message': 'message',
+        'xsrf_token': response.json_body['xsrf_token'],
     }
 
     self.assertEquals(expected_response, response.json_body)
@@ -909,8 +916,10 @@ class ConfigTest(testing.AppengineTestCase):
                      config._FormatTimestamp(
                          datetime.datetime(2016, 2, 25, 1, 2, 3, 123456)))
 
-  def testPostConfigurationSettings(self):
+  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  def testPostConfigurationSettings(self, mocked_ValidateXSRFToken):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+    mocked_ValidateXSRFToken.side_effect = [True]
 
     params = {
         'format': 'json',
@@ -939,6 +948,7 @@ class ConfigTest(testing.AppengineTestCase):
         'action_settings': json.dumps(_MOCK_ACTION_SETTINGS),
         'check_flake_settings': json.dumps(_MOCK_CHECK_FLAKE_SETTINGS),
         'code_review_settings': json.dumps(_MOCK_CODE_REVIEW_SETTINGS),
+        'message': 'reason',
     }
 
     response = self.test_app.post('/config', params=params)
@@ -971,7 +981,9 @@ class ConfigTest(testing.AppengineTestCase):
         'version': 1,
         'latest_version': 1,
         'updated_by': 'test',
-        'updated_ts': response.json_body.get('updated_ts')
+        'updated_ts': response.json_body.get('updated_ts'),
+        'message': 'reason',
+        'xsrf_token': response.json_body['xsrf_token'],
     }
 
     self.assertEquals(expected_response, response.json_body)

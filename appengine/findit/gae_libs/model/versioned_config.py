@@ -23,13 +23,16 @@ class VersionedConfig(VersionedModel):
   # Who created this revision of configuration.
   updated_by = ndb.StringProperty(indexed=False)
 
+  # The reason that the config is updated
+  message = ndb.StringProperty(indexed=False)
+
   @classmethod
   def Get(cls, version=None):
     """Returns the version of the config entity, the latest if not specified."""
     config_data = cls.GetVersion(version=version)
     return config_data or cls() if version is None else config_data
 
-  def Update(self, user, is_admin, **kwargs):
+  def Update(self, user, is_admin, message=None, **kwargs):
     """Apply ``kwargs`` dict to the entity and stores the entity if changed."""
     if not is_admin:
       raise Exception('Only admin could update config.')
@@ -44,6 +47,7 @@ class VersionedConfig(VersionedModel):
     if dirty:
       user_name = user.email().split('@')[0]
       self.updated_by = user_name
+      self.message = message
       self.Save()
       logging.info('Config %s was updated by %s', self.__class__, user_name)
 

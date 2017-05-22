@@ -6,6 +6,7 @@
 
 import json
 
+from gae_libs import token
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from model import wf_config
@@ -311,6 +312,7 @@ def _FormatTimestamp(timestamp):
 class Configuration(BaseHandler):
   PERMISSION_LEVEL = Permission.ADMIN
 
+  @token.AddXSRFToken(action_id='config')
   def HandleGet(self):
     version = self.request.params.get('version')
 
@@ -337,16 +339,23 @@ class Configuration(BaseHandler):
         'version': settings.version_number,
         'latest_version': latest_version,
         'updated_by': settings.updated_by,
-        'updated_ts': _FormatTimestamp(settings.updated_ts)
+        'updated_ts': _FormatTimestamp(settings.updated_ts),
+        'message': settings.message,
     }
 
     return {'template': 'config.html', 'data': data}
 
+  @token.VerifyXSRFToken(action_id='config')
   def HandlePost(self):
     new_config_dict = {}
     for name in self.request.params.keys():
-      if name != 'format':
+      if name not in ('format', 'xsrf_token', 'message'):
         new_config_dict[name] = json.loads(self.request.params[name])
+
+    message = self.request.get('message')
+    if not message:  # pragma: no cover
+      return self.CreateError(
+          'Please provide the reason to update the config', 400)
 
     if not _ConfigurationDictIsValid(new_config_dict):  # pragma: no cover
       return self.CreateError(
@@ -354,6 +363,7 @@ class Configuration(BaseHandler):
 
     wf_config.FinditConfig.Get().Update(users.get_current_user(),
                                         users.IsCurrentUserAdmin(),
+                                        message=message,
                                         **new_config_dict)
 
     return self.HandleGet()
