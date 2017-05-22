@@ -29,7 +29,10 @@ import (
 	"github.com/luci/luci-go/common/logging"
 )
 
-const retryAttemptTagKey = "luci_migration_retry_attempt"
+const (
+	retryAttemptTagKey = "luci_migration_retry_attempt"
+	origBuildIDTagKey  = "luci_migration_orig_build_id"
+)
 
 // Build describes a single Buildbucket build in a pubsub message.
 type Build struct {
@@ -50,19 +53,29 @@ func HandleNotification(c context.Context, build *Build, bbService *buildbucket.
 
 	// Do at most 2 attempts.
 	retryAttempt := -1
+	origBuildID := ""
 	for _, t := range build.Tags {
-		if k, v := parseTag(t); k == retryAttemptTagKey {
+		switch k, v := parseTag(t); k {
+		case retryAttemptTagKey:
 			var err error
 			retryAttempt, err = strconv.Atoi(v)
 			if err != nil {
 				return errors.Annotate(err).Reason("invalid tag %(tag)q").D("tag", t).Err()
 			}
-			if retryAttempt >= 1 {
-				logging.Infof(c, "enough retries for build %s", build.ID)
-				return nil
-			}
-			break
+		case origBuildIDTagKey:
+			origBuildID = v
 		}
+	}
+	switch {
+	case retryAttempt == -1:
+		origBuildID = build.ID
+	case retryAttempt >= 0 && origBuildID == "":
+		return errors.Reason("build has a retry attempt %(attempt)d, but no orig build id").
+			D("attempt", retryAttempt).
+			Err()
+	case retryAttempt >= 1:
+		logging.Infof(c, "enough retries for build %s", origBuildID)
+		return nil
 	}
 
 	var parameters struct {
@@ -84,7 +97,7 @@ func HandleNotification(c context.Context, build *Build, bbService *buildbucket.
 
 	// Lock the build via memcache.
 	err := memlock.TryWithLock(c, "retry-build-"+build.ID, info.RequestID(c), func(c context.Context) error {
-		return retry(c, build, retryAttempt, bbService)
+		return retry(c, build, retryAttempt, origBuildID, bbService)
 	})
 	if err == memlock.ErrFailedToLock {
 		logging.Infof(c, "build %s is locked, letting go", build.ID)
@@ -93,7 +106,7 @@ func HandleNotification(c context.Context, build *Build, bbService *buildbucket.
 	return err
 }
 
-func retry(c context.Context, build *Build, attempt int, bb *buildbucket.Service) error {
+func retry(c context.Context, build *Build, attempt int, origBuildID string, bb *buildbucket.Service) error {
 	logging.Infof(c, "retrying build %s", build.ID)
 
 	newBuild := &buildbucket.ApiPutRequestMessage{
@@ -102,7 +115,8 @@ func retry(c context.Context, build *Build, attempt int, bb *buildbucket.Service
 		ParametersJson:    build.ParametersJSON,
 		Tags: []string{
 			"user_agent:luci-migration",
-			retryAttemptTagKey + ":" + strconv.Itoa(attempt+1),
+			formatTag(origBuildIDTagKey, origBuildID),
+			formatTag(retryAttemptTagKey, strconv.Itoa(attempt+1)),
 		},
 	}
 	for _, t := range build.Tags {
@@ -145,11 +159,23 @@ func retry(c context.Context, build *Build, attempt int, bb *buildbucket.Service
 }
 
 // parseTag parses a buildbucket tag.
+//
+// If tag does not have ":", the whole tag because the the key with an empty
+// value.
 func parseTag(tag string) (k, v string) {
 	parts := strings.SplitN(tag, ":", 2)
 	k = parts[0]
 	if len(parts) > 1 {
 		v = parts[1]
+	} else {
+		// this tag is invalid. This should not happen in practice.
+		// Do not panic because this function is used for externally-supplied
+		// data.
 	}
 	return
+}
+
+// formatTag formats a tag from a key-value pair.
+func formatTag(k, v string) string {
+	return k + ":" + v
 }

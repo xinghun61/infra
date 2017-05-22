@@ -68,7 +68,8 @@ func TestFlakiness(t *testing.T) {
 				ParametersJson:    b.ParametersJSON,
 				Tags: []string{
 					"user_agent:luci-migration",
-					retryAttemptTagKey + ":0",
+					formatTag(origBuildIDTagKey, "54"),
+					formatTag(retryAttemptTagKey, "0"),
 					"buildset:patchsetX",
 					"master:masterX",
 				},
@@ -81,11 +82,15 @@ func TestFlakiness(t *testing.T) {
 				Bucket:         "luci.test.x",
 				Result:         "FAILURE",
 				ParametersJSON: paramsExperimental,
-				Tags:           []string{retryAttemptTagKey + ":0"},
+				Tags: []string{
+					formatTag(origBuildIDTagKey, "53"),
+					formatTag(retryAttemptTagKey, "0"),
+				},
 			}
 			err := HandleNotification(c, b, bbService)
 			So(err, ShouldBeNil)
-			So(actualBBRequest, ShouldNotBeNil) // did not retry
+			So(actualBBRequest, ShouldNotBeNil) // did retry
+			So(formatTag(origBuildIDTagKey, "53"), ShouldBeIn, actualBBRequest.Tags)
 		})
 
 		Convey("does not retry too many times", func() {
@@ -94,7 +99,10 @@ func TestFlakiness(t *testing.T) {
 				Bucket:         "luci.test.x",
 				Result:         "FAILURE",
 				ParametersJSON: paramsExperimental,
-				Tags:           []string{retryAttemptTagKey + ":1"},
+				Tags: []string{
+					formatTag(origBuildIDTagKey, "53"),
+					formatTag(retryAttemptTagKey, "1"),
+				},
 			}
 			err := HandleNotification(c, b, bbService)
 			So(err, ShouldBeNil)
