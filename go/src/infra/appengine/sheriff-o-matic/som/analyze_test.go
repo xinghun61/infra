@@ -30,6 +30,17 @@ func newTestContext() context.Context {
 	return ctx
 }
 
+type giMock struct {
+	info.RawInterface
+	token  string
+	expiry time.Time
+	err    error
+}
+
+func (gi giMock) AccessToken(scopes ...string) (token string, expiry time.Time, err error) {
+	return gi.token, gi.expiry, gi.err
+}
+
 func setUpGitiles(c context.Context) context.Context {
 	return urlfetch.Set(c, &testhelper.MockGitilesTransport{
 		Responses: map[string]string{

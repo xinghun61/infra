@@ -399,7 +399,6 @@ func init() {
 	gaemiddleware.InstallHandlers(r)
 	r.GET("/api/v1/trees/", protected, getTreesHandler)
 	r.GET("/api/v1/alerts/:tree", protected, getAlertsHandler)
-	r.GET("/api/v1/pubsubalerts/:tree", protected, getPubSubAlertsHandler)
 	r.GET("/api/v1/restarts/:tree", protected, getRestartingMastersHandler)
 	r.GET("/api/v1/xsrf_token", protected, getXSRFToken)
 
@@ -423,7 +422,6 @@ func init() {
 	r.GET("/_cron/annotations/refresh/", basemw, refreshAnnotationsHandler)
 	r.GET("/_cron/analyze/:tree", basemw, getAnalyzeHandler)
 	r.POST("/_/clientmon", basemw, postClientMonHandler)
-	r.POST("/_ah/push-handlers/milo", basemw, postMiloPubSubHandler)
 
 	// Ingore reqeuests from builder-alerts rather than 404.
 	r.GET("/alerts", gaemiddleware.BaseProd(), noopHandler)
