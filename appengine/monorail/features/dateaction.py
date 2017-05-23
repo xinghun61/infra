@@ -112,14 +112,18 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
       logging.warning('Issue %r has no dates to ping afterall?', issue_id)
       return
     comment = self._CreatePingComment(mr.cnxn, issue, pings, hostport)
+    starrer_ids = self.services.issue_star.LookupItemStarrers(
+        mr.cnxn, issue.issue_id)
 
     users_by_id = framework_views.MakeAllUserViews(
         mr.cnxn, self.services.user,
         tracker_bizobj.UsersInvolvedInIssues([issue]),
-        [comment.user_id])
+        tracker_bizobj.UsersInvolvedInComment(comment),
+        starrer_ids)
     logging.info('users_by_id is %r', users_by_id)
     tasks = self._MakeEmailTasks(
-      mr.cnxn, issue, project, config, comment, hostport, users_by_id, pings)
+      mr.cnxn, issue, project, config, comment, starrer_ids,
+      hostport, users_by_id, pings)
 
     notified = notify_helpers.AddAllEmailTasks(tasks)
     return {
@@ -137,8 +141,8 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
     return comment
 
   def _MakeEmailTasks(
-      self, cnxn, issue, project, config, comment, hostport, users_by_id,
-      pings):
+      self, cnxn, issue, project, config, comment, starrer_ids,
+      hostport, users_by_id, pings):
     """Return a list of dicts for tasks to notify people."""
     detail_url = framework_helpers.IssueCommentURL(
         hostport, project, issue.local_id, seq_num=comment.sequence)
@@ -163,17 +167,13 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
     contributor_could_view = permissions.CanViewIssue(
         set(), permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET,
         project, issue)
-    # Note: We never notify the reporter of any issue just because they
-    # reported it, only if they star it.
-    # TODO(jrobbins): add a user preference for notifying starrers.
-    starrer_ids = []
 
-    # TODO(jrobbins): consider IsNoisy() when we support notifying starrers.
     group_reason_list = notify_reasons.ComputeGroupReasonList(
         cnxn, self.services, project, issue, config, users_by_id,
         [], contributor_could_view, starrer_ids=starrer_ids,
         commenter_in_project=True, include_subscribers=False,
-        include_notify_all=False)
+        include_notify_all=False,
+        starrer_pref_check_function=lambda u: u.notify_starred_ping)
 
     commenter_view = users_by_id[comment.user_id]
     email_tasks = notify_helpers.MakeBulletedEmailWorkItems(

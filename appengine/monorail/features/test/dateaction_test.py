@@ -108,7 +108,8 @@ class IssueDateActionTaskTest(unittest.TestCase):
         features=fake.FeaturesService(),
         issue=fake.IssueService(),
         project=fake.ProjectService(),
-        config=fake.ConfigService())
+        config=fake.ConfigService(),
+        issue_star=fake.IssueStarService())
     self.servlet = dateaction.IssueDateActionTask(
         'req', 'res', services=self.services)
     self.mox = mox.Mox()
@@ -184,6 +185,13 @@ class IssueDateActionTaskTest(unittest.TestCase):
       'The NextAction date has arrived: %s' % date_str,
       comments[1].content)
 
+  def SetUpFieldValues(self, issue, now):
+    issue.field_values = [
+        tracker_bizobj.MakeFieldValue(123, None, None, None, now, False),
+        tracker_bizobj.MakeFieldValue(124, None, None, None, now, False),
+        tracker_bizobj.MakeFieldValue(125, None, None, None, now, False),
+        ]
+
   def testHandleRequest_IssueHasTwoArriveDates(self):
     _request, mr = testing_helpers.GetRequestObjects(
         path=urls.ISSUE_DATE_ACTION_TASK + '.do?issue_id=78901')
@@ -192,11 +200,7 @@ class IssueDateActionTaskTest(unittest.TestCase):
     date_str = timestr.TimestampToDateWidgetStr(now)
     issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111L, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
-    issue.field_values = [
-        tracker_bizobj.MakeFieldValue(123, None, None, None, now, False),
-        tracker_bizobj.MakeFieldValue(124, None, None, None, now, False),
-        tracker_bizobj.MakeFieldValue(125, None, None, None, now, False),
-        ]
+    self.SetUpFieldValues(issue, now)
     self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
         mr.cnxn, 78901)))
     self.SetUpEnqueueOutboundEmailTask(1)
@@ -211,21 +215,22 @@ class IssueDateActionTaskTest(unittest.TestCase):
       'The NextAction date has arrived: %s' % (date_str, date_str),
       comments[1].content)
 
-  def testMakeEmailTasks(self):
-    issue = fake.MakeTestIssue(
-        789, 1, 'summary', 'New', self.owner.user_id, issue_id=78901)
-    self.services.issue.TestAddIssue(issue)
-    now = int(time.time())
-    issue.field_values = [
-        tracker_bizobj.MakeFieldValue(123, None, None, None, now, False),
-        tracker_bizobj.MakeFieldValue(124, None, None, None, now, False),
-        tracker_bizobj.MakeFieldValue(125, None, None, None, now, False),
-        ]
-    issue.project_name = 'proj'
+  def MakePingComment(self):
     comment = tracker_pb2.IssueComment()
     comment.project_id = self.project.project_id
     comment.user_id = self.date_action_user.user_id
     comment.content = 'Some date(s) arrived...'
+    return comment
+
+  def testMakeEmailTasks_Owner(self):
+    """The issue owner gets pinged and the email has expected content."""
+    issue = fake.MakeTestIssue(
+        789, 1, 'summary', 'New', self.owner.user_id, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    now = int(time.time())
+    self.SetUpFieldValues(issue, now)
+    issue.project_name = 'proj'
+    comment = self.MakePingComment()
     next_action_field_def = self.config.field_defs[0]
     pings = [(next_action_field_def, now)]
     users_by_id = framework_views.MakeAllUserViews(
@@ -234,7 +239,7 @@ class IssueDateActionTaskTest(unittest.TestCase):
 
     tasks = self.servlet._MakeEmailTasks(
         'fake cnxn', issue, self.project, self.config, comment,
-        'example-app.appspot.com', users_by_id, pings)
+        [], 'example-app.appspot.com', users_by_id, pings)
     self.assertEqual(1, len(tasks))
     notify_owner_task = tasks[0]
     self.assertEqual('owner@example.com', notify_owner_task['to'])
@@ -244,3 +249,31 @@ class IssueDateActionTaskTest(unittest.TestCase):
     body = notify_owner_task['body']
     self.assertIn(comment.content, body)
     self.assertIn(next_action_field_def.docstring, body)
+
+  def testMakeEmailTasks_Starrer(self):
+    """Users who starred the issue are notified iff they opt in."""
+    issue = fake.MakeTestIssue(
+        789, 1, 'summary', 'New', 0L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    now = int(time.time())
+    self.SetUpFieldValues(issue, now)
+    issue.project_name = 'proj'
+    comment = self.MakePingComment()
+    next_action_field_def = self.config.field_defs[0]
+    pings = [(next_action_field_def, now)]
+
+    starrer_333 = self.services.user.TestAddUser('starrer333@example.com', 333L)
+    starrer_333.notify_starred_ping = True
+    self.services.user.TestAddUser('starrer444@example.com', 444L)
+    starrer_ids = [333L, 444L]
+    users_by_id = framework_views.MakeAllUserViews(
+        'fake cnxn', self.services.user,
+        [self.owner.user_id, self.date_action_user.user_id],
+        starrer_ids)
+
+    tasks = self.servlet._MakeEmailTasks(
+        'fake cnxn', issue, self.project, self.config, comment,
+        starrer_ids, 'example-app.appspot.com', users_by_id, pings)
+    self.assertEqual(1, len(tasks))
+    notify_owner_task = tasks[0]
+    self.assertEqual('starrer333@example.com', notify_owner_task['to'])

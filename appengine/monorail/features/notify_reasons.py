@@ -297,7 +297,8 @@ def ComputeGroupReasonList(
     cnxn, services, project, issue, config, users_by_id, omit_addrs,
     contributor_could_view, starrer_ids=None, noisy=False,
     old_owner_id=None, commenter_in_project=True, include_subscribers=True,
-    include_notify_all=True):
+    include_notify_all=True,
+    starrer_pref_check_function=lambda u: u.notify_starred_issue_change):
   """Return a list [(addr_perm_list, reason),...] of addrs to notify."""
   # Get the transitive set of owners and Cc'd users, and their UserViews.
   starrer_ids = starrer_ids or []
@@ -362,7 +363,7 @@ def ComputeGroupReasonList(
         ComputeIssueChangeAddressPermList(
             cnxn, starrer_ids, project, issue,
             services, omit_addrs, users_by_id,
-            pref_check_function=lambda u: u.notify_starred_issue_change))
+            pref_check_function=starrer_pref_check_function))
 
     if include_subscribers:
       sub_addr_perm_list = _GetSubscribersAddrPermList(
