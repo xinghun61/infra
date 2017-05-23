@@ -30,7 +30,19 @@ var (
 			},
 		},
 	}
-	indexes = []*datastore.IndexDefinition{&incidentStartIdx}
+	incidentIneqEndIdx = datastore.IndexDefinition{
+		Kind:     "ServiceIncident",
+		Ancestor: true,
+		SortBy: []datastore.IndexColumn{
+			{
+				Property: "Open",
+			},
+			{
+				Property: "EndTime",
+			},
+		},
+	}
+	indexes = []*datastore.IndexDefinition{&incidentStartIdx, &incidentIneqEndIdx}
 )
 
 var baseDate = time.Date(2017, time.April, 11, 23, 0, 0, 0, time.UTC)

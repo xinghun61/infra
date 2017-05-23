@@ -6,6 +6,7 @@ package backend
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -118,28 +119,65 @@ func GetIncident(c context.Context, id string, serviceID string) (*ServiceIncide
 // If no incidents for the service were found, incidents will be empty.
 func GetServiceIncidents(c context.Context, serviceID string, queryOpts *QueryOptions) ([]ServiceIncident, error) {
 	serviceKey := datastore.NewKey(c, "Service", serviceID, 0, nil)
-	query := datastore.NewQuery("ServiceIncident").Ancestor(serviceKey)
-	if queryOpts != nil {
-		var err error
-		if !queryOpts.After.IsZero() || !queryOpts.Before.IsZero() {
-			query, err = queryOpts.BuildQuery(query, "StartTime")
-			if err != nil {
-				logging.Errorf(c, "error building query from queryOpts: %s", err)
-				return nil, err
-			}
-			// TODO(jojwang): create another query with "EndTime" and consolidate
-			// the incidents returned by the two queries
-		} else {
-			query, err = queryOpts.BuildQuery(query, "")
-			if err != nil {
-				logging.Errorf(c, "error building query from queryOpts: %s", err)
+	baseQuery := datastore.NewQuery("ServiceIncident").Ancestor(serviceKey)
+	var queries []*datastore.Query
+	switch {
+	case queryOpts == nil:
+		queries = []*datastore.Query{baseQuery}
+	case !queryOpts.After.IsZero() || !queryOpts.Before.IsZero():
+		byStartTime, err := queryOpts.BuildQuery(baseQuery, "StartTime")
+		if err != nil {
+			logging.Errorf(c, "error building query from queryOpts: %s", err)
+			return nil, err
+		}
+		byEndTime, err := queryOpts.BuildQuery(baseQuery, "EndTime")
+		if err != nil {
+			logging.Errorf(c, "error building query from queryOpts: %s", err)
+			return nil, err
+		}
+		queries = []*datastore.Query{byStartTime, byEndTime}
+	default:
+		query, err := queryOpts.BuildQuery(baseQuery, "")
+		if err != nil {
+			logging.Errorf(c, "error building query from queryOpts: %s", err)
+			return nil, err
+		}
+		queries = []*datastore.Query{query}
+	}
+	return consolidateQueryResults(c, queries)
+}
+
+func consolidateQueryResults(c context.Context, queries []*datastore.Query) ([]ServiceIncident, error) {
+	type incidentsOrError struct {
+		incidents []ServiceIncident
+		err       error
+	}
+	results := make([]incidentsOrError, len(queries))
+	wg := sync.WaitGroup{}
+	for i, query := range queries {
+		wg.Add(1)
+		go func(i int, query *datastore.Query) {
+			defer wg.Done()
+			incidents := []ServiceIncident{}
+			err := datastore.GetAll(c, query, &incidents)
+			results[i] = incidentsOrError{incidents, err}
+		}(i, query)
+	}
+	wg.Wait()
+
+	resultsByID := map[string]bool{}
+	incidents := []ServiceIncident{}
+	for i, result := range results {
+		if result.err != nil {
+			logging.Errorf(c, "error getting ServiceIncident entities: %s for query: %v", result.err, queries[i])
+			return nil, result.err
+		}
+		for _, incident := range result.incidents {
+			if _, exists := resultsByID[incident.ID]; !exists {
+				incidents = append(incidents, incident)
+				resultsByID[incident.ID] = true
 			}
 		}
-	}
-	incidents := []ServiceIncident{}
-	if err := datastore.GetAll(c, query, &incidents); err != nil {
-		logging.Errorf(c, "error getting ServiceIncident entities: %s", err)
-		return nil, err
 	}
 	return incidents, nil
 }

@@ -37,7 +37,7 @@ var (
 			},
 		},
 	}
-	incidentIneqIdx = datastore.IndexDefinition{
+	incidentIneqStartIdx = datastore.IndexDefinition{
 		Kind:     "ServiceIncident",
 		Ancestor: true,
 		SortBy: []datastore.IndexColumn{
@@ -46,8 +46,17 @@ var (
 			},
 		},
 	}
+	incidentIneqEndIdx = datastore.IndexDefinition{
+		Kind:     "ServiceIncident",
+		Ancestor: true,
+		SortBy: []datastore.IndexColumn{
+			{
+				Property: "EndTime",
+			},
+		},
+	}
 
-	indexes = []*datastore.IndexDefinition{&serviceIdx, &incidentIdx, &incidentIneqIdx}
+	indexes = []*datastore.IndexDefinition{&serviceIdx, &incidentIdx, &incidentIneqStartIdx, &incidentIneqEndIdx}
 )
 
 type getServiceTest struct {
@@ -236,6 +245,10 @@ func TestGetServiceIncidents(t *testing.T) {
 			After:  baseDate.AddDate(0, 0, -1),
 			Before: baseDate},
 		},
+		{[]ServiceIncident{*testIncOne, *testIncTwo}, testService.ID, &QueryOptions{
+			After:  baseDate.AddDate(0, 0, 1),
+			Before: now.AddDate(0, 0, 1)},
+		},
 	}
 	for i, tc := range testCases {
 		incidents, err := GetServiceIncidents(ctx, tc.serviceID, tc.queryOpts)
@@ -245,6 +258,43 @@ func TestGetServiceIncidents(t *testing.T) {
 		if !reflect.DeepEqual(incidents, tc.want) {
 			t.Errorf("%d: Expected incidents:%v. Found: %v", i, tc.want, incidents)
 		}
+	}
+}
+
+func TestConsolidateQueryResults(t *testing.T) {
+	ctx := newTestContext()
+	datastore.Put(ctx, &testService)
+
+	testIncOne := &testIncs[0]
+	testIncOne.StartTime = baseDate
+	testIncOne.EndTime = baseDate.AddDate(0, 0, 4)
+	testIncOne.ServiceKey = datastore.NewKey(ctx, "Service", testService.ID, 0, nil)
+	datastore.Put(ctx, testIncOne)
+
+	testIncTwo := &testIncs[1]
+	testIncTwo.StartTime = baseDate.AddDate(0, 0, 5)
+	testIncTwo.EndTime = baseDate.AddDate(0, 0, 6)
+	testIncTwo.ServiceKey = datastore.NewKey(ctx, "Service", testService.ID, 0, nil)
+	datastore.Put(ctx, testIncTwo)
+
+	testIncThree := &testIncs[2]
+	testIncThree.StartTime = baseDate.AddDate(0, 0, 7)
+	testIncThree.EndTime = baseDate.AddDate(0, 0, 9)
+	testIncThree.ServiceKey = datastore.NewKey(ctx, "Service", testService.ID, 0, nil)
+	datastore.Put(ctx, testIncThree)
+
+	want := []ServiceIncident{*testIncTwo, *testIncThree, *testIncOne}
+	after := baseDate.AddDate(0, 0, 4)
+	before := baseDate.AddDate(0, 0, 7)
+	queryOne := datastore.NewQuery("ServiceIncident").Gte("StartTime", after).Lte("StartTime", before)
+	queryTwo := datastore.NewQuery("ServiceIncident").Gte("EndTime", after).Lte("EndTime", before)
+	queries := []*datastore.Query{queryOne, queryTwo}
+	results, err := consolidateQueryResults(ctx, queries)
+	if err != nil {
+		t.Errorf("expected no errors, found %s", err)
+	}
+	if !reflect.DeepEqual(results, want) {
+		t.Errorf("expected incidents: %v, found: %v", want, results)
 	}
 }
 
