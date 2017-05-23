@@ -1,3 +1,48 @@
+# Release Notes sheriff-o-matic 2017-05-23
+
+- 15 commits, 10 bugs affected since 626f893 (2017-05-18T18:40:34Z)
+- 4 Authors:
+  - seanmccullough@chromium.org
+  - martiniss@chromium.org
+  - zhangtiff@google.com
+  - renjietang@google.com
+
+## Changes in this release
+
+- [test test](https://chromium-review.googlesource.com/511742) (renjietang@google.com)
+- [[som] cleanup: remove "pubsub" related stuff since we abandonded it.](https://chromium-review.googlesource.com/511167) (seanmccullough@chromium.org)
+- [[som] Frontend for layout test expectations list.](https://chromium-review.googlesource.com/509912) (seanmccullough@chromium.org)
+- [SOM: Add a staging banner](https://chromium-review.googlesource.com/508217) (martiniss@chromium.org)
+- [[som] Add http handlers for fetching list of layout test expectations.](https://chromium-review.googlesource.com/508817) (seanmccullough@chromium.org)
+- [SoM: Make autocollapsing alerts on annotation changes more strategic.](https://chromium-review.googlesource.com/508234) (zhangtiff@google.com)
+- [SoM: Add check/uncheck all to group/ungroup modal.](https://chromium-review.googlesource.com/508094) (zhangtiff@google.com)
+- [SoM: Start removing paper elements and adjust styling.](https://chromium-review.googlesource.com/506615) (zhangtiff@google.com)
+- [SoM: Remove animation from collapsing/expanding alerts + misc polish.](https://chromium-review.googlesource.com/506456) (zhangtiff@google.com)
+- [SoM: Polish swarming bot headers, simplify CSS, remove animation from iron-collapse.](https://chromium-review.googlesource.com/505218) (zhangtiff@google.com)
+- [SoM: Fix alerts and bug queue flakily persisting between tree switches.](https://chromium-review.googlesource.com/493835) (zhangtiff@google.com)
+- [SoM: Trim spaces on linked bug.](https://chromium-review.googlesource.com/506568) (zhangtiff@google.com)
+- [AD: fix bot affinity detection](https://chromium-review.googlesource.com/509974) (martiniss@chromium.org)
+- [AD: Ignore "Failure reason" step](https://chromium-review.googlesource.com/508283) (martiniss@chromium.org)
+- [[som] alter memcache client to fail open on errors during a cache miss.](https://chromium-review.googlesource.com/513046) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- martiniss@chromium.org:
+  -  [https://crbug.com/723682](https://crbug.com/723682)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/603982](https://crbug.com/603982)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/697984](https://crbug.com/697984)
+  -  [https://crbug.com/712816](https://crbug.com/712816)
+  -  [https://crbug.com/718129](https://crbug.com/718129)
+  -  [https://crbug.com/719740](https://crbug.com/719740)
+  -  [https://crbug.com/720021](https://crbug.com/720021)
+  -  [https://crbug.com/720079](https://crbug.com/720079)
+  -  [https://crbug.com/720084](https://crbug.com/720084)
+  -  [https://crbug.com/723791](https://crbug.com/723791)
+
 # Release Notes sheriff-o-matic 2017-05-09
 
 - 4 commits, 3 bugs affected since 886ce0f (2017-05-02T20:53:49Z)
