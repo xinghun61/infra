@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/luci/luci-go/common/system/environ"
 	. "github.com/luci/luci-go/common/testing/assertions"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -19,7 +18,6 @@ import (
 var flagTestCases = []struct {
 	flags       []string
 	cf          CookFlags
-	env         environ.Env
 	errParse    interface{}
 	errValidate interface{}
 }{
@@ -160,7 +158,7 @@ func TestFlags(t *testing.T) {
 					Convey(fmt.Sprintf("%v", tc.flags), func() {
 						So(fs.Parse(tc.flags), ShouldErrLike, tc.errParse)
 						if tc.errParse == nil {
-							So(cf.Normalize(tc.env), ShouldErrLike, tc.errValidate)
+							So(cf.Normalize(), ShouldErrLike, tc.errValidate)
 							if tc.errValidate == nil {
 								for i, p := range cf.PrefixPathENV {
 									cf.PrefixPathENV[i] = r.Replace(p)

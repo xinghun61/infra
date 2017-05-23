@@ -35,7 +35,7 @@ func inputError(format string, args ...interface{}) error {
 
 // Normalize normalizes the contents of CookFlags, returning non-nil if there is
 // an error.
-func (c *CookFlags) Normalize(env environ.Env) error {
+func (c *CookFlags) Normalize() error {
 	if c.Mode == InvalidCookMode {
 		return inputError("missing mode (-mode)")
 	}
@@ -130,5 +130,5 @@ func (c *CookFlags) Normalize(env environ.Env) error {
 
 	c.OutputResultJSONPath = filepath.FromSlash(c.OutputResultJSONPath)
 
-	return c.LogDogFlags.setupAndValidate(c.Mode, env)
+	return c.LogDogFlags.setupAndValidate(c.Mode)
 }

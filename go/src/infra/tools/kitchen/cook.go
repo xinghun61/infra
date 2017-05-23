@@ -63,8 +63,8 @@ type cookRun struct {
 }
 
 // normalizeFlags validates and normalizes flags.
-func (c *cookRun) normalizeFlags(env environ.Env) error {
-	if err := c.CookFlags.Normalize(env); err != nil {
+func (c *cookRun) normalizeFlags() error {
+	if err := c.CookFlags.Normalize(); err != nil {
 		return err
 	}
 
@@ -132,7 +132,7 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *kitc
 
 	rv := 0
 	if c.CookFlags.LogDogFlags.Active() {
-		result.AnnotationUrl = c.CookFlags.LogDogFlags.AnnotationURL
+		result.AnnotationUrl = c.CookFlags.LogDogFlags.AnnotationURL.String()
 		rv, result.Annotations, err = c.runWithLogdogButler(ctx, &c.rr, env)
 		if err != nil {
 			return fail(errors.Annotate(err).Reason("failed to run recipe").Err())
@@ -358,7 +358,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *kitc
 	if _, err := os.Getwd(); err != nil {
 		return fail(inputError("failed to resolve CWD: %s", err))
 	}
-	if err := c.normalizeFlags(env); err != nil {
+	if err := c.normalizeFlags(); err != nil {
 		return fail(err)
 	}
 

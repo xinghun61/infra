@@ -60,7 +60,7 @@ func disableGRPCLogging(ctx context.Context) {
 func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env environ.Env) (rc int, build *milo.Step, err error) {
 	flags := c.CookFlags.LogDogFlags
 
-	log.Infof(ctx, "Using LogDog URL: %s", flags.AnnotationAddr.URL().String())
+	log.Infof(ctx, "Using LogDog URL: %s", flags.AnnotationURL)
 
 	// Install a global gRPC logger adapter. This routes gRPC log messages that
 	// are emitted through our logger. We only log gRPC prints if our logger is
@@ -101,16 +101,16 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	log.Debugf(ctx, "Generated stream server at: %s", streamServer.Address())
 
 	// Use the annotation stream's prefix component for our Butler run.
-	prefix, annoName := flags.AnnotationAddr.Path.Split()
+	prefix, annoName := flags.AnnotationURL.Path.Split()
 	// Determine our base path and annotation subpath.
 	basePath, annoSubpath := annoName.Split()
 
 	// Augment our environment with Butler parameters.
 	bsEnv := bootstrap.Environment{
-		Project:         flags.AnnotationAddr.Project,
+		Project:         flags.AnnotationURL.Project,
 		Prefix:          prefix,
 		StreamServerURI: streamServer.Address(),
-		CoordinatorHost: flags.AnnotationAddr.Host,
+		CoordinatorHost: flags.AnnotationURL.Host,
 	}
 	bsEnv.Augment(env)
 
@@ -158,8 +158,8 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 		ocfg := out.Config{
 			Auth:    authenticator,
-			Host:    flags.AnnotationAddr.Host,
-			Project: flags.AnnotationAddr.Project,
+			Host:    flags.AnnotationURL.Host,
+			Project: flags.AnnotationURL.Project,
 			Prefix:  prefix,
 			SourceInfo: []string{
 				"Kitchen",
@@ -183,7 +183,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 	butlerCfg := butler.Config{
 		Output:       o,
-		Project:      flags.AnnotationAddr.Project,
+		Project:      flags.AnnotationURL.Project,
 		Prefix:       prefix,
 		BufferLogs:   true,
 		MaxBufferAge: butler.DefaultMaxBufferAge,
@@ -273,8 +273,8 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	}
 	if c.mode.shouldEmitLogDogLinks() {
 		annoteeOpts.LinkGenerator = &annotee.CoordinatorLinkGenerator{
-			Host:    flags.AnnotationAddr.Host,
-			Project: flags.AnnotationAddr.Project,
+			Host:    flags.AnnotationURL.Host,
+			Project: flags.AnnotationURL.Project,
 			Prefix:  prefix,
 		}
 	}
