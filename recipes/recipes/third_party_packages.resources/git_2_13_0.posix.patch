@@ -1,0 +1,66 @@
+From c7342f16c502f9c3cbf061d1e9ba0885d5114a3d Mon Sep 17 00:00:00 2001
+From: Dan Jacques <dnj@chromium.org>
+Date: Tue, 23 May 2017 13:08:33 -0700
+Subject: [PATCH] Enable RUNTIME_PREFIX on Linux/Mac.
+
+---
+ exec_cmd.c | 37 +++++++++++++++++++++++++++++++++++--
+ 1 file changed, 35 insertions(+), 2 deletions(-)
+
+diff --git a/exec_cmd.c b/exec_cmd.c
+index fb94aeba9..a57d1ffd4 100644
+--- a/exec_cmd.c
++++ b/exec_cmd.c
+@@ -41,14 +41,47 @@ char *system_path(const char *path)
+ void git_extract_argv0_path(const char *argv0)
+ {
+ 	const char *slash;
++	char *resolved;
+ 
+ 	if (!argv0 || !*argv0)
+ 		return;
+ 
+ 	slash = find_last_dir_sep(argv0);
+ 
+-	if (slash)
+-		argv0_path = xstrndup(argv0, slash - argv0);
++	if (slash) {
++		resolved = xstrndup(argv0, slash - argv0);
++		if (is_absolute_path(resolved)) {
++			argv0_path = resolved;
++		} else {
++			argv0_path = absolute_pathdup(resolved);
++			free(resolved);
++		}
++	}
++	else {
++		/*
++		 * If argv[0] was not an absolute path, but we have an exec path, use that
++		 * as the argv[0] directory. This effectively pretends that Git tools are
++		 * running out of the "//libexec/git-core" directory.
++		 */
++		argv0_path = getenv(EXEC_PATH_ENVIRONMENT);
++	}
++	trace_printf("Determined argv0 path: %s\n", argv0_path);
++
++	/*
++	 * After calculating argv0, we want to export it to our sub-tooling so that it
++	 * is consistent. This is done automatically when it is specified via
++	 * --exec-path, but not for normal invocation.
++	 *
++	 * Our tooling (e.g., "git-remote-http") is called with a manufactured "argv0"
++	 * containing only its name, so path-relative lookup is not functional.
++	 *
++	 * "git_set_argv_exec_path" is called after this function, so if the user
++	 * specifies an overriding path, it will still be the path that is exported.
++	 */
++	const char *exec_path = git_exec_path();
++	if (exec_path) {
++		setenv(EXEC_PATH_ENVIRONMENT, exec_path, 1);
++	}
+ }
+ 
+ void git_set_argv_exec_path(const char *exec_path)
+-- 
+2.13.0.219.gdb65acc882-goog
+
