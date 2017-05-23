@@ -40,11 +40,13 @@ func (m *memcacheReader) Build(ctx context.Context, master *messages.MasterLocat
 			// FIXME: Maybe don't use json for serialization format.
 			data, err := json.Marshal(res)
 			if err != nil {
-				logging.Warningf(ctx, "failed to serialize build data, when saving to memcache: %s", err)
+				logging.Errorf(ctx, "failed to serialize build data, when saving to memcache: %s", err)
+				return res, nil
 			}
 			itm.SetValue(data)
 			if err = memcache.Set(ctx, itm); err != nil {
-				logging.Warningf(ctx, "failed to save build data to memcache: %s", err)
+				logging.Errorf(ctx, "failed to save build data to memcache: %s (%d bytes)", err, len(data))
+				return res, nil
 			}
 		} else {
 			logging.Debugf(ctx, "not caching %s in memcache, as it's still pending", key)
@@ -54,7 +56,7 @@ func (m *memcacheReader) Build(ctx context.Context, master *messages.MasterLocat
 
 	dec := &messages.Build{}
 	if err = json.Unmarshal(itm.Value(), dec); err != nil {
-		return nil, fmt.Errorf("failed to decode data in memcache (data probably corrupt). key %s err %s", key, err)
+		return nil, fmt.Errorf("failed to decode data in memcache (data probably corrupt: %d bytes). key %s err %s", len(itm.Value()), key, err)
 	}
 
 	return dec, nil
