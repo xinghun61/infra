@@ -149,13 +149,13 @@
       "search",
       "infra/git/linux-386",
       "-tag",
-      "version:2.12.2.2.chromium3",
+      "version:2.12.2.2.chromium4",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/linux-386 version:2.12.2.2.chromium3",
+    "name": "git.cipd search infra/git/linux-386 version:2.12.2.2.chromium4",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -237,6 +237,19 @@
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
     "name": "git.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "apply",
+      "RECIPE[infra::third_party_packages].resources/git_2_13_0.posix.patch"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.git apply",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -491,11 +504,12 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport os\nimport sys\n\npath = sys.argv[1]\nwith open(path, 'r') as fd:\n  content = fd.read()\nwith open(path, 'w') as fd:\n  for line in content.splitlines():\n    if line.strip() == 'EXTLIBS =':\n      line = 'EXTLIBS = -lssl -lcrypto -lz -lpthread -ldl'\n    fd.write(line)\n    fd.write('\\n')\n",
-      "[START_DIR]/git/checkout/Makefile"
+      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RUNTIME_PREFIX = YesPlease\ngitexecdir = libexec/git-core\ntemplate_dir = share/git-core/templates\nsysconfdir = etc\nEXTLIBS = -lssl -lcrypto -lz -lpthread -ldl",
+      "[START_DIR]/git/checkout/config.mak"
     ],
     "cwd": "[START_DIR]/git/checkout",
-    "name": "git.update Makefile",
+    "name": "git.Makefile specialization",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -507,8 +521,9 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
+      "CFLAGS": "-flto",
       "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
-      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib",
+      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib -flto",
       "LIBS": "-lssl -lcrypto -lz -lpthread -ldl",
       "NO_INSTALL_HARDLINKS": "VAR_PRESENT",
       "PATH": "[START_DIR]/_support/prefix/bin:%(PATH)s"
@@ -526,8 +541,9 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
+      "CFLAGS": "-flto",
       "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
-      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib",
+      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib -flto",
       "LIBS": "-lssl -lcrypto -lz -lpthread -ldl",
       "NO_INSTALL_HARDLINKS": "VAR_PRESENT",
       "PATH": "[START_DIR]/_support/prefix/bin:%(PATH)s"
@@ -583,7 +599,7 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
       "-tag",
-      "version:2.12.2.2.chromium3"
+      "version:2.12.2.2.chromium4"
     ],
     "name": "git.register infra/git/linux-386",
     "~followup_annotations": [

@@ -484,8 +484,9 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
+      "CFLAGS": "-flto",
       "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
-      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib",
+      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib -flto",
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
       "ac_cv_func_clock_gettime": "n",
       "ac_cv_func_getentropy": "n"
@@ -623,13 +624,13 @@
       "search",
       "infra/git/mac-amd64",
       "-tag",
-      "version:2.12.2.2.chromium3",
+      "version:2.12.2.2.chromium4",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/mac-amd64 version:2.12.2.2.chromium3",
+    "name": "git.cipd search infra/git/mac-amd64 version:2.12.2.2.chromium4",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",

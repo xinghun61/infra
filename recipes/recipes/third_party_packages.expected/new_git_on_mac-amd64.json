@@ -155,13 +155,13 @@
       "search",
       "infra/git/mac-amd64",
       "-tag",
-      "version:2.12.2.2.chromium3",
+      "version:2.12.2.2.chromium4",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/mac-amd64 version:2.12.2.2.chromium3",
+    "name": "git.cipd search infra/git/mac-amd64 version:2.12.2.2.chromium4",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -243,6 +243,19 @@
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
     "name": "git.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "apply",
+      "RECIPE[infra::third_party_packages].resources/git_2_13_0.posix.patch"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "git.git apply",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -429,13 +442,28 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RUNTIME_PREFIX = YesPlease\ngitexecdir = libexec/git-core\ntemplate_dir = share/git-core/templates\nsysconfdir = etc",
+      "[START_DIR]/git/checkout/config.mak"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.Makefile specialization",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
       "make",
       "configure"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
+      "CFLAGS": "-flto",
       "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
-      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib -framework Foundation -framework Security [START_DIR]/_support/prefix/lib/libz.a [START_DIR]/_support/prefix/lib/libcurl.a",
+      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib -flto -framework Foundation -framework Security [START_DIR]/_support/prefix/lib/libz.a [START_DIR]/_support/prefix/lib/libcurl.a",
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
       "NO_INSTALL_HARDLINKS": "VAR_PRESENT",
       "PATH": "[START_DIR]/_support/prefix/bin:%(PATH)s",
@@ -455,8 +483,9 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
+      "CFLAGS": "-flto",
       "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
-      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib -framework Foundation -framework Security [START_DIR]/_support/prefix/lib/libz.a [START_DIR]/_support/prefix/lib/libcurl.a",
+      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib -flto -framework Foundation -framework Security [START_DIR]/_support/prefix/lib/libz.a [START_DIR]/_support/prefix/lib/libcurl.a",
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
       "NO_INSTALL_HARDLINKS": "VAR_PRESENT",
       "PATH": "[START_DIR]/_support/prefix/bin:%(PATH)s",
@@ -514,7 +543,7 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
       "-tag",
-      "version:2.12.2.2.chromium3"
+      "version:2.12.2.2.chromium4"
     ],
     "name": "git.register infra/git/mac-amd64",
     "~followup_annotations": [

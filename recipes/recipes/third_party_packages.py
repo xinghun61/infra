@@ -47,7 +47,7 @@ GIT_FOR_WINDOWS_ASSET_RES = {
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-GIT_PACKAGE_VERSION_SUFFIX = '.chromium3'
+GIT_PACKAGE_VERSION_SUFFIX = '.chromium4'
 
 
 def RunSteps(api):
@@ -206,7 +206,7 @@ def PackagePythonForUnix(api, support):
   workdir = api.path['start_dir'].join('python')
   api.file.rmtree('rmtree workdir', workdir)
 
-  def install(target_dir):
+  def install(target_dir, _tag):
     # Some systems (e.g., Mac OSX) don't actually offer these libraries by
     # default, or have incorrect or inconsistent library versions. We explicitly
     # install and use controlled versions of these libraries for a more
@@ -222,13 +222,18 @@ def PackagePythonForUnix(api, support):
     cppflags = [
       '-I%s' % (support_include,),
     ]
+    cflags = [
+      '-flto',
+    ]
     ldflags = [
       '-L%s' % (support_lib,),
+      '-flto',
     ]
 
     configure_env = {
       'CPPFLAGS': ' '.join(cppflags),
-      'LDFLAGS':  ' '.join(ldflags)
+      'CFLAGS':  ' '.join(cflags),
+      'LDFLAGS':  ' '.join(ldflags),
     }
     configure_flags = [
       '--disable-shared',
@@ -313,7 +318,11 @@ def PackageGit(api, support):
 def PackageGitForUnix(api, workdir, support):
   """Builds Git on Unix and uploads it to a CIPD server."""
 
-  def install(target_dir):
+  def install(target_dir, _tag):
+    # Apply any applicable patches.
+    patch = api.resource('git_2_13_0.posix.patch')
+    api.git('apply', patch)
+
     support.ensure_curl(api)
     support.ensure_zlib(api)
 
@@ -339,8 +348,26 @@ def PackageGitForUnix(api, workdir, support):
     cppflags = [
         '-I%s' % (str(support_include,)),
     ]
+    cflags = [
+        '-flto',
+    ]
     ldflags = [
         '-L%s' % (str(support_lib,)),
+        '-flto',
+    ]
+
+    # Override the autoconfig / system Makefile entries with custom ones.
+    custom_make_entries = [
+      # "RUNTIME_PREFIX" is a Windows-only feature that allows Git to probe for
+      # its runtime path relative to its base path.
+      #
+      # Our Git patch (see resources) extends this support to Linux and Mac.
+      #
+      # These variables configure Git to enable and use relative runtime paths.
+      'RUNTIME_PREFIX = YesPlease',
+      'gitexecdir = libexec/git-core', 
+      'template_dir = share/git-core/templates', 
+      'sysconfdir = etc',
     ]
 
     if api.platform.is_linux:
@@ -355,30 +382,12 @@ def PackageGitForUnix(api, workdir, support):
         'ssl', 'crypto', 'z', 'pthread', 'dl',
       )])
 
-      api.python.inline(
-          'update Makefile',
-          r"""
-import os
-import sys
-
-path = sys.argv[1]
-with open(path, 'r') as fd:
-  content = fd.read()
-with open(path, 'w') as fd:
-  for line in content.splitlines():
-    if line.strip() == 'EXTLIBS =':
-      line = 'EXTLIBS = %(extra_libs)s'
-    fd.write(line)
-    fd.write('\n')
-          """ % {'extra_libs': extra_libs},
-          add_python_log=False,
-          args=[
-              api.context.cwd.join('Makefile'),
-          ],
-      )
-
-      # autoconf needs these flags to properly detect the build environment.
+      # autoconf and make needs these flags to properly detect the build
+      # environment.
       env['LIBS'] = extra_libs
+      custom_make_entries += [
+          'EXTLIBS = %s' % (extra_libs,),
+      ]
     elif api.platform.is_mac:
       env['MACOSX_DEPLOYMENT_TARGET'] = '10.6'
       support.update_mac_autoconf(env)
@@ -394,7 +403,16 @@ with open(path, 'w') as fd:
       )]
 
     env['CPPFLAGS'] = ' '.join(cppflags)
+    env['CFLAGS'] = ' '.join(cflags)
     env['LDFLAGS'] = ' '.join(ldflags)
+
+    # Write our custom make entries. The "config.mak" file gets loaded AFTER
+    # all the default, automatic (configure), and uname (system) entries get
+    # processed, so these are final overrides.
+    api.shutil.write(
+        'Makefile specialization',
+        api.context.cwd.join('config.mak'),
+        '\n'.join(custom_make_entries + []))
 
     with api.context(env=env):
       api.step('make configure', ['make', 'configure'])
@@ -571,8 +589,9 @@ def EnsurePackage(
   api.git.checkout(
       repo_url, ref='refs/tags/' + tag, dir_path=checkout_dir,
       submodules=False)
+
   with api.context(cwd=checkout_dir):
-    install(package_dir)
+    install(package_dir, tag)
 
   CreatePackage(api, package_name, workdir, package_dir, version)
 
