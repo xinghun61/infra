@@ -270,7 +270,6 @@ class Servlet(webapp2.RequestHandler):
           browser_major_version = int(ua['browser']['version'].split('.')[0])
         except ValueError:
           logging.warn('Could not parse version: %r', ua['browser']['version'])
-      csp_supports_nonce = browser in ('Chrome', 'Firefox')
       csp_supports_report_sample = (
         (browser == 'Chrome' and browser_major_version >= 59) or
         (browser == 'Opera' and browser_major_version >= 46))
@@ -281,7 +280,7 @@ class Servlet(webapp2.RequestHandler):
             " 'unsafe-inline'"  # Only counts in browsers that lack CSP2.
             " 'strict-dynamic'"  # Allows <script nonce> to load more.
             " https://www.gstatic.com/recaptcha/api2/"
-            " %(csp_self)s 'nonce-%(nonce)s'; "
+            " 'self' 'nonce-%(nonce)s'; "
             "child-src https://www.google.com/recaptcha/; "
             "frame-src https://www.google.com/recaptcha/; "
             "img-src %(scheme)s data: blob: ; "
@@ -291,7 +290,6 @@ class Servlet(webapp2.RequestHandler):
             "report-uri /csp.do" % {
             'nonce': nonce,
             'scheme': csp_scheme,
-            'csp_self': '' if csp_supports_nonce else "'self'",
             'rep_samp': "'report-sample'" if csp_supports_report_sample else '',
             }))
 
