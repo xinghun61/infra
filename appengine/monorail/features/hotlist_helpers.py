@@ -6,6 +6,7 @@
 """Helper functions and classes used by the hotlist pages."""
 
 import logging
+import collections
 
 from features import features_constants
 from framework import framework_views
@@ -20,6 +21,10 @@ from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
 from tracker import tablecell
+
+
+# Type to hold a HotlistRef
+HotlistRef = collections.namedtuple('HotlistRef', 'user_id, hotlist_name')
 
 
 def GetSortedHotlistIssues(
@@ -296,3 +301,107 @@ def RemoveHotlist(cnxn, hotlist_id, services):
   services.hotlist_star.ExpungeStars(cnxn, hotlist_id)
   services.user.DeleteHotlistFromHistory(cnxn, hotlist_id)
   services.features.DeleteHotlist(cnxn, hotlist_id)
+
+
+# The following are used by issueentry.
+
+def InvalidParsedHotlistRefsNames(parsed_hotlist_refs, user_hotlist_pbs):
+  """Find and return all names without a corresponding hotlist so named.
+
+  Args:
+    parsed_hotlist_refs: a list of ParsedHotlistRef objects
+    user_hotlist_pbs: the hotlist protobuf objects of all hotlists
+      belonging to the user
+
+  Returns:
+    a list of invalid names; if none are found, the empty list
+  """
+  user_hotlist_names = {hotlist.name for hotlist in user_hotlist_pbs}
+  invalid_names = list()
+  for parsed_ref in parsed_hotlist_refs:
+    if parsed_ref.hotlist_name not in user_hotlist_names:
+      invalid_names.append(parsed_ref.hotlist_name)
+  return invalid_names
+
+
+def AmbiguousShortrefHotlistNames(short_refs, user_hotlist_pbs):
+  """Find and return ambiguous hotlist shortrefs' hotlist names.
+
+  A hotlist shortref is ambiguous iff there exists more than
+  hotlist with that name in the user's hotlists.
+
+  Args:
+    short_refs: a list of ParsedHotlistRef object specifying only
+      a hotlist name (user_email being none)
+    user_hotlist_pbs: the hotlist protobuf objects of all hotlists
+      belonging to the user
+
+  Returns:
+    a list of ambiguous hotlist names; if none are found, the empty list
+  """
+  ambiguous_names = set()
+  seen = set()
+  for hotlist in user_hotlist_pbs:
+    if hotlist.name in seen:
+      ambiguous_names.add(hotlist.name)
+    seen.add(hotlist.name)
+  ambiguous_from_refs = list()
+  for ref in short_refs:
+    if ref.hotlist_name in ambiguous_names:
+      ambiguous_from_refs.append(ref.hotlist_name)
+  return ambiguous_from_refs
+
+
+def InvalidParsedHotlistRefsEmails(full_refs, user_hotlist_emails_to_owners):
+  """Find and return invalid e-mails in hotlist full refs.
+
+  Args:
+    full_refs: a list of ParsedHotlistRef object specifying both
+      user_email and hotlist_name
+    user_hotlist_emails_to_owners: a dictionary having for its keys only
+      the e-mails of the owners of the hotlists the user had edit permission
+      over. (Could also be a set containing these e-mails.)
+
+  Returns:
+    A list of invalid e-mails; if none are found, the empty list.
+  """
+  parsed_emails = [pref.user_email for pref in full_refs]
+  invalid_emails = list()
+  for email in parsed_emails:
+    if email not in user_hotlist_emails_to_owners:
+      invalid_emails.append(email)
+  return invalid_emails
+
+
+def GetHotlistsOfParsedHotlistFullRefs(
+    full_refs, user_hotlist_emails_to_owners, user_hotlist_refs_to_pbs):
+  """Check that all full refs are valid.
+
+  A ref is 'invalid' if it doesn't specify one of the user's hotlists.
+
+  Args:
+    full_refs: a list of ParsedHotlistRef object specifying both
+      user_email and hotlist_name
+    user_hotlist_emails_to_owners: a dictionary having for its keys only
+      the e-mails of the owners of the hotlists the user had edit permission
+      over.
+    user_hotlist_refs_to_pbs: a dictionary mapping HotlistRefs
+      (owner_id, hotlist_name) to the corresponding hotlist protobuf object for
+      the user's hotlists
+
+  Returns:
+    A two-tuple: (list of valid refs' corresponding hotlist protobuf objects,
+                  list of invalid refs)
+
+  """
+  invalid_refs = list()
+  valid_pbs = list()
+  for parsed_ref in full_refs:
+    hotlist_ref = HotlistRef(
+        user_hotlist_emails_to_owners[parsed_ref.user_email],
+        parsed_ref.hotlist_name)
+    if hotlist_ref not in user_hotlist_refs_to_pbs:
+      invalid_refs.append(parsed_ref)
+    else:
+      valid_pbs.append(user_hotlist_refs_to_pbs[hotlist_ref])
+  return valid_pbs, invalid_refs

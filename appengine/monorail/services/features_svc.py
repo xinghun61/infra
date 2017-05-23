@@ -565,6 +565,16 @@ class FeaturesService(object):
     if default_col_spec is not None:
       hotlist.default_col_spec = default_col_spec
 
+  def AddIssueToHotlists(self, cnxn, hotlist_ids, issue_tuple, commit=True):
+    """Add a single issue, specified in the issue_tuple, to the given hotlists.
+
+    Args:
+      cnxn: connection to SQL database.
+      hotlist_ids: a list of hotlist_ids to add the issues
+      issue_tuple: (issue_id, user_id, ts, note) of the issue to be added
+    """
+    self.AddIssuesToHotlists(cnxn, hotlist_ids, [issue_tuple], commit=commit)
+
   def AddIssuesToHotlists(self, cnxn, hotlist_ids, added_tuples, commit=True):
     """Add the issues given in the added_tuples list to the given hotlists.
 

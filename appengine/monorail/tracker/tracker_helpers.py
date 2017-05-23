@@ -88,10 +88,14 @@ ParsedUsers = collections.namedtuple(
     'cc_usernames_remove, cc_ids, cc_ids_remove')
 ParsedBlockers = collections.namedtuple(
     'ParsedBlockers', 'entered_str, iids, dangling_refs')
+ParsedHotlistRef = collections.namedtuple(
+    'ParsedHotlistRef', 'user_email, hotlist_name')
+ParsedHotlists = collections.namedtuple(
+    'ParsedHotlists', 'entered_str, hotlist_refs')
 ParsedIssue = collections.namedtuple(
     'ParsedIssue', 'summary, comment, is_description, status, users, labels, '
     'labels_remove, components, fields, template_name, attachments, '
-    'kept_attachments, blocked_on, blocking')
+    'kept_attachments, blocked_on, blocking, hotlists')
 
 
 def ParseIssueRequest(cnxn, post_data, services, errors, default_project_name):
@@ -131,11 +135,13 @@ def ParseIssueRequest(cnxn, post_data, services, errors, default_project_name):
       cnxn, post_data, services, errors, default_project_name, BLOCKED_ON)
   parsed_blocking = _ParseBlockers(
       cnxn, post_data, services, errors, default_project_name, BLOCKING)
+  parsed_hotlists = _ParseHotlists(post_data)
 
   parsed_issue = ParsedIssue(
       summary, comment, is_description, status, parsed_users, labels,
       labels_remove, parsed_components, parsed_fields, template_name,
-      attachments, kept_attachments, parsed_blocked_on, parsed_blocking)
+      attachments, kept_attachments, parsed_blocked_on, parsed_blocking,
+      parsed_hotlists)
   return parsed_issue
 
 
@@ -145,6 +151,26 @@ def _ClassifyPlusMinusItems(add_remove_list):
   add_strs = [s for s in add_remove_set if s and not s.startswith('-')]
   remove_strs = [s[1:] for s in add_remove_set if s[1:] and s.startswith('-')]
   return add_strs, remove_strs
+
+
+def _ParseHotlists(post_data):
+  entered_str = post_data.get('hotlists', '').strip()
+  hotlist_refs = []
+  for ref_str in re.split('[,;\s]+', entered_str):
+    if not ref_str:
+      continue
+    if ':' in ref_str:
+      if ref_str.split(':')[0]:
+        # E-mail isn't empty; full reference.
+        hotlist_refs.append(ParsedHotlistRef(*ref_str.split(':', 1)))
+      else:
+        # Short reference.
+        hotlist_refs.append(ParsedHotlistRef(None, ref_str.split(':', 1)[1]))
+    else:
+      # Short reference
+      hotlist_refs.append(ParsedHotlistRef(None, ref_str))
+  parsed_hotlists = ParsedHotlists(entered_str, hotlist_refs)
+  return parsed_hotlists
 
 
 def _ParseIssueRequestFields(post_data):

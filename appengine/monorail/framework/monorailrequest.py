@@ -510,6 +510,7 @@ class MonorailRequest(object):
         'initial_blocking': self.GetParam('blocking'),
         'initial_merge_into': self.GetIntParam('mergeinto'),
         'initial_components': self.GetParam('components'),
+        'initial_hotlists': self.GetParam('hotlists'),
 
         # For the people pages
         'initial_add_members': self.GetParam('add_members'),

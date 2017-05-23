@@ -9,8 +9,8 @@ import difflib
 import logging
 import string
 import time
-from third_party import ezt
 
+from features import hotlist_helpers
 from features import notify
 from framework import actionlimit
 from framework import framework_bizobj
@@ -21,11 +21,13 @@ from framework import permissions
 from framework import servlet
 from framework import template_helpers
 from framework import urls
+from third_party import ezt
 from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
 from tracker import tracker_views
+
 
 PLACEHOLDER_SUMMARY = 'Enter one-line summary'
 
@@ -162,6 +164,7 @@ class IssueEntry(servlet.Servlet):
         'initial_cc': '',
         'initial_blocked_on': '',
         'initial_blocking': '',
+        'initial_hotlists': '',
         'labels': labels,
         'fields': field_views,
 
@@ -258,6 +261,9 @@ class IssueEntry(servlet.Servlet):
     field_helpers.ValidateCustomFields(
         mr, self.services, field_values, config, mr.errors)
 
+    hotlist_pbs = ProcessParsedHotlistRefs(
+        mr, self.services, parsed.hotlists.hotlist_refs)
+
     new_local_id = None
 
     if not mr.errors.AnyErrors():
@@ -294,6 +300,12 @@ class IssueEntry(servlet.Servlet):
           self.services.issue_star.SetStar(
               mr.cnxn, self.services, config, issue.issue_id, reporter_id, True)
 
+        if hotlist_pbs:
+          hotlist_ids = [hotlist.hotlist_id for hotlist in hotlist_pbs]
+          issue_tuple = (issue.issue_id, mr.auth.user_id, int(time.time()), '')
+          self.services.features.AddIssueToHotlists(
+              mr.cnxn, hotlist_ids, issue_tuple)
+
       except tracker_helpers.OverAttachmentQuota:
         mr.errors.attachments = 'Project attachment quota exceeded.'
 
@@ -315,6 +327,7 @@ class IssueEntry(servlet.Servlet):
           fields=bounce_fields,
           initial_blocked_on=parsed.blocked_on.entered_str,
           initial_blocking=parsed.blocking.entered_str,
+          initial_hotlists=parsed.hotlists.entered_str,
           component_required=ezt.boolean(component_required))
       return
 
@@ -432,3 +445,86 @@ def _SelectTemplate(requested_template_name, config, is_member):
 
   # If it was not found, just go with a template that we know exists.
   return config.templates[0]
+
+
+def ProcessParsedHotlistRefs(mr, services, parsed_hotlist_refs):
+  """Process a list of ParsedHotlistRefs, returning referenced hotlists.
+
+  This function validates the given ParsedHotlistRefs using four checks; if all
+  of them succeed, then it returns the corresponding hotlist protobuf objects.
+  If any of them fail, it sets the appropriate error string in mr.errors, and
+  returns an empty list.
+
+  Args:
+    mr: the MonorailRequest object
+    services: the service manager
+    parsed_hotlist_refs: a list of ParsedHotlistRef objects
+
+  Returns:
+    on valid input, a list of hotlist protobuf objects
+    if a check fails (and the input is thus considered invalid), an empty list
+
+  Side-effects:
+    if any of the checks fails, set mr.errors.hotlists to a descriptive error
+  """
+  # Pre-processing; common pieces used by functions later.
+  user_hotlist_pbs = services.features.GetHotlistsByUserID(
+      mr.cnxn, mr.auth.user_id)
+  user_hotlist_owners_ids = {hotlist.owner_ids[0]
+      for hotlist in user_hotlist_pbs}
+  user_hotlist_owners_to_emails = services.user.LookupUserEmails(
+      mr.cnxn, user_hotlist_owners_ids)
+  user_hotlist_emails_to_owners = {v: k
+      for k, v in user_hotlist_owners_to_emails.iteritems()}
+  user_hotlist_refs_to_pbs = {
+      hotlist_helpers.HotlistRef(hotlist.owner_ids[0], hotlist.name): hotlist
+      for hotlist in user_hotlist_pbs }
+  short_refs = list()
+  full_refs = list()
+  for parsed_ref in parsed_hotlist_refs:
+    if parsed_ref.user_email is None:
+      short_refs.append(parsed_ref)
+    else:
+      full_refs.append(parsed_ref)
+
+  invalid_names = hotlist_helpers.InvalidParsedHotlistRefsNames(
+      parsed_hotlist_refs, user_hotlist_pbs)
+  if invalid_names:
+    mr.errors.hotlists = (
+        'You have no hotlist(s) named: %s' % ', '.join(invalid_names))
+    return []
+
+  ambiguous_names = hotlist_helpers.AmbiguousShortrefHotlistNames(
+      short_refs, user_hotlist_pbs)
+  if ambiguous_names:
+    mr.errors.hotlists = (
+        'Ambiguous hotlist(s) specified: %s' % ', '.join(ambiguous_names))
+    return []
+
+  # At this point, all refs' named hotlists are guaranteed to exist, and
+  # short refs are guaranteed to be unambiguous;
+  # therefore, short refs are also valid.
+  short_refs_hotlist_names = {sref.hotlist_name for sref in short_refs}
+  shortref_valid_pbs = [hotlist for hotlist in user_hotlist_pbs
+      if hotlist.name in short_refs_hotlist_names]
+
+  invalid_emails = hotlist_helpers.InvalidParsedHotlistRefsEmails(
+      full_refs, user_hotlist_emails_to_owners)
+  if invalid_emails:
+    mr.errors.hotlists = (
+        'You have no hotlist(s) owned by: %s' % ', '.join(invalid_emails))
+    return []
+
+  fullref_valid_pbs, invalid_refs = (
+      hotlist_helpers.GetHotlistsOfParsedHotlistFullRefs(
+        full_refs, user_hotlist_emails_to_owners, user_hotlist_refs_to_pbs))
+  if invalid_refs:
+    invalid_refs_readable = [':'.join(parsed_ref)
+        for parsed_ref in invalid_refs]
+    mr.errors.hotlists = (
+        'Not in your hotlist(s): %s' % ', '.join(invalid_refs_readable))
+    return []
+
+  hotlist_pbs = shortref_valid_pbs + fullref_valid_pbs
+
+  return hotlist_pbs

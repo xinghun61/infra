@@ -31,12 +31,38 @@ class IssueEntryTest(unittest.TestCase):
         config=fake.ConfigService(),
         issue=fake.IssueService(),
         user=fake.UserService(),
-        project=fake.ProjectService())
+        project=fake.ProjectService(),
+        features=fake.FeaturesService())
     self.project = self.services.project.TestAddProject('proj', project_id=987)
     request = webapp2.Request.blank('/p/proj/issues/entry')
     response = webapp2.Response()
     self.servlet = issueentry.IssueEntry(
         request, response, services=self.services)
+    self.user = self.services.user.TestAddUser('to_pass_tests', 0L)
+    self.services.features.TestAddHotlist(
+        name='dontcare', summary='', owner_ids=[0L])
+
+    # Set-up for testing hotlist parsing.
+    # Scenario:
+    #   Users: U1, U2, and U3
+    #   Hotlists:
+    #     H1: owned by U1 (private)
+    #     H2: owned by U2, can be edited by U1 (private)
+    #     H2: owned by U3, can be edited by U1 and U2 (public)
+    self.cnxn = fake.MonorailConnection()
+    self.U1 = self.services.user.TestAddUser('U1', 111L)
+    self.U2 = self.services.user.TestAddUser('U2', 222L)
+    self.U3 = self.services.user.TestAddUser('U3', 333L)
+
+    self.H1 = self.services.features.TestAddHotlist(
+        name='H1', summary='', owner_ids=[111L], is_private=True)
+    self.H2 = self.services.features.TestAddHotlist(
+        name='H2', summary='', owner_ids=[222L], editor_ids=[111L],
+        is_private=True)
+    self.H2_U3 = self.services.features.TestAddHotlist(
+        name='H2', summary='', owner_ids=[333L], editor_ids=[111L, 222L],
+        is_private=False)
+
     self.mox = mox.Mox()
 
   def tearDown(self):
@@ -184,7 +210,8 @@ class IssueEntryTest(unittest.TestCase):
         mr, component_required=None, fields=[], initial_blocked_on='',
         initial_blocking='', initial_cc='', initial_comment='fake comment',
         initial_components='', initial_owner='', initial_status='New',
-        initial_summary='Enter one-line summary', labels=[])
+        initial_summary='Enter one-line summary', initial_hotlists='',
+        labels=[])
     self.mox.ReplayAll()
 
     url = self.servlet.ProcessFormData(mr, post_data)
@@ -196,7 +223,6 @@ class IssueEntryTest(unittest.TestCase):
     mr = testing_helpers.MakeMonorailRequest(
         path='/p/proj/issues/entry')
     mr.auth.user_view = framework_views.StuffUserView(100, 'user@invalid', True)
-    mr.perms = permissions.EMPTY_PERMISSIONSET
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     template = config.templates[0]
     post_data = fake.PostData(
@@ -209,14 +235,14 @@ class IssueEntryTest(unittest.TestCase):
         mr, component_required=None, fields=[], initial_blocked_on='',
         initial_blocking='', initial_cc='', initial_comment=template.content,
         initial_components='', initial_owner='', initial_status='New',
-        initial_summary='Nya nya I modified the summary', labels=[])
+        initial_summary='Nya nya I modified the summary', initial_hotlists='',
+        labels=[])
     self.mox.ReplayAll()
 
     url = self.servlet.ProcessFormData(mr, post_data)
     self.mox.VerifyAll()
     self.assertEqual('Template must be filled out.', mr.errors.comment)
     self.assertIsNone(url)
-
 
   def test_SelectTemplate(self):
     mr = testing_helpers.MakeMonorailRequest(
@@ -228,3 +254,58 @@ class IssueEntryTest(unittest.TestCase):
 
     templ = issueentry._SelectTemplate(None, config, True)
     self.assertEquals('Defect report from developer', templ.name)
+
+  def testProcessFormData_RejectNonexistentHotlist(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', user_info={'user_id': 111L})
+    entered_hotlists = 'H3'
+    post_data = fake.PostData(hotlists=[entered_hotlists])
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        mr, component_required=None, fields=[], initial_blocked_on='',
+        initial_blocking='', initial_cc='', initial_comment='',
+        initial_components='', initial_owner='', initial_status='',
+        initial_summary='', initial_hotlists=entered_hotlists, labels=[])
+    self.mox.ReplayAll()
+    url = self.servlet.ProcessFormData(mr, post_data)
+    self.mox.VerifyAll()
+    self.assertEqual('You have no hotlist(s) named: H3', mr.errors.hotlists)
+    self.assertIsNone(url)
+
+  def testProcessFormData_RejectNonexistentHotlistOwner(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', user_info={'user_id': 111L})
+    entered_hotlists = 'abc:H1'
+    post_data = fake.PostData(hotlists=[entered_hotlists])
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        mr, component_required=None, fields=[], initial_blocked_on='',
+        initial_blocking='', initial_cc='', initial_comment='',
+        initial_components='', initial_owner='', initial_status='',
+        initial_summary='', initial_hotlists=entered_hotlists, labels=[])
+    self.mox.ReplayAll()
+    url = self.servlet.ProcessFormData(mr, post_data)
+    self.mox.VerifyAll()
+    self.assertEqual('You have no hotlist(s) owned by: abc', mr.errors.hotlists)
+    self.assertIsNone(url)
+
+  def testProcessFormData_RejectInvalidHotlistName(self):
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/p/proj/issues/entry', user_info={'user_id': 111L})
+    entered_hotlists = 'U1:H2'
+    post_data = fake.PostData(hotlists=[entered_hotlists])
+    self.mox.StubOutWithMock(self.servlet, 'PleaseCorrect')
+    self.servlet.PleaseCorrect(
+        mr, component_required=None, fields=[], initial_blocked_on='',
+        initial_blocking='', initial_cc='', initial_comment='',
+        initial_components='', initial_owner='', initial_status='',
+        initial_summary='', initial_hotlists=entered_hotlists, labels=[])
+    self.mox.ReplayAll()
+    url = self.servlet.ProcessFormData(mr, post_data)
+    self.mox.VerifyAll()
+    self.assertEqual('Not in your hotlist(s): U1:H2', mr.errors.hotlists)
+    self.assertIsNone(url)
+
+  # TODO(aneeshm): add a test for the ambiguous hotlist name case; it works
+  # correctly when tested locally, but for some reason doesn't in the test
+  # environment. Probably a result of some quirk in fake.py?
