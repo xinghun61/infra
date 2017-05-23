@@ -1444,7 +1444,8 @@ func TestRevRangeHandler(t *testing.T) {
 	t.Parallel()
 
 	Convey("get rev range", t, func() {
-		Convey("ok", func() {
+		// crbug.com/725595 - This test does real network access.
+		SkipConvey("ok", func() {
 			c := gaetesting.TestingContext()
 			c = authtest.MockAuthConfig(c)
 			w := httptest.NewRecorder()
