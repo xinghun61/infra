@@ -1657,6 +1657,31 @@ function onPresubmitResponse(event) {
   $('owner_avail_state').style.display = response.owner_avail_state ? '' : 'none';
   $('owner_avail_state').className = 'availability_' + response.owner_avail_state;
   $('owner_availability').textContent = response.owner_availability;
+
+  var derived_labels = '';
+  var derived_owner_email = '';
+  var derived_cc_emails = '';
+
+  if (response.derived_labels && response.derived_labels.length) {
+    derived_labels = 'Labels: ' + response.derived_labels.join(', ');
+  }
+  if (response.derived_owner_email && response.derived_owner_email.length) {
+    derived_owner_email = 'Owner: ' + response.derived_owner_email;
+  }
+  if (response.derived_cc_emails && response.derived_cc_emails.length) {
+    derived_cc_emails = 'Cc: ' + response.derived_cc_emails.join(', ');
+  }
+  $('preview_filterrules_labels').textContent = derived_labels;
+  $('preview_filterrules_owner').textContent = derived_owner_email;
+  $('preview_filterrules_ccs').textContent = derived_cc_emails;
+
+  if (derived_labels || derived_owner_email || derived_cc_emails) {
+      $('preview_filterrules_area').style.display = '';
+  } else {
+      $('preview_filterrules_area').style.display = 'none';
+  }
+
+  // TODO(jrobbins): display process warnings here.
 }
 
 function HTL_deleteHotlist(form) {

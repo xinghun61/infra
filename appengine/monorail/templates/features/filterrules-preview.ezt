@@ -1,0 +1,7 @@
+<div id="preview_filterrules_area" style="display:none">
+  Filter rules and components will add:
+  <div id="preview_filterrules_labels"></div>
+  <div id="preview_filterrules_owner"></div>
+  <div id="preview_filterrules_ccs"></div>
+  [# TODO(jrobbins): preview process warnings here.]
+</div>

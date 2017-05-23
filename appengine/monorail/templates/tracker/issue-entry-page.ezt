@@ -187,6 +187,8 @@
  </form>
 </div>
 
+[include "../features/filterrules-preview.ezt"]
+
 <div id="helparea"></div>
 
 [include "../framework/footer-script.ezt"]
@@ -292,9 +294,15 @@ runOnLoad(function() {
     }
   }
 
-  if ($("ownerenter")) {
-    $("ownerenter").addEventListener("keyup", debounce(TKR_presubmit, 500));
+  var _elementsToAddPresubmit = document.querySelectorAll(
+      "#create_issue_form input, #create_issue_form select");
+  var debounced_presubmit = debounce(TKR_presubmit, 500);
+  for (var i = 0; i < _elementsToAddPresubmit.length; i++) {
+    var el = _elementsToAddPresubmit[[]i];
+    el.addEventListener("keyup", debounced_presubmit);
+    el.addEventListener("change", debounced_presubmit);
   }
+  debounced_presubmit();
 
   if ($("attachafile")) {
     $("attachafile").addEventListener("click", function(event) {

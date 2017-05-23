@@ -251,6 +251,9 @@
   </table>
   </form>
 
+ [include "../features/filterrules-preview.ezt"]
+
+
  [if-any page_perms.DeleteIssue]
   <form action="delete.do" method="post" id="delete_form">
     <input type="hidden" name="token" value="[delete_form_token]">
@@ -347,9 +350,15 @@ runOnLoad(function() {
     }
   }
 
-  if ($("owneredit")) {
-    $("owneredit").addEventListener("keyup", debounce(TKR_presubmit, 500));
+  var _elementsToAddPresubmit = document.querySelectorAll(
+    "#issue_update_form input, #issue_update_form select");
+  var debounced_presubmit = debounce(TKR_presubmit, 500);
+  for (var i = 0; i < _elementsToAddPresubmit.length; i++) {
+    var el = _elementsToAddPresubmit[[]i];
+    el.addEventListener("keyup", debounced_presubmit);
+    el.addEventListener("change", debounced_presubmit);
   }
+  debounced_presubmit();
 
   _allOrigLabels = [[]
       "[label0]", "[label1]", "[label2]", "[label3]", "[label4]",

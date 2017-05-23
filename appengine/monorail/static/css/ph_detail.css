@@ -486,3 +486,11 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   border-radius: 0.25em;
   background-color: #e3e9ff;
 }
+
+#preview_filterrules_area {
+  color: #430;
+  margin-top: 1em;
+}
+#preview_filterrules_area div {
+  margin-left: 1em;
+}
