@@ -171,9 +171,9 @@
       "cipd",
       "ensure",
       "-root",
-      "[START_DIR]/python/sources",
+      "[START_DIR]/_support/build/sources",
       "-ensure-file",
-      "infra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
+      "infra/third_party/source/autoconf version:2.69\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -188,6 +188,14 @@
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.69----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/autoconf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.54.0--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/curl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0e--\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/openssl\"@@@",
@@ -215,7 +223,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.openssl",
+    "name": "python.openssl-1.1.0e",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -224,28 +232,42 @@
     "cmd": [
       "tar",
       "-xzf",
-      "[START_DIR]/python/sources/openssl-1.1.0e.tar.gz"
+      "[START_DIR]/_support/build/sources/openssl-1.1.0e.tar.gz"
     ],
-    "cwd": "[START_DIR]/python",
+    "cwd": "[START_DIR]/_support/build",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.openssl.extract",
+    "name": "python.openssl-1.1.0e.extract",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
   },
   {
     "cmd": [
-      "[START_DIR]/python/openssl-1.1.0e/Configure",
-      "--prefix=[START_DIR]/python/support_prefix",
+      "./Configure",
+      "--prefix=[START_DIR]/_support/prefix",
+      "no-shared",
       "darwin64-x86_64-cc"
     ],
-    "cwd": "[START_DIR]/python/openssl-1.1.0e",
+    "cwd": "[START_DIR]/_support/build/openssl-1.1.0e",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.openssl.configure",
+    "name": "python.openssl-1.1.0e.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make"
+    ],
+    "cwd": "[START_DIR]/_support/build/openssl-1.1.0e",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "name": "python.openssl-1.1.0e.make",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -255,11 +277,11 @@
       "make",
       "install_sw"
     ],
-    "cwd": "[START_DIR]/python/openssl-1.1.0e",
+    "cwd": "[START_DIR]/_support/build/openssl-1.1.0e",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.openssl.make",
+    "name": "python.openssl-1.1.0e.install",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -279,9 +301,9 @@
     "cmd": [
       "tar",
       "-xzf",
-      "[START_DIR]/python/sources/readline-7.0.tar.gz"
+      "[START_DIR]/_support/build/sources/readline-7.0.tar.gz"
     ],
-    "cwd": "[START_DIR]/python",
+    "cwd": "[START_DIR]/_support/build",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
@@ -292,10 +314,10 @@
   },
   {
     "cmd": [
-      "[START_DIR]/python/readline-7.0/configure",
-      "--prefix=[START_DIR]/python/support_prefix"
+      "./configure",
+      "--prefix=[START_DIR]/_support/prefix"
     ],
-    "cwd": "[START_DIR]/python/readline-7.0",
+    "cwd": "[START_DIR]/_support/build/readline-7.0",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
@@ -309,7 +331,7 @@
       "make",
       "install"
     ],
-    "cwd": "[START_DIR]/python/readline-7.0",
+    "cwd": "[START_DIR]/_support/build/readline-7.0",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
@@ -333,9 +355,9 @@
     "cmd": [
       "tar",
       "-xzf",
-      "[START_DIR]/python/sources/termcap-1.3.1.tar.gz"
+      "[START_DIR]/_support/build/sources/termcap-1.3.1.tar.gz"
     ],
-    "cwd": "[START_DIR]/python",
+    "cwd": "[START_DIR]/_support/build",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
@@ -346,10 +368,10 @@
   },
   {
     "cmd": [
-      "[START_DIR]/python/termcap-1.3.1/configure",
-      "--prefix=[START_DIR]/python/support_prefix"
+      "./configure",
+      "--prefix=[START_DIR]/_support/prefix"
     ],
-    "cwd": "[START_DIR]/python/termcap-1.3.1",
+    "cwd": "[START_DIR]/_support/build/termcap-1.3.1",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
@@ -363,7 +385,7 @@
       "make",
       "install"
     ],
-    "cwd": "[START_DIR]/python/termcap-1.3.1",
+    "cwd": "[START_DIR]/_support/build/termcap-1.3.1",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
@@ -387,9 +409,9 @@
     "cmd": [
       "tar",
       "-xzf",
-      "[START_DIR]/python/sources/zlib-1.2.11.tar.gz"
+      "[START_DIR]/_support/build/sources/zlib-1.2.11.tar.gz"
     ],
-    "cwd": "[START_DIR]/python",
+    "cwd": "[START_DIR]/_support/build",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
@@ -400,10 +422,11 @@
   },
   {
     "cmd": [
-      "[START_DIR]/python/zlib-1.2.11/configure",
-      "--prefix=[START_DIR]/python/support_prefix"
+      "./configure",
+      "--prefix=[START_DIR]/_support/prefix",
+      "--static"
     ],
-    "cwd": "[START_DIR]/python/zlib-1.2.11",
+    "cwd": "[START_DIR]/_support/build/zlib-1.2.11",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
@@ -417,7 +440,7 @@
       "make",
       "install"
     ],
-    "cwd": "[START_DIR]/python/zlib-1.2.11",
+    "cwd": "[START_DIR]/_support/build/zlib-1.2.11",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
@@ -431,7 +454,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "*static*\nSP=[START_DIR]/python/support_prefix\n_hashlib _hashopenssl.c -I$(SP)/include -I$(SP)/include/openssl $(SP)/lib/libssl.a $(SP)/lib/libcrypto.a\n_ssl _ssl.c -DUSE_SSL -I$(SP)/include -I$(SP)/include/openssl $(SP)/lib/libssl.a $(SP)/lib/libcrypto.a\nbinascii binascii.c -I$(SP)/include $(SP)/lib/libz.a\nzlib zlibmodule.c -I$(SP)/include $(SP)/lib/libz.a\nreadline readline.c -I$(SP)/include $(SP)/lib/libreadline.a $(SP)/lib/libtermcap.a\n",
+      "*static*\nSP=[START_DIR]/_support/prefix\n_hashlib _hashopenssl.c -I$(SP)/include -I$(SP)/include/openssl $(SP)/lib/libssl.a $(SP)/lib/libcrypto.a\n_ssl _ssl.c -DUSE_SSL -I$(SP)/include -I$(SP)/include/openssl $(SP)/lib/libssl.a $(SP)/lib/libcrypto.a\nbinascii binascii.c -I$(SP)/include $(SP)/lib/libz.a\nzlib zlibmodule.c -I$(SP)/include $(SP)/lib/libz.a\nreadline readline.c -I$(SP)/include $(SP)/lib/libreadline.a $(SP)/lib/libtermcap.a\n",
       "[START_DIR]/python/checkout/Modules/Setup.local"
     ],
     "cwd": "[START_DIR]/python/checkout",
@@ -442,7 +465,7 @@
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@Setup.local@*static*@@@",
-      "@@@STEP_LOG_LINE@Setup.local@SP=[START_DIR]/python/support_prefix@@@",
+      "@@@STEP_LOG_LINE@Setup.local@SP=[START_DIR]/_support/prefix@@@",
       "@@@STEP_LOG_LINE@Setup.local@_hashlib _hashopenssl.c -I$(SP)/include -I$(SP)/include/openssl $(SP)/lib/libssl.a $(SP)/lib/libcrypto.a@@@",
       "@@@STEP_LOG_LINE@Setup.local@_ssl _ssl.c -DUSE_SSL -I$(SP)/include -I$(SP)/include/openssl $(SP)/lib/libssl.a $(SP)/lib/libcrypto.a@@@",
       "@@@STEP_LOG_LINE@Setup.local@binascii binascii.c -I$(SP)/include $(SP)/lib/libz.a@@@",
@@ -461,9 +484,10 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
-      "CPPFLAGS": "-I[START_DIR]/python/support_prefix/include",
-      "LDFLAGS": "-L[START_DIR]/python/support_prefix/lib",
+      "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
+      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib",
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
+      "ac_cv_func_clock_gettime": "n",
       "ac_cv_func_getentropy": "n"
     },
     "name": "python.configure",
@@ -546,13 +570,13 @@
       "search",
       "infra/git/mac-amd64",
       "-tag",
-      "version:2.12.2.2.chromium2",
+      "version:2.12.2.2.chromium3",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/mac-amd64 version:2.12.2.2.chromium2",
+    "name": "git.cipd search infra/git/mac-amd64 version:2.12.2.2.chromium3",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",

@@ -40,13 +40,13 @@
       "search",
       "infra/git/windows-386",
       "-tag",
-      "version:2.12.2.2.chromium2",
+      "version:2.12.2.2.chromium3",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/windows-386 version:2.12.2.2.chromium2",
+    "name": "git.cipd search infra/git/windows-386 version:2.12.2.2.chromium3",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -274,7 +274,7 @@
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json",
       "-tag",
-      "version:2.12.2.2.chromium2"
+      "version:2.12.2.2.chromium3"
     ],
     "name": "git.register infra/git/windows-386",
     "~followup_annotations": [

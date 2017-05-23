@@ -149,13 +149,13 @@
       "search",
       "infra/git/linux-amd64",
       "-tag",
-      "version:2.12.2.2.chromium2",
+      "version:2.12.2.2.chromium3",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/linux-amd64 version:2.12.2.2.chromium2",
+    "name": "git.cipd search infra/git/linux-amd64 version:2.12.2.2.chromium3",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -246,9 +246,9 @@
       "cipd",
       "ensure",
       "-root",
-      "[START_DIR]/git/source",
+      "[START_DIR]/_support/build/sources",
       "-ensure-file",
-      "infra/third_party/source/autoconf version:2.69",
+      "infra/third_party/source/autoconf version:2.69\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -263,6 +263,26 @@
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.69----\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/autoconf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.54.0--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/curl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0e--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/openssl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.0-----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/readline\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.3.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/termcap\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.2.11--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/zlib\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
       "@@@STEP_LOG_LINE@json.output@  ]@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
@@ -272,7 +292,7 @@
   {
     "cmd": [],
     "cwd": "[START_DIR]/git/checkout",
-    "name": "git.autoconf",
+    "name": "git.zlib-1.2.11",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -281,10 +301,10 @@
     "cmd": [
       "tar",
       "-xzf",
-      "[START_DIR]/git/source/autoconf-2.69.tar.gz"
+      "[START_DIR]/_support/build/sources/zlib-1.2.11.tar.gz"
     ],
-    "cwd": "[START_DIR]/git",
-    "name": "git.autoconf.extract",
+    "cwd": "[START_DIR]/_support/build",
+    "name": "git.zlib-1.2.11.extract",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -292,11 +312,11 @@
   {
     "cmd": [
       "./configure",
-      "--prefix",
-      "[START_DIR]/git/prefix"
+      "--prefix=[START_DIR]/_support/prefix",
+      "--static"
     ],
-    "cwd": "[START_DIR]/git/autoconf-2.69",
-    "name": "git.autoconf.configure",
+    "cwd": "[START_DIR]/_support/build/zlib-1.2.11",
+    "name": "git.zlib-1.2.11.configure",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -306,10 +326,178 @@
       "make",
       "install"
     ],
-    "cwd": "[START_DIR]/git/autoconf-2.69",
-    "name": "git.autoconf.install",
+    "cwd": "[START_DIR]/_support/build/zlib-1.2.11",
+    "name": "git.zlib-1.2.11.make",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.openssl-1.1.0e",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "tar",
+      "-xzf",
+      "[START_DIR]/_support/build/sources/openssl-1.1.0e.tar.gz"
+    ],
+    "cwd": "[START_DIR]/_support/build",
+    "name": "git.openssl-1.1.0e.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./Configure",
+      "--prefix=[START_DIR]/_support/prefix",
+      "no-shared",
+      "linux-x86_64"
+    ],
+    "cwd": "[START_DIR]/_support/build/openssl-1.1.0e",
+    "name": "git.openssl-1.1.0e.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make"
+    ],
+    "cwd": "[START_DIR]/_support/build/openssl-1.1.0e",
+    "name": "git.openssl-1.1.0e.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install_sw"
+    ],
+    "cwd": "[START_DIR]/_support/build/openssl-1.1.0e",
+    "name": "git.openssl-1.1.0e.install",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/git/checkout",
+    "env": {
+      "LIBS": "-ldl -lpthread"
+    },
+    "name": "git.curl-7.54.0",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "tar",
+      "-xzf",
+      "[START_DIR]/_support/build/sources/curl-7.54.0.tar.gz"
+    ],
+    "cwd": "[START_DIR]/_support/build",
+    "env": {
+      "LIBS": "-ldl -lpthread"
+    },
+    "name": "git.curl-7.54.0.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/_support/prefix",
+      "--disable-ldap",
+      "--disable-shared",
+      "--without-librtmp",
+      "--with-zlib=[START_DIR]/_support/prefix",
+      "--with-ssl=[START_DIR]/_support/prefix"
+    ],
+    "cwd": "[START_DIR]/_support/build/curl-7.54.0",
+    "env": {
+      "LIBS": "-ldl -lpthread"
+    },
+    "name": "git.curl-7.54.0.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/_support/build/curl-7.54.0",
+    "env": {
+      "LIBS": "-ldl -lpthread"
+    },
+    "name": "git.curl-7.54.0.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.autoconf-2.69",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "tar",
+      "-xzf",
+      "[START_DIR]/_support/build/sources/autoconf-2.69.tar.gz"
+    ],
+    "cwd": "[START_DIR]/_support/build",
+    "name": "git.autoconf-2.69.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/_support/prefix"
+    ],
+    "cwd": "[START_DIR]/_support/build/autoconf-2.69",
+    "name": "git.autoconf-2.69.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/_support/build/autoconf-2.69",
+    "name": "git.autoconf-2.69.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport os\nimport sys\n\npath = sys.argv[1]\nwith open(path, 'r') as fd:\n  content = fd.read()\nwith open(path, 'w') as fd:\n  for line in content.splitlines():\n    if line.strip() == 'EXTLIBS =':\n      line = 'EXTLIBS = -lssl -lcrypto -lz -lpthread -ldl'\n    fd.write(line)\n    fd.write('\\n')\n",
+      "[START_DIR]/git/checkout/Makefile"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.update Makefile",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -319,8 +507,11 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
+      "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
+      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib",
+      "LIBS": "-lssl -lcrypto -lz -lpthread -ldl",
       "NO_INSTALL_HARDLINKS": "VAR_PRESENT",
-      "PATH": "[START_DIR]/git/prefix/bin:%(PATH)s"
+      "PATH": "[START_DIR]/_support/prefix/bin:%(PATH)s"
     },
     "name": "git.make configure",
     "~followup_annotations": [
@@ -335,8 +526,11 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
+      "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
+      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib",
+      "LIBS": "-lssl -lcrypto -lz -lpthread -ldl",
       "NO_INSTALL_HARDLINKS": "VAR_PRESENT",
-      "PATH": "[START_DIR]/git/prefix/bin:%(PATH)s"
+      "PATH": "[START_DIR]/_support/prefix/bin:%(PATH)s"
     },
     "name": "git.configure",
     "~followup_annotations": [
@@ -349,10 +543,6 @@
       "install"
     ],
     "cwd": "[START_DIR]/git/checkout",
-    "env": {
-      "NO_INSTALL_HARDLINKS": "VAR_PRESENT",
-      "PATH": "[START_DIR]/git/prefix/bin:%(PATH)s"
-    },
     "name": "git.make install",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -393,7 +583,7 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
       "-tag",
-      "version:2.12.2.2.chromium2"
+      "version:2.12.2.2.chromium3"
     ],
     "name": "git.register infra/git/linux-amd64",
     "~followup_annotations": [
