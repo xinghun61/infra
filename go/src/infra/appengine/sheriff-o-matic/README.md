@@ -121,6 +121,10 @@ To do this, you can use curl to directly post alerts to Sheriff-o-Matic. For
 example, the following command would post the contents of a JSON file
 containing alert data to the chromium tree.
 
+You can use local cron anaylzers and skip all of this by navigating to
+http://localhost:8000/cron and clicking the 'Run now' button next to any
+/_cron/analyze/... URL.
+
 ```sh
 curl -X POST -d @/path/to/alerts.json localhost:8080/api/v1/alerts/chromium
 ```
