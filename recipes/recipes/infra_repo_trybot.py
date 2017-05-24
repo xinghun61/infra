@@ -85,6 +85,8 @@ def RunSteps(api):
       api.python(
           'cipd - test packages integrity',
           api.path['checkout'].join('build', 'test_packages.py'))
+    else:
+      api.step('skipping slow cipd packaging tests', cmd=None)
 
     if api.platform.is_linux and (is_deps_roll or
         any(f.startswith('appengine/chromium_rietveld') for f in files)):

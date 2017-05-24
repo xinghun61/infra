@@ -154,6 +154,10 @@
     "name": "go tests"
   },
   {
+    "cmd": [],
+    "name": "skipping slow cipd packaging tests"
+  },
+  {
     "cmd": [
       "make",
       "-C",
