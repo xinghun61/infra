@@ -6,6 +6,8 @@ from datetime import timedelta
 import logging
 import random
 
+from google.appengine.ext import ndb
+
 from common import constants
 from gae_libs import appengine_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
@@ -15,7 +17,6 @@ from libs import analysis_status
 from libs import time_util
 from model import result_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import build_util
 from waterfall import swarming_util
@@ -85,6 +86,13 @@ def _UpdateAnalysisStatusUponCompletion(
       analysis.end_time = None
 
   analysis.put()
+
+
+def _UpdateAnalysisStatusAndStartTime(analysis):
+  if analysis.status != analysis_status.RUNNING:  # pragma: no branch
+    analysis.status = analysis_status.RUNNING
+    analysis.start_time = time_util.GetUTCNow()
+    analysis.put()
 
 
 def _GetETAToStartAnalysis(manually_triggered):
@@ -278,22 +286,43 @@ def _GetHardTimeoutSeconds(master_name, builder_name, reference_build_number,
 class RecursiveFlakePipeline(BasePipeline):
 
   def __init__(
-      self, master_name, builder_name, preferred_run_build_number,
-      step_name, test_name, version_number, triggering_build_number,
+      self, analysis_urlsafe_key, preferred_run_build_number,
       step_metadata=None, manually_triggered=False,
-      use_nearby_neighbor=False, step_size=0, retries=0
-  ):
+      use_nearby_neighbor=False, step_size=0, retries=0):
+    """Pipeline to determine the regression range of a flaky test.
+
+    Args:
+      analysis_urlsafe_key (str): A url-safe key corresponding to a
+          MasterFlakeAnalysis for which this analysis represents.
+      preferred_run_build_number (int): The build number the check flake
+          algorithm should perform a swarming rerun on, but may be overridden to
+          use the results of a nearby neighbor if use_nearby_neighbor is True.
+      step_metadata (dict): Step_metadata for the test.
+      manually_triggered (bool): True if the analysis is from manual request,
+          like by a Chromium sheriff.
+      use_nearby_neighbor (bool): Whether the optimization for using the
+          swarming results of a nearby build number, if available, should be
+          used in place of triggering a new swarming task on
+          preferred_run_build_number.
+      step_size (int): The difference in build numbers since the last call to
+          RecursiveFlakePipeline to determine the bounds for how far a nearby
+          build's swarming task results should be used. Only relevant if
+          use_nearby_neighbor is True.
+      retries (int): Number of retries of this pipeline.
+    """
     super(RecursiveFlakePipeline, self).__init__(
-        master_name, builder_name, preferred_run_build_number, step_name,
-        test_name, version_number, triggering_build_number, step_metadata,
+        analysis_urlsafe_key, preferred_run_build_number, step_metadata,
         manually_triggered, use_nearby_neighbor, step_size, retries)
-    self.master_name = master_name
-    self.builder_name = builder_name
+    self.analysis_urlsafe_key = ndb.Key(urlsafe=analysis_urlsafe_key)
+    analysis = self.analysis_urlsafe_key.get()
+    assert analysis
+    self.master_name = analysis.master_name
+    self.builder_name = analysis.builder_name
     self.preferred_run_build_number = preferred_run_build_number
-    self.triggering_build_number = triggering_build_number
-    self.step_name = step_name
-    self.test_name = test_name
-    self.version_number = version_number
+    self.triggering_build_number = analysis.build_number
+    self.step_name = analysis.step_name
+    self.test_name = analysis.test_name
+    self.version_number = analysis.version_number
     self.step_metadata = step_metadata
     self.manually_triggered = manually_triggered
     self.use_nearby_neighbor = use_nearby_neighbor
@@ -336,67 +365,87 @@ class RecursiveFlakePipeline(BasePipeline):
     if not self.was_aborted:
       return
 
-    flake_analysis = MasterFlakeAnalysis.GetVersion(
-        self.master_name, self.builder_name, self.triggering_build_number,
-        self.step_name, self.test_name, version=self.version_number)
-
-    if flake_analysis and not flake_analysis.completed:
-      flake_analysis.status = analysis_status.ERROR
-      flake_analysis.result_status = None
-      flake_analysis.error = flake_analysis.error or {
+    analysis = self.analysis_urlsafe_key.get()
+    if analysis and not analysis.completed:
+      analysis.status = analysis_status.ERROR
+      analysis.result_status = None
+      analysis.error = analysis.error or {
           'error': 'RecursiveFlakePipeline was aborted unexpectedly',
           'message': 'RecursiveFlakePipeline was aborted unexpectedly'
       }
-      flake_analysis.put()
+      analysis.put()
 
   def finalized(self):
     self._LogUnexpectedAbort()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, preferred_run_build_number,
-          step_name, test_name, version_number, triggering_build_number,
+  def run(self, analysis_urlsafe_key, preferred_run_build_number,
           step_metadata=None, manually_triggered=False,
           use_nearby_neighbor=False, step_size=0, retries=0):
     """Pipeline to determine the regression range of a flaky test.
 
     Args:
-      master_name (str): The master name.
-      builder_name (str): The builder name.
+      analysis_urlsafe_key (str): A url-safe key corresponding to a
+          MasterFlakeAnalysis for which this analysis represents.
       preferred_run_build_number (int): The build number the check flake
-        algorithm should perform a swarming rerun on, but may be overridden to
-        use the results of a nearby neighbor if use_nearby_neighbor is True.
-      step_name (str): The step name.
-      test_name (str): The test name.
-      version_number (int): The version to save analysis results and data to.
-      triggering_build_number (int): The build number that triggered this
-        analysis.
+          algorithm should perform a swarming rerun on, but may be overridden to
+          use the results of a nearby neighbor if use_nearby_neighbor is True.
       step_metadata (dict): Step_metadata for the test.
       manually_triggered (bool): True if the analysis is from manual request,
-        like by a Chromium sheriff.
+          like by a Chromium sheriff.
       use_nearby_neighbor (bool): Whether the optimization for using the
-        swarming results of a nearby build number, if available, should be used
-        in place of triggering a new swarming task on
-        preferred_run_build_number.
-      step_size (int): The difference in build numbers since the last call to
-        RecursiveFlakePipeline to determine the bounds for how far a nearby
-        build's swarming task results should be used. Only relevant if
-        use_nearby_neighbor is True.
+          swarming results of a nearby build number, if available, should be
+          used in place of triggering a new swarming task on
+          preferred_run_build_number.
+     step_size (int): The difference in build numbers since the last call to
+          RecursiveFlakePipeline to determine the bounds for how far a nearby
+          build's swarming task results should be used. Only relevant if
+          use_nearby_neighbor is True.
       retries (int): Number of retries of this pipeline. If reties exceeds the
-        _MAX_RETRY_TIMES, start this pipeline off peak hours.
+          _MAX_RETRY_TIMES, start this pipeline off peak hours.
     Returns:
       A dict of lists for reliable/flaky tests.
     """
-
     # If retries has not exceeded max count and there are available bots,
     # we can start the analysis.
     can_start_analysis = (self._BotsAvailableForTask(step_metadata)
                           if retries <= _MAX_RETRY_TIMES else True)
 
-    if not can_start_analysis:
+    if can_start_analysis:
+      # Bots are available or pipeline starts off peak hours, trigger the task.
+      analysis = self.analysis_urlsafe_key.get()
+      _UpdateAnalysisStatusAndStartTime(analysis)
+
+      # TODO(lijeffrey): Allow custom parameters supplied by user.
+      iterations = analysis.algorithm_parameters.get(
+          'swarming_rerun', {}).get('iterations_to_rerun', 100)
+      hard_timeout_seconds = _GetHardTimeoutSeconds(
+          self.master_name, self.builder_name, self.triggering_build_number,
+          self.step_name, iterations)
+      actual_run_build_number = _GetBestBuildNumberToRun(
+          self.master_name, self.builder_name, preferred_run_build_number,
+          self.step_name, self.test_name, step_size,
+          iterations) if use_nearby_neighbor else preferred_run_build_number
+
+      # Call trigger pipeline (flake style).
+      task_id = yield TriggerFlakeSwarmingTaskPipeline(
+          self.master_name, self.builder_name, actual_run_build_number,
+          self.step_name, [self.test_name], iterations, hard_timeout_seconds)
+
+      with pipeline.InOrder():
+        yield ProcessFlakeSwarmingTaskResultPipeline(
+            self.master_name, self.builder_name, actual_run_build_number,
+            self.step_name, task_id, self.triggering_build_number,
+            self.test_name, analysis.version_number)
+        yield NextBuildNumberPipeline(
+            analysis.key.urlsafe(), actual_run_build_number,
+            step_metadata=step_metadata,
+            use_nearby_neighbor=use_nearby_neighbor,
+            manually_triggered=manually_triggered)
+    else:
       retries += 1
       pipeline_job = RecursiveFlakePipeline(
-          master_name, builder_name, preferred_run_build_number, step_name,
-          test_name, version_number, triggering_build_number, step_metadata,
+          analysis_urlsafe_key, preferred_run_build_number, step_metadata,
           manually_triggered=manually_triggered,
           use_nearby_neighbor=use_nearby_neighbor, step_size=step_size,
           retries=retries)
@@ -410,59 +459,18 @@ class RecursiveFlakePipeline(BasePipeline):
             queue_name=self.queue_name or constants.DEFAULT_QUEUE)
         logging.info('Retrys exceed max count, RecursiveFlakePipeline on '
                      'MasterFlakeAnalysis %s/%s/%s/%s/%s will start off peak '
-                     'hour', master_name, builder_name, triggering_build_number,
-                     step_name, test_name)
+                     'hour', self.master_name, self.builder_name,
+                     self.triggering_build_number, self.step_name,
+                     self.test_name)
       else:
         pipeline_job._RetryWithDelay(
             queue_name=self.queue_name or constants.DEFAULT_QUEUE)
         countdown = retries * _BASE_COUNT_DOWN_SECONDS
         logging.info('No available swarming bots, RecursiveFlakePipeline on '
                      'MasterFlakeAnalysis %s/%s/%s/%s/%s will be tried after'
-                     '%d seconds', master_name, builder_name,
-                     triggering_build_number, step_name, test_name, countdown)
-    else:
-      # Bots are available or pipeline starts off peak hours, trigger the task.
-      flake_analysis = MasterFlakeAnalysis.GetVersion(
-          master_name, builder_name, triggering_build_number, step_name,
-          test_name, version=version_number)
-
-      logging.info(
-          'Running RecursiveFlakePipeline on MasterFlakeAnalysis'
-          ' %s/%s/%s/%s/%s', master_name, builder_name, triggering_build_number,
-          step_name, test_name)
-      logging.info(
-          'MasterFlakeAnalysis %s version %s', flake_analysis, version_number)
-
-      if flake_analysis.status != analysis_status.RUNNING:  # pragma: no branch
-        flake_analysis.status = analysis_status.RUNNING
-        flake_analysis.start_time = time_util.GetUTCNow()
-        flake_analysis.put()
-
-      # TODO(lijeffrey): Allow custom parameters supplied by user.
-      iterations = flake_analysis.algorithm_parameters.get(
-          'swarming_rerun', {}).get('iterations_to_rerun', 100)
-      hard_timeout_seconds = _GetHardTimeoutSeconds(
-          master_name, builder_name, triggering_build_number, step_name,
-          iterations)
-      actual_run_build_number = _GetBestBuildNumberToRun(
-          master_name, builder_name, preferred_run_build_number, step_name,
-          test_name, step_size, iterations) if use_nearby_neighbor else (
-              preferred_run_build_number)
-      # Call trigger pipeline (flake style).
-      task_id = yield TriggerFlakeSwarmingTaskPipeline(
-          master_name, builder_name, actual_run_build_number, step_name,
-          [test_name], iterations, hard_timeout_seconds)
-
-      with pipeline.InOrder():
-        yield ProcessFlakeSwarmingTaskResultPipeline(
-            master_name, builder_name, actual_run_build_number, step_name,
-            task_id, triggering_build_number, test_name, version_number)
-        yield NextBuildNumberPipeline(
-            master_name, builder_name, triggering_build_number,
-            actual_run_build_number, step_name, test_name, version_number,
-            step_metadata=step_metadata,
-            use_nearby_neighbor=use_nearby_neighbor,
-            manually_triggered=manually_triggered)
+                     '%d seconds', self.master_name, self.builder_name,
+                     self.triggering_build_number, self.step_name,
+                     self.test_name, countdown)
 
 
 def _NormalizeDataPoints(data_points):
@@ -520,48 +528,58 @@ def _GetFullBlamedCLsAndLowerBound(suspected_build_point, data_points):
   return blamed_cls, point_lower_bound.previous_build_commit_position + 1
 
 
+def _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis):
+  # Report the last flake swarming task's error that it encountered.
+  logging.error('Error in Swarming task')
+
+  error = flake_swarming_task.error or {
+      'error': 'Swarming task failed',
+      'message': 'The last swarming task did not complete as expected'
+  }
+
+  _UpdateAnalysisStatusUponCompletion(
+      analysis, None, analysis_status.ERROR, error)
+
+
+def _UpdateAnalysisAlgorithmParameters(analysis):
+  if not analysis.algorithm_parameters:
+    flake_settings = waterfall_config.GetCheckFlakeSettings()
+    analysis.algorithm_parameters = flake_settings
+    analysis.put()
+
+
 class NextBuildNumberPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   # Unused argument - pylint: disable=W0613
-  def run(
-      self, master_name, builder_name, triggering_build_number,
-      current_build_number, step_name, test_name, version_number,
-      step_metadata=None, use_nearby_neighbor=False, manually_triggered=False):
+  def run(self, analysis_urlsafe_key, current_build_number,
+          step_metadata=None, use_nearby_neighbor=False,
+          manually_triggered=False):
     # Get MasterFlakeAnalysis success list corresponding to parameters.
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, triggering_build_number, step_name,
-        test_name, version=version_number)
+    analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
+    assert analysis
+    master_name = analysis.master_name
+    builder_name = analysis.builder_name
+    triggering_build_number = analysis.build_number
+    step_name = analysis.step_name
+    test_name = analysis.test_name
 
     flake_swarming_task = FlakeSwarmingTask.Get(
         master_name, builder_name, current_build_number, step_name, test_name)
 
     # Don't call another pipeline if we fail.
     if flake_swarming_task.status == analysis_status.ERROR:
-      # Report the last flake swarming task's error that it encountered.
       # TODO(lijeffrey): Another neighboring swarming task may be needed in this
       # one's place instead of failing altogether.
-      error = flake_swarming_task.error or {
-          'error': 'Swarming task failed',
-          'message': 'The last swarming task did not complete as expected'
-      }
-
-      _UpdateAnalysisStatusUponCompletion(
-          analysis, None, analysis_status.ERROR, error)
-      logging.error('Error in Swarming task')
+      _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis)
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())
       return
 
-    if not analysis.algorithm_parameters:
-      # Uses analysis' own algorithm_parameters.
-      flake_settings = waterfall_config.GetCheckFlakeSettings()
-      analysis.algorithm_parameters = flake_settings
-      analysis.put()
-    algorithm_settings = analysis.algorithm_parameters.get(
-        'swarming_rerun')
+    _UpdateAnalysisAlgorithmParameters(analysis)
+    algorithm_settings = analysis.algorithm_parameters.get('swarming_rerun')
 
-    data_points = _NormalizeDataPoints(analysis.data_points)
     # Figure out what build_number to trigger a swarming rerun on next, if any.
+    data_points = _NormalizeDataPoints(analysis.data_points)
     next_build_number, suspected_build, iterations_to_rerun = (
         lookback_algorithm.GetNextRunPointNumber(
             data_points, algorithm_settings))
@@ -645,9 +663,8 @@ class NextBuildNumberPipeline(BasePipeline):
       return
 
     pipeline_job = RecursiveFlakePipeline(
-        master_name, builder_name, next_build_number, step_name, test_name,
-        version_number, triggering_build_number, step_metadata=step_metadata,
-        manually_triggered=manually_triggered,
+        analysis_urlsafe_key, next_build_number,
+        step_metadata=step_metadata, manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor,
         step_size=(current_build_number - next_build_number))
     # Disable attribute 'target' defined outside __init__ pylint warning,

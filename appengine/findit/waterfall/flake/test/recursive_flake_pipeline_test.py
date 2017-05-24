@@ -143,18 +143,14 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         recursive_flake_pipeline.NextBuildNumberPipeline,
         '',
-        expected_args=[master_name, builder_name, master_build_number,
-                       build_number, step_name, test_name,
-                       analysis.version_number],
+        expected_args=[analysis.key.urlsafe(), build_number],
         expected_kwargs={
             'step_metadata': None,
             'use_nearby_neighbor': False,
             'manually_triggered': False})
 
-    rfp = RecursiveFlakePipeline(
-        master_name, builder_name, build_number, step_name, test_name,
-        analysis.version_number, master_build_number,
-        use_nearby_neighbor=False, step_size=0)
+    rfp = RecursiveFlakePipeline(analysis.key.urlsafe(), build_number,
+                                 use_nearby_neighbor=False, step_size=0)
 
     rfp.start(queue_name=queue_name)
     self.execute_queued_tasks()
@@ -164,7 +160,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   def testNextBuildPipelineForNewRecursionFirstFlake(self, _):
     master_name = 'm'
     builder_name = 'b'
-    master_build_number = 100
     build_number = 100
     step_name = 's'
     test_name = 't'
@@ -187,12 +182,10 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakePipeline,
                       '',
-                      expected_args=['m', 'b', 99, 's', 't', 1, 100, None,
+                      expected_args=[analysis.key.urlsafe(), 99, None,
                                      False, False, 1, 0],
                       expected_kwargs={})
-    pipeline = NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number, build_number,
-        step_name, test_name, analysis.version_number)
+    pipeline = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -201,7 +194,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   def testNextBuildPipelineForFailedSwarmingTask(self, mocked_pipeline):
     master_name = 'm'
     builder_name = 'b'
-    master_build_number = 100
     build_number = 100
     step_name = 's'
     test_name = 't'
@@ -211,12 +203,10 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     }
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
+        test_name, status=analysis_status.PENDING)
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.ERROR, error=swarming_task_error
-    )
+        test_name, status=analysis_status.ERROR, error=swarming_task_error)
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
     data_point = DataPoint()
@@ -230,9 +220,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_args=[analysis.key.urlsafe()],
                       expected_kwargs={})
 
-    pipeline = NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number, build_number,
-        step_name, test_name, 1)
+    pipeline = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -268,9 +256,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_args=[analysis.key.urlsafe()],
                       expected_kwargs={})
 
-    pipeline = NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number, build_number, step_name,
-        test_name, analysis.version_number)
+    pipeline = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -511,18 +497,15 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   def testNextBuildPipelineForSuspectedBuildRerunStableBuild(self, *_):
     master_name = 'm'
     builder_name = 'b'
-    master_build_number = 100
     build_number = 100
     step_name = 's'
     test_name = 't'
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.RUNNING
-    )
+        test_name, status=analysis_status.RUNNING)
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
+        test_name, status=analysis_status.COMPLETED)
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
 
@@ -539,18 +522,15 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakePipeline,
                       '',
                       expected_args=[
-                          master_name, builder_name, build_number,
-                          step_name, test_name, analysis.version_number,
-                          build_number, None, False, False, 0, 0],
+                          analysis.key.urlsafe(), build_number, None, False,
+                          False, 0, 0],
                       expected_kwargs={})
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
                       '',
                       expected_args=[],
                       expected_kwargs={})
 
-    pipeline = NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number, build_number,
-        step_name, test_name, analysis.version_number)
+    pipeline = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -570,18 +550,15 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   def testNextBuildPipelineForSuspectedBuildWithLowConfidence(self, *_):
     master_name = 'm'
     builder_name = 'b'
-    master_build_number = 100
     build_number = 100
     step_name = 's'
     test_name = 't'
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
+        test_name, status=analysis_status.PENDING)
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
+        test_name, status=analysis_status.COMPLETED)
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
 
@@ -600,9 +577,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_args=[],
                       expected_kwargs={})
 
-    pipeline = NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number, build_number,
-        step_name, test_name, analysis.version_number)
+    pipeline = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -622,7 +597,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   def testNextBuildPipelineForSuspectedBuildWithEmptyBlamelist(self, *_):
     master_name = 'm'
     builder_name = 'b'
-    master_build_number = 100
     build_number = 100
     step_name = 's'
     test_name = 't'
@@ -653,9 +627,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_args=[],
                       expected_kwargs={})
 
-    pipeline = NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number, build_number,
-        step_name, test_name, analysis.version_number)
+    pipeline = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -682,7 +654,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   def testNextBuildPipelineForSuspectedBuildWithOnlyOneCommit(self, *_):
     master_name = 'm'
     builder_name = 'b'
-    master_build_number = 100
     build_number = 100
     step_name = 's'
     test_name = 't'
@@ -715,9 +686,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_args=[],
                       expected_kwargs={})
 
-    pipeline = NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number, build_number,
-        step_name, test_name, analysis.version_number)
+    pipeline = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -741,18 +710,15 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   def testNextBuildPipelineForSuspectedBuildWithMultipleCommits(self, *_):
     master_name = 'm'
     builder_name = 'b'
-    master_build_number = 100
     build_number = 100
     step_name = 's'
     test_name = 't'
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
+        test_name, status=analysis_status.PENDING)
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
+        test_name, status=analysis_status.COMPLETED)
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
 
@@ -776,9 +742,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                                      _DEFAULT_CACHE_NAME, None],
                       expected_kwargs={})
 
-    pipeline = NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number, build_number,
-        step_name, test_name, analysis.version_number)
+    pipeline = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -828,43 +792,31 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         recursive_flake_pipeline.NextBuildNumberPipeline,
         '',
-        expected_args=[master_name, builder_name, master_build_number,
-                       build_number, step_name, test_name,
-                       analysis.version_number],
+        expected_args=[analysis.key.urlsafe(), build_number],
         expected_kwargs={
             'step_metadata': None,
             'use_nearby_neighbor': False,
             'manually_triggered': False})
 
-    rfp = RecursiveFlakePipeline(
-        master_name, builder_name, build_number, step_name, test_name,
-        analysis.version_number, master_build_number,
-        use_nearby_neighbor=False, step_size=0)
+    pipeline_job = RecursiveFlakePipeline(
+        analysis.key.urlsafe(), build_number, use_nearby_neighbor=False,
+        step_size=0)
 
-    rfp.start(queue_name=queue_name)
+    pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
   def testCheckBotsAvailabilityNone(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    version_number = 1
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
+    analysis.Save()
+
     self.assertFalse(
         RecursiveFlakePipeline(
-            master_name, builder_name, build_number, step_name, test_name,
-            version_number, build_number)._BotsAvailableForTask(None))
+            analysis.key.urlsafe(), 100)._BotsAvailableForTask(None))
 
   @mock.patch.object(swarming_util, 'GetSwarmingBotCounts')
   def testCheckBotsAvailability(self, mock_fn):
-
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-    version_number = 1
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
+    analysis.Save()
 
     step_metadata = {
         'dimensions': {
@@ -882,8 +834,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertTrue(
         RecursiveFlakePipeline(
-            master_name, builder_name, build_number, step_name, test_name,
-            version_number, build_number)._BotsAvailableForTask(step_metadata))
+            analysis.key.urlsafe(), 100)._BotsAvailableForTask(step_metadata))
 
   @mock.patch.object(
       recursive_flake_pipeline, '_GetETAToStartAnalysis',
@@ -927,20 +878,17 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         recursive_flake_pipeline.NextBuildNumberPipeline,
         '',
-        expected_args=[master_name, builder_name, master_build_number,
-                       build_number, step_name, test_name,
-                       analysis.version_number],
+        expected_args=[analysis.key.urlsafe(), build_number],
         expected_kwargs={
             'step_metadata': None,
             'use_nearby_neighbor': False,
             'manually_triggered': False})
 
-    rfp = RecursiveFlakePipeline(
-        master_name, builder_name, build_number, step_name, test_name,
-        analysis.version_number, master_build_number,
+    pipeline_job = RecursiveFlakePipeline(
+        analysis.key.urlsafe(), build_number,
         use_nearby_neighbor=False, step_size=0, retries=5)
 
-    rfp.start(queue_name=queue_name)
+    pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
   def testUpdateIterationsToRerunNoIterationsToUpdate(self):
@@ -972,10 +920,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.status = analysis_status.PENDING
     analysis.Save()
 
-    rfp = RecursiveFlakePipeline(
-        master_name, builder_name, build_number, step_name, test_name,
-        analysis.version_number, master_build_number)
-
+    rfp = RecursiveFlakePipeline(analysis.key.urlsafe(), build_number)
     rfp._LogUnexpectedAbort()
 
     expected_error = {
@@ -1000,10 +945,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.status = analysis_status.COMPLETED
     analysis.Save()
 
-    rfp = RecursiveFlakePipeline(
-        master_name, builder_name, build_number, step_name, test_name,
-        analysis.version_number, master_build_number)
-
+    rfp = RecursiveFlakePipeline(analysis.key.urlsafe(), build_number)
     rfp._LogUnexpectedAbort()
 
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
@@ -1018,18 +960,15 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   def testNextBuildPipelineForExceptionsBeforeSuspectedBuild(self, *_):
     master_name = 'm'
     builder_name = 'b'
-    master_build_number = 100
     build_number = 100
     step_name = 's'
     test_name = 't'
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
+        test_name, status=analysis_status.PENDING)
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
+        test_name, status=analysis_status.COMPLETED)
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
 
@@ -1060,9 +999,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                                      _DEFAULT_CACHE_NAME, None],
                       expected_kwargs={})
 
-    pipeline = NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number, build_number,
-        step_name, test_name, analysis.version_number)
+    pipeline = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -1083,18 +1020,15 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   def testNextBuildPipelineForExceptionBuilds(self, *_):
     master_name = 'm'
     builder_name = 'b'
-    master_build_number = 100
     build_number = 100
     step_name = 's'
     test_name = 't'
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.PENDING
-    )
+        test_name, status=analysis_status.PENDING)
     self._CreateAndSaveFlakeSwarmingTask(
         master_name, builder_name, build_number, step_name,
-        test_name, status=analysis_status.COMPLETED
-    )
+        test_name, status=analysis_status.COMPLETED)
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
 
@@ -1131,9 +1065,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                                      _DEFAULT_CACHE_NAME, None],
                       expected_kwargs={})
 
-    pipeline = NextBuildNumberPipeline(
-        master_name, builder_name, master_build_number, build_number,
-        step_name, test_name, analysis.version_number)
+    pipeline = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 

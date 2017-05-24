@@ -134,15 +134,12 @@ def ScheduleAnalysisIfNeeded(
         repr(original_test), analysis.version_number)
 
     step_metadata = buildbot.GetStepLog(
-      normalized_test.master_name, normalized_test.builder_name,
-      normalized_test.build_number, normalized_test.step_name,
-      HttpClientAppengine(), 'step_metadata')
-
-    pipeline_job = RecursiveFlakePipeline(
         normalized_test.master_name, normalized_test.builder_name,
         normalized_test.build_number, normalized_test.step_name,
-        normalized_test.test_name, analysis.version_number,
-        triggering_build_number=normalized_test.build_number,
+        HttpClientAppengine(), 'step_metadata')
+
+    pipeline_job = RecursiveFlakePipeline(
+        analysis.key.urlsafe(), normalized_test.build_number,
         step_metadata=step_metadata,
         manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor)
