@@ -1,4 +1,4 @@
-# Copyright 2015 The Chromium Authors. All rights reserved.
+# Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -47,7 +47,7 @@ GIT_FOR_WINDOWS_ASSET_RES = {
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-GIT_PACKAGE_VERSION_SUFFIX = '.chromium4'
+GIT_PACKAGE_VERSION_SUFFIX = '.chromium5'
 
 
 def RunSteps(api):
@@ -371,9 +371,13 @@ def PackageGitForUnix(api, workdir, support):
       #
       # These variables configure Git to enable and use relative runtime paths.
       'RUNTIME_PREFIX = YesPlease',
-      'gitexecdir = libexec/git-core', 
-      'template_dir = share/git-core/templates', 
+      'gitexecdir = libexec/git-core',
+      'template_dir = share/git-core/templates',
       'sysconfdir = etc',
+
+      # CIPD doesn't support hardlinks, so hardlinks become copies of the
+      # original file. Use symlinks instead.
+      'NO_INSTALL_HARDLINKS = YesPlease',
     ]
 
     if api.platform.is_linux:
