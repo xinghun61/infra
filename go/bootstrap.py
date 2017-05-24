@@ -39,9 +39,6 @@ INFRA_VERSION = 1
 # Where to install Go toolset to. GOROOT would be <TOOLSET_ROOT>/go.
 TOOLSET_ROOT = os.path.join(os.path.dirname(ROOT), 'golang')
 
-# Where Go GAE SDK is supposedly installed.
-GO_APPENGINE = os.path.join(os.path.dirname(ROOT), 'go_appengine')
-
 # Default workspace with infra go code.
 WORKSPACE = os.path.join(ROOT, 'go')
 
@@ -77,16 +74,6 @@ GLIDE_SOURCE = {
   },
 }
 
-# The set of directories to copy from the go_appengine SDK's goroot into our
-# toolchain's root. See patch_appengine_sdk for more details.
-GAE_PKGS = frozenset(('appengine', 'appengine_internal', 'github.com'))
-
-# Counter-hacks against GAE's hacks :). The init module writes a gae-added
-# boolean into the os package to disable file writes, and overwrites the
-# http.DefaultTransport to prevent usage. Since we're still using the real
-# GAE SDK for running apps locally and doing app uploads, remove their hacks.
-GAE_HACK_PKGS = frozenset(('appengine_internal/init',))
-
 # Layout is the layout of the bootstrap installation.
 _Layout = collections.namedtuple('Layout', (
     # The path where the Go toolset is checked out at.
@@ -100,9 +87,6 @@ _Layout = collections.namedtuple('Layout', (
 
     # List of additional paths to add to GOPATH.
     'go_paths',
-
-    # The path to the Go AppEngine checkout.
-    'go_appengine_path',
 
     # The list of DEPS'd in paths that contain Go sources. This is used to
     # determine when our vendored tools need to be re-installed.
@@ -130,7 +114,6 @@ _EMPTY_LAYOUT = Layout(
     workspace=None,
     vendor_paths=None,
     go_paths=None,
-    go_appengine_path=None,
     go_deps_paths=None,
     go_install_tools=None,
     preserve_gopath=False)
@@ -152,7 +135,6 @@ LAYOUT = Layout(
         'github.com/luci/luci-go/deploytool/cmd/luci_deploy',
     ],
     go_paths=None,
-    go_appengine_path=GO_APPENGINE,
     preserve_gopath=False,
 )
 
@@ -497,7 +479,6 @@ def get_go_environ(layout):
     os.path.join(ROOT, 'cipd'),
     os.path.join(ROOT, 'cipd', 'bin'),
     os.path.join(ROOT, 'luci', 'appengine', 'components', 'tools'),
-    layout.go_appengine_path,
   ]
   paths_to_add.extend(os.path.join(p, '.vendor', 'bin') for p in vendor_paths)
   paths_to_add.append(env.get('GOBIN'))
@@ -523,15 +504,6 @@ def get_go_environ(layout):
   # get_go_environ is invoked multiple times.
   paths_to_add = [p for p in paths_to_add if p and p not in path]
   env['PATH'] = os.pathsep.join(paths_to_add + path)
-
-  # APPENGINE_DEV_APPSERVER is used by "appengine/aetest" package. If it's
-  # missing, aetest will scan PATH looking for dev_appserver.py, possibly
-  # finding it in some other place.
-  if layout.go_appengine_path:
-    env['APPENGINE_DEV_APPSERVER'] = os.path.join(
-        layout.go_appengine_path, 'dev_appserver.py')
-  else:
-    env.pop('APPENGINE_DEV_APPSERVER', None)
 
   # Add a tag to the prompt
   infra_prompt_tag = env.get('INFRA_PROMPT_TAG')
