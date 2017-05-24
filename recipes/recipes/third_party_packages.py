@@ -47,7 +47,7 @@ GIT_FOR_WINDOWS_ASSET_RES = {
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-GIT_PACKAGE_VERSION_SUFFIX = '.chromium5'
+GIT_PACKAGE_VERSION_SUFFIX = '.chromium6'
 
 
 def RunSteps(api):
@@ -357,10 +357,6 @@ def PackageGitForUnix(api, workdir, support):
 
     # cwd is source checkout
     env = {
-        # Set NO_INSTALL_HARDLINKS to avoid hard links in
-        # <target_dir>/libexec/git-core/git-*
-        # because CIPD does not support them. Use symlinks instead.
-        'NO_INSTALL_HARDLINKS': 'VAR_PRESENT',
         'PATH': api.path.pathsep.join([str(support_bin), '%(PATH)s']),
     }
 
@@ -394,6 +390,11 @@ def PackageGitForUnix(api, workdir, support):
       # CIPD doesn't support hardlinks, so hardlinks become copies of the
       # original file. Use symlinks instead.
       'NO_INSTALL_HARDLINKS = YesPlease',
+
+      # We disable "GECOS" detection. This will make the default commit user
+      # name potentially less pretty, but this is acceptable, since users and
+      # bots should both be setting that value.
+      'NO_GECOS_IN_PWENT = YesPlease',
     ]
 
     if api.platform.is_linux:
