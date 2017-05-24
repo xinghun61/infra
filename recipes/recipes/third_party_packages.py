@@ -222,17 +222,12 @@ def PackagePythonForUnix(api, support):
     cppflags = [
       '-I%s' % (support_include,),
     ]
-    cflags = [
-      '-flto',
-    ]
     ldflags = [
       '-L%s' % (support_lib,),
-      '-flto',
     ]
 
     configure_env = {
       'CPPFLAGS': ' '.join(cppflags),
-      'CFLAGS':  ' '.join(cflags),
       'LDFLAGS':  ' '.join(ldflags),
     }
     configure_flags = [

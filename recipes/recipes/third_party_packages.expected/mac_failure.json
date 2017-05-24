@@ -485,9 +485,8 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
-      "CFLAGS": "-flto",
       "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
-      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib -flto",
+      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib",
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
       "ac_cv_func_clock_gettime": "n",
       "ac_cv_func_getentropy": "n"

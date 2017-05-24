@@ -413,9 +413,8 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
-      "CFLAGS": "-flto",
       "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
-      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib -flto"
+      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib"
     },
     "name": "python.configure",
     "~followup_annotations": [
