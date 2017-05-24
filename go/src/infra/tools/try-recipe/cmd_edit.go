@@ -17,6 +17,7 @@ import (
 
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/flag/stringlistflag"
 	"github.com/luci/luci-go/common/flag/stringmapflag"
 	"github.com/luci/luci-go/common/logging"
 )
@@ -54,10 +55,15 @@ type cmdEdit struct {
 }
 
 type editFlags struct {
-	recipeIsolate string
-	dimensions    stringmapflag.Value
-	properties    stringmapflag.Value
-	environment   stringmapflag.Value
+	recipeIsolate  string
+	dimensions     stringmapflag.Value
+	properties     stringmapflag.Value
+	environment    stringmapflag.Value
+	recipeURL      string
+	recipeRevision string
+	cipdPackages   stringmapflag.Value
+	prefixPathEnv  stringlistflag.Flag
+	recipeName     string
 
 	swarmingServer string
 }
@@ -75,8 +81,24 @@ func (e *editFlags) register(fs *flag.FlagSet) {
 		"(repeatable) override an environment variable. This takes a parameter of `env_var=value`. "+
 			"Providing an empty value will remove that envvar.")
 
+	fs.Var(&e.cipdPackages, "cp",
+		"(repeatable) override a cipd package. This takes a parameter of `[subdir:]pkgname=version`. "+
+			"Using an empty version will remove the package. The subdir is optional and defaults to '.'.")
+
+	fs.Var(&e.prefixPathEnv, "ppe",
+		"(repeatable) override a -prefix-path-env entry. Using a value like '!value' will remove a path entry.")
+
 	fs.StringVar(&e.recipeIsolate, "rbh", "",
 		"override the recipe bundle `hash` (such as you might get from the isolate command).")
+
+	fs.StringVar(&e.recipeURL, "ru", "",
+		"override the recipe repo `url` (if not using a bundle).")
+
+	fs.StringVar(&e.recipeRevision, "rr", "",
+		"override the recipe repo `revision` (if not using a bundle).")
+
+	fs.StringVar(&e.recipeName, "r", "",
+		"override the `recipe` to run.")
 
 	fs.StringVar(&e.swarmingServer, "S", "",
 		"override the swarming `server` to launch the task on.")
@@ -84,11 +106,14 @@ func (e *editFlags) register(fs *flag.FlagSet) {
 
 func (e *editFlags) Edit(jd *JobDefinition) (*JobDefinition, error) {
 	ejd := jd.Edit()
-	ejd.RecipeSource(e.recipeIsolate)
+	ejd.RecipeSource(e.recipeIsolate, e.recipeURL, e.recipeRevision)
 	ejd.Dimensions(e.dimensions)
 	ejd.Properties(e.properties)
 	ejd.Env(e.environment)
+	ejd.Recipe(e.recipeName)
+	ejd.CipdPkgs(e.cipdPackages)
 	ejd.SwarmingServer(e.swarmingServer)
+	ejd.PrefixPathEnv(e.prefixPathEnv)
 	return ejd.Finalize()
 }
 

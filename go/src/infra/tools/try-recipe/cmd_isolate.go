@@ -113,11 +113,11 @@ func (c *cmdIsolate) Run(a subcommands.Application, args []string, env subcomman
 		if err != nil {
 			return nil, err
 		}
-
-		ret := &(*jd)
-		ret.RecipeIsolatedSource = &RecipeIsolatedSource{string(hash)}
 		logging.Infof(ctx, "isolating recipes: done")
-		return ret, nil
+
+		ejd := jd.Edit()
+		ejd.RecipeSource(string(hash), "", "")
+		return ejd.Finalize()
 	})
 	if err != nil {
 		logging.WithError(err).Errorf(ctx, "fatal")
