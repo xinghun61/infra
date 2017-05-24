@@ -102,25 +102,24 @@ func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader
 	}
 
 	// Locate the system Git.
-	args := argv[1:]
-	self, err := os.Executable()
-	logging.Debugf(c, "Identified Git wrapper (self) path at: %s", self)
+	err := gitProbe.ResolveSelf(argv[0])
+	logging.Debugf(c, "Identified Git wrapper (self) path at: %s", gitProbe.self)
 	switch {
 	case err != nil:
 		// If we can't identify our own path, we can't check our cached Git path,
 		// so invalidate it.
-		logging.Warningf(c, "Failed to get absolute path of self [%s]: %s", self, err)
+		logging.Warningf(c, "Failed to get absolute path of self [%s]: %s", gitProbe.self, err)
 		st.SelfPath = ""
 		st.GitPath = ""
 
-	case self != st.SelfPath:
+	case gitProbe.self != st.SelfPath:
 		// The wrapper state either doesn't have a "self" path, or was built by some
 		// other wrapper. Invalidate its Git state and update its "self".
 		st.GitPath = ""
-		st.SelfPath = self
+		st.SelfPath = gitProbe.self
 	}
 
-	if st.GitPath, err = gitProbe.Locate(c, st.SelfPath, st.GitPath, env); err != nil {
+	if st.GitPath, err = gitProbe.Locate(c, st.GitPath, env); err != nil {
 		errors.Log(c, errors.Annotate(err).Reason("failed to locate system Git").Err())
 		return gitWrapperErrorReturnCode
 	}
@@ -137,7 +136,7 @@ func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader
 		Stdout:        stdout,
 		Stderr:        stderr,
 	}
-	rc, err := cmd.Run(c, args, env)
+	rc, err := cmd.Run(c, argv[1:], env)
 	if err != nil {
 		errors.Log(c, errors.Annotate(err).Reason("failed to run Git").Err())
 		return gitWrapperErrorReturnCode

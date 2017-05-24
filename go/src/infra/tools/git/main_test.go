@@ -43,7 +43,7 @@ func TestMain(t *testing.T) {
 
 		Convey(`Can run local Git (must be in PATH)`, func() {
 			env = environ.System()
-			systemGit, err := gitProbe.Locate(c, "", "", env)
+			systemGit, err := gitProbe.Locate(c, "", env)
 
 			convey := Convey
 			if err != nil {

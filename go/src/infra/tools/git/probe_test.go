@@ -14,8 +14,6 @@ import (
 	"strings"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/testing/testfs"
@@ -23,6 +21,45 @@ import (
 	. "github.com/luci/luci-go/common/testing/assertions"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+// TestFindSystemGit tests the ability to resolve the current executable.
+func TestResolveSelf(t *testing.T) {
+	t.Parallel()
+
+	realExec, err := os.Executable()
+	if err != nil {
+		t.Fatalf("failed to resolve the real executable: %s", err)
+	}
+	realExecStat, err := os.Stat(realExec)
+	if err != nil {
+		t.Fatalf("failed to stat the real executable %q: %s", realExec, err)
+	}
+
+	Convey(`With a temporary directory`, t, testfs.MustWithTempDir(t, "resolve_self", func(tdir string) {
+		// Set up a base probe.
+		probe := SystemProbe{
+			Target: "git",
+		}
+
+		Convey(`Will resolve our executable.`, func() {
+			So(probe.ResolveSelf(""), ShouldBeNil)
+			So(probe.self, ShouldEqual, realExec)
+			So(os.SameFile(probe.selfStat, realExecStat), ShouldBeTrue)
+		})
+
+		Convey(`When "self" is a symlink to the executable`, func() {
+			symSelf := filepath.Join(tdir, "me")
+			if err := os.Symlink(realExec, symSelf); err != nil {
+				t.Skipf("Could not create symlink %q => %q: %s", realExec, symSelf, err)
+				return
+			}
+
+			So(probe.ResolveSelf(symSelf), ShouldBeNil)
+			So(probe.self, ShouldEqual, symSelf)
+			So(os.SameFile(probe.selfStat, realExecStat), ShouldBeTrue)
+		})
+	}))
+}
 
 // TestFindSystemGit tests the ability to locate the "git" command in PATH.
 func TestSystemProbe(t *testing.T) {
@@ -36,8 +73,8 @@ func TestSystemProbe(t *testing.T) {
 		envBase.Set("PATHEXT", strings.Join([]string{".com", ".exe", ".bat", ".ohai"}, string(os.PathListSeparator)))
 	}
 
-	Convey(`With a fake PATH setup`, t, testfs.MustWithTempDir(t, "git_find", func(tdir string) {
-		c := context.Background()
+	Convey(`With a fake PATH setup`, t, testfs.MustWithTempDir(t, "system_probe", func(tdir string) {
+		c := baseTestContext()
 
 		createExecutable := func(relPath string) (dir string, path string) {
 			path = filepath.Join(tdir, filepath.FromSlash(relPath))
@@ -81,6 +118,12 @@ func TestSystemProbe(t *testing.T) {
 			},
 		}
 
+		selfGitStat, err := os.Stat(selfGit)
+		if err != nil {
+			t.Fatalf("failed to stat self Git %q: %s", selfGit, err)
+		}
+		probe.self, probe.selfStat = selfGit, selfGitStat
+
 		env := envBase.Clone()
 		setPATH := func(v ...string) {
 			env.Set("PATH", strings.Join(v, string(os.PathListSeparator)))
@@ -89,7 +132,7 @@ func TestSystemProbe(t *testing.T) {
 		Convey(`Can identify the next Git when it follows self in PATH.`, func() {
 			setPATH(selfDir, selfDir, fooDir, wrapperDir, otherDir, nonexistDir)
 
-			git, err := probe.Locate(c, selfGit, "", env)
+			git, err := probe.Locate(c, "", env)
 			So(err, ShouldBeNil)
 			So(git, shouldBeSameFileAs, fooGit)
 			So(wrapperChecks, ShouldEqual, 1)
@@ -99,7 +142,7 @@ func TestSystemProbe(t *testing.T) {
 			setPATH(fooDir, selfDir, wrapperDir, otherDir, nonexistDir)
 
 			Convey(`Will identify Git`, func() {
-				git, err := probe.Locate(c, selfGit, "", env)
+				git, err := probe.Locate(c, "", env)
 				So(err, ShouldBeNil)
 				So(git, shouldBeSameFileAs, fooGit)
 				So(wrapperChecks, ShouldEqual, 1)
@@ -110,7 +153,7 @@ func TestSystemProbe(t *testing.T) {
 					"override/reldir", // (see "overrideGit")
 				}
 
-				git, err := probe.Locate(c, selfGit, "", env)
+				git, err := probe.Locate(c, "", env)
 				So(err, ShouldBeNil)
 				So(git, shouldBeSameFileAs, overrideGit)
 				So(wrapperChecks, ShouldEqual, 1)
@@ -120,10 +163,11 @@ func TestSystemProbe(t *testing.T) {
 		Convey(`Can identify the next Git when self does not exist.`, func() {
 			setPATH(wrapperDir, selfDir, wrapperDir, otherDir, nonexistDir, fooDir)
 
-			git, err := probe.Locate(c, nonexistGit, "", env)
+			probe.self = nonexistGit
+			git, err := probe.Locate(c, "", env)
 			So(err, ShouldBeNil)
 			So(git, shouldBeSameFileAs, fooGit)
-			So(wrapperChecks, ShouldEqual, 3)
+			So(wrapperChecks, ShouldEqual, 2)
 		})
 
 		Convey(`With PATH setup pointing to a wrapper, self, and then the system Git`, func() {
@@ -132,28 +176,28 @@ func TestSystemProbe(t *testing.T) {
 			setPATH(wrapperDir, wrapperDir, selfDir, otherDir, fooDir, nonexistDir)
 
 			Convey(`Will prefer the cached value.`, func() {
-				git, err := probe.Locate(c, selfGit, fooGit, env)
+				git, err := probe.Locate(c, fooGit, env)
 				So(err, ShouldBeNil)
 				So(git, shouldBeSameFileAs, fooGit)
 				So(wrapperChecks, ShouldEqual, 0)
 			})
 
 			Convey(`Will ignore the cached value if it is self.`, func() {
-				git, err := probe.Locate(c, selfGit, selfGit, env)
+				git, err := probe.Locate(c, selfGit, env)
 				So(err, ShouldBeNil)
 				So(git, shouldBeSameFileAs, fooGit)
 				So(wrapperChecks, ShouldEqual, 2)
 			})
 
 			Convey(`Will ignore the cached value if it does not exist.`, func() {
-				git, err := probe.Locate(c, selfGit, nonexistGit, env)
+				git, err := probe.Locate(c, nonexistGit, env)
 				So(err, ShouldBeNil)
 				So(git, shouldBeSameFileAs, fooGit)
 				So(wrapperChecks, ShouldEqual, 2)
 			})
 
 			Convey(`Will skip the wrapper and identify the system Git.`, func() {
-				git, err := probe.Locate(c, selfGit, "", env)
+				git, err := probe.Locate(c, "", env)
 				So(err, ShouldBeNil)
 				So(git, shouldBeSameFileAs, fooGit)
 				So(wrapperChecks, ShouldEqual, 2)
@@ -163,7 +207,7 @@ func TestSystemProbe(t *testing.T) {
 		Convey(`Will skip everything if the wrapper check fails.`, func() {
 			setPATH(wrapperDir, brokenDir, selfDir, otherDir, fooDir, nonexistDir)
 
-			git, err := probe.Locate(c, selfGit, "", env)
+			git, err := probe.Locate(c, "", env)
 			So(err, ShouldBeNil)
 			So(git, shouldBeSameFileAs, fooGit)
 			So(wrapperChecks, ShouldEqual, 3)
@@ -172,7 +216,7 @@ func TestSystemProbe(t *testing.T) {
 		Convey(`Will fail if cannot find another Git in PATH.`, func() {
 			setPATH(selfDir, otherDir, nonexistDir)
 
-			_, err := probe.Locate(c, selfGit, "", env)
+			_, err := probe.Locate(c, "", env)
 			So(err, ShouldErrLike, "could not find target in system")
 			So(wrapperChecks, ShouldEqual, 0)
 		})
@@ -186,7 +230,7 @@ func TestSystemProbe(t *testing.T) {
 
 			conveyFn(`Will ignore symlink because it's the same file.`, func() {
 				setPATH(selfDir, otherDir, fooDir, wrapperDir)
-				git, err := probe.Locate(c, selfGit, "", env)
+				git, err := probe.Locate(c, "", env)
 				So(err, ShouldBeNil)
 				So(git, shouldBeSameFileAs, fooGit)
 				So(wrapperChecks, ShouldEqual, 1)

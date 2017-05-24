@@ -32,17 +32,59 @@ type SystemProbe struct {
 	// the bundled Git.
 	RelativePathOverride []string
 
+	// self is the absolute path to the current executable, resolved via
+	// ResolveSelf. It may be empty if the resolution has not been performed, or
+	// if the current executable could not be resolved.
+	self string
+	// selfStat is the FileInfo for self. If self is not empty, selfStat will not
+	// be nil.
+	selfStat os.FileInfo
+
 	// testRunCommand is a testing stub that, if not nil, will be used
 	// to run the wrapper check command instead of actually running it.
 	testRunCommand func(cmd *exec.Cmd) (int, error)
 }
 
+// ResolveSelf attempts to identify the current process. If successful, returns
+// it as an absolute path.
+//
+// If this process was invoked via symlink, the path to the symlink will be
+// returned if possible.
+func (p *SystemProbe) ResolveSelf(argv0 string) error {
+	if p.self != "" {
+		return nil
+	}
+
+	// Get the authoritative executable from the system.
+	exec, err := os.Executable()
+	if err != nil {
+		return errors.Annotate(err).Reason("failed to get executable").Err()
+	}
+
+	execStat, err := os.Stat(exec)
+	if err != nil {
+		return errors.Annotate(err).Reason("failed to stat executable: %(path)s").
+			D("path", exec).
+			Err()
+	}
+
+	// Before using "os.Executable" result, which is known to resolve symlinks on
+	// Linux, try and identify via argv0.
+	if argv0 != "" && filesystem.AbsPath(&argv0) == nil {
+		if st, err := os.Stat(argv0); err == nil && os.SameFile(execStat, st) {
+			// argv[0] is the same file as our executable, but may be an unresolved
+			// symlink. Prefer it.
+			p.self, p.selfStat = argv0, st
+			return nil
+		}
+	}
+
+	p.self, p.selfStat = exec, execStat
+	return nil
+}
+
 // Locate attempts to locate the system's Target by traversing the available
 // PATH.
-//
-// self is the path of the currently-running executable. It may be empty or
-// invalid if the current executable could not be identified, or if it is no
-// longer available at that location.
 //
 // cached is the cached path, passed from wrapper to wrapper through the a
 // State struct in the environment. This may be empty, if there was no cached
@@ -50,23 +92,7 @@ type SystemProbe struct {
 //
 // env is the environment to operate with, and will not be modified during
 // execution.
-func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ.Env) (string, error) {
-	// Stat "self" to ensure that we exist. We will use this later to assert that
-	// our system target is not the same file as self.
-	//
-	// This may fail if we have been deleted since running. If so, we will skip
-	// the SameFile check.
-	var selfDir string
-	var selfStat os.FileInfo
-	if self != "" {
-		selfDir = filepath.Dir(self)
-
-		var err error
-		if selfStat, err = os.Stat(self); err != nil {
-			logging.Debugf(c, "Failed to stat self [%s]: %s", self, err)
-		}
-	}
-
+func (p *SystemProbe) Locate(c context.Context, cached string, env environ.Env) (string, error) {
 	// If we have a cached path, check that it exists and is executable and use it
 	// if it is.
 	if cached != "" {
@@ -74,11 +100,11 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 		case err == nil:
 			// Use the cached path. First, pass it through a sanity check to ensure
 			// that it is not self.
-			if selfStat == nil || !os.SameFile(selfStat, cachedStat) {
+			if p.selfStat == nil || !os.SameFile(p.selfStat, cachedStat) {
 				logging.Debugf(c, "Using cached Git: %s", cached)
 				return cached, nil
 			}
-			logging.Debugf(c, "Cached value [%s] is this wrapper [%s]; ignoring.", cached, self)
+			logging.Debugf(c, "Cached value [%s] is this wrapper [%s]; ignoring.", cached, p.self)
 
 		case os.IsNotExist(err):
 			// Our cached path doesn't exist, so we will have to look for a new one.
@@ -92,8 +118,11 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 
 	// Get stats on our parent directory. This may fail; if so, we'll skip the
 	// SameFile check.
+	var selfDir string
 	var selfDirStat os.FileInfo
-	if selfDir != "" {
+	if p.self != "" {
+		selfDir = filepath.Dir(p.self)
+
 		var err error
 		if selfDirStat, err = os.Stat(selfDir); err != nil {
 			logging.Debugf(c, "Failed to stat self directory [%s]: %s", selfDir, err)
@@ -129,7 +158,7 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 		}
 		checked[dir] = struct{}{}
 
-		path := p.checkDir(c, dir, selfStat, selfDirStat, checkEnv)
+		path := p.checkDir(c, dir, selfDirStat, checkEnv)
 		if path != "" {
 			return path, nil
 		}
@@ -144,7 +173,7 @@ func (p *SystemProbe) Locate(c context.Context, self, cached string, env environ
 // checkDir checks "checkDir" for our Target executable. It ignores
 // executables whose target is the same file or shares the same parent directory
 // as "self".
-func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.FileInfo, checkEnv environ.Env) string {
+func (p *SystemProbe) checkDir(c context.Context, dir string, selfDir os.FileInfo, checkEnv environ.Env) string {
 	// If we have a self directory defined, ensure that "dir" isn't the same
 	// directory. If it is, we will ignore this option, since we are looking for
 	// something outside of the wrapper directory.
@@ -173,10 +202,10 @@ func (p *SystemProbe) checkDir(c context.Context, dir string, self, selfDir os.F
 	}
 
 	// Make sure this file isn't the same as "self", if available.
-	if self != nil {
+	if p.selfStat != nil {
 		switch st, err := os.Stat(t); {
 		case err == nil:
-			if os.SameFile(self, st) {
+			if os.SameFile(p.selfStat, st) {
 				return ""
 			}
 
