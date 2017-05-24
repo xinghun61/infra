@@ -478,9 +478,7 @@ func (c *cookRun) updateEnv(env environ.Env) {
 	addPaths("PATH", c.PrefixPathENV)
 	addPaths("PYTHONPATH", c.PythonPaths)
 
-	for _, entry := range c.SetEnvAbspath {
-		env.SetEntry(entry)
-	}
+	env.Load(c.SetEnvAbspath)
 
 	// Tell subprocesses to use Kitchen's temp dir.
 	if c.TempDir == "" {

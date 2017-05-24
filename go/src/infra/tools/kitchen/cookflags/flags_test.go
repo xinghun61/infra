@@ -133,8 +133,8 @@ var flagTestCases = []struct {
 				"$CWD/some/dir",
 				"$CWD/foo",
 			},
-			SetEnvAbspath: []string{
-				"DORK=$CWD/sup",
+			SetEnvAbspath: map[string]string{
+				"DORK": "$CWD/sup",
 			},
 			TempDir: "$CWD/tmp",
 			LogDogFlags: LogDogFlags{

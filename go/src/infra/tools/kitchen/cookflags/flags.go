@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/luci/luci-go/common/flag/stringlistflag"
+	"github.com/luci/luci-go/common/flag/stringmapflag"
 )
 
 const (
@@ -32,7 +33,7 @@ type CookFlags struct {
 	PropertiesFile string              `json:"properties_file"`
 	PythonPaths    stringlistflag.Flag `json:"python_path"`
 	PrefixPathENV  stringlistflag.Flag `json:"prefix_path_env"`
-	SetEnvAbspath  stringlistflag.Flag `json:"set_env_abspath"`
+	SetEnvAbspath  stringmapflag.Value `json:"set_env_abspath"`
 	CacheDir       string              `json:"cache_dir"`
 	TempDir        string              `json:"temp_dir"`
 	BuildURL       string              `json:"build_url"`
@@ -179,7 +180,7 @@ func (c *CookFlags) Dump() []string {
 
 	ret.list("python-path", c.PythonPaths)
 	ret.list("prefix-path-env", c.PrefixPathENV)
-	ret.list("set-env-abspath", c.SetEnvAbspath)
+	ret.stringMap("set-env-abspath", c.SetEnvAbspath)
 
 	return append(ret, c.LogDogFlags.Dump()...)
 }

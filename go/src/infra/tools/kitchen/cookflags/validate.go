@@ -12,7 +12,6 @@ import (
 
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/flag/stringlistflag"
-	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/system/filesystem"
 )
 
@@ -110,15 +109,14 @@ func (c *CookFlags) Normalize() error {
 	}
 
 	// Normalize c.SetEnvAbspath
-	for i, entry := range c.SetEnvAbspath {
-		key, value := environ.Split(entry)
+	for key, value := range c.SetEnvAbspath {
 		if value == "" {
 			return inputError("-set-env-abspath requires a PATH value")
 		}
 		if err := filesystem.AbsPath(&value); err != nil {
 			return err
 		}
-		c.SetEnvAbspath[i] = environ.Join(key, value)
+		c.SetEnvAbspath[key] = value
 	}
 
 	if c.TempDir != "" {

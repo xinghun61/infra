@@ -17,6 +17,7 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/luci/luci-go/common/flag/stringlistflag"
+	"github.com/luci/luci-go/common/flag/stringmapflag"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/common/system/environ"
@@ -36,7 +37,7 @@ func TestCook(t *testing.T) {
 			cook.TempDir = "/tmp"
 			cook.PrefixPathENV = stringlistflag.Flag{"/path2", "/path3"}
 			cook.PythonPaths = stringlistflag.Flag{"/python2", "/python3"}
-			cook.SetEnvAbspath = stringlistflag.Flag{"FOO=/bar", "BAZ=/qux"}
+			cook.SetEnvAbspath = stringmapflag.Value{"FOO": "/bar", "BAZ": "/qux"}
 
 			env := environ.New([]string{"PATH=/path", "PYTHONPATH=/python"})
 			cook.updateEnv(env)
