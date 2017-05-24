@@ -70,7 +70,7 @@ func (c *CookFlags) Normalize() error {
 		return inputError("-recipe is required")
 	}
 
-	if c.Properties != "" && c.PropertiesFile != "" {
+	if len(c.Properties) > 0 && c.PropertiesFile != "" {
 		return inputError("only one of -properties or -properties-file is allowed")
 	}
 

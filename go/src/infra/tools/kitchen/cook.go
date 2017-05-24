@@ -492,13 +492,9 @@ func (c *cookRun) updateEnv(env environ.Env) {
 	}
 }
 
-func parseProperties(properties, propertiesFile string) (result map[string]interface{}, err error) {
-	if properties != "" {
-		err = unmarshalJSONWithNumber([]byte(properties), &result)
-		if err != nil {
-			err = inputError("could not parse properties %s\n%s", properties, err)
-		}
-		return
+func parseProperties(properties map[string]interface{}, propertiesFile string) (result map[string]interface{}, err error) {
+	if len(properties) > 0 {
+		return properties, nil
 	}
 	if propertiesFile != "" {
 		b, err := ioutil.ReadFile(propertiesFile)

@@ -5,6 +5,7 @@
 package cookflags
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -45,7 +46,7 @@ var flagTestCases = []struct {
 	{
 		flags: []string{
 			"-mode", "swarming", "-repository", "whatever", "-recipe", "yep",
-			"-properties", "foo", "-properties-file", "bar",
+			"-properties", `{"some": "thing"}`, "-properties-file", "bar",
 		},
 		errValidate: "only one of -properties or -properties-file",
 	},
@@ -91,6 +92,7 @@ var flagTestCases = []struct {
 		flags: []string{
 			"-mode", "buildbot",
 			"-repository", "meep",
+			"-properties", `{"something":"awesome"}`,
 			"-recipe", "cool_recipe",
 		},
 		cf: CookFlags{
@@ -100,6 +102,9 @@ var flagTestCases = []struct {
 			Revision:      "HEAD",
 			WorkDir:       "kitchen-workdir",
 			CheckoutDir:   "kitchen-checkout",
+			Properties: PropertyFlag{
+				"something": "awesome",
+			},
 		},
 	},
 
@@ -107,6 +112,7 @@ var flagTestCases = []struct {
 		flags: []string{
 			"-mode", "buildbot",
 			"-repository", "meep",
+			"-properties", `{"something":"awesome"}`,
 			"-temp-dir", "tmp",
 			"-recipe", "cool_recipe",
 			"-prefix-path-env", "some/dir",
@@ -136,6 +142,9 @@ var flagTestCases = []struct {
 					"A":      "B",
 					"Roffle": "Copter",
 				},
+			},
+			Properties: PropertyFlag{
+				"something": "awesome",
 			},
 		},
 	},
@@ -168,6 +177,11 @@ func TestFlags(t *testing.T) {
 						if tc.errParse == nil {
 							if tc.errValidate == nil {
 								So(cf.Dump(), ShouldResemble, tc.flags)
+								data, err := json.Marshal(cf)
+								So(err, ShouldBeNil)
+								cf2 := &CookFlags{}
+								So(json.Unmarshal(data, cf2), ShouldBeNil)
+								So(&cf, ShouldResemble, cf2)
 							}
 							So(cf.Normalize(), ShouldErrLike, tc.errValidate)
 							if tc.errValidate == nil {

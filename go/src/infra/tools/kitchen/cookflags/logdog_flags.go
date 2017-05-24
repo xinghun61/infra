@@ -13,13 +13,13 @@ import (
 
 // LogDogFlags are the subset of flags which control logdog behavior.
 type LogDogFlags struct {
-	AnnotationURL          types.StreamAddr
-	GlobalTags             streamproto.TagMap
-	LogDogOnly             bool
-	LogDogSendIOKeepAlives bool
+	AnnotationURL          types.StreamAddr   `json:"annotation_url"`
+	GlobalTags             streamproto.TagMap `json:"global_tags"`
+	LogDogOnly             bool               `json:"logdog_only"`
+	LogDogSendIOKeepAlives bool               `json:"send_io_keepalives"`
 
-	FilePath               string
-	ServiceAccountJSONPath string
+	FilePath               string `json:"file_path"`
+	ServiceAccountJSONPath string `json:"service_account_json_path"`
 }
 
 func (p *LogDogFlags) register(fs *flag.FlagSet) {

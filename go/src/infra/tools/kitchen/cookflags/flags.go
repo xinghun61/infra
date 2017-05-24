@@ -20,29 +20,29 @@ const (
 type CookFlags struct {
 	// For field documentation see the flags that these flags are bound to.
 
-	Mode CookMode
+	Mode CookMode `json:"mode"`
 
-	RepositoryURL string
-	Revision      string
-	CheckoutDir   string
+	RepositoryURL string `json:"repository_url"`
+	Revision      string `json:"revision"`
+	CheckoutDir   string `json:"checkout_dir"`
 
-	RecipeResultByteLimit int
+	RecipeResultByteLimit int `json:"recipe_result_byte_limit"`
 
-	Properties     string
-	PropertiesFile string
-	PythonPaths    stringlistflag.Flag
-	PrefixPathENV  stringlistflag.Flag
-	SetEnvAbspath  stringlistflag.Flag
-	CacheDir       string
-	TempDir        string
-	BuildURL       string
+	Properties     PropertyFlag        `json:"properties"`
+	PropertiesFile string              `json:"properties_file"`
+	PythonPaths    stringlistflag.Flag `json:"python_path"`
+	PrefixPathENV  stringlistflag.Flag `json:"prefix_path_env"`
+	SetEnvAbspath  stringlistflag.Flag `json:"set_env_abspath"`
+	CacheDir       string              `json:"cache_dir"`
+	TempDir        string              `json:"temp_dir"`
+	BuildURL       string              `json:"build_url"`
 
-	OutputResultJSONPath string
+	OutputResultJSONPath string `json:"output_result_json"`
 
-	RecipeName string
-	WorkDir    string
+	RecipeName string `json:"recipe_name"`
+	WorkDir    string `json:"work_dir"`
 
-	LogDogFlags LogDogFlags
+	LogDogFlags LogDogFlags `json:"logdog_flags"`
 }
 
 // Register the CookFlags with the provided FlagSet.
@@ -110,9 +110,12 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		defaultWorkDir,
 		`The working directory for recipe execution. It must not exist or be empty. Defaults to "./kitchen-workdir."`)
 
-	fs.StringVar(
+	if c.Properties == nil {
+		c.Properties = PropertyFlag{}
+	}
+	fs.Var(
 		&c.Properties,
-		"properties", "",
+		"properties",
 		"A JSON string containing the properties. Mutually exclusive with -properties-file.")
 
 	fs.StringVar(
@@ -164,7 +167,9 @@ func (c *CookFlags) Dump() []string {
 	ret.str("revision", c.Revision)
 	ret.strDefault("checkout-dir", c.CheckoutDir, defaultCheckoutDir)
 	ret.strDefault("recipe-result-byte-limit", strconv.Itoa(c.RecipeResultByteLimit), "0")
-	ret.str("properties", c.Properties)
+	if len(c.Properties) > 0 {
+		ret.str("properties", c.Properties.String())
+	}
 	ret.str("properties-file", c.PropertiesFile)
 	ret.str("cache-dir", c.CacheDir)
 	ret.str("temp-dir", c.TempDir)
