@@ -110,6 +110,9 @@ class IssueRerankTest(unittest.TestCase):
     tracker_helpers.GetAllowedOpenAndClosedRelatedIssues(
         self.services, mr, issue).AndReturn(
             (blocked_on_issues, {}))
+    self.services.issue.GetIssuesDict(
+        mr.cnxn, mox.SameElementsAs(blocked_on_issues.keys())).AndReturn(
+        blocked_on_issues)
     return mr, issue
 
   def SetUpRerankIssues(self, issue, target_id, moved_ids, split_above):

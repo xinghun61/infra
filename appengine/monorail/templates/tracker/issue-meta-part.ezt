@@ -169,16 +169,20 @@
       [if-any issue.multiple_blocked_on]<a id="show-ranks">View detail</a>[end]
       <br>
       <span id="blocked-links">
-        [for issue.blocked_on][if-any issue.blocked_on.visible]
-          [if-any issue.blocked_on.is_open]
+        [for issue.blocked_on][if-any issue.blocked_on.is_open]
+          [if-any issue.blocked_on.visible]
             <a href="[issue.blocked_on.url]" title="[issue.blocked_on.display_name]: [issue.blocked_on.summary]"
             >[issue.blocked_on.display_name]</a><br>
+          [else]
+	    [issue.blocked_on.display_name]<br>
           [end]
         [end][end]
-        [for issue.blocked_on][if-any issue.blocked_on.visible]
-          [if-any issue.blocked_on.is_open][else]
+        [for issue.blocked_on][if-any issue.blocked_on.is_open][else]
+          [if-any issue.blocked_on.visible]
             <a href="[issue.blocked_on.url]" title="[issue.blocked_on.display_name]: [issue.blocked_on.summary]" class="closed_ref"
             >[issue.blocked_on.display_name]</a><br>
+          [else]
+	    [issue.blocked_on.display_name]<br>
           [end]
         [end][end]
       </span>
@@ -186,16 +190,20 @@
 
     [if-any issue.blocking]
       <br><b>Blocking:</b><br>
-      [for issue.blocking][if-any issue.blocking.visible]
-        [if-any issue.blocking.is_open]
+      [for issue.blocking][if-any issue.blocking.is_open]
+        [if-any issue.blocking.visible]
           <a href="[issue.blocking.url]" title="[issue.blocking.display_name]: [issue.blocking.summary]"
            >[issue.blocking.display_name]</a><br>
+        [else]
+          [issue.blocking.display_name]<br>
         [end]
       [end][end]
-      [for issue.blocking][if-any issue.blocking.visible]
-        [if-any issue.blocking.is_open][else]
+      [for issue.blocking][if-any issue.blocking.is_open][else]
+        [if-any issue.blocking.visible]
           <a href="[issue.blocking.url]" title="[issue.blocking.display_name]: [issue.blocking.summary]" class="closed_ref"
            >[issue.blocking.display_name]</a><br>
+        [else]
+          [issue.blocking.display_name]<br>
         [end]
       [end][end]
     [end]

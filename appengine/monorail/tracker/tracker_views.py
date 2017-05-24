@@ -45,7 +45,7 @@ class IssueView(template_helpers.PBProxy):
       open_related: dict of visible open issues that are related to this issue.
       closed_related: dict {issue_id: issue} of visible closed issues that
           are related to this issue.
-      all_related: dict {issue_id: issue} of all blocked-on, blocking,
+      all_related: optional dict {issue_id: issue} of all blocked-on, blocking,
           or merged-into issues referenced from this issue, regardless of
           perms.
     """
@@ -149,30 +149,36 @@ class IssueView(template_helpers.PBProxy):
     self.blocking = []
     current_project_name = issue.project_name
 
-    if open_related is not None and closed_related is not None:
+    if (open_related is not None and closed_related is not None
+        and all_related is not None):
       self.merged_into = IssueRefView(
-          current_project_name, issue.merged_into,
+          current_project_name, all_related.get(issue.merged_into),
           open_related, closed_related)
 
       self.blocked_on = [
-          IssueRefView(current_project_name, iid, open_related, closed_related)
+          IssueRefView(
+              current_project_name, all_related.get(iid),
+              open_related, closed_related)
           for iid in blocked_on_iids]
       self.blocked_on.extend(
           [DanglingIssueRefView(ref.project, ref.issue_id)
            for ref in issue.dangling_blocked_on_refs])
-      self.blocked_on = [irv for irv in self.blocked_on if irv.visible]
       # TODO(jrobbins): sort by irv project_name and local_id
 
       self.blocking = [
-          IssueRefView(current_project_name, iid, open_related, closed_related)
+          IssueRefView(
+              current_project_name, all_related.get(iid),
+              open_related, closed_related)
           for iid in blocking_iids]
       self.blocking.extend(
           [DanglingIssueRefView(ref.project, ref.issue_id)
            for ref in issue.dangling_blocking_refs])
-      self.blocking = [irv for irv in self.blocking if irv.visible]
       # TODO(jrobbins): sort by irv project_name and local_id
 
-    self.multiple_blocked_on = ezt.boolean(len(self.blocked_on) >= 2)
+    visible_open_blocked_on = [
+        irv for irv in self.blocked_on
+        if open_related and irv.issue_id in open_related]
+    self.multiple_blocked_on = ezt.boolean(len(visible_open_blocked_on) >= 2)
     self.detail_relative_url = tracker_helpers.FormatRelativeIssueURL(
         issue.project_name, urls.ISSUE_DETAIL, id=issue.local_id)
 
@@ -213,12 +219,13 @@ class _RestrictionsView(object):
 class IssueRefView(object):
   """A simple object to easily display links to issues in EZT."""
 
-  def __init__(self, current_project_name, issue_id, open_dict, closed_dict):
+  def __init__(
+      self, current_project_name, related_issue, open_dict, closed_dict):
     """Make a simple object to display a link to a referenced issue.
 
     Args:
       current_project_name: string name of the current project.
-      issue_id: int issue ID of the target issue.
+      related_issue: issue PB of the target issue.
       open_dict: dict {issue_id: issue} of pre-fetched open issues that the
           user is allowed to view.
       closed_dict: dict of pre-fetched closed issues that the user is
@@ -227,22 +234,18 @@ class IssueRefView(object):
     Note, the target issue may be a member of either open_dict or
     closed_dict, or neither one.  If neither, nothing is displayed.
     """
-    if (not issue_id or
-        issue_id not in open_dict and issue_id not in closed_dict):
-      # Issue not found or not visible to this user, so don't link to it.
+    if not related_issue:
+      # Issue not found, so don't link to it.
       self.visible = ezt.boolean(False)
+      self.url = None
+      self.display_name = 'missing issue'
+      self.issue_ref = None
       return
 
-    self.visible = ezt.boolean(True)
-
-    if issue_id in open_dict:
-      related_issue = open_dict[issue_id]
-      self.is_open = ezt.boolean(True)
-    else:
-      related_issue = closed_dict[issue_id]
-      self.is_open = ezt.boolean(False)
-
     self.issue_id = related_issue.issue_id
+    self.visible = ezt.boolean(
+        self.issue_id in open_dict or self.issue_id in closed_dict)
+    self.is_open = ezt.boolean(self.issue_id in open_dict)
 
     if current_project_name == related_issue.project_name:
       self.url = 'detail?id=%s' % related_issue.local_id
@@ -256,7 +259,12 @@ class IssueRefView(object):
           related_issue.project_name, related_issue.local_id)
       self.issue_ref = self.display_name[6:]
 
-    self.summary = related_issue.summary
+    if self.visible:
+      self.summary = related_issue.summary
+    else:
+      self.summary = None
+      self.url = None
+
     self.is_dangling = ezt.boolean(False)
 
   def DebugString(self):

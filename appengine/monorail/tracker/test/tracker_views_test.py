@@ -133,34 +133,43 @@ class IssueViewTest(unittest.TestCase):
     self.assertEqual(ezt.boolean(False), view1.is_open)
 
   def testIssueViewWithBlocking(self):
+    all_related={
+        self.issue1.issue_id: self.issue1,
+        self.issue2.issue_id: self.issue2,
+        self.issue3.issue_id: self.issue3,
+        self.issue4.issue_id: self.issue4,
+        }
     # Treat issues 3 and 4 as visible to the current user.
     view2 = tracker_views.IssueView(
         self.issue2, self.users_by_id, _MakeConfig(),
         open_related={self.issue1.issue_id: self.issue1,
                       self.issue3.issue_id: self.issue3},
-        closed_related={self.issue4.issue_id: self.issue4})
+        closed_related={self.issue4.issue_id: self.issue4},
+        all_related=all_related)
     self.assertEqual(['not too long summary', 'sum 3'],
-                     [ref.summary for ref in view2.blocked_on])
+                     [irv.summary for irv in view2.blocked_on])
     self.assertEqual(['not too long summary', 'sum 4',
                       'Issue 5001 in codesite.'],
-                     [ref.summary for ref in view2.blocking])
+                     [irv.summary for irv in view2.blocking])
 
     # Now, treat issues 3 and 4 as not visible to the current user.
     view2 = tracker_views.IssueView(
         self.issue2, self.users_by_id, _MakeConfig(),
-        open_related={self.issue1.issue_id: self.issue1}, closed_related={})
-    self.assertEqual(['not too long summary'],
-                     [ref.summary for ref in view2.blocked_on])
-    self.assertEqual(['not too long summary', 'Issue 5001 in codesite.'],
-                     [ref.summary for ref in view2.blocking])
+        open_related={self.issue1.issue_id: self.issue1}, closed_related={},
+        all_related=all_related)
+    self.assertEqual(['not too long summary', None],
+                     [irv.summary for irv in view2.blocked_on])
+    self.assertEqual(['not too long summary', None, 'Issue 5001 in codesite.'],
+                     [irv.summary for irv in view2.blocking])
 
     # Treat nothing as visible to the current user. Can still see dangling ref.
     view2 = tracker_views.IssueView(
         self.issue2, self.users_by_id, _MakeConfig(),
-        open_related={}, closed_related={})
-    self.assertEqual([], view2.blocked_on)
-    self.assertEqual(['Issue 5001 in codesite.'],
-                     [ref.summary for ref in view2.blocking])
+        open_related={}, closed_related={}, all_related=all_related)
+    self.assertEqual([None, None],
+                     [irv.summary for irv in view2.blocked_on])
+    self.assertEqual([None, None, 'Issue 5001 in codesite.'],
+                     [irv.summary for irv in view2.blocking])
 
   def testIssueViewWithRestrictions(self):
     view = tracker_views.IssueView(
@@ -206,16 +215,14 @@ class IssueRefViewTest(unittest.TestCase):
                  2: self.issue2}
     closed_list = {3: self.issue3}
 
-    ref_iid = 1
-    irv = tracker_views.IssueRefView('foo', ref_iid, open_list, closed_list)
+    irv = tracker_views.IssueRefView('foo', self.issue1, open_list, closed_list)
     self.assertEquals(irv.visible, ezt.boolean(True))
     self.assertEquals(irv.is_open, ezt.boolean(True))
     self.assertEquals(irv.url, 'detail?id=1')
     self.assertEquals(irv.display_name, 'issue 1')
     self.assertEquals(irv.summary, 'blue screen')
 
-    ref_iid = 3
-    irv = tracker_views.IssueRefView('foo', ref_iid, open_list, closed_list)
+    irv = tracker_views.IssueRefView('foo', self.issue3, open_list, closed_list)
     self.assertEquals(irv.visible, ezt.boolean(True))
     self.assertEquals(irv.is_open, ezt.boolean(False))
     self.assertEquals(irv.url, 'detail?id=3')
@@ -227,8 +234,7 @@ class IssueRefViewTest(unittest.TestCase):
                  2: self.issue2}
     closed_list = {3: self.issue3}
 
-    ref_iid = 99
-    irv = tracker_views.IssueRefView('foo', ref_iid, open_list, closed_list)
+    irv = tracker_views.IssueRefView('foo', None, open_list, closed_list)
     self.assertEquals(irv.visible, ezt.boolean(False))
 
   def testCrossProjectReference(self):
@@ -237,8 +243,7 @@ class IssueRefViewTest(unittest.TestCase):
     closed_list = {3: self.issue3,
                    4: self.issue4}
 
-    ref_iid = 4
-    irv = tracker_views.IssueRefView('foo', ref_iid, open_list, closed_list)
+    irv = tracker_views.IssueRefView('foo', self.issue4, open_list, closed_list)
     self.assertEquals(irv.visible, ezt.boolean(True))
     self.assertEquals(irv.is_open, ezt.boolean(False))
     self.assertEquals(

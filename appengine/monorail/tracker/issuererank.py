@@ -57,31 +57,33 @@ class IssueRerank(jsonfeed.JsonFeed):
           mr.cnxn, mr.parent_id, changed_ranks)
       parent = self.services.issue.GetIssue(mr.cnxn, mr.parent_id)
 
-    blocked_on_issues = [
+    blocked_on_issues = self.services.issue.GetIssuesDict(
+        mr.cnxn, parent.blocked_on_iids)
+    blocked_on_irvs = [
         tracker_views.IssueRefView(
-            mr.project_name, issue_id,
+            mr.project_name, blocked_on_issues.get(issue_id),
             open_related, closed_related)
         for issue_id in parent.blocked_on_iids]
-    dangling_blocked_on_issues = [
+    dangling_blocked_on_irvs = [
         tracker_views.DanglingIssueRefView(ref.project, ref.issue_id)
         for ref in parent.dangling_blocked_on_refs]
     issues = [{
-          'display_name': issue.display_name,
-          'issue_id': issue.issue_id,
-          'issue_ref': issue.issue_ref,
-          'summary': issue.summary,
-          'url': issue.url,
-          'is_open': issue.is_open,
+          'display_name': irv.display_name,
+          'issue_id': irv.issue_id,
+          'issue_ref': irv.issue_ref,
+          'summary': irv.summary,
+          'url': irv.url,
+          'is_open': irv.is_open,
           'is_dangling': False,
-        } for issue in blocked_on_issues if issue.visible]
+        } for irv in blocked_on_irvs if irv.visible]
     issues.extend([{
-        'display_name': issue.display_name,
-        'issue_ref': issue.issue_ref,
-        'summary': issue.summary,
-        'url': issue.url,
-        'is_open': issue.is_open,
+        'display_name': irv.display_name,
+        'issue_ref': irv.issue_ref,
+        'summary': irv.summary,
+        'url': irv.url,
+        'is_open': irv.is_open,
         'is_dangling': True,
-        } for issue in dangling_blocked_on_issues if issue.visible])
+        } for irv in dangling_blocked_on_irvs if irv.visible])
     return {'issues': issues}
 
   def _GetIssues(self, mr):
