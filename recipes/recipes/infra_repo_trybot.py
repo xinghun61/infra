@@ -62,13 +62,18 @@ def RunSteps(api):
             'recipe lint', api.path['checkout'].join('recipes', 'recipes.py'),
             ['lint'])
 
-    # Ensure go is bootstrapped as a separate step.
-    api.python('go bootstrap', api.path['checkout'].join('go', 'env.py'))
+    if all(f.startswith('infra_internal/') or f.startswith('commit_queue/')
+           for f in files):
+      # Don't do Go testing if only Python packages are modified.
+      api.step('skipping Go tests', cmd=None)
+    else:
+      # Ensure go is bootstrapped as a separate step.
+      api.python('go bootstrap', api.path['checkout'].join('go', 'env.py'))
 
-    # Note: env.py knows how to expand 'python' into sys.executable.
-    api.python(
-        'go tests', api.path['checkout'].join('go', 'env.py'),
-        ['python', api.path['checkout'].join('go', 'test.py')])
+      # Note: env.py knows how to expand 'python' into sys.executable.
+      api.python(
+          'go tests', api.path['checkout'].join('go', 'env.py'),
+          ['python', api.path['checkout'].join('go', 'test.py')])
 
     # Do slow *.cipd packaging tests only when touching build/* or DEPS. This
     # will build all registered packages (without uploading them), and run
@@ -155,6 +160,16 @@ def GenTests(api):
         mastername='tryserver.infra',
         buildername='infra_tester') +
     diff('infra/stuff.py', 'go/src/infra/stuff.go')
+  )
+
+  yield (
+    api.test('infra_internal_gerrit_skip_golang') +
+    api.properties.tryserver(
+        gerrit_project='infra/infra_internal',
+        gerrit_url='https://chrome-internal-review.googlesource.com',
+        mastername='tryserver.infra',
+        buildername='infra_tester') +
+    diff('commit_queue/stuff.py', 'infra_internal/git_admin_tool.py')
   )
 
   yield (
