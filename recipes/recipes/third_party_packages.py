@@ -33,7 +33,7 @@ CPYTHON_PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium2'
+CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium3'
 
 GIT_REPO_URL = (
     'https://chromium.googlesource.com/external/github.com/git/git')
@@ -51,16 +51,19 @@ GIT_PACKAGE_VERSION_SUFFIX = '.chromium5'
 
 
 def RunSteps(api):
-  api.cipd.set_service_account_credentials(
-      api.cipd.default_bot_service_account_credentials)
+  if not GetDryRun(api):
+    api.cipd.set_service_account_credentials(
+        api.cipd.default_bot_service_account_credentials)
 
   support = SupportPrefix(api.path['start_dir'].join('_support'))
   with api.step.defer_results():
-    if not api.platform.is_win:
-      with api.step.nest('python'):
-        PackagePythonForUnix(api, support)
-    with api.step.nest('git'):
-      PackageGit(api, support)
+    if IsWhitelisted(api, 'python'):
+      if not api.platform.is_win:
+        with api.step.nest('python'):
+          PackagePythonForUnix(api, support)
+    if IsWhitelisted(api, 'git'):
+      with api.step.nest('git'):
+        PackageGit(api, support)
 
 
 class SupportPrefix(object):
@@ -79,6 +82,7 @@ class SupportPrefix(object):
     'infra/third_party/source/termcap': 'version:1.3.1',
     'infra/third_party/source/zlib': 'version:1.2.11',
     'infra/third_party/source/curl': 'version:7.54.0',
+    'infra/third_party/cacert': 'date:2017-01-18',
   }
 
   def __init__(self, base):
@@ -101,13 +105,16 @@ class SupportPrefix(object):
         'ac_cv_func_clock_gettime': 'n',
     })
 
-  @contextlib.contextmanager
-  def _ensure_and_build_once(self, api, name, build_fn):
+  def _ensure_sources(self, api):
     sources = self._build.join('sources')
     if self._built is None:
       api.cipd.ensure(sources, self._SOURCES)
       self._built = set()
+    return sources
 
+  @contextlib.contextmanager
+  def _ensure_and_build_once(self, api, name, build_fn):
+    sources = self._ensure_sources(api)
     if name in self._built:
       return
 
@@ -192,7 +199,8 @@ class SupportPrefix(object):
   def ensure_autoconf(self, api):
     return self._generic_build(api, 'autoconf')
 
-
+  def ensure_cacert(self, api):
+    return self._ensure_sources(api).join('cacert.pem')
 
 
 @recipe_api.composite_step
@@ -289,6 +297,19 @@ def PackagePythonForUnix(api, support):
 
     # Build Python.
     api.step('make', ['make', 'install'])
+
+    # Install "cacert.pem".
+    python_libdir = target_dir.join('lib', 'python2.7')
+    api.shutil.copy(
+        'install cacert.pem',
+        support.ensure_cacert(api),
+        python_libdir.join('cacert.pem'))
+
+    # Install "usercustomize.py".
+    api.shutil.copy(
+        'install usercustomize.py',
+        api.resource('python_usercustomize.py'),
+        python_libdir.join('usercustomize.py'))
 
   base_env = {}
   if api.platform.is_mac:
@@ -601,15 +622,31 @@ def EnsurePackage(
   CreatePackage(api, package_name, workdir, package_dir, version)
 
 
+def GetDryRun(api):
+  """Returns the "dry_run" property value.
+
+  To enable dry run, set "dry_run" to either be a string, specifying a specific
+  package name to build, or a true value to perform a full dry run. If missing
+  or a false value, this recipe will perform a production run.
+  """
+  return api.properties.get('dry_run')
+
+
+def IsWhitelisted(api, key):
+  dry_run = GetDryRun(api)
+  return (not isinstance(dry_run, basestring)) or dry_run == key
+
+
 def CreatePackage(api, name, workdir, root, version):
   package_file = workdir.join('package.cipd')
   api.cipd.build(root, package_file, name)
-  api.cipd.register(name, package_file, tags={'version': version})
+  if not GetDryRun(api):
+    api.cipd.register(name, package_file, tags={'version': version})
 
 
 def DoesPackageExist(api, name, version):
   search = api.cipd.search(name, 'version:' + version)
-  return bool(search.json.output['result'])
+  return bool(search.json.output['result'] and not GetDryRun(api))
 
 
 def GetLatestReleaseTag(api, repo_url, prefix='v'):
@@ -725,4 +762,13 @@ def GenTests(api):
       api.platform.bits(64) +
       api.properties(git_release_tag='v2.12.2') +
       api.step_data('python.refs', python_test_refs)
+  )
+
+  yield (
+      api.test('dry_run') +
+      api.properties(dry_run=True) +
+      api.platform.name('linux') +
+      api.platform.bits(64) +
+      api.step_data('python.refs', python_test_refs) +
+      api.step_data('git.refs', git_test_refs)
   )
