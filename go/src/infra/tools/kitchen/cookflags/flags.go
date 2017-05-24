@@ -4,12 +4,16 @@
 
 package cookflags
 
-//go:generate stringer -type CookMode
-
 import (
 	"flag"
+	"strconv"
 
 	"github.com/luci/luci-go/common/flag/stringlistflag"
+)
+
+const (
+	defaultCheckoutDir = "kitchen-checkout"
+	defaultWorkDir     = "kitchen-workdir"
 )
 
 // CookFlags are all of the flags necessary for the kitchen 'cook' command.
@@ -96,14 +100,14 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 	fs.StringVar(
 		&c.CheckoutDir,
 		"checkout-dir",
-		"kitchen-checkout",
+		defaultCheckoutDir,
 		"The directory to check out the repository to or to look for bundled recipes. It must either: not exist, be empty, "+
 			"be a valid Git repository, or be a recipe bundle.")
 
 	fs.StringVar(
 		&c.WorkDir,
 		"workdir",
-		"kitchen-workdir",
+		defaultWorkDir,
 		`The working directory for recipe execution. It must not exist or be empty. Defaults to "./kitchen-workdir."`)
 
 	fs.StringVar(
@@ -148,4 +152,29 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		"An optional URL to the build, which can be used to link to the build in LogDog.")
 
 	c.LogDogFlags.register(fs)
+}
+
+// Dump returns a []string command line argument which matches this CookFlags.
+func (c *CookFlags) Dump() []string {
+	ret := flagDumper{}
+
+	ret.str("mode", c.Mode.String())
+	ret.strDefault("workdir", c.WorkDir, defaultWorkDir)
+	ret.str("repository", c.RepositoryURL)
+	ret.str("revision", c.Revision)
+	ret.strDefault("checkout-dir", c.CheckoutDir, defaultCheckoutDir)
+	ret.strDefault("recipe-result-byte-limit", strconv.Itoa(c.RecipeResultByteLimit), "0")
+	ret.str("properties", c.Properties)
+	ret.str("properties-file", c.PropertiesFile)
+	ret.str("cache-dir", c.CacheDir)
+	ret.str("temp-dir", c.TempDir)
+	ret.str("build-url", c.BuildURL)
+	ret.str("output-result-json", c.OutputResultJSONPath)
+	ret.str("recipe", c.RecipeName)
+
+	ret.list("python-path", c.PythonPaths)
+	ret.list("prefix-path-env", c.PrefixPathENV)
+	ret.list("set-env-abspath", c.SetEnvAbspath)
+
+	return append(ret, c.LogDogFlags.Dump()...)
 }

@@ -107,12 +107,14 @@ var flagTestCases = []struct {
 		flags: []string{
 			"-mode", "buildbot",
 			"-repository", "meep",
+			"-temp-dir", "tmp",
 			"-recipe", "cool_recipe",
 			"-prefix-path-env", "some/dir",
 			"-prefix-path-env", "foo",
 			"-prefix-path-env", "foo",
 			"-set-env-abspath", "DORK=sup",
-			"-temp-dir", "tmp",
+			"-logdog-tag", "A=B",
+			"-logdog-tag", "Roffle=Copter",
 		},
 		cf: CookFlags{
 			Mode:          CookBuildBot,
@@ -129,6 +131,12 @@ var flagTestCases = []struct {
 				"DORK=$CWD/sup",
 			},
 			TempDir: "$CWD/tmp",
+			LogDogFlags: LogDogFlags{
+				GlobalTags: map[string]string{
+					"A":      "B",
+					"Roffle": "Copter",
+				},
+			},
 		},
 	},
 }
@@ -158,6 +166,9 @@ func TestFlags(t *testing.T) {
 					Convey(fmt.Sprintf("%v", tc.flags), func() {
 						So(fs.Parse(tc.flags), ShouldErrLike, tc.errParse)
 						if tc.errParse == nil {
+							if tc.errValidate == nil {
+								So(cf.Dump(), ShouldResemble, tc.flags)
+							}
 							So(cf.Normalize(), ShouldErrLike, tc.errValidate)
 							if tc.errValidate == nil {
 								for i, p := range cf.PrefixPathENV {
