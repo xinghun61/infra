@@ -83,7 +83,7 @@ by -O), and then launch the modified task on swarming.`,
 		Commands: []*subcommands.Command{
 			// commands to obtain JobDescriptions. These all begin with `get`.
 			// TODO(iannucci): `get` to scrape from any URL
-			// TODO(iannucci): `get-swarming` to scrape from swarming
+			getSwarmCmd(authDefaults),
 			// TODO(iannucci): `get-milo` to scrape from milo
 			// TODO(iannucci): `get-buildbot` to emulate/scrape from a buildbot
 			getBuilderCmd(authDefaults),

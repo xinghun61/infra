@@ -27,7 +27,7 @@ func getBuilderCmd(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
 		UsageLine: "get-builder bucket_name:builder_name",
 		ShortDesc: "obtain a JobDefinition from a buildbucket builder",
-		LongDesc:  `Obtains the builder definition from buildbucket and produce a JobDefinition.`,
+		LongDesc:  `Obtains the builder definition from buildbucket and produces a JobDefinition.`,
 
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdGetBuilder{}
