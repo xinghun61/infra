@@ -9,16 +9,13 @@ You'll need some extras that aren't in the default infra checkout.
 ```sh
 # sudo where appropriate for your setup.
 
-apt-get install nodejs
-apt-get install npm
 npm install -g bower
-npm install -g vulcanize
-npm install -g web-component-tester
-npm install -g web-component-tester-istanbul
 ```
 
-If you run into EACCESS errors while running any of the above, you might want
-to check out npm's "[Fixing npm permissions](https://docs.npmjs.com/getting-started/fixing-npm-permissions)" page.
+If you don't have npm or node installed yet, make sure you do so using
+`gclient runhooks` to pick up infra's CIPD packages for nodejs and
+npm (avoid using other installation methods, as they won't match what
+the builders and other infra devs have installed).
 
 ## Getting up and running
 
@@ -26,10 +23,7 @@ After initial checkout, make sure you have all of the bower dependencies
 installed. Also run this whenever bower.json is updated:
 
 ```sh
-bower install
-
-# Same with npm and packages.json:
-npm install
+make deps
 ```
 
 To run locally from an infra.git checkout:
@@ -96,12 +90,22 @@ Once you have a server running locally, you'll want to add at least one
 tree configuration to the datastore. Make sure you are logged in locally
 as an admin user (admin checkbox on fake devserver login page).
 
-Navigate to `http://localhost:8080/admin/settings` and fill out the tree(s)
-you wish to test with locally.
+Navigate to [localhost:8080/admin/settings](http://localhost:8080/admin/settings)
+and fill out the tree(s) you wish to test with locally. For consistency, you
+may just want to copy the [settings from prod](http://sheriff-o-matic.appspot.com/admin/settings).
 
 After you have at least one tree configured, you'll want to populate your
-local SoM using alerts-dispatcher. From `infra/go` in your checkout,
-run the following to generate alerts for the chromium tree:
+local SoM using either local cron tasks or alerts-dispatcher.
+
+### Populating alerts from local cron tasks
+You can use local cron anaylzers and skip all of this by navigating to
+[http://localhost:8000/cron](http://localhost:8000/cron) and clicking the 'Run now'
+button next to any `/_cron/analyze/...` URL.
+
+
+### Populating alerts from a local alerts-dispatcher run
+
+From `infra/go` in your checkout, run the following to generate alerts for the chromium tree:
 
 ```sh
 go build infra/monitoring/dispatcher
@@ -120,10 +124,6 @@ you are testing.
 To do this, you can use curl to directly post alerts to Sheriff-o-Matic. For
 example, the following command would post the contents of a JSON file
 containing alert data to the chromium tree.
-
-You can use local cron anaylzers and skip all of this by navigating to
-http://localhost:8000/cron and clicking the 'Run now' button next to any
-/_cron/analyze/... URL.
 
 ```sh
 curl -X POST -d @/path/to/alerts.json localhost:8080/api/v1/alerts/chromium
