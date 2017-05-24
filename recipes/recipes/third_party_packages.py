@@ -33,7 +33,7 @@ CPYTHON_PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium'
+CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium2'
 
 GIT_REPO_URL = (
     'https://chromium.googlesource.com/external/github.com/git/git')
@@ -242,6 +242,9 @@ def PackagePythonForUnix(api, support):
 
     if api.platform.is_mac:
       support.update_mac_autoconf(configure_env)
+
+      # Mac Python installations use 2-byte Unicode.
+      configure_flags += ['--enable-unicode=ucs2']
     else:
       configure_flags += [
         # TODO: This breaks building on Mac builder, producing:
@@ -252,6 +255,9 @@ def PackagePythonForUnix(api, support):
         #
         # Maybe look into this if we have time later.
         '--enable-optimizations',
+
+        # Linux Python (Ubuntu) installations use 4-byte Unicode.
+        '--enable-unicode=ucs4',
       ]
 
     # Edit the modules configuration to statically compile all Python modules.

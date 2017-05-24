@@ -58,7 +58,7 @@
       "search",
       "infra/python/cpython/mac-amd64",
       "-tag",
-      "version:2.1.2.chromium",
+      "version:2.1.2.chromium2",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -67,7 +67,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium",
+    "name": "python.cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium2",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -480,7 +480,8 @@
       "./configure",
       "--disable-shared",
       "--prefix",
-      "[START_DIR]/python/package"
+      "[START_DIR]/python/package",
+      "--enable-unicode=ucs2"
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
@@ -548,7 +549,7 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
       "-tag",
-      "version:2.1.2.chromium"
+      "version:2.1.2.chromium2"
     ],
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
