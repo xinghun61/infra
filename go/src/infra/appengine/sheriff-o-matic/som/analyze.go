@@ -54,11 +54,13 @@ func getAnalyzeHandler(ctx *router.Context) {
 		return
 	}
 
-	treeCfg, ok := trees[tree]
+	treeCfgs, ok := trees[tree]
 	if !ok {
 		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("unrecoginzed tree: %s", tree))
 		return
 	}
+
+	logging.Debugf(c, "%s tree has %d configs", tree, len(treeCfgs))
 
 	a := analyzer.New(5, 100)
 	a.Gatekeeper = gkRules
@@ -82,42 +84,45 @@ func getAnalyzeHandler(ctx *router.Context) {
 	}
 
 	alerts := []messages.Alert{}
-	logging.Infof(c, "Getting compressed master json for %d masters", len(treeCfg.Masters))
+	for _, treeCfg := range treeCfgs {
+		logging.Debugf(c, "Getting compressed master json for %d masters", len(treeCfg.Masters))
 
-	type res struct {
-		alerts []messages.Alert
-		err    error
-	}
+		type res struct {
+			alerts []messages.Alert
+			err    error
+		}
 
-	resCh := make(chan res)
-	for masterLoc := range treeCfg.Masters {
-		masterLoc := masterLoc
-		go func() {
-			buildExtract, err := client.BuildExtract(c, &masterLoc)
-			r := res{err: err}
-			if err == nil {
-				r.alerts = a.MasterAlerts(c, &masterLoc, buildExtract)
-				r.alerts = append(r.alerts, a.BuilderAlerts(c, tree, &masterLoc, buildExtract)...)
+		resCh := make(chan res)
+		for masterLoc := range treeCfg.Masters {
+			masterLoc := masterLoc
+			go func() {
+				buildExtract, err := client.BuildExtract(c, &masterLoc)
+				r := res{err: err}
+				if err == nil {
+					r.alerts = a.MasterAlerts(c, &masterLoc, buildExtract)
+					r.alerts = append(r.alerts, a.BuilderAlerts(c, tree, &masterLoc, buildExtract)...)
+				}
+				resCh <- r
+			}()
+		}
+
+		var anyErr error
+		for i := 0; i < len(treeCfg.Masters); i++ {
+			r := <-resCh
+			alerts = append(alerts, r.alerts...)
+			if r.err != nil {
+				anyErr = r.err
 			}
-			resCh <- r
-		}()
-	}
-
-	var anyErr error
-	for i := 0; i < len(treeCfg.Masters); i++ {
-		r := <-resCh
-		alerts = append(alerts, r.alerts...)
-		if r.err != nil {
-			anyErr = r.err
+		}
+		if anyErr != nil {
+			// TODO: Deal with partial failures so some errors are tolerated so long
+			// as some analysis succeeded.
+			errStatus(c, w, http.StatusInternalServerError, anyErr.Error())
+			return
 		}
 	}
 
-	if anyErr != nil {
-		// TODO: Deal with partial failures so some errors are tolerated so long
-		// as some analysis succeeded.
-		errStatus(c, w, http.StatusInternalServerError, anyErr.Error())
-		return
-	}
+	logging.Debugf(c, "storing %d alerts for %s", len(alerts), tree)
 
 	if err := storeAlertsSummary(c, a, tree, &messages.AlertsSummary{
 		RevisionSummaries: map[string]messages.RevisionSummary{},

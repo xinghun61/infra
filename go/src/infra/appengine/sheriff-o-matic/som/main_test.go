@@ -1116,30 +1116,47 @@ func TestMain(t *testing.T) {
 }`,
 					},
 				})
+				Convey("ok", func() {
+					getRestartingMastersHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makeGetRequest(),
+						Params:  makeParams("tree", "chromium"),
+					})
 
-				getRestartingMastersHandler(&router.Context{
-					Context: c,
-					Writer:  w,
-					Request: makeGetRequest(),
-					Params:  makeParams("tree", "chromium"),
+					_, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					So(w.Code, ShouldEqual, 200)
 				})
 
-				_, err := ioutil.ReadAll(w.Body)
-				So(err, ShouldBeNil)
-				So(w.Code, ShouldEqual, 200)
+				Convey("trooper restarts", func() {
+					getRestartingMastersHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makeGetRequest(),
+						Params:  makeParams("tree", "trooper"),
+					})
 
-				w = httptest.NewRecorder()
-				getRestartingMastersHandler(&router.Context{
-					Context: c,
-					Writer:  w,
-					Request: makeGetRequest(),
-					Params:  makeParams("tree", "non-existent"),
+					_, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					So(w.Code, ShouldEqual, 200)
 				})
 
-				b, err := ioutil.ReadAll(w.Body)
-				So(err, ShouldBeNil)
-				So(w.Code, ShouldEqual, 404)
-				So(string(b), ShouldEqual, "Unrecognized tree name")
+				Convey("unrecognized tree", func() {
+					w = httptest.NewRecorder()
+					getRestartingMastersHandler(&router.Context{
+						Context: c,
+						Writer:  w,
+						Request: makeGetRequest(),
+						Params:  makeParams("tree", "non-existent"),
+					})
+
+					b, err := ioutil.ReadAll(w.Body)
+					So(err, ShouldBeNil)
+					So(w.Code, ShouldEqual, 404)
+					So(string(b), ShouldEqual, "Unrecognized tree name")
+				})
+
 			})
 
 			Convey("/bugqueue", func() {

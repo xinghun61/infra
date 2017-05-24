@@ -461,14 +461,16 @@ func getRestartingMasters(c context.Context, treeName string) (map[string]master
 	}
 
 	// For specific trees, filter to master specified in the config.
-	cfg, ok := trees[treeName]
+	cfgs, ok := trees[treeName]
 	if !ok {
 		return nil, ErrUnrecognizedTree
 	}
 
-	for masterLoc := range cfg.Masters {
-		if err := filter(masterLoc.Name(), ms.MasterStates["master."+masterLoc.Name()]); err != nil {
-			return nil, err
+	for _, cfg := range cfgs {
+		for masterLoc := range cfg.Masters {
+			if err := filter(masterLoc.Name(), ms.MasterStates["master."+masterLoc.Name()]); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return ret, nil

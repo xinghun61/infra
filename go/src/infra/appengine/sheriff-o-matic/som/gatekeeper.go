@@ -30,13 +30,7 @@ func getGatekeeperRules(c context.Context) (*analyzer.GatekeeperRules, error) {
 		return nil, err
 	}
 
-	// TODO(seanmccullough): Clean up this API.
-	adjustedTrees := map[string][]messages.TreeMasterConfig{}
-	for treeName, cfg := range trees {
-		adjustedTrees[treeName] = []messages.TreeMasterConfig{*cfg}
-	}
-
-	return analyzer.NewGatekeeperRules(c, cfgs, adjustedTrees), nil
+	return analyzer.NewGatekeeperRules(c, cfgs, trees), nil
 }
 
 func getGatekeeperConfigs(c context.Context) ([]*messages.GatekeeperConfig, error) {
@@ -58,8 +52,8 @@ func getGatekeeperConfigs(c context.Context) ([]*messages.GatekeeperConfig, erro
 }
 
 // TODO(seanmccullough): Replace this urlfetch/memcache code with a luci-config reader.
-var getGatekeeperTrees = func(c context.Context) (map[string]*messages.TreeMasterConfig, error) {
-	ret := map[string]*messages.TreeMasterConfig{}
+var getGatekeeperTrees = func(c context.Context) (map[string][]messages.TreeMasterConfig, error) {
+	ret := map[string][]messages.TreeMasterConfig{}
 
 	for _, URL := range []string{gkTreesURL, gkTreesInternalURL, gkTreesCorpURL} {
 		gkBytes, err := client.GetGitilesCached(c, URL)
@@ -67,9 +61,17 @@ var getGatekeeperTrees = func(c context.Context) (map[string]*messages.TreeMaste
 			return nil, err
 		}
 
-		// TODO: make sure this doesn't blow away map values from previous iterations.
-		if err := json.Unmarshal(gkBytes, &ret); err != nil {
+		treeCfg := map[string]messages.TreeMasterConfig{}
+		if err := json.Unmarshal(gkBytes, &treeCfg); err != nil {
 			return nil, err
+		}
+
+		// Merge tree configs if the same tree name appears in mulitiple files.
+		for name, cfg := range treeCfg {
+			if ret[name] == nil {
+				ret[name] = []messages.TreeMasterConfig{}
+			}
+			ret[name] = append(ret[name], cfg)
 		}
 	}
 
