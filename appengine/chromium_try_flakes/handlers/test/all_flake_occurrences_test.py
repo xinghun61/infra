@@ -87,6 +87,13 @@ class TestAllFlakeOccurrences(testing.AppengineTestCase):
     return self.test_app.get(
         '/all_flake_occurrences?key=%s' % flake_key.urlsafe()).body.splitlines()
 
+  def test_html_output_with_issue_id(self):
+    flake = self._create_flake()
+    flake.issue_id = 123456
+    flake_key = flake.put()
+    return self.test_app.get(
+        '/all_flake_occurrences?key=%s' % flake_key.urlsafe()).body.splitlines()
+
   def test_no_occurrences(self):
     flake_key = Flake(name='foo.bar').put()
     self.test_app.get('/all_flake_occurrences?key=%s' % flake_key.urlsafe())

@@ -8,7 +8,9 @@
 <tr>
 <td colspan="5">
 <form action="/override_issue_id" method="GET">
-Current Issue ID where new flakes are reported:
+{% if flake.issue_id %}<a href="https://crbug.com/{{flake.issue_id}}">
+{% endif %}Current Issue ID{% if flake.issue_id %}</a>{% endif %} where new
+flakes are reported:
 <input type="hidden" name="key" value="{{flake.key.urlsafe}}"/>
 <input type="text" name="issue_id" value="{{flake.issue_id}}"/>
 <input type="submit" value="Override"/>
