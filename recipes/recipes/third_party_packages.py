@@ -33,7 +33,7 @@ CPYTHON_PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium3'
+CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium4'
 
 GIT_REPO_URL = (
     'https://chromium.googlesource.com/external/github.com/git/git')
@@ -241,13 +241,20 @@ def PackagePythonForUnix(api, support):
     configure_flags = [
       '--disable-shared',
       '--prefix', target_dir,
+      '--enable-ipv6',
+      '--with-system-expat',
+      '--with-system-ffi'
     ]
 
     if api.platform.is_mac:
       support.update_mac_autoconf(configure_env)
 
       # Mac Python installations use 2-byte Unicode.
-      configure_flags += ['--enable-unicode=ucs2']
+      configure_flags += [
+          '--enable-unicode=ucs2',
+          '--with-threads',
+          '--enable-toolbox-glue',
+      ]
     else:
       configure_flags += [
         # TODO: This breaks building on Mac builder, producing:
@@ -261,6 +268,9 @@ def PackagePythonForUnix(api, support):
 
         # Linux Python (Ubuntu) installations use 4-byte Unicode.
         '--enable-unicode=ucs4',
+
+        '--with-fpectl',
+        '--with-dbmliborder=bdb:gdbm',
       ]
 
     # Edit the modules configuration to statically compile all Python modules.
@@ -278,15 +288,13 @@ def PackagePythonForUnix(api, support):
       'zlib zlibmodule.c -I$(SP)/include $(SP)/lib/libz.a',
       'readline readline.c -I$(SP)/include '
           '$(SP)/lib/libreadline.a $(SP)/lib/libtermcap.a',
-
-      # Required: terminal newline.
-      '',
     ]
+
     setup_local = api.context.cwd.join('Modules', 'Setup.local')
     api.shutil.write(
         'Configure static modules',
         setup_local,
-        '\n'.join(setup_local_content),
+        '\n'.join(setup_local_content + ['']),
     )
     api.step.active_result.presentation.logs['Setup.local'] = (
         setup_local_content)

@@ -58,13 +58,13 @@
       "search",
       "infra/python/cpython/linux-amd64",
       "-tag",
-      "version:2.1.2.chromium3",
+      "version:2.1.2.chromium4",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium3",
+    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium4",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -402,7 +402,6 @@
       "@@@STEP_LOG_LINE@Setup.local@binascii binascii.c -I$(SP)/include $(SP)/lib/libz.a@@@",
       "@@@STEP_LOG_LINE@Setup.local@zlib zlibmodule.c -I$(SP)/include $(SP)/lib/libz.a@@@",
       "@@@STEP_LOG_LINE@Setup.local@readline readline.c -I$(SP)/include $(SP)/lib/libreadline.a $(SP)/lib/libtermcap.a@@@",
-      "@@@STEP_LOG_LINE@Setup.local@@@@",
       "@@@STEP_LOG_END@Setup.local@@@"
     ]
   },
@@ -412,8 +411,13 @@
       "--disable-shared",
       "--prefix",
       "[START_DIR]/python/package",
+      "--enable-ipv6",
+      "--with-system-expat",
+      "--with-system-ffi",
       "--enable-optimizations",
-      "--enable-unicode=ucs4"
+      "--enable-unicode=ucs4",
+      "--with-fpectl",
+      "--with-dbmliborder=bdb:gdbm"
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
@@ -499,7 +503,7 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
       "-tag",
-      "version:2.1.2.chromium3"
+      "version:2.1.2.chromium4"
     ],
     "name": "python.register infra/python/cpython/linux-amd64",
     "~followup_annotations": [
