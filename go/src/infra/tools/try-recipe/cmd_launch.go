@@ -88,7 +88,13 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 		uid = "uid:" + info.Sub
 	}
 
-	arc := mkArchiver(ctx, getIsolatedFlagsForJobDef(jd), authClient)
+	isoFlags, err := getIsolatedFlags(swarm)
+	if err != nil {
+		logging.Errorf(ctx, "fatal error: %s", err)
+		return 1
+	}
+
+	arc := mkArchiver(ctx, isoFlags, authClient)
 
 	logging.Infof(ctx, "building swarming task")
 	st, err := jd.GetSwarmingNewTask(ctx, uid, arc, jd.SwarmingServer)

@@ -42,10 +42,6 @@ type JobDefinition struct {
 
 	KitchenArgs *cookflags.CookFlags `json:"kitchen_args"`
 
-	// TODO(iannucci):
-	// this should really be a swarming.SwarmingRpcsNewTaskRequest, but the way
-	// that buildbucket sends it is incompatible with the go endpoints generated
-	// struct. Hooray...  *rollseyes*.
 	SwarmingTask *swarming.SwarmingRpcsNewTaskRequest `json:"swarming_task"`
 }
 

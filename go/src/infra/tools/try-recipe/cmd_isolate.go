@@ -108,8 +108,19 @@ func (c *cmdIsolate) Run(a subcommands.Application, args []string, env subcomman
 	logging.Infof(ctx, "bundling recipes: done")
 
 	err = editMode(ctx, func(jd *JobDefinition) (*JobDefinition, error) {
+		_, _, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingServer)
+		if err != nil {
+			return nil, err
+		}
+
+		isoFlags, err := getIsolatedFlags(swarm)
+		if err != nil {
+			return nil, err
+		}
+
 		logging.Infof(ctx, "isolating recipes")
-		hash, err := isolate(ctx, bundlePath, getIsolatedFlagsForJobDef(jd), authOpts)
+
+		hash, err := isolate(ctx, bundlePath, isoFlags, authOpts)
 		if err != nil {
 			return nil, err
 		}
