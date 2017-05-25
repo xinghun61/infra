@@ -4,6 +4,8 @@
   <title>Flaky Tests</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
   <style type="text/css">
     .truncated {
       max-width: 320px;
@@ -139,126 +141,127 @@
   </script>
 </head>
 <body>
-  <h1>Flaky Tests</h1>
-  <form method="get" action="/waterfall/list-flakes">
-    <table>
-      <tr>
-        <td style="text-align:right">Step:</td>
-        <td>
-          <input type="text" name="step_name" id="step_name" size="100" value="{{ step_name_filter }}" placeholder="unit_tests on Mac-10.9"/>
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align:right">Test:</td>
-        <td>
-          <input type="text" name="test_name" id="test_name" size="100" value="{{ test_name_filter }}" placeholder="DesktopEngagementServiceTest.TestTimeoutDiscount"/>
-        </td>
-      </tr>
-    </table>
-    {% if triage %}
-    <br>
-    <form>
-      Start Date
-      <input type="date" id="start_date" value={{ start_date }}></input>
-      End Date
-      <input type="date" id="end_date" value={{ end_date }}></input>
+  <findit-app page-header="Flaky Tests">
+    <form method="get" action="/waterfall/list-flakes">
+      <table>
+        <tr>
+          <td style="text-align:right">Step:</td>
+          <td>
+            <input type="text" name="step_name" id="step_name" size="100" value="{{ step_name_filter }}" placeholder="unit_tests on Mac-10.9"/>
+          </td>
+        </tr>
+        <tr>
+          <td style="text-align:right">Test:</td>
+          <td>
+            <input type="text" name="test_name" id="test_name" size="100" value="{{ test_name_filter }}" placeholder="DesktopEngagementServiceTest.TestTimeoutDiscount"/>
+          </td>
+        </tr>
+      </table>
+      {% if triage %}
+      <br>
+      <form>
+        Start Date
+        <input type="date" id="start_date" value={{ start_date }}></input>
+        End Date
+        <input type="date" id="end_date" value={{ end_date }}></input>
+      </form>
+      {% endif %}
+      <input type="submit" value="Filter" id="filter_results">
+      <br>
     </form>
-    {% endif %}
-    <input type="submit" value="Filter" id="filter_results">
     <br>
-  </form>
-  <br>
-  <div>
-    <button class="previous">Previous</button>
-    <button class="next">Next</button>
-  </div>
-  <br>
-  <table>
-    <thead>
-      <tr>
-        <th>Analysis Request Time</th>
-        <th>Build</th>
-        <th>Step</th>
-        <th>Test</th>
-        <th>Build Analysis Status (<a class="swarming-rerun-status-info" href="javascript:">?</a>)</th>
-        <th>Suspected Build (Confidence %)</th>
-        <th>Culprit Analysis Status (<a class="try-job-status-info" href="javascript:">?</a>)</th>
-        <th>Culprit</th>
-        <th>Analysis</th>
-        <th>
-          <select id="result_status">
-            <option value="default">Result Status</option>
-            <option value="0">Correct - Found</option>
-            <option value="10">Incorrect - Found</option>
-            <option value="20">Incorrect - Not Found</option>
-            <option value="30">Untriaged - Found</option>
-            <option value="40">Untriaged - Not Found</option>
-            <option value="50">Correct - Not Found</option>
-          </select>
-        </th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for analysis in master_flake_analyses %}
-      <tr>
-        <td>{{ analysis.request_time or '' }}</td>
-        <td>
-          {{ analysis.master_name }}, {{ analysis.builder_name }}, {{ analysis.build_number }}
-        </td>
-        <td class="truncated" title="{{ analysis.step_name }}">{{ analysis.step_name }}</td>
-        <td class="truncated" title="{{ analysis.test_name }}">{{ analysis.test_name }}</td>
-        <td>{{ analysis.build_analysis_status }}</td>
-        <td>
-          {% if analysis.suspected_build %}
-            <a href="https://luci-milo.appspot.com/buildbot/{{ analysis.master_name }}/{{ analysis.builder_name }}/{{ analysis.suspected_build }}" target="_blank">{{ analysis.suspected_build }}</a>
-            {% if analysis.confidence_in_suspected_build %}
-              ({{ '%0.1f%%' % (analysis.confidence_in_suspected_build * 100) }})
+    <div>
+      <button class="previous">Previous</button>
+      <button class="next">Next</button>
+    </div>
+    <br>
+    <table>
+      <thead>
+        <tr>
+          <th>Analysis Request Time</th>
+          <th>Build</th>
+          <th>Step</th>
+          <th>Test</th>
+          <th>Build Analysis Status (<a class="swarming-rerun-status-info" href="javascript:">?</a>)</th>
+          <th>Suspected Build (Confidence %)</th>
+          <th>Culprit Analysis Status (<a class="try-job-status-info" href="javascript:">?</a>)</th>
+          <th>Culprit</th>
+          <th>Analysis</th>
+          <th>
+            <select id="result_status">
+              <option value="default">Result Status</option>
+              <option value="0">Correct - Found</option>
+              <option value="10">Incorrect - Found</option>
+              <option value="20">Incorrect - Not Found</option>
+              <option value="30">Untriaged - Found</option>
+              <option value="40">Untriaged - Not Found</option>
+              <option value="50">Correct - Not Found</option>
+            </select>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for analysis in master_flake_analyses %}
+        <tr>
+          <td>{{ analysis.request_time or '' }}</td>
+          <td>
+            {{ analysis.master_name }}, {{ analysis.builder_name }}, {{ analysis.build_number }}
+          </td>
+          <td class="truncated" title="{{ analysis.step_name }}">{{ analysis.step_name }}</td>
+          <td class="truncated" title="{{ analysis.test_name }}">{{ analysis.test_name }}</td>
+          <td>{{ analysis.build_analysis_status }}</td>
+          <td>
+            {% if analysis.suspected_build %}
+              <a href="https://luci-milo.appspot.com/buildbot/{{ analysis.master_name }}/{{ analysis.builder_name }}/{{ analysis.suspected_build }}" target="_blank">{{ analysis.suspected_build }}</a>
+              {% if analysis.confidence_in_suspected_build %}
+                ({{ '%0.1f%%' % (analysis.confidence_in_suspected_build * 100) }})
+              {% endif %}
             {% endif %}
-          {% endif %}
-        </td>
-        <td>
-          {% if analysis.try_job_status %}
-            {{ analysis.try_job_status }}
-          {% endif %}
-        </td>
-        <td>
-          {% if analysis.culprit %}
-            {{ analysis.culprit.repo_name }}: <a href={{ analysis.culprit.url }} target="_blank">{{ analysis.culprit.commit_position }}</a>
-          {% endif %}
-        </td>
-        <td>
-          <a href="/waterfall/flake?key={{ analysis.key }}" target="_blank">Link</a>
-        </td>
-        <td>
-          {% if analysis.result_status %}
-            {{ analysis.result_status }}
-          {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <div>
-    <button class="previous">Previous</button>
-    <button class="next">Next</button>
-  </div>
-  <div id="swarming-rerun-status-explanation-dialog" title="Build Analysis Status">
-    Swarming tasks are triggered on a series of builds to identify the build that may contain the CL that introduced test flakiness
-    <ul>
-      <li>Pending: A request for a build-level analysis has been made, however tasks have not yet begun</li>
-      <li>Running: Build-level analysis is in progress</li>
-      <li>Completed: Build-level analysis is complete</li>
-      <li>Error: The analysis was halted due to an unexpected error</li>
-    </ul>
-  </div>
-  <div id="try-job-status-explanation-dialog" title="Culprit Analysis Status">
-    Try jobs are triggered on the regression range of a build suspected to contain the CL that introduced test flakiness.
-    <ul>
-      <li>Running: A suspected build number has been identified and try jobs analysis is running</li>
-      <li>Completed: Try job analysis is complete</li>
-      <li>Error: The analysis was halted due to an unexpected error</li>
-      <li>Skipped: Try jobs will not be triggered either due to no suspected build being identified, insufficient confidence in the suspected build, or build-level analysis ending in error</li>
-      <li>(Blank): Try job analysis has not yet begun, since analysis at the build level is still in progress</li>
-    </ul>
-  </div>
+          </td>
+          <td>
+            {% if analysis.try_job_status %}
+              {{ analysis.try_job_status }}
+            {% endif %}
+          </td>
+          <td>
+            {% if analysis.culprit %}
+              {{ analysis.culprit.repo_name }}: <a href={{ analysis.culprit.url }} target="_blank">{{ analysis.culprit.commit_position }}</a>
+            {% endif %}
+          </td>
+          <td>
+            <a href="/waterfall/flake?key={{ analysis.key }}" target="_blank">Link</a>
+          </td>
+          <td>
+            {% if analysis.result_status %}
+              {{ analysis.result_status }}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div>
+      <button class="previous">Previous</button>
+      <button class="next">Next</button>
+    </div>
+    <div id="swarming-rerun-status-explanation-dialog" title="Build Analysis Status">
+      Swarming tasks are triggered on a series of builds to identify the build that may contain the CL that introduced test flakiness
+      <ul>
+        <li>Pending: A request for a build-level analysis has been made, however tasks have not yet begun</li>
+        <li>Running: Build-level analysis is in progress</li>
+        <li>Completed: Build-level analysis is complete</li>
+        <li>Error: The analysis was halted due to an unexpected error</li>
+      </ul>
+    </div>
+    <div id="try-job-status-explanation-dialog" title="Culprit Analysis Status">
+      Try jobs are triggered on the regression range of a build suspected to contain the CL that introduced test flakiness.
+      <ul>
+        <li>Running: A suspected build number has been identified and try jobs analysis is running</li>
+        <li>Completed: Try job analysis is complete</li>
+        <li>Error: The analysis was halted due to an unexpected error</li>
+        <li>Skipped: Try jobs will not be triggered either due to no suspected build being identified, insufficient confidence in the suspected build, or build-level analysis ending in error</li>
+        <li>(Blank): Try job analysis has not yet begun, since analysis at the build level is still in progress</li>
+      </ul>
+    </div>
+  <findit-app>
 </body>

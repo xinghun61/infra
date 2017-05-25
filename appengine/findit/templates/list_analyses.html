@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <head>
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
-  <title>Build Analyses</title>
+  <title>Compile & Test failures</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <script>
     parameters = {
@@ -41,66 +43,67 @@
   </script>
 </head>
 <body>
-  <b>Builds and Analysis Results:</b>
-  <div id="builds">
-    <table>
-      <tr>
-        <th></th>
-        <th>Build Start Time</th>
-        <th>Build</th>
-        <th>Failure Type</th>
-        <th>Status</th>
-        <th>Suspected CLs</th>
-        <th>
-          <select id="result_status">
-            <option value="default">Result Status</option>
-            <option value="0">Correct - Found</option>
-            <option value="10">Incorrect - Found</option>
-            <option value="20">Incorrect - Not Found</option>
-            <option value="30">Untriaged - Found</option>
-            <option value="40">Untriaged - Not Found</option>
-            <option value="50">Correct - Not Found</option>
-            <option value="70">Flaky</option>
-            <option value="80">Unsupported</option>
-          </select>
-        </th>
-      </tr>
-
-      <tbody>
-      {% for analysis in analyses %}
+  <findit-app page-header="Compile & Test failures">
+    <div id="builds">
+      <table>
         <tr>
-          <td>{{loop.index}}</td>
-          <td>{{analysis.build_start_time}}</td>
-          <td>{{analysis.master_name}}, {{analysis.builder_name}},
-            <a href="/waterfall/failure?url=https://luci-milo.appspot.com/buildbot/{{analysis.master_name}}/{{analysis.builder_name}}/{{analysis.build_number}}">
-              {{analysis.build_number}}
-            </a>
-          </td>
-          <td>{{analysis.failure_type}}</td>
-          <td>{{analysis.status_description}}</td>
-          <td>
-          {% if analysis.suspected_cls %}
-            {% for suspected_cl in analysis.suspected_cls %}
-              <li>
-                {{suspected_cl.repo_name}}:
-                {% if suspected_cl.url or suspected_cl.review_url %}
-                  {% set review_url = suspected_cl.url or suspected_cl.review_url %}
-                {% else %}
-                  {% set review_url = 'https://chromium.googlesource.com/chromium/src.git/+/' + suspected_cl.revision %}
-                {% endif %}
-                {% if suspected_cl.commit_position %}
-                  <a href="{{review_url}}" target="_blank">{{suspected_cl.commit_position}}</a>
-                {% else %}
-                  <a href="{{review_url}}" target="_blank">{{suspected_cl.revision}}</a>
-                {% endif %}
-              </li>
-            {% endfor %}
-          {% endif %}
-          </td>
-          <td>{{analysis.result_status}}</td>
+          <th></th>
+          <th>Build Start Time</th>
+          <th>Build</th>
+          <th>Failure Type</th>
+          <th>Status</th>
+          <th>Suspected CLs</th>
+          <th>
+            <select id="result_status">
+              <option value="default">Result Status</option>
+              <option value="0">Correct - Found</option>
+              <option value="10">Incorrect - Found</option>
+              <option value="20">Incorrect - Not Found</option>
+              <option value="30">Untriaged - Found</option>
+              <option value="40">Untriaged - Not Found</option>
+              <option value="50">Correct - Not Found</option>
+              <option value="70">Flaky</option>
+              <option value="80">Unsupported</option>
+            </select>
+          </th>
         </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
+
+        <tbody>
+        {% for analysis in analyses %}
+          <tr>
+            <td>{{loop.index}}</td>
+            <td>{{analysis.build_start_time}}</td>
+            <td>{{analysis.master_name}}, {{analysis.builder_name}},
+              <a href="/waterfall/failure?url=https://luci-milo.appspot.com/buildbot/{{analysis.master_name}}/{{analysis.builder_name}}/{{analysis.build_number}}">
+                {{analysis.build_number}}
+              </a>
+            </td>
+            <td>{{analysis.failure_type}}</td>
+            <td>{{analysis.status_description}}</td>
+            <td>
+            {% if analysis.suspected_cls %}
+              {% for suspected_cl in analysis.suspected_cls %}
+                <li>
+                  {{suspected_cl.repo_name}}:
+                  {% if suspected_cl.url or suspected_cl.review_url %}
+                    {% set review_url = suspected_cl.url or suspected_cl.review_url %}
+                  {% else %}
+                    {% set review_url = 'https://chromium.googlesource.com/chromium/src.git/+/' + suspected_cl.revision %}
+                  {% endif %}
+                  {% if suspected_cl.commit_position %}
+                    <a href="{{review_url}}" target="_blank">{{suspected_cl.commit_position}}</a>
+                  {% else %}
+                    <a href="{{review_url}}" target="_blank">{{suspected_cl.revision}}</a>
+                  {% endif %}
+                </li>
+              {% endfor %}
+            {% endif %}
+            </td>
+            <td>{{analysis.result_status}}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </findit-app>
 </body>

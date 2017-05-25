@@ -4,43 +4,46 @@
   <title>Culprit</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
 </head>
 <body>
-  <h1>Culprit</h1>
-  <b>Project:</b> {{project_name}}<br>
-  <b>Commit:</b> <a href="https://crrev.com/{{commit_position or revision}}" target="_blank">{{commit_position or revision}}</a><br>
-  {% if cr_notified %}
-    <b>Notified:</b> Yes<br>
-    <b>Notification time:</b> {{cr_notification_time}}<br>
-  {% else %}
-    <b>Notified:</b> No<br>
-  {% endif %}
+  <findit-app page-header="Culprit">
+    <b>Project:</b> {{project_name}}<br>
+    <b>Commit:</b> <a href="https://crrev.com/{{commit_position or revision}}" target="_blank">{{commit_position or revision}}</a><br>
+    {% if cr_notified %}
+      <b>Notified:</b> Yes<br>
+      <b>Notification time:</b> {{cr_notification_time}}<br>
+    {% else %}
+      <b>Notified:</b> No<br>
+    {% endif %}
 
-  <h1>Builds</h1>
-  <div id="builds">
-    <table>
-      <thead>
-        <th></th>
-        <th>Master</th>
-        <th>Builder</th>
-        <th>Build</th>
-      </thead>
-      <tbody>
-      {% for build in builds %}
-        <tr>
-          <td>{{loop.index}}</td>
-          <td>{{build.master_name}}</td>
-          <td>{{build.builder_name}}</td>
-          <td>
-            <a href="https://luci-milo.appspot.com/buildbot/{{build.master_name}}/{{build.builder_name}}/{{build.build_number}}" target="_blank">
-              {{build.build_number}}
-            </a>
-          </td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  <br>
-  <a href="https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=Test-Findit-Wrong&components=Tools>Test>FindIt&summary=Wrongly blame {{commit_position or revision}}&comment=Detail is https://findit-for-me.appspot.com/waterfall/culprit?key={{key}}&cc=stgao@chromium.org,chanli@chromium.org,lijeffrey@chromium.org, robertocn@chromium.org">File a bug for this wrong result here</a>
+    <h1>Builds</h1>
+    <div id="builds">
+      <table>
+        <thead>
+          <th></th>
+          <th>Master</th>
+          <th>Builder</th>
+          <th>Build</th>
+        </thead>
+        <tbody>
+        {% for build in builds %}
+          <tr>
+            <td>{{loop.index}}</td>
+            <td>{{build.master_name}}</td>
+            <td>{{build.builder_name}}</td>
+            <td>
+              <a href="https://luci-milo.appspot.com/buildbot/{{build.master_name}}/{{build.builder_name}}/{{build.build_number}}" target="_blank">
+                {{build.build_number}}
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <br>
+    <a href="https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=Test-Findit-Wrong&components=Tools>Test>FindIt&summary=Wrongly blame {{commit_position or revision}}&comment=Detail is https://findit-for-me.appspot.com/waterfall/culprit?key={{key}}&cc=stgao@chromium.org,chanli@chromium.org,lijeffrey@chromium.org, robertocn@chromium.org">File a bug for this wrong result here</a>
+  </findit-app>
 </body>

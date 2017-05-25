@@ -4,6 +4,8 @@
   <title>Findit</title>
   <meta charset="utf-8">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
   <script>
   function decodeTestName(testName) {
     // Example: DetailsPanel_FileManagerDetailsPanelBrowserTest.Test_1 should be
@@ -36,51 +38,51 @@
   </script>
 </head>
 <body>
-  <div style="width:900px; margin:auto;">
-    <br>
-    <br>
-    <div style="text-align:center;font-size:40px;"> Findit </div>
-    <br>
-    <br>
-    <br>
-    <div>
-      <div><span style="color:GREEN"><b>Flaky test</b> (Gtest or Android Instrument) on Waterfall or CQ</span>: (<a href="/waterfall/list-flakes">previous analyses</a>)</div>
-      <form id="flake" action="/waterfall/flake" method="GET">
-        <table>
-          <tr>
-            <td style="text-align:right">Build URL</td>
-            <td><input required id="flake-build-url" type="url" name="url" size="120" placeholder="URL to the build cycle of the flaky test, like https://luci-milo.appspot.com/buildbot/chromium.mac/Mac10.11%20Tests/6472"/></td>
-          <tr>
-          <tr>
-            <td style="text-align:right">Step Name</td>
-            <td><input required type="text" name="step_name" id="step-name" size="120" placeholder="Full step name like 'browser_tests on Mac-10.11'"/></td>
-          </tr>
-          <tr>
-            <td style="text-align:right">Test Name</td>
-            <td>
-              <input required type="text" name="test_name" id="test-name" size="120" placeholder="PasswordManagerBrowserTestBase.InFrameNavigationDoesNotClearPopupState"/>
-            </td>
-          </tr>
-          <tr id="test-name-warning" style="color:RED;display:none">
-            <td></td>
-            <td>Should the test name be "<span id="decoded-test-name"></span>" instead?</td>
-          </tr>
-          <tr>
-            <td style="text-align:right"><a id="crbug-link" href="https://crbug.com" target="_blank">Monorail</a> Bug</td>
-            <td><input required type="text" name="bug_id" id="bug-id" size="120" placeholder="123456 (Click Monorail link to search for an existing bug before creating a new bug)"/><td>
-          </tr>
-        </table>
-        <input type="submit" value="Analyze flake"/>
-      </form>
+  <findit-app>
+    <div style="width:900px; margin:auto;">
+      <br>
+      <br>
+      <br>
+      <div>
+        <div><span style="color:GREEN"><b>Flaky test</b> (Gtest or Android Instrument) on Waterfall or CQ</span>: (<a href="/waterfall/list-flakes">previous analyses</a>)</div>
+        <form id="flake" action="/waterfall/flake" method="GET">
+          <table>
+            <tr>
+              <td style="text-align:right">Build URL</td>
+              <td><input required id="flake-build-url" type="url" name="url" size="120" placeholder="URL to the build cycle of the flaky test, like https://luci-milo.appspot.com/buildbot/chromium.mac/Mac10.11%20Tests/6472"/></td>
+            <tr>
+            <tr>
+              <td style="text-align:right">Step Name</td>
+              <td><input required type="text" name="step_name" id="step-name" size="120" placeholder="Full step name like 'browser_tests on Mac-10.11'"/></td>
+            </tr>
+            <tr>
+              <td style="text-align:right">Test Name</td>
+              <td>
+                <input required type="text" name="test_name" id="test-name" size="120" placeholder="PasswordManagerBrowserTestBase.InFrameNavigationDoesNotClearPopupState"/>
+              </td>
+            </tr>
+            <tr id="test-name-warning" style="color:RED;display:none">
+              <td></td>
+              <td>Should the test name be "<span id="decoded-test-name"></span>" instead?</td>
+            </tr>
+            <tr>
+              <td style="text-align:right"><a id="crbug-link" href="https://crbug.com" target="_blank">Monorail</a> Bug</td>
+              <td><input required type="text" name="bug_id" id="bug-id" size="120" placeholder="123456 (Click Monorail link to search for an existing bug before creating a new bug)"/><td>
+            </tr>
+          </table>
+          <input type="submit" value="Analyze flake"/>
+        </form>
+      </div>
+      <br>
+      <br>
+      <br>
+      <div>
+        <div><span style="color:GREEN"><b>Compile/test</b> failure on Waterfall:</span> (<a href="/waterfall/list-failures">previous analyses</a>)</div>
+        <form id="failure" action="/waterfall/failure" method="GET">
+          <label for="build-url">URL</label> <input required id="build-url" type="url" name="url" size="130" placeholder="Press ENTER after pasting the URL to the build cycle like https://luci-milo.appspot.com/buildbot/chromium.linux/Linux%20Tests/44306"/><br>
+          <input type="submit" value="Analyze failure"/>
+        </form>
+      </div>
     </div>
-    <br>
-    <br>
-    <div>
-      <div><span style="color:GREEN"><b>Compile/test</b> failure on Waterfall:</span> (<a href="/waterfall/list-failures">previous analyses</a>)</div>
-      <form id="failure" action="/waterfall/failure" method="GET">
-        <label for="build-url">URL</label> <input required id="build-url" type="url" name="url" size="130" placeholder="Press ENTER after pasting the URL to the build cycle like https://luci-milo.appspot.com/buildbot/chromium.linux/Linux%20Tests/44306"/><br>
-        <input type="submit" value="Analyze failure"/>
-      </form>
-    </div>
-  </div>
+  </findit-app>
 </body>

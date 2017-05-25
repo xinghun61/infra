@@ -3,6 +3,8 @@
   <meta charset="UTF-8">
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <title> Analysis of Flaky Test</title>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
   <style type="text/css">
     .container {
       box-sizing: border-box;
@@ -371,181 +373,183 @@
   </script>
 </head>
 <body>
-  <div>
-    <b>Flaky Test:</b><br>
-    Master: {{ master_name }} <br>
-    Builder: {{ builder_name }} <br>
-    Step: {{ step_name }} <br>
-    Test: {{ test_name }} <br>
-  </div>
-  <br>
-  <div>
-    <b>Analysis Result:</b><br>
-    Regression range analysis:  {{ analysis_status }}<br>
-    <br>
-    {% if last_attempted_swarming_task.task_id %}
-      Last-attempted swarming task: <a href="https://chromium-swarm.appspot.com/task?id={{ last_attempted_swarming_task.task_id }}" target="_blank">{{ last_attempted_swarming_task.task_id }}</a>
-      {% if last_attempted_swarming_task.build_number %}
-         on build <a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ last_attempted_swarming_task.build_number }}" target="_blank">{{ last_attempted_swarming_task.build_number }}</a>
-      {% endif %}
-    {% elif last_attempted_swarming_task.build_number %}
-      Last-attempted build to run a swarming task: <a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ last_attempted_swarming_task.build_number }}" target="_blank">{{ last_attempted_swarming_task.build_number }}</a>
-      <br>
-    {% endif %}
-    {% if suspected_flake.commit_position and suspected_flake.git_hash %}
-      <li>Regression Range: <a href="https://crrev.com/{{ suspected_flake.lower_bound_git_hash }}..{{ suspected_flake.git_hash }}?pretty=fuller" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.lower_bound_commit_position }}:{{ suspected_flake.commit_position }}</a>
-        {% if suspected_flake.confidence %}
-          (Confidence: {{ '%0.1f%%' % (suspected_flake.confidence * 100) }})
-        {% endif %}
-      </li>
-    {% endif %}
-    {% if suspected_flake.build_number %}
-      <li>Flakiness started in Build: <a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a>
-      </li>
-    {% endif %}
-    {% if try_job_status %}
-      <br>
-      Culprit analysis:  {{ try_job_status }}<br>
-    {% endif %}
-    {% if last_attempted_try_job %}
-      <br>
-      Last-attempted try job:
-      {% if last_attempted_try_job.url %}
-        <a href="{{ last_attempted_try_job.url }}" target="_blank">{{ last_attempted_try_job.status }}</a>
-      {% else %}
-        {{ last_attempted_try_job.status }}
-      {% endif %}
-      <br>
-    {% endif %}
-    {% if (culprit.commit_position or culprit.revision) and culprit.url %}
-      <li>Culprit: <a href="{{ culprit.url }}" target="_blank" style="color:red;font-weight:bold">{{ culprit.commit_position or culprit.revision }}</a>
-        {% if culprit.confidence %}
-          (Confidence: {{ '%0.1f%%' % (culprit.confidence * 100) }})
-        {% endif %}
-      </li>
-    {% endif %}
-    {% if error %}
-      <br>
-      <span style="color:red;font-weight:bold">Error</span>: {{ error }}<br>
-    {% endif %}
-
-  </div>
-  <br>
-  <div>
-    <b>Pass Rate by Commit:</b><br>
-    <div class="container">
-      <div id="flake-data" class="flake-trend"></div>
-    </div>
-    <div id="data-point-tooltip" class="data-point-detail">
-      <div>Pass Rate: <span id="pass-rate"></span>%</div>
-      <div id="range-container">Range: <a id="range-link" target="_blank"></a></div>
-      <div id="swarming-task-container">Swarming: <a id="swarming-task-link" target="_blank"></a></div>
-      <div id="try-job-container">Try-Job: <a id="try-job-link" target="_blank">link</a></div>
-      <div id="build-container">Build: <a id="build-link" target="_blank"></a></div>
-    </div>
-  </div>
-  {% if show_input_ui %}
+  <findit-app>
     <div>
-      <table>
-        <tr>
-          <td>Analyze a commit position range (<a class="range-help-info" href="javascript:">?</a>):</td>
-          <td><input type="text" id="lower-bound-commit-position" placeholder="Lower bound" size="10"</td>
-          <td><input type="text" id="upper-bound-commit-position" placeholder="Upper bound" size="10"</td>
-          <td> # Iterations:<input type="text" id="iterations-to-rerun" value={{ iterations_to_rerun }} size="1"<td>
-          <td><button id="analyze-regression-range-button">Analyze</button></td>
-        </tr>
-      </table>
+      <b>Flaky Test:</b><br>
+      Master: {{ master_name }} <br>
+      Builder: {{ builder_name }} <br>
+      Step: {{ step_name }} <br>
+      Test: {{ test_name }} <br>
     </div>
-  {% endif %}
-  <br>
-  <div>
-    <b>Metadata:</b><br>
-    Test rerun: {{ iterations_to_rerun }} times<br>
-    {% if request_time %}
-    Request time: {{ request_time }}<br>
-    {% endif %}
-    {% if pending_time %}
-    Pending time: {{ pending_time }}<br>
-    {% endif %}
-    {% if show_debug_info and duration %}
-    Duration: {{ duration }}<br>
-    {% endif %}
-    Total Swarm Tasks: {{ build_level_number }}<br>
-    Total Try Jobs: {{ revision_level_number }}
-  </div>
-  <br>
-  <div id="triage_flake">
-    {% if suspected_flake %}
-      <b>Feedback appreciated:</b>
-        {% if user_email %}
-          (if provided, it connects to your email {{ user_email }} for 30 days)
+    <br>
+    <div>
+      <b>Analysis Result:</b><br>
+      Regression range analysis:  {{ analysis_status }}<br>
+      <br>
+      {% if last_attempted_swarming_task.task_id %}
+        Last-attempted swarming task: <a href="https://chromium-swarm.appspot.com/task?id={{ last_attempted_swarming_task.task_id }}" target="_blank">{{ last_attempted_swarming_task.task_id }}</a>
+        {% if last_attempted_swarming_task.build_number %}
+           on build <a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ last_attempted_swarming_task.build_number }}" target="_blank">{{ last_attempted_swarming_task.build_number }}</a>
         {% endif %}
-      <table class="triage-table">
-        <tr>
-          <th class="triage-header" title="Type of Findit's result: Suspected Build or Culprit">Suspect Type</th>
-          <th class="triage-header" title="The build or revision where the test became flaky">Suspect Info</th>
-          <th class="triage-header">Feedback</th>
-        </tr>
-        <tr>
-          {% if (culprit.commit_position or culprit.git_hash) and culprit.url %}
-            <td class="triage-cell">Culprit</td>
-            <td class="triage-cell"><a href="{{culprit.url}}">{{culprit.commit_position or culprit.git_hash}}</a></td>
-          {% else %}
-            <td class="triage-cell">Suspected Build</td>
-            <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a></a></td>
+      {% elif last_attempted_swarming_task.build_number %}
+        Last-attempted build to run a swarming task: <a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ last_attempted_swarming_task.build_number }}" target="_blank">{{ last_attempted_swarming_task.build_number }}</a>
+        <br>
+      {% endif %}
+      {% if suspected_flake.commit_position and suspected_flake.git_hash %}
+        <li>Regression Range: <a href="https://crrev.com/{{ suspected_flake.lower_bound_git_hash }}..{{ suspected_flake.git_hash }}?pretty=fuller" target="_blank" style="color:red;font-weight:bold">{{ suspected_flake.lower_bound_commit_position }}:{{ suspected_flake.commit_position }}</a>
+          {% if suspected_flake.confidence %}
+            (Confidence: {{ '%0.1f%%' % (suspected_flake.confidence * 100) }})
           {% endif %}
-          <td class="triage-cell">
-            <input type="radio" name="triage-radio-button" value="2" {{ "checked" if suspected_flake.triage_result == 2 else ""}} >Correct &nbsp;&nbsp;
-            <input type="radio" name="triage-radio-button" value="1" {{ "checked" if suspected_flake.triage_result == 1 else ""}}>Incorrect
-          </td>
-        </tr>
-      </table>
-    {% endif %}
-    <div id="flake_result_triaged"></div>
-  </div>
+        </li>
+      {% endif %}
+      {% if suspected_flake.build_number %}
+        <li>Flakiness started in Build: <a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a>
+        </li>
+      {% endif %}
+      {% if try_job_status %}
+        <br>
+        Culprit analysis:  {{ try_job_status }}<br>
+      {% endif %}
+      {% if last_attempted_try_job %}
+        <br>
+        Last-attempted try job:
+        {% if last_attempted_try_job.url %}
+          <a href="{{ last_attempted_try_job.url }}" target="_blank">{{ last_attempted_try_job.status }}</a>
+        {% else %}
+          {{ last_attempted_try_job.status }}
+        {% endif %}
+        <br>
+      {% endif %}
+      {% if (culprit.commit_position or culprit.revision) and culprit.url %}
+        <li>Culprit: <a href="{{ culprit.url }}" target="_blank" style="color:red;font-weight:bold">{{ culprit.commit_position or culprit.revision }}</a>
+          {% if culprit.confidence %}
+            (Confidence: {{ '%0.1f%%' % (culprit.confidence * 100) }})
+          {% endif %}
+        </li>
+      {% endif %}
+      {% if error %}
+        <br>
+        <span style="color:red;font-weight:bold">Error</span>: {{ error }}<br>
+      {% endif %}
 
-  {% if show_debug_info and triage_history %}
-    <br>
-    <b>Triage history:</b>
-    <div>
-      <table class="triage-table">
-        <tr>
-          <th class="triage-header">When</th>
-          <th class="triage-header">Who</th>
-          <th class="triage-header">Suspect Type</th>
-          <th class="triage-header">Suspect Info</th>
-          <th class="triage-header">Result</th>
-          <th class="triage-header">Analysis Version Number</th>
-        </tr>
-        <tbody>
-          {% for triage_record in triage_history %}
-            <tr>
-              <td class="triage-cell">{{ triage_record.triaged_time }}</td>
-              <td class="triage-cell">{{ triage_record.user_name }}</td>
-              {% if triage_record.suspect_info.culprit_revision %}
-                <td class="triage-cell">Culprit</td>
-                <td class="triage-cell"><a href="{{ triage_record.suspect_info.culprit_url }}">{{triage_record.suspect_info.culprit_commit_position or triage_record.suspect_info.culprit_revision}}</a></td>
-              {% else %}
-                <td class="triage-cell">Suspected Build</td>
-                <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ triage_record.suspect_info.build_number }}" target="_blank">{{ triage_record.suspect_info.build_number }}</a></a></td>
-              {% endif %}
-              <td class="triage-cell">{{ triage_record.triage_result }}</td>
-              <td class="triage-cell">{{ triage_record.version_number }}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
     </div>
-  {% endif %}
-  <div id="range-help-explanation-dialog" title="Choose a range or point to analyze">
-    Want to analyze a specific range?<br>
-    <ul>
-      <li>Choose a commit position range and enter it into the Lower bound/Upper bound text fields</li>
-      <li>To specify a single point, enter a commit position in either lower/upper bound, or enter the same commit position for both</li>
-      <li>Optional: specify the number of iterations to rerun swarming. Findit tasks have a maximum of three hours to complete, so please use values below 800 to ensure the task completes successfully
-      <li>Press Analyze range</li>
-      <li>If the lower bound is found to be stable and upper bound flaky, Findit will attempt to identify the culprit CL that caused the flakiness</li>
-    </ul>
-  </div>
+    <br>
+    <div>
+      <b>Pass Rate by Commit:</b><br>
+      <div class="container">
+        <div id="flake-data" class="flake-trend"></div>
+      </div>
+      <div id="data-point-tooltip" class="data-point-detail">
+        <div>Pass Rate: <span id="pass-rate"></span>%</div>
+        <div id="range-container">Range: <a id="range-link" target="_blank"></a></div>
+        <div id="swarming-task-container">Swarming: <a id="swarming-task-link" target="_blank"></a></div>
+        <div id="try-job-container">Try-Job: <a id="try-job-link" target="_blank">link</a></div>
+        <div id="build-container">Build: <a id="build-link" target="_blank"></a></div>
+      </div>
+    </div>
+    {% if show_input_ui %}
+      <div>
+        <table>
+          <tr>
+            <td>Analyze a commit position range (<a class="range-help-info" href="javascript:">?</a>):</td>
+            <td><input type="text" id="lower-bound-commit-position" placeholder="Lower bound" size="10"</td>
+            <td><input type="text" id="upper-bound-commit-position" placeholder="Upper bound" size="10"</td>
+            <td> # Iterations:<input type="text" id="iterations-to-rerun" value={{ iterations_to_rerun }} size="1"<td>
+            <td><button id="analyze-regression-range-button">Analyze</button></td>
+          </tr>
+        </table>
+      </div>
+    {% endif %}
+    <br>
+    <div>
+      <b>Metadata:</b><br>
+      Test rerun: {{ iterations_to_rerun }} times<br>
+      {% if request_time %}
+      Request time: {{ request_time }}<br>
+      {% endif %}
+      {% if pending_time %}
+      Pending time: {{ pending_time }}<br>
+      {% endif %}
+      {% if show_debug_info and duration %}
+      Duration: {{ duration }}<br>
+      {% endif %}
+      Total Swarm Tasks: {{ build_level_number }}<br>
+      Total Try Jobs: {{ revision_level_number }}
+    </div>
+    <br>
+    <div id="triage_flake">
+      {% if suspected_flake %}
+        <b>Feedback appreciated:</b>
+          {% if user_email %}
+            (if provided, it connects to your email {{ user_email }} for 30 days)
+          {% endif %}
+        <table class="triage-table">
+          <tr>
+            <th class="triage-header" title="Type of Findit's result: Suspected Build or Culprit">Suspect Type</th>
+            <th class="triage-header" title="The build or revision where the test became flaky">Suspect Info</th>
+            <th class="triage-header">Feedback</th>
+          </tr>
+          <tr>
+            {% if (culprit.commit_position or culprit.git_hash) and culprit.url %}
+              <td class="triage-cell">Culprit</td>
+              <td class="triage-cell"><a href="{{culprit.url}}">{{culprit.commit_position or culprit.git_hash}}</a></td>
+            {% else %}
+              <td class="triage-cell">Suspected Build</td>
+              <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a></a></td>
+            {% endif %}
+            <td class="triage-cell">
+              <input type="radio" name="triage-radio-button" value="2" {{ "checked" if suspected_flake.triage_result == 2 else ""}} >Correct &nbsp;&nbsp;
+              <input type="radio" name="triage-radio-button" value="1" {{ "checked" if suspected_flake.triage_result == 1 else ""}}>Incorrect
+            </td>
+          </tr>
+        </table>
+      {% endif %}
+      <div id="flake_result_triaged"></div>
+    </div>
+
+    {% if show_debug_info and triage_history %}
+      <br>
+      <b>Triage history:</b>
+      <div>
+        <table class="triage-table">
+          <tr>
+            <th class="triage-header">When</th>
+            <th class="triage-header">Who</th>
+            <th class="triage-header">Suspect Type</th>
+            <th class="triage-header">Suspect Info</th>
+            <th class="triage-header">Result</th>
+            <th class="triage-header">Analysis Version Number</th>
+          </tr>
+          <tbody>
+            {% for triage_record in triage_history %}
+              <tr>
+                <td class="triage-cell">{{ triage_record.triaged_time }}</td>
+                <td class="triage-cell">{{ triage_record.user_name }}</td>
+                {% if triage_record.suspect_info.culprit_revision %}
+                  <td class="triage-cell">Culprit</td>
+                  <td class="triage-cell"><a href="{{ triage_record.suspect_info.culprit_url }}">{{triage_record.suspect_info.culprit_commit_position or triage_record.suspect_info.culprit_revision}}</a></td>
+                {% else %}
+                  <td class="triage-cell">Suspected Build</td>
+                  <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ triage_record.suspect_info.build_number }}" target="_blank">{{ triage_record.suspect_info.build_number }}</a></a></td>
+                {% endif %}
+                <td class="triage-cell">{{ triage_record.triage_result }}</td>
+                <td class="triage-cell">{{ triage_record.version_number }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+    <div id="range-help-explanation-dialog" title="Choose a range or point to analyze">
+      Want to analyze a specific range?<br>
+      <ul>
+        <li>Choose a commit position range and enter it into the Lower bound/Upper bound text fields</li>
+        <li>To specify a single point, enter a commit position in either lower/upper bound, or enter the same commit position for both</li>
+        <li>Optional: specify the number of iterations to rerun swarming. Findit tasks have a maximum of three hours to complete, so please use values below 800 to ensure the task completes successfully
+        <li>Press Analyze range</li>
+        <li>If the lower bound is found to be stable and upper bound flaky, Findit will attempt to identify the culprit CL that caused the flakiness</li>
+      </ul>
+    </div>
+  </findit-app>
 </body>
 </html>

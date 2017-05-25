@@ -30,6 +30,9 @@
         </app-toolbar>
       </app-header>
       <div id="main-content">
+        <template is="dom-if" if="[[pageHeader]]">
+          <h1>[[pageHeader]]</h1>
+        </template>
         <slot></slot>
       <div>
     </app-header-layout>
@@ -43,6 +46,10 @@
        is: 'findit-app',
 
        properties: {
+         pageHeader: {
+           type: String,
+           value: undefined,
+         },
        },
      });
    })();
