@@ -49,6 +49,9 @@
         text-overflow: ellipsis;
         max-width: 90%;
       }
+      .updated {
+        font-size: 12px;
+      }
     </style>
     <iron-ajax
         id="bugQueueAjax"
@@ -121,6 +124,7 @@
               <template is="dom-if" if="[[_validPriority(bucket.priority)]]">
                 (Pri-[[bucket.priority]])
               </template>
+              <a target="_blank" title="[[bug.updated]]" class="updated">Last update: [[bug.updated]]</a>
             </div>
           </template>
         </iron-collapse>

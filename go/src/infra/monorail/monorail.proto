@@ -58,6 +58,8 @@ message Issue {
     string status = 17;
     // A one line description of the issue.
     string summary = 18;
+    //Last updated datetime of this issue.
+    string updated = 19;
 }
 
 // IssueRef references another issue in the same Monorail instance.
