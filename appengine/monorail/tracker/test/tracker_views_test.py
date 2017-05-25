@@ -151,6 +151,7 @@ class IssueViewTest(unittest.TestCase):
     self.assertEqual(['not too long summary', 'sum 4',
                       'Issue 5001 in codesite.'],
                      [irv.summary for irv in view2.blocking])
+    self.assertTrue(view2.multiple_blocked_on)
 
     # Now, treat issues 3 and 4 as not visible to the current user.
     view2 = tracker_views.IssueView(
@@ -161,15 +162,22 @@ class IssueViewTest(unittest.TestCase):
                      [irv.summary for irv in view2.blocked_on])
     self.assertEqual(['not too long summary', None, 'Issue 5001 in codesite.'],
                      [irv.summary for irv in view2.blocking])
+    self.assertFalse(view2.multiple_blocked_on)
 
     # Treat nothing as visible to the current user. Can still see dangling ref.
+    dref_blocked_on = tracker_pb2.DanglingIssueRef()
+    dref_blocked_on.project = 'codesite'
+    dref_blocked_on.issue_id = 4999
+    self.issue2.dangling_blocked_on_refs.append(dref_blocked_on)
     view2 = tracker_views.IssueView(
         self.issue2, self.users_by_id, _MakeConfig(),
-        open_related={}, closed_related={}, all_related=all_related)
-    self.assertEqual([None, None],
+        open_related={9999: 'some irrelevant issue'},
+        closed_related={}, all_related=all_related)
+    self.assertEqual([None, None, 'Issue 4999 in codesite.'],
                      [irv.summary for irv in view2.blocked_on])
     self.assertEqual([None, None, 'Issue 5001 in codesite.'],
                      [irv.summary for irv in view2.blocking])
+    self.assertFalse(view2.multiple_blocked_on)
 
   def testIssueViewWithRestrictions(self):
     view = tracker_views.IssueView(

@@ -177,7 +177,8 @@ class IssueView(template_helpers.PBProxy):
 
     visible_open_blocked_on = [
         irv for irv in self.blocked_on
-        if open_related and irv.issue_id in open_related]
+        if (not irv.is_dangling and
+            open_related and irv.issue_id in open_related)]
     self.multiple_blocked_on = ezt.boolean(len(visible_open_blocked_on) >= 2)
     self.detail_relative_url = tracker_helpers.FormatRelativeIssueURL(
         issue.project_name, urls.ISSUE_DETAIL, id=issue.local_id)
