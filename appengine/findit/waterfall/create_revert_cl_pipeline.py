@@ -207,7 +207,7 @@ def _RevertCulprit(
   # 3. Add reviewers.
   sheriffs = rotations.current_sheriffs()
   message = textwrap.dedent("""
-      Sheriffs:
+      Sheriffs, CL owner or CL reviewers:
 
       Please confirm and "Quick L-G-T-M & CQ" this revert if it is correct.
       If it is a false positive, please close it.

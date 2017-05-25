@@ -210,13 +210,9 @@ class Rietveld(codereview.CodeReview):
     return None  # pragma: no cover
 
   def AddReviewers(self, change_id, reviewers, message=None):
-    assert reviewers
     cl = self.GetClDetails(change_id)
     current_cc_list = cl.cc
-    current_reviewers = set(cl.reviewers)
-    new_reviewers = current_reviewers | set(reviewers)
-    if current_reviewers == new_reviewers:
-      return True
+    new_reviewers = set(cl.reviewers) | set(reviewers)
 
     url_path = '/%s/publish' % change_id
     form_fields = {

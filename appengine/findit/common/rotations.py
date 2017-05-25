@@ -32,4 +32,4 @@ def get_all_rotations():
                     ROTATIONS_URL, status_code))
 
 def current_sheriffs(rotation_name='chrome'):
-  return get_all_rotations().get(rotation_name)
+  return get_all_rotations().get(rotation_name, [])
