@@ -220,8 +220,8 @@ def _RevertCulprit(
 
   if not success:  # pragma: no cover
     _UpdateCulprit(repo_name, revision, status.ERROR)
-    logging.error('Failed to add reviewers for revert of culprit %s/%s' % (
-      repo_name, revision))
+    logging.error('Failed to add reviewers or post message for revert of'
+                  ' culprit %s/%s' % (repo_name, revision))
     return ERROR
 
   _UpdateCulprit(repo_name, revision, revert_status=status.COMPLETED)

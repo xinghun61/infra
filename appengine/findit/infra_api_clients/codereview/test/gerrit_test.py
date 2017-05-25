@@ -125,7 +125,10 @@ class GerritTest(testing.AppengineTestCase):
                                            ['old@dummy.org'])
     self.http_client._AddReviewerResponse(self.server_hostname, change_id,
                                           'new@dummy.org')
-    self.assertTrue(self.gerrit.AddReviewers(change_id, ['new@dummy.org']))
+    self.http_client._SetPostMessageResponse(
+        self.server_hostname, change_id, '{}')
+    self.assertTrue(self.gerrit.AddReviewers(
+        change_id, ['new@dummy.org'], 'message'))
 
   def testAddReviewerNewAliased(self):
     change_id = 'Iabc12345'
@@ -133,13 +136,19 @@ class GerritTest(testing.AppengineTestCase):
                                            ['old@dummy.org'])
     self.http_client._AddReviewerResponse(self.server_hostname, change_id,
                                           'new@dummy.org')
-    self.assertTrue(self.gerrit.AddReviewers(change_id, ['alias@dummy.org']))
+    self.http_client._SetPostMessageResponse(
+        self.server_hostname, change_id, '{}')
+    self.assertTrue(self.gerrit.AddReviewers(
+        change_id, ['alias@dummy.org'], 'message'))
 
   def testAddReviewerExisting(self):
     change_id = 'Iabc12345'
     self.http_client._SetReviewersResponse(self.server_hostname, change_id,
                                            ['old@dummy.org'])
-    self.assertTrue(self.gerrit.AddReviewers(change_id, ['old@dummy.org']))
+    self.http_client._SetPostMessageResponse(
+        self.server_hostname, change_id, '{}')
+    self.assertTrue(self.gerrit.AddReviewers(
+        change_id, ['old@dummy.org'], 'message'))
 
   def testAddReviewerExistingAliased(self):
     change_id = 'Iabc12345'
@@ -147,7 +156,10 @@ class GerritTest(testing.AppengineTestCase):
                                            ['old@dummy.org'])
     self.http_client._AddReviewerResponse(self.server_hostname, change_id,
                                           None)
-    self.assertTrue(self.gerrit.AddReviewers(change_id, ['alias@dummy.org']))
+    self.http_client._SetPostMessageResponse(
+        self.server_hostname, change_id, '{}')
+    self.assertTrue(self.gerrit.AddReviewers(
+        change_id, ['alias@dummy.org'], 'message'))
 
   def testAddReviewerMany(self):
     change_id = 'Iabc12345'
@@ -157,9 +169,12 @@ class GerritTest(testing.AppengineTestCase):
                                           'new@dummy.org')
     self.http_client._AddReviewerResponse(self.server_hostname, change_id,
                                           'newtoo@dummy.org')
-    self.assertTrue(self.gerrit.AddReviewers(change_id, ['new@dummy.org',
-                                                         'newtoo@dummy.org',
-                                                         'old@dummy.org']))
+    self.http_client._SetPostMessageResponse(
+        self.server_hostname, change_id, '{}')
+    self.assertTrue(self.gerrit.AddReviewers(
+        change_id,
+        ['new@dummy.org', 'newtoo@dummy.org', 'old@dummy.org'],
+        'message'))
 
   def testAddReviewerFailure(self):
     change_id = 'Iabc12345'

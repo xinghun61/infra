@@ -77,17 +77,16 @@ class Gerrit(codereview.CodeReview):
       return None
 
   def AddReviewers(self, change_id, reviewers, message=None):
-    assert reviewers
     current_reviewers = self.GetClDetails(change_id).reviewers
-    for reviewer in reviewers:
-      # reviewer must be an email string.
-      assert len(reviewer.split('@')) == 2
-      if reviewer in current_reviewers:
-        # Only add reviewers not currently assinged to the change.
-        continue
-      parts =['changes', change_id, 'reviewers']
-      response = self._Post(parts, body={'reviewer': reviewer})
-      try:
+    try:
+      for reviewer in reviewers:
+        # reviewer must be an email string.
+        assert len(reviewer.split('@')) == 2
+        if reviewer in current_reviewers:
+          # Only add reviewers not currently assinged to the change.
+          continue
+        parts =['changes', change_id, 'reviewers']
+        response = self._Post(parts, body={'reviewer': reviewer})
         reviewers = response['reviewers']
         if reviewers == []:
           # This might be okay if a user has more than one email.
@@ -100,9 +99,13 @@ class Gerrit(codereview.CodeReview):
           logging.warning('Requested to add %s as reviewer to cl %s but '
                           '%s was added instead.' % (reviewer, change_id,
                                                      new_reviewer))
-      except (TypeError, KeyError, IndexError):
-        return False
-    return True
+    except (TypeError, KeyError, IndexError):
+      return False
+    finally:
+      # Post the message even if failed to add reviewers.
+      success = not message or self.PostMessage(change_id, message)
+
+    return success
 
   def GetClDetails(self, change_id):
     # Create cl info based on the url.
