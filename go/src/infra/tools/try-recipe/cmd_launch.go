@@ -5,6 +5,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -33,6 +34,8 @@ func launchCmd(authOpts auth.Options) *subcommands.Command {
 			ret.logCfg.AddFlags(&ret.Flags)
 			ret.authFlags.Register(&ret.Flags, authOpts)
 
+			ret.Flags.BoolVar(&ret.dump, "dump", false, "dump swarming task to stdout instead of running it.")
+
 			return ret
 		},
 	}
@@ -43,6 +46,8 @@ type cmdLaunch struct {
 
 	logCfg    logging.Config
 	authFlags authcli.Flags
+
+	dump bool
 }
 
 func (c *cmdLaunch) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
@@ -103,6 +108,15 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 		return 1
 	}
 	logging.Infof(ctx, "building swarming task: done")
+
+	if c.dump {
+		err := json.NewEncoder(os.Stdout).Encode(st)
+		if err != nil {
+			logging.Errorf(ctx, "fatal error: %s", err)
+			return 1
+		}
+		return 0
+	}
 
 	logging.Infof(ctx, "launching swarming task")
 	req, err := swarm.Tasks.New(st).Do()

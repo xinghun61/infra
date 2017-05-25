@@ -93,6 +93,7 @@ by -O), and then launch the modified task on swarming.`,
 
 			// commands to edit JobDescriptions.
 			editCmd(),
+			editSystemCmd(),
 
 			// commands to launch swarming tasks.
 			launchCmd(authDefaults),

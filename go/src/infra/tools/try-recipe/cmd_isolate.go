@@ -119,7 +119,6 @@ func (c *cmdIsolate) Run(a subcommands.Application, args []string, env subcomman
 		}
 
 		logging.Infof(ctx, "isolating recipes")
-
 		hash, err := isolate(ctx, bundlePath, isoFlags, authOpts)
 		if err != nil {
 			return nil, err

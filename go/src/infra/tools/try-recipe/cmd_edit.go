@@ -6,7 +6,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"os"
 	"sync/atomic"
 	"time"
@@ -17,7 +16,6 @@ import (
 
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/flag/stringlistflag"
 	"github.com/luci/luci-go/common/flag/stringmapflag"
 	"github.com/luci/luci-go/common/logging"
 )
@@ -25,7 +23,7 @@ import (
 func editCmd() *subcommands.Command {
 	return &subcommands.Command{
 		UsageLine: "edit [options]",
-		ShortDesc: "edits a JobDescription",
+		ShortDesc: "edits the userland of a JobDescription",
 		LongDesc: `Allows common manipulations to a JobDescription.
 
 Example:
@@ -39,7 +37,28 @@ try-recipe get-builder ... |
 			ret := &cmdEdit{}
 			ret.logCfg.Level = logging.Info
 
-			ret.editFlags.register(&ret.Flags)
+			ret.Flags.Var(&ret.dimensions, "d",
+				"(repeatable) override a dimension. This takes a parameter of `dimension=value`. "+
+					"Providing an empty value will remove that dimension.")
+
+			ret.Flags.Var(&ret.properties, "p",
+				"(repeatable) override a recipe property. This takes a parameter of `property_name=json_value`. "+
+					"Providing an empty json_value will remove that property.")
+
+			ret.Flags.StringVar(&ret.recipeIsolate, "rbh", "",
+				"override the recipe bundle `hash` (such as you might get from the isolate command).")
+
+			ret.Flags.StringVar(&ret.recipeURL, "ru", "",
+				"override the recipe repo `url` (if not using a bundle).")
+
+			ret.Flags.StringVar(&ret.recipeRevision, "rr", "",
+				"override the recipe repo `revision` (if not using a bundle).")
+
+			ret.Flags.StringVar(&ret.recipeName, "r", "",
+				"override the `recipe` to run.")
+
+			ret.Flags.StringVar(&ret.swarmingServer, "S", "",
+				"override the swarming `server` to launch the task on.")
 
 			return ret
 		},
@@ -51,70 +70,14 @@ type cmdEdit struct {
 
 	logCfg logging.Config
 
-	editFlags editFlags
-}
-
-type editFlags struct {
 	recipeIsolate  string
 	dimensions     stringmapflag.Value
 	properties     stringmapflag.Value
-	environment    stringmapflag.Value
 	recipeURL      string
 	recipeRevision string
-	cipdPackages   stringmapflag.Value
-	prefixPathEnv  stringlistflag.Flag
 	recipeName     string
 
 	swarmingServer string
-}
-
-func (e *editFlags) register(fs *flag.FlagSet) {
-	fs.Var(&e.dimensions, "d",
-		"(repeatable) override a dimension. This takes a parameter of `dimension=value`. "+
-			"Providing an empty value will remove that dimension.")
-
-	fs.Var(&e.properties, "p",
-		"(repeatable) override a recipe property. This takes a parameter of `property_name=json_value`. "+
-			"Providing an empty json_value will remove that property.")
-
-	fs.Var(&e.environment, "e",
-		"(repeatable) override an environment variable. This takes a parameter of `env_var=value`. "+
-			"Providing an empty value will remove that envvar.")
-
-	fs.Var(&e.cipdPackages, "cp",
-		"(repeatable) override a cipd package. This takes a parameter of `[subdir:]pkgname=version`. "+
-			"Using an empty version will remove the package. The subdir is optional and defaults to '.'.")
-
-	fs.Var(&e.prefixPathEnv, "ppe",
-		"(repeatable) override a -prefix-path-env entry. Using a value like '!value' will remove a path entry.")
-
-	fs.StringVar(&e.recipeIsolate, "rbh", "",
-		"override the recipe bundle `hash` (such as you might get from the isolate command).")
-
-	fs.StringVar(&e.recipeURL, "ru", "",
-		"override the recipe repo `url` (if not using a bundle).")
-
-	fs.StringVar(&e.recipeRevision, "rr", "",
-		"override the recipe repo `revision` (if not using a bundle).")
-
-	fs.StringVar(&e.recipeName, "r", "",
-		"override the `recipe` to run.")
-
-	fs.StringVar(&e.swarmingServer, "S", "",
-		"override the swarming `server` to launch the task on.")
-}
-
-func (e *editFlags) Edit(jd *JobDefinition) (*JobDefinition, error) {
-	ejd := jd.Edit()
-	ejd.RecipeSource(e.recipeIsolate, e.recipeURL, e.recipeRevision)
-	ejd.Dimensions(e.dimensions)
-	ejd.Properties(e.properties)
-	ejd.Env(e.environment)
-	ejd.Recipe(e.recipeName)
-	ejd.CipdPkgs(e.cipdPackages)
-	ejd.SwarmingServer(e.swarmingServer)
-	ejd.PrefixPathEnv(e.prefixPathEnv)
-	return ejd.Finalize()
 }
 
 func decodeJobDefinition(ctx context.Context) (*JobDefinition, error) {
@@ -155,7 +118,16 @@ func editMode(ctx context.Context, cb func(jd *JobDefinition) (*JobDefinition, e
 func (c *cmdEdit) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 
-	if err := editMode(ctx, c.editFlags.Edit); err != nil {
+	err := editMode(ctx, func(jd *JobDefinition) (*JobDefinition, error) {
+		ejd := jd.Edit()
+		ejd.RecipeSource(c.recipeIsolate, c.recipeURL, c.recipeRevision)
+		ejd.Dimensions(c.dimensions)
+		ejd.Properties(c.properties)
+		ejd.Recipe(c.recipeName)
+		ejd.SwarmingServer(c.swarmingServer)
+		return ejd.Finalize()
+	})
+	if err != nil {
 		logging.WithError(err).Errorf(ctx, "fatal")
 		return 1
 	}
