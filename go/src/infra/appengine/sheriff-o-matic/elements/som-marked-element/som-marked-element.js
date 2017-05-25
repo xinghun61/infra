@@ -7,9 +7,8 @@
       markdown: String,
     },
     ready: function() {
-      this.$.element.renderer = (function(r) {
-                                  r.link = this._getLinkRenderer();
-                                }).bind(this);
+      this.$.element.renderer =
+          (function(r) { r.link = this._getLinkRenderer(); }).bind(this);
     },
 
     _hrefIsAllowed: function(href) {
@@ -32,7 +31,8 @@
 
     _getLinkRenderer: function() {
       return (href, title, text) => {
-        if (!this._hrefIsAllowed(href)) return text;
+        if (!this._hrefIsAllowed(href))
+          return text;
         return `<a href="${href}" target="_blank">${text}</a>`;
       };
     },

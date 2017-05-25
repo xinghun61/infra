@@ -6,9 +6,7 @@
     properties: {
       alert: {
         type: Object,
-        value: function() {
-          return {};
-        },
+        value: function() { return {}; },
         observer: '_alertChanged',
       },
       selectedStep: {
@@ -63,9 +61,9 @@
         // if the failing step is webkit_layout_tests.
         // TODO(crbug/706192): Remove the check for webkit_tests, once this
         // step name no longer exists.
-        this.hideWebKitTests = !(
-          this.alert.title.startsWith('webkit_tests') ||
-          this.alert.title.startsWith('webkit_layout_tests'));
+        this.hideWebKitTests =
+            !(this.alert.title.startsWith('webkit_tests') ||
+              this.alert.title.startsWith('webkit_layout_tests'));
       } else {
         this.hideTests = true;
         this.hideWebKitTests = true;
@@ -73,7 +71,7 @@
     },
 
     _tabId: function(builder) {
-      return builder.name + ':' +  builder.latest_failure;
+      return builder.name + ':' + builder.latest_failure;
     },
 
     _tabTitle: function(builder) {

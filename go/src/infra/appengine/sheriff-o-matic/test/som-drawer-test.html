@@ -74,7 +74,7 @@
     });
 
     test('gets current trooper', function(done) {
-      element.refresh();
+      element._refresh();
 
       server.respond();
 
@@ -91,7 +91,7 @@
 
       let pstTime = unixTime - 8 * 60 * 60;
 
-      element.tree = 'chromium';
+      element.tree = {'name': 'chromium'};
       element._sheriffRotations = {
         'rotations': ['chrome'],
         'calendar': [

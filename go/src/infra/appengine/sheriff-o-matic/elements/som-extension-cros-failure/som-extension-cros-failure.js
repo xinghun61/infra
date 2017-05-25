@@ -9,9 +9,7 @@
       type: {type: String, value: ''},
     },
 
-    _isCrosFailure: function(type) {
-      return type == 'cros-failure';
-    },
+    _isCrosFailure: function(type) { return type == 'cros-failure'; },
 
     _classForStage: function(stage) {
       let classes = ['stage'];
@@ -37,15 +35,13 @@
       return stage && stage.builders && stage.builders.length > 0;
     },
 
-    _buildName: function(name, number) {
-      return name + ':' + number;
-    },
+    _buildName: function(name, number) { return name + ':' + number; },
 
     _buildRange: function(builder) {
       if (builder.first_failure == builder.latest_failure) {
         return this._buildName(builder.name, builder.first_failure);
       } else {
-        return this._buildName(builder.name, builder.first_failure) + "-" +
+        return this._buildName(builder.name, builder.first_failure) + '-' +
                this._buildName(builder.name, builder.latest_failure);
       }
     },

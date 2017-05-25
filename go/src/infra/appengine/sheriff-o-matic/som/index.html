@@ -23,12 +23,13 @@ function loadNonVulcanized() {
   }
 
   .warning-banner {
-    background-color: red;
+    background-color: #E75D54;
     font-size: 18px;
-    height: 18px;
+    padding: 0.5em 0;
     position: absolute;
     text-align: center;
-    top: 0;
+    bottom: 0;
+    left: 0;
     width: 100%;
     z-index: 100;
   }
@@ -38,7 +39,6 @@ function loadNonVulcanized() {
   This is the staging server. You might want to use the
   <a href="https://sheriff-o-matic.appspot.com/">production server</a>.
 </div>
-
 {{end}}
 <som-app user="{{.User}}" logout-url="{{.LogoutUrl}}" xsrf-token="{{.XsrfToken}}"></som-app>
 

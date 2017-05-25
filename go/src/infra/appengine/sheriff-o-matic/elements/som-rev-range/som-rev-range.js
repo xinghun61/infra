@@ -14,9 +14,7 @@
       _iconName: {type: String, value: 'icons:unfold-more'},
     },
 
-    ready: function() {
-      this._fetchData();
-    },
+    ready: function() { this._fetchData(); },
 
     _fetchData: function() {
       let start = this._regressionStart(this.range);
@@ -33,13 +31,9 @@
                   this._revs = body.log;
                   this.$.loadingMessage.hidden = true;
                 },
-                (reject) => {
-                  console.error(reject);
-                });
+                (reject) => { console.error(reject); });
           },
-          (reject) => {
-            console.error(reject);
-          });
+          (reject) => { console.error(reject); });
     },
 
     _toggleCollapse: function() {
@@ -49,13 +43,9 @@
       this._collapseMessage = this.$.collapse.opened ? 'less' : 'more';
     },
 
-    _shortHash: function(hash) {
-      return hash.substring(0, 8);
-    },
+    _shortHash: function(hash) { return hash.substring(0, 8); },
 
-    _firstLine: function(message) {
-      return message.split('\n')[0];
-    },
+    _firstLine: function(message) { return message.split('\n')[0]; },
 
     _regressionStart: function(range) {
       if (!range || (!range.positions || range.positions.length == 0)) {
@@ -100,7 +90,7 @@
             range.positions[range.positions.length - 1]);
       }
       return 'https://test-results.appspot.com/revision_range?start=' +
-          `${start}&end=${end}`;
+             `${start}&end=${end}`;
     },
 
     _parseCommitPosition: function(pos) {

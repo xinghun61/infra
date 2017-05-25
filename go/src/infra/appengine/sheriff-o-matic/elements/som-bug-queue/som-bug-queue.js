@@ -74,9 +74,7 @@
       }
 
       if (this._activeRequests) {
-        this._activeRequests.forEach((req) => {
-          req.abort();
-        });
+        this._activeRequests.forEach((req) => { req.abort(); });
       }
 
       let requests = [this.$.bugQueueAjax.generateRequest()];
@@ -84,14 +82,10 @@
         requests.push(this.$.uncachedBugsAjax.generateRequest());
       }
 
-      let promises = requests.map((r) => {
-        return r.completes;
-      });
+      let promises = requests.map((r) => { return r.completes; });
 
       this._activeRequests = requests;
-      Promise.all(promises).then(() => {
-        this._bugsLoaded = true;
-      });
+      Promise.all(promises).then(() => { this._bugsLoaded = true; });
     },
 
     _bugQueueLabelChanged: function() {
@@ -118,17 +112,16 @@
     },
 
     _computeBugsByPriority: function(bugs) {
-      let buckets = bugs.reduce(
-          (function(obj, b) {
-            let p = this._computePriority(b);
-            if (!(p in obj)) {
-              obj[p] = [b];
-            } else {
-              obj[p].push(b);
-            }
-            return obj;
-          }).bind(this),
-          {});
+      let buckets = bugs.reduce((function(obj, b) {
+                                  let p = this._computePriority(b);
+                                  if (!(p in obj)) {
+                                    obj[p] = [b];
+                                  } else {
+                                    obj[p].push(b);
+                                  }
+                                  return obj;
+                                }).bind(this),
+                                {});
 
       // Flatten the buckets into an array for use in dom-repeat.
       let result = Object.keys(buckets).sort().map(function(key) {
@@ -140,7 +133,7 @@
     _computeHideBugQueue: function(bugQueueLabel) {
       // No loading or empty message is shown unless a bug queue exists.
       return !bugQueueLabel || bugQueueLabel === '' ||
-          bugQueueLabel === 'Performance-Sheriff-BotHealth';
+             bugQueueLabel === 'Performance-Sheriff-BotHealth';
     },
 
     _computeIsTrooperQueue: function(bugQueueLabel) {
@@ -172,17 +165,13 @@
       }
       return labels.filter((label) => {
         return label.toLowerCase() != bugQueueLabel.toLowerCase() &&
-            !label.match(/^Pri-(\d)$/);
+               !label.match(/^Pri-(\d)$/);
       });
     },
 
-    _haveNoBugs: function(bugs) {
-      return !bugs || bugs.length == 0;
-    },
+    _haveNoBugs: function(bugs) { return !bugs || bugs.length == 0; },
 
-    _haveNoErrors: function(error) {
-      return !error;
-    },
+    _haveNoErrors: function(error) { return !error; },
 
     _priorityText: function(pri) {
       if (this._validPriority(pri)) {
@@ -195,21 +184,17 @@
       return !bugsLoaded && this._haveNoErrors(error);
     },
 
-    _validPriority: function(pri) {
-      return pri != this.UNSET_PRIORITY;
-    },
+    _validPriority: function(pri) { return pri != this.UNSET_PRIORITY; },
 
     // Collapsing/expanding priority headers.
 
-    _computeCollapseId: function(pri) {
-      return `collapsePri${pri}`;
-    },
+    _computeCollapseId: function(pri) { return `collapsePri${pri}`; },
 
     _computeCollapseIcon: function(opened) {
       return opened ? 'remove' : 'add';
     },
 
-    _collapseAll: function () {
+    _collapseAll: function() {
       for (let i = 0; i < this._bugsByPriority.length; i++) {
         let pri = this._bugsByPriority[i].priority;
         let id = this._computeCollapseId(pri);
@@ -221,7 +206,7 @@
       }
     },
 
-    _expandAll: function () {
+    _expandAll: function() {
       for (let i = 0; i < this._bugsByPriority.length; i++) {
         let pri = this._bugsByPriority[i].priority;
         let id = this._computeCollapseId(pri);

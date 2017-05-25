@@ -61,8 +61,7 @@
         reason: {},
         regression_ranges: []
       };
-      element._uberify = (url) => { return url; };
-      flush( () => {
+      flush(() => {
         let items = element.getElementsByClassName('builder');
         assert.equal(items.length, 3);
         assert.include(items[0].textContent.trim(), '4 since first detection');

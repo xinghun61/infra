@@ -23,8 +23,6 @@
       },
     },
 
-    _initializeUber: function(evt) {
-      evt.target.value = 'uber';
-    },
+    _initializeUber: function(evt) { evt.target.value = 'uber'; },
   });
 })();

@@ -32,9 +32,7 @@
       },
     },
 
-    refresh: function() {
-      this.$.masterRestarts.generateRequest();
-    },
+    refresh: function() { this.$.masterRestarts.generateRequest(); },
 
     _computeHasError: function(json) {
       return !!json && Object.keys(json).length > 0;
@@ -62,8 +60,8 @@
         var tt = new Date(state.transition_time_utc).toLocaleString();
         restarts.push({
           master: master,
-          desiredState: state.desired_state == 'running' ? 'restart' :
-                                                           state.desired_state,
+          desiredState: state.desired_state == 'running' ? 'restart'
+                                                         : state.desired_state,
           transitionTime: tt
         })
       });

@@ -45,21 +45,19 @@
     toggleQuarantined: function() {
       this.$.quarantinedBotsList.toggle();
 
-      this._toggleQuarantinedIcon = this._computeIcon(
-        this.$.quarantinedBotsList.opened);
+      this._toggleQuarantinedIcon =
+          this._computeIcon(this.$.quarantinedBotsList.opened);
     },
 
-    _computeHideBots: function(bots) {
-      return !bots || bots.length == 0;
-    },
+    _computeHideBots: function(bots) { return !bots || bots.length == 0; },
 
     _collapseAll: function() {
       this.$.deadBotsList.opened = false;
       this.$.quarantinedBotsList.opened = false;
 
       this._toggleDeadIcon = this._computeIcon(this.$.deadBotsList.opened);
-      this._toggleQuarantinedIcon = this._computeIcon(
-        this.$.quarantinedBotsList.opened);
+      this._toggleQuarantinedIcon =
+          this._computeIcon(this.$.quarantinedBotsList.opened);
     },
 
     _expandAll: function() {
@@ -67,12 +65,10 @@
       this.$.quarantinedBotsList.opened = true;
 
       this._toggleDeadIcon = this._computeIcon(this.$.deadBotsList.opened);
-      this._toggleQuarantinedIcon = this._computeIcon(
-        this.$.quarantinedBotsList.opened);
+      this._toggleQuarantinedIcon =
+          this._computeIcon(this.$.quarantinedBotsList.opened);
     },
 
-    _computeIcon(opened) {
-      return opened ? 'remove' : 'add';
-    },
+    _computeIcon(opened) { return opened ? 'remove' : 'add'; },
   });
 })();

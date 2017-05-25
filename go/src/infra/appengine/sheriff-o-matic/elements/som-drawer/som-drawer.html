@@ -121,7 +121,7 @@
       </ul>
 
       <template is="dom-if" if="[[_sheriffs]]">
-        <label>[[_computeTreeDisplayName(tree, trees)]] Sheriffs</label>
+        <label>[[tree.display_name]] Sheriffs</label>
         <ul id="currentSheriffs">
           <template is="dom-repeat" items="[[_sheriffs]]" as="sheriff">
             <li>[[sheriff.username]] <small>(ends [[_formatDateShort(sheriff.endDate)]] PST)</small></li>

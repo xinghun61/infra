@@ -9,7 +9,7 @@
 <dom-module id="som-extension-build-failure">
   <template>
     <style>
-     .builder {
+     a.builder {
         border-radius: 2px;
         border: 1px solid #dcdcdc;
         font-size: smaller;
@@ -17,7 +17,12 @@
         padding: .3em 0.5em;
         display: inline-block;
         background: #E75D54;
-        color: #f4f4f4;
+        font-weight: bold;
+        text-decoration: none;
+        color: #fff;
+     }
+     a.builder:hover {
+       text-decoration: underline;
      }
      .infra-failure {
        background: #e0b0ff;
@@ -28,11 +33,6 @@
      }
      .revert-cl {
        color: #FF4C00;
-     }
-     .builder a {
-        font-weight: bold;
-        text-decoration: none;
-        color: #fff;
      }
      .header {
        color: #000;
@@ -52,155 +52,144 @@
        overflow-y: auto;
        padding-right: 20px;
      }
-     .builder a:hover {
-       text-decoration: underline;
-     }
      #builders,
      #findit-results,
      #reasons,
      #regression-ranges {
-       margin: .25em auto;
+       margin: .5em auto;
      }
     </style>
     <template is="dom-if" if="[[!_isCrosFailure(type)]]">
-      <div>
-        <div id="builders" class="section layout horizontal center">
-          <template is="dom-if" if="[[_haveBuilders(extension)]]">
-            <div>
-              <div class="header">
-                Builders this step failed on:
-              </div>
-              <div>
-                <template is="dom-repeat" items="[[extension.builders]]" as="builder">
-                  <span class$="[[_classForBuilder(builder)]]">
-                    <a target="_blank" href$="[[_linkify(linkStyle, builder.url)]]" title$="Failing for the last [[_failureCount(builder)]] build(s): [[builder.first_failure]] - [[builder.latest_failure]].">
-                        [[builder.name]]
-                        [[_failureCountText(builder)]]
-                    </a>
-                  </span>
-                </template>
-              </div>
-            </div>
-          </template>
-        </div>
-        <div class="section">
-          <template is="dom-if" if="[[!_haveTests(extension.reason.tests)]]">
-            No test result data available.
-          </template>
-          <template is="dom-if" if="[[_haveTests(extension.reason.tests)]]">
-            <div class="header">
-              [[_testText(extension.reason.tests)]]:
-            </div>
-            <div id="reasons">
-              <div class="build-failures">
-                <ul>
-                  <template is="dom-repeat" items="[[extension.reason.tests]]" as="test" sort="_sortTests">
-                    <li id="test_results">
-                      <a target="_blank" href$=[[_linkForTest(extension.reason,test.test_name)]]>
-                        [[test.test_name]]
-                      </a>
-                      (
-                      <a target="_blank" href$=[[_linkToCSForTest(test.test_name)]]>
-                        Code Search
-                      </a>
-                      )
-                      <template is="dom-if" if="[[_hasSuspect(test)]]">
-                        <template is="dom-repeat" items="[[test.suspected_cls]]" as="testCL">
-                          <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-                          <span class="suspect-cl-results">
-                            Findit (<a target="_blank" href="http://go/findit-manual">?</a>)
-                            [[_finditApproach(testCL)]]
-                            <a href$="https://chromium.googlesource.com/chromium/src/+/[[testCL.revision]]" target="_blank">
-                                [[_textForCL(testCL.revision)]]
-                            </a>
-                          </span>
-                        </template>
-                      </template>
-                      <template is="dom-if" if="[[_isFlaky(test)]]">
-                        <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-                        <span class="suspect-cl-results">
-                          Findit
-                          (<a target="_blank" href="http://go/findit-manual">?</a>)
-                          results: Flaky
-                        </span>
-                      </template>
-                    </li>
-                  </template>
-                </ul>
-              </div>
-            </div>
-          </template>
-        </div>
-        <div id="regression-ranges" class="section">
-          <template is="dom-if" if="[[!_haveRegressionRanges(extension.regression_ranges)]]">
-            No regression range information available.
-          </template>
-          <template is="dom-if" if="[[_haveRegressionRanges(extension.regression_ranges)]]">
-            <div class="header">
-              Regression ranges:
-            </div>
-            <template is="dom-repeat" items="[[extension.regression_ranges]]" as="regressionRange" filter="_showRegressionRange">
-              <div>
-                <som-rev-range range="[[regressionRange]]"></som-rev-range>
-              </div>
-            </template>
-          </template>
-        </div>
-        <div id="findit-results" class="section">
-          <template is="dom-if" if="[[_finditNotSupport(extension)]]">
-            <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-            Not supported by Findit.
-            <br>
-          </template>
-          <template is="dom-if" if="[[_finditIsRunning(extension)]]">
-            <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-            Findit is Analyzing...
-            <template is="dom-if" if="[[_finditHasUrl(extension)]]">
-              <a target="_blank" href$=[[extension.findit_url]]>
-                Details
+      <div id="builders">
+        <template is="dom-if" if="[[_haveBuilders(extension)]]">
+          <div class="header">
+            Builders this step failed on:
+          </div>
+          <div class="layout horizontal wrap">
+            <template is="dom-repeat" items="[[extension.builders]]" as="builder">
+              <a class$="[[_classForBuilder(builder)]]" target="_blank" href$="[[_linkify(linkStyle, builder.url)]]" title$="Failing for the last [[_failureCount(builder)]] build(s): [[builder.first_failure]] - [[builder.latest_failure]].">
+                  [[builder.name]]
+                  [[_failureCountText(builder)]]
               </a>
             </template>
-            <br>
-          </template>
-          <template is="dom-if" if="[[_finditFoundNoResult(extension)]]">
-            <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-            Findit found no culprit.
-            <br>
-          </template>
-          <template is="dom-if" if="[[_haveSuspectCLs(extension)]]">
-            <template is="dom-repeat" items="[[_suspectedCls]]" as="cl">
-              <template is="dom-if" if="[[_haveRevertCL(cl)]]">
-                <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-                <strong class="revert-cl">
-                  Findit
-                  (<a target="_blank" href="http://go/findit-manual">?</a>)
-                  has created a
-                  <a target="_blank" href$=[[cl.revert_cl_url]]>revert CL</a>
-                   for culprit
-                </strong>
-                  <a target="_blank" href$=[[_linkForCL(cl.revision)]] class="suspect-cl-link">
-                    [[_textForCL(cl.revision)]]</a><strong class="revert-cl">. PLEASE REVIEW.
-                </strong>
-              </template>
-              <template is="dom-if" if="[[!_haveRevertCL(cl)]]">
-                <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-                <strong class="suspect-cl-results">
-                  Findit
-                  (<a target="_blank" href="http://go/findit-manual">?</a>)
-                  [[_finditApproach(cl)]]
-                  <a target="_blank" href$=[[_linkForCL(cl.revision)]] class="suspect-cl-link">
-                    [[_textForCL(cl.revision)]]
+          </div>
+        </template>
+      </div>
+      <div class="section">
+        <template is="dom-if" if="[[!_haveTests(extension.reason.tests)]]">
+          No test result data available.
+        </template>
+        <template is="dom-if" if="[[_haveTests(extension.reason.tests)]]">
+          <div class="header">
+            [[_testText(extension.reason.tests)]]:
+          </div>
+          <div id="reasons" class="build-failures">
+            <ul>
+              <template is="dom-repeat" items="[[extension.reason.tests]]" as="test" sort="_sortTests">
+                <li id="test_results">
+                  <a target="_blank" href$=[[_linkForTest(extension.reason,test.test_name)]]>
+                    [[test.test_name]]
                   </a>
-                  with [[_finditConfidence(cl)]]% confidence.
-                </strong>
+                  (
+                  <a target="_blank" href$=[[_linkToCSForTest(test.test_name)]]>
+                    Code Search
+                  </a>
+                  )
+                  <template is="dom-if" if="[[_hasSuspect(test)]]">
+                    <template is="dom-repeat" items="[[test.suspected_cls]]" as="testCL">
+                      <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
+                      <span class="suspect-cl-results">
+                        Findit (<a target="_blank" href="http://go/findit-manual">?</a>)
+                        [[_finditApproach(testCL)]]
+                        <a href$="https://chromium.googlesource.com/chromium/src/+/[[testCL.revision]]" target="_blank">
+                            [[_textForCL(testCL.revision)]]
+                        </a>
+                      </span>
+                    </template>
+                  </template>
+                  <template is="dom-if" if="[[_isFlaky(test)]]">
+                    <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
+                    <span class="suspect-cl-results">
+                      Findit
+                      (<a target="_blank" href="http://go/findit-manual">?</a>)
+                      results: Flaky
+                    </span>
+                  </template>
+                </li>
               </template>
-              <a target="_blank" href$=[[extension.findit_url]]>
-                More details...
-              </a>
-              <br>
-            </template>
+            </ul>
+          </div>
+        </template>
+      </div>
+      <div id="regression-ranges" class="section">
+        <template is="dom-if" if="[[!_haveRegressionRanges(extension.regression_ranges)]]">
+          No regression range information available.
+        </template>
+        <template is="dom-if" if="[[_haveRegressionRanges(extension.regression_ranges)]]">
+          <div class="header">
+            Regression ranges:
+          </div>
+          <template is="dom-repeat" items="[[extension.regression_ranges]]" as="regressionRange" filter="_showRegressionRange">
+            <div>
+              <som-rev-range range="[[regressionRange]]"></som-rev-range>
+            </div>
           </template>
-        </div>
+        </template>
+      </div>
+      <div id="findit-results" class="section">
+        <template is="dom-if" if="[[_finditNotSupport(extension)]]">
+          <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
+          Not supported by Findit.
+          <br>
+        </template>
+        <template is="dom-if" if="[[_finditIsRunning(extension)]]">
+          <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
+          Findit is Analyzing...
+          <template is="dom-if" if="[[_finditHasUrl(extension)]]">
+            <a target="_blank" href$=[[extension.findit_url]]>
+              Details
+            </a>
+          </template>
+          <br>
+        </template>
+        <template is="dom-if" if="[[_finditFoundNoResult(extension)]]">
+          <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
+          Findit found no culprit.
+          <br>
+        </template>
+        <template is="dom-if" if="[[_haveSuspectCLs(extension)]]">
+          <template is="dom-repeat" items="[[_suspectedCls]]" as="cl">
+            <template is="dom-if" if="[[_haveRevertCL(cl)]]">
+              <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
+              <strong class="revert-cl">
+                Findit
+                (<a target="_blank" href="http://go/findit-manual">?</a>)
+                has created a
+                <a target="_blank" href$=[[cl.revert_cl_url]]>revert CL</a>
+                 for culprit
+              </strong>
+                <a target="_blank" href$=[[_linkForCL(cl.revision)]] class="suspect-cl-link">
+                  [[_textForCL(cl.revision)]]</a><strong class="revert-cl">. PLEASE REVIEW.
+              </strong>
+            </template>
+            <template is="dom-if" if="[[!_haveRevertCL(cl)]]">
+              <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
+              <strong class="suspect-cl-results">
+                Findit
+                (<a target="_blank" href="http://go/findit-manual">?</a>)
+                [[_finditApproach(cl)]]
+                <a target="_blank" href$=[[_linkForCL(cl.revision)]] class="suspect-cl-link">
+                  [[_textForCL(cl.revision)]]
+                </a>
+                with [[_finditConfidence(cl)]]% confidence.
+              </strong>
+            </template>
+            <a target="_blank" href$=[[extension.findit_url]]>
+              More details...
+            </a>
+            <br>
+          </template>
+        </template>
       </div>
     </template>
   </template>

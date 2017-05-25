@@ -8,9 +8,7 @@
     properties: {
       builder: {
         type: Object,
-        value: function() {
-          return {};
-        },
+        value: function() { return {}; },
       },
       testName: {
         type: String,
@@ -45,23 +43,19 @@
 
     _actualUrlsChanged: function(urls) {
       this._emptyNode(this.$.actualIframes);
-      urls.forEach((url) => {
-        this._appendIfExists(url, this.$.actualIframes);
-      });
+      urls.forEach(
+          (url) => { this._appendIfExists(url, this.$.actualIframes); });
     },
 
     _expectedUrlsChanged: function(urls) {
       this._emptyNode(this.$.expectedIframes);
-      urls.forEach((url) => {
-        this._appendIfExists(url, this.$.expectedIframes);
-      });
+      urls.forEach(
+          (url) => { this._appendIfExists(url, this.$.expectedIframes); });
     },
 
     _diffUrlsChanged: function(urls) {
       this._emptyNode(this.$.diffIframes);
-      urls.forEach((url) => {
-        this._appendIfExists(url, this.$.diffIframes);
-      });
+      urls.forEach((url) => { this._appendIfExists(url, this.$.diffIframes); });
     },
 
     _emptyNode: function(node) {
@@ -94,17 +88,17 @@
     _computeFlakinessDashboardUrl: function(testName, testType) {
       testType = testType ? testType : 'webkit_tests';
       return 'https://test-results.appspot.com/dashboards/' +
-          'flakiness_dashboard.html#' +
-          'tests=' + encodeURIComponent(testName) +
-          '&testType=' + encodeURIComponent(testType);
+             'flakiness_dashboard.html#' +
+             'tests=' + encodeURIComponent(testName) +
+             '&testType=' + encodeURIComponent(testType);
     },
 
     _testNameChanged: function(testName) {
       if (!this.builder.name) {
         return;
       }
-      let basePath = urlFmt.layoutTest(
-          this.builder.name, this.builder.latest_failure, testName);
+      let basePath = urlFmt.layoutTest(this.builder.name,
+                                       this.builder.latest_failure, testName);
 
       // TODO: Think about replacing all of this with just an iframe to this
       // URL. It appears to contain all of the same information we want to

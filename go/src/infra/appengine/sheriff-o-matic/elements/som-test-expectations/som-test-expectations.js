@@ -19,27 +19,24 @@
       },
     },
 
-    ready: function() {
-      this.refresh();
-    },
+    ready: function() { this.refresh(); },
 
     refresh: function() {
       let promises = [this.$.testExpectationsAjax.generateRequest().completes];
-      Promise.all(promises).then((reponse) => {
-        this._testExpectationsLoaded = true;
-      });
+      Promise.all(promises).then(
+          (response) => { this._testExpectationsLoaded = true; },
+          (error) => { console.error(error); });
     },
 
     _showTestExpectationsLoading: function(testExpectationsLoaded, error) {
       return !testExpectationsLoaded && this._haveNoErrors(error);
     },
 
-    _haveNoErrors: function(error) {
-      return !error;
-    },
+    _haveNoErrors: function(error) { return !error; },
 
     _shortFileName: function(fn) {
-      if (!fn) return '';
+      if (!fn)
+        return '';
       let parts = fn.split('/');
       return parts.pop();
     },

@@ -1,3 +1,4 @@
 Language: JavaScript
 JavaScriptQuotes: Single
 ColumnLimit: 80
+SpacesInContainerLiterals: false

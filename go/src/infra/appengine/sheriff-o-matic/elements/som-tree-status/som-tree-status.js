@@ -27,7 +27,7 @@
         type: Object,
         value: {
           'chromium': 'https://chromium-status.appspot.com',
-          'chromiumos': 'https://chromiumos-status.appspot.com',
+          'chromeos': 'https://chromiumos-status.appspot.com',
           'trooper': 'https://infra-status.appspot.com/',
         },
       },

@@ -25,6 +25,9 @@
     element = fixture('basic');
     sinon.stub(window, 'fetch');
 
+    // A response to the request to retrieve alerts.
+    window.fetch.returns(Promise.resolve());
+
     server = sinon.fakeServer.create();
     server.respondWith(
       'GET',
@@ -44,262 +47,33 @@
 
   suite('basic tests', function() {
     test('renders bare minimum', function() {
-      element._alertsData = {
-        test: []
-      };
-      element._alertsTimes = {
+      element.alertsTimes = {
         test: new Date()
       };
 
       expect(element.$.lastUpdatedTime).be.hidden;
       expect(element.$.lastUpdatedUnknown).be.visible;
-      expect(element.$.fetchAlertsError).be.hidden;
-    });
-
-    test('tree not found', function(done) {
-      let tree = 'notfound';
-      let groups = [tree];
-
-      let res = new window.Response(null, {
-        status: 404,
-        headers: {
-          'Content-type': 'application/json',
-        }
-      });
-
-      window.fetch.returns(Promise.resolve(res));
-
-      element._alertsGroupsChanged(groups);
-
-      assert.isTrue(window.fetch.calledOnce);
-
-      flush(function() {
-        assert.notEqual(element._fetchAlertsError, '');
-        expect(element.$.fetchAlertsError).be.visible;
-        done();
-      });
-    });
-
-    test('tree error', function(done) {
-      let tree = 'notfound';
-      let groups = [tree];
-
-      let res = new window.Response(null, {
-        status: 500,
-        headers: {
-          'Content-type': 'application/json',
-        }
-      });
-
-      window.fetch.returns(Promise.resolve(res));
-
-      element._alertsGroupsChanged(groups);
-
-      assert.isTrue(window.fetch.calledOnce);
-
-      flush(function() {
-        assert.notEqual(element._fetchAlertsError, '');
-        expect(element.$.fetchAlertsError).be.visible;
-        done();
-      });
-    });
-  });
-
-  suite('categories', function() {
-    test('renders severity groups', function(done) {
-      element.set(['_alertsData', 'test'], [{
-          'key': 'something',
-          'severity': 2,
-      }]);
-      element._alertsTimes = {
-        test: new Date()
-      };
-
-      flush(function() {
-        assert.equal(
-            element.$$('.category-title-text').textContent.trim(),
-            element._getCategoryTitle(2) + ' (1 total)');
-        done();
-      });
-    });
-
-    test('renders tree groups for troopers', function(done) {
-      element._path = '/trooper';
-      element.set(['_alertsData', 'test'], [{
-          'key': 'something',
-          'severity': 2,
-          'tree': 'test',
-      }]);
-      element._alertsTimes = {
-        test: new Date()
-      };
-
-      flush(function() {
-        assert.equal(
-            element.$$('.category-title-text').textContent.trim(),
-              'test infra failures (1 total)');
-        done();
-      });
-    });
-  });
-
-  suite('alert streams', function() {
-    var clock;
-
-    setup(function() {
-      clock = sinon.useFakeTimers();
-    });
-
-    test('merge multiple alert streams', function() {
-      let alertsData = {
-        test: [
-          {extension: { builders: [{name: 'a'}], reasons: [ {step: 'a'} ]},
-            key: 'test key' },
-        ],
-        other: [
-          {extension: { builders: [{name: 'blahblah'}], reasons: [ {step: 'reasons'} ]} },
-        ],
-      };
-
-      let sortedAlerts = element._computeAlerts({
-        base: alertsData
-      }, {
-        'test key': {
-          snoozeTime: Date.now() + 1000000,
-        }
-      });
-
-      assert.equal(2, sortedAlerts.length);
-      assert.equal('blahblah', sortedAlerts[0].extension.builders[0].name);
-      // a is snoozed, goes to the bottom.
-      assert.equal('a', sortedAlerts[1].extension.builders[0].name);
-    });
-
-    test('merge multiple alert streams with one null', function() {
-      let alertsData = {
-        test: [
-          {extension: { builders: [{name: 'a'}], reasons: [ {step: 'a'} ]},
-            key: 'test key' },
-        ],
-        other: null
-      };
-
-      let sortedAlerts = element._computeAlerts({
-        base: alertsData
-      }, {
-        'test key': {
-          snoozeTime: Date.now() + 1000000,
-        }
-      });
-
-      assert.equal(1, sortedAlerts.length);
-      assert.equal('a', sortedAlerts[0].extension.builders[0].name);
-    });
-
-    test('ignores requests sent from stale trees', function(done) {
-      let oldRes = new window.Response('{"alerts": ["oldtreealert"]}', {
-        status: 200,
-        headers: {
-          'Content-type': 'application/json',
-        }
-      });
-      let resolveOldPromise;
-      let oldPromise = new Promise((resolve, reject) => {
-        resolveOldPromise = resolve;
-      });
-
-      let newRes = new window.Response('{"alerts": ["newtreealert"]}', {
-        status: 200,
-        headers: {
-          'Content-type': 'application/json',
-        }
-      });
-      let resolveNewPromise;
-      let newPromise = new Promise((resolve, reject) => {
-        resolveNewPromise = resolve;
-      });
-
-      element._path = '/';
-      element._trees = ['oldtree', 'newtree'];
-
-      window.fetch.returns(oldPromise);
-      element._path = '/oldtree';
-      assert.deepEqual(element._tree, 'oldtree');
-      assert.deepEqual(element._alertsGroups, ['oldtree']);
-      assert.isTrue(window.fetch.calledOnce);
-
-      window.fetch.returns(newPromise);
-      element._path = '/newtree';
-      assert.deepEqual(element._tree, 'newtree');
-      assert.deepEqual(element._alertsGroups, ['newtree']);
-      assert.isTrue(window.fetch.calledTwice);
-
-      resolveNewPromise(newRes);
-      flush(() => {
-        assert.deepEqual(element._alertsData, {'newtree': ['newtreealert']});
-
-        resolveOldPromise(oldRes);
-        flush(() => {
-          assert.deepEqual(element._alertsData, {'newtree': ['newtreealert']});
-          done();
-        });
-      });
-    });
-
-    test('sort works correctly', function() {
-      let alertsData = {
-        test: [
-          {extension: { builders: [{name: 'a'}, {name: 'b'}, {name: 'z'}], reasons: [ {step: 'a'} ]},
-            title: 'a'},
-          {extension: { builders: [{name: 'c'}], reasons: [ {step: 'a'} ]},
-            title: 'b'},
-          {extension: { builders: [{name: 'd'}], reasons: [ {step: 'c'} ]}, title: 'd' },
-          {extension: { builders: [{name: 'e'}], reasons: [ {step: 'd'} ]}, title: 'e' },
-          {extension: { builders: [{name: 'f'}], reasons: [ {step: 'b'} ]},
-            key: 'hello', title: 'd'},
-          {extension: { builders: [{name: 'g'}], reasons: [ {step: 'a'} ]},
-            key: 'test', title: 'c'},
-          {extension: { builders: [{name: 'h'}], reasons: [ {step: 'a'} ], suspected_cls: [{revision: '1'}]},
-           title: 'h'},
-          {extension: { builders: [{name: 'i'}], reasons: [ {step: 'a'} ], suspected_cls: [{revision: 'rev2', reverting_cl_url: 'revert_url'}]},
-           title: 'i'},
-          {extension: { builders: [{name: 'j'}], reasons: [ {step: 'a'} ], has_findings: true},
-           title: 'j'},
-        ]
-      };
-
-      let sortedAlerts = element._computeAlerts({
-        base: alertsData
-      }, {
-        'test': {
-          snoozeTime: Date.now() + 1000000,
-        },
-        'hello': {
-          bugs: ['test'],
-        },
-      });
-
-
-      let names = sortedAlerts.map((alr) => {
-        return alr.extension.builders[0].name;
-      })
-      assert.deepEqual(names, ['i', 'h', 'j', 'a', 'c', 'd', 'e', 'f', 'g']);
-      // b has a bug so it goes between c/d (no annotations) and a (snoozed).
-      // a is snoozed, goes to the bottom.
     });
   });
 
   suite('navigation', function() {
     setup(function() {
+      element._trees = {
+        'chromium': {
+          'name': 'chromium',
+        },
+        'chromium.perf': {
+          'name': 'chromium.perf',
+        },
+      };
       element.$.url.path = '/chromium';
-      element.$.drawer.selectedAlertsGroup = 'chromium';
     });
 
     test('sync iron-page-url to alertsGroup and drawer selection', function(done) {
       element.$.url.path = '/chromium.perf';
       flush(function() {
-        assert.equal('chromium.perf', element._tree);
-        assert.equal('chromium.perf', element.$.drawer.tree);
+        assert.equal('chromium.perf', element._tree.name);
+        assert.equal('chromium.perf', element.$.drawer.tree.name);
         done();
       });
     });
@@ -307,26 +81,20 @@
     test('sync drawer selection to alertsGroup to iron-page-url', function() {
       element.$.drawer.path = '/chromium.perf';
       assert.equal('/chromium.perf', element.$.url.path);
-      assert.equal('chromium.perf', element._tree);
+      assert.equal('chromium.perf', element._tree.name);
     });
   });
 
   suite('refresh', function() {
     var refreshStub;
-    var clock;
 
     setup(function() {
       refreshStub = sinon.stub(element, '_refresh');
-      clock = sinon.useFakeTimers();
     });
 
-    test('refreshes after a period', function(done) {
-      element.created();
-      clock.tick(60 * 1000);
-      flush(function() {
-        sinon.assert.calledOnce(refreshStub);
-        done();
-      });
+    test('refreshes when refresh is clicked', function() {
+      element.$.refresh.click();
+      sinon.assert.calledOnce(refreshStub);
     });
   });
 })();

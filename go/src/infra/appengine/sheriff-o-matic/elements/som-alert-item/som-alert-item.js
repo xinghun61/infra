@@ -3,7 +3,6 @@
 
   const bugLinkRegExp = /([0-9]{3,})/;
 
-
   Polymer({
     is: 'som-alert-item',
     behaviors: [LinkifyBehavior, AlertTypeBehavior],
@@ -90,12 +89,8 @@
       },
       _startTime:
           {type: String, computed: '_formatTimestamp(alert.start_time)'},
-      _groupNameInput: {
-        type: Object,
-        value: function() {
-          return this.$.groupName;
-        }
-      },
+      _groupNameInput:
+          {type: Object, value: function() { return this.$.groupName; }},
       collapseByDefault: Boolean,
     },
 
@@ -125,8 +120,8 @@
 
     _calculateDuration(tree, alert) {
       let date = moment(alert.start_time * 1000).tz('America/Los_Angeles');
-      let duration =  date.format('M/DD/YYYY, h:mm a z') +
-                      ' (' + date.fromNow() + ')';
+      let duration =
+          date.format('M/DD/YYYY, h:mm a z') + ' (' + date.fromNow() + ')';
       return duration;
     },
 
@@ -148,9 +143,7 @@
       evt.preventDefault();
     },
 
-    _computeHasBugs: function(bugs) {
-      return !!(bugs && bugs.length > 0);
-    },
+    _computeHasBugs: function(bugs) { return !!(bugs && bugs.length > 0); },
 
     _computeCommentsClass: function(numComments) {
       if (numComments > 0) {
@@ -171,7 +164,8 @@
     },
 
     _computeSnoozeTimeLeft: function(snoozeTime) {
-      if (!snoozeTime) return '';
+      if (!snoozeTime)
+        return '';
       let now = moment(new Date());
       let later = moment(snoozeTime);
       let duration = moment.duration(later.diff(now));
@@ -185,9 +179,7 @@
       return text + 'left';
     },
 
-    _computeCssClass: function(snoozed) {
-      return snoozed ? 'snoozed' : '';
-    },
+    _computeCssClass: function(snoozed) { return snoozed ? 'snoozed' : ''; },
 
     _computeSnoozeIcon: function(snoozed) {
       return snoozed ? 'alarm-off' : 'alarm';
@@ -197,21 +189,13 @@
       return tree && (tree == 'chromeos' || tree == 'gardener');
     },
 
-    _computeHasGroup: function(tree) {
-      return this._isCrOSTree(tree);
-    },
+    _computeHasGroup: function(tree) { return this._isCrOSTree(tree); },
 
-    _computeHasUngroup: function(alert) {
-      return alert && !!alert.grouped;
-    },
+    _computeHasUngroup: function(alert) { return alert && !!alert.grouped; },
 
-    _computeHasResolve: function(tree) {
-      return this._isCrOSTree(tree);
-    },
+    _computeHasResolve: function(tree) { return this._isCrOSTree(tree); },
 
-    _linkBug: function(evt) {
-      this.fire('link-bug');
-    },
+    _linkBug: function(evt) { this.fire('link-bug'); },
 
     _formatTimestamp: function(timestamp) {
       if (timestamp != undefined) {
@@ -221,8 +205,8 @@
     },
 
     _haveLinks: function(selected, alert) {
-      return (selected || !alert.grouped) &&
-             alert && alert.links && alert.links.length > 0;
+      return (selected || !alert.grouped) && alert && alert.links &&
+             alert.links.length > 0;
     },
 
     _hideActions: function(alertType, tree) {
@@ -254,17 +238,11 @@
       evt.preventDefault();
     },
 
-    _group: function(evt) {
-      this.fire('group');
-    },
+    _group: function(evt) { this.fire('group'); },
 
-    _ungroup: function(evt) {
-      this.fire('ungroup');
-    },
+    _ungroup: function(evt) { this.fire('ungroup'); },
 
-    _resolve: function(evt) {
-      this.fire('resolve');
-    },
+    _resolve: function(evt) { this.fire('resolve'); },
 
     _updateGroupName: function(evt) {
       let value = evt.detail.keyboardEvent.target.value;
@@ -285,9 +263,7 @@
 
       if (alert.grouped && alert.alerts) {
         // This alert is a group, search for the selected sub-alert.
-        let subAlert = alert.alerts.find((a) => {
-          return a.key == selected;
-        });
+        let subAlert = alert.alerts.find((a) => { return a.key == selected; });
 
         if (subAlert) {
           // Return the selected alert.
@@ -311,7 +287,8 @@
 
     _expandAlertCollapse: function() {
       this.selectedAlert = '';
-      this.$.alertCollapse.updateSize(String(this.$.alertCollapse.scrollHeight) + 'px');
+      this.$.alertCollapse.updateSize(
+          String(this.$.alertCollapse.scrollHeight) + 'px');
     },
 
     toggle: function(evt) {

@@ -9,7 +9,12 @@
     behaviors: [LinkifyBehavior],
 
     properties: {
-      extension: {type: Object, value: null},
+      extension: {
+        type: Object,
+        value: function () {
+          return {};
+        },
+      },
       type: {type: String, value: ''},
       _suspectedCls: {
         type: Array,
@@ -17,9 +22,7 @@
       },
     },
 
-    _isCrosFailure: function(type) {
-      return type == 'cros-failure';
-    },
+    _isCrosFailure: function(type) { return type == 'cros-failure'; },
 
     _haveBuilders: function(extension) {
       return extension && extension.builders && extension.builders.length > 0;
@@ -70,11 +73,13 @@
     },
 
     _finditIsRunning: function(extension) {
-      return extension && !extension.suspected_cls && !extension.is_finished && !extension.has_findings && extension.is_supported;
+      return extension && !extension.suspected_cls && !extension.is_finished &&
+             !extension.has_findings && extension.is_supported;
     },
 
     _finditHasNoResult: function(extension) {
-      return extension && !extension.suspected_cls && extension.is_finished && !extension.has_findings;
+      return extension && !extension.suspected_cls && extension.is_finished &&
+             !extension.has_findings;
     },
 
     _finditFoundNoResult: function(extension) {
@@ -97,35 +102,27 @@
       }
     },
 
-    _finditConfidence: function(cl) {
-      return cl.confidence.toString();
-    },
+    _finditConfidence: function(cl) { return cl.confidence.toString(); },
 
     _haveSuspectCLs: function(extension) {
       return extension && extension.suspected_cls;
     },
 
-    _haveRevertCL: function(cl) {
-      return cl && cl.revert_cl_url;
-    },
+    _haveRevertCL: function(cl) { return cl && cl.revert_cl_url; },
 
     _haveRegressionRanges: function(regression_ranges) {
       return regression_ranges && regression_ranges.length > 0;
     },
 
-    _haveTests: function(tests) {
-      return tests && tests.length > 0;
-    },
+    _haveTests: function(tests) { return tests && tests.length > 0; },
 
-    _isFlaky: function(test) {
-      return test && test.is_flaky;
-    },
+    _isFlaky: function(test) { return test && test.is_flaky; },
 
     _linkForTest: function(reason, testName) {
       return testResultsURL + 'dashboards/' +
-          'flakiness_dashboard.html#' +
-          'tests=' + encodeURIComponent(testName) +
-          '&testType=' + encodeURIComponent(reason.step);
+             'flakiness_dashboard.html#' +
+             'tests=' + encodeURIComponent(testName) +
+             '&testType=' + encodeURIComponent(reason.step);
     },
 
     _linkToCSForTest: function(testName) {
@@ -145,13 +142,11 @@
       return url + encodeURIComponent(query);
     },
 
-    _linkForCL: function(cl) {
-      return 'https://crrev.com/' + cl;
-    },
+    _linkForCL: function(cl) { return 'https://crrev.com/' + cl; },
 
     _showRegressionRange: function(range) {
       return range.positions && range.positions.length > 0 &&
-          range.repo != 'v8';
+             range.repo != 'v8';
     },
 
     _sortTests: function(a, b) {
@@ -178,12 +173,8 @@
       return len.toString() + ' tests failed';
     },
 
-    _textForCL: function(cl) {
-      return cl.substring(0, 7);
-    },
+    _textForCL: function(cl) { return cl.substring(0, 7); },
 
-    _hasSuspect: function(test) {
-      return test && test.suspected_cls;
-    },
+    _hasSuspect: function(test) { return test && test.suspected_cls; },
   });
 })();

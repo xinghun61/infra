@@ -1,6 +1,5 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-location/iron-location.html">
@@ -10,19 +9,12 @@
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="../../bower_components/paper-toolbar/paper-toolbar.html">
 
-<link rel="import" href="../../elements/som-alert-type-behavior.html">
-<link rel="import" href="../../elements/som-annotation-manager-behavior.html">
 <link rel="import" href="../../elements/som-header-styles.html">
 
-<link rel="import" href="../../elements/som-alert-item/som-alert-item.html">
-<link rel="import" href="../../elements/som-annotations/som-annotations.html">
-<link rel="import" href="../../elements/som-bug-queue/som-bug-queue.html">
+<link rel="import" href="../../elements/som-alert-view/som-alert-view.html">
 <link rel="import" href="../../elements/som-drawer/som-drawer.html">
-<link rel="import" href="../../elements/som-master-restarts/som-master-restarts.html">
-<link rel="import" href="../../elements/som-examine/som-examine.html">
-<link rel="import" href="../../elements/som-swarming-bots/som-swarming-bots.html">
+
 <link rel="import" href="../../elements/som-test-expectations/som-test-expectations.html">
-<link rel="import" href="../../elements/som-tree-status/som-tree-status.html">
 
 <link rel="import" href="../../elements/pages/som-help.html">
 <link rel="import" href="../../elements/pages/som-rotation-calendar.html">
@@ -51,36 +43,15 @@
       span.line {
         display: inline-block;
       }
-      #fetchAlertsError {
-        color: #f00;
-        margin: 1em;
-      }
-      #mainView {
+      #alertView {
         padding-bottom: 5em;
       }
-      #noAlerts {
-        text-align: center;
-        font-size: 2.5em;
-        line-height: 150%;
-      }
-      #notifications {
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 0.5em;
-        margin-bottom: 1em;
-      }
       #refresh {
-        max-width: 30px;
-      }
-      #refresh iron-icon {
+        display: flex;
         width: 25px;
         height: 25px;
-        padding: 0;
-      }
-      .alert-item {
-        box-sizing: border-box;
-        float: left;
-        width: 100%;
-        padding: 0.5em 0;
+        padding: 0 2px;
+        cursor: pointer;
       }
       .error {
         color: #c00;
@@ -93,13 +64,12 @@
         text-align: right;
         padding-right: 1em;
       }
-      .notification {
-        box-sizing: border-box;
-        width: 100%;
-        padding: 0.5em 8px;
-        margin: 0.5em auto;
-        border: 1px solid #ccc;
-        background: #f8f8f8;
+      .last-updated {
+        min-width: 200px;
+      }
+      .last-updated, .user-name {
+        text-align: right;
+        padding-right: 1em;
       }
       .page-body {
         @apply(--layout-vertical);
@@ -110,10 +80,6 @@
         padding: 1em 16px;
         min-height: 100%;
         flex-grow: 1;
-      }
-      .page-section {
-        flex-grow: 0;
-        flex-shrink: 0;
       }
       .som-title {
         font-weight: bold;
@@ -162,18 +128,18 @@
         <paper-toolbar>
           <span class="som-title">
             <template is="dom-if" if="[[_treeLogo]]">
-              <a href="/[[_tree]]"><img src="[[_treeLogo]]" alt="[[_tree]]" title="[[_tree]]" /></a>
+              <a href="/[[_tree.name]]"><img src="[[_treeLogo]]" alt="[[_tree.name]]" title="[[_tree.name]]" /></a>
             </template>
             Sheriff-o-Matic
           </span>
         </paper-toolbar>
         <som-drawer
             id="drawer"
-            tree="[[_tree]]"
             path="{{_path}}"
             static-pages="[[_staticPages]]"
             show-infra-failures="{{showInfraFailures}}"
             link-style="{{linkStyle}}"
+            tree="[[_tree]]"
             trees="{{_trees}}"
             collapse-by-default="{{collapseByDefault}}"
             ></som-drawer>
@@ -182,127 +148,34 @@
         <paper-toolbar>
           <div class="layout horizontal flex">
             <iron-icon icon="menu" paper-drawer-toggle></iron-icon>
-            <div class="flex title" id="tree-title">[[_tree]]</div>
+            <div class="flex title" id="tree-title">[[_pathIdentifier]]</div>
             <div class="flex last-updated">
               Last updated: <span hidden$="[[!_lastUpdated]]" id="lastUpdatedTime">
                 <span class="line">[[_lastUpdated.time]]</span>
                 <span class="line">([[_lastUpdated.relativeTime]])</span>
-              </span><span hidden$="[[_lastUpdated]]" id="lastUpdatedUnknown">Unknown</span>
+              </span>
+              <span hidden$="[[_lastUpdated]]" id="lastUpdatedUnknown">Unknown</span>
             </div>
             <div class="horizontal user-name">
               [[user]] (<a href$="[[logoutUrl]]">Log Out </a>)
             </div>
-            <div id="refresh" class="flex">
-              <iron-icon on-tap="_refresh" icon="refresh"></iron-icon>
-            </div>
+            <iron-icon id="refresh" on-tap="_refresh" icon="refresh"></iron-icon>
           </div>
           <paper-spinner id="fetchingAlerts" active="[[_fetchingAlerts]]"></paper-spinner>
         </paper-toolbar>
-        <som-annotations id="annotations"
-            annotations="{{annotations}}"
-            bug-queue-label="[[_bugQueueLabel]]"
-            collapse-by-default="[[collapseByDefault]]"
-            local-state="{{localState}}"
-            user="{{user}}"
-            xsrf-token="{{xsrfToken}}"></som-annotations>
         <iron-pages attr-for-selected='id' selected="[[_selectedPage]]">
-          <div id="mainView" class="page-body">
-            <div id="notifications" class="page-section">
-              <som-tree-status tree="[[_tree]]" id="treeStatus"></som-tree-status>
-              <som-master-restarts tree="[[_tree]]" id="masterRestarts"></som-master-restarts>
-              <div class="notification" hidden$="[[_isTrooperPage]]">
-                Start at the top and try to clear all the alerts. For additional guidance, see:
-                <span hidden$="[[!_helpLink]]">
-                  <a href$="[[_helpLink]]" target="_blank">[[_treeDisplayName]] Help</a>
-                </span>
-                <span hidden$="[[_helpLink]]">
-                  <a href="/help-som">The Help Page</a>
-                </span>
-              </div>
-              <div class="notification" hidden$="[[!_isTrooperPage]]">
-                Troopers, don't forget to check <a href="http://go/trooper-pagers" target="_blank">go/trooper-pagers</a>
-                and <a href="http://go/trooper-alerts" target="_blank">go/trooper-alerts</a> as well.
-                For additional guidance, see: <a href="http://go/trooper" target="_blank">The Trooper Playbook</a>
-              </div>
-            </div>
-            <div id="swarmingBots" class="page-section">
-              <template is="dom-if" if="[[_showSwarmingAlerts]]">
-                <som-swarming-bots bots="[[_swarmingAlerts]]"></som-swarming-bots>
-              </template>
-            </div>
-            <div id="alertsList" class="page-section">
-              <div id="fetchAlertsError" hidden$=[[!_fetchAlertsError]]>[[_fetchAlertsError]]</div>
-              <template is="dom-if" if="[[!_hideJulie]]">
-                <div id="noAlerts">
-                  No alerts!
-                  <br>
-                  <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping">
-                </div>
-              </template>
-              <template is="dom-repeat" items="[[_computeCategories(_alerts, _isTrooperPage)]]" as="cat">
-                <h2 class="category-title">
-                  <span>
-                    <span class="category-title-text">
-                      [[_getCategoryTitle(cat, _isTrooperPage)]] ([[_getCategoryCount(_alerts, cat, _isTrooperPage)]] total)
-                    </span>
-                    (<a href="/help-som" target="_blank">Help?</a>)
-                  </span>
-                  <div class="header-buttons">
-                    <span class="collapse-button" on-tap="_collapseAll">
-                      <iron-icon icon="remove"></iron-icon> Collapse all
-                    </span>
-                    /
-                    <span class="collapse-button" on-tap="_expandAll">
-                      <iron-icon icon="add"></iron-icon> Expand all
-                    </span>
-                  </div>
-                </h2>
-                <template is="dom-repeat" items="[[_alertItemsWithCategory(_alerts, annotations, cat, _isTrooperPage)]]" as="alert">
-                  <som-alert-item
-                      class="alert-item"
-                      tabindex="0"
-                      alert="{{alert}}"
-                      tree="[[_tree]]"
-                      selected="[[selected]]"
-                      annotation="[[computeAnnotation(annotations, alert, collapseByDefault)]]"
-                      link-style="[[linkStyle]]"
-                      on-annotation-change="_handleAnnotation"
-                      on-comment="_handleComment"
-                      on-link-bug="_handleLinkBug"
-                      on-remove-bug="_handleRemoveBug"
-                      on-snooze="_handleSnooze"
-                      on-group="_handleGroup"
-                      on-ungroup="_handleUngroup"
-                      on-resolve="_handleResolve"
-                      on-opened-change="_handleOpenedChange"
-                  ></som-alert-item>
-                </template>
-              </template>
-            </div>
-            <som-bug-queue
-              id="bugQueue"
-              class="page-section"
-              bugs="{{_bugs}}"
-              bug-queue-label="[[_bugQueueLabel]]"
-              tree-display-name="[[_treeDisplayName]]"></som-bug-queue>
-          </div>
-          <template is="dom-if" if="[[_examinedAlert]]">
-            <div id="examineAlert" class="page-body">
-              <som-alert-item
-                  alert="{{_examinedAlert}}"
-                  tree="[[_tree]]"
-                  annotation="[[computeAnnotation(annotations, _examinedAlert)]]"
-                  link-style="[[linkStyle]]"
-                  on-annotation-change="_handleAnnotation"
-                  on-comment="_handleComment"
-                  on-link-bug="_handleLinkBug"
-                  on-remove-bug="_handleRemoveBug"
-                  on-snooze="_handleSnooze"
-                  on-group="_handleGroup"
-                  examining
-              ></som-alert-item>
-              <som-examine alert="[[_examinedAlert]]" link-style="[[linkStyle]]" class="flex layout vertical"></som-examine>
-            </div>
+          <template is="dom-if" if="[[_showAlertView]]">
+            <som-alert-view id="alertView" class="page-body"
+              alerts-times="{{alertsTimes}}"
+              examined-alert-key="[[_examinedAlertKey]]"
+              fetching-alerts="{{_fetchingAlerts}}"
+              trees="[[_trees]]"
+              tree="[[_tree]]"
+              user="[[user]]"
+              link-style="[[linkStyle]]"
+              show-infra-failures="[[showInfraFailures]]"
+              collapse-by-default="[[collapseByDefault]]"
+              xsrf-token="[[xsrfToken]]"></som-alert-view>
           </template>
           <som-help id="helpSOM" class="page-body"></som-help>
           <template is="dom-if" if="[[_showRotationCalendar]]">

@@ -12,31 +12,20 @@
       annotations: {
         notify: true,
         type: Object,
-        value: function() {
-          return {};
-        },
+        value: function() { return {}; },
         computed: '_computeAnnotations(_annotationsResp, localState)'
       },
       annotationError: {
         type: Object,
-        value: function() {
-          return {};
-        },
+        value: function() { return {}; },
       },
       // The raw response from the server of annotations.
       _annotationsResp: {
         type: Array,
-        value: function() {
-          return [];
-        },
+        value: function() { return []; },
       },
       _bugErrorMessage: String,
-      _bugInput: {
-        type: Object,
-        value: function() {
-          return this.$.bug;
-        }
-      },
+      _bugInput: {type: Object, value: function() { return this.$.bug; }},
       _bugModel: Object,
       bugQueueLabel: String,
       collapseByDefault: Boolean,
@@ -52,12 +41,8 @@
         type: Boolean,
         computed: '_computeCommentsHidden(_commentsModelAnnotation)',
       },
-      _commentTextInput: {
-        type: Object,
-        value: function() {
-          return this.$.commentText;
-        }
-      },
+      _commentTextInput:
+          {type: Object, value: function() { return this.$.commentText; }},
       // TODO(zhangtiff): Change snooze time per tree.
       _defaultSnoozeTime: {
         type: Number,
@@ -71,35 +56,19 @@
       _removeBugModel: Object,
       _snoozeErrorMessage: String,
       _snoozeModel: Object,
-      _snoozeTimeInput: {
-        type: Object,
-        value: function() {
-          return this.$.snoozeTime;
-        }
-      },
+      _snoozeTimeInput:
+          {type: Object, value: function() { return this.$.snoozeTime; }},
       _groupErrorMessage: String,
-      _groupInput: {
-        type: Object,
-        value: function() {
-          return this.$.groupID;
-        }
-      },
+      _groupInput: {type: Object, value: function() { return this.$.groupID; }},
       _groupModel: Object,
       _ungroupErrorMessage: String,
-      _ungroupInput: {
-        type: Object,
-        value: function() {
-          return '';
-        }
-      },
+      _ungroupInput: {type: Object, value: function() { return ''; }},
       _ungroupModel: Object,
       user: String,
       xsrfToken: String,
     },
 
-    ready: function() {
-      this.fetchAnnotations();
-    },
+    ready: function() { this.fetchAnnotations(); },
 
     fetch: function() {
       this.annotationError.action = 'Fetching all annotations';
@@ -126,9 +95,9 @@
     // annotation change.
     sendAnnotation: function(key, type, change) {
       return this
-          .postJSON(
-              '/api/v1/annotations/' + encodeURIComponent(key) + '/' + type,
-              change)
+          .postJSON('/api/v1/annotations/' + encodeURIComponent(key) + '/' +
+                        type,
+                    change)
           .then(jsonParsePromise)
           .then(this._postResponse.bind(this));
     },
@@ -153,9 +122,7 @@
 
               // We need to refresh our XSRF token!
               window.fetch('/api/v1/xsrf_token', {credentials: 'include'})
-                  .then((respData) => {
-                    return respData.json();
-                  })
+                  .then((respData) => { return respData.json(); })
                   .then((jsonData) => {
                     // Clone options because sinon.spy args from different calls
                     // to window.fetch clobber each other in this scenario.
@@ -223,8 +190,8 @@
 
     handleAnnotation: function(evt) {
       this.annotationError.action = 'Fetching all annotations';
-      this.sendAnnotation(
-              evt.target.alert.key, evt.detail.type, evt.detail.change)
+      this.sendAnnotation(evt.target.alert.key, evt.detail.type,
+                          evt.detail.change)
           .then((response) => {})
           .catch((error) => {
             let old = this.annotationError;
@@ -252,8 +219,8 @@
 
     handleRemoveBug: function(evt) {
       this.$.removeBugDialog.open();
-      this._removeBugModel = Object.assign({alert: evt.target.alert},
-        evt.detail);
+      this._removeBugModel =
+          Object.assign({alert: evt.target.alert}, evt.detail);
       this._removeBugErrorMessage = '';
     },
 
@@ -286,7 +253,7 @@
           result += 'Builders failed on: ';
           for (let i in bugModel.extension.builders) {
             result += '\n- ' + bugModel.extension.builders[i].name + ': \n  ' +
-                bugModel.extension.builders[i].url;
+                      bugModel.extension.builders[i].url;
           }
           result += '\n\n';
         }
@@ -297,10 +264,10 @@
             result += '\n' + bugModel.extension.reasons[i].url;
             if (bugModel.extension.reasons[i].test_names) {
               result += '\n' +
-                  'Tests:';
+                        'Tests:';
               if (bugModel.extension.reasons[i].test_names) {
                 result += '\n* ' +
-                    bugModel.extension.reasons[i].test_names.join('\n* ');
+                          bugModel.extension.reasons[i].test_names.join('\n* ');
               }
             }
           }
@@ -310,9 +277,7 @@
       return result;
     },
 
-    _fileBugClicked: function() {
-      this._filedBug = true;
-    },
+    _fileBugClicked: function() { this._filedBug = true; },
 
     _removeBug: function() {
       let model = this._removeBugModel;
@@ -323,9 +288,7 @@
                 this.$.removeBugDialog.close();
                 this._removeBugErrorMessage = '';
               },
-              (error) => {
-                this._removeBugErrorMessage = error;
-              });
+              (error) => { this._removeBugErrorMessage = error; });
     },
 
     _saveBug: function() {
@@ -343,9 +306,7 @@
 
                 this.setLocalStateKey(response.key, {opened: false});
               },
-              (error) => {
-                this._bugErrorMessage = error;
-              });
+              (error) => { this._bugErrorMessage = error; });
     },
 
     ////////////////////// Snooze ///////////////////////////
@@ -362,15 +323,14 @@
 
                 this.setLocalStateKey(response.key, {opened: false});
               },
-              (error) => {
-                this._snoozeErrorMessage = error;
-              });
+              (error) => { this._snoozeErrorMessage = error; });
     },
 
     ////////////////////// Comments ///////////////////////////
 
     _addComment: function() {
-      if (this._commentInFlight) return;
+      if (this._commentInFlight)
+        return;
 
       let text = this.$.commentText.value;
       if (!(text && /[^\s]/.test(text))) {
@@ -406,9 +366,7 @@
       return this.computeAnnotation(annotations, model, this.collapseByDefault);
     },
 
-    _computeHideDeleteComment(comment) {
-      return comment.user != this.user;
-    },
+    _computeHideDeleteComment(comment) { return comment.user != this.user; },
 
     _computeUsername(email) {
       if (!email) {
@@ -433,11 +391,8 @@
         comments: [evt.model.comment.index],
       });
       if (request) {
-        request.then(
-            (response) => {},
-            (error) => {
-              this._commentsErrorMessage = error;
-            });
+        request.then((response) => {},
+                     (error) => { this._commentsErrorMessage = error; });
       }
     },
 
@@ -447,9 +402,8 @@
       this._groupErrorMessage = '';
 
       // Group the current alert and all checked alerts.
-      let alerts = this._groupModel.targets.filter((t) => {
-        return t.checked;
-      });
+      let alerts =
+          this._groupModel.targets.filter((t) => { return t.checked; });
       alerts.push(this._groupModel.alert);
 
       // Determine group ID.
@@ -466,45 +420,37 @@
       let groupID = groupAlert ? groupAlert.key : this._generateUUID();
 
       // Determine ungrouped alerts to group.
-      alerts = alerts.filter((a) => {
-        return !a.grouped;
-      });
+      alerts = alerts.filter((a) => { return !a.grouped; });
 
       // Create annotation for each ungrouped alert key.
       for (let i in alerts) {
         if (this._groupErrorMessage) {
           break;
         }
-        this.sendAnnotation(
-                alerts[i].key, 'add',
-                {group_id: groupID})
+        this.sendAnnotation(alerts[i].key, 'add', {group_id: groupID})
             .then(
                 (response) => {
                   this.$.groupDialog.close();
                   alerts[i].checked = false;
                 },
-                (error) => {
-                  this._groupErrorMessage = error;
-                });
+                (error) => { this._groupErrorMessage = error; });
       }
     },
 
     _ungroup: function() {
       // TODO(add proper error handling)
       for (let i in this._ungroupModel.alerts) {
-        if (!this._ungroupErrorMessage && this._ungroupModel.alerts[i].checked) {
-          this.sendAnnotation(
-                  this._ungroupModel.alerts[i].key, 'remove',
-                  {group_id: true})
+        if (!this._ungroupErrorMessage &&
+            this._ungroupModel.alerts[i].checked) {
+          this.sendAnnotation(this._ungroupModel.alerts[i].key, 'remove',
+                              {group_id: true})
               .then(
                   (response) => {
                     this.$.ungroupDialog.close();
 
                     this.setLocalStateKey(response.key, {opened: false});
                   },
-                  (error) => {
-                    this._ungroupErrorMessage = error;
-                  });
+                  (error) => { this._ungroupErrorMessage = error; });
           // TODO(davidriley): Figure out why things remain checked.
           this._ungroupModel.alerts[i].checked = false;
         }
@@ -524,10 +470,10 @@
       // This is actually an rfc4122 version 4 compliant uuid taken from:
       // http://stackoverflow.com/questions/105034
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
-        /[xy]/g, function(c) {
-          var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
+          /[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
     },
 
     ////////////////////// Misc UX ///////////////////////////
