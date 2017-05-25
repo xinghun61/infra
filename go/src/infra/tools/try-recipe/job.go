@@ -5,34 +5,26 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"strings"
 
+	"golang.org/x/net/context"
+
+	"github.com/luci/luci-go/client/archiver"
 	swarming "github.com/luci/luci-go/common/api/swarming/swarming/v1"
+	"github.com/luci/luci-go/common/data/rand/cryptorand"
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/isolated"
+	logdog_types "github.com/luci/luci-go/logdog/common/types"
 
 	"infra/tools/kitchen/cookflags"
 )
 
-const recipePropertiesJSON = "$RECIPE_PROPERTIES_JSON"
-const recipeName = "$RECIPE_NAME"
 const recipeCheckoutDir = "recipe-checkout-dir"
 const generateLogdogToken = "TRY_RECIPE_GENERATE_LOGDOG_TOKEN"
 const isolateServerStandin = "TRY_RECIPE_ISOLATE_SERVER"
-
-// RecipeIsolatedSource instructs the JobDefinition to obtain its recipe from an
-// isolated recipe bundle.
-type RecipeIsolatedSource struct {
-	Isolated string `json:"isolated"`
-}
-
-// RecipeProdSource instructs the JobDefinition to obtain its recipes from
-// a production (i.e. published in a repo) location.
-type RecipeProdSource struct {
-	Repo     string `json:"repo"`
-	Revision string `json:"revision"`
-}
 
 // JobDefinition defines a 'try-recipe' job. It's like a normal Swarming
 // NewTaskRequest, but with some recipe-specific extras.
@@ -70,6 +62,10 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 			}
 			ret.SwarmingTask.Properties.Command = nil
 			if !ret.KitchenArgs.LogDogFlags.AnnotationURL.IsZero() {
+				// annotation urls are one-time use; if we got one as part of the new
+				// task request, the odds are that it's already been used. We do this
+				// replacement here so that when we launch the task we can generate
+				// a unique annotation url.
 				prefix, path := ret.KitchenArgs.LogDogFlags.AnnotationURL.Path.Split()
 				prefix = generateLogdogToken
 				ret.KitchenArgs.LogDogFlags.AnnotationURL.Path = prefix.AsPathPrefix(path)
@@ -299,4 +295,64 @@ func (ejd *EditJobDefinition) PrefixPathEnv(values []string) {
 		}
 		return nil
 	})
+}
+
+func generateLogdogStream(ctx context.Context, uid string) (prefix logdog_types.StreamName, err error) {
+	buf := make([]byte, 32)
+	if _, err := cryptorand.Read(ctx, buf); err != nil {
+		return "", errors.Annotate(err).Reason("generating random token").Err()
+	}
+	return logdog_types.MakeStreamName("", "try-recipe", uid, hex.EncodeToString(buf))
+}
+
+// GetSwarmingNewTask builds a usable SwarmingRpcsNewTaskRequest from the
+// JobDefinition, incorporating all of the extra bits of the JobDefinition.
+func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, arc *archiver.Archiver, swarmingServer string) (*swarming.SwarmingRpcsNewTaskRequest, error) {
+	st := *jd.SwarmingTask
+	st.Properties = &(*st.Properties)
+
+	if jd.KitchenArgs != nil {
+		args := *jd.KitchenArgs
+		if strings.Contains(string(args.LogDogFlags.AnnotationURL.Path), generateLogdogToken) {
+			prefix, err := generateLogdogStream(ctx, uid)
+			if err != nil {
+				return nil, errors.Annotate(err).Reason("generating logdog prefix").Err()
+			}
+			args.LogDogFlags.AnnotationURL.Path = logdog_types.StreamPath(strings.Replace(
+				string(args.LogDogFlags.AnnotationURL.Path), generateLogdogToken,
+				string(prefix), -1))
+			st.Tags = append(st.Tags, "log_location:"+args.LogDogFlags.AnnotationURL.String())
+		}
+
+		if args.RepositoryURL == isolateServerStandin {
+			isoHash := args.Revision
+			if st.Properties == nil {
+				st.Properties = &swarming.SwarmingRpcsTaskProperties{}
+			}
+			if st.Properties.InputsRef == nil {
+				st.Properties.InputsRef = &swarming.SwarmingRpcsFilesRef{}
+			}
+			if st.Properties.InputsRef.Isolated != "" {
+				toCombine := isolated.HexDigests{
+					isolated.HexDigest(isoHash),
+					isolated.HexDigest(st.Properties.InputsRef.Isolated),
+				}
+				newHash, err := combineIsolates(ctx, arc, toCombine...)
+				if err != nil {
+					return nil, errors.Annotate(err).Reason("combining isolateds").Err()
+				}
+				isoHash = string(newHash)
+			}
+			st.Properties.InputsRef.Isolated = isoHash
+
+			args.RepositoryURL = ""
+			args.Revision = ""
+			args.CheckoutDir = recipeCheckoutDir
+		}
+
+		st.Properties.Command = append([]string{"kitchen${EXECUTABLE_SUFFIX}", "cook"},
+			args.Dump()...)
+	}
+
+	return &st, nil
 }

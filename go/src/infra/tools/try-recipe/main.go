@@ -95,7 +95,7 @@ by -O), and then launch the modified task on swarming.`,
 			editCmd(),
 
 			// commands to launch swarming tasks.
-			// TODO(iannucci): launch to launch on swarming
+			launchCmd(authDefaults),
 			// TODO(iannucci): launch-local to launch locally
 			// TODO(iannucci): launch-buildbucket to launch on buildbucket
 

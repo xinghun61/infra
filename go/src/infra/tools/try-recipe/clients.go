@@ -13,17 +13,17 @@ import (
 	"github.com/luci/luci-go/common/auth"
 )
 
-func newSwarmClient(ctx context.Context, authOpts auth.Options, swarmingServer string) (*http.Client, *swarming.Service, error) {
+func newSwarmClient(ctx context.Context, authOpts auth.Options, swarmingServer string) (*auth.Authenticator, *http.Client, *swarming.Service, error) {
 	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
 	authClient, err := authenticator.Client()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	swarm, err := swarming.New(authClient)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	swarm.BasePath = swarmingServer + "/api/swarming/v1/"
-	return authClient, swarm, nil
+	return authenticator, authClient, swarm, nil
 }

@@ -72,7 +72,7 @@ func findRecipesPy(ctx context.Context) (string, error) {
 		repoRoot, filepath.FromSlash(rj.RecipesPath), "recipes.py"), nil
 }
 
-func prepBundle(ctx context.Context, recipesPy string, overrides map[string]string) (string, error) {
+func prepBundle(ctx context.Context, recipesPy, subdir string, overrides map[string]string) (string, error) {
 	retDir, err := ioutil.TempDir("", "try-recipe-bundle")
 	if err != nil {
 		return "", errors.Annotate(err).Reason("generating bundle tempdir").Err()
@@ -87,7 +87,7 @@ func prepBundle(ctx context.Context, recipesPy string, overrides map[string]stri
 	for projID, path := range overrides {
 		args = append(args, "-O", fmt.Sprintf("%s=%s", projID, path))
 	}
-	args = append(args, "bundle", "--destination", retDir)
+	args = append(args, "bundle", "--destination", filepath.Join(retDir, subdir))
 	cmd := logCmd(ctx, "python", args...)
 	if logging.GetLevel(ctx) < logging.Info {
 		cmd.Stdout = os.Stdout
@@ -99,6 +99,25 @@ func prepBundle(ctx context.Context, recipesPy string, overrides map[string]stri
 	}
 
 	return retDir, nil
+}
+
+func combineIsolates(ctx context.Context, arc *archiver.Archiver, isoHashes ...isolated.HexDigest) (isolated.HexDigest, error) {
+	if len(isoHashes) == 1 {
+		return isoHashes[0], nil
+	}
+	if len(isoHashes) == 0 {
+		return "", nil
+	}
+
+	iso := isolated.New()
+	iso.Includes = isoHashes
+	isolated, err := json.Marshal(iso)
+	if err != nil {
+		return "", errors.Annotate(err).Reason("encoding ISOLATED.json").Err()
+	}
+	promise := arc.Push("ISOLATED.json", isolatedclient.NewBytesSource(isolated), 0)
+	promise.WaitForHashed()
+	return promise.Digest(), arc.Close()
 }
 
 func isolateDirectory(ctx context.Context, arc *archiver.Archiver, dir string) (isolated.HexDigest, error) {
@@ -162,7 +181,7 @@ func bundle(ctx context.Context, overrides map[string]string) (string, error) {
 		return "", err
 	}
 	logging.Debugf(ctx, "using recipes.py: %q", repoRecipesPy)
-	return prepBundle(ctx, repoRecipesPy, overrides)
+	return prepBundle(ctx, repoRecipesPy, recipeCheckoutDir, overrides)
 }
 
 func mkAuthClient(ctx context.Context, authOpts auth.Options) (*http.Client, error) {

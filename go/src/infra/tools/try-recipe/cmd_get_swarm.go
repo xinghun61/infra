@@ -74,7 +74,7 @@ func (c *cmdGetSwarm) Run(a subcommands.Application, args []string, env subcomma
 	}
 
 	logging.Infof(ctx, "getting task definition")
-	_, swarm, err := newSwarmClient(ctx, authOpts, c.swarmingServer)
+	_, _, swarm, err := newSwarmClient(ctx, authOpts, c.swarmingServer)
 	if err != nil {
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1
