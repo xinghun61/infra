@@ -52,7 +52,7 @@ type cmdEditSystem struct {
 func (c *cmdEditSystem) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 
-	err := editMode(ctx, func(jd *JobDefinition) (*JobDefinition, error) {
+	err := editMode(ctx, func(jd *JobDefinition) error {
 		ejd := jd.Edit()
 		ejd.Env(c.environment)
 		ejd.CipdPkgs(c.cipdPackages)

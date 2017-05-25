@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"flag"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -26,8 +27,8 @@ import (
 const recipeCheckoutDir = "recipe-checkout-dir"
 const generateLogdogToken = "TRY_RECIPE_GENERATE_LOGDOG_TOKEN"
 
-// RecipeProdSource represents the configuration for recipes which have been
-// committed to a repo.
+// RecipeProdSource instructs the JobDefinition to obtain its recipes from
+// a production (i.e. published in a repo) location.
 type RecipeProdSource struct {
 	RepositoryURL string `json:"repository_url"`
 	Revision      string `json:"revision"`
@@ -121,6 +122,8 @@ type Systemland struct {
 
 	CipdPkgs map[string]map[string]string `json:"cipd_packages"`
 
+	LogdogLocation string `json:"logdog_location"`
+
 	SwarmingTask *swarming.SwarmingRpcsNewTaskRequest `json:"swarming_task"`
 }
 
@@ -149,6 +152,24 @@ func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarm
 		}
 	}
 
+	if len(s.CipdPkgs) > 0 {
+		if st.Properties.CipdInput == nil {
+			st.Properties.CipdInput = &swarming.SwarmingRpcsCipdInput{}
+		}
+
+		for subdir, pkgsVers := range s.CipdPkgs {
+			for pkg, ver := range pkgsVers {
+				st.Properties.CipdInput.Packages = append(
+					st.Properties.CipdInput.Packages,
+					&swarming.SwarmingRpcsCipdPackage{
+						Path:        subdir,
+						PackageName: pkg,
+						Version:     ver,
+					})
+			}
+		}
+	}
+
 	return
 }
 
@@ -161,7 +182,7 @@ func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarm
 // Additionally, RecipeProperties will replace any args in the swarming task's
 // command which are the string $RECIPE_PROPERTIES_JSON.
 type JobDefinition struct {
-	SwarmingServer string `json:"swarming_server"`
+	SwarmingHostname string `json:"swarming_hostname"`
 
 	// TODO(iannucci): maybe support other job invocations?
 
@@ -293,12 +314,12 @@ func (jd *JobDefinition) Edit() *EditJobDefinition {
 	return &EditJobDefinition{*jd, nil}
 }
 
-// Finalize returns the mutated JobDefinition and/or error.
-func (ejd *EditJobDefinition) Finalize() (*JobDefinition, error) {
+// Finalize returns the error (if any)
+func (ejd *EditJobDefinition) Finalize() error {
 	if ejd.err != nil {
-		return nil, ejd.err
+		return ejd.err
 	}
-	return &ejd.jd, nil
+	return nil
 }
 
 func (ejd *EditJobDefinition) tweak(fn func(jd *JobDefinition) error) {
@@ -449,18 +470,37 @@ func (ejd *EditJobDefinition) CipdPkgs(cipdPkgs map[string]string) {
 	})
 }
 
-// SwarmingServer allows you to modify the current SwarmingServer used by this
+// SwarmingHostname allows you to modify the current SwarmingHostname used by this
 // try-recipe pipeline. Note that the isolated server is derived from this, so
 // if you're editing this value, do so before passing the JobDefinition through
 // the `isolate` subcommand.
-func (ejd *EditJobDefinition) SwarmingServer(host string) {
+func (ejd *EditJobDefinition) SwarmingHostname(host string) {
 	if host == "" {
 		return
 	}
 	ejd.tweak(func(jd *JobDefinition) error {
-		jd.SwarmingServer = host
+		p, err := url.Parse(host)
+		if err != nil {
+			return err
+		}
+		if p.Host != host {
+			return errors.Reason("SwarmingHostname must only specify hostname: %(url)q").
+				D("url", host).Err()
+		}
+		jd.SwarmingHostname = host
 		return nil
 	})
+}
+
+func exfiltrateMap(m map[string]string) []*swarming.SwarmingRpcsStringPair {
+	if len(m) == 0 {
+		return nil
+	}
+	ret := make([]*swarming.SwarmingRpcsStringPair, 0, len(m))
+	for k, v := range m {
+		ret = append(ret, &swarming.SwarmingRpcsStringPair{Key: k, Value: v})
+	}
+	return ret
 }
 
 // PrefixPathEnv controls kitchen's -prefix-path-env commandline variables.
@@ -503,7 +543,7 @@ func generateLogdogStream(ctx context.Context, uid string) (prefix logdog_types.
 
 // GetSwarmingNewTask builds a usable SwarmingRpcsNewTaskRequest from the
 // JobDefinition, incorporating all of the extra bits of the JobDefinition.
-func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, arc *archiver.Archiver, swarmingServer string) (*swarming.SwarmingRpcsNewTaskRequest, error) {
+func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, arc *archiver.Archiver) (*swarming.SwarmingRpcsNewTaskRequest, error) {
 	// apply systemland stuff
 	st, args, err := jd.S.genSwarmingTask(ctx, uid)
 	if err != nil {
@@ -521,34 +561,5 @@ func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, arc
 			args.Dump()...)
 	}
 
-	if len(jd.S.CipdPkgs) > 0 {
-		if st.Properties.CipdInput == nil {
-			st.Properties.CipdInput = &swarming.SwarmingRpcsCipdInput{}
-		}
-
-		for subdir, pkgsVers := range jd.S.CipdPkgs {
-			for pkg, ver := range pkgsVers {
-				st.Properties.CipdInput.Packages = append(
-					st.Properties.CipdInput.Packages,
-					&swarming.SwarmingRpcsCipdPackage{
-						Path:        subdir,
-						PackageName: pkg,
-						Version:     ver,
-					})
-			}
-		}
-	}
-
 	return st, nil
-}
-
-func exfiltrateMap(m map[string]string) []*swarming.SwarmingRpcsStringPair {
-	if len(m) == 0 {
-		return nil
-	}
-	ret := make([]*swarming.SwarmingRpcsStringPair, 0, len(m))
-	for k, v := range m {
-		ret = append(ret, &swarming.SwarmingRpcsStringPair{Key: k, Value: v})
-	}
-	return ret
 }

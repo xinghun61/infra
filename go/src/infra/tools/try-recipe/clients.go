@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -13,7 +14,7 @@ import (
 	"github.com/luci/luci-go/common/auth"
 )
 
-func newSwarmClient(ctx context.Context, authOpts auth.Options, swarmingServer string) (*auth.Authenticator, *http.Client, *swarming.Service, error) {
+func newSwarmClient(ctx context.Context, authOpts auth.Options, swarmingHost string) (*auth.Authenticator, *http.Client, *swarming.Service, error) {
 	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
 	authClient, err := authenticator.Client()
 	if err != nil {
@@ -24,6 +25,6 @@ func newSwarmClient(ctx context.Context, authOpts auth.Options, swarmingServer s
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	swarm.BasePath = swarmingServer + "/api/swarming/v1/"
+	swarm.BasePath = fmt.Sprintf("https://%s/api/swarming/v1/", swarmingHost)
 	return authenticator, authClient, swarm, nil
 }

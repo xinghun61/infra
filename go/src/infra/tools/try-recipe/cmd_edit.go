@@ -57,8 +57,8 @@ try-recipe get-builder ... |
 			ret.Flags.StringVar(&ret.recipeName, "r", "",
 				"override the `recipe` to run.")
 
-			ret.Flags.StringVar(&ret.swarmingServer, "S", "",
-				"override the swarming `server` to launch the task on.")
+			ret.Flags.StringVar(&ret.swarmingHost, "S", "",
+				"override the swarming `host` to launch the task on (i.e. chromium-swarm.appspot.com).")
 
 			return ret
 		},
@@ -77,7 +77,7 @@ type cmdEdit struct {
 	recipeRevision string
 	recipeName     string
 
-	swarmingServer string
+	swarmingHost string
 }
 
 func decodeJobDefinition(ctx context.Context) (*JobDefinition, error) {
@@ -95,14 +95,13 @@ func decodeJobDefinition(ctx context.Context) (*JobDefinition, error) {
 	return jd, errors.Annotate(err).Reason("decoding JobDefinition").Err()
 }
 
-func editMode(ctx context.Context, cb func(jd *JobDefinition) (*JobDefinition, error)) error {
+func editMode(ctx context.Context, cb func(jd *JobDefinition) error) error {
 	jd, err := decodeJobDefinition(ctx)
 	if err != nil {
 		return err
 	}
 
-	jd, err = cb(jd)
-	if err != nil {
+	if err = cb(jd); err != nil {
 		return err
 	}
 
@@ -118,13 +117,13 @@ func editMode(ctx context.Context, cb func(jd *JobDefinition) (*JobDefinition, e
 func (c *cmdEdit) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 
-	err := editMode(ctx, func(jd *JobDefinition) (*JobDefinition, error) {
+	err := editMode(ctx, func(jd *JobDefinition) error {
 		ejd := jd.Edit()
 		ejd.RecipeSource(c.recipeIsolate, c.recipeURL, c.recipeRevision)
 		ejd.Dimensions(c.dimensions)
 		ejd.Properties(c.properties)
 		ejd.Recipe(c.recipeName)
-		ejd.SwarmingServer(c.swarmingServer)
+		ejd.SwarmingHostname(c.swarmingHost)
 		return ejd.Finalize()
 	})
 	if err != nil {

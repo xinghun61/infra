@@ -74,7 +74,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 		return 1
 	}
 
-	authenticator, authClient, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingServer)
+	authenticator, authClient, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingHostname)
 	if err != nil {
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1
@@ -102,7 +102,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	arc := mkArchiver(ctx, isoFlags, authClient)
 
 	logging.Infof(ctx, "building swarming task")
-	st, err := jd.GetSwarmingNewTask(ctx, uid, arc, jd.SwarmingServer)
+	st, err := jd.GetSwarmingNewTask(ctx, uid, arc)
 	if err != nil {
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1
@@ -126,7 +126,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	}
 	logging.Infof(ctx, "launching swarming task: done")
 
-	logging.Infof(ctx, "Launched swarming task: %s/task?id=%s",
-		jd.SwarmingServer, req.TaskId)
+	logging.Infof(ctx, "Launched swarming task: https://%s/task?id=%s",
+		jd.SwarmingHostname, req.TaskId)
 	return 0
 }

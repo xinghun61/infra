@@ -7,6 +7,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 
 	"golang.org/x/net/context"
@@ -34,11 +35,8 @@ func getSwarmCmd(authOpts auth.Options) *subcommands.Command {
 			ret.logCfg.AddFlags(&ret.Flags)
 			ret.authFlags.Register(&ret.Flags, authOpts)
 
-			defaultSwarmingServer := "https://chromium-swarm.appspot.com"
-			ret.Flags.StringVar(&ret.swarmingServer, "S", defaultSwarmingServer,
-				"shorthand for 'swarm-server'")
-			ret.Flags.StringVar(&ret.swarmingServer, "swarm-server", defaultSwarmingServer,
-				"The swarming server to launch the task on.")
+			ret.Flags.StringVar(&ret.swarmingHost, "S", "chromium-swarm.appspot.com",
+				"the swarming `host` to get the task from.")
 			return ret
 		},
 	}
@@ -50,8 +48,8 @@ type cmdGetSwarm struct {
 	logCfg    logging.Config
 	authFlags authcli.Flags
 
-	taskID         string
-	swarmingServer string
+	taskID       string
+	swarmingHost string
 }
 
 func (c *cmdGetSwarm) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
@@ -60,6 +58,18 @@ func (c *cmdGetSwarm) validateFlags(ctx context.Context, args []string) (authOpt
 		return
 	}
 	c.taskID = args[0]
+
+	p, err := url.Parse(c.swarmingHost)
+	if err != nil {
+		err = errors.Annotate(err).Reason("bad SwarmingHost %(url)q").
+			D("url", c.swarmingHost).Err()
+		return
+	}
+	if p.Host != c.swarmingHost {
+		err = errors.Reason("SwarmingHost must only specify hostname: %(url)q").
+			D("url", c.swarmingHost).Err()
+		return
+	}
 	return c.authFlags.Options()
 }
 
@@ -74,7 +84,7 @@ func (c *cmdGetSwarm) Run(a subcommands.Application, args []string, env subcomma
 	}
 
 	logging.Infof(ctx, "getting task definition")
-	_, _, swarm, err := newSwarmClient(ctx, authOpts, c.swarmingServer)
+	_, _, swarm, err := newSwarmClient(ctx, authOpts, c.swarmingHost)
 	if err != nil {
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1
@@ -102,7 +112,7 @@ func (c *cmdGetSwarm) Run(a subcommands.Application, args []string, env subcomma
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1
 	}
-	jd.SwarmingServer = c.swarmingServer
+	jd.SwarmingHostname = c.swarmingHost
 
 	logging.Infof(ctx, "getting task definition: done")
 
