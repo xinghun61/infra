@@ -27,10 +27,11 @@ func grabBuilderDefinition(ctx context.Context, bbHost, bucket, builder string, 
 	sbucket.BasePath = fmt.Sprintf("%s/api/swarmbucket/v1/", bbHost)
 
 	type parameters struct {
-		BuilderName string `json:"builder_name"`
+		BuilderName     string `json:"builder_name"`
+		APIExplorerLink bool   `json:"api_explorer_link"`
 	}
 
-	data, err := json.Marshal(&parameters{builder})
+	data, err := json.Marshal(&parameters{builder, false})
 	if err != nil {
 		return nil, err
 	}
