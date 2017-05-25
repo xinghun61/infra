@@ -47,7 +47,7 @@ GIT_FOR_WINDOWS_ASSET_RES = {
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-GIT_PACKAGE_VERSION_SUFFIX = '.chromium6'
+GIT_PACKAGE_VERSION_SUFFIX = '.chromium7'
 
 
 def RunSteps(api):
