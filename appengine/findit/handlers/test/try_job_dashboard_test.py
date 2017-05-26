@@ -139,6 +139,7 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
     try_job_completed.created_time = datetime(2016, 5, 4, 0, 0, 0)
     try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
+    try_job_completed.number_of_commits_analyzed = 1
     try_job_completed.try_job_url = 'url3'
     try_job_completed.culprits = {
         'compile': {
@@ -304,5 +305,3 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     self.validateTryJobDisplayData(
         [expected_try_job_completed_display_data],
         successfully_completed_try_jobs)
-
-

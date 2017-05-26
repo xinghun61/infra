@@ -102,6 +102,15 @@ def _GetStartEndDates(start, end):
   return (datetime.strptime(start, '%Y-%m-%d'),
           datetime.strptime(end, '%Y-%m-%d'))
 
+def _AveragePerCommitExecutionTime(try_job_data, display_data):
+  if (hasattr(try_job_data, 'number_of_commits_analyzed')
+      and try_job_data.number_of_commits_analyzed
+      and try_job_data.end_time and try_job_data.start_time):
+    display_data['execution_time_per_commit'] = time_util.FormatTimedelta(
+         (try_job_data.end_time - try_job_data.start_time)
+         / try_job_data.number_of_commits_analyzed)
+  else:
+    display_data['execution_time_per_commit'] = 'N/A'
 
 class TryJobDashboard(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
@@ -161,6 +170,7 @@ class TryJobDashboard(BaseHandler):
                 try_job_data, WfTryJobData) else 'N/A')
         display_data['execution_time'] = _FormatDuration(
             try_job_data.start_time, try_job_data.end_time)
+        _AveragePerCommitExecutionTime(try_job_data, display_data)
         successfully_completed_try_jobs.append(display_data)
 
     data = {
