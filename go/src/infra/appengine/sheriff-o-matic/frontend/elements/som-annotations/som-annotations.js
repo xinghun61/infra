@@ -27,7 +27,13 @@
       _bugErrorMessage: String,
       _bugInput: {type: Object, value: function() { return this.$.bug; }},
       _bugModel: Object,
-      bugQueueLabel: String,
+      _fileBugLabels: {
+        type: Array,
+        computed: '_computeFileBugLabels(tree)',
+        value: function () {
+          return [];
+        },
+      },
       collapseByDefault: Boolean,
       _commentInFlight: Boolean,
       _commentsErrorMessage: String,
@@ -52,17 +58,21 @@
         type: Boolean,
         value: false,
       },
+      _groupErrorMessage: String,
+      _groupModel: Object,
       _removeBugErrorMessage: String,
       _removeBugModel: Object,
       _snoozeErrorMessage: String,
       _snoozeModel: Object,
       _snoozeTimeInput:
           {type: Object, value: function() { return this.$.snoozeTime; }},
-      _groupErrorMessage: String,
-      _groupInput: {type: Object, value: function() { return this.$.groupID; }},
-      _groupModel: Object,
+      tree: {
+        type: Object,
+        value: function() {
+          return {};
+        },
+      },
       _ungroupErrorMessage: String,
-      _ungroupInput: {type: Object, value: function() { return ''; }},
       _ungroupModel: Object,
       user: String,
       xsrfToken: String,
@@ -210,7 +220,7 @@
       this._bugModel = evt.target.alert;
       this.$.fileBugLink.href =
           'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=' +
-          this.bugQueueLabel + '&summary=' + this._bugModel.title +
+          this._fileBugLabels.join(',') + '&summary=' + this._bugModel.title +
           '&comment=' + encodeURIComponent(this._commentForBug(this._bugModel));
       this._filedBug = false;
       this._bugErrorMessage = '';
@@ -364,6 +374,17 @@
         return null;
       }
       return this.computeAnnotation(annotations, model, this.collapseByDefault);
+    },
+
+    _computeFileBugLabels: function(tree) {
+      let labels = ['Filed-Via-SoM'];
+      if (tree.name === 'android') {
+        labels.push('Restrict-View-Google');
+      }
+      if (tree.bug_queue_label) {
+        labels.push(tree.bug_queue_label);
+      }
+      return labels;
     },
 
     _computeHideDeleteComment(comment) { return comment.user != this.user; },
