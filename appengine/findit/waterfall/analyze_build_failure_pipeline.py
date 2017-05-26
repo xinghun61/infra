@@ -14,6 +14,8 @@ from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 from waterfall.flake.trigger_flake_analyses_pipeline import (
     TriggerFlakeAnalysesPipeline)
 from waterfall.identify_culprit_pipeline import IdentifyCulpritPipeline
+from waterfall.process_swarming_tasks_result_pipeline import (
+    ProcessSwarmingTasksResultPipeline)
 from waterfall.pull_changelog_pipeline import PullChangelogPipeline
 from waterfall.start_try_job_on_demand_pipeline import (
     StartTryJobOnDemandPipeline)
@@ -88,6 +90,10 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
       # This pipeline will run before build completes.
       yield TriggerSwarmingTasksPipeline(
           master_name, builder_name, build_number, failure_info, force)
+
+      yield ProcessSwarmingTasksResultPipeline(
+          master_name, builder_name, build_number, failure_info,
+          build_completed)
 
       # Checks if first time failures happen and starts a try job if yes.
       yield StartTryJobOnDemandPipeline(

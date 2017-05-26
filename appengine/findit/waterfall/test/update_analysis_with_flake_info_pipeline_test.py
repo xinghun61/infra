@@ -18,7 +18,7 @@ class UpdateAnalysisWithFlakeInfoPipelineTest(wf_testcase.WaterfallTestCase):
     self.build_number = 123
 
   def testAllTestsFlaky(self):
-    task_results = ['a on platform', ['a', [], ['t1', 't2']]]
+    task_results = ['a on platform',  ['t1', 't2']]
 
     analysis = WfAnalysis.Create(
         self.master_name, self.builder_name, self.build_number)
@@ -68,7 +68,7 @@ class UpdateAnalysisWithFlakeInfoPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testGetFlakyTestsNoFlaky(self):
     task_results = {
-        'a on platform': ('a', [], [])
+        'a on platform': []
     }
 
     self.assertEqual(

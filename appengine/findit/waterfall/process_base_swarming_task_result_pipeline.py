@@ -243,6 +243,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
 
         tests_statuses = self._CheckTestsRunStatuses(output_json, *call_args)
         task.tests_statuses = tests_statuses
+        task.canonical_step_name = step_name_no_platform
         task.put()
       else:
         if exit_code is not None:

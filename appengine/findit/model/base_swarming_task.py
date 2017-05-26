@@ -46,6 +46,8 @@ class BaseSwarmingTask(ndb.Model):
   # parameters need to be stored and analyzed later.
   parameters = ndb.JsonProperty(default={}, indexed=False, compressed=True)
 
+  canonical_step_name = ndb.StringProperty(indexed=False)
+
   def Reset(self):
     """Resets the task as if it's a new task."""
     self.task_id = None
@@ -58,3 +60,4 @@ class BaseSwarmingTask(ndb.Model):
     self.callback_url = None
     self.callback_target = None
     self.parameters = {}
+    self.canonical_step_name = None

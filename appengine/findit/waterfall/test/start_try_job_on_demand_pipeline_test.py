@@ -5,6 +5,7 @@
 import mock
 
 from common.waterfall import failure_type
+from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
 from waterfall import start_try_job_on_demand_pipeline
 from waterfall.start_try_job_on_demand_pipeline import (
@@ -236,12 +237,6 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
         True, try_job.key)
 
     self.MockPipeline(
-        start_try_job_on_demand_pipeline.UpdateAnalysisWithFlakeInfoPipeline,
-        None,
-        expected_args=[master_name, builder_name, build_number,
-                       'targeted_tests'],
-        expected_kwargs={})
-    self.MockPipeline(
         start_try_job_on_demand_pipeline.ScheduleTestTryJobPipeline,
         'try_job_id',
         expected_args=[
@@ -266,3 +261,75 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
     result = pipeline.run('m', 'b', 1, failure_info, {}, {}, True, False)
     WfTryJob.Create('m', 'b', 1).put()
     self.assertNotEqual(list(result), [])
+
+  def testGetSwarmingTasksResult(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_type = failure_type.TEST
+    failure_info = {
+        'parent_mastername': None,
+        'parent_buildername': None,
+        'failure_type': try_job_type,
+        'builds': {
+            '0': {
+                'blame_list': ['r0', 'r1'],
+                'chromium_revision': 'r1'
+            },
+            '1': {
+                'blame_list': ['r2'],
+                'chromium_revision': 'r2'
+            }
+        },
+        'failed_steps': {
+            'a on platform': {
+                'first_failure': 1,
+                'tests': {
+                    'test1': {
+                        'first_failure': 1
+                    },
+                    'test2': {
+                        'first_failure': 1
+                    }
+                }
+            },
+            'b': {
+                'first_failure': 1,
+                'tests': {
+                    'b_test1': {
+                        'first_failure': 1
+                    }
+                }
+            }
+        }
+    }
+
+    task1 = WfSwarmingTask.Create(master_name, builder_name, build_number,
+                                  'a on platform')
+    task1.tests_statuses = {
+        'test1': {
+            'SUCCESS': 6
+        },
+        'test2': {
+            'FAILURE': 6
+        }
+    }
+    task1.canonical_step_name = 'a'
+    task1.put()
+
+    task2 = WfSwarmingTask.Create(master_name, builder_name, build_number, 'b')
+    task2.tests_statuses = {
+        'b_test1': {
+            'SUCCESS': 6
+        }
+    }
+    task2.put()
+
+    task_results = start_try_job_on_demand_pipeline._GetReliableTests(
+        master_name, builder_name, build_number, failure_info)
+
+    expected_results = {
+        'a': ['test2']
+    }
+
+    self.assertEqual(expected_results, task_results)

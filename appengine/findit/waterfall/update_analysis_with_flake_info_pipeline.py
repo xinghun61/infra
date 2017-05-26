@@ -15,7 +15,7 @@ from waterfall import swarming_util
 def _GetFlakyTests(task_results):
   flaky_failures = defaultdict(list)
   for step, step_task_results in task_results.iteritems():
-    flaky_tests = step_task_results[2]
+    flaky_tests = step_task_results
     if flaky_tests:
       flaky_failures[step].extend(flaky_tests)
   return flaky_failures
@@ -33,7 +33,6 @@ def _UpdateAnalysisWithFlakeInfo(
     return False
 
   all_flaked = swarming_util.UpdateAnalysisResult(analysis.result, flaky_tests)
-
   if all_flaked:
     analysis.result_status = result_status.FLAKY
   analysis.put()

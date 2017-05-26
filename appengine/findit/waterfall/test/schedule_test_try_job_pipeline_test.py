@@ -27,18 +27,6 @@ class ScheduleTestTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock_select.stop()
     super(ScheduleTestTryjobPipelineTest, self).tearDown()
 
-  def testGetTargetedTests(self):
-    reliable_tests = {
-        'a on platform': ('a', ['t1', 't2']),
-        'b on platform': ('b', [])
-    }
-    targeted_tests = schedule_test_try_job_pipeline._GetTargetedTests(
-        reliable_tests)
-    expected_targeted_tests = {
-        'a': ['t1', 't2']
-    }
-    self.assertEqual(targeted_tests, expected_targeted_tests)
-
   def testGetBuildPropertiesForTestFailure(self):
     master_name = 'm'
     builder_name = 'b'
@@ -67,7 +55,7 @@ class ScheduleTestTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 223
     good_revision = 'rev1'
     bad_revision = 'rev2'
-    targeted_tests = ['a on platform', ['a', ['test1', 'test2']]]
+    targeted_tests = {'a': ['test1', 'test2']}
     build_id = '1'
     build = WfBuild.Create(master_name, builder_name, build_number)
     build.data = {'properties': {'parent_mastername': 'pm',

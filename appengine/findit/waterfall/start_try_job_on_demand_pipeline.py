@@ -6,20 +6,19 @@ import logging
 
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import BasePipeline
+from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util
 from waterfall import try_job_util
 from waterfall import waterfall_config
 from waterfall.identify_try_job_culprit_pipeline import (
     IdentifyTryJobCulpritPipeline)
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
-from waterfall.process_swarming_task_result_pipeline import (
-    ProcessSwarmingTaskResultPipeline)
+from waterfall.process_swarming_tasks_result_pipeline import (
+    StepHasFirstTimeFailure)
 from waterfall.schedule_compile_try_job_pipeline import (
     ScheduleCompileTryJobPipeline)
 from waterfall.schedule_test_try_job_pipeline import (
     ScheduleTestTryJobPipeline)
-from waterfall.update_analysis_with_flake_info_pipeline import (
-    UpdateAnalysisWithFlakeInfoPipeline)
 
 
 def _GetLastPassCompile(build_number, failed_steps):
@@ -59,11 +58,26 @@ def _GetSuspectsFromHeuristicResult(heuristic_result):
   return list(suspected_revisions)
 
 
-def _HasFirstTimeFailure(tests, build_number):
-  for test_failure in tests.itervalues():
-    if test_failure['first_failure'] == build_number:
-      return True
-  return False
+def _GetReliableTests(
+    master_name, builder_name, build_number, failure_info):
+  task_results = {}
+  for step_name, step_failure in failure_info['failed_steps'].iteritems():
+    if not StepHasFirstTimeFailure(step_failure.get('tests', {}), build_number):
+      continue
+    task = WfSwarmingTask.Get(
+        master_name, builder_name, build_number, step_name)
+
+    if not task or not task.classified_tests:
+      logging.error('No result for swarming task %s/%s/%s/%s' % (
+          master_name, builder_name, build_number, step_name))
+      continue
+
+    if not task.reliable_tests:
+      continue
+
+    task_results[task.canonical_step_name or step_name] = task.reliable_tests
+
+  return task_results
 
 
 class StartTryJobOnDemandPipeline(BasePipeline):
@@ -110,19 +124,9 @@ class StartTryJobOnDemandPipeline(BasePipeline):
       # If try_job_type is other type, the pipeline has returned.
       # So here the try_job_type is failure_type.TEST.
 
-      # Waits and gets the swarming tasks' results.
-      task_results = []
-      for step_name, step_failure in failure_info['failed_steps'].iteritems():
-        step_has_first_time_failure = _HasFirstTimeFailure(
-            step_failure.get('tests', {}), build_number)
-        if not step_has_first_time_failure:
-          continue
-        task_result = yield ProcessSwarmingTaskResultPipeline(
-            master_name, builder_name, build_number, step_name)
-        task_results.append(task_result)
-
-      yield UpdateAnalysisWithFlakeInfoPipeline(
-          master_name, builder_name, build_number, *task_results)
+      # Gets the swarming tasks' results.
+      task_results = _GetReliableTests(
+          master_name, builder_name, build_number, failure_info)
 
       parent_mastername = failure_info.get('parent_mastername') or master_name
       parent_buildername = failure_info.get('parent_buildername') or (
@@ -135,7 +139,7 @@ class StartTryJobOnDemandPipeline(BasePipeline):
       try_job_id = yield ScheduleTestTryJobPipeline(
           master_name, builder_name, build_number, good_revision, bad_revision,
           try_job_type, suspected_revisions, cache_name, dimensions,
-          *task_results)
+          task_results)
 
     try_job_result = yield MonitorTryJobPipeline(
         try_job_key.urlsafe(), try_job_type, try_job_id)

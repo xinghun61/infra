@@ -12,16 +12,6 @@ from model.wf_try_job_data import WfTryJobData
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 
 
-def _GetTargetedTests(task_results):
-  targeted_tests = defaultdict(list)
-  for step_task_results in task_results.itervalues():
-    step_name_no_platform = step_task_results[0]
-    reliable_tests = step_task_results[1]
-    if reliable_tests:
-      targeted_tests[step_name_no_platform].extend(reliable_tests)
-  return targeted_tests
-
-
 class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
   """A pipeline for scheduling a new try job for failed test build."""
 
@@ -50,7 +40,7 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
   def run(
       self, master_name, builder_name, build_number, good_revision,
       bad_revision, try_job_type, suspected_revisions, cache_name, dimensions,
-      *task_results):
+      targeted_tests):
     """
     Args:
       master_name (str): the master name of a build.
@@ -64,7 +54,7 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
           waterfall bots on the trybots.
       dimensions (list): A list of strings in the format
           ["key1:value1", "key2:value2"].
-      task_results (list): a list of reliable failed tests.
+      targeted_tests (dict): a dict of reliable failed tests.
 
     Returns:
       build_id (str): id of the triggered try job.
@@ -74,7 +64,6 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
         master_name, builder_name, build_number, good_revision, bad_revision,
         try_job_type, suspected_revisions)
 
-    targeted_tests = _GetTargetedTests(dict(task_results))
     if not targeted_tests:  # pragma: no cover
       logging.info('All tests are flaky, no try job will be triggered.')
       return
