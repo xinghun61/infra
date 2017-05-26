@@ -279,11 +279,6 @@ def add_many_async(build_request_list):
   ctx = ndb.get_context()
   new_builds = {}
 
-  # Temporary log who requests for a pubsub callback.
-  # TODO(nodir): remove this block
-  if any(r.pubsub_callback for r in build_request_list):  # pragma: no cover
-    logging.info('%s requests for pubsub callback', identity)
-
   def validate_and_normalize():
     """Validates and normalizes requests.
 
