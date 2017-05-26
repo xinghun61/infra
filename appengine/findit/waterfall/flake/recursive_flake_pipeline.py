@@ -55,6 +55,8 @@ _MAX_TIMEOUT_SECONDS = 3 * _ONE_HOUR_IN_SECONDS
 
 
 def _HasSufficientConfidenceToRunTryJobs(analysis):
+  # Based on analysis of historical data, 60% confidence could filter out almost
+  # all false positives.
   minimum_confidence_score = analysis.algorithm_parameters.get(
       'minimum_confidence_score_to_run_tryjobs',
       _DEFAULT_MINIMUM_CONFIDENCE_SCORE)
@@ -157,9 +159,44 @@ def _IsSwarmingTaskSufficientForCacheHit(
                                         analysis_status.COMPLETED]
 
 
+def _GetListOfNearbyBuildNumbers(
+    preferred_run_build_number, lower_bound_build_number,
+    upper_bound_build_number, maximum_threshold):
+  """Gets a list of numbers within range near preferred_run_build_number.
+
+  Args:
+    preferred_run_build_number (int): Assumed to be a positive number.
+    lower_bound_build_number (int): The smallest build number allowed, or None.
+    upper_bound_build_number (int): The largest build number allowed, or None.
+    maximum_threshold (int): A non-negative number for how far in either
+    direction to look.
+
+  Returns:
+    A list of nearby numbers within maximum_threshold before and after
+    preferred_run_build_number, ordered by closest to farthest. For example, if
+    preferred_run_build_number is 1000 and maximum_threshold is 2, return
+    [1000, 999, 1001, 998, 1002].
+  """
+  lower_bound = lower_bound_build_number or 0
+  upper_bound = (
+      upper_bound_build_number if upper_bound_build_number is not None else
+      preferred_run_build_number + maximum_threshold)
+  nearby_build_numbers = [preferred_run_build_number]
+
+  for i in range(1, maximum_threshold + 1):
+    if preferred_run_build_number - i >= lower_bound:
+      nearby_build_numbers.append(preferred_run_build_number - i)
+
+    if preferred_run_build_number + i <= upper_bound:
+      nearby_build_numbers.append(preferred_run_build_number + i)
+
+  return nearby_build_numbers
+
+
 def _GetBestBuildNumberToRun(
     master_name, builder_name, preferred_run_build_number, step_name, test_name,
-    step_size, number_of_iterations):
+    lower_bound_build_number, upper_bound_build_number, step_size,
+    number_of_iterations):
   """Finds the optimal nearby swarming task build number to use for a cache hit.
 
   Builds are searched back looking for something either already completed or in
@@ -171,7 +208,9 @@ def _GetBestBuildNumberToRun(
     master_name (str): The name of the master for this flake analysis.
     builder_name (str): The name of the builder for this flake analysis.
     preferred_run_build_number (int): The originally-requested build number to
-      run the swarming task on.
+        run the swarming task on.
+    lower_bound_build_number (int): The smallest build number to include.
+    upper_bound_build_number (int): The largest build number to include.
     step_name (str): The name of the step to run swarming on.
     test_name (str): The name of the test to run swarming on.
     step_size (int): The distance of the last preferred build number that was
@@ -186,7 +225,8 @@ def _GetBestBuildNumberToRun(
   """
   # Looks forward or backward up to half of step_size.
   possibly_cached_build_numbers = _GetListOfNearbyBuildNumbers(
-      preferred_run_build_number, step_size / 2)
+      preferred_run_build_number, lower_bound_build_number,
+      upper_bound_build_number, step_size / 2)
   candidate_build_number = None
   candidate_flake_swarming_task_status = None
 
@@ -215,33 +255,6 @@ def _GetBestBuildNumberToRun(
   # No cached build nearby deemed adequate could be found.
   return candidate_build_number or preferred_run_build_number
 
-
-def _GetListOfNearbyBuildNumbers(preferred_run_build_number, maximum_threshold):
-  """Gets a list of numbers within range near preferred_run_build_number.
-
-  Args:
-    preferred_run_build_number (int): Assumed to be a positive number.
-    maximum_threshold (int): A non-negative number for how far in either
-    direction to look.
-
-  Returns:
-    A list of nearby numbers within maximum_threshold before and after
-    preferred_run_build_number, ordered by closest to farthest. For example, if
-    preferred_run_build_number is 1000 and maximum_threshold is 2, return
-    [1000, 999, 1001, 998, 1002].
-  """
-  if maximum_threshold >= preferred_run_build_number:
-    # Build numbers are always assumed to start from 1, so don't include
-    # anything before that.
-    return range(1, preferred_run_build_number + maximum_threshold + 1)
-
-  nearby_build_numbers = [preferred_run_build_number]
-
-  for i in range(1, maximum_threshold + 1):
-    nearby_build_numbers.append(preferred_run_build_number - i)
-    nearby_build_numbers.append(preferred_run_build_number + i)
-
-  return nearby_build_numbers
 
 
 def _CanEstimateExecutionTimeFromReferenceSwarmingTask(swarming_task):
@@ -287,9 +300,10 @@ class RecursiveFlakePipeline(BasePipeline):
 
   def __init__(
       self, analysis_urlsafe_key, preferred_run_build_number,
-      step_metadata=None, manually_triggered=False,
-      use_nearby_neighbor=False, step_size=0, retries=0):
-    """Pipeline to determine the regression range of a flaky test.
+      lower_bound_build_number, upper_bound_build_number, step_metadata=None,
+      manually_triggered=False, use_nearby_neighbor=False, step_size=0,
+      retries=0):
+    """Pipeline to determine and analyze the regression range of a flaky test.
 
     Args:
       analysis_urlsafe_key (str): A url-safe key corresponding to a
@@ -297,6 +311,12 @@ class RecursiveFlakePipeline(BasePipeline):
       preferred_run_build_number (int): The build number the check flake
           algorithm should perform a swarming rerun on, but may be overridden to
           use the results of a nearby neighbor if use_nearby_neighbor is True.
+      lower_bound_build_number (int): The earliest build number to check. Pass
+          None to allow the look back algorithm to determine how far back to
+          look.
+      upper_bound_build_number (int): The latest build number to include in the
+          analysis. Pass None to allow the algorithm to determine where to start
+          the backward search from.
       step_metadata (dict): Step_metadata for the test.
       manually_triggered (bool): True if the analysis is from manual request,
           like by a Chromium sheriff.
@@ -308,10 +328,15 @@ class RecursiveFlakePipeline(BasePipeline):
           RecursiveFlakePipeline to determine the bounds for how far a nearby
           build's swarming task results should be used. Only relevant if
           use_nearby_neighbor is True.
-      retries (int): Number of retries of this pipeline.
+      retries (int): Number of retries of this pipeline. If reties exceeds the
+          _MAX_RETRY_TIMES, start this pipeline off peak hours.
+
+    Returns:
+      A dict of lists for reliable/flaky tests.
     """
     super(RecursiveFlakePipeline, self).__init__(
-        analysis_urlsafe_key, preferred_run_build_number, step_metadata,
+        analysis_urlsafe_key, preferred_run_build_number,
+        lower_bound_build_number, upper_bound_build_number, step_metadata,
         manually_triggered, use_nearby_neighbor, step_size, retries)
     self.analysis_urlsafe_key = ndb.Key(urlsafe=analysis_urlsafe_key)
     analysis = self.analysis_urlsafe_key.get()
@@ -319,6 +344,8 @@ class RecursiveFlakePipeline(BasePipeline):
     self.master_name = analysis.master_name
     self.builder_name = analysis.builder_name
     self.preferred_run_build_number = preferred_run_build_number
+    self.lower_bound_build_number = lower_bound_build_number
+    self.upper_bound_build_number = upper_bound_build_number
     self.triggering_build_number = analysis.build_number
     self.step_name = analysis.step_name
     self.test_name = analysis.test_name
@@ -380,9 +407,10 @@ class RecursiveFlakePipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, analysis_urlsafe_key, preferred_run_build_number,
+          lower_bound_build_number, upper_bound_build_number,
           step_metadata=None, manually_triggered=False,
           use_nearby_neighbor=False, step_size=0, retries=0):
-    """Pipeline to determine the regression range of a flaky test.
+    """Pipeline to determine and analyze the regression range of a flaky test.
 
     Args:
       analysis_urlsafe_key (str): A url-safe key corresponding to a
@@ -390,6 +418,12 @@ class RecursiveFlakePipeline(BasePipeline):
       preferred_run_build_number (int): The build number the check flake
           algorithm should perform a swarming rerun on, but may be overridden to
           use the results of a nearby neighbor if use_nearby_neighbor is True.
+      lower_bound_build_number (int): The earliest build number to check. Pass
+          None to allow the look back algorithm to determine how far back to
+          look.
+      upper_bound_build_number (int): The latest build number to include in the
+          analysis. Pass None to allow the algorithm to determine where to start
+          the backward search from.
       step_metadata (dict): Step_metadata for the test.
       manually_triggered (bool): True if the analysis is from manual request,
           like by a Chromium sheriff.
@@ -397,12 +431,13 @@ class RecursiveFlakePipeline(BasePipeline):
           swarming results of a nearby build number, if available, should be
           used in place of triggering a new swarming task on
           preferred_run_build_number.
-     step_size (int): The difference in build numbers since the last call to
+      step_size (int): The difference in build numbers since the last call to
           RecursiveFlakePipeline to determine the bounds for how far a nearby
           build's swarming task results should be used. Only relevant if
           use_nearby_neighbor is True.
       retries (int): Number of retries of this pipeline. If reties exceeds the
           _MAX_RETRY_TIMES, start this pipeline off peak hours.
+
     Returns:
       A dict of lists for reliable/flaky tests.
     """
@@ -424,10 +459,12 @@ class RecursiveFlakePipeline(BasePipeline):
           self.step_name, iterations)
       actual_run_build_number = _GetBestBuildNumberToRun(
           self.master_name, self.builder_name, preferred_run_build_number,
-          self.step_name, self.test_name, step_size,
+          self.step_name, self.test_name, lower_bound_build_number,
+          upper_bound_build_number, step_size,
           iterations) if use_nearby_neighbor else preferred_run_build_number
 
       # Call trigger pipeline (flake style).
+      print 'actual build number is %d' % actual_run_build_number
       task_id = yield TriggerFlakeSwarmingTaskPipeline(
           self.master_name, self.builder_name, actual_run_build_number,
           self.step_name, [self.test_name], iterations, hard_timeout_seconds)
@@ -439,16 +476,20 @@ class RecursiveFlakePipeline(BasePipeline):
             self.test_name, analysis.version_number)
         yield NextBuildNumberPipeline(
             analysis.key.urlsafe(), actual_run_build_number,
+            lower_bound_build_number, upper_bound_build_number,
             step_metadata=step_metadata,
             use_nearby_neighbor=use_nearby_neighbor,
             manually_triggered=manually_triggered)
     else:
       retries += 1
+
       pipeline_job = RecursiveFlakePipeline(
-          analysis_urlsafe_key, preferred_run_build_number, step_metadata,
-          manually_triggered=manually_triggered,
+          analysis_urlsafe_key, preferred_run_build_number,
+          lower_bound_build_number, upper_bound_build_number,
+          step_metadata=step_metadata, manually_triggered=manually_triggered,
           use_nearby_neighbor=use_nearby_neighbor, step_size=step_size,
           retries=retries)
+
       # Disable attribute 'target' defined outside __init__ pylint warning,
       # because pipeline generates its own __init__ based on run function.
       pipeline_job.target = (  # pylint: disable=W0201
@@ -548,13 +589,66 @@ def _UpdateAnalysisAlgorithmParameters(analysis):
     analysis.put()
 
 
+def _GetEarliestBuildNumber(
+    lower_bound_build_number, triggering_build_number, algorithm_settings):
+  if lower_bound_build_number is not None:
+    return lower_bound_build_number
+
+  max_build_numbers_to_look_back = algorithm_settings.get(
+      'max_build_numbers_to_look_back', _DEFAULT_MAX_BUILD_NUMBERS)
+
+  return max(0, triggering_build_number - max_build_numbers_to_look_back)
+
+
+def _GetLatestBuildNumber(upper_bound_build_number, triggering_build_number):
+  return upper_bound_build_number or triggering_build_number
+
+
+def _IsFinished(next_build_number, earliest_build_number,
+                latest_build_number, iterations_to_rerun):
+  """Determines whether or not to stop checking more build numbers.
+
+    An analysis at the build number level is complete if the next suggested
+    build number has already been run, is beyond the lower bound, or determined
+    to be stable as indicated by iterations_to_rerun returned by
+    lookback_algorithm.
+
+  Args:
+    next_build_number (int): The proposed next build number to run.
+    earliest_build_number (int): The lower bound build number to compare.
+    latest_build_number (int): The upper bound build number to compare.
+    iterations_to_rerun (int): The number of iterations the lookback algorithm
+        proposes to run, or None indicating it should bail out.
+  """
+  return ((next_build_number < earliest_build_number or
+           next_build_number >= latest_build_number) and
+          not iterations_to_rerun)
+
+
 class NextBuildNumberPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   # Unused argument - pylint: disable=W0613
   def run(self, analysis_urlsafe_key, current_build_number,
+          lower_bound_build_number, upper_bound_build_number,
           step_metadata=None, use_nearby_neighbor=False,
           manually_triggered=False):
+    """Pipeline for determining the build number to analyze.
+
+    Args:
+      analysis_urlsafe_key (str): The url-safe key to the MasterFlakeAnalysis
+          being analyzed.
+      current_build_number (int): The build number that has just been analyzed.
+      lower_bound_build_number (int): The earliest build number to check, or
+          None if not specified.
+      upper_bound_build_number (int): The latest build number to check, or None
+          if not specified.
+      step_metadata (dict): Step metadata for the test.
+      use_nearby_neighbor (bool): Whether or not use existing swarming reruns
+          for builds near the requested build number to analyze.
+      manually_triggered (bool): Whether or not this analysis was triggered by
+          a human user.
+    """
     # Get MasterFlakeAnalysis success list corresponding to parameters.
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
@@ -589,19 +683,17 @@ class NextBuildNumberPipeline(BasePipeline):
       _RemoveRerunBuildDataPoint(analysis, next_build_number)
       analysis.put()
 
-    max_build_numbers_to_look_back = algorithm_settings.get(
-        'max_build_numbers_to_look_back', _DEFAULT_MAX_BUILD_NUMBERS)
-    last_build_number = max(
-        0, triggering_build_number - max_build_numbers_to_look_back)
+    earliest_build_number = _GetEarliestBuildNumber(
+        lower_bound_build_number, triggering_build_number, algorithm_settings)
+    latest_build_number = _GetLatestBuildNumber(
+        upper_bound_build_number, triggering_build_number)
 
-    if ((next_build_number < last_build_number or
-         next_build_number >= triggering_build_number) and
-        not iterations_to_rerun):  # Finished.
-      build_confidence_score = None
-      if suspected_build is not None:
-        # Use steppiness as the confidence score.
-        build_confidence_score = confidence.SteppinessForBuild(
-            analysis.data_points, suspected_build)
+    if _IsFinished(next_build_number, earliest_build_number,
+                   latest_build_number, iterations_to_rerun):
+      # Use steppiness as the confidence score.
+      build_confidence_score = (confidence.SteppinessForBuild(
+          analysis.data_points, suspected_build) if suspected_build is not None
+                                else None)
 
       # Update suspected build and the confidence score.
       _UpdateAnalysisStatusUponCompletion(
@@ -615,8 +707,7 @@ class NextBuildNumberPipeline(BasePipeline):
         logging.info(('Skipping try jobs due to insufficient confidence in '
                       'suspected build'))
       else:
-        # Hook up with try-jobs. Based on analysis of historical data, 60%
-        # confidence could filter out almost all false positives.
+        # Hook up with try-jobs.
         suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
         assert suspected_build_point
 
@@ -625,7 +716,6 @@ class NextBuildNumberPipeline(BasePipeline):
 
         if blamed_cls:
           if len(blamed_cls) > 1:
-            logging.info('Running try-jobs against commits in regressions')
             start_commit_position = suspected_build_point.commit_position - 1
             start_revision = blamed_cls[start_commit_position]
             build_info = build_util.GetBuildInfo(
@@ -636,6 +726,7 @@ class NextBuildNumberPipeline(BasePipeline):
                 parent_mastername, parent_buildername)
             dimensions = waterfall_config.GetTrybotDimensions(
                 parent_mastername, parent_buildername)
+            logging.info('Running try-jobs against commits in regressions')
             yield RecursiveFlakeTryJobPipeline(
                 analysis.key.urlsafe(), start_commit_position, start_revision,
                 lower_bound, cache_name, dimensions)
@@ -664,9 +755,11 @@ class NextBuildNumberPipeline(BasePipeline):
 
     pipeline_job = RecursiveFlakePipeline(
         analysis_urlsafe_key, next_build_number,
+        lower_bound_build_number, upper_bound_build_number,
         step_metadata=step_metadata, manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor,
         step_size=(current_build_number - next_build_number))
+
     # Disable attribute 'target' defined outside __init__ pylint warning,
     # because pipeline generates its own __init__ based on run function.
     pipeline_job.target = (  # pylint: disable=W0201
