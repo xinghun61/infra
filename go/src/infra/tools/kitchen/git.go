@@ -87,7 +87,13 @@ func checkoutRepository(c context.Context, checkoutDir, repoURL, revision string
 
 // git returns an *exec.Cmd for a git command, with Stderr redirected.
 func git(ctx context.Context, workDir string, args ...string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, "git", args...)
+	// Make the tests independent of user/bot configuration.
+	newArgs := append([]string{
+		"-c", "user.email=kitchen_test@example.com",
+		"-c", "user.name=kitchen_test",
+	}, args...)
+
+	cmd := exec.CommandContext(ctx, "git", newArgs...)
 	if workDir != "" {
 		cmd.Dir = workDir
 	}
