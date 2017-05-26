@@ -28,9 +28,9 @@ func editCmd() *subcommands.Command {
 
 Example:
 
-try-recipe get-builder ... |
-  try-recipe edit -d os=Linux -p something=[100] |
-  try-recipe launch
+led get-builder ... |
+  led edit -d os=Linux -p something=[100] |
+  led launch
 `,
 
 		CommandRun: func() subcommands.CommandRun {

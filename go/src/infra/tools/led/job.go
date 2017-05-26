@@ -77,7 +77,7 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 			}
 			st.Properties.InputsRef.Isolated = isoHash
 			// TODO(iannucci): add recipe_repository swarming tag
-			// `try-recipe isolate` should be able to capture this and embed in the
+			// `led isolate` should be able to capture this and embed in the
 			// JobDefinition.
 		} else if u.RecipeProdSource != nil {
 			args.RepositoryURL = u.RecipeProdSource.RepositoryURL
@@ -173,7 +173,7 @@ func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarm
 	return
 }
 
-// JobDefinition defines a 'try-recipe' job. It's like a normal Swarming
+// JobDefinition defines a 'led' job. It's like a normal Swarming
 // NewTaskRequest, but with some recipe-specific extras.
 //
 // In particular, the RecipeIsolatedHash will be combined with the task's
@@ -471,7 +471,7 @@ func (ejd *EditJobDefinition) CipdPkgs(cipdPkgs map[string]string) {
 }
 
 // SwarmingHostname allows you to modify the current SwarmingHostname used by this
-// try-recipe pipeline. Note that the isolated server is derived from this, so
+// led pipeline. Note that the isolated server is derived from this, so
 // if you're editing this value, do so before passing the JobDefinition through
 // the `isolate` subcommand.
 func (ejd *EditJobDefinition) SwarmingHostname(host string) {
@@ -538,7 +538,7 @@ func generateLogdogStream(ctx context.Context, uid string) (prefix logdog_types.
 	if _, err := cryptorand.Read(ctx, buf); err != nil {
 		return "", errors.Annotate(err).Reason("generating random token").Err()
 	}
-	return logdog_types.MakeStreamName("", "try-recipe", uid, hex.EncodeToString(buf))
+	return logdog_types.MakeStreamName("", "led", uid, hex.EncodeToString(buf))
 }
 
 // GetSwarmingNewTask builds a usable SwarmingRpcsNewTaskRequest from the

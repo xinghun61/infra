@@ -21,29 +21,33 @@ import (
 	"github.com/luci/luci-go/common/logging"
 )
 
-func isolateCmd(authOpts auth.Options) *subcommands.Command {
+func editRecipeBundleCmd(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
-		UsageLine: "isolate [-O project_id=/path/to/local/repo]*",
-		ShortDesc: "adds isolated recipes to a JobDefinition",
+		UsageLine: "edit-recipe-bundle [-O project_id=/path/to/local/repo]*",
+		ShortDesc: "isolates recipes and adds them to a JobDefinition",
 		LongDesc: `Takes recipes from the current repo (based on cwd), along with
 any supplied overrides, and pushes them to the isolate service. The isolated
-hash for the recipes will be added to the JobDefinition.`,
+hash for the recipes will be added to the JobDefinition.
+
+Isolating recipes takes a bit of time, so you may want to save the result
+of this command (stdout) to an intermediate file for quick edits.
+`,
 
 		CommandRun: func() subcommands.CommandRun {
-			ret := &cmdIsolate{}
+			ret := &cmdEditRecipeBundle{}
 			ret.logCfg.Level = logging.Info
 
 			ret.logCfg.AddFlags(&ret.Flags)
 			ret.authFlags.Register(&ret.Flags, authOpts)
 
 			ret.Flags.Var(&ret.overrides, "O",
-				"override a repo dependency. Must be in the form of project_id=/path/to/local/repo. May be specified multiple times.")
+				"(repeatable) override a repo dependency. Takes a parameter of `project_id=/path/to/local/repo`.")
 			return ret
 		},
 	}
 }
 
-type cmdIsolate struct {
+type cmdEditRecipeBundle struct {
 	subcommands.CommandRunBase
 
 	logCfg    logging.Config
@@ -52,7 +56,7 @@ type cmdIsolate struct {
 	overrides stringmapflag.Value
 }
 
-func (c *cmdIsolate) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
+func (c *cmdEditRecipeBundle) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
 	if len(args) > 0 {
 		err = errors.Reason("unexpected positional arguments: %(args)q").D("args", args).Err()
 		return
@@ -88,7 +92,7 @@ func (c *cmdIsolate) validateFlags(ctx context.Context, args []string) (authOpts
 	return c.authFlags.Options()
 }
 
-func (c *cmdIsolate) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+func (c *cmdEditRecipeBundle) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 	authOpts, err := c.validateFlags(ctx, args)
 	if err != nil {

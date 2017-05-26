@@ -44,32 +44,47 @@ func main() {
 	authDefaults := chromeinfra.DefaultAuthOptions()
 
 	var application = cli.Application{
-		Name: "try-recipe",
-		Title: `Launches recipes into the cloud.
+		Name: "led",
+		Title: `'LUCI editor' - Multi-service LUCI job debugging tool.
 
-Allows local modifications to tasks to be launched directly in swarming. This is
-meant to aid in debugging and development for recipes on swarming.
+Allows local modifications to LUCI jobs to be launched directly in swarming.
+This is meant to aid in debugging and development for the interaction of
+multiple LUCI services:
+  * buildbucket
+  * swarming
+  * isolate
+  * recipes
+  * logdog
+  * milo
 
 This command is meant to be used multiple times in a pipeline. The flow is
 generally:
 
-  get | isolate? | edit? | launch
+  get | edit* | launch
 
-Where the isolate and edit steps are optional. The output of the commands on
-stdout is a JobDefinition JSON document, and the input to the commands is this
-same JobDefinition JSON document. At any stage in the pipeline, you may,
-of course, hand-edit the JobDefinition.
+Where the edit step(s) are optional. The output of the commands on stdout is
+a JobDefinition JSON document, and the input to the commands is this same
+JobDefinition JSON document. At any stage in the pipeline, you may, of course,
+hand-edit the JobDefinition.
 
 Example:
-  try-recipe get-builder bucket_name:builder_name | \
-    try-recipe edit -env CHROME_HEADLESS=1 | \
-    try-recipe isolate -O recipe_engine=/path/to/recipe_engine | \
-    try-recipe launch
+  led get-builder bucket_name:builder_name | \
+    led edit-recipe-bundle -O recipe_engine=/local/recipe_engine > job.json
+  # edit job.json by hand to inspect
+  led edit -env CHROME_HEADLESS=1 < job.json | \
+    led launch
 
-This would pull the recipe job from the named swarming task, set the
-$CHROME_HEADLESS environment variable to 1, isolate the recipes from the
-current working directory (overriding the recipe engine to the one indicated
-by -O), and then launch the modified task on swarming.`,
+This would pull the recipe job from the named swarming task, then isolate the
+recipes from the current working directory (with an override for the
+recipe_engine), and inject the isolate hash into the job, saving the result to
+job.json. The user thens inspects job.json to look at the full set of flags and
+features. After inspecting/editing the job, the user pipes it back through the
+edit subcommand to set the swarming envvar $CHROME_HEADLESS=1, and then launches
+the edited task back to swarming.
+
+The source for led lives at:
+  https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/tools/led
+`,
 
 		Context: func(ctx context.Context) context.Context {
 			goLoggerCfg := gologger.LoggerConfig{Out: os.Stderr}
@@ -88,12 +103,10 @@ by -O), and then launch the modified task on swarming.`,
 			// TODO(iannucci): `get-buildbot` to emulate/scrape from a buildbot
 			getBuilderCmd(authDefaults),
 
-			// commands to isolate recipes.
-			isolateCmd(authDefaults),
-
 			// commands to edit JobDescriptions.
 			editCmd(),
 			editSystemCmd(),
+			editRecipeBundleCmd(authDefaults),
 
 			// commands to launch swarming tasks.
 			launchCmd(authDefaults),

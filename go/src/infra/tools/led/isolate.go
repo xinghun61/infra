@@ -73,7 +73,7 @@ func findRecipesPy(ctx context.Context) (string, error) {
 }
 
 func prepBundle(ctx context.Context, recipesPy, subdir string, overrides map[string]string) (string, error) {
-	retDir, err := ioutil.TempDir("", "try-recipe-bundle")
+	retDir, err := ioutil.TempDir("", "luci-editor-bundle")
 	if err != nil {
 		return "", errors.Annotate(err).Reason("generating bundle tempdir").Err()
 	}
