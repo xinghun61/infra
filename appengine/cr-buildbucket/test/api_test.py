@@ -57,8 +57,6 @@ class ApiTests(object):
     self.assertIsNotNone(res.get('error'))
     self.assertEqual(res['error']['reason'], error_reason)
 
-  ####### GET ##################################################################
-
   @mock.patch('service.get', autospec=True)
   def test_get(self, get):
     self.test_build.lease_expiration_date = self.future_date

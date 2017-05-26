@@ -19,6 +19,7 @@ import acl
 import api_common
 import config
 import errors
+import events
 import model
 import service
 import swarming
@@ -80,6 +81,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
           }]
         }
     )
+
+    self.patch(
+        'google.appengine.api.app_identity.get_default_version_hostname',
+        autospec=True,
+        return_value='buildbucket.example.com')
+
+    self.patch(
+        'events.enqueue_tasks_async', autospec=True, return_value=future(None))
 
   def mock_cannot(self, action, bucket=None):
     def can_async(requested_bucket, requested_action, _identity=None):
@@ -1112,30 +1121,43 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def callback_test(self):
     self.test_build.key = ndb.Key(model.Build, 1)
     self.test_build.pubsub_callback = model.PubSubCallback(
-        topic='projects/example/topic/buildbucket',
+        topic='projects/example/topics/buildbucket',
         user_data='hello',
         auth_token='secret',
     )
     self.test_build.put()
-    with mock.patch(
-        'events.enqueue_task_async', autospec=True) as enq:
-      yield
-      test_build = self.test_build.key.get()
-      enq.assert_called_with(
-          'backend-default',
-          '/internal/task/buildbucket/notify/1',
-          json.dumps({
-            'topic': 'projects/example/topic/buildbucket',
-            'message': {
-              'build': api_common.build_to_dict(test_build),
-              'user_data': 'hello',
-            },
-            'attrs': {
-              'build_id': '1',
-              'auth_token': 'secret',
-            },
-          }, sort_keys=True),
-          model.BUILD_TIMEOUT.total_seconds())
+    yield
+    test_build = self.test_build.key.get()
+    events.enqueue_tasks_async.assert_called_with('backend-default', [
+      {
+        'url': '/internal/task/buildbucket/notify/1',
+        'payload': json.dumps({
+          'topic': 'projects/testbed-test/topics/builds',
+          'message': {
+            'build': api_common.build_to_dict(test_build),
+            'hostname': 'buildbucket.example.com',
+          },
+          'attrs': {'build_id': '1'},
+        }, sort_keys=True),
+        'age_limit_sec': model.BUILD_TIMEOUT.total_seconds(),
+      },
+      {
+        'url': '/internal/task/buildbucket/notify/1',
+        'payload': json.dumps({
+          'topic': 'projects/example/topics/buildbucket',
+          'message': {
+            'build': api_common.build_to_dict(test_build),
+            'hostname': 'buildbucket.example.com',
+            'user_data': 'hello',
+          },
+          'attrs': {
+            'build_id': '1',
+            'auth_token': 'secret',
+          },
+        }, sort_keys=True),
+        'age_limit_sec': model.BUILD_TIMEOUT.total_seconds(),
+      },
+    ])
 
   def test_start_creates_notification_task(self):
     self.lease()

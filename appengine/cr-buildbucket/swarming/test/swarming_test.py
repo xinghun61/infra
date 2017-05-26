@@ -32,13 +32,22 @@ LINUX_CHROMIUM_REL_NG_CACHE_NAME = (
     'builder_9f9e01191b0c88fe68abef460d9d68df2125dbadc27c772d84db46d39fd5171c')
 
 
-class SwarmingTest(testing.AppengineTestCase):
+class BaseTest(testing.AppengineTestCase):
   def setUp(self):
-    super(SwarmingTest, self).setUp()
+    super(BaseTest, self).setUp()
+
+    self.patch(
+        'events.enqueue_tasks_async', autospec=True, return_value=future(None))
+
     self.now = datetime.datetime(2015, 11, 30)
     self.patch(
         'components.utils.utcnow', autospec=True,
-        return_value=self.now)
+        side_effect=lambda: self.now)
+
+
+class SwarmingTest(BaseTest):
+  def setUp(self):
+    super(SwarmingTest, self).setUp()
 
     self.json_response = None
     def json_request_async(*_, **__):
@@ -894,11 +903,9 @@ class SwarmingTest(testing.AppengineTestCase):
         self.assertEqual(build.start_time, self.now)
 
 
-class SubNotifyTest(testing.AppengineTestCase):
+class SubNotifyTest(BaseTest):
   def setUp(self):
     super(SubNotifyTest, self).setUp()
-    self.patch(
-        'components.utils.utcnow', return_value=datetime.datetime(2015, 11, 30))
     self.handler = swarming.SubNotify(response=webapp2.Response())
 
   def test_unpack_msg(self):
@@ -1130,25 +1137,26 @@ class SubNotifyTest(testing.AppengineTestCase):
     self.assertTrue(self.handler.bad_message)
 
 
-class CronUpdateTest(testing.AppengineTestCase):
+class CronUpdateTest(BaseTest):
   def setUp(self):
     super(CronUpdateTest, self).setUp()
     self.build = model.Build(
-      id=1,
-      bucket='bucket',
-      create_time=datetime.datetime(2017, 1, 1),
-      start_time=datetime.datetime(2017, 1, 1),
-      parameters={
-        'builder_name': 'release',
-      },
-      swarming_hostname='chromium-swarm.appsot.com',
-      swarming_task_id='deadeef',
-      status=model.BuildStatus.STARTED,
-      lease_key=123,
-      lease_expiration_date=utils.utcnow() + datetime.timedelta(minutes=5),
-      leasee=auth.Anonymous,
+        id=1,
+        bucket='bucket',
+        create_time=self.now,
+        start_time=self.now + datetime.timedelta(seconds=1),
+        parameters={
+            'builder_name': 'release',
+        },
+        swarming_hostname='chromium-swarm.appsot.com',
+        swarming_task_id='deadeef',
+        status=model.BuildStatus.STARTED,
+        lease_key=123,
+        lease_expiration_date=self.now + datetime.timedelta(minutes=5),
+        leasee=auth.Anonymous,
     )
     self.build.put()
+    self.now += datetime.timedelta(minutes=5)
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_update_build_async(self, load_task_result_async):

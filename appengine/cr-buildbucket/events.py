@@ -12,6 +12,7 @@ successfully.
 import json
 import logging
 
+from google.appengine.api import app_identity
 from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 import webapp2
@@ -28,39 +29,54 @@ import metrics
 # they are called from other modules.
 
 # Mocked in tests.
-def enqueue_task_async(
-    queue, url, payload, task_age_limit_sec):  # pragma: no cover
-  task = taskqueue.Task(
-      url=url,
-      payload=payload,
-      retry_options=taskqueue.TaskRetryOptions(
-          task_age_limit=task_age_limit_sec))
-  return taskqueue.Queue(queue).add_async(task, transactional=True)
-
-
 @ndb.tasklet
-def _enqueue_callback_task_if_needed_async(build):
+def enqueue_tasks_async(queue, task_defs):  # pragma: no cover
+  tasks = [
+    taskqueue.Task(
+        url=t['url'],
+        payload=t['payload'],
+        retry_options=taskqueue.TaskRetryOptions(
+            task_age_limit=t['age_limit_sec']))
+    for t in task_defs
+  ]
+  # Cannot just return the return value of add_async because it is
+  # a non-Future object and does not play nice with `yield fut1, fut2` construct
+  yield taskqueue.Queue(queue).add_async(tasks, transactional=True)
+
+
+def _enqueue_pubsub_notifications_async(build):
   assert ndb.in_transaction()
   assert build
-  if not build.pubsub_callback:  # pragma: no cover
-    return
 
-  payload = json.dumps({
-    'topic': build.pubsub_callback.topic,
-    'message': {
-      'build': api_common.build_to_dict(build),
-      'user_data': build.pubsub_callback.user_data,
-    },
-    'attrs': {
-      'build_id': str(build.key.id()),
-      'auth_token': build.pubsub_callback.auth_token,
-    },
-  }, sort_keys=True)
-  return enqueue_task_async(
-      'backend-default',
-      '/internal/task/buildbucket/notify/%d' % build.key.id(),
-      payload,
-      model.BUILD_TIMEOUT.total_seconds())
+  build_dict = api_common.build_to_dict(build)
+  task_defs = []
+
+  def prep_task(topic, message=None, attrs=None):
+    message = message or {}
+    message.update(
+        build=build_dict, hostname=app_identity.get_default_version_hostname())
+    attrs = attrs or {}
+    attrs.update(build_id=str(build.key.id()))
+    payload = {
+      'topic': topic,
+      'message': message,
+      'attrs': attrs,
+    }
+    task_defs.append({
+      'url': '/internal/task/buildbucket/notify/%d' % build.key.id(),
+      'payload': json.dumps(payload, sort_keys=True),
+      'age_limit_sec': model.BUILD_TIMEOUT.total_seconds(),
+    })
+
+  prep_task('projects/%s/topics/builds' % app_identity.get_application_id())
+
+  if build.pubsub_callback:  # pragma: no branch
+    prep_task(
+        topic=build.pubsub_callback.topic,
+        message={'user_data': build.pubsub_callback.user_data},
+        attrs={'auth_token': build.pubsub_callback.auth_token})
+
+  return enqueue_tasks_async('backend-default', task_defs)
 
 
 def on_build_created(build):  # pragma: no cover
@@ -72,7 +88,7 @@ def on_build_created(build):  # pragma: no cover
 
 
 def on_build_starting_async(build):  # pragma: no cover
-  return _enqueue_callback_task_if_needed_async(build)
+  return _enqueue_pubsub_notifications_async(build)
 
 
 def on_build_started(build):  # pragma: no cover
@@ -82,7 +98,7 @@ def on_build_started(build):  # pragma: no cover
 
 
 def on_build_completing_async(build):  # pragma: no cover
-  return _enqueue_callback_task_if_needed_async(build)
+  return _enqueue_pubsub_notifications_async(build)
 
 
 def on_build_completed(build):  # pragma: no cover
@@ -117,7 +133,7 @@ def on_expired_build_reset(build):  # pragma: no cover
 
 
 def on_build_resetting_async(build):  # pragma: no cover
-  return _enqueue_callback_task_if_needed_async(build)
+  return _enqueue_pubsub_notifications_async(build)
 
 
 def on_build_reset(build):  # pragma: no cover
