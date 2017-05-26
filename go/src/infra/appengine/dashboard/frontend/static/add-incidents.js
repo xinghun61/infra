@@ -26,15 +26,34 @@
   const RIGHT_BORDER_LIMIT_PCNT = 100;
 
   // TODO(jojwang): Make pageData object follow js naming guidelines.
+
+  function filterIncidents(incidents, firstDate) {
+    let toDisplay = [];
+    incidents.forEach(incident => {
+      let cutOffDate = new Date(firstDate);
+      // cutOffDate's hours are zeroed so incidents that occurred
+      // in all hours of the first day are kept.
+      cutOffDate.setHours(0, 0, 0, 0);
+      if (incident['Open']) {
+	toDisplay.push(incident);
+      }
+      else if (new Date(incident['EndTime']) >= cutOffDate) {
+	toDisplay.push(incident);
+      }
+    });
+    return toDisplay;
+  }
+
   function addIncidents(pageData) {
     let dateStrings = pageData['Dates'].map((date) => {return fmtDate(date);});
+    let firstDate = pageData['Dates'][0];
     if (pageData['ChopsServices']) {
       setHeaderDates(document.querySelectorAll('.js-date'), dateStrings);
-      renderIncidents(pageData['ChopsServices'], dateStrings);
+      renderIncidents(pageData['ChopsServices'], dateStrings, firstDate);
     }
     if (pageData['NonSLAServices']) {
       setHeaderDates(document.querySelectorAll('.js-date-nonsla'), dateStrings);
-      renderIncidents(pageData['NonSLAServices'], dateStrings);
+      renderIncidents(pageData['NonSLAServices'], dateStrings, firstDate);
     }
   }
 
@@ -44,11 +63,12 @@
     });
   }
 
-  function renderIncidents(services, dateStrings) {
+  function renderIncidents(services, dateStrings, firstDate) {
     services.forEach((service) => {
       let serviceName = service['Service']['Name'];
       let noIssues = true;
-      service['Incidents'].forEach((incident) => {
+      let incidents = filterIncidents(service['Incidents'], firstDate);
+      incidents.forEach((incident) => {
 	if (incident['Open']) {
 	  noIssues = false;
 	  let statusCell = document.querySelector('.js-' + serviceName);
@@ -87,7 +107,7 @@
   function addIncident(incident, dateStrings) {
     let startPosition = getDatePosition(incident['StartTime'], dateStrings);
     let leftEndIcon;
-    if (!startPosition) {
+    if (startPosition === undefined) {
       startPosition = 0;
       leftEndIcon = createIcon(incident['Severity'], IconClass.CENTER);
     } else {
@@ -96,10 +116,13 @@
 
     let endPosition = getDatePosition(incident['EndTime'], dateStrings);
     let rightEndIcon;
-    if (!endPosition) {
+    if (endPosition === undefined) {
       endPosition = RIGHT_BORDER_LIMIT_PCNT;
       rightEndIcon = createIcon(incident['Severity'], IconClass.CENTER);
     } else {
+      // An incident that ends within the first hour of the first day
+      // on the dashboard should still be shown.
+      if (endPosition === 0) { endPosition = 1; }
       rightEndIcon = createIcon(incident['Severity'], IconClass.RIGHT);
     }
 

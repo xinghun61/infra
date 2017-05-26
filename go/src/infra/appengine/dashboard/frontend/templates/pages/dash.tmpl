@@ -126,10 +126,8 @@
           {{end}}
           <tr class="table-footer subtext">
             <td colspan="8" class="center-align">
-              <span><a href="?upto={{$older}}">Older</a></span>
-              {{if $newer}}
-                <span><a href="?upto={{$newer}}">Newer</a></span>
-              {{end}}
+              <span class="js-older-link"></span>
+              <span class="js-newer-link"></span>
             </td>
           </tr>
         </table>
@@ -155,10 +153,8 @@
           {{end}}
           <tr class="table-footer subtext">
             <td colspan="8" class="center-align">
-              <span><a href="?upto={{$older}}">Older</a></span>
-              {{if $newer}}
-                <span><a href="?upto={{$newer}}">Newer</a></span>
-              {{end}}
+              <span class="js-older-link"></span>
+              <span class="js-newer-link"></span>
             </td>
           </tr>
         </table>
@@ -171,6 +167,7 @@
 </div>
 <script src="/static/add-incidents.js"></script>
 <script src="/static/tree-status.js"></script>
+<script src="/static/add-nav.js"></script>
 <script>
   (function() {
     const RELOAD_TIME_INC = 60 * 1000;
@@ -178,6 +175,7 @@
     let status = new window.__StatusFetcher();
     status.fetch();
     window.__addIncidents({{.}});
+    window.__addPrevNext({{.LastDate}});
     let countdown = function(lastRefresh) {
       if (lastRefresh === RELOAD_TIME_MIN) {
         window.location.reload();

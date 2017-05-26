@@ -95,14 +95,6 @@ func createServicesPageData(c context.Context, after time.Time, before time.Time
 
 }
 
-// dateEqual should be used to check if two time.Times occur within the same day.
-// Using Time.Equal has too granular of equality.
-func dateEqual(date1, date2 time.Time) bool {
-	y1, m1, d1 := date1.Date()
-	y2, m2, d2 := date2.Date()
-	return y1 == y2 && m1 == m2 && d1 == d2
-}
-
 func dashboard(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 	err := r.ParseForm()
@@ -113,7 +105,6 @@ func dashboard(ctx *router.Context) {
 	}
 	upto := r.Form.Get("upto")
 	lastDate := time.Now()
-	var newerDate int64
 	if upto != "" {
 		unixInt, err := strconv.ParseInt(upto, 10, 64)
 		if err != nil {
@@ -123,10 +114,7 @@ func dashboard(ctx *router.Context) {
 			return
 		}
 		dateFromParams := time.Unix(unixInt, 0)
-		if !dateEqual(lastDate, dateFromParams) {
-			lastDate = dateFromParams
-			newerDate = lastDate.AddDate(0, 0, 7).Unix()
-		}
+		lastDate = dateFromParams
 	}
 
 	dates := []time.Time{}
@@ -134,7 +122,12 @@ func dashboard(ctx *router.Context) {
 		dates = append(dates, lastDate.AddDate(0, 0, -i))
 	}
 
-	sla, nonSLA, err := createServicesPageData(c, dates[0], lastDate)
+	// Lower limit of date span is pushed back for timezones that are behind
+	// UTC and may have a current time that is still one calendar day behind the UTC
+	// day. Incidents from the query that are too far back are filtered out
+	// in the front end when all Dates are local.
+	firstDateCushion := dates[0].AddDate(0, 0, -1)
+	sla, nonSLA, err := createServicesPageData(c, firstDateCushion, lastDate)
 	if err != nil {
 		http.Error(w, "failed to create Services page data, see logs",
 			http.StatusInternalServerError)
@@ -145,7 +138,6 @@ func dashboard(ctx *router.Context) {
 		"ChopsServices":  sla,
 		"NonSLAServices": nonSLA,
 		"Dates":          dates,
-		"OlderDate":      dates[0].AddDate(0, 0, -1).Unix(),
-		"NewerDate":      newerDate,
+		"LastDate":       dates[6],
 	})
 }
