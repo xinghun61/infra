@@ -1,0 +1,15 @@
+package: infra/tools/luci/led/${platform}
+description: LUCI Editor (led) lets you read+modify+launch swarming tasks.
+builders:
+  - infra-continuous-mac-10.9-64
+  - infra-continuous-precise-32
+  - infra-continuous-precise-64
+  - infra-continuous-win-32
+  - infra-continuous-win-64
+supports_cross_compilation: true
+go_packages:
+  - infra/tools/led
+root: ../../go/bin
+data:
+  - file: led${exe_suffix}
+  - version_file: .versions/led${exe_suffix}.cipd_version
