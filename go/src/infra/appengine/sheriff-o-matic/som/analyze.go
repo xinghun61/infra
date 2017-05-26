@@ -28,6 +28,12 @@ var (
 		field.String("tree"))
 )
 
+var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg string) {
+	logging.Errorf(c, "Status %d msg %s", status, msg)
+	w.WriteHeader(status)
+	w.Write([]byte(msg))
+}
+
 type bySeverity []messages.Alert
 
 func (a bySeverity) Len() int      { return len(a) }
@@ -36,7 +42,9 @@ func (a bySeverity) Less(i, j int) bool {
 	return a[i].Severity < a[j].Severity
 }
 
-func getAnalyzeHandler(ctx *router.Context) {
+// GetAnalyzeHandler enqueues a request to run an analysis on a particular tree.
+// This is usually hit by appengine cron rather than manually.
+func GetAnalyzeHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	tree := p.ByName("tree")
@@ -178,7 +186,9 @@ func getMiloDiffs(c context.Context, tree string) (*dmp.DiffMatchPatch, []dmp.Di
 	return differ, diffs, nil
 }
 
-func getMiloDiffHandler(ctx *router.Context) {
+// GetMiloDiffHandler will render an html pretty-printed diff of the alert sets
+// for a given tree, created by alerts dispatcher and GetAnalyzeHandler, respectively.
+func GetMiloDiffHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	tree := p.ByName("tree")

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"infra/monorail"
@@ -24,9 +25,14 @@ import (
 	"github.com/luci/luci-go/server/router"
 )
 
+const (
+	bugQueueCacheFormat = "bugqueue-%s"
+)
+
 var (
 	bugQueueLength = metric.NewInt("bug_queue_length", "Number of bugs in queue.",
 		nil, field.String("label"))
+	monorailEndpoint = "https://monorail-prod.appspot.com/_ah/api/monorail/v1/"
 )
 
 // A bit of a hack to let us mock getBugsFromMonorail.
@@ -64,7 +70,23 @@ var getBugsFromMonorail = func(c context.Context, q string,
 	return res, nil
 }
 
-func getBugQueueHandler(ctx *router.Context) {
+// Switches chromium.org emails for google.com emails and vice versa.
+// Note that chromium.org emails may be different from google.com emails.
+func getAlternateEmail(email string) string {
+	s := strings.Split(email, "@")
+	if len(s) != 2 {
+		return email
+	}
+
+	user, domain := s[0], s[1]
+	if domain == "chromium.org" {
+		return fmt.Sprintf("%s@google.com", user)
+	}
+	return fmt.Sprintf("%s@chromium.org", user)
+}
+
+// GetBugQueueHandler returns a set of bugs for the current user and tree.
+func GetBugQueueHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	label := p.ByName("label")
@@ -88,7 +110,8 @@ func getBugQueueHandler(ctx *router.Context) {
 	w.Write(result)
 }
 
-func getUncachedBugsHandler(ctx *router.Context) {
+// GetUncachedBugsHandler bypasses the cache to return the bug queue for current user and tree.
+func GetUncachedBugsHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	label := p.ByName("label")
@@ -141,7 +164,8 @@ func refreshBugQueue(c context.Context, label string) (memcache.Item, error) {
 	return item, nil
 }
 
-func refreshBugQueueHandler(ctx *router.Context) {
+// RefreshBugQueueHandler updates the cached bug queue for current tree.
+func RefreshBugQueueHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 	label := p.ByName("label")
 	item, err := refreshBugQueue(c, label)

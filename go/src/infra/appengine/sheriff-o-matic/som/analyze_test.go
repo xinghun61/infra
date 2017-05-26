@@ -165,7 +165,7 @@ func TestGetAnalyzeHandler(t *testing.T) {
 			Request: makeGetRequest(),
 			Params:  makeParams("tree", "unknown.tree"),
 		}
-		getAnalyzeHandler(ctx)
+		GetAnalyzeHandler(ctx)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
 	})
@@ -191,7 +191,7 @@ func TestGetAnalyzeHandler(t *testing.T) {
 			Request: makeGetRequest(),
 			Params:  makeParams("tree", "chromium"),
 		}
-		getAnalyzeHandler(ctx)
+		GetAnalyzeHandler(ctx)
 
 		So(w.Code, ShouldEqual, http.StatusOK)
 	})
@@ -217,7 +217,7 @@ func TestGetAnalyzeHandler(t *testing.T) {
 			Request: makeGetRequest(),
 			Params:  makeParams("tree", "chromium"),
 		}
-		getAnalyzeHandler(ctx)
+		GetAnalyzeHandler(ctx)
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
 	})
@@ -258,7 +258,7 @@ func TestGetMiloDiffHandler(t *testing.T) {
 				Request: makeGetRequest(),
 				Params:  makeParams("tree", "unknown.tree"),
 			}
-			getMiloDiffHandler(ctx)
+			GetMiloDiffHandler(ctx)
 
 			So(w.Code, ShouldEqual, http.StatusNotFound)
 		})
@@ -310,7 +310,7 @@ func TestGetMiloDiffHandler(t *testing.T) {
 			alertsJSON, err = getAlertsForTree(c, "chromium")
 			So(err, ShouldBeNil)
 
-			getMiloDiffHandler(ctx)
+			GetMiloDiffHandler(ctx)
 			So(w.Code, ShouldEqual, http.StatusOK)
 		})
 
@@ -332,7 +332,7 @@ func TestGetMiloDiffHandler(t *testing.T) {
 				Request: makeGetRequest(),
 				Params:  makeParams("tree", "chromium"),
 			}
-			getMiloDiffHandler(ctx)
+			GetMiloDiffHandler(ctx)
 
 			So(w.Code, ShouldEqual, http.StatusInternalServerError)
 		})

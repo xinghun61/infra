@@ -41,7 +41,7 @@ func TestGetLayoutTestsHandler(t *testing.T) {
 		}
 
 		Convey("load all, error", func() {
-			getLayoutTestsHandler(ctx)
+			GetLayoutTestsHandler(ctx)
 
 			So(w.Code, ShouldEqual, http.StatusInternalServerError)
 		})
@@ -50,7 +50,7 @@ func TestGetLayoutTestsHandler(t *testing.T) {
 			for _, path := range te.LayoutTestExpectations {
 				gt.Responses[gitilesPrefix+path+"?format=TEXT"] = `unused`
 			}
-			getLayoutTestsHandler(ctx)
+			GetLayoutTestsHandler(ctx)
 
 			So(w.Code, ShouldEqual, http.StatusOK)
 		})

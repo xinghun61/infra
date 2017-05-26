@@ -26,6 +26,8 @@ import (
 const (
 	// Maximum number of alerts to autoresolve at once to datastore to avoid exceedding datasize limits.
 	maxAlertsAutoResolveCount = 100
+	// RevisionSummaryJSONs this recent will be returned
+	recentRevisions = time.Hour * 24 * 7
 )
 
 var (
@@ -35,7 +37,8 @@ var (
 	ErrUnrecognizedTree = fmt.Errorf("Unrecognized tree name")
 )
 
-func getAlertsHandler(ctx *router.Context) {
+// GetAlertsHandler handles API requests for alerts.
+func GetAlertsHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	tree := p.ByName("tree")
@@ -118,7 +121,8 @@ func getAlertsHandler(ctx *router.Context) {
 	w.Write(data)
 }
 
-func postAlertsHandler(ctx *router.Context) {
+// PostAlertsHandler handes alert writes sent by an alerts dispatcher instance.
+func PostAlertsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
 	tree := p.ByName("tree")
@@ -248,7 +252,9 @@ func putAlertsDatastore(c context.Context, tree string, alertsSummary *messages.
 	return datastore.Put(c, revisionSummaryJSONs)
 }
 
-func postAlertHandler(ctx *router.Context) {
+// PostAlertHandler writes a single Alert based on a given client-provided key.
+// This is currently used by CrOS, but not any other clients.
+func PostAlertHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
 	tree := p.ByName("tree")
@@ -301,7 +307,8 @@ func postAlertHandler(ctx *router.Context) {
 	}
 }
 
-func resolveAlertHandler(ctx *router.Context) {
+// ResolveAlertHandler updates the Resolved status of an alert.
+func ResolveAlertHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
 	tree := p.ByName("tree")
@@ -374,7 +381,8 @@ func resolveAlertHandler(ctx *router.Context) {
 	w.Write(resp)
 }
 
-func getRestartingMastersHandler(ctx *router.Context) {
+// GetRestartingMastersHandler returns any pending master restarts for a given tree.
+func GetRestartingMastersHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	tree := p.ByName("tree")

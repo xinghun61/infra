@@ -14,15 +14,18 @@ import (
 	"github.com/luci/luci-go/server/settings"
 )
 
-type settingsUIPage struct {
+// SettingsUIPage is the SoM admin settings page.
+type SettingsUIPage struct {
 	settings.BaseUIPage
 }
 
-func (settingsUIPage) Title(c context.Context) (string, error) {
+// Title returns the settings page title.
+func (SettingsUIPage) Title(c context.Context) (string, error) {
 	return "Admin SOM settings", nil
 }
 
-func (settingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
+// Fields returns a list of settings fields.
+func (SettingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
 	fields := []settings.UIField{
 		{
 			ID:    "Trees",
@@ -73,7 +76,8 @@ func (settingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
 	return fields, nil
 }
 
-func (settingsUIPage) ReadSettings(c context.Context) (map[string]string, error) {
+// ReadSettings converts query paramters and POST body into settings values.
+func (SettingsUIPage) ReadSettings(c context.Context) (map[string]string, error) {
 	q := datastore.NewQuery("Tree")
 	results := []*Tree{}
 	datastore.GetAll(c, q, &results)
@@ -215,7 +219,8 @@ func writeAllValues(c context.Context, values map[string]string) error {
 	return nil
 }
 
-func (settingsUIPage) WriteSettings(c context.Context, values map[string]string, who, why string) error {
+// WriteSettings persists the settings values.
+func (SettingsUIPage) WriteSettings(c context.Context, values map[string]string, who, why string) error {
 	// Putting the write logic in a function outside of WriteSettings makes unit testing easier.
 	return writeAllValues(c, values)
 }

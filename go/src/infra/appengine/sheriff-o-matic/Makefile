@@ -8,26 +8,19 @@ help:
 	@echo "Available commands:"
 	@sed -n '/^[a-zA-Z0-9_]*:/s/:.*//p' <Makefile
 
-deps:
-	bower install
-	npm install
+build:
+	cd frontend && make build
+
+clean:
+	cd frontend && make clean
 
 format:
 	gofmt -s -w .
-	clang-format -i elements/**/*.js -style=file
+	cd frontend && make format
 
-lint:
-	polylint -i elements/som-app/som-app.html
-
-build: deps
-	$(VULCANIZE_PATH) elements/som-app/som-app.html -o elements/som-app/som-app.vulcanized.html --inline-scripts
-
-clean:
-	rm elements/som-app/som-app.vulcanized.html
-
-test: deps
+test: build
 	cd som && go test --cover
-	xvfb-run -a $(WCT_PATH)
+	cd frontend && make test
 
 relnotes:
 	go run ../../tools/relnotes/relnotes.go -app sheriff-o-matic . ../../monitoring/analyzer ../../monitoring/client ../../monitoring/messages
@@ -40,8 +33,8 @@ bower-cipd: deps
 # In the future we can add different commends for prod and staging.
 deploy-prod: build
 	./gae.py upload -A sheriff-o-matic
-	rm elements/som-app/som-app.vulcanized.html
+	rm frontend/elements/som-app/som-app.vulcanized.html
 
 deploy: build
 	./gae.py upload
-	rm elements/som-app/som-app.vulcanized.html
+	rm frontend/elements/som-app/som-app.vulcanized.html

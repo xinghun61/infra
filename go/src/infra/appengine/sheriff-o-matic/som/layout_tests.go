@@ -29,7 +29,9 @@ func (a byTestName) Len() int           { return len(a) }
 func (a byTestName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byTestName) Less(i, j int) bool { return a[i].TestName < a[j].TestName }
 
-func getLayoutTestsHandler(ctx *router.Context) {
+// GetLayoutTestsHandler returns a JSON summary of webkit layout tests and
+// their expected results.
+func GetLayoutTestsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 	c, cancelFunc := context.WithTimeout(c, 60*time.Second)
 	defer cancelFunc()

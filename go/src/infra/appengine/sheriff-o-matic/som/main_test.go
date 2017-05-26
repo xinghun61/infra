@@ -32,7 +32,6 @@ import (
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/clock/testclock"
 	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/authtest"
 	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
@@ -56,72 +55,6 @@ func TestMain(t *testing.T) {
 
 		tok, err := xsrf.Token(c)
 		So(err, ShouldBeNil)
-
-		Convey("index", func() {
-			Convey("pathless", func() {
-				indexPage(&router.Context{
-					Context: c,
-					Writer:  w,
-					Request: makeGetRequest(),
-					Params:  makeParams("path", ""),
-				})
-
-				So(w.Code, ShouldEqual, 302)
-			})
-
-			Convey("anonymous", func() {
-				indexPage(&router.Context{
-					Context: c,
-					Writer:  w,
-					Request: makeGetRequest(),
-					Params:  makeParams("path", "chromium"),
-				})
-
-				r, err := ioutil.ReadAll(w.Body)
-				So(err, ShouldBeNil)
-				body := string(r)
-				So(w.Code, ShouldEqual, 500)
-				So(body, ShouldNotContainSubstring, "som-app")
-				So(body, ShouldContainSubstring, "login")
-			})
-
-			authState := &authtest.FakeState{
-				Identity: "user:user@example.com",
-			}
-			c = auth.WithState(c, authState)
-
-			Convey("No access", func() {
-				indexPage(&router.Context{
-					Context: c,
-					Writer:  w,
-					Request: makeGetRequest(),
-					Params:  makeParams("path", "chromium"),
-				})
-
-				So(w.Code, ShouldEqual, 200)
-				r, err := ioutil.ReadAll(w.Body)
-				So(err, ShouldBeNil)
-				body := string(r)
-				So(body, ShouldNotContainSubstring, "som-app")
-				So(body, ShouldContainSubstring, "Access denied")
-			})
-			authState.IdentityGroups = []string{authGroup}
-
-			Convey("good path", func() {
-				indexPage(&router.Context{
-					Context: c,
-					Writer:  w,
-					Request: makeGetRequest(),
-					Params:  makeParams("path", "chromium"),
-				})
-				r, err := ioutil.ReadAll(w.Body)
-				So(err, ShouldBeNil)
-				body := string(r)
-				So(body, ShouldContainSubstring, "som-app")
-				So(w.Code, ShouldEqual, 200)
-			})
-		})
-
 		Convey("/api/v1", func() {
 			alertsIdx := datastore.IndexDefinition{
 				Kind:     "AlertsJSON",
@@ -148,7 +81,7 @@ func TestMain(t *testing.T) {
 
 			Convey("/trees", func() {
 				Convey("no trees yet", func() {
-					getTreesHandler(&router.Context{
+					GetTreesHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makeGetRequest(),
@@ -169,7 +102,7 @@ func TestMain(t *testing.T) {
 				datastore.GetTestable(c).CatchupIndexes()
 
 				Convey("basic tree", func() {
-					getTreesHandler(&router.Context{
+					GetTreesHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makeGetRequest(),
@@ -208,7 +141,7 @@ func TestMain(t *testing.T) {
 
 				Convey("GET", func() {
 					Convey("no alerts yet", func() {
-						getAlertsHandler(&router.Context{
+						GetAlertsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makeGetRequest(),
@@ -225,7 +158,7 @@ func TestMain(t *testing.T) {
 					So(datastore.Put(c, newRevisionSummaryJSON), ShouldBeNil)
 
 					Convey("basic alerts", func() {
-						getAlertsHandler(&router.Context{
+						GetAlertsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makeGetRequest(),
@@ -270,7 +203,7 @@ func TestMain(t *testing.T) {
 						})
 						ta.CatchupIndexes()
 
-						getAlertsHandler(&router.Context{
+						GetAlertsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makeGetRequest(),
@@ -307,7 +240,7 @@ func TestMain(t *testing.T) {
 					So(results, ShouldBeEmpty)
 
 					// Add an alert.
-					postAlertsHandler(&router.Context{
+					PostAlertsHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"alerts":[{"key": "test"}], "timestamp": 12345.0, "revision_summaries":{"123": {"git_hash": "123"}}}`),
@@ -345,7 +278,7 @@ func TestMain(t *testing.T) {
 					So(rslt["git_hash"], ShouldEqual, "123")
 
 					// Replace the alert.
-					postAlertsHandler(&router.Context{
+					PostAlertsHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"alerts":[{"key": "test2"}], "timestamp": 12345.0}`),
@@ -386,7 +319,7 @@ func TestMain(t *testing.T) {
 					So(rslt["key"], ShouldEqual, "test")
 
 					// Re-add original alert.
-					postAlertsHandler(&router.Context{
+					PostAlertsHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"alerts":[{"key": "test"}], "timestamp": 12345.0, "revision_summaries":{"123": {"git_hash": "123"}}}`),
@@ -446,7 +379,7 @@ func TestMain(t *testing.T) {
 					}
 
 					// Add an alert.
-					postAlertsHandler(&router.Context{
+					PostAlertsHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"alerts":[{"key": "test"}], "timestamp": 12345.0, "revision_summaries":{"123": {"git_hash": "123"}}}`),
@@ -490,7 +423,7 @@ func TestMain(t *testing.T) {
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldBeEmpty)
 
-					postAlertsHandler(&router.Context{
+					PostAlertsHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`not valid json`),
@@ -506,7 +439,7 @@ func TestMain(t *testing.T) {
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldBeEmpty)
 
-					postAlertsHandler(&router.Context{
+					PostAlertsHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{}`),
@@ -534,7 +467,7 @@ func TestMain(t *testing.T) {
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldBeEmpty)
 
-					postAlertHandler(&router.Context{
+					PostAlertHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"key": "test", "body": "foo"}`),
@@ -572,7 +505,7 @@ func TestMain(t *testing.T) {
 
 					So(datastore.Put(c, alertJSON), ShouldBeNil)
 
-					postAlertHandler(&router.Context{
+					PostAlertHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"key": "test", "body": "foo"}`),
@@ -611,7 +544,7 @@ func TestMain(t *testing.T) {
 					alertJSON.Resolved = true
 					So(datastore.Put(c, alertJSON), ShouldBeNil)
 
-					postAlertHandler(&router.Context{
+					PostAlertHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"key": "test", "body": "foo"}`),
@@ -651,7 +584,7 @@ func TestMain(t *testing.T) {
 					alertJSON.AutoResolved = true
 					So(datastore.Put(c, alertJSON), ShouldBeNil)
 
-					postAlertHandler(&router.Context{
+					PostAlertHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"key": "test", "body": "foo"}`),
@@ -687,7 +620,7 @@ func TestMain(t *testing.T) {
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldBeEmpty)
 
-					postAlertHandler(&router.Context{
+					PostAlertHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`not valid json`),
@@ -730,7 +663,7 @@ func TestMain(t *testing.T) {
 						Resolved: true,
 					}
 					req.Keys[0] = "test"
-					resolveAlertHandler(&router.Context{
+					ResolveAlertHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(makeResolve(req, tok)),
@@ -774,7 +707,7 @@ func TestMain(t *testing.T) {
 						Resolved: true,
 					}
 					req.Keys[0] = "test"
-					resolveAlertHandler(&router.Context{
+					ResolveAlertHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(makeResolve(req, tok)),
@@ -800,7 +733,7 @@ func TestMain(t *testing.T) {
 					So(datastore.GetAll(c, q, &results), ShouldBeNil)
 					So(results, ShouldBeEmpty)
 
-					resolveAlertHandler(&router.Context{
+					ResolveAlertHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`not valid json`),
@@ -814,7 +747,7 @@ func TestMain(t *testing.T) {
 			Convey("/annotations", func() {
 				Convey("GET", func() {
 					Convey("no annotations yet", func() {
-						getAnnotationsHandler(&router.Context{
+						GetAnnotationsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makeGetRequest(),
@@ -839,7 +772,7 @@ func TestMain(t *testing.T) {
 					datastore.GetTestable(c).CatchupIndexes()
 
 					Convey("basic annotation", func() {
-						getAnnotationsHandler(&router.Context{
+						GetAnnotationsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makeGetRequest(),
@@ -857,7 +790,7 @@ func TestMain(t *testing.T) {
 				})
 				Convey("POST", func() {
 					Convey("invalid action", func() {
-						postAnnotationsHandler(&router.Context{
+						PostAnnotationsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makePostRequest(""),
@@ -868,7 +801,7 @@ func TestMain(t *testing.T) {
 					})
 
 					Convey("invalid json", func() {
-						postAnnotationsHandler(&router.Context{
+						PostAnnotationsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makePostRequest("invalid json"),
@@ -894,7 +827,7 @@ func TestMain(t *testing.T) {
 						return string(change)
 					}
 					Convey("add, bad xsrf token", func() {
-						postAnnotationsHandler(&router.Context{
+						PostAnnotationsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makePostRequest(makeChange(map[string]interface{}{
@@ -915,7 +848,7 @@ func TestMain(t *testing.T) {
 						change := map[string]interface{}{}
 						Convey("snoozeTime", func() {
 							change["snoozeTime"] = 123123
-							postAnnotationsHandler(&router.Context{
+							PostAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(map[string]interface{}{
@@ -932,7 +865,7 @@ func TestMain(t *testing.T) {
 
 						Convey("bugs", func() {
 							change["bugs"] = []string{"123123"}
-							postAnnotationsHandler(&router.Context{
+							PostAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(change, tok)),
@@ -948,7 +881,7 @@ func TestMain(t *testing.T) {
 						Convey("bad change", func() {
 							change["bugs"] = []string{"ooops"}
 							w = httptest.NewRecorder()
-							postAnnotationsHandler(&router.Context{
+							PostAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(change, tok)),
@@ -963,7 +896,7 @@ func TestMain(t *testing.T) {
 
 					Convey("remove", func() {
 						Convey("can't remove non-existant annotation", func() {
-							postAnnotationsHandler(&router.Context{
+							PostAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(nil, tok)),
@@ -979,7 +912,7 @@ func TestMain(t *testing.T) {
 						Convey("basic", func() {
 							So(ann.SnoozeTime, ShouldEqual, 123)
 
-							postAnnotationsHandler(&router.Context{
+							PostAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(map[string]interface{}{
@@ -1117,34 +1050,31 @@ func TestMain(t *testing.T) {
 					},
 				})
 				Convey("ok", func() {
-					getRestartingMastersHandler(&router.Context{
+					GetRestartingMastersHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makeGetRequest(),
 						Params:  makeParams("tree", "chromium"),
 					})
-
 					_, err := ioutil.ReadAll(w.Body)
 					So(err, ShouldBeNil)
 					So(w.Code, ShouldEqual, 200)
 				})
 
 				Convey("trooper restarts", func() {
-					getRestartingMastersHandler(&router.Context{
+					GetRestartingMastersHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makeGetRequest(),
 						Params:  makeParams("tree", "trooper"),
 					})
-
 					_, err := ioutil.ReadAll(w.Body)
 					So(err, ShouldBeNil)
 					So(w.Code, ShouldEqual, 200)
 				})
 
 				Convey("unrecognized tree", func() {
-					w = httptest.NewRecorder()
-					getRestartingMastersHandler(&router.Context{
+					GetRestartingMastersHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makeGetRequest(),
@@ -1181,7 +1111,7 @@ func TestMain(t *testing.T) {
 						return res, nil
 					}
 					Convey("get bug queue handler", func() {
-						getBugQueueHandler(&router.Context{
+						GetBugQueueHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makeGetRequest(),
@@ -1194,7 +1124,7 @@ func TestMain(t *testing.T) {
 					})
 
 					Convey("refresh bug queue handler", func() {
-						refreshBugQueueHandler(&router.Context{
+						RefreshBugQueueHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makeGetRequest(),
@@ -1219,7 +1149,7 @@ func TestMain(t *testing.T) {
 					})
 
 					Convey("get uncached bugs", func() {
-						getUncachedBugsHandler(&router.Context{
+						GetUncachedBugsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makeGetRequest(),
@@ -1313,13 +1243,13 @@ func TestMain(t *testing.T) {
 						Params:  makeParams("annKey", "foobar", "action", "add"),
 					}
 
-					flushOldAnnotationsHandler(ctx)
+					FlushOldAnnotationsHandler(ctx)
 				})
 			})
 
 			Convey("refreshAnnotations", func() {
 				Convey("handler", func() {
-					refreshAnnotationsHandler(&router.Context{
+					RefreshAnnotationsHandler(&router.Context{
 						Context: c,
 						Writer:  w,
 						Request: makeGetRequest(),
@@ -1389,7 +1319,7 @@ func TestMain(t *testing.T) {
 				Params:  makeParams("xsrf_token", tok),
 			}
 
-			postClientMonHandler(ctx)
+			PostClientMonHandler(ctx)
 			So(w.Code, ShouldEqual, 200)
 		})
 
@@ -1415,10 +1345,6 @@ func TestMain(t *testing.T) {
 
 			getTreeLogo(ctx, "", &noopSigner{fmt.Errorf("fail")})
 			So(w.Code, ShouldEqual, 500)
-		})
-
-		Convey("noop", func() {
-			noopHandler(nil)
 		})
 	})
 }
@@ -1467,7 +1393,7 @@ func TestRevRangeHandler(t *testing.T) {
 			c = authtest.MockAuthConfig(c)
 			w := httptest.NewRecorder()
 
-			getRevRangeHandler(&router.Context{
+			GetRevRangeHandler(&router.Context{
 				Context: c,
 				Writer:  w,
 				Request: makeGetRequest(),
@@ -1484,7 +1410,7 @@ func TestRevRangeHandler(t *testing.T) {
 			getOAuthClient = func(ctx context.Context) (*http.Client, error) {
 				return nil, fmt.Errorf("not today")
 			}
-			getRevRangeHandler(&router.Context{
+			GetRevRangeHandler(&router.Context{
 				Context: c,
 				Writer:  w,
 				Request: makeGetRequest(),
@@ -1498,7 +1424,7 @@ func TestRevRangeHandler(t *testing.T) {
 			c = authtest.MockAuthConfig(c)
 			w := httptest.NewRecorder()
 
-			getRevRangeHandler(&router.Context{
+			GetRevRangeHandler(&router.Context{
 				Context: c,
 				Writer:  w,
 				Request: makeGetRequest(),

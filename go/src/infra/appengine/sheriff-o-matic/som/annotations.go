@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"infra/monorail"
 
@@ -25,6 +26,12 @@ import (
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
+)
+
+const (
+	annotationsCacheKey = "annotation-metadata"
+	// annotations will expire after this amount of time
+	annotationExpiration = time.Hour * 24 * 10
 )
 
 // AnnotationResponse ... The Annotation object extended with cached bug data.
@@ -43,7 +50,8 @@ func makeAnnotationResponse(a *Annotation, meta map[string]monorail.Issue) *Anno
 	return &AnnotationResponse{*a, bugs}
 }
 
-func getAnnotationsHandler(ctx *router.Context) {
+// GetAnnotationsHandler retrieves a set of annotations.
+func GetAnnotationsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
 	q := datastore.NewQuery("Annotation")
@@ -92,7 +100,8 @@ func getAnnotationsMetaData(c context.Context) (map[string]monorail.Issue, error
 	return val, nil
 }
 
-func refreshAnnotationsHandler(ctx *router.Context) {
+// RefreshAnnotationsHandler refreshes the set of annotations.
+func RefreshAnnotationsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
 	bugMap, err := refreshAnnotations(c, nil)
@@ -170,7 +179,8 @@ type postRequest struct {
 	Data      *json.RawMessage `json:"data"`
 }
 
-func postAnnotationsHandler(ctx *router.Context) {
+// PostAnnotationsHandler handles updates to annotations.
+func PostAnnotationsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
 	annKey := p.ByName("annKey")
@@ -258,7 +268,8 @@ func postAnnotationsHandler(ctx *router.Context) {
 	w.Write(resp)
 }
 
-func flushOldAnnotationsHandler(ctx *router.Context) {
+// FlushOldAnnotationsHandler culls obsolute annotations from the datastore.
+func FlushOldAnnotationsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
 
 	numDeleted, err := flushOldAnnotations(c)
