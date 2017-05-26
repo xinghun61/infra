@@ -1,0 +1,235 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="test-list.html">
+<link rel="import" href="../heuristic-hints.html">
+<dom-module id="reliable-failures">
+  <template>
+    <style>
+      ul {
+        padding-left: 20px;
+      }
+      .header {
+        font-weight: bold;
+      }
+      table {
+        border-collapse: collapse;
+        border: 1px solid gray;
+      }
+      table th, table td {
+        padding: 5px;
+        border: 1px solid gray;
+      }
+      .high-lighted {
+        color: red;
+        font-weight: bold;
+      }
+      .center {
+        text-align: center;
+      }
+      .left {
+        text-align: left;
+      }
+    </style>
+
+    <template is="dom-if" if="[[!_empty]]">
+      <div class="header">Reliable failures</div>
+      <div>
+        <table class="center">
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Test Group</th>
+              <th title="The last known good and first known bad build cycles">Good &rarr; Bad Build</th>
+              <th title="The Swarming task to rerun the tests to distingush reliable and flaky failures">Swarming Rerun</th>
+              <th title="Try-Job reruns the tests to confirm the culprits while heuristic uses rules to suggest suspects">Analysis Approach</th>
+              <th class="high-lighted" title="The suspect or culprit identified by heuristic or try-job for the failures and in which build cycle it is">Suspect/Culprit</th>
+              <th title="For heuristic analysis, the higher the score, the more suspected">Score</th>
+              <th title="How this suspect or culprit is related to the failures">Reason</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template is="dom-repeat" items="[[failures]]" as="failure">
+              <template is="dom-if" if="[[_hasTryJobFindings(failure)]]">
+                <tr>
+                  <td rowspan$="[[_getRowspan(failure)]]">
+                    [[failure.stepName]]
+                  </td>
+                  <td rowspan$="[[_getRowspan(failure)]]">
+                    <test-list tests="[[failure.result.tests]]"></test-list>
+                  </td>
+                  <td rowspan$="[[_getRowspan(failure)]]">
+                    <template is="dom-if" if="[[_hasLastPass(failure.result.last_pass)]]">
+                      <a href="[[builderUrl]]/[[failure.result.last_pass]]" target="_blank">[[failure.result.last_pass]]</a>
+                    </template>
+                    <template is="dom-if" if="[[!_hasLastPass(failure.result.last_pass)]]">
+                      Unknown
+                    </template>
+                    &rarr;
+                    <a href="[[builderUrl]]/[[failure.result.first_failure]]" target="_blank">[[failure.result.first_failure]]</a>
+                  </td>
+                  <td rowspan$="[[_getRowspan(failure)]]">
+                    <template is="dom-if" if="[[failure.result.try_job.task_id)]]">
+                      <a href="https://chromium-swarm.appspot.com/task?id=[[failure.result.try_job.task_id]]" target="_blank">[[failure.result.try_job.task_id]]</a>
+                    </template>
+                  </td>
+                  <td>
+                    Try-job
+                  </td>
+                  <td>
+                    <a class="high-lighted" href="[[_getCLLink(failure.result.try_job.culprit)]]">[[_getCLRevisionForUI(failure.result.try_job.culprit)]]</a>
+                    <br>
+                    <br>
+                    (build#: <a href="[[builderUrl]]/[[failure.result.first_failure]]">[[failure.result.first_failure]]</a>)
+                  </td>
+                  <td>
+                  </td>
+                  <td>
+                    <a href="[[failure.result.try_job.try_job_url]]">Try-job run</a>
+                  </td>
+                </tr>
+              </template>
+
+              <template is="dom-if" if="[[!_hasTryJobFindings(failure)]]">
+                <tr>
+                  <td rowspan$="[[_getRowspan(failure)]]">
+                    [[failure.stepName]]
+                  </td>
+                  <td rowspan$="[[_getRowspan(failure)]]">
+                    <test-list tests="[[failure.result.tests]]"></test-list>
+                  </td>
+                  <td rowspan$="[[_getRowspan(failure)]]">
+                    <template is="dom-if" if="[[_hasLastPass(failure.result.last_pass)]]">
+                      <a href="[[builderUrl]]/[[failure.result.last_pass]]" target="_blank">[[failure.result.last_pass]]</a>
+                    </template>
+                    <template is="dom-if" if="[[!_hasLastPass(failure.result.last_pass)]]">
+                      Unknown
+                    </template>
+                    &rarr;
+                    <a href="[[builderUrl]]/[[failure.result.first_failure]]" target="_blank">[[failure.result.first_failure]]</a>
+                  </td>
+                  <td rowspan$="[[_getRowspan(failure)]]">
+                    <template is="dom-if" if="[[failure.result.try_job.task_id)]]">
+                      <a href="https://chromium-swarm.appspot.com/task?id=[[failure.result.try_job.task_id]]" target="_blank">[[failure.result.try_job.task_id]]</a>
+                    </template>
+                  </td>
+                  <td>
+                    Try-job
+                  </td>
+                  <td class="left">
+                    [[_getTryJobStatusWhenNoFinding(failure)]]
+                  </td>
+                  <td>
+                  </td>
+                  <td>
+                    <template is="dom-if" if="[[failure.result.try_job.try_job_url]]">
+                      <a href="[[failure.result.try_job.try_job_url]]">Try-job run</a>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+
+              <template is="dom-if" if="[[_shouldShowHeuristicFindings(failure)]]">
+                <template is="dom-repeat" items="[[failure.result.heuristic_analysis.suspected_cls]]" as="suspect" index-as="index">
+                  <tr>
+                    <template is="dom-if" if="[[!index]]">
+                      <td rowspan$="[[failure.result.heuristic_analysis.suspected_cls.length]]">
+                        Heuristic
+                      </td>
+                    </template>
+                    <td>
+                      <a class="high-lighted" href="[[_getCLLink(suspect)]]" target="_blank">[[_getCLRevisionForUI(suspect)]]</a>
+                      <br>
+                      <br>
+                      (build# <a href="[[builderUrl]]/[[suspect.build_number]]" target="_blank">[[suspect.build_number]]</a>)
+                    </td>
+                    <td>
+                      [[suspect.score]]
+                    </td>
+                    <td>
+                      <heuristic-hints hints="[[suspect.hints]]"><heuristic-hints>
+                    </td>
+                  </tr>
+                </template>
+              </template>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </template>
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'reliable-failures',
+
+        properties: {
+          failures: {
+            type: Array,
+            value: undefined,
+          },
+          debug: {
+            type: Boolean,
+            value: false,
+          },
+          builderUrl: {
+            type: String,
+          },
+          _empty: {
+            type: Boolean,
+            value: true,
+            computed: '_isEmptyList(failures)',
+          },
+        },
+
+        _isEmptyList: function(failures) {
+          return !failures || failures.length == 0;
+        },
+
+        _hasHeuristicFindings: function(failure) {
+          return failure.result.heuristic_analysis && failure.result.heuristic_analysis.suspected_cls && failure.result.heuristic_analysis.suspected_cls.length > 0;
+        },
+
+        _getRowspan: function(failure) {
+          if (!this._shouldShowHeuristicFindings(failure))
+            return 1;
+          return failure.result.heuristic_analysis.suspected_cls.length + 1;
+        },
+
+        _hasLastPass: function(buildNumber) {
+          return buildNumber || buildNumber == 0;
+        },
+
+        _getCLRevisionForUI: function(clInfo) {
+          return clInfo.commit_position || clInfo.revision.substr(0, 8);
+        },
+
+        _getCLLink: function(clInfo) {
+          return clInfo.review_url || clInfo.url || 'https://crrev.com/' + (clInfo.commit_position || clInfo.revision);
+        },
+
+        _getTryJobStatusWhenNoFinding: function(failure) {
+          // TODO: after UI migrates to Polymer, change handler to provide the updated status message.
+          // For reliable failures, Swarming tasks should have already completed successfully.
+          var mapping = {
+            0: 'Try-job is pending in queue.',
+            10: 'Try-job is running.',
+            70: 'No findings (Try-job completed).',
+            80: 'No findings (Try-job failed).',
+            210: 'No findings (unknown error).',
+          };
+          return mapping[failure.result.try_job.status] || 'No findings (unknown error)';
+        },
+
+        _hasTryJobFindings: function(failure) {
+          return failure.result.try_job && failure.result.try_job.culprit && Object.keys(failure.result.try_job.culprit).length > 0;
+        },
+
+        _shouldShowHeuristicFindings: function(failure) {
+          return this._hasHeuristicFindings(failure) && (this.debug || !this._hasTryJobFindings(failure));
+        },
+      });
+    })();
+  </script>
+</dom-module>

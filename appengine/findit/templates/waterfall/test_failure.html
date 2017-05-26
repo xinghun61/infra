@@ -5,322 +5,69 @@
 {% block head %}
 <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
 <link rel="import" href="/ui/elements/analysis/test/non-reliable-failures.html">
+<link rel="import" href="/ui/elements/analysis/test/reliable-failures.html">
 {% endblock head %}
 
-{% block style %}
-    .not-display, .hidden-row {
-      display: none;
-    }
-    .truncate {
-      width: 500px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-{% endblock style %}
-
 {% block constant %}
-    findit.analysisResult = {{analysis_result | tojson | safe}};
-    findit.tryjobStatusMessageMap = {{status_message_map | tojson | safe}};
-    findit.defaultGitBaseUrl = 'https://chromium.googlesource.com/chromium/src.git/+/';
+  findit.analysisResult = {{analysis_result | tojson | safe}};
 {% endblock constant %}
 
-
-{% block functions %}
-    function toggleList(thisobj) {
-      var thisObjId = thisobj.attr("id");
-      if (thisobj.hasClass("collapsed_list")) {
-        thisobj.removeClass("collapsed_list").addClass("expanded_list");
-        thisobj.html('<a href="#" id="' + thisObjId + '"class="expanded_list">Show less</a>');
-        $('#list-' + thisObjId).removeClass("not-display");
-      } else {
-        thisobj.removeClass("expanded_list").addClass("collapsed_list");
-        thisobj.html('<a href="#" class="collapsed_list">Show more</a>');
-        $('#list-' + thisObjId).addClass("not-display");
-      }
-    }
-
-    function generateCommonCellsForAllCategories(step_name, category, index, tests, first_failure, last_pass, rowspan) {
-      var stepUrl = 'https://build.chromium.org/p/{{master_name}}/builders/{{builder_name}}/builds/{{build_number}}/steps/' + step_name + '/logs/stdio';
-      var stepLogUrl = stepUrl;
-      if (findit.showDebugInfo) {
-        stepLogUrl = '/waterfall/failure-log?url=' + stepUrl;
-      }
-      var rowString = '<td rowspan="' + rowspan + '"><a href="' + stepLogUrl + '" target="_blank">' + step_name + '</a></td>';
-
-      rowString += '<td rowspan="' + rowspan + '">';
-      var j = 0;
-      for (; j < (tests.length > 5 ? 5 : tests.length); j++) {
-        rowString += '<li><div title="' + tests[j] + '" class="truncate">' + tests[j] + '</div></li>';
-      }
-      if (tests.length > 5) {
-        rowString += '<div id="list-'  + category + '-' + index + '" class="not-display">';
-        for (; j < tests.length; j++) {
-          rowString += '<li><div title="' + tests[j] + '" class="truncate">' + tests[j] + '</div></li>';
-        }
-        rowString += '</div><a id="' + category + '-' + index + '"href="#" class="collapsed_list">Show more</a>';
-      }
-      rowString += '</td>';
-
-      rowString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + first_failure + '" target="_blank">' + first_failure + '</a></td>';
-      if (last_pass) {
-        rowString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + last_pass + '" target="_blank">' + last_pass + '</a></td>';
-      } else {
-        rowString += '<td rowspan="' + rowspan + '">N/A</td>';
-      }
-
-      return rowString;
-    }
-
-    function generateStringForSingleCL(cl) {
-      var clString = '<td><a href="' + findit.builderUrl + '/' + cl.build_number + '" target="_blank">' + cl.build_number + '</a></td>';
-      clString += '<td><a href="' + cl.url + '" target="_blank">' + cl.commit_position || cl.revision + '</a></td>';
-      clString += '<td>' + cl.score + '</td>';
-      clString += '<td>';
-
-      var sortedHintsList = Object.keys(cl.hints).sort(function(a, b) {
-        return cl.hints[b] - cl.hints[a];
-      }); // Sorts hints by score in descending order.
-      $.each(sortedHintsList, function(index, hint) {
-        clString += '<li>' + hint + '</li>';
-      });
-      clString += '</td>';
-      return clString;
-    }
-
-    function generateHeuristicCulpritCls(suspectedCls, supported) {
-      var cellTableString = '';
-
-      if (suspectedCls.length > 0) {
-          cellTableString += generateStringForSingleCL(suspectedCls[0]);
-        for (var i = 1; i < suspectedCls.length; i++) {
-          cellTableString += '<tr>' + generateStringForSingleCL(suspectedCls[i]) + '</tr>';
-        }
-      } else {
-        cellTableString += '<td colspan="4">';
-        if (!supported) {
-          cellTableString += 'Not Supported</td>';
-        } else {
-          cellTableString += 'Not Found</td>';
-        }
-      }
-      return cellTableString;
-    }
-
-    function displayReliableFailures(step_name, results) {
-      if (!jQuery.isEmptyObject(results)) {
-        var tableString = '';
-        $.each(results, function(index, result) {
-          tableString += '<tr>';
-          var rowspan = result.heuristic_analysis.suspected_cls.length > 0 ? result.heuristic_analysis.suspected_cls.length : 1;
-
-          tableString += generateCommonCellsForAllCategories(step_name, 'determined', index, result.tests, result.first_failure, result.last_pass, rowspan);
-
-          var tryJob = result.try_job;
-          var tryJobCulprit = tryJob.culprit;
-          if (! jQuery.isEmptyObject(tryJobCulprit)) {
-            var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '" target="_blank">' + build_number + '</a></td>';
-            var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '" target="_blank">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
-
-          } else {
-            tableString += '<td colspan="2" rowspan="' + rowspan + '">' + findit.tryjobStatusMessageMap[tryJob.status] + '</td>';
-          }
-
-          tableString += '<td rowspan="' + rowspan + '">';
-          tableString += '<li>Reliable failure: <a href="' + tryJob.task_url+ '" target="_blank">' + tryJob.task_id + '</a></li>';
-          if (tryJob.try_job_url) {
-            tableString += '<li>For try job details: <a href="' + tryJob.try_job_url+ '" target="_blank">' + tryJob.try_job_build_number + '</a></li>';
-          }
-          tableString += '</td>';
-
-          tableString += generateHeuristicCulpritCls(result.heuristic_analysis.suspected_cls, result.supported);
-          tableString += '</tr>';
-        });
-
-        $('#reliable_failures_table tbody').append(tableString);
-        $('#reliable_failures').removeClass('not-display');
-      }
-    }
-
-    function displayReliableFailuresToSheriffs(step_name, results) {
-      if (!jQuery.isEmptyObject(results)) {
-        var tableString = '';
-        $.each(results, function(index, result) {
-          tableString += '<tr>';
-
-          var tryJob = result.try_job;
-          var tryJobCulprit = tryJob.culprit;
-          var rowspan = 1;
-
-          if (jQuery.isEmptyObject(tryJobCulprit)) {
-            rowspan = result.heuristic_analysis.suspected_cls.length > 0 ? result.heuristic_analysis.suspected_cls.length : 1;
-          }
-          tableString += generateCommonCellsForAllCategories(step_name, 'determined', index, result.tests, result.first_failure, result.last_pass, 1);
-
-          if (! jQuery.isEmptyObject(tryJobCulprit)) {
-            tableString += '<td rowspan="' + rowspan + '">Try Job</td>';
-            var build_number = result.try_job.try_job_key.split('/')[2];  // try_job_key would look like: 'master_name/builder_name/build_number'.
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + findit.builderUrl + '/' + build_number + '" target="_blank">' + build_number + '</a></td>';
-            var review_url = tryJobCulprit.url || tryJobCulprit.review_url || (findit.defaultGitBaseUrl + tryJobCulprit.revision);
-            tableString += '<td rowspan="' + rowspan + '"><a href="' + review_url + '" target="_blank">' + tryJobCulprit.commit_position || tryJobCulprit.revision + '</a></td>';
-            // Right now this cell is only for scores of heuristic results, placeholder for confidence in the future.
-            tableString += '<td rowspan="' + rowspan + '">N/A</td>';
-            tableString += '<td rowspan="' + rowspan + '">';
-            tableString += '<li>Reliable failure: <a href="' + tryJob.task_url+ '" target="_blank">' + tryJob.task_id + '</a></li>';
-            if (tryJob.try_job_url) {
-              tableString += '<li>For try job details: <a href="' + tryJob.try_job_url+ '" target="_blank">' + tryJob.try_job_build_number + '</a></li>';
-            }
-            tableString += '</td>';
-            tableString += '<td rowspan="' + rowspan + '">Try job completed successfully.</td>';
-
-          } else {
-            if (result.heuristic_analysis.suspected_cls.length > 0) {
-              tableString += '<td rowspan="' + rowspan + '">Heuristic Analysis</td>';
-              tableString += generateHeuristicCulpritCls(result.heuristic_analysis.suspected_cls, result.supported);
-            } else {
-              var no_result_reason = 'Not Found';
-              if (! result.supported) {
-                no_result_reason = 'Not Supported';
-              }
-              tableString += '<td colspan="5" rowspan="' + rowspan + '">' + no_result_reason + '</td>';
-            }
-            tableString += '<td rowspan="' + rowspan + '">' + findit.tryjobStatusMessageMap[tryJob.status] + '</td>';
-          }
-
-          tableString += '</tr>';
-        });
-
-        $('#reliable_failures_sheriffs_table tbody').append(tableString);
-        $('#reliable_failures_sheriffs').removeClass('not-display');
-      }
-    }
-{% endblock functions %}
-
 {% block failure_classification %}
-          if (!jQuery.isEmptyObject(findit.analysisResult)) {
-            var flakyFailures = [];
-            var unclassifiedFailures = [];
-            $.each(findit.analysisResult, function(step_name, step_results) {
-              $.each(step_results.results, function(category, results) {
-                if (category == 'reliable_failures') {
-                  {% if show_debug_info %}
-                    displayReliableFailures(step_name, results);
-                  {% else %}
-                    displayReliableFailuresToSheriffs(step_name, results);
-                  {% endif %}
-                } else if (category == 'unclassified_failures') {
-                  $.each(results, function(index, result) {
-                    unclassifiedFailures.push({
-                      'stepName': step_name,
-                      'result': result,
-                    });
-                  });
-                } else if (category == 'flaky_failures') {
-                  $.each(results, function(index, result) {
-                    flakyFailures.push({
-                      'stepName': step_name,
-                      'result': result,
-                    });
-                  });
-                } else {
-                  alert('Unrecongnizable category of test results, please file a bug for it.');
-                }
-              });
-            });
-            document.getElementById('flaky-failures').failures = flakyFailures;
-            document.getElementById('unclassified-failures').failures = unclassifiedFailures;
-          } else {
-            $('#triage-and-table').text('no failure is found');
-          }
-{% endblock failure_classification %}
-
-{% block toggle_list %}
-      $(document).on("click",".collapsed_list, .expanded_list",function() {
-        toggleList($(this));
+  var reliableFailures = [];
+  var flakyFailures = [];
+  var unclassifiedFailures = [];
+  $.each(findit.analysisResult, function(step_name, step_results) {
+    $.each(step_results.results, function(category, results) {
+      var targetCategory = null;
+      if (category == 'reliable_failures') {
+        targetCategory = reliableFailures;
+      } else if (category == 'unclassified_failures') {
+        targetCategory = unclassifiedFailures;
+      } else if (category == 'flaky_failures') {
+        targetCategory = flakyFailures;
+      } else {
+        alert('Unrecongnizable category of test results, please file a bug for it.');
+        return;
+      }
+      $.each(results, function(index, result) {
+        targetCategory.push({
+          'stepName': step_name,
+          'result': result,
+        });
       });
-{% endblock toggle_list %}
+    });
+  });
+  document.getElementById('reliable-failures').debug = findit.showDebugInfo;
+  document.getElementById('reliable-failures').failures = reliableFailures;
+  document.getElementById('flaky-failures').failures = flakyFailures;
+  document.getElementById('unclassified-failures').failures = unclassifiedFailures;
+{% endblock failure_classification %}
 
 {% block heading %}
 Test Failure:
 {% endblock heading %}
 
 {% block failure_info %}
-    Build Number: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}" target="_blank">{{build_number}}</a>
+  Build Number: <a href="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}" target="_blank">{{build_number}}</a>
 {% endblock failure_info %}
 
-
 {% block result_tables %}
-    {% if analysis_failed %}
-      <span class="error">No result because of some error in analysis!</span>
-    {% else %}
-      <div id="triage-and-table">
-        <div id="analysis_result">
-          <div id="reliable_failures" class='not-display'>
-            <b>Reliable failures</b>
-            <table id="reliable_failures_table">
-              <thead>
-                <tr>
-                  <th rowspan="3" title="Failed step name" width="150px">Step</th>
-                  <th rowspan="3" title="Failed test name" width="300px">Test(s)</th>
-                  <th rowspan="3" title="The build cycle in which the step started to fail">First Failure</th>
-                  <th rowspan="3" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
-                  <th colspan="8">Suspected CLs</th>
-                </tr>
-                <tr>
-                  <th colspan="3">Try Job Result</th>
-                  <th colspan="5">Heuristic Analysis Result</th>
-                </tr>
-                <tr>
-                  <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
-                  <th title="Git commit position/hash">Commit</th>
-                  <th title="Information about related swarming rerun and try job">Swarming rerun and<br>Try Job Info</th>
-                  <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
-                  <th title="Git commit position/hash">Commit</th>
-                  <th title="The higher score, the more suspected">Score (<a class="score-info" href="javascript:">?</a>)</th>
-                  <th title="Why this CL is related to the failure">Hints</th>
-                </tr>
-              </thead>
-              <tbody>
-              </tbody>
-            </table>
-            <br>
-          </div>
+  {% if analysis_failed %}
+    <span class="error">No result because of some error in analysis!</span>
+  {% elif not analysis_result %}
+    <div id="no-failures-message">No failure was found.</div>
+  {% endif %}
+  <div id="analysis_result">
+    <div id="reliable-failure-container">
+      <reliable-failures id="reliable-failures" builder-url="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}"></reliable-failures>
+    </div>
 
-          <div id="reliable_failures_sheriffs" class='not-display'>
-            <b>Reliable failures</b>
-            <table id="reliable_failures_sheriffs_table">
-              <thead>
-                <tr>
-                  <th rowspan="2" title="Failed step name" width="150px">Step</th>
-                  <th rowspan="2" title="Failed test name" width="300px">Test(s)</th>
-                  <th rowspan="2" title="The build cycle in which the step started to fail">First Failure</th>
-                  <th rowspan="2" title="The last build cycle in which the step passed">Last Pass<br>Before Failure</th>
-                  <th colspan="6">Suspected CLs</th>
-                </tr>
-                <tr>
-                  <th title="The source of result, it could be a Try Job rerun or Heuristic Analysis on failure logs and CLs in regression range.">Analysis approach</th>
-                  <th title="The build cycle in which the CL was built or tested for the first time">Build Number</th>
-                  <th title="Git commit position/hash">Commit</th>
-                  <th title="The higher score, the more suspected">Score (<a class="score-info" href="javascript:">?</a>)</th>
-                  <th title="Why this CL is related to the failure">Reason</th>
-                  <th title="Additional information such as the status of try job.">Note</th>
-                </tr>
-              </thead>
-              <tbody>
-              </tbody>
-            </table>
-            <br>
-          </div>
+    <div id="flaky-failure-container">
+      <non-reliable-failures id="flaky-failures" header="Flaky failures" builder-url="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}"></non-reliable-failures>
+    </div>
 
-          <div id="flaky-failure-container">
-            <non-reliable-failures id="flaky-failures" header="Flaky failures" builder-url="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}"></non-reliable-failures>
-          </div>
-
-          <div id="unclassified-failure-container">
-            <non-reliable-failures id="unclassified-failures" header="Unclassified failures" builder-url="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}"></non-reliable-failures>
-          </div>
-        </div>
-    {% endif %}
+    <div id="unclassified-failure-container">
+      <non-reliable-failures id="unclassified-failures" header="Unclassified failures" builder-url="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}"></non-reliable-failures>
+    </div>
+  </div>
 {% endblock result_tables %}

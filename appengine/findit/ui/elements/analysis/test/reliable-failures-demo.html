@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Testing failure-group</title>
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="reliable-failures.html">
+<body>
+  <div>
+    <div>Empty failure list(Should show nothing):</div>
+    <div style="border: 1px solid; width: 300px">
+    <reliable-failures id="no-failures"></reliable-failures>
+    </div>
+  </div>
+  <br>
+  <br>
+  <br>
+  <div>
+    <div>Public view(Should not show heuristic result if there is try-job result):</div>
+    <div style="border: 1px solid;">
+      <reliable-failures id="public-view" builder-url="https://luci-milo.appspot.com/buildbot/chromium.memory/Linux%20TSan%20Tests"></reliable-failures>
+    </div>
+  </div>
+  <br>
+  <br>
+  <br>
+  <div>
+    <div>Debug view(Should show both heuristic result and try-job result):</div>
+    <div style="border: 1px solid;">
+      <reliable-failures id="debug-view" builder-url="https://luci-milo.appspot.com/buildbot/chromium.memory/Linux%20TSan%20Tests"></reliable-failures>
+    </div>
+  </div>
+</body>
+<script>
+  var tests = [];
+  tests.push('LongTestName.aaaaaaaaaaaaaaaaaaaaaaaaassssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+  for (var i = 0; i < 20; i ++) {
+    tests.push('TestSuite.Test_' + i);
+  }
+
+  var reliableFailures = [
+    {
+      'stepName': 'Has try-job result and heuristic findings',
+      'result': {
+        'supported': true,
+        'tests': tests,
+        'first_failure': 123,
+        'last_pass': 120,
+        'try_job': {
+          'status': 70,
+          'culprit': {
+            'review_url': 'http://crrev.com/469228',
+            'commit_position': 467789,
+            'revision': '275c19ecdc32a7d1fc994f77b9972b041a86f7a7',
+          },
+          'task_id': '35e9fd18cff70610',
+          'try_job_url': 'http://build.chromium.org/p/tryserver.chromium.linux/builders/linux_chromium_tsan_variable/builds/10',
+        },
+        'heuristic_analysis': {
+          'suspected_cls': [
+            {
+              'commit_position': 500000,
+              'repo_name': 'chromium',
+              'url': 'https://codereview.chromium.org/2187403002',
+              'score': 10,
+              'build_number': 122,
+              'revision': 'b7a8f7678a999ba33e509e918e8e339956e3d150',
+              'hints': {
+                'hint_score_4': 4,
+                'hint_score_5': 5,
+                'hint_score_1': 1,
+              },
+            },
+            {
+              'commit_position': 500001,
+              'repo_name': 'chromium',
+              'url': 'https://codereview.chromium.org/2187403002',
+              'score': 8,
+              'build_number': 123,
+              'revision': 'b7a8f7678a999ba33e509e918e8e339956e3d150',
+              'hints': {
+                'hint_score_3': 3,
+                'hint_score_5': 5,
+              },
+            },
+          ],
+        },
+      },
+    },
+    {
+      'stepName': 'Has try-job result only',
+      'result': {
+        'supported': true,
+        'tests': ['PDFExtensionTest.TouchHandling'],
+        'first_failure': 123,
+        'last_pass': 120,
+        'try_job': {
+          'status': 70,
+          'culprit': {
+            'review_url': 'http://crrev.com/469228',
+            'revision': '275c19ecdc32a7d1fc994f77b9972b041a86f7a7',
+          },
+          'task_id': '35e9fd18cff70610',
+          'try_job_url': 'http://build.chromium.org/p/tryserver.chromium.linux/builders/linux_chromium_tsan_variable/builds/10',
+        },
+        'heuristic_analysis': {
+          'suspected_cls': [],
+        },
+      },
+    },
+    {
+      'stepName': 'Has heuristic result only',
+      'result': {
+        'supported': true,
+        'tests': ['PDFExtensionTest.TouchHandling'],
+        'first_failure': 123,
+        'last_pass': 120,
+        'try_job': {
+          'status': 210,
+          'culprit': {
+          },
+          'task_id': '35e9fd18cff70610',
+          'try_job_url': 'http://build.chromium.org/p/tryserver.chromium.linux/builders/linux_chromium_tsan_variable/builds/10',
+        },
+        'heuristic_analysis': {
+          'suspected_cls': [
+            {
+              'commit_position': 500000,
+              'repo_name': 'chromium',
+              'url': 'https://codereview.chromium.org/2187403002',
+              'score': 10,
+              'build_number': 122,
+              'revision': 'b7a8f7678a999ba33e509e918e8e339956e3d150',
+              'hints': {
+                'hint_score_4': 4,
+                'hint_score_5': 5,
+                'hint_score_1': 1,
+              },
+            },
+            {
+              'commit_position': 500001,
+              'repo_name': 'chromium',
+              'url': 'https://codereview.chromium.org/2187403002',
+              'score': 8,
+              'build_number': 123,
+              'revision': 'b7a8f7678a999ba33e509e918e8e339956e3d150',
+              'hints': {
+                'hint_score_3': 3,
+                'hint_score_5': 5,
+              },
+            },
+          ],
+        },
+      },
+    },
+    {
+      'stepName': 'Try-job completed without finding',
+      'result': {
+        'supported': true,
+        'tests': tests,
+        'first_failure': 123,
+        'last_pass': 120,
+        'try_job': {
+          'status': 70,
+          'culprit': {
+          },
+          'task_id': '35e9fd18cff70610',
+          'try_job_url': 'http://build.chromium.org/p/tryserver.chromium.linux/builders/linux_chromium_tsan_variable/builds/10',
+        },
+        'heuristic_analysis': {
+          'suspected_cls': [
+          ],
+        },
+      },
+    },
+    {
+      'stepName': 'Try-job is pending',
+      'result': {
+        'supported': true,
+        'tests': tests,
+        'first_failure': 123,
+        'last_pass': 120,
+        'try_job': {
+          'status': 0,
+          'culprit': {
+          },
+          'task_id': '35e9fd18cff70610',
+        },
+        'heuristic_analysis': {
+          'suspected_cls': [
+          ],
+        },
+      },
+    },
+    {
+      'stepName': 'Try-job failed',
+      'result': {
+        'supported': true,
+        'tests': tests,
+        'first_failure': 123,
+        'last_pass': 120,
+        'try_job': {
+          'status': 80,
+          'culprit': {
+          },
+          'task_id': '35e9fd18cff70610',
+          'try_job_url': 'http://build.chromium.org/p/tryserver.chromium.linux/builders/linux_chromium_tsan_variable/builds/10',
+        },
+        'heuristic_analysis': {
+          'suspected_cls': [
+          ],
+        },
+      },
+    },
+    {
+      'stepName': 'Try-job is still running',
+      'result': {
+        'supported': true,
+        'tests': tests,
+        'first_failure': 123,
+        'last_pass': 120,
+        'try_job': {
+          'status': 10,
+          'culprit': {
+          },
+          'task_id': '35e9fd18cff70610',
+          'try_job_url': 'http://build.chromium.org/p/tryserver.chromium.linux/builders/linux_chromium_tsan_variable/builds/10',
+        },
+        'heuristic_analysis': {
+          'suspected_cls': [
+          ],
+        },
+      },
+    },
+  ];
+  document.getElementById('public-view').failures = reliableFailures;
+  document.getElementById('debug-view').debug = true;
+  document.getElementById('debug-view').failures = reliableFailures;
+</script>
