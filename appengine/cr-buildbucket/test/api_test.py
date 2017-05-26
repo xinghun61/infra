@@ -16,7 +16,6 @@ sys.path.insert(0, os.path.join(
 from components import auth
 from components import utils
 from components.test_support import test_case
-from google.appengine.ext import ndb
 from testing_utils import testing
 import mock
 import gae_ts_mon
@@ -39,12 +38,15 @@ class ApiTests(object):
     gae_ts_mon.reset_for_unittest(disable=True)
     auth.disable_process_cache()
 
-    self.future_date = utils.utcnow() + datetime.timedelta(minutes=1)
+    self.patch(
+        'components.utils.utcnow', return_value=datetime.datetime(2017, 1, 1))
+    self.future_date = utils.utcnow() + datetime.timedelta(days=1)
     # future_ts is str because INT64 values are formatted as strings.
     self.future_ts = str(utils.datetime_to_timestamp(self.future_date))
     self.test_build = model.Build(
       id=1,
       bucket='chromium',
+      create_time=datetime.datetime(2017, 1, 1),
       parameters={
         'buildername': 'linux_rel',
       },
@@ -54,14 +56,6 @@ class ApiTests(object):
     res = self.call_api(method_name, req).json_body
     self.assertIsNotNone(res.get('error'))
     self.assertEqual(res['error']['reason'], error_reason)
-
-  def test_expired_build_to_message(self):
-    yesterday = utils.utcnow() - datetime.timedelta(days=1)
-    yesterday_timestamp = utils.datetime_to_timestamp(yesterday)
-    self.test_build.lease_key = 1
-    self.test_build.lease_expiration_date = yesterday
-    msg = api.build_to_message(self.test_build)
-    self.assertEqual(msg.lease_expiration_ts, yesterday_timestamp)
 
   ####### GET ##################################################################
 
@@ -746,7 +740,8 @@ class EndpointsApiTest(testing.EndpointsTestCase, ApiTests):
     self.setUpTests()
 
 
-class Webapp2ApiTest(test_case.Webapp2EndpointsTestCase, ApiTests):
+class Webapp2ApiTest(
+    test_case.Webapp2EndpointsTestCase, testing.MockPatchMixin, ApiTests):
   api_service_cls = api.BuildBucketApi
 
   def setUp(self):

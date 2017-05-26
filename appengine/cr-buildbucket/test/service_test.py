@@ -16,6 +16,7 @@ import mock
 from proto import project_config_pb2
 from test.test_util import future
 import acl
+import api_common
 import config
 import errors
 import model
@@ -1119,13 +1120,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with mock.patch(
         'events.enqueue_task_async', autospec=True) as enq:
       yield
+      test_build = self.test_build.key.get()
       enq.assert_called_with(
           'backend-default',
           '/internal/task/buildbucket/notify/1',
           json.dumps({
             'topic': 'projects/example/topic/buildbucket',
             'message': {
-              'build_id': '1',
+              'build': api_common.build_to_dict(test_build),
               'user_data': 'hello',
             },
             'attrs': {

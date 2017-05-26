@@ -35,7 +35,7 @@ class TryJobPushTest(testing.AppengineTestCase):
                     'build_id': '12345',
                 },
                 'data': base64.b64encode(json.dumps({
-                    'build_id': '12345',
+                    'build': {'id': '12345'},
                     'user_data': json.dumps({
                         'Message-Type': 'BuildbucketStatusChange',
                     }),
@@ -91,7 +91,7 @@ class TryJobPushTest(testing.AppengineTestCase):
                       'build_id': '8988270260466361040',
                   },
                   'data': base64.b64encode(json.dumps({
-                      'build_id': '8988270260466361040',
+                      'build': {'id': '8988270260466361040'},
                       'user_data': json.dumps({
                           # Should break beacause of this
                           'Message-Type': 'HyperLoopSpaceJump',
@@ -123,7 +123,7 @@ class TryJobPushTest(testing.AppengineTestCase):
                       'build_id': 12345,
                   },
                   'data': base64.b64encode(json.dumps({
-                      'build_id': 12345,
+                      'build': {'id': 12345},
                       'user_data': json.dumps({
                           'Message-Type': 'BuildbucketStatusChange',
                       }),
@@ -151,12 +151,12 @@ class TryJobPushTest(testing.AppengineTestCase):
     self.test_app.post('/pubsub/tryjobpush', params={
         'data': json.dumps({
             'message':{
-                'attributes':{
+                'attributes': {
                     'auth_token': pubsub_callback.GetVerificationToken(),
                     'build_id': 12345,
                 },
                 'data': base64.b64encode(json.dumps({
-                    'build_id': 12345,
+                    'build': {'id': 12345},
                     'user_data': json.dumps({
                         'Message-Type': 'BuildbucketStatusChange',
                     }),

@@ -10,13 +10,17 @@ from google.appengine.ext import ndb
 from testing_utils import testing
 import mock
 
+import api_common
 import events
 import model
 
 
 class NotificationsTest(testing.AppengineTestCase):
   @mock.patch('events.enqueue_task_async', autospec=True)
-  def test_enqueue_callback_task_if_needed(self, enqueue_task_async):
+  @mock.patch('components.utils.utcnow', autospec=True)
+  def test_enqueue_callback_task_if_needed(self, utcnow, enqueue_task_async):
+    utcnow.return_value = datetime.datetime(2017, 1, 1)
+
     build = model.Build(
         id=1,
         bucket='chromium',
@@ -34,13 +38,14 @@ class NotificationsTest(testing.AppengineTestCase):
       events.on_build_completing_async(build).get_result()
     txn()
 
+    build = build.key.get()
     enqueue_task_async.assert_called_with(
         'backend-default',
         '/internal/task/buildbucket/notify/1',
         json.dumps({
           'topic': 'projects/example/topic/buildbucket',
           'message': {
-            'build_id': '1',
+            'build': api_common.build_to_dict(build),
             'user_data': 'hello',
           },
           'attrs': {

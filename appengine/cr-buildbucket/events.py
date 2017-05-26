@@ -20,6 +20,7 @@ from components import auth
 from components import decorators
 from components import pubsub
 
+import api_common
 import model
 import metrics
 
@@ -47,7 +48,7 @@ def _enqueue_callback_task_if_needed_async(build):
   payload = json.dumps({
     'topic': build.pubsub_callback.topic,
     'message': {
-      'build_id': str(build.key.id()),
+      'build': api_common.build_to_dict(build),
       'user_data': build.pubsub_callback.user_data,
     },
     'attrs': {

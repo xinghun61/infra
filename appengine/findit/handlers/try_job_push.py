@@ -36,7 +36,10 @@ class TryJobPush(BaseHandler):
       payload = base64.b64decode(envelope['message']['data'])
       # Expected payload format:
       # json.dumps({
-      #   'build_id': '123412342130498',  # Buildbucket id
+      #   'build': {
+      #     'id': '123412342130498',  # Buildbucket id
+      #     # Other build fields.
+      #   },
       #   'user_data': json.dumps({
       #       'Message-Type': 'BuildbucketStatusChange'}),
       #       # Plus any data from MakePubsubCallback

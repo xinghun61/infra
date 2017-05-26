@@ -19,6 +19,7 @@ import gae_ts_mon
 import endpoints
 
 import acl
+import api_common
 import config
 import errors
 import model
@@ -80,32 +81,8 @@ class PutRequestMessage(messages.Message):
   pubsub_callback = messages.MessageField(PubSubCallbackMessage, 6)
 
 
-class BuildMessage(messages.Message):
-  """Describes model.Build, see its docstring."""
-  id = messages.IntegerField(1, required=True)
-  bucket = messages.StringField(2, required=True)
-  tags = messages.StringField(3, repeated=True)
-  parameters_json = messages.StringField(4)
-  status = messages.EnumField(model.BuildStatus, 5)
-  result = messages.EnumField(model.BuildResult, 6)
-  result_details_json = messages.StringField(7)
-  failure_reason = messages.EnumField(model.FailureReason, 8)
-  cancelation_reason = messages.EnumField(model.CancelationReason, 9)
-  lease_expiration_ts = messages.IntegerField(10)
-  lease_key = messages.IntegerField(11)
-  url = messages.StringField(12)
-  created_ts = messages.IntegerField(13)
-  started_ts = messages.IntegerField(20)
-  updated_ts = messages.IntegerField(14)
-  completed_ts = messages.IntegerField(15)
-  created_by = messages.StringField(16)
-  status_changed_ts = messages.IntegerField(17)
-  utcnow_ts = messages.IntegerField(18, required=True)
-  retry_of = messages.IntegerField(19)
-
-
 class BuildResponseMessage(messages.Message):
-  build = messages.MessageField(BuildMessage, 1)
+  build = messages.MessageField(api_common.BuildMessage, 1)
   error = messages.MessageField(ErrorMessage, 2)
 
 
@@ -128,41 +105,9 @@ def put_request_message_to_build_request(request):
   )
 
 
-def build_to_message(build, include_lease_key=False):
-  """Converts model.Build to BuildMessage."""
-  assert build
-  assert build.key
-  assert build.key.id()
-
-  msg = BuildMessage(
-      id=build.key.id(),
-      bucket=build.bucket,
-      tags=build.tags,
-      parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
-      status=build.status,
-      result=build.result,
-      result_details_json=json.dumps(build.result_details),
-      cancelation_reason=build.cancelation_reason,
-      failure_reason=build.failure_reason,
-      lease_key=build.lease_key if include_lease_key else None,
-      url=build.url,
-      created_ts=datetime_to_timestamp_safe(build.create_time),
-      started_ts=datetime_to_timestamp_safe(build.start_time),
-      updated_ts=datetime_to_timestamp_safe(build.update_time),
-      completed_ts=datetime_to_timestamp_safe(build.complete_time),
-      created_by=build.created_by.to_bytes() if build.created_by else None,
-      status_changed_ts=datetime_to_timestamp_safe(build.status_changed_time),
-      utcnow_ts=datetime_to_timestamp_safe(utils.utcnow()),
-      retry_of=build.retry_of,
-  )
-  if build.lease_expiration_date is not None:
-    msg.lease_expiration_ts = utils.datetime_to_timestamp(
-        build.lease_expiration_date)
-  return msg
-
-
 def build_to_response_message(build, include_lease_key=False):
-  return BuildResponseMessage(build=build_to_message(build, include_lease_key))
+  return BuildResponseMessage(
+    build=api_common.build_to_message(build, include_lease_key))
 
 
 def id_resource_container(body_message_class=message_types.VoidMessage):
@@ -234,12 +179,6 @@ def parse_datetime(timestamp):
         'Could not parse timestamp: %s' % timestamp)
 
 
-def datetime_to_timestamp_safe(value):
-  if value is None:
-    return None
-  return utils.datetime_to_timestamp(value)
-
-
 @auth.endpoints_api(
     name='buildbucket', version='v1',
     title='Build Bucket Service')
@@ -278,7 +217,7 @@ class BuildBucketApi(remote.Service):
   class PutBatchResponseMessage(messages.Message):
     class OneResult(messages.Message):
       client_operation_id = messages.StringField(1)
-      build = messages.MessageField(BuildMessage, 2)
+      build = messages.MessageField(api_common.BuildMessage, 2)
       error = messages.MessageField(ErrorMessage, 3)
 
     results = messages.MessageField(OneResult, 1, repeated=True)
@@ -299,7 +238,8 @@ class BuildBucketApi(remote.Service):
     for req, (build, ex) in zip(request.builds, results):
       one_res = res.OneResult(client_operation_id=req.client_operation_id)
       if build:
-        one_res.build = build_to_message(build, include_lease_key=True)
+        one_res.build = api_common.build_to_message(
+            build, include_lease_key=True)
       else:
         one_res.error = exception_to_error_message(ex)
       res.results.append(one_res)
@@ -345,7 +285,7 @@ class BuildBucketApi(remote.Service):
   )
 
   class SearchResponseMessage(messages.Message):
-    builds = messages.MessageField(BuildMessage, 1, repeated=True)
+    builds = messages.MessageField(api_common.BuildMessage, 1, repeated=True)
     next_cursor = messages.StringField(2)
     error = messages.MessageField(ErrorMessage, 3)
 
@@ -369,7 +309,7 @@ class BuildBucketApi(remote.Service):
         retry_of=request.retry_of,
     )
     return self.SearchResponseMessage(
-        builds=map(build_to_message, builds),
+        builds=map(api_common.build_to_message, builds),
         next_cursor=next_cursor,
     )
 
@@ -395,7 +335,7 @@ class BuildBucketApi(remote.Service):
         start_cursor=request.start_cursor,
     )
     return self.SearchResponseMessage(
-        builds=map(build_to_message, builds),
+        builds=map(api_common.build_to_message, builds),
         next_cursor=next_cursor)
 
   ####### LEASE ################################################################
@@ -437,7 +377,7 @@ class BuildBucketApi(remote.Service):
     return build_to_response_message(build)
 
   ####### START ################################################################
-  
+
   class StartRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1)
     url = messages.StringField(2)
@@ -589,7 +529,7 @@ class BuildBucketApi(remote.Service):
   class CancelBatchResponseMessage(messages.Message):
     class OneResult(messages.Message):
       build_id = messages.IntegerField(1, required=True)
-      build = messages.MessageField(BuildMessage, 2)
+      build = messages.MessageField(api_common.BuildMessage, 2)
       error = messages.MessageField(ErrorMessage, 3)
 
     results = messages.MessageField(OneResult, 1, repeated=True)
@@ -607,7 +547,7 @@ class BuildBucketApi(remote.Service):
       one_res = res.OneResult(build_id=build_id)
       try:
         build = service.cancel(build_id, result_details=result_details)
-        one_res.build = build_to_message(build)
+        one_res.build = api_common.build_to_message(build)
       except errors.Error as ex:
         one_res.error = exception_to_error_message(ex)
       res.results.append(one_res)
