@@ -6,16 +6,16 @@ import os
 
 
 CRASH_BACKEND = {
-    'fracas': 'crash-backend-fracas',
-    'cracas': 'crash-backend-cracas',
-    'clusterfuzz': 'crash-backend-clusterfuzz'
+    'fracas': 'backend-fracas',
+    'cracas': 'backend-cracas',
+    'clusterfuzz': 'backend-clusterfuzz'
 }
 
 
 CRASH_ANALYSIS_QUEUE = {
-    'fracas': 'crash-analysis-fracas-queue',
-    'cracas': 'crash-analysis-cracas-queue',
-    'clusterfuzz': 'crash-analysis-clusterfuzz-queue'
+    'fracas': 'fracas-analysis-queue',
+    'cracas': 'cracas-analysis-queue',
+    'clusterfuzz': 'clusterfuzz-analysis-queue'
 }
 
 

@@ -67,7 +67,7 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
     testcase = '1232435'
 
     analysis = ClusterfuzzAnalysis.Create(testcase)
-    analysis.testcase = testcase
+    analysis.identifiers = testcase
 
     self.assertEqual(analysis.identifiers, testcase)
 

@@ -4,14 +4,19 @@ version: 1
 runtime: python27
 api_version: 1
 threadsafe: true
-instance_class: B1
+instance_class: F1
 automatic_scaling:
   min_idle_instances: 1
   max_concurrent_requests: 40
 
 handlers:
-- url: /.*
+- url: /fracas/.*
   script: backend.main.backend_app
+  secure: always
+
+# Pipeline handler.
+- url: /_ah/pipeline(/.*)?
+  script: "gae_libs.pipeline_wrapper.pipeline_handlers._APP"
   secure: always
 
 skip_files:
@@ -30,3 +35,5 @@ libraries:
   version: latest
 - name: jinja2
   version: latest
+- name: numpy
+  version: 1.6.1

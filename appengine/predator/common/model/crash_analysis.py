@@ -51,6 +51,8 @@ class CrashAnalysis(ndb.Model):
   # stack. N.B. ``dependencies`` includes chromium itself.
   dependency_rolls = ndb.PickleProperty(indexed=False)
 
+  identifiers = ndb.JsonProperty(indexed=False)
+
   ################### Properties for the analysis progress. ###################
 
   # The url path to the pipeline status page.
@@ -197,6 +199,7 @@ class CrashAnalysis(ndb.Model):
     self.regression_range = crash_data.regression_range
     self.dependencies = crash_data.dependencies
     self.dependency_rolls = crash_data.dependency_rolls
+    self.identifiers = crash_data.identifiers
 
     # Set progress properties.
     self.status = analysis_status.PENDING
@@ -223,11 +226,19 @@ class CrashAnalysis(ndb.Model):
     raise NotImplementedError()
 
   def ToJson(self):
+    stacktrace_str = None
+    if self.stacktrace:
+      stacktrace_str = self.stacktrace.ToString()
+    elif self.stack_trace:
+      stacktrace_str = self.stack_trace
+
+    if stacktrace_str:
+      stacktrace_str.replace('@', '')
     return {
         'chrome_version': self.crashed_version,
         'signature': self.signature,
         'platform': self.platform,
-        'stack_trace': self.stack_trace
+        'stack_trace': stacktrace_str
     }
 
   def ReInitialize(self, client):
@@ -235,7 +246,3 @@ class CrashAnalysis(ndb.Model):
     crash_data = client.GetCrashData(crash_json)
 
     self.Initialize(crash_data)
-
-  @property
-  def identifiers(self):
-    raise NotImplementedError()

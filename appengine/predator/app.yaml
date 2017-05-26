@@ -12,6 +12,18 @@ automatic_scaling:
 handlers:
 # Static resources and home page.
 # Web UI pages.
+- url: /
+  static_files: common/static/robots.txt
+  upload: common/static/robots.txt
+
+- url: /robots.txt
+  static_files: common/static/robots.txt
+  upload: common/static/robots.txt
+
+- url: /common.css
+  static_files: common/static/common.css
+  upload: common/static/common.css
+
 - url: /.*
   script: frontend.main.frontend_app
   secure: always
@@ -32,3 +44,5 @@ libraries:
   version: latest
 - name: jinja2
   version: latest
+- name: numpy
+  version: 1.6.1

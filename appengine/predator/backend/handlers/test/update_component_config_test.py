@@ -11,11 +11,11 @@ import webtest
 
 from google.appengine.api import users
 
+from backend.handlers.update_component_config import (
+    GetComponentClassifierConfig)
+from backend.handlers.update_component_config import UpdateComponentConfig
 from common.model.crash_config import CrashConfig
 from frontend.handlers import crash_config
-from frontend.handlers.update_component_config import (
-    GetComponentClassifierConfig)
-from frontend.handlers.update_component_config import UpdateComponentConfig
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.testcase import TestCase
 from libs.http.retry_http_client import RetryHttpClient
@@ -96,7 +96,7 @@ class DummyHttpClient(HttpClientAppengine):
 class UpdateComponentConfigTest(TestCase):
   """Tests utility functions and ``CrashConfig`` handler."""
   app_module = webapp2.WSGIApplication([
-      ('/crash/update-component-config', UpdateComponentConfig),
+      ('/process/update-component-config', UpdateComponentConfig),
   ], debug=True)
 
   def setUp(self):
@@ -120,10 +120,10 @@ class UpdateComponentConfigTest(TestCase):
     self.assertIsNone(component_classifier_config)
 
   @mock.patch(
-      'frontend.handlers.update_component_config.GetComponentClassifierConfig')
+      'backend.handlers.update_component_config.GetComponentClassifierConfig')
   def testHandleGet(self, mocked_get_component_classifier_config):
     mocked_get_component_classifier_config.return_value = _MOCK_CONFIG
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    response = self.test_app.get('/crash/update-component-config')
+    response = self.test_app.get('/process/update-component-config')
     self.assertEqual(response.status_int, 200)
     self.assertDictEqual(_MOCK_CONFIG, CrashConfig.Get().component_classifier)

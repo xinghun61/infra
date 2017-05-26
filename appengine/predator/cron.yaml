@@ -1,0 +1,8 @@
+cron:
+- description: Send ts_mon metrics
+  url: /internal/cron/ts_mon/send
+  schedule: every 1 minutes
+
+- description: Sunday evening to update directory mapping of components
+  url: /process/update-component-config
+  schedule: every sunday 21:00

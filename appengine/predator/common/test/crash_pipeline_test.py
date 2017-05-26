@@ -2,6 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
+from datetime import timedelta
+import mock
+
 from analysis.culprit import Culprit
 from analysis.suspect import Suspect
 from analysis.type_enums import CrashClient
@@ -77,9 +81,8 @@ class CrashPipelineTest(AppengineTestCase):
         algorithm = 'ALGORITHM',
     )
     self.mock(FinditForFracas, 'FindCulprit', lambda *_: dummy_culprit)
-    pipeline = crash_pipeline.CrashAnalysisPipeline(
-        CrashClient.FRACAS,
-        crash_identifiers)
+    pipeline = crash_pipeline.CrashAnalysisPipeline(CrashClient.FRACAS,
+                                                    crash_identifiers)
     pipeline.run()
 
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
@@ -90,3 +93,31 @@ class CrashPipelineTest(AppengineTestCase):
     self.assertTrue(analysis.found_components)
     dummy_suspect, dummy_tags = dummy_culprit.ToDicts()
     self.assertDictEqual(analysis.result, dummy_suspect)
+
+
+class RerunPipelineTest(AppengineTestCase):
+  app_module = pipeline_handlers._APP
+
+  def testRunForUnsupportClient(self):
+    client = 'dummy_client'
+    start_date = datetime(2017, 5, 19, 0, 0, 0)
+    end_date = datetime(2017, 5, 20, 0, 0, 0)
+
+    self.MockPipeline(crash_pipeline.RerunPipeline, None,
+                      [client, start_date, end_date])
+    rerun_pipeline = crash_pipeline.RerunPipeline(client, start_date, end_date)
+    rerun_pipeline.start_test()
+    self.assertIsNone(rerun_pipeline.outputs.default.value, None)
+
+  @mock.patch('common.crash_pipeline.FinditForClientID')
+  def testRun(self, mock_findit_for_client):
+    mock_findit_for_client.return_value = None
+
+    client = CrashClient.CRACAS
+    start_date = datetime(2017, 5, 19, 0, 0, 0)
+    end_date = datetime(2017, 5, 20, 0, 0, 0)
+
+    self.MockPipeline(crash_pipeline.RerunPipeline, None,
+                      [client, start_date, end_date])
+    rerun_pipeline = crash_pipeline.RerunPipeline(client, start_date, end_date)
+    rerun_pipeline.start_test()

@@ -205,9 +205,7 @@ class Findit(object):
     crash_data.platform = self.RenamePlatform(crash_data.platform)
 
     model = self.GetAnalysis(crash_data.identifiers)
-    if (model and not model.failed and
-        crash_data.regression_range == (tuple(model.regression_range)
-                                        if model.regression_range else None)):
+    if model and not model.failed:
       logging.info('The analysis of %s has already been done.',
                    repr(crash_data.identifiers))
       return False

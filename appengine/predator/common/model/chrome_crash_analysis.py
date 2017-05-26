@@ -33,10 +33,3 @@ class ChromeCrashAnalysis(CrashAnalysis):  # pylint: disable=W0223
     crash_json = super(ChromeCrashAnalysis, self).ToJson()
     crash_json['customized_data'] = self.customized_data
     return crash_json
-
-  @property
-  def identifiers(self):
-    return {'signature': self.signature,
-            'platform': self.platform,
-            'channel': self.channel,
-            'regression_range': self.regression_range}

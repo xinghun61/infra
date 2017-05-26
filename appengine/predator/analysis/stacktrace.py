@@ -59,7 +59,8 @@ class StackFrame(namedtuple('StackFrame',
         tuple(crashed_line_numbers), repo_url)
 
   def ToString(self):
-    frame_str = '#%d in %s @ %s' % (self.index, self.function, self.file_path)
+    frame_str = '#%d XXX in %s %s' % (self.index, self.function,
+                                      self.raw_file_path)
     if self.crashed_line_numbers:
       frame_str += ':%d' % self.crashed_line_numbers[0]
 
@@ -229,6 +230,9 @@ class CallStack(namedtuple('CallStack',
 
   __bool__ = __nonzero__
 
+  def ToString(self):  # pragma: no cover
+    return '\n'.join([str(frame) for frame in self.frames])
+
 
 class CallStackBuffer(object):
   """A Mutable type to simplify constructing ``CallStack`` objects.
@@ -307,6 +311,10 @@ class Stacktrace(namedtuple('Stacktrace', ['stacks', 'crash_stack'])):
     return bool(self.stacks)
 
   __bool__ = __nonzero__
+
+  def ToString(self):  # pragma: no cover
+    return '\n\nCRASHED [ERROR]\n'.join([stack.ToString()
+                                         for stack in self.stacks])
 
 
 class StacktraceBuffer(object):

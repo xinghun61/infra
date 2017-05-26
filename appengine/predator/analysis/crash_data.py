@@ -56,6 +56,10 @@ class CrashData(object):
     self._stacktrace_str = crash_data['stack_trace'] or ''
 
   @property
+  def stacktrace_str(self):
+    return self._stacktrace_str
+
+  @property
   def crashed_version(self):
     return self._crashed_version
 

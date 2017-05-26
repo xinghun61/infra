@@ -29,7 +29,7 @@
       parameters['suspected_cls_triage_status'] = $('#suspected_cls_triage_status').val() == 'default' ? undefined : $('#suspected_cls_triage_status').val();
       parameters['regression_range_triage_status'] = $('#regression_range_triage_status').val() == 'default' ? undefined : $('#regression_range_triage_status').val();
       parameters['signature'] = $('#signature').val() == ''? undefined : $('#signature').val();
-      return createUrl(client + '-dashboard', parameters);
+      return createUrl('dashboard', parameters);
     };
 
     $(document).ready(function() {
@@ -118,7 +118,7 @@
         {% for crash in crashes %}
           <tr>
             <td>
-              <a href="./{{client}}-result-feedback?key={{crash.key}}" target="_blank">{{crash.signature}}</a>
+              <a href="./result-feedback?key={{crash.key}}" target="_blank">{{crash.signature}}</a>
             </td>
             <td>
               <a href="https://chromium.googlesource.com/chromium/src.git/+/{{crash.version}}" target="_blank">{{crash.version}}</a>

@@ -26,7 +26,7 @@
         'component_classifier': getJsonOfTextarea('component-classifier'),
         'project_classifier': getJsonOfTextarea('project-classifier'),
       };
-      $.post('/crash/config', { data: JSON.stringify(newConfig) }).done(function() {
+      $.post('config', { data: JSON.stringify(newConfig) }).done(function() {
         window.location.reload();  // Reload after successful saving.
       }).fail(function(xhr) {
         // Replace the whole page with errors from server side.

@@ -17,12 +17,12 @@ from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 # CloudStorage of latest component/team informatio in OWNERS files.
 # (Automatically updated by cron job).
-OWNERS_MAPPING_URL = \
-  'https://storage.googleapis.com/chromium-owners/component_map.json'
+OWNERS_MAPPING_URL = (
+    'https://storage.googleapis.com/chromium-owners/component_map.json')
 # List of mappings not covered by OWNERS files (e.g. file path -> component).
 # These mappings are manually collected and upload to cloud storage.
-PREDATOR_MAPPING_URL = \
-  'https://storage.googleapis.com/chromium-owners/predator_config_v0.json'
+PREDATOR_MAPPING_URL = (
+    'https://storage.googleapis.com/chromium-owners/predator_config_v0.json')
 
 
 def GetComponentClassifierConfig(owner_mapping_url=OWNERS_MAPPING_URL,

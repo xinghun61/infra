@@ -7,6 +7,9 @@ from datetime import datetime
 import mock
 
 from analysis.crash_report import CrashReport
+from analysis.stacktrace import CallStack
+from analysis.stacktrace import StackFrame
+from analysis.stacktrace import Stacktrace
 from analysis.type_enums import CrashClient
 from common.appengine_testcase import AppengineTestCase
 from common.model import crash_analysis
@@ -138,7 +141,7 @@ class CrashAnalysisTest(AppengineTestCase):
     analysis = CrashAnalysis()
     analysis.Initialize(crash_data)
 
-    self.assertEqual(analysis.stack_trace, crash_data.stacktrace)
+    self.assertEqual(analysis.stack_trace, crash_data.stacktrace_str)
     self.assertEqual(analysis.signature, crash_data.signature)
     self.assertEqual(analysis.platform, crash_data.platform)
     self.assertEqual(analysis.regression_range, crash_data.regression_range)
@@ -195,6 +198,16 @@ class CrashAnalysisTest(AppengineTestCase):
                           'signature': analysis.signature,
                           'platform': analysis.platform,
                           'stack_trace': analysis.stack_trace})
+
+    analysis.stack_trace = None
+    frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [3])
+    callstack = CallStack(0, [frame])
+    analysis.stacktrace = Stacktrace([callstack], callstack)
+    self.assertDictEqual(analysis.ToJson(),
+                         {'chrome_version': analysis.crashed_version,
+                          'signature': analysis.signature,
+                          'platform': analysis.platform,
+                          'stack_trace': analysis.stacktrace.ToString()})
 
   def testReInitialize(self):
     """Tests ``ReInitialize`` method."""

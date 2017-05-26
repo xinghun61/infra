@@ -107,8 +107,7 @@ class CrashHandler(BaseHandler):
 
       need_analysis, crash_data = NeedNewAnalysis(json_crash_data)
       if need_analysis:
-        StartNewAnalysis(json_crash_data['client_id'],
-                         crash_data.identifiers)
+        StartNewAnalysis(json_crash_data['client_id'], crash_data.identifiers)
 
     except (KeyError, ValueError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.

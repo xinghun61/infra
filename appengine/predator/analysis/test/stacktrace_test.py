@@ -24,13 +24,13 @@ class CallStackTest(AnalysisTestCase):
   def testStackFrameToString(self):
     self.assertEqual(
         StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', []).ToString(),
-        '#0 in func @ f.cc')
+        '#0 XXX in func src/f.cc')
     self.assertEqual(
         StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [1]).ToString(),
-        '#0 in func @ f.cc:1')
+        '#0 XXX in func src/f.cc:1')
     self.assertEqual(
         StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [1, 2]).ToString(),
-        '#0 in func @ f.cc:1:1')
+        '#0 XXX in func src/f.cc:1:1')
 
   def testBlameUrlForStackFrame(self):
     frame = StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [])

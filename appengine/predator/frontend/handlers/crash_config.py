@@ -252,7 +252,7 @@ class CrashConfig(BaseHandler):
         'project_classifier': settings.project_classifier,
     }
 
-    return {'template': 'crash/crash_config.html', 'data': data}
+    return {'template': 'crash_config.html', 'data': data}
 
   def HandlePost(self):
     data = self.request.params.get('data')

@@ -63,7 +63,3 @@ class ClusterfuzzAnalysis(CrashAnalysis):
     crash_json = super(ClusterfuzzAnalysis, self).ToJson()
     crash_json['customized_data'] = self.customized_data
     return crash_json
-
-  @property
-  def identifiers(self):  # pragma: no cover
-    return self.testcase

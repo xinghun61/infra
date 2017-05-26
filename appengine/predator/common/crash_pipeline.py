@@ -2,23 +2,35 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import copy
 import json
 import logging
+
+from google.appengine.ext import ndb
 
 from analysis.type_enums import CrashClient
 from common import findit_for_chromecrash
 from common import findit_for_clusterfuzz
+from common import monitoring
+from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
+from common.model.cracas_crash_analysis import CracasCrashAnalysis
+from common.model.crash_analysis import CrashAnalysis
+from common.model.crash_config import CrashConfig
+from common.model.fracas_crash_analysis import FracasCrashAnalysis
 from gae_libs import appengine_util
 from gae_libs import pubsub_util
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
+from gae_libs.iterator import Iterate
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from libs import time_util
-from common import monitoring
-from common.model.crash_config import CrashConfig
+
+CLIENT_ID_TO_CRASH_ANALYSIS = {
+    CrashClient.FRACAS: FracasCrashAnalysis,
+    CrashClient.CRACAS: CracasCrashAnalysis,
+    CrashClient.CLUSTERFUZZ: ClusterfuzzAnalysis
+}
 
 
 # TODO(http://crbug.com/659346): write complete coverage tests for this.
@@ -108,6 +120,7 @@ class CrashAnalysisPipeline(CrashBasePipeline):
   def finalized(self):
     if self.was_aborted: # pragma: no cover
       self._PutAbortedError()
+      raise Exception('Abort CrashAnalysisPipeline.')
 
   # N.B., this method must be factored out for unittest reasons; since
   # ``finalized`` takes no arguments (by AppEngine's spec) and
@@ -128,6 +141,8 @@ class CrashAnalysisPipeline(CrashBasePipeline):
     recieving them here. Thus, we discard all the arguments to this method
     (except for ``self``, naturally).
     """
+    logging.info('Start analysis of crash_pipeline. %s',
+                 json.dumps(self._crash_identifiers))
     # TODO(wrengr): shouldn't this method somehow call _NeedsNewAnalysis
     # to guard against race conditions?
     analysis = self._findit.GetAnalysis(self._crash_identifiers)
@@ -176,6 +191,7 @@ class PublishResultPipeline(CrashBasePipeline):
     if self.was_aborted: # pragma: no cover.
       logging.error('Failed to publish %s analysis result for %s',
                     repr(self._crash_identifiers), self.client_id)
+      raise Exception('Abort PublishResultPipeline.')
 
   # TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
   def run(self, *_args, **_kwargs): # pragma: no cover
@@ -237,3 +253,39 @@ class CrashWrapperPipeline(BasePipeline): # pragma: no cover
         self._client_id, self._crash_identifiers)
     with pipeline.After(run_analysis):
       yield PublishResultPipeline(self._client_id, self._crash_identifiers)
+
+
+# TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
+class RerunPipeline(BasePipeline):  # pragma: no cover
+
+  def run(self, client_id, start_date, end_date):
+    analysis = CLIENT_ID_TO_CRASH_ANALYSIS.get(client_id)
+    if not analysis:
+      return
+
+    query = analysis.query()
+    query = query.filter(
+        analysis.requested_time >= start_date).filter(
+            analysis.requested_time < end_date)
+
+    client = FinditForClientID(
+        client_id,
+        CachedGitilesRepository.Factory(HttpClientAppengine()),
+        CrashConfig.Get())
+    updated_crashes = []
+    logging.info('query: %s' % str(query))
+    for crash in Iterate(query):
+      logging.info('Download crash %s', str(crash))
+      crash.ReInitialize(client)
+      crash.key = analysis._CreateKey(crash.identifiers)
+      updated_crashes.append(crash)
+
+    ndb.put_multi(updated_crashes)
+
+    for crash in updated_crashes:
+      logging.info('Initialize analysis for crash %s', crash.identifiers)
+      try:
+        yield CrashAnalysisPipeline(client_id, crash.identifiers)
+      except Exception as e:
+        logging.error(str(e))
+        return

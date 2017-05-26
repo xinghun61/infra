@@ -19,8 +19,8 @@ if [[ ${has_realpath} == "0" ]]; then
 fi
 APP_CFG="${GOOGLE_APP_ENGINE_DIR}/appcfg.py"
 
-DEFAULT_MODULE="${PREDATOR_DIR}/app/app.yaml"
-BACKEND_MODULES="${PREDATOR_DIR}/app/backend-clusterfuzz.yaml ${PREDATOR_DIR}/app/backend-fracas.yaml ${PREDATOR_DIR}/app/backend-cracas.yaml"
+DEFAULT_MODULE="${PREDATOR_DIR}/app.yaml"
+BACKEND_MODULES="${PREDATOR_DIR}/backend-clusterfuzz.yaml ${PREDATOR_DIR}/backend-fracas.yaml ${PREDATOR_DIR}/backend-cracas.yaml ${PREDATOR_DIR}/backend-clusterfuzz.yaml ${PREDATOR_DIR}/backend-process.yaml"
 
 
 if [[ -z "${USER}" ]]; then
@@ -43,7 +43,7 @@ print_usage() {
   echo "  test                 Run unittests"
   echo "  run                  Run Predator locally"
   echo "  deploy-prod          Deploy predator to predator-for-me for release"
-  echo "  deploy-test-prod     Deploy predator to predator-for-me for test"
+  echo "  deploy-test-prod     Deploy predator to predator-for-me-test for test"
   echo "  deploy-staging       Deploy predator to predator-for-me-staging for test"
   exit 1
 }
@@ -88,7 +88,7 @@ deploy_for_test() {
   fi
   echo "app id is ${app_id_to_use}"
 
-  local new_version=${USER}
+  local new_version="${USER}"
 
   echo "-----------------------------------"
   python ${APP_CFG} update -A ${app_id_to_use} --version ${new_version} ${DEFAULT_MODULE} ${BACKEND_MODULES}

@@ -39,4 +39,4 @@ queue:
   max_concurrent_requests: 15
   retry_parameters:
     min_backoff_seconds: 15
-    task_retry_limit: 3 name: clusterfuzz-analysis-queue
+    task_retry_limit: 3

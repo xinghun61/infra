@@ -324,7 +324,11 @@
               <td align="center"> <a href={{suspected_cl.author}}>{{suspected_cl.author}}</a> </td>
               <td align="center"> <a href={{suspected_cl.time}}>{{suspected_cl.time}}</a> </td>
               <td align="center"> {{suspected_cl.confidence}} </td>
-              <td align="left"><pre>{{suspected_cl.reasons}}</pre></td>
+              <td align="left">
+                {% for reason in suspected_cl.reasons %}
+                  <pre>{{reason}}</pre>
+                {% endfor %}
+              </td>
               <td align="left">
                 {% for changed_file in suspected_cl.changed_files %}
                   <li>
