@@ -27,27 +27,6 @@ import (
 const recipeCheckoutDir = "recipe-checkout-dir"
 const generateLogdogToken = "TRY_RECIPE_GENERATE_LOGDOG_TOKEN"
 
-// RecipeProdSource instructs the JobDefinition to obtain its recipes from
-// a production (i.e. published in a repo) location.
-type RecipeProdSource struct {
-	RepositoryURL string `json:"repository_url"`
-	Revision      string `json:"revision"`
-}
-
-// Userland is the data in a swarmbucket task which is kitchen "down". All
-// information here can be modified with the `edit` subcommand, and can be
-// changed in production by changing the builder definitions.
-type Userland struct {
-	// Only one source may be defined at a time.
-	RecipeIsolatedHash string            `json:"recipe_isolated_hash"`
-	RecipeProdSource   *RecipeProdSource `json:"recipe_prod_source"`
-
-	RecipeName       string                 `json:"recipe_name"`
-	RecipeProperties map[string]interface{} `json:"recipe_properties"`
-
-	Dimensions map[string]string `json:"dimensions"`
-}
-
 func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cookflags.CookFlags, st *swarming.SwarmingRpcsNewTaskRequest) error {
 	st.Properties.Dimensions = exfiltrateMap(u.Dimensions)
 
@@ -107,26 +86,6 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 	return nil
 }
 
-// Systemland is the data in a swarmbucket task which is kitchen "up". All
-// information here can be modified with the `edit-system` subcommand, and can
-// be changed in production by altering the implementation details of
-// swarmbucket and/or the particular swarmbucket deployments.
-type Systemland struct {
-	KitchenArgs *cookflags.CookFlags `json:"kitchen_args"`
-
-	// This env is the one that swarming gives to kitchen. If we need
-	// a userspace-env we should add the relevent options to Kitchen so it can
-	// present a modified environment to the task, but not be influced by it
-	// directly.
-	Env map[string]string `json:"env"`
-
-	CipdPkgs map[string]map[string]string `json:"cipd_packages"`
-
-	LogdogLocation string `json:"logdog_location"`
-
-	SwarmingTask *swarming.SwarmingRpcsNewTaskRequest `json:"swarming_task"`
-}
-
 func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarming.SwarmingRpcsNewTaskRequest, args *cookflags.CookFlags, err error) {
 	st = &(*s.SwarmingTask)
 	st.Properties = &(*st.Properties)
@@ -171,23 +130,6 @@ func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarm
 	}
 
 	return
-}
-
-// JobDefinition defines a 'led' job. It's like a normal Swarming
-// NewTaskRequest, but with some recipe-specific extras.
-//
-// In particular, the RecipeIsolatedHash will be combined with the task's
-// isolated (if any), by uploading a new isolated which 'includes' both.
-//
-// Additionally, RecipeProperties will replace any args in the swarming task's
-// command which are the string $RECIPE_PROPERTIES_JSON.
-type JobDefinition struct {
-	SwarmingHostname string `json:"swarming_hostname"`
-
-	// TODO(iannucci): maybe support other job invocations?
-
-	U *Userland   `json:"userland"`
-	S *Systemland `json:"systemland"`
 }
 
 func trimTags(tags []string, trimPrefixes []string) []string {

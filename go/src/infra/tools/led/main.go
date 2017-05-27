@@ -84,6 +84,9 @@ the edited task back to swarming.
 
 The source for led lives at:
   https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/tools/led
+
+The spec (as it is) for JobDefinition is at:
+  https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/tools/led/job_def.go
 `,
 
 		Context: func(ctx context.Context) context.Context {
