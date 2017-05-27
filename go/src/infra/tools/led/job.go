@@ -107,7 +107,10 @@ func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarm
 				string(prefix), -1))
 		}
 		if !args.LogDogFlags.AnnotationURL.IsZero() {
-			st.Tags = append(st.Tags, "log_location:"+args.LogDogFlags.AnnotationURL.String())
+			st.Tags = append(st.Tags,
+				"allow_milo:1",
+				"log_location:"+args.LogDogFlags.AnnotationURL.String(),
+			)
 		}
 	}
 
@@ -200,6 +203,7 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 
 				ret.S.SwarmingTask.Tags = trimTags(ret.S.SwarmingTask.Tags, []string{
 					// this are all captured in KitchenArgs
+					"allow_milo:", // implied by KitchenArgs.LogDogFlags.AnnotationURL
 					"log_location:",
 					"recipe_name:",
 					"recipe_repository:",
