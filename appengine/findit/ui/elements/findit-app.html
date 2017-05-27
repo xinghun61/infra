@@ -1,31 +1,67 @@
-<link rel="import" href="/bower_components/app-layout/app-layout.html">
+<link rel="import" href="/bower_components/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="/bower_components/app-layout/app-header/app-header.html">
+<link rel="import" href="/bower_components/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/bower_components/paper-listbox/paper-listbox.html">
 <link rel="import" href="/bower_components/paper-menu/paper-menu.html">
+<link rel="import" href="/bower_components/paper-menu-button/paper-menu-button.html">
 <link rel="import" href="/bower_components/polymer/polymer.html">
 
 <dom-module id="findit-app">
   <template>
     <style>
-      app-toolbar {
-        background-color: #1F78B4;
+      app-header, paper-menu, paper-listbox {
+        background-color: #4285f4;
         color: #fff;
       }
-      paper-menu {
-        background-color: #1F78B4;
-        color: #fff;
+      app-header paper-menu {
+        --paper-menu-selected-item: {
+          font-weight: normal;
+        };
       }
-      paper-item a {
+      app-header paper-icon-button {
+        --paper-icon-button-ink-color: white;
+      }
+      app-header paper-item a {
         color: #fff;
+        --paper-item: {
+          cursor: pointer;
+        };
+      }
+      app-header paper-item a:hover {
+        color: black;
       }
     </style>
 
     <app-header-layout>
-      <app-header fixed>
+      <app-header slot="header" fixed>
         <app-toolbar>
           <paper-menu>
-            <paper-item><a href="https://sites.google.com/a/chromium.org/cr-culprit-finder/findit/">Findit</a></paper-item>
+            <paper-item>
+              <a href="https://sites.google.com/a/chromium.org/cr-culprit-finder/findit/"><img src="/images/findit.png" style="width: 40px; height: 40px"/>Findit</a>
+            </paper-item>
             <paper-item><a href="/">Home</a></paper-item>
             <paper-item><a href="/waterfall/list-failures">Failures</a></paper-item>
             <paper-item><a href="/waterfall/list-flakes">Flakes</a></paper-item>
+            <template is="dom-if" if="[[user.is_admin]]">
+              <paper-menu-button style="height: 18px">
+                <paper-icon-button icon="menu" slot="dropdown-trigger"></paper-icon-button>
+                <paper-listbox slot="dropdown-content">
+                  <paper-item><a href="/waterfall/try-job-dashboard">Try-jobs</a></paper-item>
+                  <br>
+                  <paper-item><a href="/waterfall/pipeline-errors-dashboard">Pipeline Errors</a></paper-item>
+                  <br>
+                  <paper-item><a href="/waterfall/config">Config</a></paper-item>
+                  <br>
+                  <paper-item><a href="/waterfall/check-trybot-mapping">Trybot Mapping</a></paper-item>
+                  <br>
+                  <paper-item><a href="/waterfall/auto-revert-metrics">Auto Revert Metrics</a></paper-item>
+                  <br>
+                  <paper-item><a href="/waterfall/check-duplicate-failures">Check Duplicate Failures</a></paper-item>
+                </paper-listbox>
+              </paper-menu-button>
+            </template>
           </paper-menu>
         </app-toolbar>
       </app-header>
@@ -49,6 +85,12 @@
          pageHeader: {
            type: String,
            value: undefined,
+         },
+         user: {
+           type: Object,
+           value: {
+             is_admin: true,  // TODO: pass over from http handler.
+           },
          },
        },
      });

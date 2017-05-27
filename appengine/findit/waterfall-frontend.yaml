@@ -45,6 +45,11 @@ handlers:
   upload: static/images/favicon.ico
   secure: always
 
+# images
+- url: /images
+  static_dir: static/images
+  secure: always
+
 # Pipeline status UI handler.
 - url: /_ah/pipeline(/.*)?
   script: main.pipeline_status_application
