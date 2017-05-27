@@ -683,11 +683,11 @@
       "search",
       "infra/git/linux-amd64",
       "-tag",
-      "version:2.12.2.2.chromium8",
+      "version:2.12.2.2.chromium9",
       "-json-output",
       "/path/to/tmp/json"
     ],
-    "name": "git.cipd search infra/git/linux-amd64 version:2.12.2.2.chromium8",
+    "name": "git.cipd search infra/git/linux-amd64 version:2.12.2.2.chromium9",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -1215,7 +1215,9 @@
       "-out",
       "[START_DIR]/git/package.cipd",
       "-json-output",
-      "/path/to/tmp/json"
+      "/path/to/tmp/json",
+      "-install-mode",
+      "copy"
     ],
     "name": "git.build linux-amd64",
     "~followup_annotations": [

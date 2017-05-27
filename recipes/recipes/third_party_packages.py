@@ -49,7 +49,7 @@ GIT_FOR_WINDOWS_ASSET_RES = {
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-GIT_PACKAGE_VERSION_SUFFIX = '.chromium8'
+GIT_PACKAGE_VERSION_SUFFIX = '.chromium9'
 
 
 def RunSteps(api):
@@ -463,6 +463,7 @@ def PackagePythonForUnix(api):
         install,
         tag,
         version,
+        None,
     )
 
 
@@ -606,6 +607,11 @@ def PackageGitForUnix(api, workdir, support):
       install,
       tag,
       version,
+
+      # We must install via "copy", as Git copies template files verbatim, and
+      # if they are symlinks, then these symlinks will be used as templates,
+      # which is both incorrect and invalid.
+      'copy',
   )
 
 
@@ -710,7 +716,7 @@ def PackageGitForWindows(api, workdir):
       api.resource('profile.d.vpython.sh'),
       package_dir.join('etc', 'profile.d', 'vpython.sh'))
 
-  CreatePackage(api, package_name, workdir, package_dir, version)
+  CreatePackage(api, package_name, workdir, package_dir, version, None)
 
 
 def GetLatestGitForWindowsRelease(api):
@@ -745,7 +751,8 @@ def GetLatestGitForWindowsRelease(api):
 
 
 def EnsurePackage(
-    api, workdir, repo_url, package_name_prefix, install, tag, version):
+    api, workdir, repo_url, package_name_prefix, install, tag, version,
+    cipd_install_mode):
   """Ensures that the specified CIPD package exists."""
   package_name = package_name_prefix + api.cipd.platform_suffix()
 
@@ -764,7 +771,8 @@ def EnsurePackage(
   with api.context(cwd=checkout_dir):
     install(package_dir, tag)
 
-  CreatePackage(api, package_name, workdir, package_dir, version)
+  CreatePackage(api, package_name, workdir, package_dir, version,
+                cipd_install_mode)
 
 
 def GetDryRun(api):
@@ -782,9 +790,9 @@ def IsWhitelisted(api, key):
   return (not isinstance(dry_run, basestring)) or dry_run == key
 
 
-def CreatePackage(api, name, workdir, root, version):
+def CreatePackage(api, name, workdir, root, version, install_mode):
   package_file = workdir.join('package.cipd')
-  api.cipd.build(root, package_file, name)
+  api.cipd.build(root, package_file, name, install_mode=install_mode)
   if not GetDryRun(api):
     api.cipd.register(name, package_file, tags={'version': version})
 
