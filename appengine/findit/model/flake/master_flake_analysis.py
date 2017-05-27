@@ -54,6 +54,9 @@ class DataPoint(ndb.Model):
   # This flag is only for build level data points.
   has_valid_artifact = ndb.BooleanProperty(indexed=False, default=True)
 
+  # The number of iterations run to determine this data point's pass rate.
+  iterations = ndb.IntegerProperty(indexed=False)
+
   def GetCommitPosition(self, revision):
     """Gets the commit position of a revision within blame_list.
 

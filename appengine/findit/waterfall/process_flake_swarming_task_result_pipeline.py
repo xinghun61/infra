@@ -59,6 +59,7 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     data_point.pass_rate = pass_rate
     data_point.task_id = flake_swarming_task.task_id
     data_point.has_valid_artifact = has_valid_artifact
+    data_point.iterations = flake_swarming_task.tries
 
     # Include git information about each build that was run.
     build_info = build_util.GetBuildInfo(

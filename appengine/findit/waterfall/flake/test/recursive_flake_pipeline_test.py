@@ -34,6 +34,24 @@ class MOCK_INFO(object):
   parent_mastername = 'pm'
 
 
+def _GenerateDataPoint(
+    pass_rate=None, build_number=None, task_id=None, try_job_url=None,
+    commit_position=None, git_hash=None, previous_build_commit_position=None,
+    previous_build_git_hash=None, blame_list=None, has_valid_artifact=True):
+  data_point = DataPoint()
+  data_point.pass_rate = pass_rate
+  data_point.build_number = build_number
+  data_point.task_id = task_id
+  data_point.try_job_url = try_job_url
+  data_point.commit_position = commit_position
+  data_point.git_hash = git_hash
+  data_point.previous_build_commit_position = previous_build_commit_position
+  data_point.previous_build_git_hash = previous_build_git_hash
+  data_point.blame_list = blame_list if blame_list else []
+  data_point.has_valid_artifact = has_valid_artifact
+  return data_point
+
+
 class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
@@ -54,15 +72,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     flake_swarming_task.tries = number_of_iterations
     flake_swarming_task.error = error
     flake_swarming_task.put()
-
-  def _GenerateDataPoints(self, pass_rates, build_numbers):
-    data_points = []
-    for i in range(0, len(pass_rates)):
-      data_point = DataPoint()
-      data_point.pass_rate = pass_rates[i]
-      data_point.build_number = build_numbers[i]
-      data_points.append(data_point)
-    return data_points
 
   def testGetETAToStartAnalysisWhenManuallyTriggered(self):
     mocked_utcnow = datetime.utcnow()
@@ -291,9 +300,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.data_points = self._GenerateDataPoints(
-        pass_rates=[1.0],
-        build_numbers=[100])
+    analysis.data_points = [
+        _GenerateDataPoint(pass_rate=1.0, build_number=100)]
     analysis.status = analysis_status.RUNNING
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
@@ -329,9 +337,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.data_points = self._GenerateDataPoints(
-        pass_rates=[1.0],
-        build_numbers=[100])
+    analysis.data_points = [
+        _GenerateDataPoint(pass_rate=1.0, build_number=100)]
     analysis.status = analysis_status.RUNNING
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
@@ -357,7 +364,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, master_build_number, step_name, test_name)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
-  def testNextBuildNumberWithUpper(self):
+  def testNextBuildNumberWithUpperBound(self):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -367,9 +374,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.data_points = self._GenerateDataPoints(
-        pass_rates=[1.0],
-        build_numbers=[100])
+    analysis.data_points = [
+        _GenerateDataPoint(pass_rate=1.0, build_number=100)]
     analysis.status = analysis_status.RUNNING
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
@@ -644,9 +650,49 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
             step_name, test_name, None, None, step_size, number_of_iterations),
         running_cached_build_number_2)
 
+  def testFilterDataPointsByLowerUpperBounds(self):
+    all_data_points = [
+        _GenerateDataPoint(build_number=100),
+        _GenerateDataPoint(build_number=90),
+        _GenerateDataPoint(build_number=80),
+        _GenerateDataPoint(build_number=70),
+        _GenerateDataPoint(build_number=60)]
+
+    expected_data_points = [
+        _GenerateDataPoint(build_number=90),
+        _GenerateDataPoint(build_number=80),
+        _GenerateDataPoint(build_number=70)]
+
+    self.assertEqual(
+        expected_data_points,
+        recursive_flake_pipeline._FilterDataPointsByLowerUpperBounds(
+            all_data_points, 70, 90))
+    self.assertEqual(
+        all_data_points,
+        recursive_flake_pipeline._FilterDataPointsByLowerUpperBounds(
+            all_data_points, None, None))
+    self.assertEqual(
+        all_data_points[1:],
+        recursive_flake_pipeline._FilterDataPointsByLowerUpperBounds(
+            all_data_points, None, 91))
+    self.assertEqual(
+        all_data_points[:-1],
+        recursive_flake_pipeline._FilterDataPointsByLowerUpperBounds(
+            all_data_points, 61, None))
+    self.assertEqual(
+        [],
+        recursive_flake_pipeline._FilterDataPointsByLowerUpperBounds(
+            all_data_points, 10, 20))
+
   def testNormalizeDataPoints(self):
-    data_points = self._GenerateDataPoints([0.9, 0.8, 1.0], [2, 1, 3])
-    normalized_data_points = _NormalizeDataPoints(data_points)
+    lower_bound_build_number = 1
+    upper_bound_build_number = 3
+    data_points = [
+        _GenerateDataPoint(pass_rate=0.9, build_number=2),
+        _GenerateDataPoint(pass_rate=0.8, build_number=1),
+        _GenerateDataPoint(pass_rate=1.0, build_number=3)]
+    normalized_data_points = _NormalizeDataPoints(
+        data_points, lower_bound_build_number, upper_bound_build_number)
     self.assertEqual(normalized_data_points[0].run_point_number, 3)
     self.assertEqual(normalized_data_points[1].run_point_number, 2)
     self.assertEqual(normalized_data_points[2].run_point_number, 1)
@@ -705,7 +751,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name, test_name)
     self.assertEqual(200, analysis.algorithm_parameters['swarming_rerun'][
         'iterations_to_rerun'])
-    self.assertEqual([data_point1], analysis.data_points)
+
     self.assertEqual(analysis_status.RUNNING, analysis.status)
 
   @mock.patch.object(
@@ -904,7 +950,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_kwargs={})
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
                       '',
-                      expected_args=[analysis.key.urlsafe(), 9, 'r2', 8,
+                      expected_args=[analysis.key.urlsafe(), 9, 'r2', 8, 10,
                                      _DEFAULT_CACHE_NAME, None],
                       expected_kwargs={})
 
@@ -1061,6 +1107,23 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
+  def testGetFullBlamedCLsAndLowerBound(self):
+    data_points = [
+        _GenerateDataPoint(pass_rate=0.9, build_number=100,
+                           commit_position=1000, blame_list=['r1000', 'r999'],
+                           previous_build_commit_position=998),
+        _GenerateDataPoint(pass_rate=-1, build_number=99, blame_list=['r998'],
+                           has_valid_artifact=False, commit_position=998,
+                           previous_build_commit_position=997),
+        _GenerateDataPoint(pass_rate=1.0, build_number=98, commit_position=997,
+                           blame_list=['r997', 'r996'],
+                           previous_build_commit_position=995)]
+    suspected_point = data_points[0]
+    self.assertEqual(
+        ({998: 'r998', 999: 'r1000', 1000: 'r999'}, 998),
+        recursive_flake_pipeline._GetFullBlamedCLsAndLowerBound(
+            suspected_point, data_points))
+
   def testUpdateIterationsToRerunNoIterationsToUpdate(self):
     master_name = 'm'
     builder_name = 'b'
@@ -1135,6 +1198,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 100
     step_name = 's'
     test_name = 't'
+
     self._CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.PENDING)
@@ -1144,20 +1208,13 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
 
-    data_point1 = DataPoint()
-    data_point1.pass_rate = .08
-    data_point1.build_number = 100
-    data_point1.blame_list = ['r1', 'r2', 'r3']
-    data_point1.commit_position = 10
-    data_point1.previous_build_commit_position = 7
-    data_point2 = DataPoint()
-    data_point2.pass_rate = -1
-    data_point2.build_number = 99
-    data_point2.blame_list = ['r0']
-    data_point2.commit_position = 7
-    data_point2.has_valid_artifact = False
-    data_point2.previous_build_commit_position = 6
-    analysis.data_points.extend(([data_point1, data_point2]))
+    analysis.data_points = [
+        _GenerateDataPoint(pass_rate=0.8, build_number=100, commit_position=10,
+                           blame_list=['r8', 'r9', 'r10'],
+                           previous_build_commit_position=7),
+        _GenerateDataPoint(pass_rate=-1, build_number=99, commit_position=7,
+                           has_valid_artifact=False,
+                           blame_list=['r7'], previous_build_commit_position=6)]
     analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
     analysis.put()
 
@@ -1167,7 +1224,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_kwargs={})
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
                       '',
-                      expected_args=[analysis.key.urlsafe(), 9, 'r2', 7,
+                      expected_args=[analysis.key.urlsafe(), 9, 'r9', 7, 10,
                                      _DEFAULT_CACHE_NAME, None],
                       expected_kwargs={})
 
@@ -1205,26 +1262,16 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
 
-    data_point1 = DataPoint()
-    data_point1.pass_rate = .08
-    data_point1.build_number = 100
-    data_point1.blame_list = ['r8', 'r9', 'r10']
-    data_point1.commit_position = 10
-    data_point1.previous_build_commit_position = 7
-    data_point2 = DataPoint()
-    data_point2.pass_rate = -1
-    data_point2.build_number = 99
-    data_point2.blame_list = ['r7']
-    data_point2.commit_position = 7
-    data_point2.has_valid_artifact = False
-    data_point2.previous_build_commit_position = 6
-    data_point3 = DataPoint()
-    data_point3.pass_rate = .3
-    data_point3.build_number = 98
-    data_point3.blame_list = ['r5', 'r6']
-    data_point3.commit_position = 6
-    data_point3.previous_build_commit_position = 4
-    analysis.data_points.extend(([data_point1, data_point2, data_point3]))
+    analysis.data_points = [
+        _GenerateDataPoint(pass_rate=0.8, build_number=100, commit_position=10,
+                           blame_list=['r8', 'r9', 'r10'],
+                           previous_build_commit_position=7),
+        _GenerateDataPoint(pass_rate=-1, build_number=99, blame_list=['r7'],
+                           commit_position=7, has_valid_artifact=False,
+                           previous_build_commit_position=6),
+        _GenerateDataPoint(pass_rate=0.3, build_number=98,
+                           blame_list=['r5', 'r6'], commit_position=6,
+                           previous_build_commit_position=4)]
     analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
     analysis.put()
 
@@ -1234,7 +1281,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       expected_kwargs={})
     self.MockPipeline(recursive_flake_pipeline.RecursiveFlakeTryJobPipeline,
                       '',
-                      expected_args=[analysis.key.urlsafe(), 5, 'r5', 5,
+                      expected_args=[analysis.key.urlsafe(), 5, 'r5', 5, 6,
                                      _DEFAULT_CACHE_NAME, None],
                       expected_kwargs={})
 

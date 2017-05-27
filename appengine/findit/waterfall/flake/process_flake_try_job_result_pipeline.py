@@ -107,12 +107,14 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
       pass_rate = float(pass_count) / tries
     else:  # Test does not exist.
       pass_rate = -1
+      tries = 0
 
     data_point = DataPoint()
     data_point.commit_position = commit_position
     data_point.git_hash = revision
     data_point.pass_rate = pass_rate
     data_point.try_job_url = try_job.flake_results[-1].get('url')
+    data_point.iterations = tries
     data_point.task_id = _GetSwarmingTaskIdForTryJob(
         try_job.flake_results[-1].get('report'), revision, step_name, test_name)
     flake_analysis.data_points.append(data_point)

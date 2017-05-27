@@ -256,7 +256,6 @@ def _GetBestBuildNumberToRun(
   return candidate_build_number or preferred_run_build_number
 
 
-
 def _CanEstimateExecutionTimeFromReferenceSwarmingTask(swarming_task):
   return (swarming_task and
           not swarming_task.error and
@@ -463,8 +462,6 @@ class RecursiveFlakePipeline(BasePipeline):
           upper_bound_build_number, step_size,
           iterations) if use_nearby_neighbor else preferred_run_build_number
 
-      # Call trigger pipeline (flake style).
-      print 'actual build number is %d' % actual_run_build_number
       task_id = yield TriggerFlakeSwarmingTaskPipeline(
           self.master_name, self.builder_name, actual_run_build_number,
           self.step_name, [self.test_name], iterations, hard_timeout_seconds)
@@ -514,11 +511,28 @@ class RecursiveFlakePipeline(BasePipeline):
                      self.test_name, countdown)
 
 
-def _NormalizeDataPoints(data_points):
+def _FilterDataPointsByLowerUpperBounds(
+    data_points, lower_bound_build_number, upper_bound_build_number):
+  lower_bound = lower_bound_build_number or 0
+  upper_bound = upper_bound_build_number or float('inf')
+  filtered_data_points = []
+  for data_point in data_points:
+    if (data_point.build_number is not None and
+        data_point.build_number >= lower_bound and
+        data_point.build_number <= upper_bound):
+      filtered_data_points.append(data_point)
+
+  return filtered_data_points
+
+
+def _NormalizeDataPoints(
+    data_points, lower_bound_build_number, upper_bound_build_number):
+  filtered_data_points = _FilterDataPointsByLowerUpperBounds(
+      data_points, lower_bound_build_number, upper_bound_build_number)
   normalized_data_points = [
       (lambda data_point: NormalizedDataPoint(
           data_point.build_number, data_point.pass_rate,
-          data_point.has_valid_artifact))(d) for d in data_points]
+          data_point.has_valid_artifact))(d) for d in filtered_data_points]
   return sorted(
       normalized_data_points, key=lambda k: k.run_point_number, reverse=True)
 
@@ -673,7 +687,9 @@ class NextBuildNumberPipeline(BasePipeline):
     algorithm_settings = analysis.algorithm_parameters.get('swarming_rerun')
 
     # Figure out what build_number to trigger a swarming rerun on next, if any.
-    data_points = _NormalizeDataPoints(analysis.data_points)
+    data_points = _NormalizeDataPoints(
+        analysis.data_points, lower_bound_build_number,
+        upper_bound_build_number)
     next_build_number, suspected_build, iterations_to_rerun = (
         lookback_algorithm.GetNextRunPointNumber(
             data_points, algorithm_settings))
@@ -711,9 +727,9 @@ class NextBuildNumberPipeline(BasePipeline):
         suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
         assert suspected_build_point
 
-        blamed_cls, lower_bound = _GetFullBlamedCLsAndLowerBound(
-            suspected_build_point, analysis.data_points)
-
+        blamed_cls, lower_bound_commit_position = (
+            _GetFullBlamedCLsAndLowerBound(
+                suspected_build_point, analysis.data_points))
         if blamed_cls:
           if len(blamed_cls) > 1:
             start_commit_position = suspected_build_point.commit_position - 1
@@ -729,7 +745,8 @@ class NextBuildNumberPipeline(BasePipeline):
             logging.info('Running try-jobs against commits in regressions')
             yield RecursiveFlakeTryJobPipeline(
                 analysis.key.urlsafe(), start_commit_position, start_revision,
-                lower_bound, cache_name, dimensions)
+                lower_bound_commit_position,
+                suspected_build_point.commit_position, cache_name, dimensions)
             return  # No update to bug yet.
           else:
             logging.info('Single commit in the blame list of suspected build')
