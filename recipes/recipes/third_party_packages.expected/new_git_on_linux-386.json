@@ -58,13 +58,13 @@
       "search",
       "infra/python/cpython/linux-386",
       "-tag",
-      "version:2.1.2.chromium4",
+      "version:2.1.2.chromium5",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "python.cipd search infra/python/cpython/linux-386 version:2.1.2.chromium4",
+    "name": "python.cipd search infra/python/cpython/linux-386 version:2.1.2.chromium5",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -149,13 +149,13 @@
       "search",
       "infra/git/linux-386",
       "-tag",
-      "version:2.12.2.2.chromium7",
+      "version:2.12.2.2.chromium8",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/linux-386 version:2.12.2.2.chromium7",
+    "name": "git.cipd search infra/git/linux-386 version:2.12.2.2.chromium8",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -244,12 +244,16 @@
   {
     "cmd": [
       "git",
-      "apply",
+      "-c",
+      "user.name=third_party_packages",
+      "-c",
+      "user.email=third_party_packages@example.com",
+      "am",
       "RECIPE[infra::third_party_packages].resources/git_2_13_0.posix.patch"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git.git apply",
+    "name": "git.git -c",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -259,9 +263,9 @@
       "cipd",
       "ensure",
       "-root",
-      "[START_DIR]/_support/build/sources",
+      "[START_DIR]/git/_support/sources",
       "-ensure-file",
-      "infra/third_party/cacert date:2017-01-18\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
+      "infra/third_party/source/autoconf version:2.69\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -274,16 +278,16 @@
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-date:2017-01-18-\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/cacert\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }, @@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.69----\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/autoconf\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.54.0--\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/curl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:0.9.8zh-\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/mac_openssl_headers\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0e--\", @@@",
@@ -307,6 +311,30 @@
     ]
   },
   {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
+      "[START_DIR]/git/_support/zlib-1.2.11",
+      "511"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.makedirs mkdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
+      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
+      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
+      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
+      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
+      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
+    ]
+  },
+  {
     "cmd": [],
     "cwd": "[START_DIR]/git/checkout",
     "name": "git.zlib-1.2.11",
@@ -318,9 +346,9 @@
     "cmd": [
       "tar",
       "-xzf",
-      "[START_DIR]/_support/build/sources/zlib-1.2.11.tar.gz"
+      "[START_DIR]/git/_support/sources/zlib-1.2.11.tar.gz"
     ],
-    "cwd": "[START_DIR]/_support/build",
+    "cwd": "[START_DIR]/git/_support/zlib-1.2.11",
     "name": "git.zlib-1.2.11.extract",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -329,10 +357,10 @@
   {
     "cmd": [
       "./configure",
-      "--prefix=[START_DIR]/_support/prefix",
+      "--prefix=[START_DIR]/git/_support/zlib-1.2.11/prefix",
       "--static"
     ],
-    "cwd": "[START_DIR]/_support/build/zlib-1.2.11",
+    "cwd": "[START_DIR]/git/_support/zlib-1.2.11/zlib-1.2.11",
     "name": "git.zlib-1.2.11.configure",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -343,10 +371,34 @@
       "make",
       "install"
     ],
-    "cwd": "[START_DIR]/_support/build/zlib-1.2.11",
+    "cwd": "[START_DIR]/git/_support/zlib-1.2.11/zlib-1.2.11",
     "name": "git.zlib-1.2.11.make",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
+      "[START_DIR]/git/_support/openssl-1.1.0e",
+      "511"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.makedirs mkdir (2)",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
+      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
+      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
+      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
+      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
+      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
     ]
   },
   {
@@ -361,9 +413,9 @@
     "cmd": [
       "tar",
       "-xzf",
-      "[START_DIR]/_support/build/sources/openssl-1.1.0e.tar.gz"
+      "[START_DIR]/git/_support/sources/openssl-1.1.0e.tar.gz"
     ],
-    "cwd": "[START_DIR]/_support/build",
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0e",
     "name": "git.openssl-1.1.0e.extract",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -372,11 +424,11 @@
   {
     "cmd": [
       "./Configure",
-      "--prefix=[START_DIR]/_support/prefix",
+      "--prefix=[START_DIR]/git/_support/openssl-1.1.0e/prefix",
       "no-shared",
       "linux-x86"
     ],
-    "cwd": "[START_DIR]/_support/build/openssl-1.1.0e",
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0e/openssl-1.1.0e",
     "name": "git.openssl-1.1.0e.configure",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -386,7 +438,7 @@
     "cmd": [
       "make"
     ],
-    "cwd": "[START_DIR]/_support/build/openssl-1.1.0e",
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0e/openssl-1.1.0e",
     "name": "git.openssl-1.1.0e.make",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -397,10 +449,37 @@
       "make",
       "install_sw"
     ],
-    "cwd": "[START_DIR]/_support/build/openssl-1.1.0e",
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0e/openssl-1.1.0e",
     "name": "git.openssl-1.1.0e.install",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
+      "[START_DIR]/git/_support/curl-7.54.0",
+      "511"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "env": {
+      "LIBS": "-ldl -lpthread"
+    },
+    "name": "git.makedirs mkdir (3)",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
+      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
+      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
+      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
+      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
+      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
     ]
   },
   {
@@ -418,9 +497,9 @@
     "cmd": [
       "tar",
       "-xzf",
-      "[START_DIR]/_support/build/sources/curl-7.54.0.tar.gz"
+      "[START_DIR]/git/_support/sources/curl-7.54.0.tar.gz"
     ],
-    "cwd": "[START_DIR]/_support/build",
+    "cwd": "[START_DIR]/git/_support/curl-7.54.0",
     "env": {
       "LIBS": "-ldl -lpthread"
     },
@@ -432,14 +511,14 @@
   {
     "cmd": [
       "./configure",
-      "--prefix=[START_DIR]/_support/prefix",
+      "--prefix=[START_DIR]/git/_support/curl-7.54.0/prefix",
       "--disable-ldap",
       "--disable-shared",
       "--without-librtmp",
-      "--with-zlib=[START_DIR]/_support/prefix",
-      "--with-ssl=[START_DIR]/_support/prefix"
+      "--with-zlib=[START_DIR]/git/_support/zlib-1.2.11/prefix",
+      "--with-ssl=[START_DIR]/git/_support/openssl-1.1.0e/prefix"
     ],
-    "cwd": "[START_DIR]/_support/build/curl-7.54.0",
+    "cwd": "[START_DIR]/git/_support/curl-7.54.0/curl-7.54.0",
     "env": {
       "LIBS": "-ldl -lpthread"
     },
@@ -453,13 +532,37 @@
       "make",
       "install"
     ],
-    "cwd": "[START_DIR]/_support/build/curl-7.54.0",
+    "cwd": "[START_DIR]/git/_support/curl-7.54.0/curl-7.54.0",
     "env": {
       "LIBS": "-ldl -lpthread"
     },
     "name": "git.curl-7.54.0.make",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
+      "[START_DIR]/git/_support/autoconf-2.69",
+      "511"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.makedirs mkdir (4)",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_LOG_LINE@python.inline@@@@",
+      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
+      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
+      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
+      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
+      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
+      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
+      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
+      "@@@STEP_LOG_END@python.inline@@@"
     ]
   },
   {
@@ -474,9 +577,9 @@
     "cmd": [
       "tar",
       "-xzf",
-      "[START_DIR]/_support/build/sources/autoconf-2.69.tar.gz"
+      "[START_DIR]/git/_support/sources/autoconf-2.69.tar.gz"
     ],
-    "cwd": "[START_DIR]/_support/build",
+    "cwd": "[START_DIR]/git/_support/autoconf-2.69",
     "name": "git.autoconf-2.69.extract",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -485,9 +588,9 @@
   {
     "cmd": [
       "./configure",
-      "--prefix=[START_DIR]/_support/prefix"
+      "--prefix=[START_DIR]/git/_support/autoconf-2.69/prefix"
     ],
-    "cwd": "[START_DIR]/_support/build/autoconf-2.69",
+    "cwd": "[START_DIR]/git/_support/autoconf-2.69/autoconf-2.69",
     "name": "git.autoconf-2.69.configure",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -498,7 +601,7 @@
       "make",
       "install"
     ],
-    "cwd": "[START_DIR]/_support/build/autoconf-2.69",
+    "cwd": "[START_DIR]/git/_support/autoconf-2.69/autoconf-2.69",
     "name": "git.autoconf-2.69.make",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -509,7 +612,7 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "RUNTIME_PREFIX = YesPlease\ngitexecdir = libexec/git-core\ntemplate_dir = share/git-core/templates\nsysconfdir = etc\nNO_INSTALL_HARDLINKS = YesPlease\nNO_GECOS_IN_PWENT = YesPlease\nEXTLIBS = -lssl -lcrypto -lz -lpthread -ldl",
+      "RUNTIME_PREFIX = YesPlease\ngitexecdir = libexec/git-core\ntemplate_dir = share/git-core/templates\nsysconfdir = etc\nNO_INSTALL_HARDLINKS = YesPlease\nNO_GECOS_IN_PWENT = YesPlease\nEXTLIBS = -lcurl -ldl -lpthread -lssl -lcrypto -lz",
       "[START_DIR]/git/checkout/config.mak"
     ],
     "cwd": "[START_DIR]/git/checkout",
@@ -526,10 +629,10 @@
     "cwd": "[START_DIR]/git/checkout",
     "env": {
       "CFLAGS": "-flto",
-      "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
-      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib -flto",
-      "LIBS": "-lssl -lcrypto -lz -lpthread -ldl",
-      "PATH": "[START_DIR]/_support/prefix/bin:%(PATH)s"
+      "CPPFLAGS": "-I[START_DIR]/git/_support/curl-7.54.0/prefix/include -I[START_DIR]/git/_support/openssl-1.1.0e/prefix/include -I[START_DIR]/git/_support/zlib-1.2.11/prefix/include",
+      "LDFLAGS": "-flto -L[START_DIR]/git/_support/curl-7.54.0/prefix/lib -L[START_DIR]/git/_support/openssl-1.1.0e/prefix/lib -L[START_DIR]/git/_support/zlib-1.2.11/prefix/lib",
+      "LIBS": "-lcurl -ldl -lpthread -lssl -lcrypto -lz",
+      "PATH": "[START_DIR]/git/_support/autoconf-2.69/prefix/bin:%(PATH)s"
     },
     "name": "git.make configure",
     "~followup_annotations": [
@@ -545,10 +648,10 @@
     "cwd": "[START_DIR]/git/checkout",
     "env": {
       "CFLAGS": "-flto",
-      "CPPFLAGS": "-I[START_DIR]/_support/prefix/include",
-      "LDFLAGS": "-L[START_DIR]/_support/prefix/lib -flto",
-      "LIBS": "-lssl -lcrypto -lz -lpthread -ldl",
-      "PATH": "[START_DIR]/_support/prefix/bin:%(PATH)s"
+      "CPPFLAGS": "-I[START_DIR]/git/_support/curl-7.54.0/prefix/include -I[START_DIR]/git/_support/openssl-1.1.0e/prefix/include -I[START_DIR]/git/_support/zlib-1.2.11/prefix/include",
+      "LDFLAGS": "-flto -L[START_DIR]/git/_support/curl-7.54.0/prefix/lib -L[START_DIR]/git/_support/openssl-1.1.0e/prefix/lib -L[START_DIR]/git/_support/zlib-1.2.11/prefix/lib",
+      "LIBS": "-lcurl -ldl -lpthread -lssl -lcrypto -lz",
+      "PATH": "[START_DIR]/git/_support/autoconf-2.69/prefix/bin:%(PATH)s"
     },
     "name": "git.configure",
     "~followup_annotations": [
@@ -601,7 +704,7 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
       "-tag",
-      "version:2.12.2.2.chromium7"
+      "version:2.12.2.2.chromium8"
     ],
     "name": "git.register infra/git/linux-386",
     "~followup_annotations": [

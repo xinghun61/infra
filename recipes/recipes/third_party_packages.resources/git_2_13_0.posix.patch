@@ -1,18 +1,18 @@
-From c241857ef2519b1a1d81dc0b60ddc39f596e6266 Mon Sep 17 00:00:00 2001
+From 0a76b918360f99f7a4dff9814d260d386599ae0b Mon Sep 17 00:00:00 2001
 From: Dan Jacques <dnj@google.com>
-Date: Wed, 24 May 2017 19:16:59 -0700
-Subject: [PATCH] Add binary-relative lookup.
+Date: Fri, 26 May 2017 06:51:27 -0700
+Subject: [PATCH] Add binary-relative lookup
 
 Add the ability for Git to resolve its own binary location, as well as
 for it to use relative pathing against this resolution to locate
 helpers and other distribution files.
 ---
- Makefile         |  9 +++++++
+ Makefile         |  9 ++++++++
  config.mak.uname |  2 ++
- exec_cmd.c       | 32 ++++++++++++++++++++---
- exec_path.c      | 78 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ exec_cmd.c       | 45 ++++++++++++++++++++++++++++++------
+ exec_path.c      | 70 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  exec_path.h      |  6 +++++
- 5 files changed, 123 insertions(+), 4 deletions(-)
+ 5 files changed, 125 insertions(+), 7 deletions(-)
  create mode 100644 exec_path.c
  create mode 100644 exec_path.h
 
@@ -64,7 +64,7 @@ index 399fe1927..7df4ab455 100644
  ifeq ($(uname_S),SunOS)
  	NEEDS_SOCKET = YesPlease
 diff --git a/exec_cmd.c b/exec_cmd.c
-index fb94aeba9..a128dcc74 100644
+index fb94aeba9..b8579bc16 100644
 --- a/exec_cmd.c
 +++ b/exec_cmd.c
 @@ -1,5 +1,6 @@
@@ -74,28 +74,38 @@ index fb94aeba9..a128dcc74 100644
  #include "quote.h"
  #include "argv-array.h"
  #define MAX_ARGS	32
-@@ -40,15 +41,38 @@ char *system_path(const char *path)
+@@ -40,15 +41,45 @@ char *system_path(const char *path)
  
  void git_extract_argv0_path(const char *argv0)
  {
 +	char *resolved;
  	const char *slash;
++	const char *path;
++
++	if ((path = getenv(EXEC_PATH_ENVIRONMENT)) != NULL) {
++		trace_printf("Determined argv0 path from ENV: %s\n", path);
++		argv0_path = path;
++	} else {
++		resolved = git_get_exec_path(argv0);
++		if (!resolved) {
++			trace_printf("Could not determine argv0 path from: %s\n", argv0);
++			return;
++		}
++
++		slash = find_last_dir_sep(resolved);
++		if (slash) {
++			resolved[slash - resolved] = '\0';
++		}
++
++		argv0_path = resolved;
++	}
++	trace_printf("Determined argv0 path for [%s]: %s\n", argv0, argv0_path);
  
 -	if (!argv0 || !*argv0)
-+	resolved = git_get_exec_path(argv0);
-+	if (!resolved) {
-+		trace_printf("Could not determine argv0 path from: %s\n", argv0);
- 		return;
-+	}
- 
+-		return;
+-
 -	slash = find_last_dir_sep(argv0);
-+	slash = find_last_dir_sep(resolved);
-+	if (slash) {
-+		resolved[slash - resolved] = '\0';
-+	}
-+	argv0_path = resolved;
-+	trace_printf("Determined argv0 path from [%s]: %s\n", argv0, argv0_path);
- 
+-
 -	if (slash)
 -		argv0_path = xstrndup(argv0, slash - argv0);
 +	/*
@@ -119,25 +129,15 @@ index fb94aeba9..a128dcc74 100644
  void git_set_argv_exec_path(const char *exec_path)
 diff --git a/exec_path.c b/exec_path.c
 new file mode 100644
-index 000000000..e2c30a2e8
+index 000000000..196898357
 --- /dev/null
 +++ b/exec_path.c
-@@ -0,0 +1,78 @@
+@@ -0,0 +1,70 @@
 +#include "cache.h"
 +
 +#ifdef HAVE_NS_GET_EXECUTABLE_PATH
 +#include <mach-o/dyld.h>
 +#endif
-+
-+static int git_get_exec_path_from_env(struct strbuf *buf)
-+{
-+	const char *path;
-+	if ((path = getenv(EXEC_PATH_ENVIRONMENT)) != NULL) {
-+		strbuf_addstr(buf, path);
-+		return 0;
-+	}
-+	return 1;
-+}
 +
 +static int git_get_exec_path_from_argv0(struct strbuf *buf, const char *argv0)
 +{
@@ -149,6 +149,7 @@ index 000000000..e2c30a2e8
 +
 +	slash = find_last_dir_sep(argv0);
 +	if (slash) {
++		trace_printf("Determined argv0 path from argv0: %s\n", argv0);
 +		strbuf_add_absolute_path(buf, argv0);
 +		return 0;
 +	}
@@ -162,6 +163,7 @@ index 000000000..e2c30a2e8
 +	ssize_t len;
 +
 +	if (realpath("/proc/self/exe", path)) {
++		trace_printf("Determined argv0 path from procfs: %s\n", path);
 +		strbuf_addstr(buf, path);
 +		return 0;
 +	}
@@ -176,6 +178,7 @@ index 000000000..e2c30a2e8
 +	char path[PATH_MAX];
 +	uint32_t size = sizeof(path);
 +	if (!_NSGetExecutablePath(path, &size)) {
++		trace_printf("Determined argv0 path from Mac: %s\n", path);
 +		strbuf_addstr(buf, path);
 +		return 0;
 +	}
@@ -188,14 +191,13 @@ index 000000000..e2c30a2e8
 +	struct strbuf buf = STRBUF_INIT;
 +
 +	if (
-+	    !git_get_exec_path_from_env(&buf) ||
 +#ifdef HAVE_PROCFS
 +	    !git_get_exec_path_procfs(&buf) ||
 +#endif
 +#ifdef HAVE_NS_GET_EXECUTABLE_PATH
 +	    !git_get_exec_path_mac(&buf) ||
 +#endif
-+		!git_get_exec_path_from_argv0(&buf, argv0)) {
++	    !git_get_exec_path_from_argv0(&buf, argv0)) {
 +		return strbuf_detach(&buf, NULL);
 +	}
 +
@@ -214,5 +216,5 @@ index 000000000..b0afdb538
 +
 +#endif /* GIT_EXEC_PATH_H */
 -- 
-2.13.0.rc1.294.g07d810a77f-goog
+2.13.0
 

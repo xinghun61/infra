@@ -4,7 +4,9 @@
 
 """This recipe builds and packages third party software, such as Git."""
 
+import collections
 import contextlib
+import itertools
 import json
 import re
 
@@ -33,7 +35,7 @@ CPYTHON_PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium4'
+CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium5'
 
 GIT_REPO_URL = (
     'https://chromium.googlesource.com/external/github.com/git/git')
@@ -47,7 +49,7 @@ GIT_FOR_WINDOWS_ASSET_RES = {
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-GIT_PACKAGE_VERSION_SUFFIX = '.chromium7'
+GIT_PACKAGE_VERSION_SUFFIX = '.chromium8'
 
 
 def RunSteps(api):
@@ -55,15 +57,27 @@ def RunSteps(api):
     api.cipd.set_service_account_credentials(
         api.cipd.default_bot_service_account_credentials)
 
-  support = SupportPrefix(api.path['start_dir'].join('_support'))
   with api.step.defer_results():
     if IsWhitelisted(api, 'python'):
       if not api.platform.is_win:
         with api.step.nest('python'):
-          PackagePythonForUnix(api, support)
+          PackagePythonForUnix(api)
     if IsWhitelisted(api, 'git'):
       with api.step.nest('git'):
-        PackageGit(api, support)
+        PackageGit(api)
+
+
+_SourceBase = collections.namedtuple('_SourceBase', (
+    # The Path to this Source's installation PREFIX.
+    'prefix',
+    # List of library names (e.g., "z", "curl") that this Source exports.
+    'libs',
+    # List of other Source entries that this Source depends on.
+    'deps',
+    # List of other shared libraries that this library requires when dynamically
+    # linking.
+    'shared_deps',
+))
 
 
 class SupportPrefix(object):
@@ -75,24 +89,55 @@ class SupportPrefix(object):
   for any given run.
   """
 
+  class Source(_SourceBase):
+
+    def _expand(self):
+      exp = [self]
+      for dep in self.deps:
+        exp += dep._expand()
+      return exp
+
+    @property
+    def cppflags(self):
+      return ['-I%s/include' % (s.prefix,) for s in self._expand()]
+
+    @property
+    def ldflags(self):
+      return ['-L%s' % (s.prefix.join('lib'),) for s in self._expand()]
+
+    @property
+    def static(self):
+      link = []
+      for s in self._expand():
+        link += ['lib%s.a' % (lib,) for lib in s.libs]
+      return link
+
+    @property
+    def full_static(self):
+      return [str(self.prefix.join('lib', s)) for s in self.static]
+
+    @property
+    def shared(self):
+      link = []
+      for s in self._expand():
+        link += ['-l%s' % (lib,)
+                 for lib in itertools.chain(s.libs, s.shared_deps)]
+      return link
+
+
   _SOURCES = {
     'infra/third_party/source/autoconf': 'version:2.69',
     'infra/third_party/source/openssl': 'version:1.1.0e',
+    'infra/third_party/source/mac_openssl_headers': 'version:0.9.8zh',
     'infra/third_party/source/readline': 'version:7.0',
     'infra/third_party/source/termcap': 'version:1.3.1',
     'infra/third_party/source/zlib': 'version:1.2.11',
     'infra/third_party/source/curl': 'version:7.54.0',
-    'infra/third_party/cacert': 'date:2017-01-18',
   }
 
   def __init__(self, base):
-    self._build = base.join('build')
-    self._prefix = base.join('prefix')
+    self._base = base
     self._built = None
-
-  @property
-  def prefix(self):
-    return self._prefix
 
   @staticmethod
   def update_mac_autoconf(env):
@@ -106,108 +151,135 @@ class SupportPrefix(object):
     })
 
   def _ensure_sources(self, api):
-    sources = self._build.join('sources')
+    sources = self._base.join('sources')
     if self._built is None:
       api.cipd.ensure(sources, self._SOURCES)
-      self._built = set()
+      self._built = {}
     return sources
 
-  @contextlib.contextmanager
-  def _ensure_and_build_once(self, api, name, build_fn):
+  def _ensure_and_build_once(self, api, name, tag, build_fn):
     sources = self._ensure_sources(api)
-    if name in self._built:
-      return
+    key = (name, tag)
+    prefix = self._built.get(key)
+    if prefix:
+      return prefix
 
-    for k, v in self._SOURCES.iteritems():
-      if k.endswith('/' + name):
-        base = '%s-%s' % (name, v.lstrip('version:'))
-        archive = sources.join('%s.tar.gz' % (base,))
-        break
-    else: # pragma: no cover
-      raise KeyError('Unknown package [%s]' % (name,))
+    base = '%s-%s' % (name, tag.lstrip('version:'))
+    archive = sources.join('%s.tar.gz' % (base,))
 
+    workdir = self._base.join(base)
+    api.shutil.makedirs('mkdir', workdir)
+
+    prefix = workdir.join('prefix')
     with api.step.nest(base):
-      with api.context(cwd=self._build):
+      with api.context(cwd=workdir):
         api.step('extract', ['tar', '-xzf', archive])
+      build = workdir.join(base) # Archive is extracted here.
 
       try:
-        with api.context(cwd=self._build.join(base)):
-          build_fn()
-        self._built.add(name)
+        with api.context(cwd=build):
+          build_fn(prefix)
       finally:
         pass
+    self._built[key] = prefix
+    return prefix
 
-  def ensure_openssl(self, api):
-    def build_fn():
+  def _build_openssl(self, api, tag, shell=False):
+    def build_fn(prefix):
       target = {
         ('mac', 'intel', 64): 'darwin64-x86_64-cc',
         ('linux', 'intel', 32): 'linux-x86',
         ('linux', 'intel', 64): 'linux-x86_64',
       }[(api.platform.name, api.platform.arch, api.platform.bits)]
 
-      api.step('configure', [
+      configure_cmd = [
         './Configure',
-        '--prefix=%s' % (self.prefix,),
+        '--prefix=%s' % (prefix,),
         'no-shared',
         target,
-      ])
+      ]
+      if shell:
+        configure_cmd = ['bash'] + configure_cmd
+
+      api.step('configure', configure_cmd)
       api.step('make', ['make'])
 
       # Install OpenSSL. Note that "install_sw" is an OpenSSL-specific
       # sub-target that only installs headers and library, saving time.
       api.step('install', ['make', 'install_sw'])
-    self._ensure_and_build_once(api, 'openssl', build_fn)
 
-  def _generic_build(self, api, name, configure_args=None):
-    def build_fn():
+    return self.Source(
+        prefix=self._ensure_and_build_once(api, 'openssl', tag, build_fn),
+        libs=['ssl', 'crypto'],
+        deps=[],
+        shared_deps=[])
+
+  def ensure_static_openssl(self, api):
+    return self._build_openssl(api, 'version:1.1.0e')
+
+  def ensure_mac_native_openssl(self, api):
+    return self._build_openssl(api, 'version:0.9.8zh', shell=True)
+
+  def _generic_build(self, api, name, tag, configure_args=None, libs=None,
+                     deps=None, shared_deps=None):
+    def build_fn(prefix):
       api.step('configure', [
         './configure',
-        '--prefix=%s' % (self.prefix,),
+        '--prefix=%s' % (prefix,),
       ] + (configure_args or []))
       api.step('make', ['make', 'install'])
-    self._ensure_and_build_once(api, name, build_fn)
+    return self.Source(
+        prefix=self._ensure_and_build_once(api, name, tag, build_fn),
+        deps=deps or [],
+        libs=libs or [name],
+        shared_deps=shared_deps or [])
 
   def ensure_curl(self, api):
-    self.ensure_zlib(api)
+    zlib = self.ensure_zlib(api)
 
     env = {}
     configure_args = [
       '--disable-ldap',
       '--disable-shared',
       '--without-librtmp',
-      '--with-zlib=%s' % (str(self.prefix,)),
+      '--with-zlib=%s' % (str(zlib.prefix,)),
     ]
+    deps = []
+    shared_deps = []
     if api.platform.is_mac:
       configure_args += ['--with-darwinssl']
     elif api.platform.is_linux:
-      self.ensure_openssl(api)
+      ssl = self.ensure_static_openssl(api)
       env['LIBS'] = ' '.join(['-ldl', '-lpthread'])
-      configure_args += ['--with-ssl=%s' % (str(self.prefix),)]
+      configure_args += ['--with-ssl=%s' % (str(ssl.prefix),)]
+      deps += [ssl]
+      shared_deps += ['dl', 'pthread']
 
     with api.context(env=env):
-      return self._generic_build(api, 'curl', configure_args=configure_args)
+      return self._generic_build(api, 'curl', 'version:7.54.0',
+                                 configure_args=configure_args, deps=deps,
+                                 shared_deps=shared_deps)
 
   def ensure_zlib(self, api):
-    return self._generic_build(api, 'zlib', configure_args=['--static'])
+    return self._generic_build(api, 'zlib', 'version:1.2.11', libs=['z'],
+                               configure_args=['--static'])
 
   def ensure_termcap(self, api):
-    return self._generic_build(api, 'termcap')
+    return self._generic_build(api, 'termcap', 'version:1.3.1')
 
   def ensure_readline(self, api):
-    return self._generic_build(api, 'readline')
+    return self._generic_build(api, 'readline', 'version:7.0')
 
   def ensure_autoconf(self, api):
-    return self._generic_build(api, 'autoconf')
-
-  def ensure_cacert(self, api):
-    return self._ensure_sources(api).join('cacert.pem')
+    return self._generic_build(api, 'autoconf', 'version:2.69')
 
 
 @recipe_api.composite_step
-def PackagePythonForUnix(api, support):
+def PackagePythonForUnix(api):
   """Builds Python for Unix and uploads it to CIPD."""
 
   workdir = api.path['start_dir'].join('python')
+  support = SupportPrefix(workdir.join('_support'))
 
   tag = GetLatestReleaseTag(api, CPYTHON_REPO_URL, 'v2.')
   version = tag.lstrip('v') + CPYTHON_PACKAGE_VERSION_SUFFIX
@@ -219,20 +291,16 @@ def PackagePythonForUnix(api, support):
     # default, or have incorrect or inconsistent library versions. We explicitly
     # install and use controlled versions of these libraries for a more
     # controlled, consistent, and (in case of OpenSSL) secure Python build.
-    support.ensure_openssl(api)
-    support.ensure_readline(api)
-    support.ensure_termcap(api)
-    support.ensure_zlib(api)
+    readline = support.ensure_readline(api)
+    termcap = support.ensure_termcap(api)
+    zlib = support.ensure_zlib(api)
+    libs = (readline, termcap, zlib)
 
-    support_lib = support.prefix.join('lib')
-    support_include = support.prefix.join('include')
-
-    cppflags = [
-      '-I%s' % (support_include,),
-    ]
-    ldflags = [
-      '-L%s' % (support_lib,),
-    ]
+    cppflags = []
+    ldflags = []
+    for lib in libs:
+      cppflags += lib.cppflags
+      ldflags += lib.ldflags
 
     configure_env = {
       'CPPFLAGS': ' '.join(cppflags),
@@ -242,20 +310,75 @@ def PackagePythonForUnix(api, support):
       '--disable-shared',
       '--prefix', target_dir,
       '--enable-ipv6',
-      '--with-system-expat',
-      '--with-system-ffi'
     ]
 
+    # Edit the modules configuration to statically compile all Python modules.
+    #
+    # We do this by identifying the line '#*shared*' in "/Modules/Setup.dist"
+    # and replacing it with '*static*'.
+    setup_local_content = [
+      '*static*',
+      'LIBTERMCAP_PREFIX=%s' % (termcap.prefix,),
+      'binascii binascii.c %s %s' % (
+          ' '.join(zlib.cppflags), ' '.join(zlib.full_static)),
+      'zlib zlibmodule.c %s %s' % (
+          ' '.join(zlib.cppflags), ' '.join(zlib.full_static)),
+      'readline readline.c %s %s' % (
+          ' '.join(readline.cppflags + termcap.cppflags),
+          ' '.join(readline.full_static + termcap.full_static)),
+    ]
+
+    # If True, we will augment "ssl.py" to install default system CA certs.
+    probe_default_ssl_ca_certs = False
+
     if api.platform.is_mac:
+      # On Mac, we want to link as much statically as possible. However, Mac OSX
+      # comes with an OpenSSL library that has Mac keychain support built in.
+      # In order to have Python's SSL use the system keychain, we must link
+      # against the native system OpenSSL libraries!
+      #
+      # (Note on Linux, the certificate authority is stored as a file, which we
+      # can just point Python to; consequently, we compile OpenSSL statically).
+      #
+      # In order to link against the system OpenSSL dynamic library, we need
+      # headers representing that library version. OSX doesn't come with those,
+      # so we build and install an equivalent OpenSSL version and include *just
+      # its headers* in our SSL module build.
       support.update_mac_autoconf(configure_env)
 
-      # Mac Python installations use 2-byte Unicode.
       configure_flags += [
+          # Mac Python installations use 2-byte Unicode.
           '--enable-unicode=ucs2',
+
+          # Flags gathered from stock Python installation.
           '--with-threads',
           '--enable-toolbox-glue',
       ]
-    else:
+
+      # On Mac, we want to link against the system OpenSSL libraries.
+      #
+      # Mac uses "-syslibroot", which takes ownership of library paths that
+      # begin with paths matching those in the system library root, which
+      # includes "/usr/lib". In order to circumvent this, we will create a
+      # symlink to "/usr" called ".../systemusr", then reference it as
+      # ".../systemusr/lib".
+      system_usr = workdir.join('systemusr')
+      api.step('symlink usr', ['ln', '-s', '/usr', system_usr])
+
+      #
+      # Note that we link against our support OpenSSL prefix headers, since the
+      # system may not have them installed.
+      ssl = support.ensure_mac_native_openssl(api)
+      ssl_cppflags = ' '.join(ssl.cppflags)
+      ssl_shared = ' '.join(ssl.shared)
+      setup_local_content += [
+        'SYSTEM_USR_LIB=%s/lib' % (str(system_usr),),
+        '_hashlib _hashopenssl.c %s -L$(SYSTEM_USR_LIB) %s' % (
+          ssl_cppflags, ssl_shared),
+        '_ssl _ssl.c -DUSE_SSL %s -L$(SYSTEM_USR_LIB) %s' % (
+          ssl_cppflags, ssl_shared),
+      ]
+    elif api.platform.is_linux:
       configure_flags += [
         # TODO: This breaks building on Mac builder, producing:
         #
@@ -273,22 +396,16 @@ def PackagePythonForUnix(api, support):
         '--with-dbmliborder=bdb:gdbm',
       ]
 
-    # Edit the modules configuration to statically compile all Python modules.
-    #
-    # We do this by identifying the line '#*shared*' in "/Modules/Setup.dist"
-    # and replacing it with '*static*'.
-    setup_local_content = [
-      '*static*',
-      'SP=%s' % (support.prefix,),
-      '_hashlib _hashopenssl.c -I$(SP)/include -I$(SP)/include/openssl '
-          '$(SP)/lib/libssl.a $(SP)/lib/libcrypto.a',
-      '_ssl _ssl.c -DUSE_SSL -I$(SP)/include -I$(SP)/include/openssl '
-          '$(SP)/lib/libssl.a $(SP)/lib/libcrypto.a',
-      'binascii binascii.c -I$(SP)/include $(SP)/lib/libz.a',
-      'zlib zlibmodule.c -I$(SP)/include $(SP)/lib/libz.a',
-      'readline readline.c -I$(SP)/include '
-          '$(SP)/lib/libreadline.a $(SP)/lib/libtermcap.a',
-    ]
+      # On Linux, we will statically compile OpenSSL into the binary, since we
+      # want to be generally system/library agnostic.
+      ssl = support.ensure_static_openssl(api)
+      probe_default_ssl_ca_certs = True
+      ssl_cppflags = ' '.join(ssl.cppflags)
+      ssl_static = ' '.join(ssl.full_static)
+      setup_local_content += [
+        '_hashlib _hashopenssl.c %s %s' % (ssl_cppflags, ssl_static),
+        '_ssl _ssl.c -DUSE_SSL %s %s' % (ssl_cppflags, ssl_static),
+      ]
 
     setup_local = api.context.cwd.join('Modules', 'Setup.local')
     api.shutil.write(
@@ -306,18 +423,32 @@ def PackagePythonForUnix(api, support):
     # Build Python.
     api.step('make', ['make', 'install'])
 
-    # Install "cacert.pem".
+    # Augment the Python installation.
     python_libdir = target_dir.join('lib', 'python2.7')
-    api.shutil.copy(
-        'install cacert.pem',
-        support.ensure_cacert(api),
-        python_libdir.join('cacert.pem'))
-
-    # Install "usercustomize.py".
     api.shutil.copy(
         'install usercustomize.py',
         api.resource('python_usercustomize.py'),
         python_libdir.join('usercustomize.py'))
+
+    if probe_default_ssl_ca_certs:
+      with api.step.nest('provision SSL'):
+        # Read / augment / write the "ssl.py" module to implement custom SSL
+        # certificate loading logic.
+        #
+        # We do this here instead of "usercustomize.py" because the latter isn't
+        # propagated when a VirtualEnv is cut.
+        ssl_py = python_libdir.join('ssl.py')
+        ssl_py_content = api.shutil.read(
+            'read ssl.py',
+            ssl_py)
+        ssl_py_content += '\n' + api.shutil.read(
+            'read ssl.py addendum',
+            api.resource('python_ssl_suffix.py'),
+        )
+        api.shutil.write(
+            'write ssl.py',
+            ssl_py,
+            ssl_py_content)
 
   base_env = {}
   if api.platform.is_mac:
@@ -336,9 +467,11 @@ def PackagePythonForUnix(api, support):
 
 
 @recipe_api.composite_step
-def PackageGit(api, support):
+def PackageGit(api):
   workdir = api.path['start_dir'].join('git')
+  support = SupportPrefix(workdir.join('_support'))
   api.file.rmtree('rmtree workdir', workdir)
+
   if api.platform.is_win:
     PackageGitForWindows(api, workdir)
   else:
@@ -351,34 +484,35 @@ def PackageGitForUnix(api, workdir, support):
   def install(target_dir, _tag):
     # Apply any applicable patches.
     patch = api.resource('git_2_13_0.posix.patch')
-    api.git('apply', patch)
+    api.git(
+        '-c', 'user.name=third_party_packages',
+        '-c', 'user.email=third_party_packages@example.com',
+        'am', patch)
 
-    support.ensure_curl(api)
-    support.ensure_zlib(api)
+    curl = support.ensure_curl(api)
+    zlib = support.ensure_zlib(api)
+    libs = (curl, zlib)
 
     # Note on OS X:
     # `make configure` requires autoconf in $PATH, which is not available on
     # OS X out of box. Unfortunately autoconf is not easy to make portable, so
     # we cannot package it.
-    support.ensure_autoconf(api)
-    support_bin = support.prefix.join('bin')
+    autoconf = support.ensure_autoconf(api)
+    support_bin = autoconf.prefix.join('bin')
 
     # cwd is source checkout
     env = {
         'PATH': api.path.pathsep.join([str(support_bin), '%(PATH)s']),
     }
 
-    support_include = support.prefix.join('include')
-    support_lib = support.prefix.join('lib')
-
-    cppflags = [
-        '-I%s' % (str(support_include,)),
-    ]
-    cflags = [
+    cppflags = []
+    ldflags = [
         '-flto',
     ]
-    ldflags = [
-        '-L%s' % (str(support_lib,)),
+    for lib in libs:
+      cppflags += lib.cppflags
+
+    cflags = [
         '-flto',
     ]
 
@@ -413,9 +547,13 @@ def PackageGitForUnix(api, workdir, support):
       # doesn't make its way to the Makefile (bug?). Therefore, the most
       # direct way to do this is to find the line in Git's "Makefile" that
       # initializes EXTLIBS and add the dependent libraries to it :(
-      extra_libs = ' '.join(['-l%s' % (l,) for l in (
-        'ssl', 'crypto', 'z', 'pthread', 'dl',
-      )])
+      extra_libs = []
+      for lib in libs:
+        extra_libs += lib.shared
+      extra_libs = ' '.join(extra_libs)
+
+      for lib in libs:
+        ldflags += lib.ldflags
 
       # autoconf and make needs these flags to properly detect the build
       # environment.
@@ -433,9 +571,7 @@ def PackageGitForUnix(api, workdir, support):
 
       # We have to force our static libraries into linking to prevent it from
       # linking dynamic or, worse, not seeing them at all.
-      ldflags += [str(support.prefix.join('lib', stlib)) for stlib in (
-        'libz.a', 'libcurl.a',
-      )]
+      ldflags += zlib.full_static + curl.full_static
 
     env['CPPFLAGS'] = ' '.join(cppflags)
     env['CFLAGS'] = ' '.join(cflags)
@@ -485,7 +621,7 @@ def PackageGitForWindows(api, workdir):
     return
 
   # Download the archive.
-  api.file.makedirs('ensure workdir', workdir)
+  api.shutil.makedirs('ensure workdir', workdir)
   archive_path = workdir.join('archive.sfx')
   api.url.get_file(
       archive_url,

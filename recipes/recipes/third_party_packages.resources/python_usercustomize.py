@@ -7,18 +7,29 @@
 It will be installed into: //lib/python2.7/usercustomize.py
 
 It customizes the installed Python environment to:
-  - Use the included "cacert.pem" certificate authority bundle, which will be
-    included at: //lib/python2.7/cacert.pem
+  - Incorporate system Python paths.
 
 See:
 https://chromium.googlesource.com/infra/infra/+/master/doc/packaging/python.md
 """
 
 import os
-import ssl
+import site
 import sys
 
-CACERT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cacert.pem")
-def hack_set_default_verify_paths(self):
-  self.load_verify_locations(cafile=CACERT)
-ssl.SSLContext.set_default_verify_paths = hack_set_default_verify_paths
+# Add system Python paths to the end of "sys.path".
+def add_system_paths():
+  def get_system_sitedirs():
+    vers = sys.version[:3]
+    if sys.platform == 'darwin':
+      base = '/System/Library/Frameworks/Python.framework/Versions/' + vers
+      yield os.path.join(base, 'Extras', 'lib', 'python')
+    if sys.platform.startswith('linux'):
+      for prefix in ('/usr/lib', '/usr/local/lib'):
+        for pkg_dir in ('dist-packages', 'site-packages'):
+          yield os.path.join(prefix, 'python' + vers, pkg_dir)
+
+  for sitedir in get_system_sitedirs():
+    if os.path.isdir(sitedir):
+      site.addsitedir(sitedir)
+add_system_paths()
