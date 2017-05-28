@@ -35,7 +35,7 @@ CPYTHON_PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium5'
+CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium6'
 
 GIT_REPO_URL = (
     'https://chromium.googlesource.com/external/github.com/git/git')
@@ -463,7 +463,7 @@ def PackagePythonForUnix(api):
         install,
         tag,
         version,
-        None,
+        'copy',
     )
 
 

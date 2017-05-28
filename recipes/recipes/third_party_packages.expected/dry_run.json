@@ -58,11 +58,11 @@
       "search",
       "infra/python/cpython/linux-amd64",
       "-tag",
-      "version:2.1.2.chromium5",
+      "version:2.1.2.chromium6",
       "-json-output",
       "/path/to/tmp/json"
     ],
-    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium5",
+    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium6",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -610,7 +610,9 @@
       "-out",
       "[START_DIR]/python/package.cipd",
       "-json-output",
-      "/path/to/tmp/json"
+      "/path/to/tmp/json",
+      "-install-mode",
+      "copy"
     ],
     "name": "python.build linux-amd64",
     "~followup_annotations": [
