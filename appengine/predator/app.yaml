@@ -9,6 +9,9 @@ automatic_scaling:
   min_idle_instances: 1
   max_concurrent_requests: 40
 
+builtins:
+  - remote_api: on
+
 handlers:
 # Static resources and home page.
 # Web UI pages.
