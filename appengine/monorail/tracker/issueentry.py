@@ -301,7 +301,7 @@ class IssueEntry(servlet.Servlet):
               mr.cnxn, self.services, config, issue.issue_id, reporter_id, True)
 
         if hotlist_pbs:
-          hotlist_ids = [hotlist.hotlist_id for hotlist in hotlist_pbs]
+          hotlist_ids = {hotlist.hotlist_id for hotlist in hotlist_pbs}
           issue_tuple = (issue.issue_id, mr.auth.user_id, int(time.time()), '')
           self.services.features.AddIssueToHotlists(
               mr.cnxn, hotlist_ids, issue_tuple)

@@ -25,7 +25,8 @@ class IssueOptionsJSONTest(unittest.TestCase):
         config=fake.ConfigService(),
         issue=fake.IssueService(),
         user=fake.UserService(),
-        usergroup=fake.UserGroupService())
+        usergroup=fake.UserGroupService(),
+        features=fake.FeaturesService())
     services.user.TestAddUser('user_111@domain.com', 111L)
     services.user.TestAddUser('user_222@domain.com', 222L)
     services.user.TestAddUser('user_333@domain.com', 333L)
@@ -47,6 +48,13 @@ class IssueOptionsJSONTest(unittest.TestCase):
     self.project.contributor_ids.extend([333L])
     self.servlet = issueoptions.IssueOptionsJSON(
         'req', webapp2.Response(), services=services)
+
+    # Fake hotlists
+    services.features.TestAddHotlist('name_111', owner_ids=[111L])
+    services.features.TestAddHotlist('name_222', owner_ids=[222L])
+    services.features.TestAddHotlist('name_333', owner_ids=[333L])
+    services.features.TestAddHotlist('name_666', owner_ids=[666L])
+    services.features.TestAddHotlist('name_999', owner_ids=[999L])
 
     self.services = services
 
@@ -117,6 +125,11 @@ class IssueOptionsJSONTest(unittest.TestCase):
     member_emails = self.RunAndGetMemberEmails(
         666L, permissions.OWNER_ACTIVE_PERMISSIONSET)
     self.assertNotIn('user_666@domain.com', member_emails)
+
+  def testHandleRequest_Hotlists(self):
+    json_data = self.RunHandleRequest(111L, permissions.USER_PERMISSIONSET)
+    self.assertListEqual(json_data['hotlists'],
+                         [{'ref_str': 'name_111', 'summary': ''}])
 
   @unittest.skip('TODO(jrobbins): reimplement')
   def skip_testHandleRequest_Groups(self):

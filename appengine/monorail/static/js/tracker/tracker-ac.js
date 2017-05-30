@@ -11,6 +11,10 @@
  * modified version of the autocomplete library.
  */
 
+/**
+ * This is an autocomplete store that holds the hotlists of the current user.
+ */
+var TKR_hotlistsStore;
 
 /**
  * This is an autocomplete store that holds well-known issue label
@@ -182,6 +186,20 @@ function TKR_openClosedComplete(prefix, openStatusDefs, closedStatusDefs) {
                                 closedStatusDefs[i].doc));
   }
   return out;
+}
+
+
+function TKR_setUpHotlistsStore(hotlists) {
+  var docdict = {};
+  var ref_strs = [];
+
+  for (var i = 0; i < hotlists.length; i++) {
+    ref_strs.push(hotlists[i]['ref_str']);
+    docdict[hotlists[i]['ref_str']] = hotlists[i]['summary'];
+  }
+
+  TKR_hotlistsStore = new _AC_SimpleStore(ref_strs, docdict);
+  TKR_hotlistsStore.substitute = TKR_acSubstituteWithComma;
 }
 
 
@@ -1114,6 +1132,7 @@ function TKR_gotIssueOptionsFeed(xhr) {
       indMemerDefs.push(member);
     }
   }
+  TKR_setUpHotlistsStore(json_data.hotlists);
   TKR_setUpStatusStore(json_data.open, json_data.closed);
   TKR_setUpSearchStore(
       json_data.labels, json_data.members, json_data.open, json_data.closed,

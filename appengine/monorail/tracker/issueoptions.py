@@ -175,6 +175,27 @@ class IssueOptionsJSON(jsonfeed.JsonFeed):
       if md_id in group_ids:
         md['is_group'] = True
 
+    hotlist_pbs = self.services.features.GetHotlistsByUserID(
+        mr.cnxn, mr.auth.user_id)
+    seen = set()
+    ambiguous_names = set()
+    for hpb in hotlist_pbs:
+      if hpb.name in seen:
+        ambiguous_names.add(hpb.name)
+      seen.add(hpb.name)
+    hotlists = list()
+    ambiguous_owners_ids = {hpb.owner_ids[0] for hpb in hotlist_pbs
+        if hpb.name in ambiguous_names}
+    ambiguous_owners_ids_to_emails = self.services.user.LookupUserEmails(
+        mr.cnxn, ambiguous_owners_ids)
+    for hpb in hotlist_pbs:
+      if hpb.name in ambiguous_names:
+        ref_str = ':'.join([ambiguous_owners_ids_to_emails[hpb.owner_ids[0]],
+                           hpb.name])
+      else:
+        ref_str = hpb.name
+      hotlists.append({'ref_str': ref_str, 'summary': hpb.summary})
+
     return {
         'open': open_statuses,
         'closed': closed_statuses,
@@ -186,6 +207,7 @@ class IssueOptionsJSON(jsonfeed.JsonFeed):
         'strict': ezt.boolean(config.restrict_to_known),
         'members': members_def_list,
         'custom_permissions': custom_permissions,
+        'hotlists': hotlists,
         }
 
 

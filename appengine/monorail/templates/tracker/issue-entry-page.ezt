@@ -166,7 +166,7 @@
 
       <tr [if-any page_perms.EditIssue][else]style="display:none;"[end]><th><label for="hotlists">Hotlists:</label></th>
        <td class="inplace" colspan="2">
-        <input type="text" name="hotlists" id="hotlists" value="[initial_hotlists]" />
+        <input type="text" name="hotlists" autocomplete="off" id="hotlistsenter" value="[initial_hotlists]" />
         [if-any errors.hotlists]
          <div class="fielderror">[errors.hotlists]</div>
         [end]

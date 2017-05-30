@@ -21,6 +21,7 @@ function TKR_onload() {
   _ac_install();
 
   _ac_register(function (input, event) {
+     if (input.id.startsWith('hotlists')) return TKR_hotlistsStore;
      if (input.id.startsWith('search')) return TKR_searchStore;
      if (input.id.startsWith('query_') || input.id.startsWith('predicate_'))
        return TKR_projectQueryStore;
