@@ -3,7 +3,7 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
-"""JSON feed for issue presubmit warningins."""
+"""JSON feed for issue presubmit warnings."""
 
 import logging
 
@@ -23,6 +23,9 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
   def AssertBasePermission(self, mr):
     """Make sure that the logged in user has permission to view this page."""
     super(IssuePresubmitJSON, self).AssertBasePermission(mr)
+    if mr.local_id is None:
+      return  # For issue creation, there is no existing issue.
+
     issue = self._GetIssue(mr)
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     granted_perms = tracker_bizobj.GetGrantedPerms(
@@ -37,10 +40,6 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
 
   def _GetIssue(self, mr):
     """Retrive the requested issue."""
-    if mr.local_id is None:
-      logging.info('issue not specified')
-      self.abort(404, 'issue not specified')
-
     try:
       issue = self.services.issue.GetIssueByLocalID(
           mr.cnxn, mr.project_id, mr.local_id)
