@@ -31,6 +31,9 @@ handlers:
   script: frontend.main.frontend_app
   secure: always
 
+includes:
+- first_party/gae_ts_mon  # handles /internal/cron/ts_mon/send
+
 skip_files:
 - ^(.*/)?#.*#$
 - ^(.*/)?.*~$
