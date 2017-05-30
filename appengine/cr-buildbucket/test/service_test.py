@@ -1127,33 +1127,20 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.test_build.put()
     yield
-    test_build = self.test_build.key.get()
     events.enqueue_tasks_async.assert_called_with('backend-default', [
       {
         'url': '/internal/task/buildbucket/notify/1',
         'payload': json.dumps({
-          'topic': 'projects/testbed-test/topics/builds',
-          'message': {
-            'build': api_common.build_to_dict(test_build),
-            'hostname': 'buildbucket.example.com',
-          },
-          'attrs': {'build_id': '1'},
+          'id': 1,
+          'mode': 'global',
         }, sort_keys=True),
         'age_limit_sec': model.BUILD_TIMEOUT.total_seconds(),
       },
       {
         'url': '/internal/task/buildbucket/notify/1',
         'payload': json.dumps({
-          'topic': 'projects/example/topics/buildbucket',
-          'message': {
-            'build': api_common.build_to_dict(test_build),
-            'hostname': 'buildbucket.example.com',
-            'user_data': 'hello',
-          },
-          'attrs': {
-            'build_id': '1',
-            'auth_token': 'secret',
-          },
+          'id': 1,
+          'mode': 'callback',
         }, sort_keys=True),
         'age_limit_sec': model.BUILD_TIMEOUT.total_seconds(),
       },
