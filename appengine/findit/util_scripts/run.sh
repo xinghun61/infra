@@ -32,6 +32,10 @@ else
   TMP_DIR=${APPENGINE_TMP}
 fi
 
+
+set -e  # Exit immediately if a command exits with a non-zero status.
+#set -x  # Print all executed commands for debugging.
+
 print_usage() {
   echo
   echo "Usage:"
@@ -74,6 +78,12 @@ run_findit_locally() {
   ${INFRA_PYTHON} ${GOOGLE_APP_ENGINE_DIR}/dev_appserver.py ${options} ${FINDIT_DIR}/dispatch.yaml ${FINDIT_MODULES}
 }
 
+install_polymer() {
+  echo "Reinstalling $(FINDIT_DIR)/third_party/bower_components"
+  echo "If npm or bower was not installed yet, please follow README to install them first."
+  (cd "${FINDIT_DIR}/third_party" && rm -rf bower_components && bower install && cd -)
+}
+
 deploy_findit_for_test() {
   # Deploy a version for testing, the version name is the same as the user name.
   if [[ -z ${APP_ID} ]]; then
@@ -98,6 +108,8 @@ deploy_findit_for_test() {
 }
 
 deploy_findit_for_prod() {
+  install_polymer
+
   local app_id="findit-for-me"
 
   # Sync to latest code.

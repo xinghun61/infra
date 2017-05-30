@@ -35,6 +35,7 @@ skip_files:
 - ^(.*/)?README$
 - ^(.*/)?Makefile$
 - ^(.*/)?util_scripts/.*$
+- ^(.*/)?third_party/bower_components/.*$
 
 libraries:
 - name: webapp2
