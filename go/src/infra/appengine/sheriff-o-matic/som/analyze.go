@@ -26,6 +26,10 @@ var (
 	alertDiffs = metric.NewCounter("analyzer/cron_alert_diffs",
 		"Number of diffs between alerts-dispatcher and cron alerts json", nil,
 		field.String("tree"))
+	alertCount = metric.NewInt("analyzer/alert_count",
+		"Number of alerts generated.",
+		nil,
+		field.String("tree"))
 )
 
 var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg string) {
@@ -130,6 +134,7 @@ func GetAnalyzeHandler(ctx *router.Context) {
 		}
 	}
 
+	alertCount.Set(c, int64(len(alerts)), tree)
 	logging.Debugf(c, "storing %d alerts for %s", len(alerts), tree)
 
 	if err := storeAlertsSummary(c, a, tree, &messages.AlertsSummary{
