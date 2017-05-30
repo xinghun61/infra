@@ -144,7 +144,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'build_number': None
         },
         'last_attempted_try_job': {},
-        'user_email': 'test@example.com'
     }
 
     self.assertEquals(200, response.status_int)
@@ -253,7 +252,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'build_number': None
         },
         'last_attempted_try_job': {},
-        'user_email': 'test@google.com'
     }
 
     self.assertEqual(200, response.status_int)

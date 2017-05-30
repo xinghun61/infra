@@ -8,7 +8,7 @@
   <link rel="import" href="/ui/elements/findit-app.html">
 </head>
 <body>
-  <findit-app page-header="Culprit">
+  <findit-app id="app" page-header="Culprit">
     <b>Project:</b> {{project_name}}<br>
     <b>Commit:</b> <a href="https://crrev.com/{{commit_position or revision}}" target="_blank">{{commit_position or revision}}</a><br>
     {% if cr_notified %}
@@ -46,4 +46,7 @@
     <br>
     <a href="https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=Test-Findit-Wrong&components=Tools>Test>FindIt&summary=Wrongly blame {{commit_position or revision}}&comment=Detail is https://findit-for-me.appspot.com/waterfall/culprit?key={{key}}&cc=stgao@chromium.org,chanli@chromium.org,lijeffrey@chromium.org, robertocn@chromium.org">File a bug for this wrong result here</a>
   </findit-app>
+  <script>
+    document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+  </script>
 </body>

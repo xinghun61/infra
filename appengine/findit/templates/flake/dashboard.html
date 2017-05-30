@@ -137,11 +137,13 @@
       $('.try-job-status-info').click(function() {
         $('#try-job-status-explanation-dialog').dialog('open');
       });
+
+      document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
     });
   </script>
 </head>
 <body>
-  <findit-app page-header="Flaky Tests">
+  <findit-app id="app" page-header="Flaky Tests">
     <form method="get" action="/waterfall/list-flakes">
       <table>
         <tr>

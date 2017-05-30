@@ -17,6 +17,8 @@
   }
 
   $(document).ready(function() {
+    document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+
     $('#test-name').on('change paste', function() {
       var testName = $('#test-name').val().trim();
       if (!testName) {
@@ -38,7 +40,7 @@
   </script>
 </head>
 <body>
-  <findit-app>
+  <findit-app id="app" login-required="true">
     <div style="width:900px; margin:auto;">
       <br>
       <br>
@@ -46,6 +48,7 @@
       <div>
         <div><span style="color:GREEN"><b>Flaky test</b> (Gtest or Android Instrument) on Waterfall or CQ</span>: (<a href="/waterfall/list-flakes">previous analyses</a>)</div>
         <form id="flake" action="/waterfall/flake" method="GET">
+          <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
           <table>
             <tr>
               <td style="text-align:right">Build URL</td>
@@ -79,6 +82,7 @@
       <div>
         <div><span style="color:GREEN"><b>Compile/test</b> failure on Waterfall:</span> (<a href="/waterfall/list-failures">previous analyses</a>)</div>
         <form id="failure" action="/waterfall/failure" method="GET">
+          <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
           <label for="build-url">URL</label> <input required id="build-url" type="url" name="url" size="130" placeholder="Press ENTER after pasting the URL to the build cycle like https://luci-milo.appspot.com/buildbot/chromium.linux/Linux%20Tests/44306"/><br>
           <input type="submit" value="Analyze failure"/>
         </form>

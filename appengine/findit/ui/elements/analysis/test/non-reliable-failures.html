@@ -35,7 +35,7 @@
               <th title="The last known good and first known bad build cycles">Good &rarr; Bad Build</th>
               <th title="The Swarming task to rerun the tests to distingush reliable and flaky failures">Swarming Rerun</th>
               <th class="high-lighted" title="The suspected commit for the failures and in which build cycle it is">Suspected Commit</th>
-              <th title="The higher the score, the more suspected">Score</th>
+              <th title="The higher the score, the more suspected">Score(<a href="#" on-click="_showScoreExplanation">?</a>)</th>
               <th title="How this suspected commit is related to the failures">Heuristic Hints</th>
             </tr>
           </thead>
@@ -163,6 +163,10 @@
 
         _getSuspectInfo: function(failure, index, path) {
           return this.get(path, failure.result.heuristic_analysis.suspected_cls[index]);
+        },
+
+        _showScoreExplanation: function() {
+         this.fire('message', {'predefined_code': 200});
         },
       });
     })();

@@ -10,12 +10,7 @@ automatic_scaling:
   max_concurrent_requests: 25
 
 handlers:
-# Static resources and home page.
-- url: /
-  static_files: templates/home.html
-  upload: templates/home.html
-  secure: always
-
+# Static resources.
 - url: /robots.txt
   static_files: static/robots.txt
   upload: static/robots.txt

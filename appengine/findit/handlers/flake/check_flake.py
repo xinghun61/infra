@@ -175,7 +175,6 @@ def _GetLastAttemptedTryJobDetails(analysis):
 
 class CheckFlake(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
-  INCLUDE_LOGIN_USER_EMAIL = True
 
   def _ShowInputUI(self, analysis):
     # TODO(lijeffrey): Remove checks for admin and debug flag once analyze

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Testing heuristic-hints</title>
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="/ui/elements/auth-login.html">
+<body>
+  <div>
+    <div>Not login yet:</div>
+    <div style="border: 1px solid; width: 300px; background-color:#4285f4">
+      <auth-login id="no-login"></auth-login>
+    </div>
+  </div>
+  <br>
+  <br>
+  <br>
+  <div>
+    <div>Already login:</div>
+    <div style="border: 1px solid; width: 300px; background-color:#4285f4">
+      <auth-login id="user-login"></auth-login>
+    </div>
+  </div>
+  <br>
+  <br>
+  <br>
+  <div>
+    <div>Admin:</div>
+    <div style="border: 1px solid; width: 300px; background-color:#4285f4">
+      <auth-login id="admin-login"></auth-login>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('no-login').email = null;
+    document.getElementById('no-login').isAdmin = false;
+    document.getElementById('no-login').loginUrl = 'https://findit-for-me.appspot.com/login';
+    document.getElementById('no-login').logoutUrl = null;
+
+    document.getElementById('user-login').email = 'test@chromium.org';
+    document.getElementById('user-login').isAdmin = false;
+    document.getElementById('user-login').loginUrl = null;
+    document.getElementById('user-login').logoutUrl = 'https://findit-for-me.appspot.com/logout';
+
+    document.getElementById('admin-login').email = 'test@chromium.org';
+    document.getElementById('admin-login').isAdmin = false;
+    document.getElementById('admin-login').loginUrl = null;
+    document.getElementById('admin-login').logoutUrl = 'https://findit-for-me.appspot.com/logout';
+  </script>
+</body>

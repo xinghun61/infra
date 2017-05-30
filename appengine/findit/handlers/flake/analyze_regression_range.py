@@ -37,7 +37,6 @@ def _ValidateInput(lower_bound_commit_position, upper_bound_commit_position,
 
 class AnalyzeRegressionRange(BaseHandler):
   PERMISSION_LEVEL = Permission.CORP_USER
-  INCLUDE_LOGIN_USER_EMAIL = True
 
   def HandleGet(self):
     return self.HandlePost()

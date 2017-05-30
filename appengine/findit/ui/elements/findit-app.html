@@ -7,6 +7,8 @@
 <link rel="import" href="/bower_components/paper-menu/paper-menu.html">
 <link rel="import" href="/bower_components/paper-menu-button/paper-menu-button.html">
 <link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="./app-messages.html">
+<link rel="import" href="./auth-login.html">
 
 <dom-module id="findit-app">
   <template>
@@ -44,7 +46,7 @@
             <paper-item><a href="/">Home</a></paper-item>
             <paper-item><a href="/waterfall/list-failures">Failures</a></paper-item>
             <paper-item><a href="/waterfall/list-flakes">Flakes</a></paper-item>
-            <template is="dom-if" if="[[user.is_admin]]">
+            <template is="dom-if" if="[[userInfo.is_admin]]">
               <paper-menu-button style="height: 18px">
                 <paper-icon-button icon="menu" slot="dropdown-trigger"></paper-icon-button>
                 <paper-listbox slot="dropdown-content">
@@ -57,18 +59,19 @@
                   <paper-item><a href="/waterfall/check-trybot-mapping">Trybot Mapping</a></paper-item>
                   <br>
                   <paper-item><a href="/waterfall/auto-revert-metrics">Auto Revert Metrics</a></paper-item>
-                  <br>
-                  <paper-item><a href="/waterfall/check-duplicate-failures">Check Duplicate Failures</a></paper-item>
                 </paper-listbox>
               </paper-menu-button>
             </template>
           </paper-menu>
+          <div main-title></div>
+          <auth-login is-admin="[[userInfo.is_admin]]" email="[[userInfo.email]]" login-url="[[userInfo.login_url]]" logout-url="[[userInfo.logout_url]]" login-required="[[loginRequired]]"></auth-login>
         </app-toolbar>
       </app-header>
       <div id="main-content">
         <template is="dom-if" if="[[pageHeader]]">
           <h1>[[pageHeader]]</h1>
         </template>
+        <app-messages></app-messages>
         <slot></slot>
       <div>
     </app-header-layout>
@@ -86,11 +89,13 @@
            type: String,
            value: undefined,
          },
-         user: {
+         loginRequired: {
+           type: Boolean,
+           value: false,
+         },
+         userInfo: {
            type: Object,
-           value: {
-             is_admin: true,  // TODO: pass over from http handler.
-           },
+           value: undefined,
          },
        },
      });

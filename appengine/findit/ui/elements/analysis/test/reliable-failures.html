@@ -42,7 +42,7 @@
               <th title="The Swarming task to rerun the tests to distingush reliable and flaky failures">Swarming Rerun</th>
               <th title="Try-Job reruns the tests to confirm the culprits while heuristic uses rules to suggest suspects">Analysis Approach</th>
               <th class="high-lighted" title="The suspect or culprit identified by heuristic or try-job for the failures and in which build cycle it is">Suspect/Culprit</th>
-              <th title="For heuristic analysis, the higher the score, the more suspected">Score</th>
+              <th title="For heuristic analysis, the higher the score, the more suspected">Score(<a href="#" on-click="_showScoreExplanation">?</a>)</th>
               <th title="How this suspect or culprit is related to the failures">Reason</th>
             </tr>
           </thead>
@@ -228,6 +228,10 @@
 
         _shouldShowHeuristicFindings: function(failure) {
           return this._hasHeuristicFindings(failure) && (this.debug || !this._hasTryJobFindings(failure));
+        },
+
+        _showScoreExplanation: function() {
+         this.fire('message', {'predefined_code': 200});
         },
       });
     })();

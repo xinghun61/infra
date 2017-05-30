@@ -332,10 +332,10 @@
       });
     }
 
-    function handleLogin(httpStatus, response) {
-      if (httpStatus == 401 && response.login_url) {
-        alert(response.error_message || 'Please login with your Google account first.');
-        window.location.href = response.login_url;
+    function handleLogin(httpStatus) {
+      if (httpStatus == 401) {
+        var event = new CustomEvent('message', {'detail': {'predefined_code': 100}});
+        document.dispatchEvent(event);
       } else {
         alert('Unknown error.');
       }
@@ -348,11 +348,13 @@
       alert('Analyze regression range is not yet implemented.');
       $.getJSON('/waterfall/flake/analyze_regression_range?format=json&lower_bound_commit_position=' + lowerBoundCommitPosition +'&upper_bound_commit_position=' + upperBoundCommitPosition + '&iterations_to_rerun=' + iterationsToRerun + '&key=' + findit.analysisKey, function(data) {
       }).error(function(xhr) {
-        handleLogin(xhr.status, xhr.responseJSON);
+        handleLogin(xhr.status);
       });
     }
 
-    $(document).ready(function(){
+    $(document).ready(function() {
+      document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+
       DrawFlakeTrend();
       $('input[name=triage-radio-button]').on('change', function() {
         triageSuspectedFlake($(this).val());
@@ -373,7 +375,7 @@
   </script>
 </head>
 <body>
-  <findit-app>
+  <findit-app id="app">
     <div>
       <b>Flaky Test:</b><br>
       Master: {{ master_name }} <br>
@@ -480,8 +482,8 @@
     <div id="triage_flake">
       {% if suspected_flake %}
         <b>Feedback appreciated:</b>
-          {% if user_email %}
-            (if provided, it connects to your email {{ user_email }} for 30 days)
+          {% if (user_info or {}).get('email') %}
+            (if provided, it connects to your email for 30 days)
           {% endif %}
         <table class="triage-table">
           <tr>

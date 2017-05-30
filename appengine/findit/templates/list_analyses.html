@@ -31,6 +31,8 @@
     }
 
     $(document).ready(function() {
+      document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+
       if ('{{result_status}}' != '-1') {
         $('#result_status').val('{{result_status}}');
       }
@@ -43,7 +45,7 @@
   </script>
 </head>
 <body>
-  <findit-app page-header="Compile & Test failures">
+  <findit-app id="app" page-header="Compile & Test failures">
     <div id="builds">
       <table>
         <tr>

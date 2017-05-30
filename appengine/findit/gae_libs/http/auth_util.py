@@ -35,3 +35,23 @@ def IsCurrentUserAdmin(scope=_EMAIL_SCOPE):  # pragma: no cover
   except oauth.OAuthRequestError:
     pass  # Not logged-in or invalid oauth token.
   return is_admin
+
+
+def GetLoginUrl(url):  # pragma: no cover
+  return users.create_login_url(url)
+
+
+def GetLogoutUrl(url='/'):  # pragma: no cover
+  return users.create_logout_url(url)
+
+
+def GetUserInfo(url='/'):  # pragma: no cover
+  info = {
+      'email': GetUserEmail(),
+      'is_admin': IsCurrentUserAdmin(),
+  }
+  if info['email'] is not None:
+    info['logout_url'] = GetLogoutUrl()
+  else:
+    info['login_url'] = GetLoginUrl(url)
+  return info

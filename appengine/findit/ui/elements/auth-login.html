@@ -1,0 +1,67 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+
+<dom-module id="auth-login">
+  <template>
+    <style>
+      a, span {
+        color: #fff;
+      }
+      a:hover {
+        color: black;
+      }
+    </style>
+
+    <template is="dom-if" if="[[email]]">
+      <span>[[email]]</span>
+      <template is="dom-if" if="[[isAdmin]]">
+        <span>(admin)</span>
+      </template>
+      <template is="dom-if" if="[[logoutUrl]]">
+        |
+        <a href="[[logoutUrl]]">Log out</a>
+      </template>
+    </template>
+    <template is="dom-if" if="[[loginUrl]]">
+      <a href="[[loginUrl]]">Log in</a>
+    </template>
+  </template>
+
+  <script>
+   (function() {
+     'use strict';
+
+     Polymer({
+       is: 'auth-login',
+
+       properties: {
+         isAdmin: {
+           type: Boolean,
+           value: false,
+         },
+         email: {
+           type: String,
+           value: undefined,
+         },
+         loginUrl: {
+           type: String,
+           value:undefined,
+         },
+         logoutUrl: {
+           type: String,
+           value:undefined,
+         },
+         loginRequired: {
+           type: Boolean,
+           value: false,
+         },
+       },
+
+       attached : function() {
+         if ((!this.email || !this.email.endsWith('@google.com')) && this.loginRequired) {
+           this.fire('message', {'predefined_code': 100});
+         }
+       },
+     });
+   })();
+  </script>
+</dom-module>

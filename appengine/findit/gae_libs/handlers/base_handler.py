@@ -6,11 +6,12 @@ import collections
 import json
 import logging
 
-from google.appengine.api import users
 import jinja2
 import webapp2
 
 from common import constants
+from gae_libs import appengine_util
+from gae_libs import token
 from gae_libs.http import auth_util
 
 
@@ -41,9 +42,6 @@ class BaseHandler(webapp2.RequestHandler):
   # By default, redirect to destination page after login for GET requests.
   LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = True
 
-  # By default, not include user email in response.
-  INCLUDE_LOGIN_USER_EMAIL = False
-
   def _HasPermission(self):
     if (self.request.headers.get('X-AppEngine-QueueName') or
         self.request.headers.get('X-AppEngine-Cron')):
@@ -70,7 +68,7 @@ class BaseHandler(webapp2.RequestHandler):
     # Show debug info only if the app is run locally during development, if the
     # currently logged-in user is an admin, or if it is explicitly requested
     # with parameter 'debug=1'.
-    return users.is_current_user_admin() or self.request.get('debug') == '1'
+    return auth_util.IsCurrentUserAdmin() or self.request.get('debug') == '1'
 
   @staticmethod
   def CreateError(error_message, return_code=500):
@@ -165,9 +163,9 @@ class BaseHandler(webapp2.RequestHandler):
     # body and include files, so it is better to redirect to the original page.
     if (self.request.method == 'GET' and
         self.LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET):
-      return users.create_login_url(self.request.url)
+      return auth_util.GetLoginUrl(self.request.url)
     else:
-      return users.create_login_url(self.request.referrer)
+      return auth_util.GetLoginUrl(self.request.referrer)
 
   def _Handle(self, handler_func):
     try:
@@ -198,9 +196,14 @@ class BaseHandler(webapp2.RequestHandler):
       return_code = 500
       cache_expiry = None
 
-    user_email = auth_util.GetUserEmail()
-    if user_email and self.INCLUDE_LOGIN_USER_EMAIL:
-      data['user_email'] = user_email
+    # Not add user login/logout info in unit tests environment to avoid updating
+    # too many existing testcases.
+    if not appengine_util.IsInUnitTestEnvironment():
+      data['user_info'] = auth_util.GetUserInfo(self.request.url)
+      # If not yet, generate one xsrf token for the login user.
+      if not data.get('xsrf_token') and data.get('user_info', {}).get('email'):
+        data['xsrf_token'] = token.GenerateXSRFToken(
+            data.get('user_info', {}).get('email'))
 
     self._SendResponse(template, data, return_code, cache_expiry)
 

@@ -42,10 +42,10 @@
 
     {% block constant %}{% endblock constant %}
 
-    function handleLogin(httpStatus, response) {
-      if (httpStatus == 401 && response.login_url) {
-        alert(response.error_message || 'Please login with your Google account first.');
-        window.location.href = response.login_url;
+    function handleLogin(httpStatus) {
+      if (httpStatus == 401) {
+        var event = new CustomEvent('message', {'detail': {'predefined_code': 100}});
+        document.dispatchEvent(event);
       } else {
         alert('Unknown error. Please refresh the page and try again!');
       }
@@ -59,7 +59,7 @@
           $('#cl-result-triaged').text('Feedback has been recorded. Thank you!')
         }
       }).error(function(xhr) {
-        handleLogin(xhr.status, xhr.responseJSON);
+        handleLogin(xhr.status);
       });
     }
 
@@ -87,13 +87,15 @@
         $('#triage-help-button').prop('disabled', false);
       }).error(function(xhr) {
         $('#triage-help-running').hide();
-        handleLogin(xhr.status, xhr.responseJSON);
+        handleLogin(xhr.status);
       });
     }
 
     {% block functions %}{% endblock functions %}
 
     $(document).ready(function() {
+      document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+
       if (!findit.analysisCompleted) {
         $('#status_message').text('running, will refresh in 5 seconds...');
         $('#status_message').attr('class', 'running');
@@ -118,19 +120,15 @@
         }
       }
 
-      $('#score-explanation-dialog').dialog({
-        autoOpen: false,
-        modal: true,
-        width: 600,
-      });
       $('.score-info').click(function() {
-        $('#score-explanation-dialog').dialog('open');
+        var event = new CustomEvent('message', {'detail': {'predefined_code': 200}});
+        document.dispatchEvent(event);
       });
     });
   </script>
 </head>
 <body>
-  <findit-app>
+  <findit-app id="app">
     <a href="https://code.google.com/p/chromium/issues/entry?status=Unconfirmed&labels=Pri-2&components=Tools>Test>FindIt>Waterfall&summary=Findit%20bug%20or%20reature%20request&comment=Url%20to%20the%20build%20Failure:%0Ahttps://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}%0A%0AWhat%20is%20the%20bug%20or%20feature:%0A" target="_blank">File a Findit bug</a>
     <br>
     <br>
@@ -175,8 +173,8 @@
       <div>
         {% if suspected_cls %}
           <b>Feedback appreciated:</b>
-          {% if user_email %}
-            (if provided, it connects to your email {{ user_email }} for 30 days)
+          {% if (user_info or {}).get('email') %}
+            (if provided, it connects to your email for 30 days)
           {% endif %}
           <table>
             <tr><th>CL</th><th>Confidence</th><th>Feedback</th></tr>
@@ -258,22 +256,5 @@
         </table>
       </div>
     {% endif %}
-
-    <div id="score-explanation-dialog" title="Score Explanation">
-      The total score is a sum of scores for all hints.<br>
-      Rules to set a score to an hint:
-      <ul>
-        <li>5: The CL added or deleted a file that appears in the failure log.</li>
-        <li>2: The CL modified a file that appears in the failure log.</li>
-        <li>1: The CL modified a file that is related to another file
-               appearing in the failure log. (eg: file.h was changed and
-               file_unittest.cc or file_impl.cc appeared in the log.)</li>
-        <li>1: The CL rolled a dependency within src/DEPS and a file of that
-               dependency appears in the failure log. (eg: third_party/dep
-               was changed in src/DEPS and third_party/dep/f.cpp appeared
-               in the log.)</li>
-      </ul>
-      (More rules will be added when implemented.)
-    </div>
   </findit-app>
 </body>

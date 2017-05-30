@@ -13,12 +13,7 @@ builtins:
   - remote_api: on
 
 handlers:
-# Static resources and home page.
-- url: /
-  static_files: templates/home.html
-  upload: templates/home.html
-  secure: always
-
+# Static resources.
 - url: /robots.txt
   static_files: static/robots.txt
   upload: static/robots.txt

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Testing heuristic-hints</title>
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/ui/elements/app-messages.html">
+<body>
+  <div>
+    <app-messages></app-messages>
+  </div>
+
+  <dom-module id="other-element">
+    <template>
+      <div>
+        Message Code:
+        <select id="message-code">
+          <option value="100">100</option>
+          <option value="200">200</option>
+          <option value="0">Undefined</option>
+        </select>
+        <br>
+        <button id="fire" type="button" on-click="fireMessageEvent">Fire Message Event</button>
+      </div>
+    </template>
+
+    <script>
+      HTMLImports.whenReady(function () {
+        Polymer({
+          is: 'other-element',
+          fireMessageEvent: function () {
+            var message_code = document.getElementById('message-code').value;
+            if (message_code == '0')
+              message_code = undefined;
+            console.log('Message code:' + message_code);
+            this.fire('message', {'predefined_code': message_code, 'text': 'Pure text message'});
+          },
+        });
+      });
+    </script>
+  </dom-module>
+  <other-element></other-element>
+</body>

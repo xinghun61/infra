@@ -359,7 +359,6 @@ def _GetAllSuspectedCLsAndCheckStatus(
 
 class BuildFailure(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
-  INCLUDE_LOGIN_USER_EMAIL = True
 
   def _ShowTriageHelpButton(self):
     return users.is_current_user_admin()
