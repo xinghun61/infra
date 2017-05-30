@@ -33,6 +33,11 @@
     'rev': '372c827cb1d38e418163d6b3fa5f550bdc5a8ec7',
     'implicit': True,  # Required by WebTest
   },
+  'cachetools': {
+    'build': '0',
+    'gs': '3efa164096089b0c88652788fada938775229129.tar.gz',
+    'version': '2.0.0'
+  },
   'cffi': {
     'version': '1.7.0',
     'build': '0',
@@ -82,6 +87,31 @@
     'build': '0',
     'repo': 'external/github.com/google/google-api-python-client',
     'rev': 'd83246e69b22f084d1ae92da5897572a4a4eb03d',
+  },
+  'google_auth': {
+    'build': '0',
+    'gs': 'd2e44427f82b37fca41487cd00793a770be65989.tar.gz',
+    'version': '1.0.1'
+  },
+  'googleapis_common_protos': {
+    'build': '0',
+    'gs': 'c7ce97beeadceebb1eb10b4dbcd52c0fc664c686.tar.gz',
+    'version': '1.5.2'
+  },
+  'google_auth_httplib2': {
+    'build': '0',
+    'gs': 'b3f99b951e2340c10b370104439086babe0cef4f.tar.gz',
+    'version': '0.0.2'
+  },
+  'google_cloud_bigquery': {
+    'build': '0',
+    'gs': 'f4ce6bee14b8291886b7f0c8d7fdf92c17ef658b.tar.gz',
+    'version': '0.24.0'
+  },
+  'google_cloud_core': {
+    'build': '0',
+    'gs': '8c6401edab67c15dd52beda9ccce2294d478b3c7.tar.gz',
+    'version': '0.24.1'
   },
   'httplib2': {
     'version': '0.9',
