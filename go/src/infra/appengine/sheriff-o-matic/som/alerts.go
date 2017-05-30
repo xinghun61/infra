@@ -57,7 +57,8 @@ func GetAlertsHandler(ctx *router.Context) {
 
 	// TODO(seanmccullough): remove this check once we turn down a-d and only
 	// use the cron tasks for alerts for all trees. See crbug.com/705074
-	if tree == "chromium" || tree == "ios" {
+
+	if tree == "chromium" || tree == "ios" || tree == "android" || tree == "official_android" {
 		tree = "milo." + tree
 	}
 
