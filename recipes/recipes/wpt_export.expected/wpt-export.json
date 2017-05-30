@@ -103,6 +103,7 @@
     "cmd": [
       "git",
       "config",
+      "--global",
       "user.name",
       "Chromium WPT Sync"
     ],
@@ -114,6 +115,7 @@
     "cmd": [
       "git",
       "config",
+      "--global",
       "user.email",
       "blink-w3c-test-autoroller@chromium.org"
     ],
