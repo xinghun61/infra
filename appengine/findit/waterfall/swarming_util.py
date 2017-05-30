@@ -702,9 +702,9 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
   recent_bots = WfTryBotCache.Get(cache_name).recent_bots
   # TODO(robertocn): Optimize this selection strategy.
   for bot_id in recent_bots:
-    request_dimensions = copy.deepcopy(tryjob.dimensions)
+    request_dimensions = dict([x.split(':', 1) for x in tryjob.dimensions])
     request_dimensions['id'] = bot_id
     counts = GetSwarmingBotCounts(request_dimensions, http_client)
     if counts['available']:
-      tryjob.dimensions = request_dimensions
+      tryjob.dimensions = ['%s:%s' % (k, v) for k, v in request_dimensions]
       return
