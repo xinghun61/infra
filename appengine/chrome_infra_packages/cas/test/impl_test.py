@@ -45,6 +45,7 @@ class CASServiceImplTest(testing.AppengineTestCase):
   def mock_now(self, now):
     super(CASServiceImplTest, self).mock_now(now)
     self.mock(utils, 'utcnow', lambda: now)
+    self.testbed.get_stub('memcache')._gettime = lambda: int(utils.time_time())
 
   def test_get_cas_service_ok(self):
     conf = config.GlobalConfig(
@@ -65,14 +66,18 @@ class CASServiceImplTest(testing.AppengineTestCase):
     self.mock(config, 'cached', lambda: conf)
     self.assertIsNone(impl.get_cas_service())
 
-  def test_fetch(self):
+  @staticmethod
+  def get_cas_service_for_fetch():
     service = impl.CASService('/bucket/real', '/bucket/temp')
-
     sign_calls = []
     def fake_sign_blob(data):
       sign_calls.append(data)
       return 'unused_key_id', '\x00signature\xff'
     service._app_identity_sign_blob = fake_sign_blob
+    return service, sign_calls
+
+  def test_fetch_simple(self):
+    service, sign_calls = self.get_cas_service_for_fetch()
     self.mock_now(utils.timestamp_to_datetime(1416444987 * 1000000.))
 
     # Signature and email should be urlencoded.
@@ -81,13 +86,17 @@ class CASServiceImplTest(testing.AppengineTestCase):
         'https://storage.googleapis.com/bucket/real/SHA1/'
         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?'
         'GoogleAccessId=test%40localhost&'
-        'Expires=1416448587&'
+        'Expires=1416452187&'
         'Signature=AHNpZ25hdHVyZf8%3D', url)
 
     # Since sign_blob is mocked out, at least verify it is called as expected.
     self.assertEqual([
-      'GET\n\n\n1416448587\n/bucket/real/SHA1/' + 'a'*40
+      'GET\n\n\n1416452187\n/bucket/real/SHA1/' + 'a'*40
     ], sign_calls)
+
+  def test_fetch_content_disposition_param(self):
+    service, _ = self.get_cas_service_for_fetch()
+    self.mock_now(utils.timestamp_to_datetime(1416444987 * 1000000.))
 
     # Content disposition header works too.
     url = service.generate_fetch_url('SHA1', 'a' * 40, filename='abc')
@@ -95,9 +104,46 @@ class CASServiceImplTest(testing.AppengineTestCase):
         'https://storage.googleapis.com/bucket/real/SHA1/'
         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?'
         'GoogleAccessId=test%40localhost&'
-        'Expires=1416448587&'
+        'Expires=1416452187&'
         'Signature=AHNpZ25hdHVyZf8%3D&'
         'response-content-disposition=attachment%3B+filename%3D%22abc%22', url)
+
+  def test_fetch_signed_url_caching(self):
+    service, sign_calls = self.get_cas_service_for_fetch()
+
+    epoch = utils.timestamp_to_datetime(1416444987 * 1000000.)
+    self.mock_now(epoch)
+
+    # Initial call populates the memcache.
+    url1 = service.generate_fetch_url('SHA1', 'a' * 40)
+    self.assertEqual(
+        'https://storage.googleapis.com/bucket/real/SHA1/'
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?'
+        'GoogleAccessId=test%40localhost&'
+        'Expires=1416452187&'
+        'Signature=AHNpZ25hdHVyZf8%3D', url1)
+
+    # Did actually sign the URL. It expires in 7200 sec.
+    self.assertEqual([
+      'GET\n\n\n1416452187\n/bucket/real/SHA1/' + 'a'*40
+    ], sign_calls)
+    del sign_calls[:]
+
+    # Hour and a half (almost) later, still using cached URL.
+    self.mock_now(epoch + datetime.timedelta(seconds=5399))
+    url2 = service.generate_fetch_url('SHA1', 'a' * 40)
+    self.assertEqual(url1, url2)
+
+    # No 'sign' calls were made.
+    self.assertFalse(sign_calls)
+
+    # 2 sec after that the memcache entry expires and new URL is generated.
+    self.mock_now(epoch + datetime.timedelta(seconds=5401))
+    url3 = service.generate_fetch_url('SHA1', 'a' * 40)
+    self.assertNotEqual(url2, url3)
+    self.assertEqual([
+      'GET\n\n\n1416457588\n/bucket/real/SHA1/' + 'a'*40
+    ], sign_calls)
 
   def test_is_object_present(self):
     service = impl.CASService('/bucket/real', '/bucket/temp')

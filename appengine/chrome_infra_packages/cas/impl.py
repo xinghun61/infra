@@ -47,6 +47,7 @@ import webapp2
 from google.appengine import runtime
 from google.appengine.api import app_identity
 from google.appengine.api import datastore_errors
+from google.appengine.api import memcache
 from google.appengine.ext import ndb
 
 # We use cloud storage guts to implement "copy if ETag matches".
@@ -65,8 +66,14 @@ import config
 # upload_session_id expires, rendering sessions unreachable by clients. But the
 # entities themselves unnecessarily stay in the datastore.
 
-# How long to keep signed fetch URL alive.
-FETCH_URL_EXPIRATION_SEC = 60 * 60
+# Memcache namespace for cached signed URLs. See _sign_gs_fetch.
+SIGNED_URL_MEMCACHE_NAMESPACE = 'v1-signed-urls'
+
+# Minimal lifetime of returned signed fetch URL.
+SIGNED_URL_EXPIRATION_MIN_SEC = 30 * 60
+
+# Maximal lifetime of returned signed fetch URL.
+SIGNED_URL_EXPIRATION_MAX_SEC = 2 * 60 * 60
 
 # How long to keep pending upload session alive.
 SESSION_EXPIRATION_TIME_SEC = 6 * 60 * 60
@@ -517,25 +524,31 @@ class CASService(object):
       * signature is byte blob with the signature
       * expires is Unix timestamp (integer seconds) when the signature expires
     """
-    # TODO(vadimsh): Popular packages are fetched very frequently when they are
-    # updated. Cache the signature in memcache to avoid hammering 'sign_blob'.
-
-    # See https://cloud.google.com/storage/docs/access-control/signed-urls.
-    #
-    # Basically, we should sign a specially crafted multi-line string that
-    # encodes expected parameters of the request. During the actual request,
-    # Google Storage backend will construct the same string and verify that
-    # provided signature matches it.
-    expires = int(utils.time_time() + FETCH_URL_EXPIRATION_SEC)
-    to_sign = '\n'.join([
-      'GET',
-      '',  # expected value of 'Content-MD5' header, not used
-      '',  # expected value of 'Content-Type' header, not used
-      str(expires),
-      gs_path,
-    ])
-    _, signature = self._app_identity_sign_blob(to_sign)
-    return signature, expires
+    cached = memcache.get(gs_path, namespace=SIGNED_URL_MEMCACHE_NAMESPACE)
+    if not cached:
+      # See https://cloud.google.com/storage/docs/access-control/signed-urls.
+      #
+      # Basically, we should sign a specially crafted multi-line string that
+      # encodes expected parameters of the request. During the actual request,
+      # Google Storage backend will construct the same string and verify that
+      # provided signature matches it.
+      expires = int(utils.time_time() + SIGNED_URL_EXPIRATION_MAX_SEC)
+      to_sign = '\n'.join([
+        'GET',
+        '',  # expected value of 'Content-MD5' header, not used
+        '',  # expected value of 'Content-Type' header, not used
+        str(expires),
+        gs_path,
+      ])
+      _, signature = self._app_identity_sign_blob(to_sign)
+      cached = {'signature': signature, 'expires': expires}
+      # Make the memcache entry expire sooner that the signature, so that the
+      # returned URL always lives for at least SIGNED_URL_EXPIRATION_MIN_SEC.
+      memcache.set(
+          gs_path, cached,
+          time=SIGNED_URL_EXPIRATION_MAX_SEC - SIGNED_URL_EXPIRATION_MIN_SEC,
+          namespace=SIGNED_URL_MEMCACHE_NAMESPACE)
+    return cached['signature'], cached['expires']
 
 
 class UploadSession(ndb.Model):
