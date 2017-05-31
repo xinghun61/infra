@@ -28,18 +28,6 @@ import config
 package = 'cipd'
 
 
-class ServiceAccountInfo(messages.Message):
-  """Identity and private key of a service account to use to sign GS URLs.
-
-  For copy-pasting pleasure in API Explorer it's compatible with JSON blob
-  produced by "Generate new JSON key" button in Cloud Console > APIs & auth >
-  Credentials > Service Account.
-  """
-  client_email = messages.StringField(1, required=True)
-  private_key = messages.StringField(2, required=True)
-  private_key_id = messages.StringField(3, required=True)
-
-
 class GoogleStorageConfig(messages.Message):
   """Google Storage paths to use for CAS."""
   cas_gs_path = messages.StringField(1, required=True)
@@ -52,25 +40,6 @@ class GoogleStorageConfig(messages.Message):
     title='CIPD Administration API')
 class AdminApi(remote.Service):
   """Administration API accessibly only by the service admins."""
-
-  @gae_ts_mon.instrument_endpoint()
-  @auth.endpoints_method(ServiceAccountInfo, name='setServiceAccount')
-  @auth.require(auth.is_admin)
-  def service_account(self, request):
-    """Changes service account email and private key used to sign GS URLs."""
-    conf = config.GlobalConfig.fetch()
-    if not conf:
-      conf = config.GlobalConfig()
-
-    changed = conf.modify(
-        updated_by=auth.get_current_identity().to_bytes(),
-        service_account_email=request.client_email,
-        service_account_pkey=request.private_key,
-        service_account_pkey_id=request.private_key_id)
-    if changed:
-      logging.warning('Updated service account configuration')
-
-    return message_types.VoidMessage()
 
   @gae_ts_mon.instrument_endpoint()
   @auth.endpoints_method(GoogleStorageConfig, name='setGoogleStorageConfig')

@@ -22,12 +22,8 @@ class Interrupt(Exception):
 
 class MockedRepoService(object):
   def __init__(self):
-    self.configured = True
     self.client_bin_err = None
     self.no_client_bin = False
-
-  def is_fetch_configured(self):
-    return self.configured
 
   def resolve_version(self, pkg, version, limit):
     if pkg == 'infra/tools/cipd/mac-amd64' and version == 'ref':
@@ -110,13 +106,8 @@ class ClientHandlerTest(testing.AppengineTestCase):
     self.assertEqual(
         self.call('mac-amd64', 'ref'), (403, 'Not allowed.'))
 
-  def test_repo_not_configured_1(self):
+  def test_repo_not_configured(self):
     self.repo_mock = None
-    self.assertEqual(
-        self.call('mac-amd64', 'ref'), (500, 'The service is not configured.'))
-
-  def test_repo_not_configured_2(self):
-    self.repo_mock.configured = False
     self.assertEqual(
         self.call('mac-amd64', 'ref'), (500, 'The service is not configured.'))
 

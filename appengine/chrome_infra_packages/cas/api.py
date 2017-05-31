@@ -128,7 +128,7 @@ class CASServiceApi(remote.Service):
       return error('Invalid hash digest format')
 
     service = impl.get_cas_service()
-    if service is None or not service.is_fetch_configured():
+    if service is None:
       raise endpoints.InternalServerErrorException('Service is not configured')
 
     url = service.generate_fetch_url(hash_algo, request.file_hash)

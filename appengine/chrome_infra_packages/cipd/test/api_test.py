@@ -1432,9 +1432,6 @@ class MockedRepoService(impl.RepoService):
     super(MockedRepoService, self).__init__(None)
     self.uploaded = set()
 
-  def is_fetch_configured(self):
-    return True
-
   def generate_fetch_url(self, instance):
     return 'http://signed-url/%s' % instance.instance_id
 

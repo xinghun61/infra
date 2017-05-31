@@ -45,6 +45,7 @@ import urllib
 import webapp2
 
 from google.appengine import runtime
+from google.appengine.api import app_identity
 from google.appengine.api import datastore_errors
 from google.appengine.ext import ndb
 
@@ -110,17 +111,9 @@ def get_cas_service():
   except ValueError as err:
     logging.error("Invalid CAS config: %s", err)
     return None
-  service_account_key = auth.ServiceAccountKey(
-      client_email=conf.service_account_email,
-      private_key=conf.service_account_pkey,
-      private_key_id=conf.service_account_pkey_id)
-  if utils.is_local_dev_server():  # pragma: no branch
-    from . import hacks
-    hacks.patch_cloudstorage_lib(service_account_key)
   return CASService(
       conf.cas_gs_path.rstrip('/'),
-      conf.cas_gs_temp.rstrip('/'),
-      service_account_key)
+      conf.cas_gs_temp.rstrip('/'))
 
 
 class NotFoundError(Exception):
@@ -135,21 +128,18 @@ class UploadIdSignature(auth.TokenKind):
 
 
 class CASService(object):
-  """CAS implementation on top of Google Storage."""
+  """CAS implementation on top of Google Storage.
 
-  def __init__(self, gs_path, gs_temp, service_account_key=None):
+  It uses GAE App Identity API to sign Google Storage URLs.
+  """
+
+  def __init__(self, gs_path, gs_temp):
     self._gs_path = gs_path.rstrip('/')
     self._gs_temp = gs_temp.rstrip('/')
-    self._service_account_key = service_account_key
     self._retry_params = api_utils.RetryParams()
+    self._app_identity_sign_blob = app_identity.sign_blob  # mocked in tests
     cloudstorage.validate_file_path(self._gs_path)
     cloudstorage.validate_file_path(self._gs_temp)
-
-  def is_fetch_configured(self):
-    """True if service account credentials are configured."""
-    return (
-        self._service_account_key and
-        self._service_account_key.private_key_id)
 
   def is_object_present(self, hash_algo, hash_digest):
     """True if the given object is in the store."""
@@ -164,24 +154,16 @@ class CASService(object):
     for more info about signed URLs.
     """
     assert is_valid_hash_digest(hash_algo, hash_digest)
-    assert self.is_fetch_configured()
 
-    # Generate the signature.
+    # Generate the signature for GET operation.
     gs_path = self._verified_gs_path(hash_algo, hash_digest)
-    expires = str(int(utils.time_time() + FETCH_URL_EXPIRATION_SEC))
-    to_sign = '\n'.join([
-      'GET',
-      '', # Content-MD5, not provided
-      '', # Content-Type, not provided
-      expires,
-      gs_path,
-    ])
-    signature = self._rsa_sign(self._service_account_key.private_key, to_sign)
+    signature, expires = self._sign_gs_fetch(gs_path)
 
+    # Query parameters for the final URL.
     params = [
-      ('GoogleAccessId', self._service_account_key.client_email),
-      ('Expires', expires),
-      ('Signature', signature),
+      ('GoogleAccessId', utils.get_service_account_name()),
+      ('Expires', str(expires)),
+      ('Signature', base64.b64encode(signature)),
     ]
 
     # Oddly, response-content-disposition is not signed and can be slapped onto
@@ -524,16 +506,36 @@ class CASService(object):
     # TODO(vadimsh): Finalize pending upload using upload_session.upload_url.
     self._gs_delete(upload_session.temp_gs_location)
 
-  @staticmethod
-  def _rsa_sign(pkey_pem, data):  # pragma: no cover
-    """Returns base64 encoded RSA-SHA256 signature of a string."""
-    # Load crypto modules lazily. For some reason they are not available in unit
-    # test environment (but work on dev server).
-    from Crypto.Hash import SHA256
-    from Crypto.PublicKey import RSA
-    from Crypto.Signature import PKCS1_v1_5
-    signer = PKCS1_v1_5.new(RSA.importKey(pkey_pem))
-    return base64.b64encode(signer.sign(SHA256.new(data)))
+  def _sign_gs_fetch(self, gs_path):
+    """Returns signature (and its properties) for Google Storage GET operation.
+
+    Callers can use it to construct signed Google Storage URL. The returned
+    signature is guaranteed to have at least 30 min lifetime (but may have
+    more).
+
+    Returns tuple (signature, expires), where:
+      * signature is byte blob with the signature
+      * expires is Unix timestamp (integer seconds) when the signature expires
+    """
+    # TODO(vadimsh): Popular packages are fetched very frequently when they are
+    # updated. Cache the signature in memcache to avoid hammering 'sign_blob'.
+
+    # See https://cloud.google.com/storage/docs/access-control/signed-urls.
+    #
+    # Basically, we should sign a specially crafted multi-line string that
+    # encodes expected parameters of the request. During the actual request,
+    # Google Storage backend will construct the same string and verify that
+    # provided signature matches it.
+    expires = int(utils.time_time() + FETCH_URL_EXPIRATION_SEC)
+    to_sign = '\n'.join([
+      'GET',
+      '',  # expected value of 'Content-MD5' header, not used
+      '',  # expected value of 'Content-Type' header, not used
+      str(expires),
+      gs_path,
+    ])
+    _, signature = self._app_identity_sign_blob(to_sign)
+    return signature, expires
 
 
 class UploadSession(ndb.Model):

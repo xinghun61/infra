@@ -584,7 +584,7 @@ class PackageRepositoryApi(remote.Service):
     """Returns configured impl.RepoService."""
     if self._service is None:
       self._service = impl.get_repo_service()
-      if self._service is None or not self._service.is_fetch_configured():
+      if self._service is None:
         raise endpoints.InternalServerErrorException(
             'Service is not configured')
     return self._service

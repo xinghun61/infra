@@ -55,7 +55,7 @@ class ClientHandler(auth.AuthenticatingHandler):
     # The rest of the calls touch datastore and Google Storage, need
     # a configured Repo implementation.
     repo = impl.get_repo_service()
-    if repo is None or not repo.is_fetch_configured():
+    if repo is None:
       self.abort(500, 'The service is not configured.')
 
     # Resolve a version to a concrete instance ID, if necessary.

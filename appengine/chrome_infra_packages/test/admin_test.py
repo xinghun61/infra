@@ -9,12 +9,6 @@ import admin
 import config
 
 
-SERVICE_ACCOUNT_INFO = {
-  'client_email': 'client@email.com',
-  'private_key': 'private_key',
-  'private_key_id': 'private_key_id',
-}
-
 GS_CONFIG = {
   'cas_gs_path': '/bucket/gs_path',
   'cas_gs_temp': '/bucket/gs_temp/',
@@ -27,21 +21,7 @@ class TestAdminHandlers(testing.EndpointsTestCase):
   def test_require_auth(self):
     auth_testing.mock_is_admin(self, False)
     with self.call_should_fail(403):
-      self.call_api('service_account', SERVICE_ACCOUNT_INFO)
-    with self.call_should_fail(403):
       self.call_api('gs_config', GS_CONFIG)
-
-  def test_service_account(self):
-    auth_testing.mock_is_admin(self, True)
-    self.call_api('service_account', SERVICE_ACCOUNT_INFO)
-    conf = config.GlobalConfig.fetch()
-    self.assertEqual(conf.service_account_email, 'client@email.com')
-    self.assertEqual(conf.service_account_pkey, 'private_key')
-    self.assertEqual(conf.service_account_pkey_id, 'private_key_id')
-    # Second call with same data doesn't change version.
-    version = conf.key.id()
-    self.call_api('service_account', SERVICE_ACCOUNT_INFO)
-    self.assertEqual(config.GlobalConfig.fetch().key.id(), version)
 
   def test_gs_config_ok(self):
     auth_testing.mock_is_admin(self, True)

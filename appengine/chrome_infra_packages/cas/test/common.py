@@ -15,9 +15,6 @@ from cas import impl
 class MockedCASService(object):  # pragma: no cover
   """Same interface as impl.CASService, but without implementation."""
 
-  def is_fetch_configured(self):
-    return True
-
   def is_object_present(self, hash_algo, hash_digest):
     return False
 

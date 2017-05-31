@@ -160,10 +160,6 @@ class RepoService(object):
     self.cas_service = cas_service
     self.processors = processors or []
 
-  def is_fetch_configured(self):
-    """True if 'generate_fetch_url' has enough configuration to work."""
-    return self.cas_service.is_fetch_configured()
-
   def get_instance(self, package_name, instance_id):
     """Returns PackageInstance entity if such instance is registered.
 
@@ -396,7 +392,6 @@ class RepoService(object):
     Returns:
       Signed URL that can be used by a client to fetch package file.
     """
-    assert self.is_fetch_configured()
     return self.cas_service.generate_fetch_url(
         DIGEST_ALGO, instance.instance_id)
 
@@ -421,7 +416,6 @@ class RepoService(object):
         c) Both items are None if client binary is still being extracted.
     """
     assert client.is_cipd_client_package(instance.package_name)
-    assert self.is_fetch_configured()
     processing_result = self.get_processing_result(
         instance.package_name,
         instance.instance_id,

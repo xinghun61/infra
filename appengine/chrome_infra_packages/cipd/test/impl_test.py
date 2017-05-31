@@ -795,9 +795,6 @@ class MockedCASService(object):
   def __init__(self):
     self.uploaded = {}
 
-  def is_fetch_configured(self):
-    return True
-
   def generate_fetch_url(self, algo, digest, filename=None):
     r = 'https://signed-url/%s/%s' % (algo, digest)
     if filename:

@@ -11,7 +11,6 @@ import StringIO
 
 from testing_utils import testing
 
-from components import auth
 from components import auth_testing
 from components import utils
 
@@ -67,18 +66,13 @@ class CASServiceImplTest(testing.AppengineTestCase):
     self.assertIsNone(impl.get_cas_service())
 
   def test_fetch(self):
-    service = impl.CASService(
-        '/bucket/real', '/bucket/temp',
-        auth.ServiceAccountKey('account@email.com', 'PEM private key', 'id'))
+    service = impl.CASService('/bucket/real', '/bucket/temp')
 
-    # Actual _rsa_sign implementation depends on PyCrypto, that for some reason
-    # is not importable in unit tests. _rsa_sign is small enough to be "tested"
-    # manually on the dev server.
-    calls = []
-    def fake_sign(pkey, data):
-      calls.append((pkey, data))
-      return '+signature+'
-    self.mock(service, '_rsa_sign', fake_sign)
+    sign_calls = []
+    def fake_sign_blob(data):
+      sign_calls.append(data)
+      return 'unused_key_id', '\x00signature\xff'
+    service._app_identity_sign_blob = fake_sign_blob
     self.mock_now(utils.timestamp_to_datetime(1416444987 * 1000000.))
 
     # Signature and email should be urlencoded.
@@ -86,24 +80,23 @@ class CASServiceImplTest(testing.AppengineTestCase):
     self.assertEqual(
         'https://storage.googleapis.com/bucket/real/SHA1/'
         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?'
-        'GoogleAccessId=account%40email.com&'
+        'GoogleAccessId=test%40localhost&'
         'Expires=1416448587&'
-        'Signature=%2Bsignature%2B', url)
+        'Signature=AHNpZ25hdHVyZf8%3D', url)
 
-    # Since _rsa_sign is mocked out, at least verify it is called as expected.
-    self.assertEqual([(
-      'PEM private key',
+    # Since sign_blob is mocked out, at least verify it is called as expected.
+    self.assertEqual([
       'GET\n\n\n1416448587\n/bucket/real/SHA1/' + 'a'*40
-    )], calls)
+    ], sign_calls)
 
     # Content disposition header works too.
     url = service.generate_fetch_url('SHA1', 'a' * 40, filename='abc')
     self.assertEqual(
         'https://storage.googleapis.com/bucket/real/SHA1/'
         'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa?'
-        'GoogleAccessId=account%40email.com&'
+        'GoogleAccessId=test%40localhost&'
         'Expires=1416448587&'
-        'Signature=%2Bsignature%2B&'
+        'Signature=AHNpZ25hdHVyZf8%3D&'
         'response-content-disposition=attachment%3B+filename%3D%22abc%22', url)
 
   def test_is_object_present(self):
