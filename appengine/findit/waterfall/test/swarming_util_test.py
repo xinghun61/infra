@@ -1093,7 +1093,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   def testAssignWarmCacheHost(self, mock_fn):
     class MockTryJob(object):
       is_swarmbucket_build = True
-      dimensions = [] 
+      dimensions = []
 
     cache_name = 'some_cache_name'
     content_data = {
@@ -1117,15 +1117,22 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     }
     mock_fn.return_value = (json.dumps(content_data), None)
     try_job_2 = MockTryJob()
+    try_job_2.dimensions.append('misc:dimension')
     swarming_util.AssignWarmCacheHost(try_job_2, cache_name,
                                       SwarmingHttpClient())
+    # We should at least have one dimension here
+    self.assertTrue(try_job_2.dimensions)
     self.assertTrue(isinstance(try_job_2.dimensions, list))
+    id_found = False
     for dimension in try_job_2.dimensions:
-      value, key = dimension.split(':', 1)
+      key, value = dimension.split(':', 1)
+      if key == 'id':
+        id_found = True
       self.assertTrue(value)
       self.assertTrue(isinstance(value, basestring))
       self.assertTrue(key)
       self.assertTrue(isinstance(key, basestring))
+    self.assertTrue(id_found)
 
   @mock.patch.object(swarming_util, '_SendRequestToServer')
   def testSelectWarmCacheNoOp(self, mock_fn):

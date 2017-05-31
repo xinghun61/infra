@@ -706,5 +706,6 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
     request_dimensions['id'] = bot_id
     counts = GetSwarmingBotCounts(request_dimensions, http_client)
     if counts['available']:
-      tryjob.dimensions = ['%s:%s' % (k, v) for k, v in request_dimensions]
+      tryjob.dimensions = ['%s:%s' % (k, v) for k, v in
+                           request_dimensions.iteritems()]
       return
