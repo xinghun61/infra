@@ -46,7 +46,7 @@
 
 [include "../framework/footer-script.ezt"]
 [if-any grid_mode][else]
-  [include "issue-list-js.ezt"]
+  [include "issue-list-js.ezt" "issuelist"]
 [end]
 
 <script type="text/javascript" nonce="[nonce]">

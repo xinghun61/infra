@@ -71,8 +71,8 @@ runOnLoad(function() {
 <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
   _setupKibblesOnListPage(
-    '[project_home_url]/issues/list',
+    [is arg0 "issuelist"]'[project_home_url]/issues/list'[else]'[currentPageURLEncoded]'[end],
     '[project_home_url]/issues/entry',
-    '[projectname]', 1, 0, '[set_star_token]');
+    '[projectname]', [is arg0 "issuelist"]1[else]5[end], 0, '[set_star_token]');
 });
 </script>

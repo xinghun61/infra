@@ -80,7 +80,7 @@
 
 [include "../framework/footer-script.ezt"]
 [if-any grid_mode][else]
-  [include "../tracker/issue-list-js.ezt"]
+  [include "../tracker/issue-list-js.ezt" "hotlist"]
 [end]
 
 <script type="text/javascript" nonce="[nonce]">
