@@ -147,31 +147,37 @@
        </td>
       </tr>
 
-      <tr [if-any page_perms.EditIssue][else]style="display:none;"[end]><th style="white-space:nowrap"><label for="blocked_on">Blocked on:</label></th>
-       <td class="inplace" colspan="2">
-        <input type="text" name="blocked_on" id="blocked_on" value="[initial_blocked_on]">
-        [if-any errors.blocked_on]
-         <div class="fielderror">[errors.blocked_on]</div>
-        [end]
-       </td>
-      </tr>
-      <tr [if-any page_perms.EditIssue][else]style="display:none;"[end]><th><label for="blocking">Blocking:</label></th>
-       <td class="inplace" colspan="2">
-        <input type="text" name="blocking" id="blocking" value="[initial_blocking]" />
-        [if-any errors.blocking]
-         <div class="fielderror">[errors.blocking]</div>
-        [end]
-       </td>
-      </tr>
+      <tbody class="collapse">
+       <tr class="ifCollapse">
+        <td><a href="#" class="toggleCollapse">More options</a></td>
+       </tr>
 
-      <tr [if-any page_perms.EditIssue][else]style="display:none;"[end]><th><label for="hotlists">Hotlists:</label></th>
-       <td class="inplace" colspan="2">
-        <input type="text" name="hotlists" autocomplete="off" id="hotlistsenter" value="[initial_hotlists]" />
-        [if-any errors.hotlists]
-         <div class="fielderror">[errors.hotlists]</div>
-        [end]
-       </td>
-      </tr>
+       <tr [if-any page_perms.EditIssue][else]style="display:none;"[end] class="ifExpand"><th style="white-space:nowrap"><label for="blocked_on">Blocked on:</label></th>
+        <td class="inplace" colspan="2">
+         <input type="text" name="blocked_on" id="blocked_on" value="[initial_blocked_on]">
+         [if-any errors.blocked_on]
+          <div class="fielderror">[errors.blocked_on]</div>
+         [end]
+        </td>
+       </tr>
+       <tr [if-any page_perms.EditIssue][else]style="display:none;"[end] class="ifExpand"><th><label for="blocking">Blocking:</label></th>
+        <td class="inplace" colspan="2">
+         <input type="text" name="blocking" id="blocking" value="[initial_blocking]" />
+         [if-any errors.blocking]
+          <div class="fielderror">[errors.blocking]</div>
+         [end]
+        </td>
+       </tr>
+
+       <tr [if-any page_perms.EditIssue][else]style="display:none;"[end] class="ifExpand"><th><label for="hotlists">Hotlists:</label></th>
+        <td class="inplace" colspan="2">
+         <input type="text" name="hotlists" autocomplete="off" id="hotlistsenter" value="[initial_hotlists]" />
+         [if-any errors.hotlists]
+          <div class="fielderror">[errors.hotlists]</div>
+         [end]
+        </td>
+       </tr>
+      </tbody>
 
      [if-any show_captcha]
       <tr><th style="white-space:nowrap">Human Verification:</th>
