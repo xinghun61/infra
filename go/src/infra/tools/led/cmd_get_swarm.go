@@ -7,7 +7,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"os"
 
 	"golang.org/x/net/context"
@@ -59,17 +58,11 @@ func (c *cmdGetSwarm) validateFlags(ctx context.Context, args []string) (authOpt
 	}
 	c.taskID = args[0]
 
-	p, err := url.Parse(c.swarmingHost)
-	if err != nil {
-		err = errors.Annotate(err).Reason("bad SwarmingHost %(url)q").
-			D("url", c.swarmingHost).Err()
+	if err = checkHost(c.swarmingHost); err != nil {
+		err = errors.Annotate(err).Reason("SwarmingHostname").Err()
 		return
 	}
-	if p.Host != c.swarmingHost {
-		err = errors.Reason("SwarmingHost must only specify hostname: %(url)q").
-			D("url", c.swarmingHost).Err()
-		return
-	}
+
 	return c.authFlags.Options()
 }
 

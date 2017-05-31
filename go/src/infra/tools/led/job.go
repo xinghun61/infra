@@ -250,14 +250,14 @@ func updateMap(dest, updates map[string]string) {
 // commands to be called while buffering the error (if any). Obtain the modified
 // JobDefinition (or error) by calling Finalize.
 type EditJobDefinition struct {
-	jd  JobDefinition
+	jd  *JobDefinition
 	err error
 }
 
 // Edit returns a mutator wrapper which knows how to manipulate various aspects
 // of the JobDefinition.
 func (jd *JobDefinition) Edit() *EditJobDefinition {
-	return &EditJobDefinition{*jd, nil}
+	return &EditJobDefinition{jd, nil}
 }
 
 // Finalize returns the error (if any)
@@ -270,7 +270,7 @@ func (ejd *EditJobDefinition) Finalize() error {
 
 func (ejd *EditJobDefinition) tweak(fn func(jd *JobDefinition) error) {
 	if ejd.err == nil {
-		ejd.err = fn(&ejd.jd)
+		ejd.err = fn(ejd.jd)
 	}
 }
 
@@ -416,6 +416,19 @@ func (ejd *EditJobDefinition) CipdPkgs(cipdPkgs map[string]string) {
 	})
 }
 
+func checkHost(host string) error {
+	p, err := url.Parse(host)
+	if err != nil {
+		return errors.Annotate(err).Reason("bad url %(url)q").D("url", host).Err()
+	}
+	// for some reason, urlparse will parse 'some.host.tld' as the Path...
+	if p.Path != host {
+		return errors.Reason("must only specify hostname: %(url)q v %(parsed)q").
+			D("url", host).D("parsed", p.Path).Err()
+	}
+	return nil
+}
+
 // SwarmingHostname allows you to modify the current SwarmingHostname used by this
 // led pipeline. Note that the isolated server is derived from this, so
 // if you're editing this value, do so before passing the JobDefinition through
@@ -425,13 +438,8 @@ func (ejd *EditJobDefinition) SwarmingHostname(host string) {
 		return
 	}
 	ejd.tweak(func(jd *JobDefinition) error {
-		p, err := url.Parse(host)
-		if err != nil {
-			return err
-		}
-		if p.Host != host {
-			return errors.Reason("SwarmingHostname must only specify hostname: %(url)q").
-				D("url", host).Err()
+		if err := checkHost(host); err != nil {
+			return errors.Annotate(err).Reason("SwarmingHostname").Err()
 		}
 		jd.SwarmingHostname = host
 		return nil
