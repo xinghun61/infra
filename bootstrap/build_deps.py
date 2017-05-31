@@ -77,7 +77,7 @@ def run_custom_build(name, link, sha, build):
 
   assert has_custom_build(name)
 
-  link = Link(link, trusted=True)
+  link = Link(link)
   unpack = unpack_vcs_link if is_vcs_url(link) else unpack_file_url
 
   with tempdir() as tmpd, tempdir() as wheeld:  # pylint: disable=C0321
