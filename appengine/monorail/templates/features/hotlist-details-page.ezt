@@ -7,7 +7,7 @@
 <form id="edithotlist" action="details.do" method="POST" autocomplete="off" enctype="multipart/form-data">
   <input type="hidden" name="token" value="[form_token]">
 
-<h4>Hotlist details</h4>
+<h4>Hotlist settings</h4>
 
 <div class="section">
   Hotlist name:<br>

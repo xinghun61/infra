@@ -44,7 +44,7 @@
         id = "hotlists-dropdown">Hotlist: [hotlist.name] <small>&#9660;</small></a>
       <a href="[hotlist.url]" class="[is main_tab_mode "ht2"]active[end]">Issues</a>
       <a href="[hotlist.url]/people" class="[is main_tab_mode "ht3"]active[end]">People</a>
-      <a href="[hotlist.url]/details" class="[is main_tab_mode "ht4"]active[end]">Details</a>
+      <a href="[hotlist.url]/details" class="[is main_tab_mode "ht4"]active[end]">Settings</a>
       </th>
     [end]
 
