@@ -2,13 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import json
 import mock
-import os
 
 from testing_utils import testing
 
 from infra_api_clients.codereview.gerrit import Gerrit
+from libs import time_util
 from libs.http import retry_http_client
 
 
@@ -439,17 +440,27 @@ class GerritTest(testing.AppengineTestCase):
 
   def testCreateRevertSuccessful(self):
     change_id = 'I123456'
+
     reverting_change_id = 'I987654'
     response = self.http_client._MakeResponse(
       {'change_id': reverting_change_id})
     url = 'https://%s/a/changes/%s/revert' % (self.server_hostname, change_id)
     self.http_client.SetResponse(url, (200, response))
-    self.assertEqual(reverting_change_id, self.gerrit.CreateRevert(
-      'Reason', change_id))
+
+    with mock.patch.object(
+        self.gerrit,
+        '_GenerateRevertCLDescription',
+        return_value='Reason'):
+      self.assertEqual(reverting_change_id, self.gerrit.CreateRevert(
+          'Reason', change_id))
 
   def testCreateRevertFailure(self):
     change_id = 'I123456'
-    self.assertFalse(self.gerrit.CreateRevert('Reason', change_id))
+    with mock.patch.object(
+        self.gerrit,
+        '_GenerateRevertCLDescription',
+        return_value='Reason'):
+      self.assertFalse(self.gerrit.CreateRevert('Reason', change_id))
 
   def testRequestAddsAuthenticationPrefix(self):
     self.gerrit._AuthenticatedRequest(['changes', '123'])
@@ -460,3 +471,103 @@ class GerritTest(testing.AppengineTestCase):
     self.gerrit._AuthenticatedRequest(['a', 'changes', '123'])
     url, _payload, _headers = self.http_client.requests[0]
     self.assertEqual('https://server.host.name/a/changes/123', url)
+
+  @mock.patch.object(time_util, 'GetUTCNow',
+                     return_value= datetime.datetime(2017, 6, 1, 1, 0, 0))
+  def testGenerateRevertCLDescription(self, _):
+    change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
+    reason = 'Reason'
+
+    expected_description = (
+        'Revert "cl title"\n\n'
+        'This reverts commit edda1046ce724695004242e943f59f5e1b2d00ff.\n\n'
+        'Reason for revert:\nReason\n\n'
+        'Original change\'s description:\n'
+        '> cl title\n> \n> some description\n> \n> NOAUTOREVERT= True\n> \n'
+        '> Change-Id: someid\n> Reviewed-on: cl_url\n> Commit-Queue: owner\n'
+        '> Reviewed-by: reviewers\n> \n> BUGS : 12345, 67890\n'
+        '> Cq-Include-Trybots: m1.b1:m2.b2\n'
+        '# Not skipping CQ checks because original CL landed > 1 day ago.\n'
+        'BUGS : 12345, 67890\n'
+        'Cq-Include-Trybots: m1.b1:m2.b2'
+    )
+
+    with mock.patch.object(
+        self.gerrit,
+        '_Get',
+        return_value={
+            'change_id': 'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
+            'status': 'MERGED',
+            'owner': {
+                'email': 'abc@chromium.org'
+            },
+            'submitted': '2017-02-27 18:56:54.000000000',
+            '_number': 446905,
+            'reviewers': {
+                'REVIEWER': [
+                    {'email': 'one@chromium.org'},
+                    {'email': 'commit-bot@chromium.org'},
+                    {'email': 'two@chromium.org'}
+                ],
+                'CC': []
+            },
+            'messages': [
+                {
+                    'id': 'b7d6785c324297ec4f1e6b2de34cf83f4c58e87c',
+                    'author': {'email': 'one@chromium.org'},
+                    'date': '2017-02-27 18:47:15.000000000',
+                    'message': 'Patch Set 1: Commit-Queue+2',
+                    '_revision_number': 1
+                }
+            ],
+            'current_revision': 'edda1046ce724695004242e943f59f5e1b2d00ff',
+            'revisions': {
+                'edda1046ce724695004242e943f59f5e1b2d00ff': {
+                    '_number': 2,
+                    'commit': {
+                        'committer': {
+                            'email': 'commit-bot@chromium.org',
+                        },
+                      'message': 'cl title\n\nsome description\n\n'
+                                 'NOAUTOREVERT= True\n\nChange-Id: '
+                                 'someid\nReviewed-on: cl_url\nCommit-Queue: '
+                                 'owner\nReviewed-by: reviewers\n\n'
+                                 'BUGS : 12345, 67890\n'
+                                 'Cq-Include-Trybots: m1.b1:m2.b2'
+                    },
+                }
+            },
+           'subject': 'cl title'
+        }):
+
+      self.assertEqual(
+          expected_description,
+          self.gerrit._GenerateRevertCLDescription(change_id, reason))
+
+  def testGetBugLine(self):
+    expected_results = {
+      'message': '',
+      'BUG: 24343\n': 'BUG: 24343',
+      'Bug: 23234\n': 'Bug: 23234',
+      'issue: 34254\n': 'issue: 34254'
+    }
+
+    for k, v in expected_results.iteritems():
+      self.assertEqual(v, self.gerrit._GetBugLine(k))
+
+  def testGetCQTryBotLine(self):
+    expected_results = {
+      'message': '',
+      'cq-include-trybots: m1.b1:m2.b2\n': 'cq-include-trybots: m1.b1:m2.b2',
+      'CQ_INCLUDE_TRYBOTS= m1.b1:m2.b2 \n': 'CQ_INCLUDE_TRYBOTS= m1.b1:m2.b2',
+      'Cq_Include_Trybots= m1.b1:m2.b2\n': 'Cq_Include_Trybots= m1.b1:m2.b2'
+    }
+    for k, v in expected_results.iteritems():
+      self.assertEqual(v, self.gerrit._GetCQTryBotLine(k))
+
+  @mock.patch.object(time_util, 'GetUTCNow',
+                     return_value= datetime.datetime(2017, 2, 7, 1, 0, 0))
+  def testGetCQFlagsOrExplanationWithinOneDay(self, _):
+    time = datetime.datetime(2017, 2, 7, 0, 0, 0)
+    self.assertEqual('No-Presubmit: true\nNo-Tree-Checks: true\nNo-Try: true\n',
+                     self.gerrit._GetCQFlagsOrExplanation(time))

@@ -47,6 +47,56 @@ class Gerrit(codereview.CodeReview):
       return self.HTTP_CLIENT.Post(url, data=payload, headers=headers)
     raise NotImplementedError()  # pragma: no cover
 
+  def _GetBugLine(self, description):
+    bug_line_pattern = re.compile('^\s*((BUGS?|ISSUE)\s*[=:]\s*.*)$',
+                                  re.IGNORECASE)
+    for line in reversed(description.splitlines()):
+      if bug_line_pattern.match(line):
+        return line.strip()
+    return ''
+
+  def _GetCQTryBotLine(self, description):
+    cq_trybot_line_pattern = re.compile(
+        '^\s*(CQ_INCLUDE_TRYBOTS=.*|Cq-Include-Trybots:.*)$', re.IGNORECASE)
+    for line in reversed(description.splitlines()):
+      if cq_trybot_line_pattern.match(line):
+        return line.strip()
+    return ''
+
+  def _GetRevisedCLDescription(self, description):
+    """Adds '> ' in front of the original cl description."""
+    return ''.join(['> ' + l for l in description.splitlines(True)])
+
+  def _GetCQFlagsOrExplanation(self, commit_timestamp):
+    delta = time_util.GetUTCNow() - commit_timestamp
+    if delta.days > 1:
+      return (
+          '# Not skipping CQ checks because original CL landed > 1 day ago.\n')
+    return 'No-Presubmit: true\nNo-Tree-Checks: true\nNo-Try: true\n'
+
+  def _GenerateRevertCLDescription(self, change_id, revert_reason):
+    original_cl_info = self.GetClDetails(change_id)
+    original_cl_subject = original_cl_info.subject
+    original_cl_change_id = original_cl_info.change_id
+    original_cl_description = original_cl_info.description
+    original_cl_commit_revision = original_cl_info.commits[0].revision
+    original_cl_commit_timestamp = original_cl_info.commits[0].timestamp
+
+    revert_cl_description = (
+        'Revert "%s"\n\n' % (original_cl_subject if original_cl_subject else
+        original_cl_change_id))
+    revert_cl_description += 'This reverts commit %s.\n\n' % (
+        original_cl_commit_revision)
+    revert_cl_description += 'Reason for revert:\n%s\n\n' % revert_reason
+    revert_cl_description += 'Original change\'s description:\n%s\n' % (
+        self._GetRevisedCLDescription(original_cl_description))
+    revert_cl_description += self._GetCQFlagsOrExplanation(
+        original_cl_commit_timestamp)
+    revert_cl_description += self._GetBugLine(original_cl_description) + '\n'
+    revert_cl_description += self._GetCQTryBotLine(
+        original_cl_description)
+    return revert_cl_description
+
   def _Get(self, path_parts, params=None, headers=None):
     """Makes a simple get to Gerrit's API and parses the json output."""
     return self._HandleResponse(*self._AuthenticatedRequest(
@@ -70,7 +120,9 @@ class Gerrit(codereview.CodeReview):
 
   def CreateRevert(self, reason, change_id, patchset_id=None):
     parts = ['changes', change_id, 'revert']
-    reverting_change = self._Post(parts, body={'message': reason})
+    revert_cl_description = self._GenerateRevertCLDescription(change_id, reason)
+    reverting_change = self._Post(
+        parts, body={'message': revert_cl_description})
     try:
       return reverting_change['change_id']
     except (TypeError, KeyError):
