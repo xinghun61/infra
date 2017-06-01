@@ -1,0 +1,71 @@
+<!-- Copyright 2017 The Chromium Authors. All rights reserved.
+Use of this source code is governed under the Apache License, Version 2.0
+that can be found in the LICENSE file. -->
+
+{{define "title"}}Builder {{.Model.Builder.ID.Builder}}{{end}}
+
+{{define "content"}}
+  {{with .Model}}
+<ol class="breadcrumb">
+  <li class="active">
+    <a href="/">All masters</a>
+  </li>
+  <li class="active">
+    <a href="/masters/{{.Builder.ID.Master}}/">{{.Builder.ID.Master}}</a>
+  </li>
+  <li class="active">
+    <a href="/masters/{{.Builder.ID.Master}}/builders/{{.Builder.ID.Builder}}/">{{.Builder.ID.Builder}}</a>
+  </li>
+</ol>
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-12">
+      <h2>{{.Builder.ID.Builder}}</h2>
+
+      <div>
+        Buildbot:
+        <a href="https://ci.chromium.org/buildbot/{{.Builder.ID.Master}}/{{.Builder.ID.Builder}}/">
+          https://ci.chromium.org/buildbot/{{.Builder.ID.Master}}/{{.Builder.ID.Builder}}/
+        </a>
+      </div>
+
+      <div>
+        LUCI:
+        <a href="https://ci.chromium.org/buildbucket/{{.Builder.LUCIBuildbucketBucket}}/{{.Builder.LUCIBuildbucketBuilder}}/">
+          https://ci.chromium.org/buildbucket/{{.Builder.LUCIBuildbucketBucket}}/{{.Builder.LUCIBuildbucketBuilder}}/
+        </a>
+      </div>
+
+      <div>
+        Tracking bug:
+        <a href="{{.Builder.IssueID.URL}}">{{.Builder.IssueID.URL}}</a>
+      </div>
+
+    {{if not .StatusKnown}}
+      <div class="alert alert-info" role="alert" style="margin-top: 10px">
+        Migration status is unknown.
+        Perhaps this builder was not analyzed yet.
+      </div>
+    {{else}}
+      <div>
+        Status: <span class="label label-{{.StatusClassSuffix}}">{{.Builder.Migration.Status}}</span>
+        as of {{.Builder.Migration.AnalysisTime}}
+      </div>
+      <div>
+        Estimated LUCI Correctness:
+        {{.Builder.Migration.Correctness | percent}}%
+        with {{.Builder.Migration.CorrectnessConfidence | percent}}% confidence
+      </div>
+      <div>
+        LUCI Speed: {{.Builder.Migration.Speed | percent}}%
+      </div>
+
+      <h2>Details</h2>
+      <div>{{.Details}}</div>
+    {{end}}
+    </div>
+  </div>
+</div>
+  {{end}}
+{{end}}

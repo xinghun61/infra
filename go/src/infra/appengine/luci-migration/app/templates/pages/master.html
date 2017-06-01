@@ -8,29 +8,37 @@ that can be found in the LICENSE file. -->
   {{with .Model}}
 <ol class="breadcrumb">
   <li class="active"><a href="/">All masters</a></li>
+  <li class="active"><a href="/masters/{{.Name}}/">{{.Name}}</a></li>
 </ol>
 
 <div class="container">
   <div class="row">
     <div class="col-sm-12">
 
-      <h2>Masters</h2>
+      <h2>Master {{.Name}}</h2>
       <table class="table">
         <thead>
           <tr>
-            <td>Name</td>
-            <td>Total builders</td>
-            <td>Migrated builders</td>
+            <td>Builder</td>
+            <td>Migration Status</td>
+            <td>Estimated LUCI Correctness</td>
+            <td>LUCI Speed</td>
           </tr>
         </thead>
         <tbody>
-    {{range .Masters}}
+    {{range .Builders}}
           <tr>
             <td>
-              <a href="masters/{{.Name}}/">{{.Name}}</a>
+              <a href="builders/{{.Name}}">{{.Name}}</a>
             </td>
-            <td>{{.TotalBuilderCount}}</td>
-            <td>{{.MigratedBuilderCount}} ({{.MigratedBuilderPercent}}%)</td>
+            <td>{{.Migration.Status}}</td>
+            <td>
+      {{if .ShowScores}}
+              {{.Migration.Correctness | percent}}%
+              ({{.Migration.CorrectnessConfidence | percent}}% confidence)
+      {{end}}
+            </td>
+            <td>{{if .ShowScores}}{{.Migration.Speed | percent}}%{{end}}</td>
           </tr>
     {{end}}
         </tbody>

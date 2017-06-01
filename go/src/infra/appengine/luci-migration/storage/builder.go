@@ -8,11 +8,26 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/net/context"
+
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/errors"
 
 	"infra/appengine/luci-migration/config"
 )
+
+// BuilderKind is kind of Builder entities.
+const BuilderKind = "Builder"
+
+const builderIDSep = ':' // must have byte length of 1
+
+// BuilderMasterFilter limits a builder query to builders of the master.
+func BuilderMasterFilter(c context.Context, q *datastore.Query, master string) *datastore.Query {
+	q = q.Gt("__key__", datastore.NewKey(c, BuilderKind, master+string(builderIDSep), 0, nil))
+	// ';' is the next rune after ':'. master name cannot have ':' or ';'
+	q = q.Lt("__key__", datastore.NewKey(c, BuilderKind, master+string(builderIDSep+1), 0, nil))
+	return q
+}
 
 // Builder is a Buildbot builder that needs to be migrated to LUCI.
 type Builder struct {
@@ -26,6 +41,8 @@ type Builder struct {
 
 	LUCIBuildbucketBucket  string
 	LUCIBuildbucketBuilder string
+
+	Migration BuilderMigration
 }
 
 // IssueID globally identifies a Monorail issue.
@@ -33,6 +50,15 @@ type IssueID struct {
 	Hostname string
 	Project  string
 	ID       int
+}
+
+// URL returns issue URL.
+func (i *IssueID) URL() string {
+	if i.Hostname == "monorail-prod.appspot.com" && i.Project == "chromium" {
+		return fmt.Sprintf("https://crbug.com/%d", i.ID)
+	}
+
+	return fmt.Sprintf("https://%s/p/%s/issues/detail?id=%d", i.Hostname, i.Project, i.ID)
 }
 
 // BuilderID is a combination of a Buildbot master and builder.
@@ -43,7 +69,7 @@ type BuilderID struct {
 
 // String implements fmt.Stringer.
 func (b *BuilderID) String() string {
-	return b.Master + ":" + b.Builder
+	return b.Master + string(builderIDSep) + b.Builder
 }
 
 // ToProperty implements PropertyConverter.
@@ -57,12 +83,16 @@ func (b *BuilderID) FromProperty(p datastore.Property) error {
 	if !ok {
 		return fmt.Errorf("not a string")
 	}
-	parts := strings.SplitN(str, ":", 2)
-	if len(parts) != 2 {
-		return errors.Reason("no colon in %(id)q").D("id", str).Err()
+
+	sep := strings.IndexRune(str, builderIDSep)
+	if sep == -1 {
+		return errors.Reason("no %(sep)q in %(id)q").
+			D("sep", builderIDSep).
+			D("id", str).
+			Err()
 	}
 
-	b.Master = parts[0]
-	b.Builder = parts[1]
+	b.Master = str[:sep]
+	b.Builder = str[sep+1:]
 	return nil
 }

@@ -7,6 +7,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io"
 	"net/http"
 	"strings"
@@ -38,6 +39,8 @@ import (
 	"infra/appengine/luci-migration/flakiness"
 )
 
+var errNotFound = errors.New("not found")
+
 //// Routes.
 
 // prepareTemplates configures templates.Bundle used by all UI handlers.
@@ -48,6 +51,11 @@ func prepareTemplates() *templates.Bundle {
 		Loader:          templates.FileSystemLoader("templates"),
 		DebugMode:       info.IsDevAppServer,
 		DefaultTemplate: "base",
+		FuncMap: template.FuncMap{
+			"percent": func(v float64) interface{} {
+				return int(100 * v)
+			},
+		},
 		DefaultArgs: func(c context.Context) (templates.Args, error) {
 			loginURL, err := auth.LoginURL(c, "/")
 			if err != nil {
@@ -73,10 +81,6 @@ func prepareTemplates() *templates.Bundle {
 	}
 }
 
-func indexPage(c *router.Context) {
-	templates.MustRender(c.Context, c.Writer, "pages/index.html", nil)
-}
-
 func cronDiscoverBuilders(c *router.Context) error {
 	// Standard cron job timeout is 10min.
 	c.Context, _ = context.WithDeadline(c.Context, clock.Now(c.Context).Add(10*time.Minute))
@@ -91,9 +95,9 @@ func cronDiscoverBuilders(c *router.Context) error {
 	switch {
 	case err != nil:
 		return err
-	case cfg.Milo.Hostname == "":
+	case cfg.Milo.GetHostname() == "":
 		return errors.New("invalid config: milo host unspecified")
-	case cfg.Monorail.Hostname == "":
+	case cfg.Monorail.GetHostname() == "":
 		return errors.New("invalid config: monorail host unspecified")
 	}
 
@@ -111,7 +115,7 @@ func cronDiscoverBuilders(c *router.Context) error {
 	}
 
 	return parallel.FanOutIn(func(work chan<- func() error) {
-		for _, m := range cfg.Buildbot.Masters {
+		for _, m := range cfg.GetBuildbot().GetMasters() {
 			m := m
 			work <- func() error {
 				masterCtx := logging.SetField(c.Context, "master", m.Name)
@@ -167,7 +171,9 @@ func init() {
 		auth.Authenticate(server.UsersAPIAuthMethod{}),
 	)
 
-	r.GET("/", m, indexPage)
+	r.GET("/", m, errHandler(handleIndexPage))
+	r.GET("/masters/:master/", m, errHandler(handleMasterPage))
+	r.GET("/masters/:master/builders/:builder/", m, errHandler(handleBuilderPage))
 
 	http.DefaultServeMux.Handle("/", r)
 }
@@ -177,8 +183,6 @@ func errHandler(f func(c *router.Context) error) router.Handler {
 		if err := f(c); err != nil {
 			logging.Errorf(c.Context, "Internal server error: %s", err.Error())
 			http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
-		} else {
-			c.Writer.Write([]byte("OK"))
 		}
 	}
 }
@@ -195,9 +199,6 @@ func taskHandler(f func(c *router.Context) error) router.Handler {
 		case err != nil:
 			logging.WithError(err).Errorf(c.Context, "fatal error")
 			c.Writer.Write([]byte("Not really OK, but do not retry"))
-
-		default:
-			c.Writer.Write([]byte("OK"))
 		}
 	}
 }
