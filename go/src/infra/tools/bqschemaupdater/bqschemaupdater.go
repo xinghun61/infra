@@ -2,41 +2,24 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// Package main takes as an argument the file path of a schema to be added to
+// or updated in BigQuery. That file should contain a tabledef.TableDef proto
+// in text format.
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"io"
+	"io/ioutil"
 	"log"
 	"os"
 
 	"cloud.google.com/go/bigquery"
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
+	pb "infra/tools/bqschemaupdater/tabledef"
 )
 
-// TableDef contains all the necessary information needed to create a BigQuery
-// table. It is designed to be populated from a JSON config.
-type TableDef struct {
-	DatasetID   string        `json:"datasetID"`
-	TableID     string        `json:"tableID"`
-	Name        string        `json:"name"`
-	Description string        `json:"description"`
-	Fields      []FieldSchema `json:"schema"`
-}
-
-// FieldSchema exactly mirrors bigquery.FieldSchema, and exists to provide json
-// tags that are not present in bigquery.FieldSchema.
-type FieldSchema struct {
-	Name        string        `json:"name"`
-	Description string        `json:"description"`
-	Repeated    bool          `json:"repeated"`
-	Required    bool          `json:"required"`
-	Type        string        `json:"type"`
-	Schema      []FieldSchema `json:"schema"`
-}
-
-func bqSchema(fields []FieldSchema) bigquery.Schema {
+func bqSchema(fields []*pb.FieldSchema) bigquery.Schema {
 	var s bigquery.Schema
 	for _, f := range fields {
 		s = append(s, bqField(f))
@@ -44,13 +27,13 @@ func bqSchema(fields []FieldSchema) bigquery.Schema {
 	return s
 }
 
-func bqField(f FieldSchema) *bigquery.FieldSchema {
+func bqField(f *pb.FieldSchema) *bigquery.FieldSchema {
 	fs := &bigquery.FieldSchema{
 		Name:        f.Name,
 		Description: f.Description,
-		Type:        bigquery.FieldType(f.Type),
-		Repeated:    f.Repeated,
-		Required:    f.Required,
+		Type:        bigquery.FieldType(f.Type.String()),
+		Repeated:    f.IsRepeated,
+		Required:    f.IsRequired,
 	}
 	if fs.Type == bigquery.RecordFieldType {
 		fs.Schema = bqSchema(f.Schema)
@@ -58,20 +41,19 @@ func bqField(f FieldSchema) *bigquery.FieldSchema {
 	return fs
 }
 
-func tableDefs(r io.Reader) []TableDef {
-	var s []TableDef
-	d := json.NewDecoder(r)
-	err := d.Decode(&s)
+func tableDef(s string) *pb.TableDef {
+	td := &pb.TableDef{}
+	err := proto.UnmarshalText(s, td)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return s
+	return td
 }
 
-func updateFromTableDef(ctx context.Context, ts tableStore, td TableDef) error {
-	_, err := ts.getTableMetadata(ctx, td.DatasetID, td.TableID)
+func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) error {
+	_, err := ts.getTableMetadata(ctx, td.DatasetId, td.TableId)
 	if errNotFound(err) {
-		err = ts.createTable(ctx, td.DatasetID, td.TableID)
+		err = ts.createTable(ctx, td.DatasetId, td.TableId)
 		if err != nil {
 			return err
 		}
@@ -81,7 +63,7 @@ func updateFromTableDef(ctx context.Context, ts tableStore, td TableDef) error {
 		Description: td.Description,
 		Schema:      bqSchema(td.Fields),
 	}
-	err = ts.updateTable(ctx, td.DatasetID, td.TableID, md)
+	err = ts.updateTable(ctx, td.DatasetId, td.TableId, md)
 	return err
 }
 
@@ -92,11 +74,11 @@ func main() {
 	if file == "" {
 		log.Fatal("Missing arg: file path for schema to add/update")
 	}
-	r, err := os.Open(file)
+	in, err := ioutil.ReadFile(file)
 	if err != nil {
 		log.Fatal(err)
 	}
-	tds := tableDefs(r)
+	td := tableDef(string(in))
 
 	ctx := context.Background()
 	c, err := bigquery.NewClient(ctx, "chrome-infra-events")
@@ -109,10 +91,8 @@ func main() {
 		ts = dryRunTableStore{ts: ts, w: os.Stdout}
 	}
 
-	for _, td := range tds {
-		err = updateFromTableDef(ctx, ts, td)
-		if err != nil {
-			log.Fatal(err)
-		}
+	err = updateFromTableDef(ctx, ts, td)
+	if err != nil {
+		log.Fatal(err)
 	}
 }

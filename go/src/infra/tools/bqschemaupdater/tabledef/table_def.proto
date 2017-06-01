@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package tabledef;
+
+message TableDef {
+  string dataset_id = 1;
+  string table_id = 2;
+  string name = 3;
+  string description = 4;
+  repeated FieldSchema fields = 5;
+}
+
+enum Type {
+  STRING = 0;
+  BYTES = 1;
+  INTEGER = 2;
+  FLOAT = 3;
+  BOOLEAN = 4;
+  TIMESTAMP = 5;
+  RECORD = 6;
+  DATE = 7;
+  TIME = 8;
+  DATETIME = 9;
+}
+
+message FieldSchema {
+  string name = 1;
+  string description = 2;
+  bool is_repeated = 3;
+  bool is_required = 4;
+  Type type = 5;
+  repeated FieldSchema schema = 6;
+}
