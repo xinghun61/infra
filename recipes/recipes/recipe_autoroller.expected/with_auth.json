@@ -78,7 +78,7 @@
     ],
     "cwd": "[CACHE]/recipe_autoroller/build",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "build.git fetch",

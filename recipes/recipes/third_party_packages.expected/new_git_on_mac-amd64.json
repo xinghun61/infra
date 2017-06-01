@@ -195,7 +195,7 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
-      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:%(PATH)s"
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
     "name": "git.git fetch",
@@ -545,7 +545,7 @@
       "CPPFLAGS": "-I[START_DIR]/git/_support/curl-7.54.0/prefix/include -I[START_DIR]/git/_support/zlib-1.2.11/prefix/include",
       "LDFLAGS": "-flto -framework Foundation -framework Security [START_DIR]/git/_support/zlib-1.2.11/prefix/lib/libz.a [START_DIR]/git/_support/curl-7.54.0/prefix/lib/libcurl.a",
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
-      "PATH": "[START_DIR]/git/_support/autoconf-2.69/prefix/bin:%(PATH)s",
+      "PATH": "[START_DIR]/git/_support/autoconf-2.69/prefix/bin:<PATH>",
       "ac_cv_func_clock_gettime": "n",
       "ac_cv_func_getentropy": "n"
     },
@@ -566,7 +566,7 @@
       "CPPFLAGS": "-I[START_DIR]/git/_support/curl-7.54.0/prefix/include -I[START_DIR]/git/_support/zlib-1.2.11/prefix/include",
       "LDFLAGS": "-flto -framework Foundation -framework Security [START_DIR]/git/_support/zlib-1.2.11/prefix/lib/libz.a [START_DIR]/git/_support/curl-7.54.0/prefix/lib/libcurl.a",
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
-      "PATH": "[START_DIR]/git/_support/autoconf-2.69/prefix/bin:%(PATH)s",
+      "PATH": "[START_DIR]/git/_support/autoconf-2.69/prefix/bin:<PATH>",
       "ac_cv_func_clock_gettime": "n",
       "ac_cv_func_getentropy": "n"
     },
