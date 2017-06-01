@@ -156,19 +156,14 @@ def ApplyGivenRules(cnxn, services, issue, config, rules, predicate_asts):
     rules: list of FilterRule PBs.
 
   Returns:
-    True if any derived_* field of the issue was changed.
+    A dictionary {(field_id, new_value): explanation_str} of traces that
+    explain which rule generated each derived value.
 
   SIDE-EFFECT: update the derived_* fields of the Issue PB.
   """
   (derived_owner_id, derived_status, derived_cc_ids,
-   derived_labels, derived_notify_addrs) = _ComputeDerivedFields(
+   derived_labels, derived_notify_addrs, traces) = _ComputeDerivedFields(
        cnxn, services, issue, config, rules, predicate_asts)
-
-  any_change = (derived_owner_id != issue.derived_owner_id or
-                derived_status != issue.derived_status or
-                derived_cc_ids != issue.derived_cc_ids or
-                derived_labels != issue.derived_labels or
-                derived_notify_addrs != issue.derived_notify_addrs)
 
   # Remember any derived values.
   issue.derived_owner_id = derived_owner_id
@@ -177,7 +172,7 @@ def ApplyGivenRules(cnxn, services, issue, config, rules, predicate_asts):
   issue.derived_labels = derived_labels
   issue.derived_notify_addrs = derived_notify_addrs
 
-  return any_change
+  return traces
 
 
 def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
@@ -192,10 +187,10 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
     predicate_asts: QueryAST PB for each rule.
 
   Returns:
-    A 5-tuple of derived values for owner_id, status, cc_ids, labels, and
-    notify_addrs.  These values are the result of applying all rules in order.
-    Filter rules only produce derived values that do not conflict with the
-    explicit field values of the issue.
+    A 6-tuple of derived values for owner_id, status, cc_ids, labels,
+    notify_addrs, and traces.  These values are the result of applying all
+    rules in order.  Filter rules only produce derived values that do not
+    conflict with the explicit field values of the issue.
   """
   excl_prefixes = [
       prefix.lower() for prefix in config.exclusive_label_prefixes]
@@ -217,15 +212,16 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
   derived_cc_ids = []
   derived_labels = []
   derived_notify_addrs = []
+  traces = {}  # {(field_id, new_value): explanation_str}
 
   def AddLabelConsideringExclusivePrefixes(label):
     lab_lower = label.lower()
     if lab_lower in label_set:
-      return  # We already have that label.
+      return False  # We already have that label.
     prefix = lab_lower.split('-')[0]
     if '-' in lab_lower and prefix in excl_prefixes:
       if prefix in excl_prefixes_used:
-        return  # Issue already has that prefix.
+        return False  # Issue already has that prefix.
       # Replace any earlied-added label that had the same exclusive prefix.
       if prefix in prefix_values_added:
         label_set.remove(prefix_values_added[prefix].lower())
@@ -234,6 +230,7 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
 
     derived_labels.append(label)
     label_set.add(lab_lower)
+    return True
 
   # Apply component labels and auto-cc's before doing the rules.
   components = tracker_bizobj.GetIssueComponentsAndAncestors(issue, config)
@@ -242,10 +239,14 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
       if cc_id not in cc_set:
         derived_cc_ids.append(cc_id)
         cc_set.add(cc_id)
+        traces[(tracker_pb2.FieldID.CC, cc_id)] = (
+            'Added by component %s' % cd.path)
 
     for label_id in cd.label_ids:
       lab = services.config.LookupLabel(cnxn, config.project_id, label_id)
-      AddLabelConsideringExclusivePrefixes(lab)
+      if AddLabelConsideringExclusivePrefixes(lab):
+        traces[(tracker_pb2.FieldID.LABELS, lab)] = (
+            'Added by component %s' % cd.path)
 
   # Apply each rule in order. Later rules see the results of earlier rules.
   # Later rules can overwrite or add to results of earlier rules.
@@ -263,24 +264,33 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
 
     if rule_owner_id and not issue.owner_id:
       derived_owner_id = rule_owner_id
+      traces[(tracker_pb2.FieldID.OWNER, rule_owner_id)] = (
+        'Added by rule: IF %s THEN SET DEFAULT OWNER' % rule.predicate)
 
     if rule_status and not issue.status:
       derived_status = rule_status
+      traces[(tracker_pb2.FieldID.STATUS, rule_status)] = (
+        'Added by rule: IF %s THEN SET DEFAULT STATUS' % rule.predicate)
 
     for cc_id in rule_add_cc_ids:
       if cc_id not in cc_set:
         derived_cc_ids.append(cc_id)
         cc_set.add(cc_id)
+        traces[(tracker_pb2.FieldID.CC, cc_id)] = (
+          'Added by rule: IF %s THEN ADD CC' % rule.predicate)
 
     for lab in rule_add_labels:
-      AddLabelConsideringExclusivePrefixes(lab)
+      if AddLabelConsideringExclusivePrefixes(lab):
+        traces[(tracker_pb2.FieldID.LABELS, lab)] = (
+            'Added by rule: IF %s THEN ADD LABEL' % rule.predicate)
 
     for addr in rule_add_notify:
       if addr not in derived_notify_addrs:
         derived_notify_addrs.append(addr)
+        # Note: No trace because also-notify addresses are not shown in the UI.
 
   return (derived_owner_id, derived_status, derived_cc_ids, derived_labels,
-          derived_notify_addrs)
+          derived_notify_addrs, traces)
 
 
 def EvalPredicate(

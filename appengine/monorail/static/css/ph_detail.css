@@ -491,6 +491,13 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   color: #430;
   margin-top: 1em;
 }
+
 #preview_filterrules_area div {
   margin-left: 1em;
+}
+
+#preview_filterrules_area div span {
+  font-style: italic;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
 }

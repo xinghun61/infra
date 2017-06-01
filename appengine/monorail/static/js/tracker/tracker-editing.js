@@ -1634,6 +1634,32 @@ function onUpdateNoteResponse(event) {
 
 
 /**
+ * Generate DOM for a filter rules preview section.
+ */
+function renderFilterRulesSection(section_id, heading, value_why_list) {
+  var section = $(section_id);
+  while (section.firstChild) {
+    section.removeChild(section.firstChild);
+  }
+  if (value_why_list.length == 0) return false;
+
+  section.appendChild(document.createTextNode(heading + ': '));
+  for (var i = 0; i < value_why_list.length; ++i) {
+    if (i > 0) {
+      section.appendChild(document.createTextNode(', '));
+    }
+    var value = value_why_list[i].value;
+    var why = value_why_list[i].why;
+    var span = section.appendChild(
+        document.createElement('span'));
+	span.textContent = value;
+	if (why) span.setAttribute('title', why);
+  }
+  return true;
+}
+
+
+/**
  * Ask server to do a presubmit check and then display and warnings
  * as the user edits an issue.
  */
@@ -1658,22 +1684,12 @@ function onPresubmitResponse(event) {
   $('owner_avail_state').className = 'availability_' + response.owner_avail_state;
   $('owner_availability').textContent = response.owner_availability;
 
-  var derived_labels = '';
-  var derived_owner_email = '';
-  var derived_cc_emails = '';
-
-  if (response.derived_labels && response.derived_labels.length) {
-    derived_labels = 'Labels: ' + response.derived_labels.join(', ');
-  }
-  if (response.derived_owner_email && response.derived_owner_email.length) {
-    derived_owner_email = 'Owner: ' + response.derived_owner_email;
-  }
-  if (response.derived_cc_emails && response.derived_cc_emails.length) {
-    derived_cc_emails = 'Cc: ' + response.derived_cc_emails.join(', ');
-  }
-  $('preview_filterrules_labels').textContent = derived_labels;
-  $('preview_filterrules_owner').textContent = derived_owner_email;
-  $('preview_filterrules_ccs').textContent = derived_cc_emails;
+  var derived_labels = renderFilterRulesSection(
+      'preview_filterrules_labels', 'Labels', response.derived_labels);
+  var derived_owner_email = renderFilterRulesSection(
+      'preview_filterrules_owner', 'Owner', response.derived_owner_email);
+  var derived_cc_emails = renderFilterRulesSection(
+      'preview_filterrules_ccs', 'Cc', response.derived_cc_emails);
 
   if (derived_labels || derived_owner_email || derived_cc_emails) {
       $('preview_filterrules_area').style.display = '';

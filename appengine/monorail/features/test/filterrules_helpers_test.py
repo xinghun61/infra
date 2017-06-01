@@ -348,7 +348,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS)
     self.assertEquals(
-        (0, '', [], [], []),
+        (0, '', [], [], [], {}),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
@@ -357,7 +357,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS)
     self.assertEquals(
-        (0, '', [], [], []),
+        (0, '', [], [], [], {}),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
@@ -365,10 +365,21 @@ class FilterRulesHelpersTest(unittest.TestCase):
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS,
         component_ids=[10])
+    traces = {
+      (tracker_pb2.FieldID.CC, TEST_ID_MAP['db@example.com']):
+          'Added by component DB',
+      (tracker_pb2.FieldID.CC, TEST_ID_MAP['ui-db@example.com']):
+          'Added by component DB',
+      (tracker_pb2.FieldID.LABELS, 'i18n'):
+          'Added by component DB',
+      (tracker_pb2.FieldID.LABELS, 'Priority-High'):
+          'Added by component DB',
+      }
     self.assertEquals(
-        (0, '', 
+        (0, '',
          [TEST_ID_MAP['db@example.com'], TEST_ID_MAP['ui-db@example.com']],
-         ['i18n', 'Priority-High'], []),
+         ['i18n', 'Priority-High'], [],
+         traces),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
@@ -377,10 +388,15 @@ class FilterRulesHelpersTest(unittest.TestCase):
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=['Priority-Low', 'i18n'],
         component_ids=[10])
     issue.cc_ids = [TEST_ID_MAP['db@example.com']]
+    traces = {
+      (tracker_pb2.FieldID.CC, TEST_ID_MAP['ui-db@example.com']):
+          'Added by component DB',
+      }
     self.assertEquals(
         (0, '',
          [TEST_ID_MAP['ui-db@example.com']],
-         [], []),
+         [], [],
+         traces),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
@@ -389,11 +405,28 @@ class FilterRulesHelpersTest(unittest.TestCase):
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS,
         component_ids=[10, 30])
+    traces = {
+      (tracker_pb2.FieldID.CC, TEST_ID_MAP['db@example.com']):
+          'Added by component DB',
+      (tracker_pb2.FieldID.CC, TEST_ID_MAP['ui-db@example.com']):
+          'Added by component DB',
+      (tracker_pb2.FieldID.LABELS, 'i18n'):
+          'Added by component DB',
+      (tracker_pb2.FieldID.LABELS, 'Priority-High'):
+          'Added by component DB',
+      (tracker_pb2.FieldID.CC, TEST_ID_MAP['ui@example.com']):
+          'Added by component UI',
+      (tracker_pb2.FieldID.LABELS, 'Priority-Medium'):
+          'Added by component UI',
+      (tracker_pb2.FieldID.LABELS, 'l10n'):
+          'Added by component UI',
+      }
     self.assertEquals(
         (0, '',
          [TEST_ID_MAP['db@example.com'], TEST_ID_MAP['ui-db@example.com'],
           TEST_ID_MAP['ui@example.com']],
-         ['i18n', 'l10n', 'Priority-Medium'], []),
+         ['i18n', 'l10n', 'Priority-Medium'], [],
+         traces),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
@@ -421,22 +454,26 @@ class FilterRulesHelpersTest(unittest.TestCase):
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=ORIG_LABELS)
     self.assertEquals(
-        (0, '', [], [], []),
+        (0, '', [], [], [], {}),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=['foo', 'bar'])
     self.assertEquals(
-        (0, '', [], [], []),
+        (0, '', [], [], [], {}),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
     # One rule fires.
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=['Size-L'])
+    traces = {
+        (tracker_pb2.FieldID.OWNER, 444L):
+            'Added by rule: IF Size=L THEN SET DEFAULT OWNER',
+        }
     self.assertEquals(
-        (444L, '', [], [], []),
+        (444L, '', [], [], [], traces),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
@@ -444,42 +481,73 @@ class FilterRulesHelpersTest(unittest.TestCase):
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L,
         labels=['HasWorkaround', 'Priority-Critical'])
+    traces = {}
     self.assertEquals(
-        (0, '', [], [], []),
+        (0, '', [], [], [], traces),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
-    # One rule fires, but limited effect because of explicit exclusive label.
+    # One rule fires, another has no effect because of explicit exclusive label.
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L,
         labels=['Security', 'Priority-Critical'])
+    traces = {
+        (tracker_pb2.FieldID.LABELS, 'Private'):
+            'Added by rule: IF label:Security THEN ADD LABEL',
+        }
     self.assertEquals(
-        (0, '', [], ['Private'], ['jrobbins@chromium.org']),
+        (0, '', [], ['Private'], ['jrobbins@chromium.org'],
+         traces),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
     # Multiple rules have cumulative effect.
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=['HasWorkaround', 'Size-L'])
+    traces = {
+        (tracker_pb2.FieldID.LABELS, 'Priority-Low'):
+            'Added by rule: IF label:HasWorkaround THEN ADD LABEL',
+        (tracker_pb2.FieldID.OWNER, 444L):
+            'Added by rule: IF Size=L THEN SET DEFAULT OWNER',
+        }
     self.assertEquals(
-        (444L, '', [], ['Priority-Low'], []),
+        (444L, '', [], ['Priority-Low'], [],
+         traces),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
     # Two rules fire, second overwrites the first.
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=['HasWorkaround', 'Security'])
+    traces = {
+        (tracker_pb2.FieldID.LABELS, 'Priority-Low'):
+            'Added by rule: IF label:HasWorkaround THEN ADD LABEL',
+        (tracker_pb2.FieldID.LABELS, 'Priority-High'):
+            'Added by rule: IF label:Security THEN ADD LABEL',
+        (tracker_pb2.FieldID.LABELS, 'Private'):
+            'Added by rule: IF label:Security THEN ADD LABEL',
+        }
     self.assertEquals(
-        (0, '', [], ['Private', 'Priority-High'], ['jrobbins@chromium.org']),
+        (0, '', [], ['Private', 'Priority-High'], ['jrobbins@chromium.org'],
+         traces),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
     # Two rules fire, second triggered by the first.
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 0L, labels=['Security', 'Regression'])
+    traces = {
+        (tracker_pb2.FieldID.LABELS, 'Priority-High'):
+            'Added by rule: IF label:Security THEN ADD LABEL',
+        (tracker_pb2.FieldID.LABELS, 'Urgent'):
+            'Added by rule: IF Priority=High label:Regression THEN ADD LABEL',
+        (tracker_pb2.FieldID.LABELS, 'Private'):
+            'Added by rule: IF label:Security THEN ADD LABEL',
+        }
     self.assertEquals(
         (0, '', [], ['Private', 'Priority-High', 'Urgent'],
-         ['jrobbins@chromium.org']),
+         ['jrobbins@chromium.org'],
+         traces),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
@@ -489,10 +557,15 @@ class FilterRulesHelpersTest(unittest.TestCase):
     config = tracker_pb2.ProjectIssueConfig(
         exclusive_label_prefixes=excl_prefixes)
     predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, None)
+    traces = {
+        (tracker_pb2.FieldID.CC, 111L):
+            'Added by rule: IF Watch THEN ADD CC',
+        }
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 111L, labels=['Watch', 'Monitor'])
     self.assertEquals(
-        (0, '', [111L], [], []),
+        (0, '', [111L], [], [],
+         traces),
         filterrules_helpers._ComputeDerivedFields(
             cnxn, self.services, issue, config, rules, predicate_asts))
 
