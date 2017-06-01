@@ -123,6 +123,7 @@ class Gerrit(codereview.CodeReview):
     result.cc = [x['email'] for x in change_info['reviewers'].get('CC', [])]
     result.closed = change_info['status'] == 'MERGED'
     result.owner_email = change_info['owner']['email']
+    result.subject = change_info['subject']
 
     # If the status is merged, look at the commit details for the current
     # commit.
@@ -134,14 +135,16 @@ class Gerrit(codereview.CodeReview):
           change_info['submitted'])
       result.commits.append(cl_info.Commit(patchset_id, current_revision,
                                            commit_timestamp))
+      revision_commit = revision_info['commit']
       # Detect manual commits.
-      committer = revision_info['commit']['committer']['email']
+      committer = revision_commit['committer']['email']
       if committer not in self.commit_bot_emails:
         result.AddCqAttempt(patchset_id, committer, commit_timestamp)
 
+      result.description = revision_commit['message']
+
       # Checks for if the culprit owner has turned off auto revert.
-      result.auto_revert_off = codereview.IsAutoRevertOff(
-          revision_info['commit']['message'])
+      result.auto_revert_off = codereview.IsAutoRevertOff(result.description)
 
     # TO FIND COMMIT ATTEMPTS:
     # In messages look for "Patch Set 1: Commit-Queue+2"

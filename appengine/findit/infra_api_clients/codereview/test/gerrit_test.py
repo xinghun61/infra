@@ -50,7 +50,8 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
                 'message': 'some message'}}},
       'messages': [],
       'submitted': '2017-03-24 01:07:39.000000000',
-      'reviewers': {'REVIEWER':[{'email': x} for x in reviewers]}
+      'reviewers': {'REVIEWER':[{'email': x} for x in reviewers]},
+      'subject': 'fake subject'
     })
     self.SetResponse(url, (200, response))
 
@@ -220,7 +221,8 @@ class GerritTest(testing.AppengineTestCase):
                       'message': 'some message'
                   }
                }
-           }
+           },
+           'subject': 'subject'
         }):
       cl_info = self.gerrit.GetClDetails(change_id)
     self.assertNotEqual(
@@ -259,7 +261,8 @@ class GerritTest(testing.AppengineTestCase):
                         'message': 'some message'
                     }
                 }
-            }
+            },
+           'subject': 'subject'
         }):
       cl_info = self.gerrit.GetClDetails(change_id)
     self.assertEqual(
@@ -317,9 +320,11 @@ class GerritTest(testing.AppengineTestCase):
                                  'NOAUTOREVERT= True\n\nChange-Id: '
                                  'someid\nReviewed-on: cl_url\nCommit-Queue: '
                                  'owner\nReviewed-by: reviewers\n\n'
+                                 'BUGS : 12345, 67890'
                     },
                 }
-            }
+            },
+           'subject': 'subject'
         }, {
             'change_id': 'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
             'status': 'MERGED',
@@ -370,9 +375,11 @@ class GerritTest(testing.AppengineTestCase):
                                    'NOAUTOREVERT=TRUE\n\nChange-Id: '
                                    'someid\nReviewed-on: cl_url\nCommit-Queue: '
                                    'owner\nReviewed-by: reviewers\n\n'
+                                   'BUG: 123455'
                     },
                 }
-            }
+            },
+           'subject': 'subject'
         }]):
       cl_info = self.gerrit.GetClDetails(change_id)
     self.assertEqual(cl_info.serialize(), {
@@ -387,6 +394,12 @@ class GerritTest(testing.AppengineTestCase):
                       'timestamp': '2017-02-27 18:56:54 UTC',
                        'revision': 'edda1046ce724695004242e943f59f5e1b2d00ff'}],
         'cc': [],
+        'subject': 'subject',
+        'description': 'cl title\n\nsome description\n\n'
+                       'NOAUTOREVERT= True\n\nChange-Id: '
+                       'someid\nReviewed-on: cl_url\nCommit-Queue: '
+                       'owner\nReviewed-by: reviewers\n\n'
+                       'BUGS : 12345, 67890',
         'change_id': 'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
         'reverts': [{'patchset_id': 2,
                      'reverting_user_email': 'one@chromium.org',
@@ -405,6 +418,13 @@ class GerritTest(testing.AppengineTestCase):
                              'revision':
                                    'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824'}],
                          'cc': [],
+                         'subject': 'subject',
+                         'description': 'cl title\n\nsome description\n\n'
+                                        'NOAUTOREVERT=TRUE\n\nChange-Id: '
+                                        'someid\nReviewed-on: cl_url\n'
+                                        'Commit-Queue: '
+                                        'owner\nReviewed-by: reviewers\n\n'
+                                        'BUG: 123455',
                          'change_id':
                                'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
                                'reverts': [],

@@ -102,6 +102,10 @@ class ClInfo(object):  # pragma: no cover
     # If CL owner has turned off auto-revert.
     self.auto_revert_off = False
 
+    self.subject = None
+
+    self.description = None
+
   def AddCqAttempt(self, patchset_id, committer, timestamp):
     if patchset_id not in self.commit_attempts.keys():
       self.commit_attempts[patchset_id] = CommitAttempt(
@@ -124,7 +128,9 @@ class ClInfo(object):  # pragma: no cover
         'closed': self.closed,
         'cc': self.cc,
         'reviewers': self.reviewers,
-        'auto_revert_off': self.auto_revert_off
+        'auto_revert_off': self.auto_revert_off,
+        'subject': self.subject,
+        'description': self.description
     }
 
   def GetPatchsetIdByRevision(self, revision):

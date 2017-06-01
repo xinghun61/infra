@@ -203,7 +203,9 @@ class RietveldTest(testing.AppengineTestCase):
                      }
                  ],
                  'reverts': [],
-                 'closed': True
+                 'closed': True,
+                 'subject': None,
+                 'description': None
              },
              'reverting_user_email': 'reviewer@chromium.org',
              'timestamp': '2017-02-23 03:09:25 UTC'
@@ -211,7 +213,9 @@ class RietveldTest(testing.AppengineTestCase):
      ],
      'cc': [u'chromium-reviews@chromium.org'],
      'reviewers': [u'someone@chromium.org'],
-     'closed': True})
+     'closed': True,
+     'subject': None,
+     'description': None})
 
   @mock.patch(
       'libs.time_util.DatetimeFromString',
