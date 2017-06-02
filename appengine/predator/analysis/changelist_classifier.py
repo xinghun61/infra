@@ -61,6 +61,9 @@ class ChangelistClassifier(object):
           self.__class__.__name__, str(report))
       return []
 
+    if len(suspects) == 1:
+      return suspects
+
     return self.RankSuspects(report, suspects)
 
   def GenerateSuspects(self, report):

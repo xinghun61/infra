@@ -5,6 +5,7 @@
 import copy
 import logging
 import math
+import mock
 
 from analysis.crash_report import CrashReport
 from analysis.changelist_classifier import ChangelistClassifier
@@ -157,6 +158,22 @@ class ChangelistClassifierTest(AppengineTestCase):
     expected_suspects = [suspect1.ToDict()]
     self.assertListEqual([suspect.ToDict() for suspect in suspects],
                          expected_suspects)
+
+  @mock.patch(
+      'analysis.changelist_classifier.ChangelistClassifier.RankSuspects')
+  @mock.patch(
+      'analysis.changelist_classifier.ChangelistClassifier.GenerateSuspects')
+  def testCallOneSuspect(self, mock_generate_suspects, mock_rank_suspects):
+    """Tests that ``__call__`` returns immediately when there's one suspect."""
+    suspect = Suspect(DUMMY_CHANGELOG1, 'src/')
+    mock_generate_suspects.return_value = [suspect]
+
+    suspects = self.changelist_classifier(DUMMY_REPORT)
+
+    expected_suspects = [suspect.ToDict()]
+    self.assertListEqual([suspect.ToDict() for suspect in suspects],
+                         expected_suspects)
+    self.assertFalse(mock_rank_suspects.called)
 
   def testGenerateSuspectsFilterReverted(self):
     """Tests ``GenerateSuspects`` method."""
