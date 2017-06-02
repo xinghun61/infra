@@ -204,7 +204,6 @@ func init() {
 	r.GET("/_cron/refresh/bugqueue/:label", basemw, som.RefreshBugQueueHandler)
 	r.GET("/_cron/annotations/flush_old/", basemw, som.FlushOldAnnotationsHandler)
 	r.GET("/_cron/annotations/refresh/", basemw, som.RefreshAnnotationsHandler)
-	r.GET("/_cron/analyze/:tree", basemw, som.GetAnalyzeHandler)
 	r.POST("/_/clientmon", basemw, som.PostClientMonHandler)
 
 	// Ingore reqeuests from builder-alerts rather than 404.

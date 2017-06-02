@@ -30,11 +30,14 @@ bower-cipd: deps
 	cipd pkg-build -pkg-def ./cipd/sheriff-o-matic.yaml -pkg-var platform:linux-amd64 -out ./cipd/bower_components.cipd
 	cipd pkg-register ./cipd/bower_components.cipd
 
-# In the future we can add different commends for prod and staging.
+getversion:
+	$(eval VERS := $(shell ../../../../../luci/appengine/components/tools/calculate_version.py))
+	echo version is $(VERS)
+
 deploy-prod: build
-	./gae.py upload -A sheriff-o-matic
+	gcloud app deploy --no-promote --no-stop-previous-version frontend/app.yaml backend/app.yaml dispatch.yaml cron.yaml --project sheriff-o-matic --version $(VERS)
 	rm frontend/elements/som-app/som-app.vulcanized.html
 
-deploy: build
-	./gae.py upload
+deploy-staging: build getversion
+	gcloud app deploy --no-promote --no-stop-previous-version frontend/app.yaml backend/app.yaml dispatch.yaml cron.yaml --project sheriff-o-matic-staging --version $(VERS)
 	rm frontend/elements/som-app/som-app.vulcanized.html

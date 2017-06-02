@@ -20,4 +20,3 @@ indexes:
   ancestor: yes
   properties:
   - name: Date
-    direction: asc

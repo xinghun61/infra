@@ -1,7 +1,7 @@
 runtime: go
 api_version: go1
-application: sheriff-o-matic-staging
 instance_class: F4
+service: default
 
 handlers:
 - url: /bower_components

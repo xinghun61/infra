@@ -1,0 +1,7 @@
+dispatch:
+  - url: "*/_cron/analyze/*"
+    service: analyzer
+
+  - url: "*/*"
+    service: default
+

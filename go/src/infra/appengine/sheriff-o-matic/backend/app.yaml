@@ -1,0 +1,18 @@
+runtime: go
+api_version: go1
+service: analyzer
+instance_class: F4
+
+handlers:
+- url: /_cron/analyze/.*
+  script: _go_app
+  secure: always
+  login: admin
+
+skip_files:
+- ^(.*/)?#.*#$
+- ^(.*/)?.*~$
+- ^(.*/)?.*\.py[co]$
+- ^(.*/)?.*/RCS/.*$
+- ^(.*/)?\..*$
+
