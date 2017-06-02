@@ -11,6 +11,7 @@ from analysis.type_enums import CrashClient
 from common import findit_for_chromecrash
 from common import findit_for_clusterfuzz
 from common import monitoring
+from common.exceptions import PredatorError
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
 from common.model.cracas_crash_analysis import CracasCrashAnalysis
 from common.model.crash_analysis import CrashAnalysis
@@ -120,7 +121,7 @@ class CrashAnalysisPipeline(CrashBasePipeline):
   def finalized(self):
     if self.was_aborted: # pragma: no cover
       self._PutAbortedError()
-      raise Exception('Abort CrashAnalysisPipeline.')
+      raise PredatorError('Abort CrashAnalysisPipeline.')
 
   # N.B., this method must be factored out for unittest reasons; since
   # ``finalized`` takes no arguments (by AppEngine's spec) and
@@ -191,7 +192,7 @@ class PublishResultPipeline(CrashBasePipeline):
     if self.was_aborted: # pragma: no cover.
       logging.error('Failed to publish %s analysis result for %s',
                     repr(self._crash_identifiers), self.client_id)
-      raise Exception('Abort PublishResultPipeline.')
+      raise PredatorError('Abort PublishResultPipeline.')
 
   # TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
   def run(self, *_args, **_kwargs): # pragma: no cover
