@@ -46,7 +46,10 @@ BUCKETER_1K = gae_ts_mon.GeometricBucketer(growth_factor=10 ** 0.031)
 def _fields_for(build, field_names):
   """Returns field values for a build"""
   if not build:
-    return {f: '' for f in field_names}
+    return {
+      f: False if f == 'canary_build' else ''
+      for f in field_names
+    }
 
   tags = None
   result = {}
@@ -57,7 +60,7 @@ def _fields_for(build, field_names):
       if tags is None:
         tags = dict(t.split(':', 1) for t in build.tags)
       if f == 'canary_build':
-        result[f] = tags.get(f, '') == 'true'
+        result[f] = tags.get(f) == 'true'
       else:
         result[f] = tags.get(f, '')
     else:
@@ -104,32 +107,34 @@ def _adder(metric, value_fn):
 inc_created_builds = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/created',
     'Build creation',
-    _mkfields('bucket', 'builder', 'user_agent')))
+    _mkfields('bucket', 'builder', 'user_agent', 'canary_build')))
 inc_started_builds = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/started',
     'Build start',
-    _mkfields('bucket', 'builder')))
+    _mkfields('bucket', 'builder', 'canary_build')))
 inc_completed_builds = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/completed',
     'Build completion, including success, failure and cancellation',
     _mkfields(
-        'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason')))
+        'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason',
+        'canary_build')))
 inc_heartbeat_failures = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/heartbeats',
     'Failures to extend a build lease',
-    _mkfields('bucket', 'builder', 'status')))
+    _mkfields('bucket', 'builder', 'status', 'canary_build')))
 inc_lease_expirations = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/lease_expired',
     'Build lease expirations',
-    _mkfields('bucket', 'builder', 'status')))
+    _mkfields('bucket', 'builder', 'status', 'canary_build')))
 inc_leases = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/leases',
     'Successful build leases or lease extensions',
-    _mkfields('bucket', 'builder')))
+    _mkfields('bucket', 'builder', 'canary_build')))
 
 
 _BUILD_DURATION_FIELDS = _mkfields(
-    'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason')
+    'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason',
+    'canary_build')
 
 
 # requires the argument to have non-None create_time and complete_time.

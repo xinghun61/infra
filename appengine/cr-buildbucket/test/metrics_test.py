@@ -139,8 +139,18 @@ class MetricsTest(testing.AppengineTestCase):
     actual = metrics._fields_for(build, expected.keys())
     self.assertEqual(expected, actual)
 
+    expected = {
+      'bucket': '',
+      'builder': '',
+      'canary_build': False,
+      'user_agent': '',
+      'status': '',
+      'result': '',
+      'failure_reason': '',
+      'cancelation_reason': '',
+    }
     self.assertEqual(
-        {k: '' for k in expected},
+        expected,
         metrics._fields_for(None, expected.keys()))
 
     with self.assertRaises(ValueError):
