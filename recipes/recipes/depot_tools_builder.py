@@ -5,11 +5,11 @@
 """Recipe to build windows depot_tools bootstrap zipfile."""
 
 DEPS = [
-  'build/file',
   'build/zip',
   'depot_tools/cipd',
   'depot_tools/git',
   'depot_tools/gsutil',
+  'recipe_engine/file',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -36,7 +36,7 @@ def RunSteps(api, revision):
 
   with api.step.nest('clean workspace'):
     api.file.rmtree('rm depot_tools', api.path['checkout'])
-    api.file.remove('rm depot_tools.zip', zip_out, ok_ret=(0, 1))
+    api.file.remove('rm depot_tools.zip', zip_out)
 
     # generate the new directory
     api.step('mk depot_tools', ['mkdir', api.path['checkout']])
@@ -108,11 +108,12 @@ def RunSteps(api, revision):
 
   bs_win = api.path['checkout'].join('bootstrap', 'win')
 
-  version = api.file.read('read git version', bs_win.join('git_version.txt'),
+  version = api.file.read_text(
+    'read git version', bs_win.join('git_version.txt'),
     test_data='1.2.3\n').strip()
   api.step.active_result.presentation.step_text = 'got %r' % version
 
-  bleeding_edge = api.file.read('read git version (bleeding_edge)',
+  bleeding_edge = api.file.read_text('read git version (bleeding_edge)',
     bs_win.join('git_version_bleeding_edge.txt'), test_data='2.2.3\n').strip()
   api.step.active_result.presentation.step_text = 'got %r' % bleeding_edge
 

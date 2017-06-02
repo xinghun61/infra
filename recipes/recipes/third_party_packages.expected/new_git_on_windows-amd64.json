@@ -7,12 +7,14 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::file]\\resources\\fileutil.py",
+      "RECIPE_MODULE[recipe_engine::file]\\resources\\fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "rmtree",
       "[START_DIR]\\git"
     ],
     "infra_step": true,
-    "name": "git.rmtree rmtree workdir",
+    "name": "git.rmtree workdir",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -215,11 +217,15 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]\\resources\\fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "RECIPE[infra::third_party_packages].resources\\profile.d.python.sh",
       "[START_DIR]\\git\\package\\etc\\profile.d\\python.sh"
     ],
     "cwd": "[START_DIR]\\git\\package",
+    "infra_step": true,
     "name": "git.install etc/profile.d/python.sh",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -229,11 +235,15 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]\\resources\\fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "RECIPE[infra::third_party_packages].resources\\profile.d.vpython.sh",
       "[START_DIR]\\git\\package\\etc\\profile.d\\vpython.sh"
     ],
     "cwd": "[START_DIR]\\git\\package",
+    "infra_step": true,
     "name": "git.install etc/profile.d/vpython.sh",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"

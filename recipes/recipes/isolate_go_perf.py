@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 DEPS = [
-  'build/file',
   'build/perf_dashboard',
   'depot_tools/bot_update',
   'depot_tools/depot_tools',
@@ -11,6 +10,7 @@ DEPS = [
   'depot_tools/git',
   'depot_tools/gsutil',
   'recipe_engine/context',
+  'recipe_engine/file',
   'recipe_engine/path',
   'recipe_engine/platform',
   'recipe_engine/properties',
@@ -92,8 +92,9 @@ def upload_isolate(api, isolate):
         'upload go bin',
         api.depot_tools.upload_to_google_storage_path,
         ['-b', 'chromium-luci', isolate])
-  sha1 = api.file.read('isolate sha1', str(isolate) + '.sha1',
-                       test_data='0123456789abcdeffedcba987654321012345678')
+  sha1 = api.file.read_text(
+    'isolate sha1', str(isolate) + '.sha1',
+    test_data='0123456789abcdeffedcba987654321012345678')
   api.step.active_result.presentation.step_text = sha1
 
 

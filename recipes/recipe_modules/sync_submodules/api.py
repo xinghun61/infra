@@ -66,7 +66,7 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
         c if c.isalnum() else '_' for c in self.m.properties['buildername'])
     checkout_dir = config_types.Path(AbsolutePath('/b/build/slave/cache_dir/'),
                                      sanitized_buildername)
-    self.m.file.makedirs('checkout', checkout_dir)
+    self.m.file.ensure_directory('makedirs checkout', checkout_dir)
     self.m.path['checkout'] = checkout_dir
 
     # Populate the git cache, get the path to the mirror.

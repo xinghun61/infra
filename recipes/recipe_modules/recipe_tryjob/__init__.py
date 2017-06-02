@@ -1,5 +1,4 @@
 DEPS = [
-  'build/file',
   'build/luci_config',
 
   'depot_tools/gclient',
@@ -8,6 +7,7 @@ DEPS = [
   'depot_tools/tryserver',
 
   'recipe_engine/context',
+  'recipe_engine/file',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/python',

@@ -174,7 +174,7 @@ class RecipeTryjobApi(recipe_api.RecipeApi):
       Path to repo on disk.
     """
     checkout_path = root_dir.join(proj)
-    self.m.file.makedirs('%s directory' % proj, checkout_path)
+    self.m.file.ensure_directory('%s directory' % proj, checkout_path)
 
     # Not working yet, but maybe??
     #api.file.rmtree('clean old %s repo' % proj, checkout_path)

@@ -98,10 +98,14 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "[START_DIR]/infra/go/src/github.com/luci/luci-go/web/bower.json",
       "/path/to/tmp/"
     ],
+    "infra_step": true,
     "name": "bower.js.read",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -141,10 +145,14 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "[START_DIR]/infra/go/src/github.com/luci/luci-go/web/package.json",
       "/path/to/tmp/"
     ],
+    "infra_step": true,
     "name": "node.js.read",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",

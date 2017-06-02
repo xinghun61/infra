@@ -122,10 +122,14 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "/creds/service_accounts/service-account-container_registry_pusher.json",
       "/path/to/tmp/"
     ],
+    "infra_step": true,
     "name": "Read service account creds"
   },
   {

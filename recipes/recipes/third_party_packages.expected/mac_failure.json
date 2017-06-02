@@ -42,12 +42,14 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "rmtree",
       "[START_DIR]/python"
     ],
     "infra_step": true,
-    "name": "python.rmtree rmtree workdir",
+    "name": "python.rmtree workdir",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -652,12 +654,14 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "rmtree",
       "[START_DIR]/git"
     ],
     "infra_step": true,
-    "name": "git.rmtree rmtree workdir",
+    "name": "git.rmtree workdir",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]

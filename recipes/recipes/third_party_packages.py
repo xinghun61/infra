@@ -17,7 +17,7 @@ DEPS = [
   'depot_tools/cipd',
   'depot_tools/git',
   'depot_tools/gitiles',
-  'build/file',
+  'recipe_engine/file',
   'recipe_engine/context',
   'recipe_engine/json',
   'recipe_engine/path',

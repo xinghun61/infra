@@ -5,13 +5,13 @@
 from recipe_engine.recipe_api import Property
 
 DEPS = [
-  'build/file',
   'depot_tools/bot_update',
   'depot_tools/cipd',
   'depot_tools/depot_tools',
   'depot_tools/gclient',
   'depot_tools/infra_paths',
   'recipe_engine/context',
+  'recipe_engine/file',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -97,17 +97,17 @@ def build_luci(api):
       'build luci-go', go_env,
       ['go', 'install', 'github.com/luci/luci-go/client/cmd/...'])
 
-  files = sorted(api.file.listdir('listing go bin', go_bin))
-  absfiles = [api.path.join(go_bin, i) for i in files]
+  absfiles = api.file.listdir('listing go bin', go_bin,
+                              test_data=['file 1', 'file 2'])
   with api.context(env={
       'DEPOT_TOOLS_GSUTIL_BIN_DIR': api.path['cache'].join('gsutil')}):
     api.python(
         'upload go bin',
         api.depot_tools.upload_to_google_storage_path,
         ['-b', 'chromium-luci'] + absfiles)
-  for name, abspath in zip(files, absfiles):
-    sha1 = api.file.read(
-        '%s sha1' % str(name), abspath + '.sha1',
+  for abspath in absfiles:
+    sha1 = api.file.read_text(
+        '%s sha1' % str(abspath.pieces[-1]), str(abspath) + '.sha1',
         test_data='0123456789abcdeffedcba987654321012345678')
     api.step.active_result.presentation.step_text = sha1
 

@@ -10,7 +10,6 @@ import contextlib
 
 DEPS = [
   'build/chromium',
-  'build/file',
   'build/trigger',
   'depot_tools/bot_update',
   'depot_tools/depot_tools',
@@ -18,6 +17,7 @@ DEPS = [
   'depot_tools/git',
   'depot_tools/gsutil',
   'recipe_engine/context',
+  'recipe_engine/file',
   'recipe_engine/path',
   'recipe_engine/platform',
   'recipe_engine/properties',
@@ -61,7 +61,7 @@ def export_tarball(api, args, source, destination):
         destination + '.hashes',
         args=['-a', 'public-read'])
   finally:
-    api.file.rmtree('temp dir', temp_dir)
+    api.file.rmtree('rmtree temp dir', temp_dir)
 
 
 @contextlib.contextmanager
@@ -72,7 +72,7 @@ def copytree_checkout(api):
     api.file.copytree('copytree', api.path['checkout'], dest_dir, symlinks=True)
     yield dest_dir
   finally:
-    api.file.rmtree('temp dir', temp_dir)
+    api.file.rmtree('rmtree temp dir', temp_dir)
 
 
 @recipe_api.composite_step

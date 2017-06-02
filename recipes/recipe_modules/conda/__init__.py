@@ -1,6 +1,6 @@
 DEPS = [
-  'build/file',
   'depot_tools/cipd',
+  'recipe_engine/file',
   'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/platform',

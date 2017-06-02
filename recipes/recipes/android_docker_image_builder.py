@@ -4,9 +4,9 @@
 
 
 DEPS = [
-    'build/file',
     'depot_tools/bot_update',
     'depot_tools/gclient',
+    'recipe_engine/file',
     'recipe_engine/path',
     'recipe_engine/raw_io',
     'recipe_engine/step',
@@ -74,7 +74,7 @@ def RunSteps(api):
   api.step('Build image', ['/bin/bash', build_script])
 
   # Read service account creds.
-  service_account_creds = api.file.read(
+  service_account_creds = api.file.read_text(
       'Read service account creds', _CONTAINER_REGISTRY_CREDENTIAL_PATH)
 
   # Login to the container registry. Pass the contents of the credentials file

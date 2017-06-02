@@ -21,8 +21,8 @@ DEPS = [
     'depot_tools/gclient',
     'depot_tools/bot_update',
     'depot_tools/cipd',
-    'build/file',
     'recipe_engine/context',
+    'recipe_engine/file',
     'recipe_engine/path',
     'recipe_engine/python',
     'recipe_engine/step',
@@ -77,9 +77,7 @@ def RunSteps(api):
 
   for name, spec in sorted(_WEB_PACKAGES.iteritems()):
     with api.step.nest(name):
-      content = api.file.read(
-          'read',
-          web_path.join(spec.filename))
+      content = api.file.read_text('read', web_path.join(spec.filename))
       result = api.step.active_result
 
       h = _hash_content(content)

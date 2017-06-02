@@ -165,12 +165,14 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "rmcontents",
       "[START_DIR]/infra/go/bin"
     ],
     "infra_step": true,
-    "name": "rmcontents clean go bin"
+    "name": "clean go bin"
   },
   {
     "cmd": [
@@ -187,24 +189,15 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport json, os, sys\nif os.path.exists(sys.argv[1]) and os.path.isdir(sys.argv[1]):\n  with open(sys.argv[2], 'w') as f:\n    json.dump(os.listdir(sys.argv[1]), f)\n",
-      "[START_DIR]/infra/go/bin",
-      "/path/to/tmp/json"
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "listdir",
+      "[START_DIR]/infra/go/bin"
     ],
-    "name": "listdir listing go bin",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@[@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"file 1\", @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"file 2\"@@@",
-      "@@@STEP_LOG_LINE@json.output@]@@@",
-      "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_LOG_LINE@python.inline@@@@",
-      "@@@STEP_LOG_LINE@python.inline@import json, os, sys@@@",
-      "@@@STEP_LOG_LINE@python.inline@if os.path.exists(sys.argv[1]) and os.path.isdir(sys.argv[1]):@@@",
-      "@@@STEP_LOG_LINE@python.inline@  with open(sys.argv[2], 'w') as f:@@@",
-      "@@@STEP_LOG_LINE@python.inline@    json.dump(os.listdir(sys.argv[1]), f)@@@",
-      "@@@STEP_LOG_END@python.inline@@@"
-    ]
+    "infra_step": true,
+    "name": "listing go bin",
+    "stdout": "/path/to/tmp/"
   },
   {
     "cmd": [
@@ -225,10 +218,14 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "[START_DIR]/infra/go/bin/file 1.sha1",
       "/path/to/tmp/"
     ],
+    "infra_step": true,
     "name": "file 1 sha1",
     "~followup_annotations": [
       "@@@STEP_TEXT@0123456789abcdeffedcba987654321012345678@@@"
@@ -238,10 +235,14 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "[START_DIR]/infra/go/bin/file 2.sha1",
       "/path/to/tmp/"
     ],
+    "infra_step": true,
     "name": "file 2 sha1",
     "~followup_annotations": [
       "@@@STEP_TEXT@0123456789abcdeffedcba987654321012345678@@@"

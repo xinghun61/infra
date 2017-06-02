@@ -3,11 +3,11 @@
 # found in the LICENSE file.
 
 DEPS = [
-  'build/file',
   'depot_tools/gclient',
   'depot_tools/git',
   'depot_tools/infra_paths',
   'recipe_engine/context',
+  'recipe_engine/file',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/raw_io',

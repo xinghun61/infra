@@ -233,7 +233,9 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "rmtree",
       "[TMP_BASE]/export_tarball_tmp_1"
     ],
@@ -309,7 +311,9 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "rmtree",
       "[TMP_BASE]/export_tarball_tmp_2"
     ],
@@ -320,11 +324,15 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copytree(sys.argv[1], sys.argv[2], symlinks=bool(sys.argv[3]))\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--symlinks",
+      "copytree",
       "[START_DIR]/src",
-      "[TMP_BASE]/tmp_tmp_3/src",
-      "1"
+      "[TMP_BASE]/tmp_tmp_3/src"
     ],
+    "infra_step": true,
     "name": "copytree"
   },
   {
@@ -848,7 +856,9 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "rmtree",
       "[TMP_BASE]/export_tarball_tmp_4"
     ],
@@ -859,7 +869,9 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "rmtree",
       "[TMP_BASE]/tmp_tmp_3"
     ],
@@ -870,11 +882,15 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copytree(sys.argv[1], sys.argv[2], symlinks=bool(sys.argv[3]))\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--symlinks",
+      "copytree",
       "[START_DIR]/src",
-      "[TMP_BASE]/tmp_tmp_5/src",
-      "1"
+      "[TMP_BASE]/tmp_tmp_5/src"
     ],
+    "infra_step": true,
     "name": "copytree (2)"
   },
   {
@@ -958,7 +974,9 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "rmtree",
       "[TMP_BASE]/export_tarball_tmp_6"
     ],
@@ -969,7 +987,9 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "rmtree",
       "[TMP_BASE]/tmp_tmp_5"
     ],

@@ -7,12 +7,14 @@
     "cmd": [
       "python",
       "-u",
-      "RECIPE_MODULE[build::file]/resources/fileutil.py",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
       "rmtree",
       "[START_DIR]/depot_tools"
     ],
     "infra_step": true,
-    "name": "clean workspace.rmtree rm depot_tools",
+    "name": "clean workspace.rm depot_tools",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -21,17 +23,16 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport os\nimport sys\nos.remove(sys.argv[1])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "remove",
       "[START_DIR]/depot_tools.zip"
     ],
+    "infra_step": true,
     "name": "clean workspace.rm depot_tools.zip",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@python.inline@@@@",
-      "@@@STEP_LOG_LINE@python.inline@import os@@@",
-      "@@@STEP_LOG_LINE@python.inline@import sys@@@",
-      "@@@STEP_LOG_LINE@python.inline@os.remove(sys.argv[1])@@@",
-      "@@@STEP_LOG_END@python.inline@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -215,10 +216,14 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "[START_DIR]/depot_tools/bootstrap/win/git_version.txt",
       "/path/to/tmp/"
     ],
+    "infra_step": true,
     "name": "read git version",
     "~followup_annotations": [
       "@@@STEP_TEXT@got '2.2.3'@@@"
@@ -228,10 +233,14 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "[START_DIR]/depot_tools/bootstrap/win/git_version_bleeding_edge.txt",
       "/path/to/tmp/"
     ],
+    "infra_step": true,
     "name": "read git version (bleeding_edge)",
     "~followup_annotations": [
       "@@@STEP_TEXT@got '2.2.3'@@@"
