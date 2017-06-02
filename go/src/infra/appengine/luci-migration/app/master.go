@@ -56,8 +56,8 @@ func masterPage(c context.Context, master string) (*masterViewModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	var masterCfg *config.Buildbot_Master
-	for _, m := range cfg.GetBuildbot().GetMasters() {
+	var masterCfg *config.Master
+	for _, m := range cfg.GetMasters() {
 		if m.Name == master {
 			masterCfg = m
 			break

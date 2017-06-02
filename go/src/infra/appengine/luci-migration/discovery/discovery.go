@@ -39,7 +39,7 @@ type Builders struct {
 
 // Discover fetches builder names of the master and registers new ones in the
 // storage.
-func (d *Builders) Discover(c context.Context, master *config.Buildbot_Master) error {
+func (d *Builders) Discover(c context.Context, master *config.Master) error {
 	logging.Infof(c, "discovering new builders")
 
 	if master.SchedulingType != config.SchedulingType_TRYJOBS {
@@ -98,7 +98,7 @@ func (d *Builders) Discover(c context.Context, master *config.Buildbot_Master) e
 	})
 }
 
-func (d *Builders) registerBuilder(c context.Context, master *config.Buildbot_Master, name string) error {
+func (d *Builders) registerBuilder(c context.Context, master *config.Master, name string) error {
 	builder := &storage.Builder{
 		ID:                     bid(master.Name, name),
 		SchedulingType:         master.SchedulingType,
@@ -137,7 +137,7 @@ type masterJSON struct {
 	Builders map[string]struct{}
 }
 
-func (d *Builders) fetchBuilderNames(c context.Context, master *config.Buildbot_Master) (names []string, err error) {
+func (d *Builders) fetchBuilderNames(c context.Context, master *config.Master) (names []string, err error) {
 	// this is inefficient, but there is no better API
 	res, err := d.Buildbot.GetCompressedMasterJSON(c, &milo.MasterRequest{Name: master.Name})
 	if err != nil {

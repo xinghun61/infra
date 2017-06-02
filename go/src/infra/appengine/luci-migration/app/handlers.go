@@ -95,27 +95,27 @@ func cronDiscoverBuilders(c *router.Context) error {
 	switch {
 	case err != nil:
 		return err
-	case cfg.Milo.GetHostname() == "":
-		return errors.New("invalid config: milo host unspecified")
-	case cfg.Monorail.GetHostname() == "":
-		return errors.New("invalid config: monorail host unspecified")
+	case cfg.BuildbotServiceHostname == "":
+		return errors.New("invalid config: discovery: milo host unspecified")
+	case cfg.MonorailHostname == "":
+		return errors.New("invalid config: discovery: monorail host unspecified")
 	}
 
 	discoverer := &discovery.Builders{
 		RegistrationSemaphore: make(parallel.Semaphore, 10),
 		Buildbot: milo.NewBuildbotPRPCClient(&prpc.Client{
 			C:    httpClient,
-			Host: cfg.Milo.Hostname,
+			Host: cfg.BuildbotServiceHostname,
 		}),
 		Monorail: monorail.NewEndpointsClient(
 			httpClient,
-			fmt.Sprintf("https://%s/_ah/api/monorail/v1", cfg.Monorail.Hostname),
+			fmt.Sprintf("https://%s/_ah/api/monorail/v1", cfg.MonorailHostname),
 		),
-		MonorailHostname: cfg.Monorail.Hostname,
+		MonorailHostname: cfg.MonorailHostname,
 	}
 
 	return parallel.FanOutIn(func(work chan<- func() error) {
-		for _, m := range cfg.GetBuildbot().GetMasters() {
+		for _, m := range cfg.GetMasters() {
 			m := m
 			work <- func() error {
 				masterCtx := logging.SetField(c.Context, "master", m.Name)

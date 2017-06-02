@@ -42,19 +42,17 @@ func TestIndex(t *testing.T) {
 			})
 
 			c = useConfig(c, `
-					buildbot {
-						masters {
-							name: "tryserver.chromium.linux"
-							public: true
-						}
-						masters {
-							name: "tryserver.chromium.mac"
-							public: true
-						}
-						masters {
-							name: "tryserver.chromium.win"
-							public: true
-						}
+					masters {
+						name: "tryserver.chromium.linux"
+						public: true
+					}
+					masters {
+						name: "tryserver.chromium.mac"
+						public: true
+					}
+					masters {
+						name: "tryserver.chromium.win"
+						public: true
 					}
 				`)
 
@@ -115,11 +113,7 @@ func TestIndex(t *testing.T) {
 		})
 
 		Convey("checks access", func() {
-			c = useConfig(c, `
-				buildbot {
-					masters { name: "tryserver.chromium.linux" }
-				}
-				`)
+			c = useConfig(c, `masters { name: "tryserver.chromium.linux" }`)
 
 			Convey("forbidden", func() {
 				c := auth.WithState(c, &authtest.FakeState{

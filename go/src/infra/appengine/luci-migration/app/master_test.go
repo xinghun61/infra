@@ -46,11 +46,7 @@ func TestMaster(t *testing.T) {
 			c := auth.WithState(c, &authtest.FakeState{
 				Identity: "user:user@example.com",
 			})
-			c = useConfig(c, `
-					buildbot {
-						masters { name: "tryserver.chromium.linux" }
-					}
-				`)
+			c = useConfig(c, `masters { name: "tryserver.chromium.linux" }`)
 
 			_, err := handle(c)
 			So(err, ShouldEqual, errNotFound)
@@ -61,11 +57,7 @@ func TestMaster(t *testing.T) {
 				Identity:       "user:user@example.com",
 				IdentityGroups: []string{internalAccessGroup},
 			})
-			c = useConfig(c, `
-					buildbot {
-						masters { name: "tryserver.chromium.linux" }
-					}
-				`)
+			c = useConfig(c, `masters { name: "tryserver.chromium.linux" }`)
 
 			_, err := handle(c)
 			So(err, ShouldBeNil)
@@ -76,11 +68,9 @@ func TestMaster(t *testing.T) {
 				Identity: "user:user@example.com",
 			})
 			c = useConfig(c, `
-				buildbot {
-					masters {
-						name: "tryserver.chromium.linux"
-						public: true
-					}
+				masters {
+					name: "tryserver.chromium.linux"
+					public: true
 				}`)
 
 			err := datastore.Put(

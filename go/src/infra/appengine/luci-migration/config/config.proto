@@ -9,31 +9,31 @@ package luci.migration;
 option go_package = "config";
 
 message Config {
-    Monorail monorail = 1;
-    Milo milo = 2;
-    Buildbot buildbot = 3;
-}
-
-message Monorail {
-    string hostname = 1;
-}
-
-message Milo {
-    string hostname = 1;
-}
-
-message Buildbot {
-
-    message Master {
-        string name = 1;
-        bool public = 2;
-        SchedulingType scheduling_type = 3;
-        OS os = 4;
-
-        string luci_bucket = 5;
-    }
-
+    // Buildbot masters that we want to migrate to LUCI.
     repeated Master masters = 1;
+
+    // New bugs for discovered builders are filed on this Monorail instance.
+    string monorail_hostname = 2;
+    // Buildbot master information is fetched from this instance.
+    string buildbot_service_hostname = 3;
+}
+
+// A single buildbot master.
+message Master {
+    // Name of the master without "master." prefix, e.g.
+    // "tryserver.chromium.linux".
+    string name = 1;
+    // if true, pages related to this master will be publicly accessible.
+    bool public = 2;
+    // SchedulingType defines how builders on this mastter will be analyzed.
+    SchedulingType scheduling_type = 3;
+    // OS defines "OS" Monorail label.
+    OS os = 4;
+
+    // LuciBucket is the equivalent LUCI buildbucket bucket.
+    // It is assumed to have "LUCI <buildbot_builder_name>" builders for each
+    // Buildbot builder.
+    string luci_bucket = 5;
 }
 
 enum SchedulingType {

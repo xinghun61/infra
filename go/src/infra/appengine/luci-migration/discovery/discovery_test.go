@@ -72,7 +72,7 @@ func TestDiscovery(t *testing.T) {
 			Monorail:         monorailtest.NewTestClient(monorailServer),
 			MonorailHostname: "monorail-prod.appspot.com",
 		}
-		linuxTryserver := &config.Buildbot_Master{
+		linuxTryserver := &config.Master{
 			Name:           "tryserver.chromium.linux",
 			Public:         false,
 			SchedulingType: config.SchedulingType_TRYJOBS,

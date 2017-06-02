@@ -50,10 +50,10 @@ func indexPage(c context.Context) (*indexViewModel, error) {
 	if err != nil {
 		return nil, err
 	}
-	model.Masters = make([]*indexMasterViewModel, 0, len(cfg.GetBuildbot().GetMasters()))
+	model.Masters = make([]*indexMasterViewModel, 0, len(cfg.GetMasters()))
 	masterMap := make(map[string]*indexMasterViewModel, len(model.Masters))
 
-	for _, m := range cfg.GetBuildbot().GetMasters() {
+	for _, m := range cfg.GetMasters() {
 		if !m.Public && !hasInternalAccess {
 			continue
 		}
