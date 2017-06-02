@@ -20,7 +20,7 @@ import (
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/logging/gologger"
 
-	"infra/tools/kitchen/proto"
+	"infra/tools/kitchen/build"
 )
 
 var logConfig = log.Config{
@@ -87,12 +87,12 @@ func logAnnotatedErr(ctx context.Context, err error) {
 
 // InputError indicates an error in the kitchen's input, e.g. command line flag
 // or env variable.
-// It is converted to KitchenError.INVALID_INPUT defined in the result.proto.
+// It is converted to InfraFailure.INVALID_INPUT defined in the result.proto.
 type InputError string
 
 func (e InputError) Error() string { return string(e) }
 
-// inputError returns an error that will be converted to a KitchenError with
+// inputError returns an error that will be converted to a InfraFailure with
 // type INVALID_INPUT.
 func inputError(format string, args ...interface{}) error {
 	// We don't use D to keep signature of this function simple
@@ -100,20 +100,20 @@ func inputError(format string, args ...interface{}) error {
 	return errors.Annotate(InputError(fmt.Sprintf(format, args...))).Err()
 }
 
-// kitchenError converts an error to a kitchen.KitchenError protobuf message.
-func kitchenError(err error) *kitchen.KitchenError {
-	res := &kitchen.KitchenError{
+// infraFailure converts an error to a build.InfraFailure protobuf message.
+func infraFailure(err error) *build.InfraFailure {
+	failure := &build.InfraFailure{
 		Text: err.Error(),
 	}
 	switch _, isInputError := errors.Unwrap(err).(InputError); {
 	case isInputError:
-		res.Type = kitchen.KitchenError_INVALID_INPUT
+		failure.Type = build.InfraFailure_INVALID_INPUT
 	case errors.Unwrap(err) == context.Canceled:
-		res.Type = kitchen.KitchenError_CANCELED
+		failure.Type = build.InfraFailure_CANCELED
 	default:
-		res.Type = kitchen.KitchenError_INTERNAL_ERROR
-		res.CallStack = errors.RenderStack(err).ToLines()
+		failure.Type = build.InfraFailure_BOOTSTRAPPER_ERROR
+		failure.BootstrapperCallStack = errors.RenderStack(err).ToLines()
 	}
 
-	return res
+	return failure
 }

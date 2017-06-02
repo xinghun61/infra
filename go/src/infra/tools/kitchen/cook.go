@@ -25,9 +25,9 @@ import (
 	"github.com/luci/luci-go/common/system/exitcode"
 	"github.com/luci/luci-go/common/system/filesystem"
 
+	"infra/tools/kitchen/build"
 	"infra/tools/kitchen/cookflags"
 	"infra/tools/kitchen/migration"
-	"infra/tools/kitchen/proto"
 	"infra/tools/kitchen/third_party/recipe_engine"
 )
 
@@ -77,17 +77,17 @@ func (c *cookRun) normalizeFlags() error {
 
 // ensureAndRunRecipe ensures that we have the recipe (according to -repository,
 // -revision and -checkout-dir) and runs it.
-func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *kitchen.CookResult {
-	result := &kitchen.CookResult{}
+func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *build.BuildRunResult {
+	result := &build.BuildRunResult{}
 
-	fail := func(err error) *kitchen.CookResult {
+	fail := func(err error) *build.BuildRunResult {
 		if err == nil {
 			panic("do not call fail with nil err")
 		}
-		if result.KitchenError != nil {
+		if result.InfraFailure != nil {
 			panic("bug! forgot to return the result on previous error")
 		}
-		result.KitchenError = kitchenError(err)
+		result.InfraFailure = infraFailure(err)
 		return result
 	}
 
@@ -155,7 +155,7 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *kitc
 			return fail(errors.Annotate(err).Reason("failed to run recipe").Err())
 		}
 	}
-	result.RecipeExitCode = &kitchen.OptionalInt32{Value: int32(rv)}
+	result.RecipeExitCode = &build.OptionalInt32{Value: int32(rv)}
 
 	// Now read the recipe result file.
 	recipeResultFile, err := os.Open(c.rr.outputResultJSONFile)
@@ -196,9 +196,9 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *kitc
 
 	if result.RecipeResult.GetFailure() != nil && result.RecipeResult.GetFailure().GetFailure() == nil {
 		// The recipe run has failed and the failure type is not step failure.
-		result.KitchenError = &kitchen.KitchenError{
+		result.InfraFailure = &build.InfraFailure{
 			Text: fmt.Sprintf("recipe infra failure: %s", result.RecipeResult.GetFailure().HumanReason),
-			Type: kitchen.KitchenError_RECIPE_INFRA_FAILURE,
+			Type: build.InfraFailure_RECIPE_INFRA_FAILURE,
 		}
 		return result
 	}
@@ -313,9 +313,9 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 	// The first thing we do is write a result file in case we crash or get killed.
 	// Note that this code is not reachable if subcommands package could not
 	// parse flags.
-	result := &kitchen.CookResult{
-		KitchenError: &kitchen.KitchenError{
-			Type: kitchen.KitchenError_INTERNAL_ERROR,
+	result := &build.BuildRunResult{
+		InfraFailure: &build.InfraFailure{
+			Type: build.InfraFailure_BOOTSTRAPPER_ERROR,
 			Text: "kitchen crashed or got killed",
 		},
 	}
@@ -336,20 +336,20 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 		return 1
 	}
 
-	if result.KitchenError != nil {
-		fmt.Fprintln(os.Stderr, "run failed because of the kitchen error")
+	if result.InfraFailure != nil {
+		fmt.Fprintln(os.Stderr, "run failed because of an infra failure")
 		return 1
 	}
 	if result.RecipeExitCode == nil {
-		panic("impossible: KitchenError is not nil, but there is no recipe exit code")
+		panic("impossible: InfraFailure is nil, but there is no recipe exit code")
 	}
 	return int(result.RecipeExitCode.Value)
 }
 
 // run runs the cook subcommmand and returns cook result.
-func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *kitchen.CookResult {
-	fail := func(err error) *kitchen.CookResult {
-		return &kitchen.CookResult{KitchenError: kitchenError(err)}
+func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *build.BuildRunResult {
+	fail := func(err error) *build.BuildRunResult {
+		return &build.BuildRunResult{InfraFailure: infraFailure(err)}
 	}
 	// Process input.
 	if len(args) != 0 {
@@ -427,13 +427,13 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *kitc
 
 	// Run the recipe.
 	result := c.ensureAndRunRecipe(ctx, env)
-	bootstrapSuccess = result.KitchenError == nil
+	bootstrapSuccess = result.InfraFailure == nil
 	return result
 }
 
 // flushResult writes the result to c.OutputResultJSOPath file
 // if the path is specified.
-func (c *cookRun) flushResult(result *kitchen.CookResult) (err error) {
+func (c *cookRun) flushResult(result *build.BuildRunResult) (err error) {
 	if c.OutputResultJSONPath == "" {
 		return nil
 	}

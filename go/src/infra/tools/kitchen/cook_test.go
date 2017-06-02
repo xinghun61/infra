@@ -22,7 +22,7 @@ import (
 	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/luci/luci-go/common/system/environ"
 
-	"infra/tools/kitchen/proto"
+	"infra/tools/kitchen/build"
 	"infra/tools/kitchen/third_party/recipe_engine"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -87,7 +87,7 @@ func TestCook(t *testing.T) {
 			env := environ.System()
 			mode := "swarming"
 
-			run := func(mockRecipeResult *recipe_engine.Result, recipeExitCode int) *kitchen.CookResult {
+			run := func(mockRecipeResult *recipe_engine.Result, recipeExitCode int) *build.BuildRunResult {
 				// Mock recipes.py result
 				mockedRecipeResultPath := filepath.Join(tdir, "expected_result.json")
 				m := jsonpb.Marshaler{}
@@ -183,8 +183,8 @@ func TestCook(t *testing.T) {
 					}
 					result := run(recipeResult, 0)
 					result.Annotations = nil
-					So(result, ShouldResemble, &kitchen.CookResult{
-						RecipeExitCode: &kitchen.OptionalInt32{Value: 0},
+					So(result, ShouldResemble, &build.BuildRunResult{
+						RecipeExitCode: &build.OptionalInt32{Value: 0},
 						RecipeResult:   recipeResult,
 						AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
 					})
@@ -204,8 +204,8 @@ func TestCook(t *testing.T) {
 					}
 					result := run(recipeResult, 1)
 					result.Annotations = nil
-					So(result, ShouldResemble, &kitchen.CookResult{
-						RecipeExitCode: &kitchen.OptionalInt32{Value: 1},
+					So(result, ShouldResemble, &build.BuildRunResult{
+						RecipeExitCode: &build.OptionalInt32{Value: 1},
 						RecipeResult:   recipeResult,
 						AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
 					})

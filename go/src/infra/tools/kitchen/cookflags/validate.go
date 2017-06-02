@@ -19,12 +19,12 @@ var validRevisionRe = regexp.MustCompile("^([a-z0-9]{40}|HEAD|refs/.+)$")
 
 // InputError indicates an error in the kitchen's input, e.g. command line flag
 // or env variable.
-// It is converted to KitchenError.INVALID_INPUT defined in the result.proto.
+// It is converted to InfraError.INVALID_INPUT defined in the result.proto.
 type InputError string
 
 func (e InputError) Error() string { return string(e) }
 
-// inputError returns an error that will be converted to a KitchenError with
+// inputError returns an error that will be converted to a InfraError with
 // type INVALID_INPUT.
 func inputError(format string, args ...interface{}) error {
 	// We don't use D to keep signature of this function simple
