@@ -175,7 +175,7 @@ def parse_binary_bucket_config(cfg_bytes):
 
 def is_swarming_config(cfg):
   """Returns True if this is a Swarming bucket config."""
-  return cfg.HasField('swarming')
+  return cfg and cfg.HasField('swarming')
 
 
 @ndb.non_transactional

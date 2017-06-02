@@ -464,7 +464,7 @@ def prepare_task_def_async(build, fake_build=False):
     raise errors.InvalidInputError('Invalid builder name %r' % builder_name)
   project_id, bucket_cfg = yield config.get_bucket_async(build.bucket)
 
-  if not bucket_cfg.HasField('swarming'):
+  if not config.is_swarming_config(bucket_cfg):
     raise errors.InvalidInputError(
         'Bucket %s is not configured for swarming' % build.bucket)
 
