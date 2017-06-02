@@ -122,6 +122,11 @@ for that. Known chrome-infra build requesters:
 *   `"rietveld"`
 *   `"git_cl_try"`
 
+### canary_build tag
+
+Tag specifies whether this build used a canary version of infrastructure.
+Valid values: "true", "false".
+
 ## Configuration
 
 Buckets are registered in `<buildbucket-app-id>.cfg` files in `infra/config`

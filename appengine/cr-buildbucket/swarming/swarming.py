@@ -403,7 +403,7 @@ def _create_task_def_async(
       'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
       'swarming_hostname': swarming_cfg.hostname,
     }, sort_keys=True)
-  raise ndb.Return(task)
+  raise ndb.Return(task, canary)
 
 
 def _to_swarming_dimensions(dims):
@@ -451,7 +451,7 @@ def prepare_task_def_async(build, fake_build=False):
   If configured, generates a build number and updates the build.
   Creates a swarming task definition.
 
-  Returns a tuple (bucket_cfg, builder_cfg, task_def).
+  Returns a tuple (bucket_cfg, builder_cfg, task_def, canary).
   """
   if build.lease_key:
     raise errors.InvalidInputError(
@@ -486,10 +486,10 @@ def prepare_task_def_async(build, fake_build=False):
       build_number = yield sequence.generate_async(seq_name, 1)
     build.tags.append('build_address:%s/%d' % (seq_name, build_number))
 
-  task_def = yield _create_task_def_async(
+  task_def, canary = yield _create_task_def_async(
       project_id, bucket_cfg.swarming, builder_cfg, build, build_number,
       fake_build)
-  raise ndb.Return(bucket_cfg, builder_cfg, task_def)
+  raise ndb.Return(bucket_cfg, builder_cfg, task_def, canary)
 
 
 @ndb.tasklet
@@ -501,7 +501,8 @@ def create_task_async(build):
   Raises:
     errors.InvalidInputError if build attribute values are inavlid.
   """
-  bucket_cfg, builder_cfg, task_def = yield prepare_task_def_async(build)
+  bucket_cfg, builder_cfg, task_def, canary = yield prepare_task_def_async(
+      build)
 
   res = yield _call_api_async(
       auth.get_current_identity(),
@@ -527,6 +528,7 @@ def create_task_async(build):
   build.tags.extend([
     'swarming_hostname:%s' % bucket_cfg.swarming.hostname,
     'swarming_task_id:%s' % task_id,
+    'canary_build:%s' % str(canary).lower(),
   ])
   task_req = res.get('request', {})
   for t in task_req.get('tags', []):

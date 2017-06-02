@@ -206,7 +206,7 @@ class SwarmingTest(BaseTest):
         },
     )
 
-    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
+    _, _, task_def, _ = swarming.prepare_task_def_async(build).get_result()
 
     self.assertEqual(task_def['properties']['caches'], [
       {'path': 'cache/a', 'name': 'a'},
@@ -229,13 +229,13 @@ class SwarmingTest(BaseTest):
         },
     )
 
-    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
+    _, _, task_def, _ = swarming.prepare_task_def_async(build).get_result()
 
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], '120')
 
     builder_cfg.execution_timeout_secs = 60
-    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
+    _, _, task_def, _ = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], '60')
 
@@ -378,6 +378,7 @@ class SwarmingTest(BaseTest):
     self.assertEqual(set(build.tags), {
       'build_address:bucket/linux_chromium_rel_ng/1',
       'builder:linux_chromium_rel_ng',
+      'canary_build:false',
       'swarming_dimension:cores:8',
       'swarming_dimension:os:Ubuntu',
       'swarming_dimension:pool:Chrome',
@@ -564,6 +565,7 @@ class SwarmingTest(BaseTest):
     self.assertEqual(set(build.tags), {
       'build_address:bucket/linux_chromium_rel_ng/1',
       'builder:linux_chromium_rel_ng',
+      'canary_build:true',
       'swarming_dimension:cores:8',
       'swarming_dimension:os:Ubuntu',
       'swarming_dimension:pool:Chrome',

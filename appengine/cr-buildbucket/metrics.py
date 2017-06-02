@@ -23,8 +23,10 @@ GLOBAL_TARGET_FIELDS = {
 
 _TAG_FIELD_NAMES = {
   'builder',
-  'user_agent'
+  'user_agent',
+  'canary_build',
 }
+
 _ATTR_FIELD_NAMES = {
   'bucket',
   'status',
@@ -54,21 +56,26 @@ def _fields_for(build, field_names):
     elif f in _TAG_FIELD_NAMES:
       if tags is None:
         tags = dict(t.split(':', 1) for t in build.tags)
-      result[f] = tags.get(f, '')
+      if f == 'canary_build':
+        result[f] = tags.get(f, '') == 'true'
+      else:
+        result[f] = tags.get(f, '')
     else:
       raise ValueError('invalid field %r' % f)
   return result
 
 
 def _fields_for_fn(fields):
-  assert all(isinstance(f, gae_ts_mon.StringField) for f in fields)
   assert all(f.name in _ALL_FIELD_NAMES for f in fields)
   field_names = [f.name for f in fields]
   return lambda b: _fields_for(b, field_names)   # pragma: no cover
 
 
-def _string_fields(*names):
-  return [gae_ts_mon.StringField(n) for n in names]
+def _mkfields(*names):
+  field_types = {
+    'canary_build': gae_ts_mon.BooleanField,
+  }
+  return [field_types.get(n, gae_ts_mon.StringField)(n) for n in names]
 
 
 def _incrementer(metric):
@@ -97,31 +104,31 @@ def _adder(metric, value_fn):
 inc_created_builds = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/created',
     'Build creation',
-    _string_fields('bucket', 'builder', 'user_agent')))
+    _mkfields('bucket', 'builder', 'user_agent')))
 inc_started_builds = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/started',
     'Build start',
-    _string_fields('bucket', 'builder')))
+    _mkfields('bucket', 'builder')))
 inc_completed_builds = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/completed',
     'Build completion, including success, failure and cancellation',
-    _string_fields(
+    _mkfields(
         'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason')))
 inc_heartbeat_failures = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/heartbeats',
     'Failures to extend a build lease',
-    _string_fields('bucket', 'builder', 'status')))
+    _mkfields('bucket', 'builder', 'status')))
 inc_lease_expirations = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/lease_expired',
     'Build lease expirations',
-    _string_fields('bucket', 'builder', 'status')))
+    _mkfields('bucket', 'builder', 'status')))
 inc_leases = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/leases',
     'Successful build leases or lease extensions',
-    _string_fields('bucket', 'builder')))
+    _mkfields('bucket', 'builder')))
 
 
-_BUILD_DURATION_FIELDS = _string_fields(
+_BUILD_DURATION_FIELDS = _mkfields(
     'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason')
 
 
@@ -149,40 +156,40 @@ add_build_run_duration = _adder(  # pragma: no branch
 CURRENTLY_PENDING = gae_ts_mon.GaugeMetric(
     'buildbucket/builds/pending',
     'Number of pending builds',
-    _string_fields('bucket'))
+    _mkfields('bucket'))
 CURRENTLY_RUNNING = gae_ts_mon.GaugeMetric(
     'buildbucket/builds/running',
     'Number of running builds',
-    _string_fields('bucket'))
+    _mkfields('bucket'))
 LEASE_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/builds/never_leased_duration',
     'Duration between a build is created and it is leased for the first time',
-    _string_fields('bucket'),
+    _mkfields('bucket'),
     bucketer=BUCKETER_24_HR,
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
 SCHEDULING_LATENCY_SEC = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/builds/scheduling_duration',
     'Duration of a build remaining in SCHEDULED state',
-    _string_fields('bucket'),
+    _mkfields('bucket'),
     bucketer=BUCKETER_48_HR,
     units=gae_ts_mon.MetricsDataUnits.SECONDS)
 SEQUENCE_NUMBER_GEN_DURATION_MS = gae_ts_mon.CumulativeDistributionMetric(
     'buildbucket/sequence_number/gen_duration',
     'Duration of a sequence number generation in ms',
-    _string_fields('sequence'),
+    _mkfields('sequence'),
     # Bucketer for 1ms..5s range
     bucketer=BUCKETER_5_SEC,
     units=gae_ts_mon.MetricsDataUnits.MILLISECONDS)
 TAG_INDEX_INCONSISTENT_ENTRIES = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/tag_index/inconsistent_entries',
     'Number of inconsistent entries encountered during build search',
-    _string_fields('tag'),
+    _mkfields('tag'),
     # We can't have more than 1000 entries in a tag index.
     bucketer=BUCKETER_1K)
 TAG_INDEX_SEARCH_SKIPPED_BUILDS = gae_ts_mon.NonCumulativeDistributionMetric(
     'buildbucket/tag_index/skipped_builds',
     'Number of builds we fetched, but skipped',
-    _string_fields('tag'),
+    _mkfields('tag'),
     # We can't have more than 1000 entries in a tag index.
     bucketer=BUCKETER_1K)
 

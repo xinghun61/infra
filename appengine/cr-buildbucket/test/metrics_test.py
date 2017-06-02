@@ -115,7 +115,12 @@ class MetricsTest(testing.AppengineTestCase):
   def test_fields_for(self):
     build = model.Build(
         bucket='master.x',
-        tags=['builder:release', 'user_agent:cq', 'something:else'],
+        tags=[
+          'builder:release',
+          'user_agent:cq',
+          'something:else',
+          'canary_build:true',
+        ],
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.FAILURE,
         failure_reason=model.FailureReason.BUILD_FAILURE,
@@ -123,6 +128,7 @@ class MetricsTest(testing.AppengineTestCase):
     expected = {
       'bucket': 'master.x',
       'builder': 'release',
+      'canary_build': True,
       'user_agent': 'cq',
       'status': 'COMPLETED',
       'result': 'FAILURE',
