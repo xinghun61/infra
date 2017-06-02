@@ -89,7 +89,6 @@ def build_to_dict(build, include_lease_key=False):
 
   # Special cases
   result = {
-    'id': str(msg.id), # must be string
     'tags': msg.tags,  # a list
   }
 
@@ -102,6 +101,10 @@ def build_to_dict(build, include_lease_key=False):
       v = str(v)
     else:
       assert isinstance(v, (basestring, int, long, bool)), v
+
+    if (isinstance(f, messages.IntegerField) and
+        f.variant == messages.Variant.INT64):
+      v = str(v)
     result[f.name] = v
 
   return result

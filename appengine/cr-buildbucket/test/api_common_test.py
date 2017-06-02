@@ -43,15 +43,15 @@ class ApiCommonTests(testing.AppengineTestCase):
     self.test_build.result_details = {'result': 'nice'}
     expected = {
       'bucket': 'chromium',
-      'completed_ts': 1483315200000000,
-      'created_ts': 1483228800000000,
+      'completed_ts': '1483315200000000',
+      'created_ts': '1483228800000000',
       'id': '1',
       'parameters_json': json.dumps({'buildername': 'linux_rel'}),
       'result': 'SUCCESS',
       'result_details_json': json.dumps({'result': 'nice'}),
-      'started_ts': 1483315200000000,
+      'started_ts': '1483315200000000',
       'status': 'COMPLETED',
       'tags': [],
-      'utcnow_ts': 1483228800000000,
+      'utcnow_ts': '1483228800000000',
     }
     self.assertEqual(expected, api_common.build_to_dict(self.test_build))
