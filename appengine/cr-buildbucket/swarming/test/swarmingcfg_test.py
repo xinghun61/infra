@@ -226,7 +226,6 @@ class SwarmingCfgTest(testing.AppengineTestCase):
           'builder rel: cache #2: duplicate path',
         ])
 
-
   def test_default_recipe(self):
     self.cfg_test(
         '''

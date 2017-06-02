@@ -21,6 +21,7 @@ from webob import exc
 import mock
 import webapp2
 
+from swarming import isolate
 from swarming import swarming
 from proto import project_config_pb2
 from test.test_util import future, ununicide
@@ -787,7 +788,6 @@ class SwarmingTest(BaseTest):
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
-
   def test_create_task_async_on_leased_build(self):
     build = model.Build(
       id=1,
@@ -852,6 +852,21 @@ class SwarmingTest(BaseTest):
         'task_result': {
           'state': 'COMPLETED',
           'failure': True,
+        },
+        'build_run_result': {
+          'infra_failure': {
+            'type': 'BOOTSTRAPPER_ERROR',
+            'text': 'it is not good',
+          },
+        },
+        'status': model.BuildStatus.COMPLETED,
+        'result': model.BuildResult.FAILURE,
+        'failure_reason': model.FailureReason.INFRA_FAILURE,
+      },
+      {
+        'task_result': {
+          'state': 'COMPLETED',
+          'failure': True,
           'internal_failure': True
         },
         'status': model.BuildStatus.COMPLETED,
@@ -895,7 +910,8 @@ class SwarmingTest(BaseTest):
     for case in cases:
       build = model.Build(id=1, bucket='bucket', create_time=utils.utcnow())
       build.put()
-      swarming._sync_build_async(1, case['task_result']).get_result()
+      swarming._sync_build_async(
+          1, case['task_result'], case.get('build_run_result')).get_result()
       build = build.key.get()
       self.assertEqual(build.status, case['status'])
       self.assertEqual(build.result, case.get('result'))
@@ -903,6 +919,83 @@ class SwarmingTest(BaseTest):
       self.assertEqual(build.cancelation_reason, case.get('cancelation_reason'))
       if build.status == model.BuildStatus.STARTED:
         self.assertEqual(build.start_time, self.now)
+
+  @mock.patch('swarming.isolate.fetch_async')
+  def test_load_build_run_result_async(self, fetch_isolate_async):
+    self.assertIsNone(swarming._load_build_run_result_async({}).get_result())
+
+    expected = {
+      'infra_failure': {
+        'text': 'not good',
+      },
+    }
+    fetch_isolate_async.side_effect = [
+      # isolated
+      future(json.dumps({
+        'files': {
+          swarming.BUILD_RUN_RESULT_FILENAME: {'h': 'deadbeef'},
+        },
+      })),
+      # build-run-result.json
+      future(json.dumps(expected)),
+    ]
+    actual = swarming._load_build_run_result_async({
+      'id': 'taskid',
+      'outputs_ref': {
+        'isolatedserver': 'https://isolate.example.com',
+        'namespace': 'default-gzip',
+        'isolated': 'badcoffee',
+      }
+    }).get_result()
+    self.assertEqual(expected, actual)
+    fetch_isolate_async.assert_any_call(isolate.Location(
+        'isolate.example.com', 'default-gzip', 'badcoffee',
+    ))
+    fetch_isolate_async.assert_any_call(isolate.Location(
+        'isolate.example.com', 'default-gzip', 'deadbeef',
+    ))
+
+  @mock.patch('swarming.isolate.fetch_async')
+  def test_load_build_run_result_async_no_result(self, fetch_isolate_async):
+    # isolated only, without the result
+    fetch_isolate_async.return_value = future(json.dumps({
+      'files': {
+        'soemthing_else.txt': {'h': 'deadbeef'},
+      },
+    }))
+    actual = swarming._load_build_run_result_async({
+      'id': 'taskid',
+      'outputs_ref': {
+        'isolatedserver': 'https://isolate.example.com',
+        'namespace': 'default-gzip',
+        'isolated': 'badcoffee',
+      }
+    }).get_result()
+    self.assertIsNone(actual)
+
+  def test_load_build_run_result_async_non_https_server(self):
+    with self.assertRaises(swarming.BuildResultFileReadError):
+      swarming._load_build_run_result_async({
+        'id': 'taskid',
+        'outputs_ref': {
+          'isolatedserver': 'http://isolate.example.com',
+          'namespace': 'default-gzip',
+          'isolated': 'badcoffee',
+        }
+      }).get_result()
+
+  @mock.patch('swarming.isolate.fetch_async')
+  def test_load_build_run_result_async_isolate_error(self, fetch_isolate_async):
+    fetch_isolate_async.side_effect = isolate.Error()
+    with self.assertRaises(swarming.BuildResultFileReadError):
+      swarming._load_build_run_result_async({
+        'id': 'taskid',
+        'outputs_ref': {
+          'isolatedserver': 'https://isolate.example.com',
+          'namespace': 'default-gzip',
+          'isolated': 'badcoffee',
+        }
+      }).get_result()
 
 
 class SubNotifyTest(BaseTest):

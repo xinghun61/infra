@@ -47,6 +47,7 @@ import webapp2
 
 from proto import project_config_pb2
 from . import swarmingcfg as swarmingcfg_module
+from . import isolate
 import config
 import errors
 import events
@@ -60,6 +61,7 @@ PARAM_PROPERTIES = 'properties'
 PARAM_SWARMING = 'swarming'
 PARAM_CHANGES = 'changes'
 DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/task?id={task_id}'
+BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
 
 # The default percentage of builds that use canary swarming task template.
 # This number is relatively high so we treat canary seriously and that we have
@@ -76,13 +78,20 @@ CACHE_DIR = 'cache'
 ################################################################################
 # Creation/cancellation of tasks.
 
+class Error(Exception):
+  """Base class for swarmbucket-specific errors."""
 
-class TemplateNotFound(Exception):
+
+class TemplateNotFound(Error):
   """Raised when a task template is not found."""
 
 
 class CanaryTemplateNotFound(TemplateNotFound):
   """Raised when canary template is explicitly requested, but not found."""
+
+
+class BuildResultFileReadError(Error):
+  """Raised when build result file could not be read"""
 
 
 @ndb.tasklet
@@ -301,6 +310,7 @@ def _create_task_def_async(
     'builder_hash': (
         hashlib.sha256('%s:%s' % (build.bucket, builder_cfg.name)).hexdigest()),
     'build_id': build.key.id(),
+    'build_result_filename': BUILD_RUN_RESULT_FILENAME,
     'builder': builder_cfg.name,
     'cache_dir': CACHE_DIR,
     'hostname': app_identity.get_default_version_hostname(),
@@ -580,10 +590,52 @@ def _load_task_result_async(
       impersonated_identity, hostname, 'task/%s/result' % task_id)
 
 
-def _sync_build_in_memory(build, result):
-  """Syncs |build| state with swarming task |result|."""
+@ndb.tasklet
+def _load_build_run_result_async(task_result):
+  """Fetches BUILD_RUN_RESULT_FILENAME from swarming task output."""
+  outputs_ref = task_result.get('outputs_ref')
+  if not outputs_ref:
+    raise ndb.Return(None)
+
+  server_prefix = 'https://'
+  if not outputs_ref['isolatedserver'].startswith(server_prefix):
+    raise BuildResultFileReadError(
+        'Bad isolatedserver %r read from task %s' %
+        (outputs_ref['isolatedserver'], task_result['id']))
+
+  hostname = outputs_ref['isolatedserver'][len(server_prefix):]
+
+  @ndb.tasklet
+  def fetch_json_async(loc):
+    try:
+      raw = yield isolate.fetch_async(loc)
+      raise ndb.Return(json.loads(raw))
+    except (ValueError, isolate.Error) as ex:
+      raise BuildResultFileReadError(
+          'could not load %s: %s' % (isolated_loc.human_url, ex))
+
+  isolated_loc = isolate.Location(
+      hostname, outputs_ref['namespace'], outputs_ref['isolated'])
+  isolated = yield fetch_json_async(isolated_loc)
+
+  # Assume the isolated file format
+  result_entry = isolated['files'].get(BUILD_RUN_RESULT_FILENAME)
+  if not result_entry:
+    raise ndb.Return(None)
+
+  result_loc = isolated_loc._replace(digest=result_entry['h'])
+  build_result = yield fetch_json_async(result_loc)
+  raise ndb.Return(build_result)
+
+
+def _sync_build_in_memory(build, task_result, build_run_result):
+  """Syncs buildbucket |build| state with swarming task |result|."""
   # Task result docs:
   # https://github.com/luci/luci-py/blob/985821e9f13da2c93cb149d9e1159c68c72d58da/appengine/swarming/server/task_result.py#L239
+  #
+  # build_run_result is dict parsed from BuildRunResult JSONPB. May be None.
+  # https://chromium.googlesource.com/infra/infra/+/924a4fa83c1c1018635544e5783f18eeb2ea2edc/go/src/infra/tools/kitchen/proto/result.proto
+
   if build.status == model.BuildStatus.COMPLETED:  # pragma: no cover
     # Completed builds are immutable.
     return False
@@ -603,7 +655,7 @@ def _sync_build_in_memory(build, result):
     'CANCELED',
     'COMPLETED',
   )
-  state = None if result is None else result.get('state')
+  state = (task_result or {}).get('state')
   if state is None:
     build.status = model.BuildStatus.COMPLETED
     build.result = model.BuildResult.FAILURE
@@ -632,12 +684,15 @@ def _sync_build_in_memory(build, result):
       # Task started, but timed out.
       build.result = model.BuildResult.FAILURE
       build.failure_reason = model.FailureReason.INFRA_FAILURE
-    elif state == 'BOT_DIED' or result.get('internal_failure'):
+    elif state == 'BOT_DIED' or task_result.get('internal_failure'):
       build.result = model.BuildResult.FAILURE
       build.failure_reason = model.FailureReason.INFRA_FAILURE
-    elif result.get('failure'):
+    elif task_result.get('failure'):
       build.result = model.BuildResult.FAILURE
-      build.failure_reason = model.FailureReason.BUILD_FAILURE
+      if build_run_result and build_run_result.get('infra_failure'):
+        build.failure_reason = model.FailureReason.INFRA_FAILURE
+      else:
+        build.failure_reason = model.FailureReason.BUILD_FAILURE
     else:
       assert state == 'COMPLETED'
       build.result = model.BuildResult.SUCCESS
@@ -656,22 +711,36 @@ def _sync_build_in_memory(build, result):
     logging.info('Build %s result: %s', build.key.id(), build.result)
     build.clear_lease()
     build.complete_time = now
+    small_build_run_result = None
+    if build_run_result:
+      small_build_run_result = build_run_result.copy()
+      # Exclude annotations from the build run result because they may exceed
+      # Build entity size limit.
+      small_build_run_result.pop('annotations', None)
     build.result_details = {
       'swarming': {
-        'task_result': result,
+        'task_result': task_result,
       },
+      'build_run_result': small_build_run_result,
     }
   return True
 
 
 @ndb.tasklet
-def _sync_build_async(build_id, result):
-  """Syncs Build entity in the datastore with the task result."""
+def _sync_build_async(build_id, task_result, build_run_result):
+  """Syncs Build entity in the datastore with the swarming task.
+
+  Tries to load |build_run_result| from isolate if it is None.
+  """
+
+  if not build_run_result and task_result:
+    build_run_result = yield _load_build_run_result_async(task_result)
 
   @ndb.transactional_tasklet
   def txn_async():
     build = yield model.Build.get_by_id_async(build_id)
-    if build is None or not _sync_build_in_memory(build, result):
+    if (build is None or
+        not _sync_build_in_memory(build, task_result, build_run_result)):
       raise ndb.Return(None)
 
     futures = [build.put_async()]
@@ -744,7 +813,7 @@ class SubNotify(webapp2.RequestHandler):
     logging.info('Received message: %r', msg)
 
     hostname, created_time, task_id, build_id = self.unpack_msg(msg)
-    task_url = '%s/task?id=%s' % (hostname, task_id)
+    task_url = 'https://%s/task?id=%s' % (hostname, task_id)
 
     # Load build.
     logging.info('Build id: %s', build_id)
@@ -771,7 +840,7 @@ class SubNotify(webapp2.RequestHandler):
 
     # Update build.
     result = _load_task_result_async(None, hostname, task_id).get_result()
-    _sync_build_async(build_id, result).get_result()
+    _sync_build_async(build_id, result, None).get_result()
 
   def stop(self, msg, *args, **kwargs):
     """Logs error and stops request processing.
@@ -812,7 +881,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
       logging.error(
           'Task %s/%s referenced by build %s is not found',
           build.swarming_hostname, build.swarming_task_id, build.key.id())
-    yield _sync_build_async(build.key.id(), result)
+    yield _sync_build_async(build.key.id(), result, None)
 
   @decorators.require_cronjob
   def get(self):  # pragma: no cover
