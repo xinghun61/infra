@@ -98,11 +98,6 @@ func (c *CookFlags) Normalize() error {
 		return nil
 	}
 
-	// Normalize c.PythonPaths
-	if err := normalizePathSlice(&c.PythonPaths); err != nil {
-		return err
-	}
-
 	// Normalize c.PrefixPathENV
 	if err := normalizePathSlice(&c.PrefixPathENV); err != nil {
 		return err

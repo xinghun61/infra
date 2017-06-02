@@ -31,7 +31,6 @@ type CookFlags struct {
 
 	Properties     PropertyFlag        `json:"properties"`
 	PropertiesFile string              `json:"properties_file"`
-	PythonPaths    stringlistflag.Flag `json:"python_path"`
 	PrefixPathENV  stringlistflag.Flag `json:"prefix_path_env"`
 	SetEnvAbspath  stringmapflag.Value `json:"set_env_abspath"`
 	CacheDir       string              `json:"cache_dir"`
@@ -71,17 +70,6 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		"recipe",
 		"",
 		"Name of the recipe to run")
-
-	// TODO(dnj): Remove this flag once all usages have been eliminated.
-	fs.Var(
-		&c.PythonPaths,
-		"python-path",
-		"(Deprecated, use -pythonpath).")
-
-	fs.Var(
-		&c.PythonPaths,
-		"pythonpath",
-		"Python path to include. Can be specified multiple times.")
 
 	fs.Var(
 		&c.PrefixPathENV,
@@ -178,7 +166,6 @@ func (c *CookFlags) Dump() []string {
 	ret.str("output-result-json", c.OutputResultJSONPath)
 	ret.str("recipe", c.RecipeName)
 
-	ret.list("python-path", c.PythonPaths)
 	ret.list("prefix-path-env", c.PrefixPathENV)
 	ret.stringMap("set-env-abspath", c.SetEnvAbspath)
 

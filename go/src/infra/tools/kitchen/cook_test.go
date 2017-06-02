@@ -36,14 +36,12 @@ func TestCook(t *testing.T) {
 		Convey("updateEnv", func() {
 			cook.TempDir = "/tmp"
 			cook.PrefixPathENV = stringlistflag.Flag{"/path2", "/path3"}
-			cook.PythonPaths = stringlistflag.Flag{"/python2", "/python3"}
 			cook.SetEnvAbspath = stringmapflag.Value{"FOO": "/bar", "BAZ": "/qux"}
 
-			env := environ.New([]string{"PATH=/path", "PYTHONPATH=/python"})
+			env := environ.New([]string{"PATH=/path"})
 			cook.updateEnv(env)
 			So(env.Map(), ShouldResemble, map[string]string{
-				"PATH":       strings.Join([]string{"/path2", "/path3", "/path"}, string(os.PathListSeparator)),
-				"PYTHONPATH": strings.Join([]string{"/python2", "/python3", "/python"}, string(os.PathListSeparator)),
+				"PATH": strings.Join([]string{"/path2", "/path3", "/path"}, string(os.PathListSeparator)),
 
 				"BAZ": "/qux",
 				"FOO": "/bar",

@@ -476,7 +476,6 @@ func (c *cookRun) updateEnv(env environ.Env) {
 	}
 
 	addPaths("PATH", c.PrefixPathENV)
-	addPaths("PYTHONPATH", c.PythonPaths)
 
 	env.Load(c.SetEnvAbspath)
 
