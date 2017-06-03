@@ -6,6 +6,7 @@
 
 import base64
 import collections
+import urlparse
 import zlib
 
 from google.appengine.ext import ndb
@@ -63,7 +64,11 @@ def fetch_async(loc):
        raise Error('could parse response for %s: %s' % (loc.human_url, ex))
   elif 'url' in res:
     try:
-      content = yield net.request_async(res['url'])
+      parts = urlparse.urlsplit(res['url'])
+      content = yield net.request_async(
+          urlparse.urlunsplit(parts._replace(query='', fragment='')),
+          params=urlparse.parse_qsl(parts.query),
+      )
     except net.Error as ex:
       raise Error(
           'Could not fetch %s from %s: %s' % (loc.human_url, res['url'], ex))
