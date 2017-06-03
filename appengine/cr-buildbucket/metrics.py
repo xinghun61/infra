@@ -147,6 +147,7 @@ add_build_cycle_duration = _adder(  # pragma: no branch
         units=gae_ts_mon.MetricsDataUnits.SECONDS),
     lambda b: (b.complete_time - b.create_time).total_seconds())
 
+
 # requires the argument to have non-None start_time and complete_time.
 add_build_run_duration = _adder(  # pragma: no branch
     gae_ts_mon.NonCumulativeDistributionMetric(
@@ -156,6 +157,17 @@ add_build_run_duration = _adder(  # pragma: no branch
         bucketer=BUCKETER_48_HR,
         units=gae_ts_mon.MetricsDataUnits.SECONDS),
     lambda b: (b.complete_time - b.start_time).total_seconds())
+
+
+# requires the argument to have non-None create_time and start_time.
+add_build_scheduling_duration = _adder(  # pragma: no branch
+    gae_ts_mon.NonCumulativeDistributionMetric(
+        'buildbucket/builds/scheduling_durations',
+        'Duration between build creation and start',
+        _BUILD_DURATION_FIELDS,
+        bucketer=BUCKETER_48_HR,
+        units=gae_ts_mon.MetricsDataUnits.SECONDS),
+    lambda b: (b.start_time - b.create_time).total_seconds())
 
 
 CURRENTLY_PENDING = gae_ts_mon.GaugeMetric(

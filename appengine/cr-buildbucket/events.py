@@ -80,6 +80,8 @@ def on_build_started(build):  # pragma: no cover
   assert not ndb.in_transaction()
   logging.info('Build %s was started. URL: %s', build.key.id(), build.url)
   metrics.inc_started_builds(build)
+  if build.start_time is not None:
+    metrics.add_build_scheduling_duration(build)
 
 
 def on_build_completing_async(build):  # pragma: no cover
