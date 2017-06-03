@@ -59,6 +59,10 @@ var defaultGitRetryRegexpSource = []string{
 
 	// crbug.com/430343
 	`The requested URL returned error: 5\d+`,
+
+	// crbug.com/725233
+	`Operation too slow`,
+
 	`Connection reset by peer`,
 
 	`Unable to look up`,

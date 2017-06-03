@@ -37,6 +37,7 @@ func TestDefaultGitRetryRegexps(t *testing.T) {
 			`Connection reset by peer`,
 			`Unable to look up $TRAILING_CONTENT`,
 			`Couldn't resolve host`,
+			`unable to access 'URL': Operation too slow. Less than 1000 bytes/sec transferred the last 300 seconds`,
 			`Unknown SSL protocol error in connection to foo.example.com:443`,
 		} {
 			Convey(fmt.Sprintf(`Matches line: %q`, line), func() {
