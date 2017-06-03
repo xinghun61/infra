@@ -15,6 +15,8 @@ import (
 	"github.com/maruel/subcommands"
 
 	"github.com/luci/luci-go/client/authcli"
+	swarmbucket "github.com/luci/luci-go/common/api/buildbucket/swarmbucket/v1"
+	swarming "github.com/luci/luci-go/common/api/swarming/swarming/v1"
 	"github.com/luci/luci-go/common/auth"
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/errors"
@@ -81,6 +83,54 @@ func (c *cmdGetBuilder) validateFlags(ctx context.Context, args []string) (authO
 	return
 }
 
+func (c *cmdGetBuilder) grabBuilderDefinition(ctx context.Context, bucket, builder string, authOpts auth.Options) (*JobDefinition, error) {
+	authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
+	authClient, err := authenticator.Client()
+	if err != nil {
+		return nil, err
+	}
+	sbucket, err := swarmbucket.New(authClient)
+	sbucket.BasePath = fmt.Sprintf("https://%s/api/swarmbucket/v1/", c.bbHost)
+
+	type parameters struct {
+		BuilderName     string `json:"builder_name"`
+		APIExplorerLink bool   `json:"api_explorer_link"`
+	}
+
+	data, err := json.Marshal(&parameters{builder, false})
+	if err != nil {
+		return nil, err
+	}
+
+	args := &swarmbucket.SwarmingSwarmbucketApiGetTaskDefinitionRequestMessage{
+		BuildRequest: &swarmbucket.ApiPutRequestMessage{
+			Bucket:         bucket,
+			ParametersJson: string(data),
+		},
+	}
+	answer, err := sbucket.GetTaskDef(args).Context(ctx).Do()
+	if err != nil {
+		return nil, errors.WrapTransient(err)
+	}
+
+	newTask := &swarming.SwarmingRpcsNewTaskRequest{}
+	r := strings.NewReader(answer.TaskDefinition)
+	if err := json.NewDecoder(r).Decode(newTask); err != nil {
+		return nil, err
+	}
+
+	jd, err := JobDefinitionFromNewTaskRequest(newTask)
+	if err != nil {
+		return nil, err
+	}
+	// TODO(iannucci): obtain swarming server from answer
+	jd.SwarmingHostname = "chromium-swarm.appspot.com"
+	if strings.Contains(c.bbHost, "-dev.") {
+		jd.SwarmingHostname = "chromium-swarm-dev.appspot.com"
+	}
+	return jd, nil
+}
+
 func (c *cmdGetBuilder) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 	authOpts, bucket, builder, err := c.validateFlags(ctx, args)
@@ -92,7 +142,7 @@ func (c *cmdGetBuilder) Run(a subcommands.Application, args []string, env subcom
 	}
 
 	logging.Infof(ctx, "getting builder definition")
-	jd, err := grabBuilderDefinition(ctx, c.bbHost, bucket, builder, authOpts)
+	jd, err := c.grabBuilderDefinition(ctx, bucket, builder, authOpts)
 	if err != nil {
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1

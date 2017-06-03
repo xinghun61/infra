@@ -6,12 +6,9 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"golang.org/x/net/context"
 
@@ -23,83 +20,6 @@ import (
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
 )
-
-// findRecipesPy locates the current repo's `recipes.py`. It does this by:
-//   * invoking git to find the repo root
-//   * loading the recipes.cfg at infra/config/recipes.cfg
-//   * stat'ing the recipes.py implied by the recipes_path in that cfg file.
-//
-// Failure will return an error.
-//
-// On success, the absolute path to recipes.py is returned.
-func findRecipesPy(ctx context.Context) (string, error) {
-	cmd := logCmd(ctx, "git", "rev-parse", "--show-toplevel")
-	out, err := cmd.Output()
-	if err = cmdErr(err, "finding git repo"); err != nil {
-		return "", err
-	}
-
-	repoRoot := strings.TrimSpace(string(out))
-
-	pth := filepath.Join(repoRoot, "infra", "config", "recipes.cfg")
-	switch st, err := os.Stat(pth); {
-	case err != nil:
-		return "", errors.Annotate(err).Reason("reading recipes.cfg").Err()
-
-	case !st.Mode().IsRegular():
-		return "", errors.Reason("%(path)q is not a regular file").
-			D("path", pth).Err()
-	}
-
-	type recipesJSON struct {
-		RecipesPath string `json:"recipes_path"`
-	}
-	rj := &recipesJSON{}
-
-	f, err := os.Open(pth)
-	if err != nil {
-		return "", errors.Reason("reading recipes.cfg: %(path)q").
-			D("path", pth).Err()
-	}
-	defer f.Close()
-
-	if err := json.NewDecoder(f).Decode(rj); err != nil {
-		return "", errors.Reason("parsing recipes.cfg: %(path)q").
-			D("path", pth).Err()
-	}
-
-	return filepath.Join(
-		repoRoot, filepath.FromSlash(rj.RecipesPath), "recipes.py"), nil
-}
-
-func prepBundle(ctx context.Context, recipesPy, subdir string, overrides map[string]string) (string, error) {
-	retDir, err := ioutil.TempDir("", "luci-editor-bundle")
-	if err != nil {
-		return "", errors.Annotate(err).Reason("generating bundle tempdir").Err()
-	}
-
-	args := []string{
-		recipesPy,
-	}
-	if logging.GetLevel(ctx) < logging.Info {
-		args = append(args, "-v")
-	}
-	for projID, path := range overrides {
-		args = append(args, "-O", fmt.Sprintf("%s=%s", projID, path))
-	}
-	args = append(args, "bundle", "--destination", filepath.Join(retDir, subdir))
-	cmd := logCmd(ctx, "python", args...)
-	if logging.GetLevel(ctx) < logging.Info {
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-	}
-	if err := cmdErr(cmd.Run(), "creating bundle"); err != nil {
-		os.RemoveAll(retDir)
-		return "", err
-	}
-
-	return retDir, nil
-}
 
 func combineIsolates(ctx context.Context, arc *archiver.Archiver, isoHashes ...isolated.HexDigest) (isolated.HexDigest, error) {
 	if len(isoHashes) == 1 {
@@ -182,15 +102,6 @@ func isolateDirectory(ctx context.Context, arc *archiver.Archiver, dir string) (
 	promise.WaitForHashed()
 
 	return promise.Digest(), arc.Close()
-}
-
-func bundle(ctx context.Context, overrides map[string]string) (string, error) {
-	repoRecipesPy, err := findRecipesPy(ctx)
-	if err != nil {
-		return "", err
-	}
-	logging.Debugf(ctx, "using recipes.py: %q", repoRecipesPy)
-	return prepBundle(ctx, repoRecipesPy, recipeCheckoutDir, overrides)
 }
 
 func mkAuthClient(ctx context.Context, authOpts auth.Options) (*http.Client, error) {

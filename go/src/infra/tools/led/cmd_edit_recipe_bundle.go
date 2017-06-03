@@ -5,9 +5,12 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -92,6 +95,92 @@ func (c *cmdEditRecipeBundle) validateFlags(ctx context.Context, args []string) 
 	return c.authFlags.Options()
 }
 
+func (c *cmdEditRecipeBundle) prepBundle(ctx context.Context, recipesPy, subdir string) (string, error) {
+	retDir, err := ioutil.TempDir("", "luci-editor-bundle")
+	if err != nil {
+		return "", errors.Annotate(err).Reason("generating bundle tempdir").Err()
+	}
+
+	args := []string{
+		recipesPy,
+	}
+	if logging.GetLevel(ctx) < logging.Info {
+		args = append(args, "-v")
+	}
+	for projID, path := range c.overrides {
+		args = append(args, "-O", fmt.Sprintf("%s=%s", projID, path))
+	}
+	args = append(args, "bundle", "--destination", filepath.Join(retDir, subdir))
+	cmd := logCmd(ctx, "python", args...)
+	if logging.GetLevel(ctx) < logging.Info {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+	}
+	if err := cmdErr(cmd.Run(), "creating bundle"); err != nil {
+		os.RemoveAll(retDir)
+		return "", err
+	}
+
+	return retDir, nil
+}
+
+// findRecipesPy locates the current repo's `recipes.py`. It does this by:
+//   * invoking git to find the repo root
+//   * loading the recipes.cfg at infra/config/recipes.cfg
+//   * stat'ing the recipes.py implied by the recipes_path in that cfg file.
+//
+// Failure will return an error.
+//
+// On success, the absolute path to recipes.py is returned.
+func (c *cmdEditRecipeBundle) findRecipesPy(ctx context.Context) (string, error) {
+	cmd := logCmd(ctx, "git", "rev-parse", "--show-toplevel")
+	out, err := cmd.Output()
+	if err = cmdErr(err, "finding git repo"); err != nil {
+		return "", err
+	}
+
+	repoRoot := strings.TrimSpace(string(out))
+
+	pth := filepath.Join(repoRoot, "infra", "config", "recipes.cfg")
+	switch st, err := os.Stat(pth); {
+	case err != nil:
+		return "", errors.Annotate(err).Reason("reading recipes.cfg").Err()
+
+	case !st.Mode().IsRegular():
+		return "", errors.Reason("%(path)q is not a regular file").
+			D("path", pth).Err()
+	}
+
+	type recipesJSON struct {
+		RecipesPath string `json:"recipes_path"`
+	}
+	rj := &recipesJSON{}
+
+	f, err := os.Open(pth)
+	if err != nil {
+		return "", errors.Reason("reading recipes.cfg: %(path)q").
+			D("path", pth).Err()
+	}
+	defer f.Close()
+
+	if err := json.NewDecoder(f).Decode(rj); err != nil {
+		return "", errors.Reason("parsing recipes.cfg: %(path)q").
+			D("path", pth).Err()
+	}
+
+	return filepath.Join(
+		repoRoot, filepath.FromSlash(rj.RecipesPath), "recipes.py"), nil
+}
+
+func (c *cmdEditRecipeBundle) bundle(ctx context.Context) (string, error) {
+	repoRecipesPy, err := c.findRecipesPy(ctx)
+	if err != nil {
+		return "", err
+	}
+	logging.Debugf(ctx, "using recipes.py: %q", repoRecipesPy)
+	return c.prepBundle(ctx, repoRecipesPy, recipeCheckoutDir)
+}
+
 func (c *cmdEditRecipeBundle) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 	authOpts, err := c.validateFlags(ctx, args)
@@ -103,7 +192,7 @@ func (c *cmdEditRecipeBundle) Run(a subcommands.Application, args []string, env 
 	}
 
 	logging.Infof(ctx, "bundling recipes")
-	bundlePath, err := bundle(ctx, c.overrides)
+	bundlePath, err := c.bundle(ctx)
 	if err != nil {
 		logging.Errorf(ctx, "fatal error during bundle: %s", err)
 		return 1
