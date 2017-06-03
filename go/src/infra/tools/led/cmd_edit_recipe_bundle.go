@@ -98,7 +98,7 @@ func (c *cmdEditRecipeBundle) Run(a subcommands.Application, args []string, env 
 	if err != nil {
 		logging.Errorf(ctx, "bad arguments: %s", err)
 		fmt.Fprintln(os.Stderr)
-		subcommands.CmdHelp.CommandRun().Run(a, []string{"isolate"}, env)
+		subcommands.CmdHelp.CommandRun().Run(a, []string{"edit-recipe-bundle"}, env)
 		return 1
 	}
 

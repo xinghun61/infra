@@ -64,7 +64,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	if err != nil {
 		logging.Errorf(ctx, "bad arguments: %s", err)
 		fmt.Fprintln(os.Stderr)
-		subcommands.CmdHelp.CommandRun().Run(a, args, env)
+		subcommands.CmdHelp.CommandRun().Run(a, []string{"launch"}, env)
 		return 1
 	}
 
