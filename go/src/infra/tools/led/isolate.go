@@ -139,19 +139,28 @@ func isolateDirectory(ctx context.Context, arc *archiver.Archiver, dir string) (
 			return nil
 		}
 
+		relPath, err := filepath.Rel(dir, fullPath)
+		if err != nil {
+			return errors.Annotate(err).Reason("relpath of %(full)q").D("full", fullPath).Err()
+		}
+
 		if fi.Mode().IsRegular() {
-			relPath, err := filepath.Rel(dir, fullPath)
-			if err != nil {
-				return errors.Annotate(err).Reason("relpath of %(full)q").D("full", fullPath).Err()
-			}
 			isoData = append(isoData, datum{
 				relPath, arc.PushFile(relPath, fullPath, i)})
-			iso.Files[relPath] = isolated.BasicFile("", int(fi.Mode()), fi.Size())
 			i++
+			iso.Files[relPath] = isolated.BasicFile("", int(fi.Mode()), fi.Size())
+			return nil
+		}
+		if (fi.Mode() & os.ModeSymlink) != 0 {
+			val, err := os.Readlink(fullPath)
+			if err != nil {
+				return errors.Annotate(err).Reason("reading link of %(full)q").D("full", fullPath).Err()
+			}
+			iso.Files[relPath] = isolated.SymLink(val)
 			return nil
 		}
 
-		return errors.Reason("don't know how to process: %(fi)v").D("fi", fi).Err()
+		return errors.Reason("don't know how to process: %(fi)s").D("fi", fi).Err()
 	})
 	if err != nil {
 		return "", err
