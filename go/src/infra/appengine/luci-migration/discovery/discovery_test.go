@@ -107,7 +107,6 @@ https://app.example.com/masters/tryserver.chromium.linux/builders/linux_chromium
 					"Type-Task",
 					"Pri-3",
 					"Master-tryserver.chromium.linux",
-					"Builder-linux_chromium_asan_rel_ng",
 					"OS-LINUX",
 					"Restrict-View-Google",
 				},

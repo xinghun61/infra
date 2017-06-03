@@ -77,7 +77,6 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 				"Type-Task",
 				"Pri-3",
 				"Master-" + excludeInvalid(builder.ID.Master),
-				"Builder-" + excludeInvalid(builder.ID.Builder),
 			},
 		},
 	}
