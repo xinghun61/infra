@@ -139,7 +139,7 @@ def ScheduleAnalysisIfNeeded(
         HttpClientAppengine(), 'step_metadata')
 
     pipeline_job = RecursiveFlakePipeline(
-        analysis.key.urlsafe(), normalized_test.build_number, None, None,
+        analysis.key.urlsafe(), normalized_test.build_number, None, None, None,
         step_metadata=step_metadata,
         manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor)

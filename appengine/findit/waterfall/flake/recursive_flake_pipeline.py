@@ -38,6 +38,7 @@ from waterfall.trigger_flake_swarming_task_pipeline import (
 
 _DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
 _DEFAULT_MAX_BUILD_NUMBERS = 500
+_DEFAULT_ITERATIONS_TO_RERUN = 100
 
 
 _BASE_COUNT_DOWN_SECONDS = 2 * 60
@@ -295,13 +296,19 @@ def _GetHardTimeoutSeconds(master_name, builder_name, reference_build_number,
              _MAX_TIMEOUT_SECONDS)
 
 
+def _GetIterationsToRerun(user_specified_iterations, analysis):
+  return user_specified_iterations or analysis.algorithm_parameters.get(
+      'swarming_rerun', {}).get(
+          'iterations_to_rerun', _DEFAULT_ITERATIONS_TO_RERUN)
+
+
 class RecursiveFlakePipeline(BasePipeline):
 
   def __init__(
       self, analysis_urlsafe_key, preferred_run_build_number,
-      lower_bound_build_number, upper_bound_build_number, step_metadata=None,
-      manually_triggered=False, use_nearby_neighbor=False, step_size=0,
-      retries=0):
+      lower_bound_build_number, upper_bound_build_number,
+      user_specified_iterations, step_metadata=None, manually_triggered=False,
+      use_nearby_neighbor=False, step_size=0, retries=0):
     """Pipeline to determine and analyze the regression range of a flaky test.
 
     Args:
@@ -316,6 +323,9 @@ class RecursiveFlakePipeline(BasePipeline):
       upper_bound_build_number (int): The latest build number to include in the
           analysis. Pass None to allow the algorithm to determine where to start
           the backward search from.
+      user_specified_iterations (int): The number of iterations to rerun the
+          test as specified by the user. If None, Findit will fallback to what
+          is in the analysis' algorithm parameters.
       step_metadata (dict): Step_metadata for the test.
       manually_triggered (bool): True if the analysis is from manual request,
           like by a Chromium sheriff.
@@ -335,8 +345,9 @@ class RecursiveFlakePipeline(BasePipeline):
     """
     super(RecursiveFlakePipeline, self).__init__(
         analysis_urlsafe_key, preferred_run_build_number,
-        lower_bound_build_number, upper_bound_build_number, step_metadata,
-        manually_triggered, use_nearby_neighbor, step_size, retries)
+        lower_bound_build_number, upper_bound_build_number,
+        user_specified_iterations, step_metadata, manually_triggered,
+        use_nearby_neighbor, step_size, retries)
     self.analysis_urlsafe_key = ndb.Key(urlsafe=analysis_urlsafe_key)
     analysis = self.analysis_urlsafe_key.get()
     assert analysis
@@ -345,6 +356,7 @@ class RecursiveFlakePipeline(BasePipeline):
     self.preferred_run_build_number = preferred_run_build_number
     self.lower_bound_build_number = lower_bound_build_number
     self.upper_bound_build_number = upper_bound_build_number
+    self.user_specified_iterations = user_specified_iterations
     self.triggering_build_number = analysis.build_number
     self.step_name = analysis.step_name
     self.test_name = analysis.test_name
@@ -407,8 +419,9 @@ class RecursiveFlakePipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, analysis_urlsafe_key, preferred_run_build_number,
           lower_bound_build_number, upper_bound_build_number,
-          step_metadata=None, manually_triggered=False,
-          use_nearby_neighbor=False, step_size=0, retries=0):
+          user_specified_iterations, step_metadata=None,
+          manually_triggered=False, use_nearby_neighbor=False, step_size=0,
+          retries=0):
     """Pipeline to determine and analyze the regression range of a flaky test.
 
     Args:
@@ -423,6 +436,9 @@ class RecursiveFlakePipeline(BasePipeline):
       upper_bound_build_number (int): The latest build number to include in the
           analysis. Pass None to allow the algorithm to determine where to start
           the backward search from.
+      user_specified_iterations (int): The number of iterations each swarming
+          task should run, as supplied by the user. If None is specified,
+          Findit will decide how many iterations to rerun.
       step_metadata (dict): Step_metadata for the test.
       manually_triggered (bool): True if the analysis is from manual request,
           like by a Chromium sheriff.
@@ -450,9 +466,7 @@ class RecursiveFlakePipeline(BasePipeline):
       analysis = self.analysis_urlsafe_key.get()
       _UpdateAnalysisStatusAndStartTime(analysis)
 
-      # TODO(lijeffrey): Allow custom parameters supplied by user.
-      iterations = analysis.algorithm_parameters.get(
-          'swarming_rerun', {}).get('iterations_to_rerun', 100)
+      iterations = _GetIterationsToRerun(user_specified_iterations, analysis)
       hard_timeout_seconds = _GetHardTimeoutSeconds(
           self.master_name, self.builder_name, self.triggering_build_number,
           self.step_name, iterations)
@@ -474,7 +488,7 @@ class RecursiveFlakePipeline(BasePipeline):
         yield NextBuildNumberPipeline(
             analysis.key.urlsafe(), actual_run_build_number,
             lower_bound_build_number, upper_bound_build_number,
-            step_metadata=step_metadata,
+            user_specified_iterations, step_metadata=step_metadata,
             use_nearby_neighbor=use_nearby_neighbor,
             manually_triggered=manually_triggered)
     else:
@@ -483,7 +497,8 @@ class RecursiveFlakePipeline(BasePipeline):
       pipeline_job = RecursiveFlakePipeline(
           analysis_urlsafe_key, preferred_run_build_number,
           lower_bound_build_number, upper_bound_build_number,
-          step_metadata=step_metadata, manually_triggered=manually_triggered,
+          user_specified_iterations, step_metadata=step_metadata,
+          manually_triggered=manually_triggered,
           use_nearby_neighbor=use_nearby_neighbor, step_size=step_size,
           retries=retries)
 
@@ -645,8 +660,8 @@ class NextBuildNumberPipeline(BasePipeline):
   # Unused argument - pylint: disable=W0613
   def run(self, analysis_urlsafe_key, current_build_number,
           lower_bound_build_number, upper_bound_build_number,
-          step_metadata=None, use_nearby_neighbor=False,
-          manually_triggered=False):
+          user_specified_iterations, step_metadata=None,
+          use_nearby_neighbor=False, manually_triggered=False):
     """Pipeline for determining the build number to analyze.
 
     Args:
@@ -657,6 +672,9 @@ class NextBuildNumberPipeline(BasePipeline):
           None if not specified.
       upper_bound_build_number (int): The latest build number to check, or None
           if not specified.
+      user_specified_iterations (int): The number of iterations to rerun as
+          specified by the user. If None is passed, Findit will determine the
+          number of iterations to rerun.
       step_metadata (dict): Step metadata for the test.
       use_nearby_neighbor (bool): Whether or not use existing swarming reruns
           for builds near the requested build number to analyze.
@@ -690,12 +708,13 @@ class NextBuildNumberPipeline(BasePipeline):
     data_points = _NormalizeDataPoints(
         analysis.data_points, lower_bound_build_number,
         upper_bound_build_number)
-    next_build_number, suspected_build, iterations_to_rerun = (
+    next_build_number, suspected_build, updated_iterations_to_rerun = (
         lookback_algorithm.GetNextRunPointNumber(
             data_points, algorithm_settings))
-    if iterations_to_rerun:
-      # Need to rerun the first build with more iterations.
-      _UpdateIterationsToRerun(analysis, iterations_to_rerun)
+    if updated_iterations_to_rerun and user_specified_iterations is None:
+      # The lookback algorithm determined the build needs to be rerun with more
+      # iterations.
+      _UpdateIterationsToRerun(analysis, updated_iterations_to_rerun)
       _RemoveRerunBuildDataPoint(analysis, next_build_number)
       analysis.put()
 
@@ -705,7 +724,7 @@ class NextBuildNumberPipeline(BasePipeline):
         upper_bound_build_number, triggering_build_number)
 
     if _IsFinished(next_build_number, earliest_build_number,
-                   latest_build_number, iterations_to_rerun):
+                   latest_build_number, updated_iterations_to_rerun):
       # Use steppiness as the confidence score.
       build_confidence_score = (confidence.SteppinessForBuild(
           analysis.data_points, suspected_build) if suspected_build is not None
@@ -746,7 +765,8 @@ class NextBuildNumberPipeline(BasePipeline):
             yield RecursiveFlakeTryJobPipeline(
                 analysis.key.urlsafe(), start_commit_position, start_revision,
                 lower_bound_commit_position,
-                suspected_build_point.commit_position, cache_name, dimensions)
+                suspected_build_point.commit_position,
+                user_specified_iterations, cache_name, dimensions)
             return  # No update to bug yet.
           else:
             logging.info('Single commit in the blame list of suspected build')
@@ -773,7 +793,8 @@ class NextBuildNumberPipeline(BasePipeline):
     pipeline_job = RecursiveFlakePipeline(
         analysis_urlsafe_key, next_build_number,
         lower_bound_build_number, upper_bound_build_number,
-        step_metadata=step_metadata, manually_triggered=manually_triggered,
+        user_specified_iterations, step_metadata=step_metadata,
+        manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor,
         step_size=(current_build_number - next_build_number))
 

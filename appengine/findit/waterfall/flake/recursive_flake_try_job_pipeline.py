@@ -33,6 +33,7 @@ from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 _GIT_REPO = CachedGitilesRepository(
     HttpClientAppengine(),
     'https://chromium.googlesource.com/chromium/src.git')
+_DEFAULT_ITERATIONS_TO_RERUN = 100
 
 
 def CreateCulprit(revision, commit_position, confidence_score,
@@ -80,22 +81,30 @@ def _CreateTryJobEntity(
   return try_job
 
 
+def _GetIterationsToRerun(user_specified_iterations, analysis):
+  return (user_specified_iterations or
+          analysis.algorithm_parameters.get(
+              'try_job_rerun', {}).get('iterations_to_rerun',
+                                       _DEFAULT_ITERATIONS_TO_RERUN))
+
+
 class RecursiveFlakeTryJobPipeline(BasePipeline):
   """Starts a series of flake try jobs to identify the exact culprit."""
 
   def __init__(
       self, urlsafe_flake_analysis_key, commit_position, revision,
-      lower_bound_commit_position, upper_bound_commit_position, cache_name,
-      dimensions):
+      lower_bound_commit_position, upper_bound_commit_position,
+      user_specified_iterations, cache_name, dimensions):
     super(RecursiveFlakeTryJobPipeline, self).__init__(
         urlsafe_flake_analysis_key, commit_position, revision,
-        lower_bound_commit_position, upper_bound_commit_position, cache_name,
-        dimensions)
+        lower_bound_commit_position, upper_bound_commit_position,
+        user_specified_iterations, cache_name, dimensions)
     self.urlsafe_flake_analysis_key = urlsafe_flake_analysis_key
     self.commit_position = commit_position
     self.revision = revision
     self.lower_bound_commit_position = lower_bound_commit_position
     self.upper_bound_commit_position = upper_bound_commit_position
+    self.user_specified_iterations = user_specified_iterations
 
   def _LogUnexpectedAbort(self):
     if not self.was_aborted:
@@ -137,8 +146,8 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, urlsafe_flake_analysis_key, commit_position, revision,
-          lower_bound_commit_position, upper_bound_commit_position, cache_name,
-          dimensions):
+          lower_bound_commit_position, upper_bound_commit_position,
+          user_specified_iterations, cache_name, dimensions):
     """Runs a try job at a revision to determine its flakiness.
 
     Args:
@@ -150,6 +159,9 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
           |commit_position|.
       lower_bound_commit_position (int): The lower bound of commit position
           that can run a try job.
+      user_specified_iterations (int): The number of iterations the test
+          should be run as specified by the user. If None, Findit will use
+          what's specified in the analysis' algorithm parameters.
       cache_name (str): A string to identify separate directories for different
           waterfall bots on the trybots.
       dimensions (list): A list of strings in the format
@@ -177,12 +189,11 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
     analysis.put()
 
     with pipeline.InOrder():
-      iterations_to_rerun = analysis.algorithm_parameters.get(
-          'try_job_rerun', {}).get('iterations_to_rerun')
+      iterations = _GetIterationsToRerun(user_specified_iterations, analysis)
       try_job_id = yield ScheduleFlakeTryJobPipeline(
           analysis.master_name, analysis.builder_name,
           analysis.canonical_step_name, analysis.test_name, revision,
-          analysis.key.urlsafe(), cache_name, dimensions, iterations_to_rerun)
+          analysis.key.urlsafe(), cache_name, dimensions, iterations)
 
       try_job_result = yield MonitorTryJobPipeline(
           try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
@@ -239,8 +250,8 @@ class NextCommitPositionPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, urlsafe_flake_analysis_key, urlsafe_try_job_key,
-          lower_bound_commit_position, upper_bound_commit_position, cache_name,
-          dimensions):
+          lower_bound_commit_position, upper_bound_commit_position,
+          user_specified_iterations, cache_name, dimensions):
     """Determines the next commit position to run a try job on.
 
     Args:
@@ -299,8 +310,8 @@ class NextCommitPositionPipeline(BasePipeline):
 
     pipeline_job = RecursiveFlakeTryJobPipeline(
         urlsafe_flake_analysis_key, next_commit_position, next_revision,
-        lower_bound_commit_position, upper_bound_commit_position, cache_name,
-        dimensions)
+        lower_bound_commit_position, upper_bound_commit_position,
+        user_specified_iterations, cache_name, dimensions)
     # Disable attribute 'target' defined outside __init__ pylint warning,
     # because pipeline generates its own __init__ based on run function.
     pipeline_job.target = (  # pylint: disable=W0201
