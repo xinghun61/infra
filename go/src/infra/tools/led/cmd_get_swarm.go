@@ -58,7 +58,7 @@ func (c *cmdGetSwarm) validateFlags(ctx context.Context, args []string) (authOpt
 	}
 	c.taskID = args[0]
 
-	if err = checkHost(c.swarmingHost); err != nil {
+	if err = validateHost(c.swarmingHost); err != nil {
 		err = errors.Annotate(err).Reason("SwarmingHostname").Err()
 		return
 	}

@@ -21,7 +21,7 @@ import (
 	"github.com/luci/luci-go/common/logging"
 )
 
-const bbServerDefault = "https://cr-buildbucket.appspot.com"
+const bbHostDefault = "cr-buildbucket.appspot.com"
 
 func getBuilderCmd(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
@@ -36,8 +36,8 @@ func getBuilderCmd(authOpts auth.Options) *subcommands.Command {
 			ret.logCfg.AddFlags(&ret.Flags)
 			ret.authFlags.Register(&ret.Flags, authOpts)
 
-			ret.Flags.StringVar(&ret.bbServer, "B", bbServerDefault,
-				"The buildbucket server to grab the definition from.")
+			ret.Flags.StringVar(&ret.bbHost, "B", bbHostDefault,
+				"The buildbucket hostname to grab the definition from.")
 
 			return ret
 		},
@@ -50,7 +50,7 @@ type cmdGetBuilder struct {
 	logCfg    logging.Config
 	authFlags authcli.Flags
 
-	bbServer string
+	bbHost string
 }
 
 func (c *cmdGetBuilder) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, bucket, builder string, err error) {
@@ -58,8 +58,8 @@ func (c *cmdGetBuilder) validateFlags(ctx context.Context, args []string) (authO
 		err = errors.Reason("unexpected positional arguments: %(args)q").D("args", args).Err()
 		return
 	}
-	if c.bbServer == "" {
-		err = errors.New("empty server")
+	if err = validateHost(c.bbHost); err != nil {
+		err = errors.Annotate(err).Err()
 		return
 	}
 
@@ -92,7 +92,7 @@ func (c *cmdGetBuilder) Run(a subcommands.Application, args []string, env subcom
 	}
 
 	logging.Infof(ctx, "getting builder definition")
-	jd, err := grabBuilderDefinition(ctx, c.bbServer, bucket, builder, authOpts)
+	jd, err := grabBuilderDefinition(ctx, c.bbHost, bucket, builder, authOpts)
 	if err != nil {
 		logging.Errorf(ctx, "fatal error: %s", err)
 		return 1

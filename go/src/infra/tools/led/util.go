@@ -5,6 +5,8 @@
 package main
 
 import (
+	"fmt"
+	"net/url"
 	"os/exec"
 	"strings"
 
@@ -48,4 +50,19 @@ func getIsolatedFlags(s *swarming.Service) (isolatedclient.Flags, error) {
 		ServerURL: details.DefaultIsolateServer,
 		Namespace: details.DefaultIsolateNamespace,
 	}, nil
+}
+
+// validateHost returns an error iff `host` is not, precisely, a hostname.
+func validateHost(host string) error {
+	// assume that host is a bare host. This means that we can add a scheme,
+	// user/pass, a port, and a path to it, and then parsing it and retrieving
+	// 'Hostname' should equal the original string.
+	p, err := url.Parse(fmt.Sprintf("https://user:pass@%s:100/path", host))
+	if err != nil {
+		return errors.Annotate(err).Reason("bad url %(url)q").D("url", host).Err()
+	}
+	if p.Scheme != "https" || p.Port() != "100" || p.Path != "/path" || p.User.String() != "user:pass" || p.Hostname() != host {
+		return errors.Reason("must only specify hostname: %(url)q").D("url", host).Err()
+	}
+	return nil
 }

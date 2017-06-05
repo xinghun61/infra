@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"flag"
-	"net/url"
 	"regexp"
 	"strings"
 
@@ -416,19 +415,6 @@ func (ejd *EditJobDefinition) CipdPkgs(cipdPkgs map[string]string) {
 	})
 }
 
-func checkHost(host string) error {
-	p, err := url.Parse(host)
-	if err != nil {
-		return errors.Annotate(err).Reason("bad url %(url)q").D("url", host).Err()
-	}
-	// for some reason, urlparse will parse 'some.host.tld' as the Path...
-	if p.Path != host {
-		return errors.Reason("must only specify hostname: %(url)q v %(parsed)q").
-			D("url", host).D("parsed", p.Path).Err()
-	}
-	return nil
-}
-
 // SwarmingHostname allows you to modify the current SwarmingHostname used by this
 // led pipeline. Note that the isolated server is derived from this, so
 // if you're editing this value, do so before passing the JobDefinition through
@@ -438,7 +424,7 @@ func (ejd *EditJobDefinition) SwarmingHostname(host string) {
 		return
 	}
 	ejd.tweak(func(jd *JobDefinition) error {
-		if err := checkHost(host); err != nil {
+		if err := validateHost(host); err != nil {
 			return errors.Annotate(err).Reason("SwarmingHostname").Err()
 		}
 		jd.SwarmingHostname = host
