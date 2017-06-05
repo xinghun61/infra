@@ -65,7 +65,9 @@ of commits to include. Then:
 - run `make deploy-prod`
 - Go to the Versions section of the
 [App Engine Console](https://appengine.google.com/) and update the default
-version of the app.
+version of the app services. *Rembember to update both the "default" and "analyzer"
+services*. Having the default and analyzer services running different versions
+may cause errors and/or monitoring alerts to fire.
 - Send a PSA email to cit-sheriffing@ about the new release.
 
 ### Deploying to staging
