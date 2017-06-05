@@ -16,6 +16,8 @@ func Fetch(client *http.Client, path string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+	fileReq.Header.Add("Accept-Encoding", "gzip")
+
 	resp, err := client.Do(fileReq)
 	if err != nil {
 		return nil, err

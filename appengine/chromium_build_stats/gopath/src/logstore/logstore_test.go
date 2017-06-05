@@ -20,7 +20,7 @@ func TestURL(t *testing.T) {
 		},
 		{
 			obj:    "2014/09/07/build48-m1/ninja_log.build48-m1.chrome-bot.20140907-165439%2E13840.gz",
-			urlstr: "https://chrome-goma-log.storage.googleapis.com/2014/09/07/build48-m1/ninja_log.build48-m1.chrome-bot.20140907-165439.13840.gz",
+			urlstr: "https://chrome-goma-log.storage.googleapis.com/2014/09/07/build48-m1/ninja_log.build48-m1.chrome-bot.20140907-165439%2E13840.gz",
 		},
 		{
 			obj:   "2014/09/07/build48-m1/ninja_log.build48-m1.chrome-bot.20140907-165439%.13840%gz",
