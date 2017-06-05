@@ -158,10 +158,10 @@
     'rev': '496f40dca9a47c0f1dfe0cd841256485708c8442',
   },
   'protobuf': {
-    'version': '2.6.0',
+    'version': '3.3.0',
     'build': '0',
     'repo': 'external/github.com/google/protobuf',
-    'rev': '629a556879cc84e0f52546f0484b65b72ce44fe8',
+    'rev': 'a6189acd18b00611c1dc7042299ad75486f08a1a',
   },
   'pyasn1': {
     'version': '0.1.7',

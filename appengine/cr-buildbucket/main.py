@@ -2,14 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os
-
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
-import google
-
-google.__path__.insert(
-    0, os.path.join(APP_DIR, 'components', 'third_party', 'protobuf', 'google'))
-
 from components import config
 from components import ereporter2
 from components import utils
