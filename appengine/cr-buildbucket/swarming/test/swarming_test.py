@@ -182,7 +182,6 @@ class SwarmingTest(BaseTest):
       {'swarming': []},
       {'swarming': {'junk': 1}},
       {'swarming': {'recipe': []}},
-      {'swarming': {'canary_template': 'yes'}},
     ]
     for p in bad:
       logging.info('testing %s', p)
@@ -205,9 +204,10 @@ class SwarmingTest(BaseTest):
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
         },
+        canary_preference=model.CanaryPreference.AUTO,
     )
 
-    _, _, task_def, _ = swarming.prepare_task_def_async(build).get_result()
+    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
 
     self.assertEqual(task_def['properties']['caches'], [
       {'path': 'cache/a', 'name': 'a'},
@@ -228,15 +228,16 @@ class SwarmingTest(BaseTest):
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
         },
+        canary_preference=model.CanaryPreference.AUTO,
     )
 
-    _, _, task_def, _ = swarming.prepare_task_def_async(build).get_result()
+    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
 
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], '120')
 
     builder_cfg.execution_timeout_secs = 60
-    _, _, task_def, _ = swarming.prepare_task_def_async(build).get_result()
+    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], '60')
 
@@ -248,9 +249,6 @@ class SwarmingTest(BaseTest):
         created_by=auth.Identity('user', 'john@example.com'),
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
-          'swarming': {
-            'canary_template': False,
-          },
           'properties': {
             'a': 'b',
           },
@@ -259,6 +257,7 @@ class SwarmingTest(BaseTest):
             'repo_url': 'https://chromium.googlesource.com/chromium/src',
           }]
         },
+        canary_preference=model.CanaryPreference.PROD,
     )
 
     self.json_response = {
@@ -301,7 +300,6 @@ class SwarmingTest(BaseTest):
         'buildbucket_bucket:bucket',
         'buildbucket_build_id:1',
         'buildbucket_hostname:cr-buildbucket.appspot.com',
-        'buildbucket_template_canary:false',
         'buildbucket_template_revision:template_rev',
         'builder:linux_chromium_rel_ng',
         'buildertag:yes',
@@ -379,7 +377,6 @@ class SwarmingTest(BaseTest):
     self.assertEqual(set(build.tags), {
       'build_address:bucket/linux_chromium_rel_ng/1',
       'builder:linux_chromium_rel_ng',
-      'canary_build:false',
       'swarming_dimension:cores:8',
       'swarming_dimension:os:Ubuntu',
       'swarming_dimension:pool:Chrome',
@@ -404,6 +401,7 @@ class SwarmingTest(BaseTest):
         id=1,
         bucket='bucket',
         parameters={'builder_name': 'linux_chromium_rel_ng'},
+        canary_preference=model.CanaryPreference.AUTO,
     )
 
     with self.assertRaises(errors.InvalidInputError):
@@ -417,13 +415,18 @@ class SwarmingTest(BaseTest):
         id=1,
         bucket='bucket',
         parameters={'builder_name': 'linux_chromium_rel_ng'},
+        canary_preference=model.CanaryPreference.AUTO,
     )
 
     with self.assertRaises(swarming.TemplateNotFound):
       swarming.create_task_async(build).get_result()
 
   def test_create_task_async_bad_request(self):
-    build = model.Build(id=1, bucket='bucket')
+    build = model.Build(
+        id=1,
+        bucket='bucket',
+        canary_preference=model.CanaryPreference.AUTO,
+    )
 
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
@@ -446,10 +449,8 @@ class SwarmingTest(BaseTest):
         created_by=auth.Identity('user', 'john@example.com'),
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
-          'swarming': {
-            'canary_template': True,
-          }
         },
+        canary_preference=model.CanaryPreference.CANARY,
     )
 
     self.json_response = {
@@ -491,7 +492,6 @@ class SwarmingTest(BaseTest):
         'buildbucket_bucket:bucket',
         'buildbucket_build_id:1',
         'buildbucket_hostname:cr-buildbucket.appspot.com',
-        'buildbucket_template_canary:true',
         'buildbucket_template_revision:template_rev',
         'builder:linux_chromium_rel_ng',
         'buildertag:yes',
@@ -566,7 +566,6 @@ class SwarmingTest(BaseTest):
     self.assertEqual(set(build.tags), {
       'build_address:bucket/linux_chromium_rel_ng/1',
       'builder:linux_chromium_rel_ng',
-      'canary_build:true',
       'swarming_dimension:cores:8',
       'swarming_dimension:os:Ubuntu',
       'swarming_dimension:pool:Chrome',
@@ -592,10 +591,8 @@ class SwarmingTest(BaseTest):
         created_by=auth.Identity('user', 'john@example.com'),
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
-          'swarming': {
-            'canary_template': True,
-          }
         },
+        canary_preference=model.CanaryPreference.CANARY,
     )
 
     self.task_template_canary = None
@@ -639,11 +636,11 @@ class SwarmingTest(BaseTest):
         create_time=utils.utcnow(),
         created_by=auth.Identity('user', 'john@example.com'),
         parameters={'builder_name': 'linux_chromium_rel_ng'},
+        canary_preference=model.CanaryPreference.AUTO,
     )
     swarming.create_task_async(build).get_result()
 
-    actual_task_def = net.json_request_async.call_args[1]['payload']
-    self.assertIn('buildbucket_template_canary:false', actual_task_def['tags'])
+    self.assertFalse(build.canary)
     should_use_canary_template.assert_called_with(54)
 
   def test_create_task_async_override_cfg(self):
@@ -662,6 +659,7 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        canary_preference=model.CanaryPreference.AUTO,
     )
 
     self.json_response = {
@@ -707,6 +705,7 @@ class SwarmingTest(BaseTest):
             'override_builder_cfg': [],
           }
         },
+        canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
@@ -722,6 +721,7 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
@@ -737,6 +737,7 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
@@ -752,6 +753,7 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
@@ -768,6 +770,7 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
@@ -784,16 +787,18 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
   def test_create_task_async_on_leased_build(self):
     build = model.Build(
-      id=1,
-      bucket='bucket',
-      parameters={'builder_name': 'linux_chromium_rel_ng'},
-      lease_key=12345,
+        id=1,
+        bucket='bucket',
+        parameters={'builder_name': 'linux_chromium_rel_ng'},
+        lease_key=12345,
+        canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
@@ -812,7 +817,7 @@ class SwarmingTest(BaseTest):
       max_attempts=None,
     )
 
-  def test_update_build_success(self):
+  def test_sync_build_success(self):
     cases = [
       {
         'task_result': None,
@@ -908,7 +913,13 @@ class SwarmingTest(BaseTest):
     ]
 
     for case in cases:
-      build = model.Build(id=1, bucket='bucket', create_time=utils.utcnow())
+      build = model.Build(
+          id=1,
+          bucket='bucket',
+          create_time=utils.utcnow(),
+          canary_preference=model.CanaryPreference.AUTO,
+          canary=False,
+      )
       build.put()
       swarming._sync_build_async(
           1, case['task_result'], case.get('build_run_result')).get_result()
@@ -1075,15 +1086,17 @@ class SubNotifyTest(BaseTest):
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_post(self, load_task_result_async):
     build = model.Build(
-        id=1,
-        bucket='chromium',
-        create_time=utils.utcnow(),
-        parameters={
-          'builder_name': 'release'
-        },
-        status=model.BuildStatus.SCHEDULED,
-        swarming_hostname='chromium-swarm.appspot.com',
-        swarming_task_id='deadbeef',
+      id=1,
+      bucket='chromium',
+      create_time=utils.utcnow(),
+      parameters={
+        'builder_name': 'release'
+      },
+      status=model.BuildStatus.SCHEDULED,
+      swarming_hostname='chromium-swarm.appspot.com',
+      swarming_task_id='deadbeef',
+      canary_preference=model.CanaryPreference.AUTO,
+      canary=False,
     )
     build.put()
 
@@ -1120,6 +1133,7 @@ class SubNotifyTest(BaseTest):
         status=model.BuildStatus.SCHEDULED,
         swarming_hostname='chromium-swarm.appspot.com',
         swarming_task_id='deadbeef',
+        canary_preference=model.CanaryPreference.AUTO,
     )
     build.put()
 
@@ -1149,6 +1163,7 @@ class SubNotifyTest(BaseTest):
         status=model.BuildStatus.SCHEDULED,
         swarming_hostname='chromium-swarm.appspot.com',
         swarming_task_id='deadbeef',
+        canary_preference=model.CanaryPreference.AUTO,
     )
     build.put()
 
@@ -1249,12 +1264,14 @@ class CronUpdateTest(BaseTest):
         lease_key=123,
         lease_expiration_date=self.now + datetime.timedelta(minutes=5),
         leasee=auth.Anonymous,
+        canary_preference=model.CanaryPreference.AUTO,
+        canary=False,
     )
     self.build.put()
     self.now += datetime.timedelta(minutes=5)
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
-  def test_update_build_async(self, load_task_result_async):
+  def test_sync_build_async(self, load_task_result_async):
     load_task_result_async.return_value = future({
       'state': 'RUNNING',
     })
@@ -1278,7 +1295,7 @@ class CronUpdateTest(BaseTest):
     self.assertIsNotNone(build.complete_time)
 
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
-  def test_update_build_async_no_task(self, load_task_result_async):
+  def test_sync_build_async_no_task(self, load_task_result_async):
     load_task_result_async.return_value = future(None)
 
     build = self.build

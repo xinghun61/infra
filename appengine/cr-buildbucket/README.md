@@ -20,7 +20,7 @@ it and report a result back.
 Buildbucket has native integration with Swarming and Recipes.
 A bucket can define builders and a buildbucket build in such bucket is converted
 to a swarming task that runs a recipe.
-The results are reported back to buildbucket when the task compeltes.
+The results are reported back to buildbucket when the task completes.
 See [Swarming](doc/swarming.md).
 
 ## Buildbot

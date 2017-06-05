@@ -79,7 +79,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
             'author': 'nodir@google.com',
             'message': 'buildbucket: initial commit'
           }]
-        }
+        },
+        canary=False,
     )
 
     self.patch(
@@ -128,14 +129,16 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add(self):
     params = {'buildername': 'linux_rel'}
     build = self.add(
-      bucket='chromium',
-      parameters=params,
+        bucket='chromium',
+        parameters=params,
+        canary_preference=model.CanaryPreference.CANARY,
     )
     self.assertIsNotNone(build.key)
     self.assertIsNotNone(build.key.id())
     self.assertEqual(build.bucket, 'chromium')
     self.assertEqual(build.parameters, params)
     self.assertEqual(build.created_by, auth.get_current_identity())
+    self.assertEqual(build.canary_preference, model.CanaryPreference.CANARY)
 
   def test_add_with_client_operation_id(self):
     build = self.add(
@@ -156,6 +159,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       self.add(bucket='chromium as')
     with self.assertRaises(errors.InvalidInputError):
       self.add(bucket='')
+
+  def test_add_with_bad_canary_preference(self):
+    with self.assertRaises(errors.InvalidInputError):
+      self.add(bucket='bucket', canary_preference=None)
 
   def test_add_with_leasing(self):
     build = self.add(
@@ -391,8 +398,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         client_operation_id='0',
     )
     req2 = service.BuildRequest(
-      bucket='chromium',
-      tags=['buildset:a'],
+        bucket='chromium',
+        tags=['buildset:a'],
     )
     service.add(req1)
     service.add_many_async([req1, req2]).get_result()
@@ -420,6 +427,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   ################################### RETRY ####################################
 
   def test_retry(self):
+    self.test_build.canary_preference = model.CanaryPreference.CANARY
     self.test_build.initial_tags = ['x:x']
     self.test_build.tags = self.test_build.initial_tags + ['y:y']
     self.test_build.put()
@@ -431,6 +439,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(build.parameters, self.test_build.parameters)
     self.assertEqual(build.retry_of, self.test_build.key.id())
     self.assertEqual(build.tags, ['builder:infra', 'x:x'])
+    self.assertEqual(build.canary_preference, model.CanaryPreference.CANARY)
 
   def test_retry_with_build_address(self):
     self.test_build.put()
@@ -621,6 +630,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         result=model.BuildResult.SUCCESS,
         create_time=utils.utcnow(),
         complete_time=utils.utcnow() + datetime.timedelta(seconds=1),
+        canary=False,
     )
     self.put_build(build2)
 
@@ -1036,6 +1046,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNone(build.lease_key)
     self.assertIsNone(build.lease_expiration_date)
     self.assertIsNone(build.leasee)
+    self.assertIsNone(build.canary)
     self.assertTrue(self.lease())
 
   def test_reset_is_idempotent(self):
@@ -1077,18 +1088,19 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       service.validate_url(123)
 
-  def start(self, url=None, lease_key=None):
+  def start(self, url=None, lease_key=None, canary=False):
     self.test_build = service.start(
       self.test_build.key.id(),
       lease_key or self.test_build.lease_key,
-      url=url)
+      url, canary)
 
   def test_start(self):
     self.lease()
-    self.start(url='http://localhost')
+    self.start(url='http://localhost', canary=True)
     self.assertEqual(self.test_build.status, model.BuildStatus.STARTED)
     self.assertEqual(self.test_build.url, 'http://localhost')
     self.assertEqual(self.test_build.start_time, self.now)
+    self.assertTrue(self.test_build.canary)
 
   def test_start_started_build(self):
     self.lease()
@@ -1096,14 +1108,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     lease_key = self.test_build.lease_key
     url = 'http://localhost/'
 
-    service.start(build_id, lease_key, url)
-    service.start(build_id, lease_key, url)
-    service.start(build_id, lease_key, url + '1')
+    service.start(build_id, lease_key, url, False)
+    service.start(build_id, lease_key, url, False)
+    service.start(build_id, lease_key, url + '1', False)
 
   def test_start_non_leased_build(self):
     self.test_build.put()
     with self.assertRaises(errors.LeaseExpiredError):
-      service.start(self.test_build.key.id(), 42)
+      service.start(self.test_build.key.id(), 42, None, False)
 
   def test_start_completed_build(self):
     self.test_build.status = model.BuildStatus.COMPLETED
@@ -1111,11 +1123,11 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.complete_time = utils.utcnow()
     self.test_build.put()
     with self.assertRaises(errors.BuildIsCompletedError):
-      service.start(self.test_build.key.id(), 42)
+      service.start(self.test_build.key.id(), 42, None, False)
 
   def test_start_without_lease_key(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.start(1, None)
+      service.start(1, None, None, False)
 
   @contextlib.contextmanager
   def callback_test(self):
@@ -1328,6 +1340,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         result=model.BuildResult.SUCCESS,
         create_time=utils.utcnow(),
         complete_time=utils.utcnow() + datetime.timedelta(seconds=1),
+        canary=False,
     )
     completed_build.put()
     self.assertIsNotNone(self.test_build.key.get())
@@ -1345,6 +1358,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         status=model.BuildStatus.STARTED,
         create_time=utils.utcnow(),
         start_time=utils.utcnow(),
+        canary=False,
     )
     started_build.put()
 
@@ -1354,6 +1368,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         result=model.BuildResult.SUCCESS,
         create_time=utils.utcnow(),
         complete_time=utils.utcnow(),
+        canary=False,
     )
     completed_build.put()
 

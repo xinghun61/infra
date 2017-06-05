@@ -52,6 +52,15 @@ class CancelationReason(messages.Enum):
   TIMEOUT = 2
 
 
+class CanaryPreference(messages.Enum):
+  # The build system will decide whether to use canary or not
+  AUTO = 1
+  # Use the production build infrastructure
+  PROD = 2
+  # Use the canary build infrastructure
+  CANARY = 3
+
+
 class PubSubCallback(ndb.Model):
   """Parameters for a callack push task."""
   topic = ndb.StringProperty(required=True, indexed=False)
@@ -117,6 +126,9 @@ class Build(ndb.Model):
   pubsub_callback = ndb.StructuredProperty(PubSubCallback, indexed=False)
   # id of the original build that this build was derived from.
   retry_of = ndb.IntegerProperty()
+  # Specifies whether canary of build infrastructure should be used for this
+  # build.
+  canary_preference = msgprop.EnumProperty(CanaryPreference, indexed=False)
 
   # Lease-time attributes.
 
@@ -139,6 +151,11 @@ class Build(ndb.Model):
   url = ndb.StringProperty(indexed=False)
   # when the build started. Unknown for old builds.
   start_time = ndb.DateTimeProperty()
+  # True if canary build infrastructure is used to run this build.
+  # It may be None only in SCHEDULED state. Otherwise it must be True or False.
+  # If canary_preference is CANARY, this field value does not have to be True,
+  # e.g. if the build infrastructure does not have a canary.
+  canary = ndb.BooleanProperty()
 
   # Completion time attributes.
 
@@ -167,7 +184,7 @@ class Build(ndb.Model):
     assert not (is_completed and is_leased)
     assert (self.lease_expiration_date is not None) == is_leased
     assert (self.leasee is not None) == is_leased
-    # no cover due to a bug in coverage (http://stackoverflow.com/a/35325514)
+    # no cover due to a bug in coverage (https://stackoverflow.com/a/35325514)
     assert not self.tags or all(':' in t for t in self.tags)  # pragma: no cover
     assert self.create_time
     assert (self.complete_time is not None) == is_completed

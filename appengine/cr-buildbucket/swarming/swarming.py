@@ -161,9 +161,6 @@ def validate_build_parameters(builder_name, params):
   if swarming is not None:
     assert_object('swarming', swarming)
     swarming = copy.deepcopy(swarming)
-    canary_template = swarming.pop('canary_template', None)
-    if canary_template not in (True, False, None):
-      bad('swarming.canary_template parameter must true, false or null')
 
     override_builder_cfg_data = swarming.pop('override_builder_cfg', None)
     if override_builder_cfg_data is not None:
@@ -287,19 +284,22 @@ def _create_task_def_async(
   swarming_param = params.get(PARAM_SWARMING) or {}
 
   # Use canary template?
-  canary = swarming_param.get('canary_template')
-  canary_required = bool(canary)
-  if canary is None:
+  assert isinstance(build.canary_preference, model.CanaryPreference)
+  if build.canary_preference == model.CanaryPreference.AUTO:
     canary_percentage = DEFAULT_CANARY_TEMPLATE_PERCENTAGE
     if swarming_cfg.HasField('task_template_canary_percentage'):
       canary_percentage = swarming_cfg.task_template_canary_percentage.value
-    canary = should_use_canary_template(canary_percentage)
+    build.canary = should_use_canary_template(canary_percentage)
+  else:
+    build.canary = build.canary_preference == model.CanaryPreference.CANARY
 
   builder_cfg = _prepare_builder_config(builder_cfg, swarming_param)
 
   try:
-    task_template_rev, task_template, canary = yield get_task_template_async(
-        canary, canary_required)
+    task_template_rev, task_template, build.canary = (
+        yield get_task_template_async(
+            build.canary,
+            build.canary_preference == model.CanaryPreference.CANARY))
   except CanaryTemplateNotFound as ex:
     raise errors.InvalidInputError(ex.message)
   if not task_template:
@@ -378,7 +378,6 @@ def _create_task_def_async(
     'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
     'buildbucket_bucket:%s' % build.bucket,
     'buildbucket_build_id:%s' % build.key.id(),
-    'buildbucket_template_canary:%s' % str(canary).lower(),
     'buildbucket_template_revision:%s' % task_template_rev,
   ])
   if is_recipe:  # pragma: no branch
@@ -413,7 +412,7 @@ def _create_task_def_async(
       'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
       'swarming_hostname': swarming_cfg.hostname,
     }, sort_keys=True)
-  raise ndb.Return(task, canary)
+  raise ndb.Return(task)
 
 
 def _to_swarming_dimensions(dims):
@@ -461,7 +460,7 @@ def prepare_task_def_async(build, fake_build=False):
   If configured, generates a build number and updates the build.
   Creates a swarming task definition.
 
-  Returns a tuple (bucket_cfg, builder_cfg, task_def, canary).
+  Returns a tuple (bucket_cfg, builder_cfg, task_def).
   """
   if build.lease_key:
     raise errors.InvalidInputError(
@@ -496,10 +495,10 @@ def prepare_task_def_async(build, fake_build=False):
       build_number = yield sequence.generate_async(seq_name, 1)
     build.tags.append('build_address:%s/%d' % (seq_name, build_number))
 
-  task_def, canary = yield _create_task_def_async(
+  task_def = yield _create_task_def_async(
       project_id, bucket_cfg.swarming, builder_cfg, build, build_number,
       fake_build)
-  raise ndb.Return(bucket_cfg, builder_cfg, task_def, canary)
+  raise ndb.Return(bucket_cfg, builder_cfg, task_def)
 
 
 @ndb.tasklet
@@ -511,7 +510,7 @@ def create_task_async(build):
   Raises:
     errors.InvalidInputError if build attribute values are inavlid.
   """
-  bucket_cfg, builder_cfg, task_def, canary = yield prepare_task_def_async(
+  bucket_cfg, builder_cfg, task_def = yield prepare_task_def_async(
       build)
 
   res = yield _call_api_async(
@@ -538,7 +537,6 @@ def create_task_async(build):
   build.tags.extend([
     'swarming_hostname:%s' % bucket_cfg.swarming.hostname,
     'swarming_task_id:%s' % task_id,
-    'canary_build:%s' % str(canary).lower(),
   ])
   task_req = res.get('request', {})
   for t in task_req.get('tags', []):

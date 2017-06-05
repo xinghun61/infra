@@ -100,11 +100,10 @@ class ApiTests(object):
       tags=req['tags'],
       client_operation_id='42',
       pubsub_callback=model.PubSubCallback(
-        topic='projects/foo/topic/bar',
-        user_data='hello',
-        auth_token='secret',
+          topic='projects/foo/topic/bar',
+          user_data='hello',
+          auth_token='secret',
       ),
-      retry_of=None,
     ))
     self.assertEqual(resp['build']['id'], str(self.test_build.key.id()))
     self.assertEqual(resp['build']['bucket'], req['bucket'])
@@ -130,9 +129,9 @@ class ApiTests(object):
     }
     resp = self.call_api('put', req).json_body
     add.assert_called_once_with(service.BuildRequest(
-      bucket=self.test_build.bucket,
-      lease_expiration_date=self.future_date,
-      tags=[],
+        bucket=self.test_build.bucket,
+        lease_expiration_date=self.future_date,
+        tags=[],
     ))
     self.assertEqual(
       resp['build']['lease_expiration_ts'], req['lease_expiration_ts'])
@@ -221,19 +220,19 @@ class ApiTests(object):
     resp = self.call_api('put_batch', req).json_body
     add_many_async.assert_called_once_with([
       service.BuildRequest(
-        bucket=self.test_build.bucket,
-        tags=self.test_build.tags,
-        client_operation_id='0',
+          bucket=self.test_build.bucket,
+          tags=self.test_build.tags,
+          client_operation_id='0',
       ),
       service.BuildRequest(
-        bucket=build2.bucket,
-        tags=[],
-        client_operation_id='1',
+          bucket=build2.bucket,
+          tags=[],
+          client_operation_id='1',
       ),
       service.BuildRequest(
-        bucket='bad name',
-        tags=[],
-        client_operation_id='2',
+          bucket='bad name',
+          tags=[],
+          client_operation_id='2',
       ),
     ])
 
@@ -269,6 +268,7 @@ class ApiTests(object):
       'status': 'COMPLETED',
       'tag': ['important'],
       'retry_of': '42',
+      'canary': True,
     }
 
     res = self.call_api('search', req).json_body
@@ -284,6 +284,7 @@ class ApiTests(object):
       max_builds=None,
       start_cursor=None,
       retry_of=42,
+      canary=True,
     )
     self.assertEqual(len(res['builds']), 1)
     self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
@@ -372,10 +373,11 @@ class ApiTests(object):
       'id': self.test_build.key.id(),
       'lease_key': 42,
       'url': self.test_build.url,
+      'canary': True,
     }
     res = self.call_api('start', req).json_body
     start.assert_called_once_with(
-      req['id'], req['lease_key'], url=req['url'])
+        req['id'], req['lease_key'], req['url'], req['canary'])
     self.assertEqual(int(res['build']['id']), req['id'])
     self.assertEqual(res['build']['url'], req['url'])
 

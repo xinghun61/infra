@@ -79,6 +79,7 @@ class PutRequestMessage(messages.Message):
   parameters_json = messages.StringField(4)
   lease_expiration_ts = messages.IntegerField(5)
   pubsub_callback = messages.MessageField(PubSubCallbackMessage, 6)
+  canary_preference = messages.EnumField(model.CanaryPreference, 7)
 
 
 class BuildResponseMessage(messages.Message):
@@ -102,6 +103,8 @@ def put_request_message_to_build_request(request):
       lease_expiration_date=parse_datetime(request.lease_expiration_ts),
       client_operation_id=request.client_operation_id,
       pubsub_callback=pubsub_callback_from_message(request.pubsub_callback),
+      canary_preference=(
+          request.canary_preference or model.CanaryPreference.AUTO),
   )
 
 
@@ -282,6 +285,8 @@ class BuildBucketApi(remote.Service):
       created_by=messages.StringField(8),
       max_builds=messages.IntegerField(9, variant=messages.Variant.INT32),
       retry_of=messages.IntegerField(10),
+      canary=messages.BooleanField(11),
+      # search by canary_preference is not supported
   )
 
   class SearchResponseMessage(messages.Message):
@@ -307,6 +312,7 @@ class BuildBucketApi(remote.Service):
         created_by=request.created_by,
         start_cursor=request.start_cursor,
         retry_of=request.retry_of,
+        canary=request.canary,
     )
     return self.SearchResponseMessage(
         builds=map(api_common.build_to_message, builds),
@@ -381,6 +387,7 @@ class BuildBucketApi(remote.Service):
   class StartRequestBodyMessage(messages.Message):
     lease_key = messages.IntegerField(1)
     url = messages.StringField(2)
+    canary = messages.BooleanField(3)
 
   @buildbucket_api_method(
       id_resource_container(StartRequestBodyMessage), BuildResponseMessage,
@@ -388,7 +395,8 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def start(self, request):
     """Marks a build as started."""
-    build = service.start(request.id, request.lease_key, url=request.url)
+    build = service.start(
+        request.id, request.lease_key, request.url, bool(request.canary))
     return build_to_response_message(build)
 
   ####### HEARTBEAT ############################################################

@@ -55,9 +55,12 @@ If luci-config file
 `services/\<buildbucket-app-id\>:swarming_task_template_canary.json` exists
 then it is used as a task template in a fraction of builds specified by bucket
 task_template_canary_percentage config value. If it is not configured, then
-the franction is the hardcoded value of 10%.
+the fraction is the hardcoded value of 10%.
 
-See also "canary_template" build parameter.
+An individual build request can specify `canary_preference` field value to
+explicitly opt-in/out of canary. If `canary_preference` is true, but the
+canary is not configured on an instance of swarmbucket, such build request
+will be rejected.
 
 ### Bucket level
 
@@ -109,11 +112,6 @@ Real world configuration example:
 A buildbucket build can have `"swarming"` parameter, which is a JSON object with
 optional properties:
 
-* `"canary_template"`: specifies whether canary task template must be used:
-  * `true`: use the canary template. If not found, respond with an error.
-  * `false`: do not use canary template.
-  * `null` (default): use canary template with some low probability if it
-    exists.
 * `"override_builder_cfg"`: can override builder configuration defined on the
   server.
   For example, it can override a dimensions or a recipe ref.
@@ -144,7 +142,6 @@ A swarming task created by buildbucket has extra tags:
 * `buildbucket_hostname:<hostname>`
 * `buildbucket_bucket:<bucket>`
 * `buildbucket_build_id:<id>`
-* `buildbucket_template_canary:true` or `buildbucket_template_canary:false`
 * `buildbucket_template_revision:<template commit hash>`
 * `recipe_repository:<repo url>`
 * `recipe_revision:<revision>`

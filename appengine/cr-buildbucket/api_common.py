@@ -33,6 +33,8 @@ class BuildMessage(messages.Message):
   status_changed_ts = messages.IntegerField(17)
   utcnow_ts = messages.IntegerField(18, required=True)
   retry_of = messages.IntegerField(19)
+  canary_preference = messages.BooleanField(21)
+  canary = messages.BooleanField(22)
 
 
 def datetime_to_timestamp_safe(value):
@@ -67,6 +69,8 @@ def build_to_message(build, include_lease_key=False):
     status_changed_ts=datetime_to_timestamp_safe(build.status_changed_time),
     utcnow_ts=datetime_to_timestamp_safe(utils.utcnow()),
     retry_of=build.retry_of,
+    canary_preference=build.canary_preference,
+    canary=build.canary,
     # when changing this function, make sure build_to_dict would still work
   )
   if build.lease_expiration_date is not None:

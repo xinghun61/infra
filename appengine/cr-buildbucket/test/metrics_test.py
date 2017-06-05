@@ -42,6 +42,7 @@ class MetricsTest(testing.AppengineTestCase):
           status=model.BuildStatus.STARTED,
           create_time=datetime.datetime(2015, 1, 1),
           start_time=datetime.datetime(2015, 1, 1),
+          canary=False,
       ),
     ])
     metrics.set_build_status_metric(
@@ -77,6 +78,7 @@ class MetricsTest(testing.AppengineTestCase):
           never_leased=True,
           create_time=datetime.datetime(2015, 1, 3),
           complete_time=datetime.datetime(2015, 1, 4),
+          canary=False,
       ),
       model.Build(
           bucket='chromium',
@@ -119,36 +121,27 @@ class MetricsTest(testing.AppengineTestCase):
           'builder:release',
           'user_agent:cq',
           'something:else',
-          'canary_build:true',
         ],
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.FAILURE,
         failure_reason=model.FailureReason.BUILD_FAILURE,
+        canary=True,
     )
     expected = {
       'bucket': 'master.x',
       'builder': 'release',
-      'canary_build': True,
+      'canary': True,
       'user_agent': 'cq',
       'status': 'COMPLETED',
       'result': 'FAILURE',
       'failure_reason': 'BUILD_FAILURE',
       'cancelation_reason': '',
     }
-    self.assertEqual(set(expected), set(metrics._ALL_FIELD_NAMES))
+    self.assertEqual(set(expected), set(metrics._BUILD_FIELDS))
     actual = metrics._fields_for(build, expected.keys())
     self.assertEqual(expected, actual)
 
-    expected = {
-      'bucket': '',
-      'builder': '',
-      'canary_build': False,
-      'user_agent': '',
-      'status': '',
-      'result': '',
-      'failure_reason': '',
-      'cancelation_reason': '',
-    }
+    expected = {f: metrics._default_field_value(f) for f in expected}
     self.assertEqual(
         expected,
         metrics._fields_for(None, expected.keys()))

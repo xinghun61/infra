@@ -64,6 +64,12 @@ A Build JSON object may have the following keys:
 *   `updated_ts`: timestamp when the build was modified last time.
     A modification includes leasing.
 *   `utcnow_ts`: current UTC time on the server.
+*   `canary_preference`: whether the build should use canary of build
+    infrastructure. Can take values `PROD`, `CANARY` and `AUTO` (default).
+*   `canary`: a boolean that indicates whether a canary of the build
+    infrastructure is used to run this build.
+    Even If `canary_preference` is `CANARY`, `canary` may be false if the
+    underlying build infrastructure does not support canary.
 
 All timestamps are in microseconds since Unix Epoch.
 
@@ -121,11 +127,6 @@ for that. Known chrome-infra build requesters:
 *   `"cq"`: Chromium Commit Queue
 *   `"rietveld"`
 *   `"git_cl_try"`
-
-### canary_build tag
-
-Tag specifies whether this build used a canary version of infrastructure.
-Valid values: "true", "false".
 
 ## Configuration
 

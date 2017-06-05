@@ -134,7 +134,7 @@ class SwarmbucketApi(remote.Service):
             (identity, build_request.bucket))
 
       build = build_request.create_build(1, identity)
-      bucket_cfg, _, task_def, _ = (
+      bucket_cfg, _, task_def = (
           swarming.prepare_task_def_async(build, fake_build=True).get_result())
       task_def_json = json.dumps(task_def)
 

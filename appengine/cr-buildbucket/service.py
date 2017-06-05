@@ -127,7 +127,7 @@ def validate_tags(tags, mode, builder=None):
 
 _BuildRequestBase = collections.namedtuple('_BuildRequestBase', [
   'bucket', 'tags', 'parameters', 'lease_expiration_date',
-  'client_operation_id', 'pubsub_callback', 'retry_of',
+  'client_operation_id', 'pubsub_callback', 'retry_of', 'canary_preference',
 ])
 
 
@@ -136,7 +136,8 @@ class BuildRequest(_BuildRequestBase):
 
   def __new__(
       cls, bucket, tags=None, parameters=None, lease_expiration_date=None,
-      client_operation_id=None, pubsub_callback=None, retry_of=None):
+      client_operation_id=None, pubsub_callback=None, retry_of=None,
+      canary_preference=model.CanaryPreference.AUTO):
     """Creates an BuildRequest. Does not perform validation.
 
     Args:
@@ -151,10 +152,12 @@ class BuildRequest(_BuildRequestBase):
         it will be returned instead.
       pubsub_callback (model.PubsubCallback): callback parameters.
       retry_of (int): value for model.Build.retry_of attribute.
+      canary_preference (model.CanaryPreference): specifies whether canary of
+        the build infrastructure should be used.
     """
     self = super(BuildRequest, cls).__new__(
         cls, bucket, tags, parameters, lease_expiration_date,
-        client_operation_id, pubsub_callback, retry_of)
+        client_operation_id, pubsub_callback, retry_of, canary_preference)
     return self
 
   def normalize(self):
@@ -164,6 +167,9 @@ class BuildRequest(_BuildRequestBase):
       errors.InvalidInputError if arguments are invalid.
     """
     # Validate.
+    if not isinstance(self.canary_preference, model.CanaryPreference):
+      raise errors.InvalidInputError(
+          'invalid canary_preference %r' % self.canary_preference)
     validate_bucket_name(self.bucket)
     validate_tags(
         self.tags, 'new',
@@ -185,7 +191,7 @@ class BuildRequest(_BuildRequestBase):
     return BuildRequest(
         self.bucket, normalized_tags, self.parameters,
         self.lease_expiration_date, self.client_operation_id,
-        self.pubsub_callback, self.retry_of)
+        self.pubsub_callback, self.retry_of, self.canary_preference)
 
   def _client_op_memcache_key(self, identity=None):
     if self.client_operation_id is None:  # pragma: no cover
@@ -209,6 +215,7 @@ class BuildRequest(_BuildRequestBase):
         never_leased=self.lease_expiration_date is None,
         pubsub_callback=self.pubsub_callback,
         retry_of=self.retry_of,
+        canary_preference=self.canary_preference,
     )
     if self.lease_expiration_date is not None:
       build.lease_expiration_date = self.lease_expiration_date
@@ -479,6 +486,7 @@ def retry(
       client_operation_id=client_operation_id,
       pubsub_callback=pubsub_callback,
       retry_of=build_id,
+      canary_preference=build.canary_preference or model.CanaryPreference.AUTO,
   ))
 
 
@@ -545,7 +553,7 @@ def search(
     buckets=None, tags=None,
     status=None, result=None, failure_reason=None, cancelation_reason=None,
     created_by=None, max_builds=None, start_cursor=None,
-    retry_of=None):
+    retry_of=None, canary=None):
   """Searches for builds.
 
   Args:
@@ -562,6 +570,8 @@ def search(
     start_cursor (string): a value of "next" cursor returned by previous
       search_by_tags call. If not None, return next builds in the query.
     retry_of (int): value of retry_of attribute.
+    canary (bool): if not None, value of "canary" field.
+      Search by canary_preference is not supported.
 
   Returns:
     A tuple:
@@ -586,7 +596,7 @@ def search(
 
   search_args = (
     buckets, tags, status, result, failure_reason, cancelation_reason,
-    created_by, max_builds, start_cursor, retry_of)
+    created_by, max_builds, start_cursor, retry_of, canary)
 
   is_tag_index_cursor = (
     start_cursor and TAG_INDEX_SEARCH_CURSOR_RE.match(start_cursor))
@@ -625,7 +635,7 @@ def search(
 
 def _query_search(
     buckets, tags, status, result, failure_reason, cancelation_reason,
-    created_by, max_builds, start_cursor, retry_of):
+    created_by, max_builds, start_cursor, retry_of, canary):
   """Searches for builds using NDB query. For args doc, see search().
 
   Assumes:
@@ -650,6 +660,7 @@ def _query_search(
   q = filter_if(model.Build.cancelation_reason, cancelation_reason)
   q = filter_if(model.Build.created_by, created_by)
   q = filter_if(model.Build.retry_of, retry_of)
+  q = filter_if(model.Build.canary, canary)
   # buckets is None if the current identity has access to ALL buckets.
   if buckets and not check_buckets_locally:
     q = q.filter(model.Build.bucket.IN(buckets))
@@ -673,7 +684,7 @@ def _query_search(
 
 def _tag_index_search(
     buckets, tags, status, result, failure_reason, cancelation_reason,
-    created_by, max_builds, start_cursor, retry_of):
+    created_by, max_builds, start_cursor, retry_of, canary):
   """Searches for builds using TagIndex entities. For args doc, see search().
 
   Assumes:
@@ -749,6 +760,7 @@ def _tag_index_search(
     ('cancelation_reason', cancelation_reason),
     ('created_by', created_by),
     ('retry_of', retry_of),
+    ('canary', canary),
   ]
   scalar_filters = [(a, v) for a, v in scalar_filters if v is not None]
 
@@ -949,6 +961,7 @@ def reset(build_id):
     build.status_changed_time = utils.utcnow()
     build.clear_lease()
     build.url = None
+    build.canary = None
     _fut_results(build.put_async(), events.on_build_resetting_async(build))
     return build
 
@@ -957,17 +970,19 @@ def reset(build_id):
   return build
 
 
-def start(build_id, lease_key, url=None):
+def start(build_id, lease_key, url, canary):
   """Marks build as STARTED. Idempotent.
 
   Args:
     build_id: id of the started build.
     lease_key: current lease key.
     url (str): a URL to a build-system-specific build, viewable by a human.
+    canary (bool): True if canary build infrastructure is used for this build.
 
   Returns:
     The updated Build.
   """
+  assert isinstance(canary, bool), canary
   validate_lease_key(lease_key)
   validate_url(url)
 
@@ -993,6 +1008,7 @@ def start(build_id, lease_key, url=None):
     build.status = model.BuildStatus.STARTED
     build.status_changed_time = build.start_time
     build.url = url
+    build.canary = canary
     _fut_results(build.put_async(), events.on_build_starting_async(build))
     return True, build
 
