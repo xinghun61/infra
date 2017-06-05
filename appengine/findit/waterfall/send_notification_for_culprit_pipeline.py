@@ -13,7 +13,6 @@ from libs import analysis_status as status
 from libs import time_util
 from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import build_util
 from waterfall import create_revert_cl_pipeline
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
@@ -78,15 +77,17 @@ def _SendNotificationForCulprit(
     culprit = WfSuspectedCL.Get(repo_name, revision)
 
     action = 'identified'
+    should_email = True
     if revert_status == create_revert_cl_pipeline.CREATED_BY_SHERIFF:
       action = 'confirmed'
+      should_email = False
 
     message = textwrap.dedent("""
     Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
     failures in the build cycles as shown on:
     https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
         action, commit_position or revision, culprit.key.urlsafe())
-    sent = codereview.PostMessage(change_id, message)
+    sent = codereview.PostMessage(change_id, message, should_email)
   else:
     logging.error('No code-review url for %s/%s', repo_name, revision)
 

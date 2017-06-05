@@ -41,13 +41,14 @@ class CodeReview(object):  # pragma: no cover.
     """
     raise NotImplementedError()
 
-  def PostMessage(self, change_id, message):
+  def PostMessage(self, change_id, message, should_email=True):
     """Posts the given message to the CL codereview of the given change id.
 
     Args:
       change_id (str or int): The change id of the CL on Gerrit or the issue
           number of the CL on Rietveld.
       message(str): The message to be posted to the codereview.
+      should_email (bool): Should send an email when posting the message or not.
     """
     raise NotImplementedError()
 

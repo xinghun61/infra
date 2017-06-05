@@ -109,13 +109,13 @@ class Rietveld(codereview.CodeReview):
     headers['Content-Type'] = content_type
     return self.HTTP_CLIENT.Post(url, data=body, headers=headers)
 
-  def PostMessage(self, change_id, message):
+  def PostMessage(self, change_id, message, should_email=True):
     url_path = '/%s/publish' % change_id
     form_fields = {
         'message': message,
         'message_only': 'True',
         'add_as_reviewer': 'False',
-        'send_mail': 'True',
+        'send_mail': str(bool(should_email)),
         'no_redirect': 'True',
     }
     status_code, content = self._SendPostRequest(url_path, form_fields)

@@ -22,8 +22,8 @@ _MOCKED_DATETIME_UTCNOW = datetime.datetime(2016, 06, 28, 12, 44, 00)
 class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
   def _MockRietveld(self, requests):
-    def Mocked_Rietveld_PostMessage(_, change_id, message):
-      requests.append((change_id, message))
+    def Mocked_Rietveld_PostMessage(_, change_id, message, should_email):
+      requests.append((change_id, message, should_email))
       return True
     self.mock(Rietveld, 'PostMessage', Mocked_Rietveld_PostMessage)
 
