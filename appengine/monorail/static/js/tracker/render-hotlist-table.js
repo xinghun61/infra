@@ -95,7 +95,7 @@ function createEditableNoteCell(td, cell, issueID, hotlistID) {
   var textBox = document.createElement('textarea');
   setAttributes(textBox, {'id': 'itemnote-' + issueID,'placeholder': '---',
                           'class': 'itemnote rowwidgets', 'issueid': issueID,
-                          'style': 'width:' + '200px'})
+                          'style': 'height:15px'})
   if (cell['values'].length > 0) {
     textBox.value = cell['values'][0]['item'];
   }
