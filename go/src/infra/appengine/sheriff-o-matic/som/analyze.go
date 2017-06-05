@@ -23,10 +23,10 @@ import (
 )
 
 var (
-	alertDiffs = metric.NewCounter("analyzer/cron_alert_diffs",
-		"Number of diffs between alerts-dispatcher and cron alerts json", nil,
+	alertDiffs = metric.NewCounter("sheriff_o_matic/analyzer/cron_alert_diffs",
+		"Number of diffs between alerts-dqispatcher and cron alerts json", nil,
 		field.String("tree"))
-	alertCount = metric.NewInt("analyzer/alert_count",
+	alertCount = metric.NewInt("sheriff_o_matic/analyzer/alert_count",
 		"Number of alerts generated.",
 		nil,
 		field.String("tree"))
