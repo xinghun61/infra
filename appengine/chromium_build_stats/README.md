@@ -27,6 +27,9 @@ How to:
  (or
   $ cd default; ../goenv.sh goapp deploy
  )
+ NOTE: Check ninja trace data after deploy. If it's not accessible,
+ you must forget to generate trace-viewer contents (See the first item of
+ this how-to). Re-generate it and deploy again.
 
  to run gofmt
   $ cd default; ../goenv.sh goapp fmt
