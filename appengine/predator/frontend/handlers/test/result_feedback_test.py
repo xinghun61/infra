@@ -4,6 +4,7 @@
 
 import calendar
 from datetime import datetime
+import mock
 
 from google.appengine.api import users
 import webapp2
@@ -138,12 +139,9 @@ class ResultFeedbackTest(AppengineTestCase):
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)
 
-  def testDisplayTriageHistory(self):
-
-    def _MockIsCurrectUserAdmin(*_):
-      return True
-
-    self.mock(users, 'is_current_user_admin', _MockIsCurrectUserAdmin)
+  @mock.patch('google.appengine.api.users.is_current_user_admin')
+  def testDisplayTriageHistory(self, mock_is_current_user_admin):
+    mock_is_current_user_admin.return_value = True
 
     self.analysis.triage_history = [{
         'triage_timestamp': calendar.timegm(datetime.utcnow().timetuple()),

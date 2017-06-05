@@ -224,7 +224,7 @@ class CrashAnalysisTest(AppengineTestCase):
         process_type='renderer')
     findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
     crash_data = findit.GetCrashData(raw_crash_data)
-    self.mock(findit, 'GetCrashData', lambda *_: crash_data)
+    findit.GetCrashData = mock.Mock(return_value=crash_data)
 
     analysis.ReInitialize(findit)
     self.assertEqual(analysis.signature, crash_data.signature)

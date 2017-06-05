@@ -62,8 +62,9 @@ class FinditForChromeCrashTest(AppengineTestCase):
   # just testing that mocking works. I'm guessing it was to check that
   # we fail when the analysis is for the wrong client_id; but if so,
   # then we shouldn't need to mock FindCulprit...
-  def testFindCulprit(self):
-    self.mock(FinditForChromeCrash, 'FindCulprit', lambda self, *_: None)
+  @mock.patch('common.findit_for_chromecrash.FinditForChromeCrash.FindCulprit')
+  def testFindCulprit(self, mock_find_culprit):
+    mock_find_culprit.return_value = None
 
     # TODO(wrengr): would be less fragile to call
     # FinditForFracas.CreateAnalysis instead; though if I'm right about

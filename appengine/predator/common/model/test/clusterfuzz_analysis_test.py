@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import mock
 
 from analysis.clusterfuzz_data import ClusterfuzzData
 from analysis.type_enums import CrashClient
@@ -51,9 +52,8 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
       def dependency_rolls(self):
         return {}
 
-    self.mock(findit, 'GetCrashData',
-              lambda raw_crash_data:  # pylint: disable=W0108
-              MockClusterfuzzData(raw_crash_data))
+    findit.GetCrashData = mock.Mock(
+        return_value=MockClusterfuzzData(raw_crash_data))
 
     crash_data = findit.GetCrashData(raw_crash_data)
     analysis = ClusterfuzzAnalysis()

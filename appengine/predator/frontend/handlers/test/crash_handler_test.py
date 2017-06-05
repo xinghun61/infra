@@ -40,28 +40,35 @@ class CrashHandlerTest(AppengineTestCase):
 
       self.assertTrue(need_new_analysis)
 
-  def testDoNotNeedNewAnalysisIfNeedsNewAnalysisReturnsFalse(self):
+  @mock.patch('common.crash_pipeline.FinditForClientID')
+  def testDoNotNeedNewAnalysisIfNeedsNewAnalysisReturnsFalse(
+      self, mock_findit_for_client_ID):
     mock_findit = self.GetMockFindit()
-    self.mock(mock_findit, 'NeedsNewAnalysis', lambda _: False)
-    self.mock(crash_pipeline, 'FinditForClientID', lambda *_: mock_findit)
+    mock_findit.NeedsNewAnalysis = mock.Mock(return_value=False)
+    mock_findit_for_client_ID.return_value = mock_findit
+
     need_new_analysis, _ = crash_handler.NeedNewAnalysis(
         self.GetDummyChromeCrashData())
+
     # Check policy failed due to empty client config.
     self.assertFalse(need_new_analysis)
 
-  def testNeedNewAnalysisIfNeedsNewAnalysisReturnsTrue(self):
+  @mock.patch('common.crash_pipeline.FinditForClientID')
+  def testNeedNewAnalysisIfNeedsNewAnalysisReturnsTrue(
+      self, mock_findit_for_client_ID):
     mock_findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
-    self.mock(mock_findit, 'NeedsNewAnalysis', lambda _: True)
-    self.mock(crash_pipeline, 'FinditForClientID', lambda *_: mock_findit)
+    mock_findit.NeedsNewAnalysis = mock.Mock(return_value=True)
+    mock_findit_for_client_ID.return_value = mock_findit
     self.assertTrue(crash_handler.NeedNewAnalysis(
         self.GetDummyChromeCrashData(client_id=CrashClient.FRACAS)))
 
-  def testStartNewAnalysis(self):
+  @mock.patch('common.crash_pipeline.CrashWrapperPipeline.start')
+  def testStartNewAnalysis(self, mock_start):
     client_id = 'clusterfuzz'
     crash_identifiers = {'testcase': 1324345}
     self.MockPipeline(CrashWrapperPipeline, None,
                       (client_id, crash_identifiers))
-    self.mock(CrashWrapperPipeline, 'start', lambda *args, **kwargs: None)
+    mock_start.return_value = None
     crash_handler.StartNewAnalysis(client_id, crash_identifiers)
 
   @mock.patch('common.findit.Findit._CheckPolicy')

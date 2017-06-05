@@ -138,21 +138,25 @@ class ChangelistClassifierTest(AppengineTestCase):
     self.changelist_classifier = ChangelistClassifier(
         get_repository, meta_feature, meta_weight)
 
-  def testCallFailedFindingSuspects(self):
+  @mock.patch(
+      'analysis.changelist_classifier.ChangelistClassifier.GenerateSuspects')
+  def testCallFailedFindingSuspects(self, mock_generate_suspects):
     """Tests that ``__call__`` method failed to find suspects."""
-    self.mock(self.changelist_classifier, 'GenerateSuspects', lambda *_: [])
+    mock_generate_suspects.return_value = []
     suspects = self.changelist_classifier(DUMMY_REPORT)
     self.assertListEqual(suspects, [])
 
-  def testCallFindsSuspects(self):
+  @mock.patch(
+      'analysis.changelist_classifier.ChangelistClassifier.RankSuspects')
+  @mock.patch(
+      'analysis.changelist_classifier.ChangelistClassifier.GenerateSuspects')
+  def testCallFindsSuspects(self, mock_generate_suspects, mock_rank_suspects):
     """Tests that ``__call__`` method finds suspects."""
     suspect1 = Suspect(DUMMY_CHANGELOG1, 'src/')
     suspect2 = Suspect(DUMMY_CHANGELOG2, 'src/')
 
-    self.mock(self.changelist_classifier, 'GenerateSuspects',
-              lambda *_: [suspect1, suspect2])
-    self.mock(self.changelist_classifier, 'RankSuspects',
-              lambda report, suspects: [suspects[0]])
+    mock_generate_suspects.return_value = [suspect1, suspect2]
+    mock_rank_suspects.side_effect = lambda report, suspects: [suspects[0]]
     suspects = self.changelist_classifier(DUMMY_REPORT)
 
     expected_suspects = [suspect1.ToDict()]
@@ -175,37 +179,40 @@ class ChangelistClassifierTest(AppengineTestCase):
                          expected_suspects)
     self.assertFalse(mock_rank_suspects.called)
 
-  def testGenerateSuspectsFilterReverted(self):
+  @mock.patch('libs.gitiles.gitiles_repository.GitilesRepository.GetChangeLogs')
+  def testGenerateSuspectsFilterReverted(self, mock_get_change_logs):
     """Tests ``GenerateSuspects`` method."""
     dep_roll = DependencyRoll('src/', 'https://repo', 'rev1', 'rev5')
     report = DUMMY_REPORT._replace(dependency_rolls={dep_roll.path: dep_roll})
-    self.mock(GitilesRepository, 'GetChangeLogs',
-              lambda *_: [DUMMY_CHANGELOG1, DUMMY_CHANGELOG2, DUMMY_CHANGELOG3])
+    mock_get_change_logs.return_value = [DUMMY_CHANGELOG1,
+                                         DUMMY_CHANGELOG2,
+                                         DUMMY_CHANGELOG3]
 
     suspects = self.changelist_classifier.GenerateSuspects(report)
     self.assertListEqual(suspects, [])
 
   def testRankSuspectsAllLogZeros(self):
     """Tests ``RankSuspects`` method."""
-    self.mock(self.changelist_classifier._model, 'Features',
-              lambda _: lambda _: MetaFeatureValue('dummy', {}))
+    # the return value of _model.Features isn't used in this case so there's no
+    # need to set one
+    self.changelist_classifier._model.Features = mock.Mock()
     suspect1 = Suspect(DUMMY_CHANGELOG1, 'src/')
     suspect2 = Suspect(DUMMY_CHANGELOG2, 'src/')
 
-    self.mock(self.changelist_classifier._model, 'Score',
-              lambda _: lambda _: lmath.LOG_ZERO)
+    self.changelist_classifier._model.Score = mock.Mock(
+        return_value=lambda _: lmath.LOG_ZERO)
     suspects = self.changelist_classifier.RankSuspects(DUMMY_REPORT,
                                                        [suspect1, suspect2])
     self.assertEqual(suspects, [])
 
   def testRankSuspects(self):
     """Tests ``RankSuspects`` method."""
-    self.mock(self.changelist_classifier._model, 'Features',
-              lambda _: lambda _: MetaFeatureValue('dummy', {}))
+    self.changelist_classifier._model.Features = mock.Mock(
+        return_value=lambda _: MetaFeatureValue('dummy', {}))
 
     suspect = Suspect(DUMMY_CHANGELOG1, 'src/')
-    self.mock(self.changelist_classifier._model, 'Score',
-              lambda _: lambda _: 1.0)
+    self.changelist_classifier._model.Score = mock.Mock(
+        return_value=lambda _: 1.0)
     suspects = self.changelist_classifier.RankSuspects(DUMMY_REPORT,
                                                        [suspect])
     self.assertEqual(suspects[0].ToDict(), suspect.ToDict())

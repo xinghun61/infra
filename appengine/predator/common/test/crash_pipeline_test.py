@@ -35,13 +35,14 @@ class CrashPipelineTest(AppengineTestCase):
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
     self.assertEqual(analysis_status.ERROR, analysis.status)
 
-  def testFindCulpritFails(self):
+  @mock.patch('common.findit_for_chromecrash.FinditForFracas.FindCulprit')
+  def testFindCulpritFails(self, mock_find_culprit):
     crash_identifiers = self.GetDummyChromeCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.RUNNING
     analysis.put()
 
-    self.mock(FinditForFracas, 'FindCulprit', lambda *_: None)
+    mock_find_culprit.return_value = None
     pipeline = crash_pipeline.CrashAnalysisPipeline(
         CrashClient.FRACAS,
         crash_identifiers)
@@ -54,7 +55,8 @@ class CrashPipelineTest(AppengineTestCase):
     self.assertFalse(analysis.found_project)
     self.assertFalse(analysis.found_components)
 
-  def testFindCulpritSucceeds(self):
+  @mock.patch('common.findit_for_chromecrash.FinditForFracas.FindCulprit')
+  def testFindCulpritSucceeds(self, mock_find_culprit):
     crash_identifiers = self.GetDummyChromeCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.status = analysis_status.RUNNING
@@ -80,7 +82,7 @@ class CrashPipelineTest(AppengineTestCase):
         regression_range = ['VERSION_0', 'VERSION_1'],
         algorithm = 'ALGORITHM',
     )
-    self.mock(FinditForFracas, 'FindCulprit', lambda *_: dummy_culprit)
+    mock_find_culprit.return_value = dummy_culprit
     pipeline = crash_pipeline.CrashAnalysisPipeline(CrashClient.FRACAS,
                                                     crash_identifiers)
     pipeline.run()

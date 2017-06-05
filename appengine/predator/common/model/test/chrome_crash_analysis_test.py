@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import mock
 
 from analysis.chrome_crash_data import ChromeCrashData
 from common.appengine_testcase import AppengineTestCase
@@ -60,9 +61,8 @@ class ChromeCrashAnalysisTest(AppengineTestCase):
       def dependency_rolls(self):
         return {}
 
-    self.mock(findit, 'GetCrashData',
-              lambda crash_data: MockChromeCrashData(  # pylint: disable=W0108
-                  crash_data))
+    findit.GetCrashData = mock.Mock(
+        return_value=MockChromeCrashData(crash_data))
 
     crash_data = findit.GetCrashData(crash_data)
     analysis = ChromeCrashAnalysis()

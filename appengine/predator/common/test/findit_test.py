@@ -4,6 +4,7 @@
 
 import copy
 import logging
+import mock
 
 from google.appengine.api import app_identity
 
@@ -60,19 +61,21 @@ class FinditTest(AppengineTestCase):
     crash_analysis_model.put()
     self.assertFalse(self.findit.NeedsNewAnalysis(crash_data))
 
-  def testNeedsNewAnalysisIfNoAnalysisYet(self):
+  @mock.patch('common.model.crash_analysis.CrashAnalysis.Initialize')
+  def testNeedsNewAnalysisIfNoAnalysisYet(self, mock_initialize):
     """Tests that ``NeedsNewAnalysis`` returns True if crash not analyzed."""
     crash_data = self.findit.GetCrashData(self.GetDummyChromeCrashData())
-    self.mock(CrashAnalysis, 'Initialize', lambda *_: None)
+    mock_initialize.return_value = None
     self.assertTrue(self.findit.NeedsNewAnalysis(crash_data))
 
-  def testNeedsNewAnalysisIfLastOneFailed(self):
+  @mock.patch('common.model.crash_analysis.CrashAnalysis.Initialize')
+  def testNeedsNewAnalysisIfLastOneFailed(self, mock_initialize):
     """Tests that ``NeedsNewAnalysis`` returns True if last analysis failed."""
     crash_data = self.findit.GetCrashData(self.GetDummyChromeCrashData())
     crash_analysis_model = self.findit.CreateAnalysis(crash_data.identifiers)
     crash_analysis_model.status = analysis_status.ERROR
     crash_analysis_model.put()
-    self.mock(CrashAnalysis, 'Initialize', lambda *_: None)
+    mock_initialize.return_value = None
     self.assertTrue(self.findit.NeedsNewAnalysis(crash_data))
 
   def testGetPublishableResultFoundTrue(self):
