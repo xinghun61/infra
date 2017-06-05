@@ -25,6 +25,7 @@ class ApiCommonTests(testing.AppengineTestCase):
         parameters={
           'buildername': 'linux_rel',
         },
+        canary_preference=model.CanaryPreference.AUTO,
     )
 
   def test_expired_build_to_message(self):
@@ -53,5 +54,6 @@ class ApiCommonTests(testing.AppengineTestCase):
       'status': 'COMPLETED',
       'tags': [],
       'utcnow_ts': '1483228800000000',
+      'canary_preference': 'AUTO',
     }
     self.assertEqual(expected, api_common.build_to_dict(self.test_build))

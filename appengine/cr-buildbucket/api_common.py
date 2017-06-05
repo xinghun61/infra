@@ -33,7 +33,7 @@ class BuildMessage(messages.Message):
   status_changed_ts = messages.IntegerField(17)
   utcnow_ts = messages.IntegerField(18, required=True)
   retry_of = messages.IntegerField(19)
-  canary_preference = messages.BooleanField(21)
+  canary_preference = messages.EnumField(model.CanaryPreference, 21)
   canary = messages.BooleanField(22)
 
 
@@ -105,10 +105,9 @@ def build_to_dict(build, include_lease_key=False):
       v = str(v)
     else:
       assert isinstance(v, (basestring, int, long, bool)), v
-
-    if (isinstance(f, messages.IntegerField) and
-        f.variant == messages.Variant.INT64):
-      v = str(v)
+      if (isinstance(f, messages.IntegerField) and
+          f.variant == messages.Variant.INT64):
+        v = str(v)
     result[f.name] = v
 
   return result
