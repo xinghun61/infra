@@ -20,6 +20,9 @@
     <style include="som-input-styles"></style>
     <style include="iron-flex iron-flex-alignment"></style>
     <style>
+      paper-input {
+        display: inline-block;
+      }
      .alert-controls {
        text-align: center;
        min-width: 380px;
@@ -67,16 +70,8 @@
      .alert-title-bar:hover {
        cursor: pointer;
      }
-     .sub-alert-list {
-       max-height: 60px;
-       overflow-y: auto;
-     }
-     .alert-radio {
-       font-size: 0.8em;
-     }
-     .alert-radio paper-radio-button {
-       --paper-radio-button-size: 12px;
-       padding: 4px;
+     .comments-link-highlighted {
+       color: #FF8C00;
      }
      .no-toggle {
        cursor: default;
@@ -91,18 +86,12 @@
      .snoozed {
        opacity: 0.5;
      }
-     .comments-link-highlighted {
-       color: #FF8C00;
+     .sub-alert-list {
+       font-size: 0.8em;
      }
-     .subAlert {
-        border-radius: 2px;
-        border: 1px solid #dcdcdc;
-        font-size: smaller;
-        margin: .1em;
-        padding: .3em 0.5em;
-        display: inline-block;
-        background: #E75D54;
-        color: #f4f4f4;
+     .sub-alert-list paper-radio-button {
+       --paper-radio-button-size: 12px;
+       padding: 4px;
      }
      #expand-tip {
        color: #a9a9a9;
@@ -118,6 +107,11 @@
        margin: 0 2px;
        white-space: nowrap;
        overflow: hidden;
+     }
+     #alertCollapse {
+       max-height: 40px;
+       overflow-y: auto;
+       margin: 0.5em 0;
      }
      #bugsList iron-icon {
        color: #666;
@@ -169,13 +163,15 @@
      }
     </style>
     <div id="root" class$="[[_cssClass]]">
-      <div class="alert-title-bar horizontal layout justified" on-tap="toggle">
+      <div class="alert-title-bar horizontal layout justified" on-tap="_toggle">
         <div class="horizontal layout wrap">
           <div class="layout horizontal flex-child">
             <div class="alert-title self-center">
-              <template is="dom-if" if="[[_hasUngroup]]" >
+              <template is="dom-if" if="[[_hasUngroup]]">
                 <iron-a11y-keys target="[[_groupNameInput]]" keys="enter" on-keys-pressed="_updateGroupName"></iron-a11y-keys>
+                Group:
                 <paper-input id="groupName" value="[[alert.title]]" class="no-toggle"></paper-input>
+                ([[alert.alerts.length]] alerts)
               </template>
               <template is="dom-if" if="[[!_hasUngroup]]">
                 <span id="snoozeTitle" hidden="[[!annotation.snoozed]]">Snoozed ([[_snoozeTimeLeft]]): </span>
@@ -215,37 +211,35 @@
             </span>
           </div>
           <div class="alert-controls-buttons layout horizontal center flex-child wrap">
-            <button class="horizontal layout center" id="linkBug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, tree)]]">
+            <button id="linkBug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, tree)]]">
               <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
               Link/File Bug
             </button>
-            <button class="horizontal layout center" id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" hidden$="[[_hideActions(alert.type, tree)]]">
+            <button id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" hidden$="[[_hideActions(alert.type, tree)]]">
               <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
               </iron-icon>
               [[_snoozeText]]
             </button>
-            <button class="horizontal layout center" id="group" on-tap="_group" alt="Group" hidden$="[[!_hasGroup]]">
+            <button id="group" on-tap="_group" alt="Group" hidden$="[[!_hasGroup]]">
               <iron-icon class="group-icon" icon="editor:merge-type"></iron-icon>
               Group
             </button>
-            <button class="horizontal layout center" id="ungroup" on-tap="_ungroup" alt="Ungroup" hidden$="[[!_hasUngroup]]">
+            <button id="ungroup" on-tap="_ungroup" alt="Ungroup" hidden$="[[!_hasUngroup]]">
               <iron-icon class="ungroup-icon" icon="close"></iron-icon>
               Ungroup
             </button>
-            <button class="horizontal layout center" id="resolve" on-tap="_resolve" alt="Resolve" hidden$="[[!_hasResolve]]">
+            <button id="resolve" on-tap="_resolve" alt="Resolve" hidden$="[[!_hasResolve]]">
               <iron-icon class="ungroup-icon" icon="check"></iron-icon>
               Resolve
             </button>
           </div>
         </div>
         <div class="alert-info flex">
-          <template is="dom-if" if="[[_haveSubAlerts(alert)]]">
-            <div class="collapse layout horizontal center" on-tap="_expandAlertCollapse">
-              [[alert.alerts.length]] alerts.
-            </div>
-          </template>
-          <iron-collapse id="alertCollapse" class="sub-alert-list" opened hidden$="[[!_haveSubAlerts(alert)]]">
-            <paper-radio-group id="alertRadio" class="alert-radio" attr-for-selected="value" selected="{{selectedAlert}}">
+          <iron-collapse id="alertCollapse" hidden$="[[!_haveSubAlerts(alert)]]" opened>
+            <paper-radio-group class="sub-alert-list" on-tap="_expandAlertCollapse" attr-for-selected="value" selected="{{selectedAlert}}">
+              <paper-radio-button value="">
+                Merged alert view
+              </paper-radio-button>
               <template is="dom-repeat" items="[[alert.alerts]]" as="subalert">
                 <paper-radio-button value="[[subalert.key]]">
                   [[subalert.title]]

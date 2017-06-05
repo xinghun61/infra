@@ -286,12 +286,10 @@
     },
 
     _expandAlertCollapse: function() {
-      this.selectedAlert = '';
-      this.$.alertCollapse.updateSize(
-          String(this.$.alertCollapse.scrollHeight) + 'px');
+      this.$.alertCollapse.updateSize(String(this.$.alertCollapse.scrollHeight) + 'px');
     },
 
-    toggle: function(evt) {
+    _toggle: function(evt) {
       let path = evt.path;
       for (let i = 0; i < path.length; i++) {
         let itm = path[i];
