@@ -222,10 +222,12 @@ def main():
            'container registry.')
   args = parser.parse_args()
 
+  log_prefix = '%s-%s' % (
+      args.name, ','.join(args.devices) if args.devices else 'all')
   logger = logging.getLogger()
   logger.setLevel(logging.DEBUG if args.verbose else logging.WARNING)
   log_fmt = logging.Formatter(
-      '%(asctime)s.%(msecs)03d %(levelname)s %(message)s',
+      '%(asctime)s.%(msecs)03d %(levelname)s ' + log_prefix + ' %(message)s' ,
       datefmt='%y%m%d %H:%M:%S')
 
   # Udev-triggered runs of this script run as root while the crons run as
@@ -240,15 +242,15 @@ def main():
   stdout_handler = logging.StreamHandler(sys.stdout)
   logger.addHandler(stdout_handler)
 
-  # Quiet the cmd_helper module. It can be quite noisy.
-  cmd_helper_logger= logging.getLogger('devil.utils.cmd_helper')
+  # Quiet some noisy modules.
+  cmd_helper_logger = logging.getLogger('devil.utils.cmd_helper')
   cmd_helper_logger.setLevel(logging.ERROR)
+  urllib3_logger = logging.getLogger('requests.packages.urllib3.connectionpool')
+  urllib3_logger.setLevel(logging.WARNING)
 
   if not os.path.exists(_BOT_SHUTDOWN_FILE):
     logging.debug('Killing any host-side ADB processes.')
     kill_adb()
-
-  logging.debug('Running %s on devices: %s', args.name, args.devices or 'all')
 
   docker_client = containers.DockerClient()
   if not docker_client.ping():
