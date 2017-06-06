@@ -195,7 +195,12 @@
     ],
     "infra_step": true,
     "name": "listing go bin",
-    "stdout": "/path/to/tmp/"
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@listdir@[START_DIR]/infra/go/bin/file 1@@@",
+      "@@@STEP_LOG_LINE@listdir@[START_DIR]/infra/go/bin/file 2@@@",
+      "@@@STEP_LOG_END@listdir@@@"
+    ]
   },
   {
     "cmd": [
