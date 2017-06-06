@@ -73,6 +73,7 @@ class HotlistPeopleListTest(unittest.TestCase):
     mr.cnxn = 'fake cnxn'
     page_data = self.servlet.GatherPageData(mr)
     self.assertEqual(ezt.boolean(True), page_data['offer_membership_editing'])
+    self.assertEqual(ezt.boolean(False), page_data['offer_remove_self'])
     self.assertEqual(page_data['total_num_owners'], 1)
     self.assertEqual(page_data['newly_added_views'], [])
     self.assertEqual(len(page_data['pagination'].visible_results), 2)
@@ -82,11 +83,13 @@ class HotlistPeopleListTest(unittest.TestCase):
     mr.auth.effective_ids = {222L}
     page_data = self.servlet.GatherPageData(mr)
     self.assertEqual(ezt.boolean(False), page_data['offer_membership_editing'])
+    self.assertEqual(ezt.boolean(True), page_data['offer_remove_self'])
 
     mr.auth.user_id = 333L
     mr.auth.effective_ids = {333L}
     page_data = self.servlet.GatherPageData(mr)
     self.assertEqual(ezt.boolean(False), page_data['offer_membership_editing'])
+    self.assertEqual(ezt.boolean(False), page_data['offer_remove_self'])
 
   def testProcessFormData_Permission(self):
     """Only owner can change member of hotlist."""
@@ -101,7 +104,6 @@ class HotlistPeopleListTest(unittest.TestCase):
     self.assertRaises(permissions.PermissionException,
                       self.servlet.ProcessFormData, mr, {})
 
-
   def testProcessRemoveMembers(self):
     hotlist = self.servlet.services.features.TestAddHotlist(
         'HotlistName', 'removing 222, monica', [111L], [222L])
@@ -114,6 +116,31 @@ class HotlistPeopleListTest(unittest.TestCase):
     url = self.servlet.ProcessRemoveMembers(
         mr, post_data, '/u/111/hotlists/HotlistName')
     self.assertTrue('/u/111/hotlists/HotlistName/people' in url)
+    self.assertEqual(hotlist.editor_ids, [])
+
+  def testProcessRemoveSelf(self):
+    hotlist = self.servlet.services.features.TestAddHotlist(
+        'HotlistName', 'self removing 222, monica', [111L], [222L])
+    mr = testing_helpers.MakeMonorailRequest(
+        path='/u/buzbuz@gmail.com/hotlists/HotlistName/people',
+        hotlist=hotlist)
+    mr.hotlist_id = hotlist.hotlist_id
+    mr.cnxn = 'fake cnxn'
+    # The owner cannot be removed using ProcessRemoveSelf(); this is enforced
+    # by permission in ProcessFormData, not in the function itself;
+    # nor may a random user...
+    mr.auth.user_id = 333L
+    mr.auth.effective_ids = {333L}
+    url = self.servlet.ProcessRemoveSelf(mr, '/u/111/hotlists/HotlistName')
+    self.assertTrue('/u/111/hotlists/HotlistName/people' in url)
+    self.assertEqual(hotlist.owner_ids, [111L])
+    self.assertEqual(hotlist.editor_ids, [222L])
+    # ...but an editor can.
+    mr.auth.user_id = 222L
+    mr.auth.effective_ids = {222L}
+    url = self.servlet.ProcessRemoveSelf(mr, '/u/111/hotlists/HotlistName')
+    self.assertTrue('/u/111/hotlists/HotlistName/people' in url)
+    self.assertEqual(hotlist.owner_ids, [111L])
     self.assertEqual(hotlist.editor_ids, [])
 
   def testProcessAddMembers(self):

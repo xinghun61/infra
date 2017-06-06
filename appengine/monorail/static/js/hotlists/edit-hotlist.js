@@ -19,3 +19,19 @@ function initializeDialogBox(hotlist_id) {
   });
 
 }
+
+function initializeDialogBoxRemoveSelf() {
+  /* Initialise the dialog box for removing self from the hotlist. */
+
+  var removeSelfContainer = $('remove-self-container');
+  $('remove-self').addEventListener('click', function () {
+    removeSelfContainer.style.display = 'block';
+  });
+
+  var cancelButtonRS = document.getElementById('cancel-remove-self');
+
+  cancelButtonRS.addEventListener('click', function () {
+    removeSelfContainer.style.display = 'none';
+  });
+
+}

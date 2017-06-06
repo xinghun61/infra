@@ -1,0 +1,19 @@
+<div id="remove-self-container" style="display: [if-any open_dialog]block[else]none[end]">
+  <div id="remove-self-dialog">
+    <h2 style="margin-top:0">
+      Hotlist: [hotlist.name]
+    </h2>
+
+    <section>
+      Would you like to remove yourself as an editor of this hotlist?
+      <input type="checkbox" name="removeself">
+    </section>
+
+    <menu>
+      <button id="cancel-remove-self" type="reset">Cancel</button>
+      <button type="submit">Confirm</button>
+    </menu>
+  </div>
+</div>
+
+<script type="text/javascript" defer src="/static/js/hotlists/edit-hotlist.js?version=[app_version]" nonce="[nonce]"></script>

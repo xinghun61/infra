@@ -70,6 +70,11 @@ class HotlistPeopleList(servlet.Servlet):
     offer_membership_editing = permissions.CanAdministerHotlist(
         mr.auth.effective_ids, mr.hotlist)
 
+    offer_remove_self = (
+        not offer_membership_editing and
+        mr.auth.user_id and
+        mr.auth.user_id in mr.hotlist.editor_ids)
+
     newly_added_views = [mv for mv in all_member_views
                          if str(mv.user.user_id) in mr.GetParam('new', [])]
 
@@ -82,6 +87,7 @@ class HotlistPeopleList(servlet.Servlet):
         'initially_expand_form': ezt.boolean(False),
         'newly_added_views': newly_added_views,
         'offer_membership_editing': ezt.boolean(offer_membership_editing),
+        'offer_remove_self': ezt.boolean(offer_remove_self),
         'total_num_owners': len(mr.hotlist.owner_ids),
         'check_abandonment': ezt.boolean(True),
         'initial_new_owner_username': '',
@@ -94,17 +100,25 @@ class HotlistPeopleList(servlet.Servlet):
     """Process the posted form."""
     permit_edit = permissions.CanAdministerHotlist(
         mr.auth.effective_ids, mr.hotlist)
-    if not permit_edit:
+    can_remove_self = (
+        not permit_edit and
+        mr.auth.user_id and
+        mr.auth.user_id in mr.hotlist.editor_ids)
+    if not can_remove_self and not permit_edit:
       raise permissions.PermissionException(
           'User is not permitted to edit hotlist membership')
     hotlist_url = hotlist_helpers.GetURLOfHotlist(
         mr.cnxn, mr.hotlist, self.services.user)
-    if 'addbtn' in post_data:
-      return self.ProcessAddMembers(mr, post_data, hotlist_url)
-    elif 'removebtn' in post_data:
-      return self.ProcessRemoveMembers(mr, post_data, hotlist_url)
-    elif 'changeowners' in post_data:
-      return self.ProcessChangeOwnership(mr, post_data)
+    if permit_edit:
+      if 'addbtn' in post_data:
+        return self.ProcessAddMembers(mr, post_data, hotlist_url)
+      elif 'removebtn' in post_data:
+        return self.ProcessRemoveMembers(mr, post_data, hotlist_url)
+      elif 'changeowners' in post_data:
+        return self.ProcessChangeOwnership(mr, post_data)
+    if can_remove_self:
+      if 'removeself' in post_data:
+        return self.ProcessRemoveSelf(mr, hotlist_url)
 
   def _MakeMemberViews(self, mr, member_ids, users_by_id):
     """Return a sorted list of MemberViews for display by EZT."""
@@ -200,6 +214,23 @@ class HotlistPeopleList(servlet.Servlet):
     (owner_ids, editor_ids,
      follower_ids) = hotlist_helpers.MembersWithoutGivenIDs(
          mr.hotlist, remove_ids)
+
+    self.services.features.UpdateHotlistRoles(
+        mr.cnxn, mr.hotlist_id, owner_ids, editor_ids, follower_ids)
+
+    return framework_helpers.FormatAbsoluteURL(
+        mr, '%s%s' % (
+              hotlist_url, urls.HOTLIST_PEOPLE),
+          saved=1, ts=int(time.time()), include_project=False)
+
+  def ProcessRemoveSelf(self, mr, hotlist_url):
+    """Process the request to remove the logged-in user."""
+    remove_ids = [mr.auth.user_id]
+
+    # This function does no permission checking; that's done by the caller.
+    (owner_ids, editor_ids,
+        follower_ids) = hotlist_helpers.MembersWithoutGivenIDs(
+            mr.hotlist, remove_ids)
 
     self.services.features.UpdateHotlistRoles(
         mr.cnxn, mr.hotlist_id, owner_ids, editor_ids, follower_ids)

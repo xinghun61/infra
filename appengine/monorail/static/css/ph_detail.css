@@ -246,7 +246,7 @@ td u:hover { text-decoration: underline; }
 
 /* For Popup dialog boxes*/
 
-#add-to-hotlist, #transfer-ownership-container {
+#add-to-hotlist, #transfer-ownership-container, #remove-self-container {
     position: fixed;
     top: 0;
     left: 0;
@@ -256,7 +256,7 @@ td u:hover { text-decoration: underline; }
     z-index: 10;
 }
 
-#add-to-hotlist-dialog, #transfer-ownership-dialog {
+#add-to-hotlist-dialog, #transfer-ownership-dialog, #remove-self-dialog {
     position: fixed;
     top: 50%;
     left: 50%;
