@@ -42,15 +42,9 @@ def parse_config(content, filename='<unknown>'):
                  "'root_directory' field. File: %s", filename)
     error_occurred = True
 
-  if 'tool' not in config and 'cmd' not in config:
+  if 'cmd' not in config:
     LOGGER.error("Command to run must be specified in the 'cmd' "
                  "field. File: %s", filename)
-    error_occurred = True
-
-  if 'cmd' in config and ('tool' in config or 'args' in config):
-    LOGGER.error("Command to run must be specified with the 'tool' and "
-                 "'args' fields OR with the 'cmd' field, not both. "
-                 "File: %s", filename)
     error_occurred = True
 
   if 'cmd' in config and not isinstance(config['cmd'], list):
@@ -62,41 +56,12 @@ def parse_config(content, filename='<unknown>'):
   if 'cmd' in config:
     config['cmd'] = [str(x) for x in config['cmd']]
 
-  # 'args', 'environment', 'resources', 'stop_time', 'working_directory' are
-  # optional
+  # 'environment', 'resources', 'stop_time', 'working_directory' are optional.
 
   # We gathered enough errors, bail out.
   if error_occurred:
     return None
 
-  ### Past this point, 'config' contains all required fields. ###
-  ### i.e. name, root_directory, (tool(args)*)|cmd            ###
-
-  # TODO(pgervais): this is deprecated. Remove when all configs have been
-  #    ported to the new system.
-  if 'tool' in config:
-    LOGGER.warning("The 'tool' field is deprecated. Use 'cmd' instead. "
-                   "File: %s", filename)
-    # Convert to the new format.
-    # This is compatibility code, os-specific parts were originally living in
-    # service.py.
-    executable = [os.path.join(config['root_directory'], 'run.py'),
-                  config['tool']]
-    if sys.platform == 'win32':  # pragma: no cover
-      # Prepend the path to the Python interpreter on windows.
-      executable.insert(
-        0, os.path.join(config['root_directory'],
-                        os.path.join('ENV', 'Scripts', 'python.exe')))
-
-    # Using unicode for the key so as to be consistent with json.load
-    config[u'cmd'] = executable + config.get('args', [])
-    del config['tool']
-    if 'args' in config:
-      del config['args']
-
-  assert 'cmd' in config
-  assert 'args' not in config
-  assert 'tool' not in config
   return config
 
 

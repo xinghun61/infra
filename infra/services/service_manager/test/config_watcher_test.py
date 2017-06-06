@@ -91,70 +91,10 @@ class ConfigWatcherTest(unittest.TestCase):
     self.mock_thread.start.assert_called_once_with()
     self.mock_thread.start_service.assert_called_once_with()
 
-  def test_add_deprecated_field_tool(self):
-    # 'tool' and 'args' are deprecated.
-    self._set_config(
-      'foo.json',
-      '{"name": "foo", "root_directory": "bar", "tool": "baz"}')
-
-    self.cw._iteration()
-    cmd = [os.path.join('bar','run.py'), 'baz']
-
-    if sys.platform == 'win32':  # pragma: no cover
-      cmd.insert(0, os.path.join('bar', 'ENV', 'Scripts', 'python.exe' ))
-
-    self.mock_thread_ctor.assert_called_once_with(
-        43,
-        '/state',
-        {'name': 'foo',
-         'root_directory': 'bar',
-         'cmd': cmd},
-        self.mock_cloudtail)
-    self.mock_thread.start.assert_called_once_with()
-    self.mock_thread.start_service.assert_called_once_with()
-
-  def test_add_deprecated_field_tool_args(self):
-    # 'tool' and 'args' are deprecated.
-    self._set_config(
-      'foo.json',
-      '{"name": "foo", "root_directory": "bar", '
-          '"tool": "baz", "args": ["arg"]}')
-
-    self.cw._iteration()
-    cmd = [os.path.join('bar','run.py'), 'baz', 'arg']
-
-    if sys.platform == 'win32':  # pragma: no cover
-      cmd.insert(0, os.path.join('bar', 'ENV', 'Scripts', 'python.exe' ))
-
-    self.mock_thread_ctor.assert_called_once_with(
-        43,
-        '/state',
-        {'name': 'foo',
-         'root_directory': 'bar',
-         'cmd': cmd},
-        self.mock_cloudtail)
-    self.mock_thread.start.assert_called_once_with()
-    self.mock_thread.start_service.assert_called_once_with()
-
   def test_invalid_cmd(self):
     self._set_config(
       'foo.json',
       '{"name": "foo", "root_directory": "bar", "cmd": "foo"}')
-    self.cw._iteration()
-    self.assertFalse(self.mock_thread_ctor.called)
-
-  def test_invalid_fields_combination_cmd_tool(self):
-    self._set_config(
-      'foo.json',
-      '{"name": "foo", "root_directory": "bar", '
-          '"cmd": ["foo"], "tool": "foo"}')
-    self.cw._iteration()
-    self.assertFalse(self.mock_thread_ctor.called)
-
-  def test_invalid_fields_combination_cmd_args(self):
-    self._set_config(
-      'foo.json',
-      '{"name": "foo", "root_directory": "bar", "cmd": ["foo"], "args": ["1"]}')
     self.cw._iteration()
     self.assertFalse(self.mock_thread_ctor.called)
 

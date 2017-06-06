@@ -1,8 +1,7 @@
 # Service Manager
 
 The `service_manager` starts, monitors and stops long-running processes on the
-machine.  Any tool runnable by `infra/run.py` can be made into a service
-controlled by `service_manager`.
+machine.
 
 Services are configured with JSON config files in `/etc/infra-services`.
 or `C:/chrome-infra/service-config` on Windows.
@@ -56,18 +55,9 @@ The config file contains a JSON object with the following fields:
 
 The below fields have been deprecated.
 
-* __args__       - (DEPRECATED, optional, default [])
-                   A list of commandline arguments to pass to the tool.
-                   Please use __cmd__ instead.
 * __root_directory__  - (DEPRECATED)
                         The directory that contains run.py when __tool__ is
                         used.
-* __tool__      - This field has been DEPRECATED and replaced by cmd. Please
-                  use 'cmd' instead.
-                  The python module containing `__main__.py`, such as
-                  'infra.services.sysmon'.  You can run `./run.py` by itself
-                  with
-                  no arguments to see a list of these.
 
 Example:
 

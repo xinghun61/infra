@@ -53,17 +53,3 @@ def root_setup():
     subprocess.check_call(['initctl', 'start', 'service_manager'])
   return 0
 
-
-def write_service(name, root_directory, tool, args):
-  """Creates a config file to ensure service_manager starts the given service.
-
-  Call this from your service's own --root-setup handler.
-  """
-
-  with open(os.path.join(SERVICES_DIRECTORY, '%s.json' % name), 'w') as fh:
-    json.dump({
-      'name': name,
-      'root_directory': root_directory,
-      'tool': tool,
-      'args': args,
-    }, fh)

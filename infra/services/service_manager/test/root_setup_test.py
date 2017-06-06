@@ -71,16 +71,3 @@ class RootSetupTest(unittest.TestCase):
     self.mock_check_output.return_value = 'service_manager start/running'
     self.assertEquals(0, root_setup.root_setup())
     self.assertEquals(1, self.mock_check_call.call_count)
-
-  def test_write_service(self):
-    self.assertEquals(0, root_setup.root_setup())
-    root_setup.write_service('foo', 'bar', 'baz', [1, 2])
-
-    path = os.path.join(root_setup.SERVICES_DIRECTORY, 'foo.json')
-    contents = open(path).read()
-    self.assertEquals({
-        'name': 'foo',
-        'root_directory': 'bar',
-        'tool': 'baz',
-        'args': [1, 2],
-    }, json.loads(contents))
