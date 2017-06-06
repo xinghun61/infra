@@ -81,7 +81,7 @@
       <br>
       <div>
         <div><span style="color:GREEN"><b>Compile/test</b> failure on Waterfall:</span> (<a href="/waterfall/list-failures">previous analyses</a>)</div>
-        <form id="failure" action="/waterfall/failure" method="GET">
+        <form id="failure" action="/waterfall/failure" method="POST">
           <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
           <label for="build-url">URL</label> <input required id="build-url" type="url" name="url" size="130" placeholder="Press ENTER after pasting the URL to the build cycle like https://luci-milo.appspot.com/buildbot/chromium.linux/Linux%20Tests/44306"/><br>
           <input type="submit" value="Analyze failure"/>

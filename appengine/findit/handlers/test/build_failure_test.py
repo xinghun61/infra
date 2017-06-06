@@ -212,16 +212,40 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     self.assertEqual(1, len(build_failure._GetTriageHistory(analysis)))
 
-  def testInvalidBuildUrl(self):
+  def testInvalidBuildUrlForGetRequest(self):
     build_url = 'abc'
     self.assertRaisesRegexp(
         webtest.app.AppError,
-        re.compile('.*501 Not Implemented.*Url &#34;%s&#34; '
+        re.compile('.*404 Not Found.*Url &#34;%s&#34; '
                    'is not pointing to a build.*' % build_url,
                    re.MULTILINE | re.DOTALL),
         self.test_app.get, '/failure', params={'url': build_url})
 
-  def testNonAdminCanViewAnalysisOfFailureOnUnsupportedMaster(self):
+  def testAnalysisNotFound(self):
+    master_name = 'm'
+    builder_name = 'b 1'
+    build_number = 123
+    build_url = buildbot.CreateBuildUrl(
+        master_name, builder_name, build_number)
+    response = self.test_app.get(
+        '/failure', params={'format': 'json', 'url': build_url}, status=400)
+    self.assertEqual('Please schedule analyses on home page instead.',
+                     response.json_body.get('error_message'))
+
+  def testAnalysisNotFoundAfterRedirect(self):
+    master_name = 'm'
+    builder_name = 'b 1'
+    build_number = 123
+    build_url = buildbot.CreateBuildUrl(
+        master_name, builder_name, build_number)
+    response = self.test_app.get(
+        '/failure',
+        params={'format': 'json', 'url': build_url, 'redirect': '1'},
+        status=401)
+    self.assertEqual('No permission to schedule a new analysis.',
+                     response.json_body.get('error_message'))
+
+  def testAnyoneCanViewExistingAnalysis(self):
     master_name = 'm2'
     builder_name = 'b 1'
     build_number = 123
@@ -240,34 +264,80 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.put()
 
+    self.mock_current_user(user_email='test@some.domain', is_admin=False)
+
     response = self.test_app.get('/failure',
                                  params={'url': build_url})
     self.assertEquals(200, response.status_int)
-    self.assertEqual(0, len(self.taskqueue_stub.get_filtered_tasks()))
 
-  def testNonAdminCannotRequestAnalysisOfFailureOnUnsupportedMaster(self):
+  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  def testInvalidBuildUrlForPostRequest(
+      self, mocked_ValidateXSRFToken):
+    mocked_ValidateXSRFToken.side_effect = [True]
+    self.mock_current_user(user_email='test@google.com', is_admin=False)
+
+    build_url = 'an/invalid/url'
+    response = self.test_app.post(
+        '/failure',
+        params={'url': build_url, 'xsrf_token': 'abc', 'format': 'json'},
+        status=404)
+    self.assertEqual(
+        'Url "%s" is not pointing to a build.' % build_url,
+        response.json_body.get('error_message'))
+
+  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  def testNonAdminCannotRequestAnalysisOfFailureOnUnsupportedMaster(
+      self, mocked_ValidateXSRFToken):
+    mocked_ValidateXSRFToken.side_effect = [True]
     master_name = 'm2'
     builder_name = 'b 1'
     build_number = 123
     build_url = buildbot.CreateBuildUrl(
         master_name, builder_name, build_number)
 
+    self.mock_current_user(user_email='test@google.com', is_admin=False)
     self.assertRaisesRegexp(
         webtest.app.AppError,
         re.compile('.*501 Not Implemented.*Master &#34;%s&#34; '
                    'is not supported yet.*' % master_name,
                    re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/failure', params={'url': build_url})
+        self.test_app.post, '/failure',
+        params={'url': build_url, 'xsrf_token': 'abc'})
 
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value=None)
-  def testCannotGetBuildInfo(self, _):
+  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  def testCorpUserCanViewAnalysisOfFailureOnUnsupportedMaster(
+      self, mocked_ValidateXSRFToken):
+    mocked_ValidateXSRFToken.side_effect = [True]
     master_name = 'm2'
     builder_name = 'b 1'
     build_number = 123
     build_url = buildbot.CreateBuildUrl(
         master_name, builder_name, build_number)
 
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+
+    self.mock_current_user(user_email='test@google.com', is_admin=False)
+
+    response = self.test_app.post(
+        '/failure', params={'url': build_url, 'xsrf_token': 'ab'}, status=302)
+    redirect_url = '/waterfall/failure?redirect=1&url=%s' % build_url
+    self.assertTrue(response.headers.get('Location', '').endswith(redirect_url))
+
+    self.assertEqual(0, len(self.taskqueue_stub.get_filtered_tasks()))
+
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=None)
+  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  def testCannotGetBuildInfo(self, mocked_ValidateXSRFToken,  _):
+    mocked_ValidateXSRFToken.side_effect = [True]
+    master_name = 'm'
+    builder_name = 'b 1'
+    build_number = 123
+    build_url = buildbot.CreateBuildUrl(
+        master_name, builder_name, build_number)
+
+    self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     self.assertRaisesRegexp(
         webtest.app.AppError,
@@ -275,11 +345,14 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                    ' build &#34;%s/%s/%s&#34;.*' % (
                        master_name, builder_name, build_number),
                    re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/failure', params={'url': build_url})
+        self.test_app.post, '/failure',
+        params={'url': build_url, 'xsrf_token': 'abc'})
 
+  @mock.patch('gae_libs.token.ValidateXSRFToken')
   @mock.patch.object(build_util, 'GetBuildInfo')
-  def testCannotRerunIncompleteBuild(self, mock_fn):
-    master_name = 'm2'
+  def testCannotRerunIncompleteBuild(self, mock_fn, mocked_ValidateXSRFToken):
+    mocked_ValidateXSRFToken.side_effect = [True]
+    master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
     build_url = buildbot.CreateBuildUrl(
@@ -289,19 +362,23 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     build_info.completed = False
     mock_fn.return_value = build_info
 
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     self.assertRaisesRegexp(
         webtest.app.AppError,
-        re.compile('.*501 Not Implemented.*Can&#39;t rerun an incomplete'
-                   ' build &#34;%s/%s/%s&#34;.*' % (
+        re.compile('.*501 Not Implemented.*Can&#39;t force a rerun for an '
+                   'incomplete build &#34;%s/%s/%s&#34;.*' % (
                        master_name, builder_name, build_number),
                    re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/failure', params={'url': build_url, 'force': '1'})
+        self.test_app.post, '/failure',
+        params={'url': build_url, 'force': '1', 'xsrf_token': 'abc'})
 
+  @mock.patch('gae_libs.token.ValidateXSRFToken')
   @mock.patch.object(build_util, 'GetBuildInfo')
-  def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self, mock_fn):
-    master_name = 'm2'
+  def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(
+      self, mock_fn, mocked_ValidateXSRFToken):
+    mocked_ValidateXSRFToken.side_effect = [True]
+    master_name = 'm'
     builder_name = 'b'
     build_number = 123
     build_url = buildbot.CreateBuildUrl(
@@ -313,13 +390,18 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
-    response = self.test_app.get('/failure', params={'url': build_url})
-    self.assertEquals(200, response.status_int)
+    response = self.test_app.post(
+        '/failure', params={'url': build_url, 'xsrf_token': 'ab'}, status=302)
+    redirect_url = '/waterfall/failure?redirect=1&url=%s' % build_url
+    self.assertTrue(response.headers.get('Location', '').endswith(redirect_url))
 
     self.assertEqual(1, len(self.taskqueue_stub.get_filtered_tasks()))
 
+  @mock.patch('gae_libs.token.ValidateXSRFToken')
   @mock.patch.object(build_util, 'GetBuildInfo')
-  def testAnyoneCanRequestAnalysisOfFailureOnSupportedMaster(self, mock_fn):
+  def testNotEveryoneCanRequestNewAnalysisOfFailureOnSupportedMaster(
+      self, mock_fn, mocked_ValidateXSRFToken):
+    mocked_ValidateXSRFToken.side_effect = [True]
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
@@ -330,10 +412,14 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     build_info.completed = False
     mock_fn.return_value = build_info
 
-    response = self.test_app.get('/failure', params={'url': build_url})
-    self.assertEquals(200, response.status_int)
+    self.mock_current_user(user_email='test@chromium.org', is_admin=False)
 
-    self.assertEqual(1, len(self.taskqueue_stub.get_filtered_tasks()))
+    response = self.test_app.post(
+        '/failure', params={'url': build_url, 'xsrf_token': 'abc'}, status=302)
+    redirect_url = '/waterfall/failure?redirect=1&url=%s' % build_url
+    self.assertTrue(response.headers.get('Location', '').endswith(redirect_url))
+
+    self.assertEqual(0, len(self.taskqueue_stub.get_filtered_tasks()))
 
   def testGetOrganizedAnalysisResultBySuspectedCLNonSwarming(self):
     analysis_result = {
@@ -939,6 +1025,16 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_try_job_result, response.json_body['try_job'])
     self.assertEqual(
         expected_suspected_cls, response.json_body['suspected_cls'])
+
+  def testGetAllSuspectedCLsAndCheckStatusWhenNoSuspectedCLs(self):
+    self.assertEqual(
+        [], build_failure._GetAllSuspectedCLsAndCheckStatus('m', 'b', 1, None))
+
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.suspected_cls = []
+    self.assertEqual(
+        [],
+        build_failure._GetAllSuspectedCLsAndCheckStatus('m', 'b', 1, analysis))
 
   def testGetAllSuspectedCLsAndCheckStatus(self):
     master_name = 'm'
