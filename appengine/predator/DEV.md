@@ -21,6 +21,17 @@ From command line, run:
 If a code path branch is not tested and no line number is shown in the command
 line output, you could check the code coverage report shown in the output.
 
+# How to run Predator on a certain crash?
+
+Given a crash id ahpzfmdvb2dsZS5jb2 (This is a fake id for demonstration)
+
+From command line, run:
+  infra/appengine/predator/scripts/run-predator -k ahpzfmdvb2dsZS5jb2 -v
+
+Debug:
+  you can set breakpoint anywhere when running Predator using this script by:
+  import pdb; pdb.set_trace()
+
 # How to deploy to appengine?
 
 For testing on the staging app, deploy to predator-for-me-staging.appspot.com:
