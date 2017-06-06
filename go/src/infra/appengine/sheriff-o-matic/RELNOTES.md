@@ -1,3 +1,24 @@
+# Release Notes sheriff-o-matic 2017-06-06
+
+- 7 commits, 1 bugs affected since 98ca199 (2017-05-30T23:02:13Z)
+- 2 Authors:
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [SoM: Polish grouped alert view slightly.](https://chromium-review.googlesource.com/508041) (zhangtiff@google.com)
+- [[som] fix typo](https://chromium-review.googlesource.com/524995) (seanmccullough@chromium.org)
+- [[som] Update README.md for new deployment instructions.](https://chromium-review.googlesource.com/524294) (seanmccullough@chromium.org)
+- [[som] adjust tsmon metric names to be less ambiguous](https://chromium-review.googlesource.com/524262) (seanmccullough@chromium.org)
+- [[som] Split analyzer cron jobs into their own backend service.](https://chromium-review.googlesource.com/520625) (seanmccullough@chromium.org)
+- [SoM: Fix gitignore for som-app.vulcanized.html](https://chromium-review.googlesource.com/519648) (zhangtiff@google.com)
+- [[som] whitelist isolate server for alert links](https://chromium-review.googlesource.com/526333) (seanmccullough@chromium.org)
+
+## Bugs updated, by author
+- zhangtiff@google.com:
+  -  [https://crbug.com/723793](https://crbug.com/723793)
+
 # Release Notes sheriff-o-matic 2017-05-30
 
 - 8 commits, 5 bugs affected since c9de2ca (2017-05-23T22:50:56Z)
