@@ -84,7 +84,6 @@ class CrashAnalysisTest(AppengineTestCase):
     analysis.Reset()
     self.assertIsNone(analysis.pipeline_status_path)
     self.assertEqual(analysis_status.PENDING, analysis.status)
-    self.assertIsNone(analysis.requested_time)
     self.assertIsNone(analysis.started_time)
     self.assertIsNone(analysis.findit_version)
     self.assertIsNone(analysis.has_regression_range)
@@ -99,12 +98,6 @@ class CrashAnalysisTest(AppengineTestCase):
                      triage_status.UNTRIAGED)
     self.assertEqual(analysis.suspected_components_triage_status,
                      triage_status.UNTRIAGED)
-    self.assertEqual(analysis.culprit_regression_range, None)
-    self.assertEqual(analysis.culprit_cls, None)
-    self.assertEqual(analysis.culprit_project, None)
-    self.assertEqual(analysis.culprit_components, None)
-    self.assertEqual(analysis.triage_history, None)
-    self.assertEqual(analysis.note, None)
 
   def testUpdateCrashAnalysis(self):
     update = {'note': 'dummy'}

@@ -4,6 +4,7 @@
 
 import json
 import logging
+import traceback
 
 from google.appengine.ext import ndb
 
@@ -258,6 +259,7 @@ class CrashWrapperPipeline(BasePipeline): # pragma: no cover
 
 # TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
 class RerunPipeline(BasePipeline):  # pragma: no cover
+  """Reruns analysis of all crash analyses in a time range."""
 
   def run(self, client_id, start_date, end_date):
     analysis = CLIENT_ID_TO_CRASH_ANALYSIS.get(client_id)
@@ -287,6 +289,6 @@ class RerunPipeline(BasePipeline):  # pragma: no cover
       logging.info('Initialize analysis for crash %s', crash.identifiers)
       try:
         yield CrashAnalysisPipeline(client_id, crash.identifiers)
-      except Exception as e:
-        logging.error(str(e))
+      except Exception:
+        logging.exception(traceback.format_exc())
         return

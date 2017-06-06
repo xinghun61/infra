@@ -5,7 +5,6 @@
 import copy
 import hashlib
 import json
-import logging
 
 from google.appengine.ext import ndb
 
@@ -111,7 +110,6 @@ class CrashAnalysis(ndb.Model):
   def Reset(self):
     self.pipeline_status_path = None
     self.status = analysis_status.PENDING
-    self.requested_time = None
     self.started_time = None
     self.completed_time = None
     self.findit_version = None
@@ -120,15 +118,9 @@ class CrashAnalysis(ndb.Model):
     self.solution = None
     self.result = None
     self.regression_range_triage_status = triage_status.UNTRIAGED
-    self.culprit_regression_range = None
     self.suspected_cls_triage_status = triage_status.UNTRIAGED
-    self.culprit_cls = None
     self.suspected_project_triage_status = triage_status.UNTRIAGED
-    self.culprit_project = None
     self.suspected_components_triage_status = triage_status.UNTRIAGED
-    self.culprit_components = None
-    self.triage_history = None
-    self.note = None
 
   def Update(self, update):
     updated = False
@@ -203,7 +195,7 @@ class CrashAnalysis(ndb.Model):
 
     # Set progress properties.
     self.status = analysis_status.PENDING
-    self.requested_time = time_util.GetUTCNow()
+    self.started_time = time_util.GetUTCNow()
 
   def ToCrashReport(self):
     """Converts this model to ``CrashReport`` to give to Predator library."""
@@ -226,14 +218,13 @@ class CrashAnalysis(ndb.Model):
     raise NotImplementedError()
 
   def ToJson(self):
-    stacktrace_str = None
-    if self.stacktrace:
-      stacktrace_str = self.stacktrace.ToString()
-    elif self.stack_trace:
-      stacktrace_str = self.stack_trace
+    # ``stack_trace`` is the raw stacktrace string, ``stacktrace`` is the parsed
+    # ``Stactrace`` object. We want to get the raw string. However some legacy
+    # data didn't store any, in this case, we use ``self.stacktrace.ToString()``
+    # instead.
+    stacktrace_str = self.stack_trace or (
+        self.stacktrace.ToString() if self.stacktrace else None)
 
-    if stacktrace_str:
-      stacktrace_str.replace('@', '')
     return {
         'chrome_version': self.crashed_version,
         'signature': self.signature,
@@ -242,7 +233,20 @@ class CrashAnalysis(ndb.Model):
     }
 
   def ReInitialize(self, client):
+    """ReInitializes the ``CrashAnalysis`` entity.
+
+    Note, there are 3 parts of ``CrashAnalysis`` that will be kept the same:
+    1. raw data returned by ``ToJson``.
+    2. ``requested_time`` (namely, the datetime when this crash was first sent
+    to Predator).
+    3. all manually collected ``culprit_*`` results, ``triage_history`` and
+    ``note``.
+
+    Other properties like parsed ``stacktrace`` or ``dependencies`` will be
+    recomputed.
+    """
     crash_json = self.ToJson()
     crash_data = client.GetCrashData(crash_json)
 
+    self.Reset()
     self.Initialize(crash_data)
