@@ -22,7 +22,8 @@ var (
 	packageInstanceID = metric.NewString("cipd/packages/deployed/instance_id",
 		"instance ids of deployed packages.",
 		nil,
-		field.String("package_name"))
+		field.String("package_name"),
+		field.String("path"))
 )
 
 // Register adds tsmon callbacks to set cipd metrics.
@@ -77,7 +78,7 @@ func update(c context.Context) error {
 				logging.Warningf(c, "Error reading CIPD version file %s: %s", filePath, err)
 				continue
 			}
-			packageInstanceID.Set(c, v.InstanceID, v.PackageName)
+			packageInstanceID.Set(c, v.InstanceID, v.PackageName, path)
 		}
 	}
 	return nil
