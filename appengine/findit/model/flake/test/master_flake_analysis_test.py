@@ -236,3 +236,70 @@ class MasterFlakeAnalysisTest(TestCase):
 
     self.assertEqual(expected_CLs,
                      data_point.GetDictOfCommitPositionAndRevision())
+
+  def testGetCommitPositionOfBuild(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(build_number=100, commit_position=1000),
+        DataPoint.Create(build_number=101, commit_position=1100)]
+    self.assertIsNone(analysis.GetCommitPositionOfBuild(102))
+    self.assertEqual(
+        1000,
+        analysis.GetCommitPositionOfBuild(100))
+
+  def testGetCommitPositionOfBuildNoDataPoints(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertIsNone(analysis.GetCommitPositionOfBuild(102))
+
+  def testGetDataPointsWithinBuildNumberRange(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(build_number=100, commit_position=1000),
+        DataPoint.Create(build_number=101, commit_position=1100),
+        DataPoint.Create(build_number=110, commit_position=2000)]
+    self.assertEqual(
+        analysis.data_points,
+        analysis.GetDataPointsWithinBuildNumberRange(100, 110))
+    self.assertEqual(
+        [analysis.data_points[-1]],
+        analysis.GetDataPointsWithinBuildNumberRange(110, 120))
+
+  def testGetDataPointsWithinBuildNumberRangeNoDataPoints(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertEqual(
+        [],
+        analysis.GetDataPointsWithinBuildNumberRange(100, 110))
+
+  def testRemoveDataPointWithBuildNumber(self):
+    data_points = [
+        DataPoint.Create(build_number=100, commit_position=1000),
+        DataPoint.Create(build_number=101, commit_position=1100),
+        DataPoint.Create(build_number=110, commit_position=2000)]
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = data_points
+    analysis.RemoveDataPointWithBuildNumber(110)
+
+    self.assertEqual(data_points[:-1], analysis.data_points)
+
+  def testRemoveDataPointWithBuildNumberNoDataPoints(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.RemoveDataPointWithBuildNumber(110)
+
+    self.assertEqual([], analysis.data_points)
+
+  def testRemoveDataPointWithCommitPosition(self):
+    data_points = [
+        DataPoint.Create(build_number=100, commit_position=1000),
+        DataPoint.Create(build_number=101, commit_position=1100),
+        DataPoint.Create(build_number=110, commit_position=2000)]
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = data_points
+    analysis.RemoveDataPointWithCommitPosition(2000)
+
+    self.assertEqual(data_points[:-1], analysis.data_points)
+
+  def testRemoveDataPointWithCommitPositionNoDataPoints(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.RemoveDataPointWithCommitPosition(1100)
+
+    self.assertEqual([], analysis.data_points)

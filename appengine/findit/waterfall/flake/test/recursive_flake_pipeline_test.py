@@ -708,49 +708,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
             step_name, test_name, None, None, step_size, number_of_iterations),
         running_cached_build_number_2)
 
-  def testFilterDataPointsByLowerUpperBounds(self):
-    all_data_points = [
-        _GenerateDataPoint(build_number=100),
-        _GenerateDataPoint(build_number=90),
-        _GenerateDataPoint(build_number=80),
-        _GenerateDataPoint(build_number=70),
-        _GenerateDataPoint(build_number=60)]
-
-    expected_data_points = [
-        _GenerateDataPoint(build_number=90),
-        _GenerateDataPoint(build_number=80),
-        _GenerateDataPoint(build_number=70)]
-
-    self.assertEqual(
-        expected_data_points,
-        recursive_flake_pipeline._FilterDataPointsByLowerUpperBounds(
-            all_data_points, 70, 90))
-    self.assertEqual(
-        all_data_points,
-        recursive_flake_pipeline._FilterDataPointsByLowerUpperBounds(
-            all_data_points, None, None))
-    self.assertEqual(
-        all_data_points[1:],
-        recursive_flake_pipeline._FilterDataPointsByLowerUpperBounds(
-            all_data_points, None, 91))
-    self.assertEqual(
-        all_data_points[:-1],
-        recursive_flake_pipeline._FilterDataPointsByLowerUpperBounds(
-            all_data_points, 61, None))
-    self.assertEqual(
-        [],
-        recursive_flake_pipeline._FilterDataPointsByLowerUpperBounds(
-            all_data_points, 10, 20))
-
   def testNormalizeDataPoints(self):
-    lower_bound_build_number = 1
-    upper_bound_build_number = 3
     data_points = [
         _GenerateDataPoint(pass_rate=0.9, build_number=2),
         _GenerateDataPoint(pass_rate=0.8, build_number=1),
         _GenerateDataPoint(pass_rate=1.0, build_number=3)]
-    normalized_data_points = _NormalizeDataPoints(
-        data_points, lower_bound_build_number, upper_bound_build_number)
+    normalized_data_points = _NormalizeDataPoints(data_points)
     self.assertEqual(normalized_data_points[0].run_point_number, 3)
     self.assertEqual(normalized_data_points[1].run_point_number, 2)
     self.assertEqual(normalized_data_points[2].run_point_number, 1)

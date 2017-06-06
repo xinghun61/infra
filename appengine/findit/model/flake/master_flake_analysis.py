@@ -57,6 +57,26 @@ class DataPoint(ndb.Model):
   # The number of iterations run to determine this data point's pass rate.
   iterations = ndb.IntegerProperty(indexed=False)
 
+  @staticmethod
+  def Create(
+      build_number=None, pass_rate=None, task_id=None, commit_position=None,
+      git_hash=None, previous_build_commit_position=None,
+      previous_build_git_hash=None, blame_list=None, try_job_url=None,
+      has_valid_artifact=True, iterations=None):
+    data_point = DataPoint()
+    data_point.build_number = build_number
+    data_point.pass_rate = pass_rate
+    data_point.task_id = task_id
+    data_point.commit_position = commit_position
+    data_point.git_hash = git_hash
+    data_point.previous_build_commit_position = previous_build_commit_position
+    data_point.previous_build_git_hash = previous_build_git_hash
+    data_point.blame_list = blame_list or []
+    data_point.try_job_url = try_job_url
+    data_point.has_valid_artifact = has_valid_artifact
+    data_point.iterations = iterations
+    return data_point
+
   def GetCommitPosition(self, revision):
     """Gets the commit position of a revision within blame_list.
 
@@ -213,6 +233,62 @@ class MasterFlakeAnalysis(
     self.last_attempted_build_number = None
     self.last_attempted_swarming_task_id = None
     self.last_attempted_revision = None
+
+  def GetCommitPositionOfBuild(self, build_number):
+    """Gets the commit position of a build in self.data_points if available.
+
+      Searches self.data_points for the data point with the corresponding build
+      number and returns its commit position if found, else None. Note that data
+      points generated as a result of try jobs should not have build_number set.
+
+    Args:
+      build_number (int): The build number to find the matching data point.
+
+    Returns:
+      The commit position of the data point with the matching build number.
+    """
+    for data_point in self.data_points:
+      # Skip try job data points since they should not have build_number.
+      if (data_point.build_number == build_number and
+          data_point.try_job_url is None):
+        return data_point.commit_position
+    return None
+
+  def GetDataPointsWithinBuildNumberRange(
+      self, lower_bound_build_number, upper_bound_build_number):
+    """Filters data_points by lower and upper bound build numbers.
+
+      All data points within the build number range will be returned, including
+      data points created by try jobs.
+
+    Args:
+      data_points (list): A list of DataPoint objects.
+      lower_bound_build_number (int): The earlist build number a data point can
+          have not to be filtered out. If None is passed, defaults to 0.
+      upper_bound_commit_position (int): The latest commit position a data point
+          can have not to be filtered out. If none is passed, defaults to
+          infinity.
+
+    Returns:
+      A list of DataPoins filtered by the input commit positions.
+    """
+    lower_bound = self.GetCommitPositionOfBuild(lower_bound_build_number) or 0
+    upper_bound = self.GetCommitPositionOfBuild(
+        upper_bound_build_number) or float('inf')
+
+    return filter(
+        lambda x: (x.commit_position is not None and
+                   x.commit_position >= lower_bound and
+                   x.commit_position <= upper_bound),
+        self.data_points)
+
+  def RemoveDataPointWithBuildNumber(self, build_number):
+    self.data_points = filter(
+        lambda x: x.build_number != build_number, self.data_points)
+
+  def RemoveDataPointWithCommitPosition(self, commit_position):
+    self.data_points = filter(
+        lambda x: x.commit_position != commit_position, self.data_points)
 
   # The original build/step/test in which a flake actually occurred.
   # A CQ trybot step has to be mapped to a Waterfall buildbot step.

@@ -252,3 +252,43 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         regression_range_analysis_pipeline._GetEarliestContainingBuild(
             100,
             MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')).build_number)
+
+  def testRemoveStablePointsFromAnalysisWithinRange(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_settings = {
+        'swarming_rerun': {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98
+        }
+    }
+    data_points = [
+        DataPoint.Create(
+            pass_rate=1.0, build_number=100, commit_position=1000,
+            iterations=100),
+        DataPoint.Create(
+            pass_rate=0.5, build_number=101, commit_position=1100)]
+    analysis.data_points = data_points
+    regression_range_analysis_pipeline._RemoveStablePointsWithinRange(
+        analysis, 99, 101, 200)
+
+    self.assertEqual([data_points[1]], analysis.data_points)
+
+  def testRemoveStablePointsFromAnalysisWithinRangeNoChanges(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_settings = {
+        'swarming_rerun': {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98
+        }
+    }
+    data_points = [
+        DataPoint.Create(
+            pass_rate=1.0, build_number=100, commit_position=1000,
+            iterations=100),
+        DataPoint.Create(
+            pass_rate=0.5, build_number=101, commit_position=1100)]
+    analysis.data_points = data_points
+    regression_range_analysis_pipeline._RemoveStablePointsWithinRange(
+        analysis, 102, 105, 50)
+
+    self.assertEqual(data_points, analysis.data_points)

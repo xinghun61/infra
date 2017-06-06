@@ -526,28 +526,22 @@ class RecursiveFlakePipeline(BasePipeline):
                      self.test_name, countdown)
 
 
-def _FilterDataPointsByLowerUpperBounds(
-    data_points, lower_bound_build_number, upper_bound_build_number):
-  lower_bound = lower_bound_build_number or 0
-  upper_bound = upper_bound_build_number or float('inf')
-  filtered_data_points = []
-  for data_point in data_points:
-    if (data_point.build_number is not None and
-        data_point.build_number >= lower_bound and
-        data_point.build_number <= upper_bound):
-      filtered_data_points.append(data_point)
+def _NormalizeDataPoints(data_points):
+  """Converts a list of data points into a list of normalized data points.
 
-  return filtered_data_points
+    Data points need to be normalized before passing into lookback_algorithm.py,
+    which is agnostic to build numbers and commit positions.
 
+  Args:
+    data_points (list): A list of DataPoint objects.
 
-def _NormalizeDataPoints(
-    data_points, lower_bound_build_number, upper_bound_build_number):
-  filtered_data_points = _FilterDataPointsByLowerUpperBounds(
-      data_points, lower_bound_build_number, upper_bound_build_number)
+  Returns:
+    A list of NormalizedDataPoint objects based on data_points.
+  """
   normalized_data_points = [
       (lambda data_point: NormalizedDataPoint(
           data_point.build_number, data_point.pass_rate,
-          data_point.has_valid_artifact))(d) for d in filtered_data_points]
+          data_point.has_valid_artifact))(d) for d in data_points]
   return sorted(
       normalized_data_points, key=lambda k: k.run_point_number, reverse=True)
 
@@ -561,16 +555,6 @@ def _UpdateIterationsToRerun(analysis, iterations_to_rerun):
 
   analysis.algorithm_parameters['try_job_rerun'][
       'iterations_to_rerun'] = iterations_to_rerun
-
-
-def _RemoveRerunBuildDataPoint(analysis, build_number):
-  new_data_points = []
-  for data_point in analysis.data_points:
-    if data_point.build_number == build_number:
-      continue
-    new_data_points.append(data_point)
-
-  analysis.data_points = new_data_points
 
 
 def _GetFullBlamedCLsAndLowerBound(suspected_build_point, data_points):
@@ -681,7 +665,6 @@ class NextBuildNumberPipeline(BasePipeline):
       manually_triggered (bool): Whether or not this analysis was triggered by
           a human user.
     """
-    # Get MasterFlakeAnalysis success list corresponding to parameters.
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
     master_name = analysis.master_name
@@ -705,9 +688,9 @@ class NextBuildNumberPipeline(BasePipeline):
     algorithm_settings = analysis.algorithm_parameters.get('swarming_rerun')
 
     # Figure out what build_number to trigger a swarming rerun on next, if any.
-    data_points = _NormalizeDataPoints(
-        analysis.data_points, lower_bound_build_number,
-        upper_bound_build_number)
+    data_points_within_range = analysis.GetDataPointsWithinBuildNumberRange(
+        lower_bound_build_number, upper_bound_build_number)
+    data_points = _NormalizeDataPoints(data_points_within_range)
     next_build_number, suspected_build, updated_iterations_to_rerun = (
         lookback_algorithm.GetNextRunPointNumber(
             data_points, algorithm_settings))
@@ -715,7 +698,7 @@ class NextBuildNumberPipeline(BasePipeline):
       # The lookback algorithm determined the build needs to be rerun with more
       # iterations.
       _UpdateIterationsToRerun(analysis, updated_iterations_to_rerun)
-      _RemoveRerunBuildDataPoint(analysis, next_build_number)
+      analysis.RemoveDataPointWithBuildNumber(next_build_number)
       analysis.put()
 
     earliest_build_number = _GetEarliestBuildNumber(

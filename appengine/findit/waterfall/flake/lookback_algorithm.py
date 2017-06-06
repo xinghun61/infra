@@ -11,7 +11,7 @@ class NormalizedDataPoint(object):
     self.has_valid_artifact = has_valid_artifact
 
 
-def _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
+def IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
   return pass_rate < lower_flake_threshold or pass_rate > upper_flake_threshold
 
 
@@ -101,8 +101,8 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
         tasks (swarming or try job). A normalized has only pass_rate and
         run_point_number.
     algorithm_settings (dict): A dict of parameters for lookback algorithm.
-    lower_boundary_run_point_number (int): An optional int lower boundary run
-        point not to exceed.
+    lower_bound_run_point_number (int): An optional int lower boundary run point
+        not to exceed.
 
   Returns:
     (next_run_point, suspected_point, iterations_to_rerun): The next point to
@@ -144,7 +144,7 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
         # No flaky region has been identified, no findings.
         return None, None, None
 
-    elif _IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
+    elif IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
 
       # If the swarming rerun for the first build had stable results, either
       # the test is really stable so we should bail out or
@@ -158,7 +158,7 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
       if iterations_to_rerun > max_iterations_to_rerun:
         # Cannot increase iterations_to_rerun, need to make a decision.
         if flakes_in_a_row:  # Ready for sequential search.
-          return _SequentialSearch(valid_points, i,  all_builds, invalid_builds)
+          return _SequentialSearch(valid_points, i, all_builds, invalid_builds)
         else:  # First build is stable, bail out.
           return None, None, None
 
@@ -179,7 +179,7 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
         # consider the virtual previous run is stable.
         previous_pass_rate = valid_points[i - 1].pass_rate if i > 0 else 0
 
-        if _IsStable(
+        if IsStable(
             previous_pass_rate, lower_flake_threshold, upper_flake_threshold):
           next_run_point = run_point_number - flakes_in_a_row
           continue

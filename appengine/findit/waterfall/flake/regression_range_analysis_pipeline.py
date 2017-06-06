@@ -7,6 +7,7 @@ from gae_libs.pipeline_wrapper import pipeline
 
 from waterfall import build_util
 from waterfall import buildbot
+from waterfall.flake.lookback_algorithm import IsStable
 
 
 class _CommitPositionRange():
@@ -254,6 +255,31 @@ def _GetEarliestContainingBuild(commit_position, master_flake_analysis):
 
   return _GetNearestBuild(
       master_name, builder_name, lower_bound, upper_bound, commit_position)
+
+
+def _RemoveStablePointsWithinRange(
+    analysis, lower_bound_build_number, upper_bound_build_number,
+    minimum_iterations):
+  """Clears an analysis' data points within a commit position range."""
+  algorithm_settings = analysis.algorithm_settings.get('swarming_rerun')
+  lower_flake_threshold = algorithm_settings.get('lower_flake_threshold')
+  upper_flake_threshold = algorithm_settings.get('upper_flake_threshold')
+
+  filtered_data_points = analysis.GetDataPointsWithinBuildNumberRange(
+      lower_bound_build_number, upper_bound_build_number)
+  any_changes = False
+  for data_point in filtered_data_points:
+    if (data_point.iterations < minimum_iterations and
+        IsStable(data_point.pass_rate, lower_flake_threshold,
+                 upper_flake_threshold)):
+      # Flaky points with more iterations will still be flaky, however stable
+      # points with too few iterations cannot be trusted and should be removed.
+      analysis.RemoveDataPointWithCommitPosition(data_point.commit_position)
+      any_changes = True
+
+  if any_changes:
+    analysis.put()
+
 
 # TODO(lijeffrey): Start a pipline to call into recursive flake pipeline to
 # analyze the specified range.
