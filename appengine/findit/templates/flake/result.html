@@ -66,6 +66,7 @@
     findit.regressedBuildNumber = {{ suspected_flake.build_number or -1 }};
     findit.passRates = {{ pass_rates | tojson | safe }};
     findit.culpritGitHash = '{{ culprit.git_hash }}';
+    findit.xsrfToken = '{{ xsrf_token }}';
 
     function getTriageParameters(triageResult) {
       parameters = {}
@@ -316,6 +317,15 @@
       });
     }
 
+    function handleLogin(httpStatus) {
+      if (httpStatus == 401 || xhr.status == 403) {
+        var event = new CustomEvent('message', {'detail': {'predefined_code': 100}});
+        document.dispatchEvent(event);
+      } else {
+        alert('Unknown error.');
+      }
+    }
+
     function triageSuspectedFlake(triageResult) {
       $.getJSON(createTriageUrl(getTriageParameters(triageResult)), function(data) {
         if (! data['success']) {
@@ -324,21 +334,8 @@
           $('#flake_result_triaged').text('Feedback has been recorded. Thank you!');
         }
       }).error(function(xhr) {
-        var response = xhr.responseJSON;
-        if (xhr.status == 401 && response.login_url) {
-          alert(response.error_message || 'Please login with your Google account first.');
-          window.location.href = response.login_url;
-        }
+        handleLogin(xhr.status);
       });
-    }
-
-    function handleLogin(httpStatus) {
-      if (httpStatus == 401) {
-        var event = new CustomEvent('message', {'detail': {'predefined_code': 100}});
-        document.dispatchEvent(event);
-      } else {
-        alert('Unknown error.');
-      }
     }
 
     function analyzeRegressionRange() {
@@ -346,7 +343,15 @@
       var upperBoundCommitPosition = $('#upper-bound-commit-position').val();
       var iterationsToRerun = $('#iterations-to-rerun').val();
       alert('Analyze regression range is not yet implemented.');
-      $.getJSON('/waterfall/flake/analyze_regression_range?format=json&lower_bound_commit_position=' + lowerBoundCommitPosition +'&upper_bound_commit_position=' + upperBoundCommitPosition + '&iterations_to_rerun=' + iterationsToRerun + '&key=' + findit.analysisKey, function(data) {
+      var params = {
+          'format': 'json',
+          'lower_bound_commit_position': lowerBoundCommitPosition,
+          'upper_bound_commit_position': upperBoundCommitPosition,
+          'iterations_to_rerun': iterationsToRerun,
+          'key': findit.analysisKey,
+          'xsrf_token': findit.xsrfToken,
+      };
+      $.post('/waterfall/flake/analyze_regression_range', params, function(data) {
       }).error(function(xhr) {
         handleLogin(xhr.status);
       });

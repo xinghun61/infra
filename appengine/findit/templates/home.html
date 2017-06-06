@@ -47,7 +47,7 @@
       <br>
       <div>
         <div><span style="color:GREEN"><b>Flaky test</b> (Gtest or Android Instrument) on Waterfall or CQ</span>: (<a href="/waterfall/list-flakes">previous analyses</a>)</div>
-        <form id="flake" action="/waterfall/flake" method="GET">
+        <form id="flake" action="/waterfall/flake" method="POST">
           <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
           <table>
             <tr>

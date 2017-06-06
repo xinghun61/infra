@@ -54,17 +54,22 @@ class AnalyzeRegressionRangeTest(wf_testcase.WaterfallTestCase):
         analyze_regression_range._GetLowerAndUpperBoundCommitPositions(2, 1))
 
   @mock.patch.object(users, 'is_current_user_admin', return_value=True)
-  def testPost(self, _):
+  @mock.patch.object(
+      analyze_regression_range.token, 'ValidateXSRFToken', return_value=True)
+  def testPost(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.put()
 
-    self.mock_current_user(user_email='test@google.com')
+    self.mock_current_user(user_email='test@google.com', is_admin=False)
 
-    response = self.test_app.get('/waterfall/analyze_regression_range', params={
-        'lower_bound_commit_position': 1,
-        'upper_bound_commit_position': 2,
-        'iterations_to_rerun': 100,
-        'key': analysis.key.urlsafe()
-    })
+    response = self.test_app.post(
+        '/waterfall/analyze_regression_range',
+        params={
+            'lower_bound_commit_position': 1,
+            'upper_bound_commit_position': 2,
+            'iterations_to_rerun': 100,
+            'key': analysis.key.urlsafe(),
+            'xsrf_token': 'abc',
+        })
 
     self.assertEqual(200, response.status_int)

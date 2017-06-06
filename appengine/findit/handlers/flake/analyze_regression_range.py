@@ -4,6 +4,7 @@
 
 from google.appengine.ext import ndb
 
+from gae_libs import token
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 
@@ -38,9 +39,7 @@ def _ValidateInput(lower_bound_commit_position, upper_bound_commit_position,
 class AnalyzeRegressionRange(BaseHandler):
   PERMISSION_LEVEL = Permission.CORP_USER
 
-  def HandleGet(self):
-    return self.HandlePost()
-
+  @token.VerifyXSRFToken()
   def HandlePost(self):
     lower_bound_commit_position = self.request.get(
         'lower_bound_commit_position')

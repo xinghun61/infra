@@ -7,6 +7,7 @@ import logging
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
+from gae_libs import token
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from gae_libs.http import auth_util
@@ -43,7 +44,7 @@ def _GetSuspectedFlakeInfo(analysis):
           'triage_result': int (correct, incorrect, etc.)
       }
   """
-  if analysis.suspected_flake_build_number is None:
+  if not analysis or analysis.suspected_flake_build_number is None:
     return {}
 
   data_point = analysis.GetDataPointOfSuspectedBuild()
@@ -173,6 +174,14 @@ def _GetLastAttemptedTryJobDetails(analysis):
   }
 
 
+def _GetDurationForAnalysis(analysis):
+  """Returns the duration of the given analysis."""
+  if analysis.status == analysis_status.PENDING:
+    return None
+  return time_util.FormatDuration(
+        analysis.start_time, analysis.end_time or time_util.GetUTCNow())
+
+
 class CheckFlake(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
@@ -210,85 +219,92 @@ class CheckFlake(BaseHandler):
 
     return None
 
-  def HandleGet(self):
-    key = self.request.get('key')
-    if key:
-      analysis = ndb.Key(urlsafe=key).get()
-      if not analysis:  # pragma: no cover
-        return self.CreateError('Analysis of flake is not found', 404)
-    else:
-      build_url = self.request.get('url', '').strip()
-      build_info = buildbot.ParseBuildUrl(build_url)
-      if not build_info:  # pragma: no cover
-        return self.CreateError('Unknown build info!', 400)
-      master_name, builder_name, build_number = build_info
+  @token.VerifyXSRFToken()
+  def HandlePost(self):
+    build_url = self.request.get('url', '').strip()
+    build_info = buildbot.ParseBuildUrl(build_url)
+    if not build_info:
+      return self.CreateError('Unknown build info!', 400)
+    master_name, builder_name, build_number = build_info
 
-      step_name = self.request.get('step_name', '').strip()
-      test_name = self.request.get('test_name', '').strip()
-      bug_id = self.request.get('bug_id', '').strip()
-      # TODO(lijeffrey): Add support for force flag to trigger a rerun.
+    step_name = self.request.get('step_name', '').strip()
+    test_name = self.request.get('test_name', '').strip()
+    bug_id = self.request.get('bug_id', '').strip()
+    # TODO(lijeffrey): Add support for force flag to trigger a rerun.
 
-      error = self._ValidateInput(step_name, test_name, bug_id)
+    error = self._ValidateInput(step_name, test_name, bug_id)
 
-      if error:  # pragma: no cover
-        return error
+    if error:
+      return error
 
-      build_number = int(build_number)
-      bug_id = int(bug_id) if bug_id else None
-      user_email = auth_util.GetUserEmail()
-      is_admin = auth_util.IsCurrentUserAdmin()
+    build_number = int(build_number)
+    bug_id = int(bug_id) if bug_id else None
+    user_email = auth_util.GetUserEmail()
+    is_admin = auth_util.IsCurrentUserAdmin()
 
-      request = FlakeAnalysisRequest.Create(test_name, False, bug_id)
-      request.AddBuildStep(master_name, builder_name, build_number, step_name,
-                           time_util.GetUTCNow())
-      scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
-          request, user_email, is_admin, triggering_sources.FINDIT_UI)
+    request = FlakeAnalysisRequest.Create(test_name, False, bug_id)
+    request.AddBuildStep(master_name, builder_name, build_number, step_name,
+                         time_util.GetUTCNow())
+    scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
+        request, user_email, is_admin, triggering_sources.FINDIT_UI)
 
-      analysis = MasterFlakeAnalysis.GetVersion(
-          master_name, builder_name, build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+
+    if not analysis:
+      if scheduled is None:
+        # User does not have permission to trigger, nor was any previous
+        # analysis triggered to view.
+        return {
+            'template': 'error.html',
+            'data': {
+                'error_message':
+                    ('No permission to schedule an analysis for flaky test. '
+                     'Please log in with your @google.com account first.'),
+            },
+            'return_code': 403,
+        }
+
+      # Check if a previous request has already covered this analysis so use
+      # the results from that analysis.
+      request = FlakeAnalysisRequest.GetVersion(key=test_name)
+
+      if not (request and request.analyses):
+        return {
+            'template': 'error.html',
+            'data': {
+                'error_message': (
+                    'Flake analysis is not supported for "%s/%s". Either '
+                    'the test type is not supported or the test is not '
+                    'swarmed yet.' % (step_name, test_name)),
+            },
+            'return_code': 400,
+        }
+
+      analysis = request.FindMatchingAnalysisForConfiguration(
+          master_name, builder_name)
 
       if not analysis:
-        if scheduled is None:
-          # User does not have permission to trigger, nor was any previous
-          # analysis triggered to view.
-          return {
-              'template': 'error.html',
-              'data': {
-                  'error_message':
-                      ('You could schedule an analysis for flaky test only '
-                       'after you login with @google.com account.'),
-              },
-              'return_code': 401,
-          }
+        logging.error('Flake analysis was deleted unexpectedly!')
+        return {
+            'template': 'error.html',
+            'data': {
+                'error_message': 'Flake analysis was deleted unexpectedly!',
+            },
+            'return_code': 404,
+        }
 
-        # Check if a previous request has already covered this analysis so use
-        # the results from that analysis.
-        request = FlakeAnalysisRequest.GetVersion(key=test_name)
+    return self.CreateRedirect(
+        '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
 
-        if not (request and request.analyses):
-          return {
-              'template': 'error.html',
-              'data': {
-                  'error_message': (
-                      'Flake analysis is not supported for this request. Either'
-                      ' the build step may not be supported or the test is not '
-                      'swarmed.'),
-              },
-              'return_code': 400,
-          }
+  def HandleGet(self):
+    key = self.request.get('key')
+    if not key:
+      return self.CreateError('No key was provided.', 404)
 
-        analysis = request.FindMatchingAnalysisForConfiguration(
-            master_name, builder_name)
-
-        if not analysis:  # pragma: no cover
-          logging.error('Flake analysis was deleted unexpectedly!')
-          return {
-              'template': 'error.html',
-              'data': {
-                  'error_message': 'Flake analysis was deleted unexpectedly!',
-              },
-              'return_code': 400
-          }
+    analysis = ndb.Key(urlsafe=key).get()
+    if not analysis:
+      return self.CreateError('Analysis of flake is not found.', 404)
 
     suspected_flake = _GetSuspectedFlakeInfo(analysis)
     culprit = _GetCulpritInfo(analysis)
@@ -328,10 +344,7 @@ class CheckFlake(BaseHandler):
     data['pending_time'] = time_util.FormatDuration(
         analysis.request_time,
         analysis.start_time or time_util.GetUTCNow())
-    if analysis.status != analysis_status.PENDING:
-      data['duration'] = time_util.FormatDuration(
-          analysis.start_time,
-          analysis.end_time or time_util.GetUTCNow())
+    data['duration'] = _GetDurationForAnalysis(analysis)
 
     data['pass_rates'] = _GetCoordinatesData(analysis)
 
