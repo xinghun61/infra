@@ -1,8 +1,16 @@
 <!DOCTYPE html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Error Page</title>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
+</head>
 <body>
-  Error: {{ error_message }}
-  <br>
-  {% if login_url %}
-  <a href="{{login_url}}">Login</a>
-  {% endif %}
+  <findit-app id="app">
+    <span style="color:red">Error</span>: {{ error_message }}
+  </findit-app>
 </body>
+<script>
+  document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+</script>

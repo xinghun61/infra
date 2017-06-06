@@ -39,9 +39,6 @@ class BaseHandler(webapp2.RequestHandler):
   # Subclass needs to overwrite it explicitly to give wider access.
   PERMISSION_LEVEL = Permission.ADMIN
 
-  # By default, redirect to destination page after login for GET requests.
-  LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = True
-
   def _HasPermission(self):
     if (self.request.headers.get('X-AppEngine-QueueName') or
         self.request.headers.get('X-AppEngine-Cron')):
@@ -77,6 +74,12 @@ class BaseHandler(webapp2.RequestHandler):
         'template': 'error.html',
         'data': {'error_message': error_message},
         'return_code': return_code,
+    }
+
+  @staticmethod
+  def CreateRedirect(url):
+    return {
+        'redirect_url': url,
     }
 
   def HandleGet(self):  # pylint: disable=R0201
@@ -156,31 +159,21 @@ class BaseHandler(webapp2.RequestHandler):
     self.response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     self.response.write(data)
 
-  def GetLoginUrl(self):
-    """Returns the login url."""
-    # For GET, all parameters are included in the URL. So it is safe to redirect
-    # to the destination page. However, for POST, the parameters could be in the
-    # body and include files, so it is better to redirect to the original page.
-    if (self.request.method == 'GET' and
-        self.LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET):
-      return auth_util.GetLoginUrl(self.request.url)
-    else:
-      return auth_util.GetLoginUrl(self.request.referrer)
-
   def _Handle(self, handler_func):
     try:
       if not self._HasPermission():
         template = 'error.html'
         data = {
             'error_message':
-                ('Either not login or no permission. '
-                 'Please login with your google.com account.'),
-            'login_url': self.GetLoginUrl(),
+                ('Either not log in yet or no permission. '
+                 'Please log in with your @google.com account.'),
         }
         return_code = 401
+        redirect_url = None
         cache_expiry = None
       else:
         result = handler_func() or {}
+        redirect_url = result.get('redirect_url')
 
         template = result.get('template', None)
         data = result.get('data', {})
@@ -194,12 +187,19 @@ class BaseHandler(webapp2.RequestHandler):
           'error_message': 'An internal error occurred.'
       }
       return_code = 500
+      redirect_url = None
       cache_expiry = None
+
+    if redirect_url is not None:
+      self.response.clear()
+      self.redirect(redirect_url)
+      return
 
     # Not add user login/logout info in unit tests environment to avoid updating
     # too many existing testcases.
     if not appengine_util.IsInUnitTestEnvironment():
-      data['user_info'] = auth_util.GetUserInfo(self.request.url)
+      data['user_info'] = auth_util.GetUserInfo(
+          self.request.referer or self.request.url or '/')
       # If not yet, generate one xsrf token for the login user.
       if not data.get('xsrf_token') and data.get('user_info', {}).get('email'):
         data['xsrf_token'] = token.GenerateXSRFToken(

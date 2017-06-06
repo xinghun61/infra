@@ -256,8 +256,7 @@ class CheckFlake(BaseHandler):
               'data': {
                   'error_message':
                       ('You could schedule an analysis for flaky test only '
-                       'after you login with google.com account.'),
-                  'login_url': self.GetLoginUrl(),
+                       'after you login with @google.com account.'),
               },
               'return_code': 401,
           }

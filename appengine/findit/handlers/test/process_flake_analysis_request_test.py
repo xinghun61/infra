@@ -22,14 +22,8 @@ class ProcessFlakeAnalysisRequestsTest(testing.AppengineTestCase):
   ], debug=True)
 
   def testNonAdminCanNotSendRequest(self):
-    self.assertRaisesRegexp(
-        webtest.app.AppError,
-        re.compile('.*401 Unauthorized.*'
-                   'Error: Either not login or no permission.*',
-                   re.MULTILINE | re.DOTALL),
-        self.test_app.post,
-        '/process-flake-analysis-request',
-        params='')
+    self.test_app.post(
+        '/process-flake-analysis-request?format=json', params='', status=401)
 
   @mock.patch.object(
       process_flake_analysis_request.flake_analysis_service,

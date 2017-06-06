@@ -32,11 +32,11 @@ class PermissionTest(testing.AppengineTestCase):
   def _VerifyUnauthorizedAccess(self, mocked_user_email=None):
     if mocked_user_email:
       self.mock_current_user(user_email=mocked_user_email)
-    self.assertRaisesRegexp(
-        webtest.app.AppError,
-        re.compile('.*401 Unauthorized.*Either not login or no permission.*',
-                   re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/permission')
+    response = self.test_app.get('/permission?format=json', status=401)
+    self.assertEqual(
+        ('Either not log in yet or no permission. '
+         'Please log in with your @google.com account.'),
+        response.json_body.get('error_message'))
 
   def _VerifyAuthorizedAccess(self, mocked_user_email=None, is_admin=False,
                               headers=None):
@@ -108,53 +108,6 @@ class PermissionTest(testing.AppengineTestCase):
   def testUnknownPermissionLevel(self):
     PermissionLevelHandler.PERMISSION_LEVEL = 80000  # An unknown permission.
     self._VerifyUnauthorizedAccess('test@google.com')
-
-  def testLoginLinkForGetButForceToUseReferer(self):
-    PermissionLevelHandler.PERMISSION_LEVEL = Permission.CORP_USER
-    PermissionLevelHandler.LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = False
-    referer_url = 'http://localhost/referer'
-    login_url = ('https://www.google.com/accounts/Login?continue=%s' %
-                 urllib.quote(referer_url))
-    self.assertRaisesRegexp(
-        webtest.app.AppError,
-        re.compile('.*401 Unauthorized.*%s.*' % re.escape(login_url),
-                   re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/permission', headers={'referer': referer_url})
-
-  def testLoginLinkForGetWithReferer(self):
-    PermissionLevelHandler.PERMISSION_LEVEL = Permission.CORP_USER
-    PermissionLevelHandler.LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = True
-    referer_url = 'http://localhost/referer'
-    login_url = ('https://www.google.com/accounts/Login?continue=%s' %
-                 urllib.quote('http://localhost/permission'))
-    self.assertRaisesRegexp(
-        webtest.app.AppError,
-        re.compile('.*401 Unauthorized.*%s.*' % re.escape(login_url),
-                   re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/permission', headers={'referer': referer_url})
-
-  def testLoginLinkForGetWithoutReferer(self):
-    PermissionLevelHandler.PERMISSION_LEVEL = Permission.CORP_USER
-    PermissionLevelHandler.LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = True
-    login_url = ('https://www.google.com/accounts/Login?continue=%s' %
-                 urllib.quote('http://localhost/permission'))
-    self.assertRaisesRegexp(
-        webtest.app.AppError,
-        re.compile('.*401 Unauthorized.*%s.*' % re.escape(login_url),
-                   re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/permission')
-
-  def testLoginLinkForPostWithReferer(self):
-    PermissionLevelHandler.PERMISSION_LEVEL = Permission.CORP_USER
-    PermissionLevelHandler.LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = True
-    referer_url = 'http://localhost/referer'
-    login_url = ('https://www.google.com/accounts/Login?continue=%s' %
-                 urllib.quote(referer_url))
-    self.assertRaisesRegexp(
-        webtest.app.AppError,
-        re.compile('.*401 Unauthorized.*%s.*' % re.escape(login_url),
-                   re.MULTILINE | re.DOTALL),
-        self.test_app.post, '/permission', headers={'referer': referer_url})
 
   @mock.patch('gae_libs.appengine_util.IsInProduction')
   def testUserInfoWhenLogin(self, mocked_IsInProduction):
@@ -269,6 +222,23 @@ class ResultTest(testing.AppengineTestCase):
     self.assertFalse(response.cache_control.no_cache)
     self.assertTrue(response.cache_control.public)
     self.assertEquals(5, response.cache_control.max_age)
+
+
+class RedirectHandler(BaseHandler):
+  PERMISSION_LEVEL = Permission.ANYONE
+
+  def HandlePost(self):
+    return self.CreateRedirect('/url')
+
+
+class RedirectTest(testing.AppengineTestCase):
+  app_module = webapp2.WSGIApplication([
+      ('/redirect', RedirectHandler),
+  ], debug=True)
+
+  def testRedirect(self):
+    response = self.test_app.post('/redirect', status=302)
+    self.assertTrue(response.headers.get('Location', '').endswith('/url'))
 
 
 class ResultFormatTest(testing.AppengineTestCase):

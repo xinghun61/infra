@@ -82,6 +82,8 @@ class VerifyXSRFToken(object):
       xsrf_token = str(handler.request.get('xsrf_token'))
       if (not user_email or
           not ValidateXSRFToken(user_email, xsrf_token, self._action_id)):
-        return handler.CreateError('Invalid XSRF token', return_code=403)
+        return handler.CreateError(
+            'Invalid XSRF token. Please log in or refresh the page first.',
+            return_code=403)
       return handler_method(handler, *args, **kwargs)
     return VerifyToken

@@ -74,14 +74,10 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
     self.assertFalse(requests[0][1]['build_completed'])
 
   def testNonAdminCanNotSendRequest(self):
-    self.assertRaisesRegexp(
-        webtest.app.AppError,
-        re.compile('.*401 Unauthorized.*'
-                   'Error: Either not login or no permission.*',
-                   re.MULTILINE | re.DOTALL),
-        self.test_app.post,
-        '/process-failure-analysis-requests',
-        params=json.dumps({'builds': []}))
+    self.test_app.post(
+        '/process-failure-analysis-requests?format=json',
+        params=json.dumps({'builds': []}),
+        status=401)
 
   def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
