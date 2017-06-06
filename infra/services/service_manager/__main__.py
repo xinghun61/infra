@@ -63,10 +63,6 @@ class ServiceManager(app.BaseApplication):
              'bootstrap service_manager')
 
     parser.add_argument(
-        '--cloudtail-experiment-percent',
-        type=int, default=100,
-        help='deprecated and ignored')
-    parser.add_argument(
         '--cloudtail-path',
         default=default_cloudtail_path,
         help='path to the cloudtail binary (default %(default)s)')
