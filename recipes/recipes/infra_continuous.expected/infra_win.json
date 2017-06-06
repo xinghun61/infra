@@ -69,9 +69,7 @@
       "python",
       "-u",
       "test.py",
-      "test",
-      "--jobs",
-      "1"
+      "test"
     ],
     "cwd": "[START_DIR]\\infra",
     "name": "infra python tests"

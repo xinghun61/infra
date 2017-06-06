@@ -49,7 +49,7 @@ def RunSteps(api):
 
   with api.step.defer_results():
     with api.context(cwd=api.path['checkout']):
-      api.python('python tests', 'test.py', ['test', '--jobs', 1])
+      api.python('python tests', 'test.py', ['test'])
 
     if not internal:
       # TODO(phajdan.jr): should we make recipe tests run on other platforms?

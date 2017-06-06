@@ -30,7 +30,7 @@ def RunSteps(api):
       api.python(
           'infra python tests',
           'test.py',
-          ['test', '--jobs', 1])
+          ['test'])
 
     api.python(
         'go third parties',

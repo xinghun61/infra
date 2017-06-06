@@ -145,7 +145,7 @@ def RunSteps(api, mastername, buildername, buildnumber):
         api.python(
             'infra python tests',
             'test.py',
-            ['test', '--jobs', 1])
+            ['test'])
 
       # Run Glyco tests only on public Linux\Mac CI.
       if project_name == 'infra' and not api.platform.is_win:

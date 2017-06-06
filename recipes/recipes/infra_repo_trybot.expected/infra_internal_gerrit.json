@@ -111,9 +111,7 @@
       "python",
       "-u",
       "test.py",
-      "test",
-      "--jobs",
-      "1"
+      "test"
     ],
     "cwd": "[START_DIR]/infra_internal",
     "name": "python tests"
