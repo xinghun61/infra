@@ -51,6 +51,7 @@ var (
 		"crbug.com",                     // Monorail as well
 		"console.developers.google.com", // Cloud storage links
 		"chromium-swarm.appspot.com",    // Swarming results
+		"isolateserver.appspot.com",     // Isolate server
 	}
 )
 
