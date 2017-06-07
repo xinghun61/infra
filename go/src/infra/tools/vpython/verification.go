@@ -11,7 +11,7 @@ import (
 	"github.com/luci/luci-go/vpython/application"
 )
 
-var verificationScenarios = []*vpython.Pep425Tag{
+var verificationScenarios = []*vpython.PEP425Tag{
 	{"cp27", "cp27mu", "manylinux1_i686"},
 	{"cp27", "cp27mu", "manylinux1_x86_64"},
 	{"cp27", "cp27mu", "linux_arm64"},
@@ -29,7 +29,7 @@ var verificationScenarios = []*vpython.Pep425Tag{
 
 // verificationGen is an application.VerificationFunc which will generate
 // verification scenarios for infra-supported package combinations.
-func withVerificationConfig(c context.Context, fn func(application.Config, []*vpython.Pep425Tag) error) error {
+func withVerificationConfig(c context.Context, fn func(application.Config, []*vpython.PEP425Tag) error) error {
 	// Clone our default package loader and configure it for verification.
 	plBase := cipdPackageLoader
 	plBase.Template = func(c context.Context, e *vpython.Environment) (map[string]string, error) {

@@ -13,7 +13,7 @@ import (
 	"github.com/luci/luci-go/vpython/cipd"
 )
 
-// pep425MacArch is a parsed PEP425 Mac architecture string.
+// pep425MacPlatform is a parsed PEP425 Mac platform string.
 //
 // The string is formatted:
 // macosx_<maj>_<min>_<cpu-arch>
@@ -22,16 +22,16 @@ import (
 //	- macosx_10_6_intel
 //	- macosx_10_0_fat
 //	- macosx_10_2_x86_64
-type pep425MacArch struct {
+type pep425MacPlatform struct {
 	major int
 	minor int
 	arch  string
 }
 
-// parsePEP425MacArch parses a pep425MacArch from the supplied architecture
-// string. If the string does not contain a recognizable Mac architecture, this
-// function returns nil.
-func parsePEP425MacArch(v string) *pep425MacArch {
+// parsePEP425MacPlatform parses a pep425MacPlatform from the supplied
+// platform string. If the string does not contain a recognizable Mac
+// platform, this function returns nil.
+func parsePEP425MacPlatform(v string) *pep425MacPlatform {
 	parts := strings.SplitN(v, "_", 4)
 	if len(parts) != 4 {
 		return nil
@@ -40,7 +40,7 @@ func parsePEP425MacArch(v string) *pep425MacArch {
 		return nil
 	}
 
-	var ma pep425MacArch
+	var ma pep425MacPlatform
 	var err error
 	if ma.major, err = strconv.Atoi(parts[1]); err != nil {
 		return nil
@@ -54,7 +54,7 @@ func parsePEP425MacArch(v string) *pep425MacArch {
 }
 
 // less returns true if "ma" represents a Mac version before "other".
-func (ma *pep425MacArch) less(other *pep425MacArch) bool {
+func (ma *pep425MacPlatform) less(other *pep425MacPlatform) bool {
 	switch {
 	case ma.major < other.major:
 		return true
@@ -67,29 +67,29 @@ func (ma *pep425MacArch) less(other *pep425MacArch) bool {
 	}
 }
 
-// pep425IsBetterMacArch processes two PEP425 architecture strings and returns
-// true if "candidate" is a superior PEP425 tag candidate than "cur".
+// pep425IsBetterMacPlatform processes two PEP425 platform strings and
+// returns true if "candidate" is a superior PEP425 tag candidate than "cur".
 //
 // This function favors, in order:
-//	- Mac architectures over non-Mac architectures,
+//	- Mac platforms over non-Mac platforms,
 //	- "intel" package builds over non-"intel"
 //	- Older Mac versions over newer ones
-func pep425IsBetterMacArch(cur, candidate string) bool {
-	// Parse a Mac architecture string
-	curArch := parsePEP425MacArch(cur)
-	candidateArch := parsePEP425MacArch(candidate)
+func pep425IsBetterMacPlatform(cur, candidate string) bool {
+	// Parse a Mac platform string
+	curPlatform := parsePEP425MacPlatform(cur)
+	candidatePLatform := parsePEP425MacPlatform(candidate)
 	switch {
-	case curArch == nil:
-		return candidateArch != nil
-	case candidateArch == nil:
+	case curPlatform == nil:
+		return candidatePLatform != nil
+	case candidatePLatform == nil:
 		return false
-	case curArch.arch != "intel" && candidateArch.arch == "intel":
+	case curPlatform.arch != "intel" && candidatePLatform.arch == "intel":
 		// Prefer "intel" architecture over others, since it's more modern and
 		// generic.
 		return true
-	case curArch.arch == "intel" && candidateArch.arch != "intel":
+	case curPlatform.arch == "intel" && candidatePLatform.arch != "intel":
 		return false
-	case candidateArch.less(curArch):
+	case candidatePLatform.less(curPlatform):
 		// We prefer the lowest Mac architecture available.
 		return true
 	default:
@@ -97,33 +97,33 @@ func pep425IsBetterMacArch(cur, candidate string) bool {
 	}
 }
 
-// pep425IsBetterLinuxArch processes two PEP425 architecture strings and returns
-// true if "candidate" is a superior PEP425 tag candidate than "cur".
+// pep425IsBetterLinuxPlatform processes two PEP425 platform strings and
+// returns true if "candidate" is a superior PEP425 tag candidate than "cur".
 //
 // This function favors, in order:
-//	- Linux architectures over non-Linux architectures.
+//	- Linux platforms over non-Linux platforms.
 //	- "manylinux1_" over non-"manylinux1_".
 //
-// Examples of expected Linux architecture strings are:
+// Examples of expected Linux platform strings are:
 //	- linux1_x86_64
 //	- linux1_i686
 //	- manylinux1_i686
-func pep425IsBetterLinuxArch(cur, candidate string) bool {
-	// Determies if the specified architecture is a Linux architecture and, if so,
-	// is it a "manylinux1_" Linux architecture.
-	isLinuxArch := func(arch string) (is bool, many bool) {
+func pep425IsBetterLinuxPlatform(cur, candidate string) bool {
+	// Determies if the specified platform is a Linux platform and, if so, if it
+	// is a "manylinux1_" Linux platform.
+	isLinuxPlatform := func(plat string) (is bool, many bool) {
 		switch {
-		case strings.HasPrefix(arch, "linux_"):
+		case strings.HasPrefix(plat, "linux_"):
 			is = true
-		case strings.HasPrefix(arch, "manylinux1_"):
+		case strings.HasPrefix(plat, "manylinux1_"):
 			is, many = true, true
 		}
 		return
 	}
 
-	// We prefer "manylinux1_" architectures over "linux_" architectures.
-	curIs, curMany := isLinuxArch(cur)
-	candidateIs, candidateMany := isLinuxArch(candidate)
+	// We prefer "manylinux1_" platforms over "linux_" platforms.
+	curIs, curMany := isLinuxPlatform(cur)
+	candidateIs, candidateMany := isLinuxPlatform(candidate)
 	switch {
 	case !curIs:
 		return candidateIs
@@ -139,35 +139,35 @@ func pep425IsBetterLinuxArch(cur, candidate string) bool {
 // pep425TagSelector chooses the "best" PEP425 tag from a set of potential tags.
 // This "best" tag will be used to resolve our CIPD templates and allow for
 // Python implementation-specific CIPD template parameters.
-func pep425TagSelector(goOS string, tags []*vpython.Pep425Tag) *vpython.Pep425Tag {
-	var best *vpython.Pep425Tag
+func pep425TagSelector(goOS string, tags []*vpython.PEP425Tag) *vpython.PEP425Tag {
+	var best *vpython.PEP425Tag
 
-	// isPreferredOSArch is an OS-specific architecture preference function.
-	isPreferredOSArch := func(cur, candidate string) bool { return false }
+	// isPreferredOSPlatform is an OS-specific platform preference function.
+	isPreferredOSPlatform := func(cur, candidate string) bool { return false }
 	switch goOS {
 	case "linux":
-		isPreferredOSArch = pep425IsBetterLinuxArch
+		isPreferredOSPlatform = pep425IsBetterLinuxPlatform
 	case "darwin":
-		isPreferredOSArch = pep425IsBetterMacArch
+		isPreferredOSPlatform = pep425IsBetterMacPlatform
 	}
 
-	isBetter := func(t *vpython.Pep425Tag) bool {
+	isBetter := func(t *vpython.PEP425Tag) bool {
 		switch {
 		case best == nil:
 			return true
 		case t.Count() > best.Count():
 			// More populated fields is more specificity.
 			return true
-		case best.AnyArch() && !t.AnyArch():
-			// More specific architecture is preferred.
+		case best.AnyPlatform() && !t.AnyPlatform():
+			// More specific platform is preferred.
 			return true
 		case !best.HasABI() && t.HasABI():
 			// More specific ABI is preferred.
 			return true
-		case isPreferredOSArch(best.Arch, t.Arch):
+		case isPreferredOSPlatform(best.Platform, t.Platform):
 			return true
-		case strings.HasPrefix(best.Version, "py") && !strings.HasPrefix(t.Version, "py"):
-			// Prefer specific Python (e.g., cp27) version over generic (e.g., py27).
+		case strings.HasPrefix(best.Python, "py") && !strings.HasPrefix(t.Python, "py"):
+			// Prefer specific Python (e.g., cp27) over generic (e.g., py27).
 			return true
 
 		default:
@@ -191,39 +191,39 @@ func pep425TagSelector(goOS string, tags []*vpython.Pep425Tag) *vpython.Pep425Ta
 // parameters not getting exported.
 //
 // The full set of exported tag parameters is:
-// - py_version: The PEP425 Python "version" (e.g., "cp27").
+// - py_python: The PEP425 "python" tag value (e.g., "cp27").
 // - py_abi: The PEP425 Python ABI (e.g., "cp27mu").
-// - py_arch: The PEP425 Python architecture (e.g., "manylinux1_x86_64").
+// - py_platform: The PEP425 Python platform (e.g., "manylinux1_x86_64").
 // - py_tag: The full PEP425 tag (e.g., "cp27-cp27mu-manylinux1_x86_64").
 //
 // This function also backports the Python platform into the CIPD "platform"
-// field, ensuring that regardless of the host architecture, the Python CIPD
+// field, ensuring that regardless of the host platform, the Python CIPD
 // wheel is chosen based solely on that host's Python interpreter.
 //
 // Infra CIPD packages tend to use "${platform}" (generic) combined with
-// "${py_abi}" and "${py_arch}" to identify its packages.
-func getPEP425CIPDTemplateForTag(tag *vpython.Pep425Tag) (map[string]string, error) {
+// "${py_abi}" and "${py_platform}" to identify its packages.
+func getPEP425CIPDTemplateForTag(tag *vpython.PEP425Tag) (map[string]string, error) {
 	if tag == nil {
 		return nil, errors.New("no PEP425 tag")
 	}
 
 	template := make(map[string]string, 4)
-	if tag.Version != "" {
-		template["py_version"] = tag.Version
+	if tag.Python != "" {
+		template["py_python"] = tag.Python
 	}
 	if tag.Abi != "" {
 		template["py_abi"] = tag.Abi
 	}
-	if tag.Arch != "" {
-		template["py_arch"] = tag.Arch
+	if tag.Platform != "" {
+		template["py_platform"] = tag.Platform
 	}
-	if tag.Version != "" && tag.Abi != "" && tag.Arch != "" {
+	if tag.Python != "" && tag.Abi != "" && tag.Platform != "" {
 		template["py_tag"] = tag.TagString()
 	}
 
 	// Override the CIPD "platform" based on the PEP425 tag. This allows selection
-	// of Python wheels based on the architecture of the Python executable rather
-	// than the architecture of the underlying platform.
+	// of Python wheels based on the platform of the Python executable rather
+	// than the platform of the underlying operating system.
 	//
 	// For example, a 64-bit Windows version can run 32-bit Python, and we'll
 	// want to use 32-bit Python wheels.
