@@ -48,7 +48,9 @@
       _tree: {
         type: Object,
         computed: '_computeTree(_pathIdentifier, _trees)',
-        value: function() { return {}; },
+        value: function() {
+          return {};
+        },
       },
       _treeLogo: {
         type: String,

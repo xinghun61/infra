@@ -8,7 +8,9 @@
     properties: {
       builder: {
         type: Object,
-        value: function() { return {}; },
+        value: function() {
+          return {};
+        },
       },
       testName: {
         type: String,
@@ -43,19 +45,23 @@
 
     _actualUrlsChanged: function(urls) {
       this._emptyNode(this.$.actualIframes);
-      urls.forEach(
-          (url) => { this._appendIfExists(url, this.$.actualIframes); });
+      urls.forEach((url) => {
+        this._appendIfExists(url, this.$.actualIframes);
+      });
     },
 
     _expectedUrlsChanged: function(urls) {
       this._emptyNode(this.$.expectedIframes);
-      urls.forEach(
-          (url) => { this._appendIfExists(url, this.$.expectedIframes); });
+      urls.forEach((url) => {
+        this._appendIfExists(url, this.$.expectedIframes);
+      });
     },
 
     _diffUrlsChanged: function(urls) {
       this._emptyNode(this.$.diffIframes);
-      urls.forEach((url) => { this._appendIfExists(url, this.$.diffIframes); });
+      urls.forEach((url) => {
+        this._appendIfExists(url, this.$.diffIframes);
+      });
     },
 
     _emptyNode: function(node) {

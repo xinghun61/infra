@@ -26,7 +26,7 @@
     });
 
     test('does not render if no status app exists', function(done) {
-      element.tree = 'faketree';
+      element.treeName = 'faketree';
       flush(function () {
         assert.equal(false, element._hasStatusApp);
         assert.equal(false, element._hasError);
@@ -39,7 +39,7 @@
     });
 
     test('renders if tree is open', function(done) {
-      element.tree = 'chromium';
+      element.treeName = 'chromium';
 
       server.respondWith(
         'GET',
@@ -67,7 +67,7 @@
     });
 
     test('renders if tree closed', function(done) {
-      element.tree = 'chromium';
+      element.treeName = 'chromium';
 
       server.respondWith(
         'GET',
@@ -97,7 +97,7 @@
     });
 
     test('shows error on response error', function(done) {
-      element.tree = 'chromium';
+      element.treeName = 'chromium';
 
       server.respondWith(
         'GET',

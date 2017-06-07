@@ -60,7 +60,11 @@
        min-width: 150px;
      }
      .alert-title {
+       display: flex;
+       flex-direction: row;
+       align-items: center;
        font-weight: bold;
+       padding: 0 8px;
      }
      .alert-title-bar {
        align-items: center;
@@ -69,6 +73,9 @@
      }
      .alert-title-bar:hover {
        cursor: pointer;
+     }
+     .comments-link-highlighted {
+       color: #FF8C00;
      }
      .comments-link-highlighted {
        color: #FF8C00;
@@ -142,7 +149,9 @@
        overflow: hidden;
      }
      #groupName {
-       width: 320px;
+       min-width: 320px;
+       padding: 0 4px;
+       margin-top: -16px;
      }
      #collapse {
        transition: height 3s ease;
@@ -166,11 +175,13 @@
       <div class="alert-title-bar horizontal layout justified" on-tap="_toggle">
         <div class="horizontal layout wrap">
           <div class="layout horizontal flex-child">
-            <div class="alert-title self-center">
+            <div class="alert-title">
+              <input id="checkbox" type="checkbox" hidden$="[[examining]]" class="no-toggle" checked="{{checked::change}}" />
               <template is="dom-if" if="[[_hasUngroup]]">
                 <iron-a11y-keys target="[[_groupNameInput]]" keys="enter" on-keys-pressed="_updateGroupName"></iron-a11y-keys>
                 Group:
-                <paper-input id="groupName" value="[[alert.title]]" class="no-toggle"></paper-input>
+                <paper-input id="groupName" value="[[alert.title]]" class="no-toggle">
+                </paper-input>
                 ([[alert.alerts.length]] alerts)
               </template>
               <template is="dom-if" if="[[!_hasUngroup]]">
@@ -204,18 +215,19 @@
       <div id="collapse" hidden$="[[!annotation.opened]]" class="alert-expanded layout horizontal wrap">
         <div class="alert-controls layout horizontal center flex-child">
           <div class="layout vertical alert-controls-links">
-            <a href$="[[tree]]/examine/[[alert.key]]" hidden$="[[_hideExamine(alert.type, examining, tree)]]">Examine</a>
-            <a href$="[[tree]]" hidden$="[[!examining]]">[[tree]]</a>
+            <a href$="[[treeName]]/examine/[[alert.key]]"
+              hidden$="[[_hideExamine(alert.type, examining, treeName)]]">Examine</a>
+            <a href$="[[treeName]]" hidden$="[[!examining]]">[[treeName]]</a>
             <span class$="link [[_commentsClass]]" on-tap="_comment" id="commentsLink">
               <iron-icon icon="question-answer"></iron-icon> ([[_numComments]])
             </span>
           </div>
           <div class="alert-controls-buttons layout horizontal center flex-child wrap">
-            <button id="linkBug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, tree)]]">
+            <button id="linkBug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, treeName)]]">
               <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
               Link/File Bug
             </button>
-            <button id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" hidden$="[[_hideActions(alert.type, tree)]]">
+            <button id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" hidden$="[[_hideActions(alert.type, treeName)]]">
               <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
               </iron-icon>
               [[_snoozeText]]
@@ -253,7 +265,7 @@
               <a class="alert-link" target="_blank" href$="[[_linkify(linkStyle, link.href)]]">[[link.title]]</a>
             </template>
           </div>
-          <som-extension-trooper-failure tree="[[tree]]" type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-trooper-failure>
+          <som-extension-trooper-failure tree-name="[[treeName]]" type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-trooper-failure>
           <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-build-failure>
           <som-extension-cros-failure type="[[alert.type]]" extension="[[_getExtension(selectedAlert, alert)]]" link-style="[[linkStyle]]"></som-extension-cros-failure>
         </div>

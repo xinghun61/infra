@@ -8,7 +8,8 @@
       bots: {
         type: Object,
         value: function() {
-          return {}
+          return {
+          }
         },
       },
       _hideDeadBots: {
@@ -49,7 +50,9 @@
           this._computeIcon(this.$.quarantinedBotsList.opened);
     },
 
-    _computeHideBots: function(bots) { return !bots || bots.length == 0; },
+    _computeHideBots: function(bots) {
+      return !bots || bots.length == 0;
+    },
 
     _collapseAll: function() {
       this.$.deadBotsList.opened = false;
@@ -69,6 +72,8 @@
           this._computeIcon(this.$.quarantinedBotsList.opened);
     },
 
-    _computeIcon(opened) { return opened ? 'remove' : 'add'; },
+    _computeIcon(opened) {
+      return opened ? 'remove' : 'add';
+    },
   });
 })();

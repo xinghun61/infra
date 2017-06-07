@@ -74,7 +74,9 @@
       }
 
       if (this._activeRequests) {
-        this._activeRequests.forEach((req) => { req.abort(); });
+        this._activeRequests.forEach((req) => {
+          req.abort();
+        });
       }
 
       let requests = [this.$.bugQueueAjax.generateRequest()];
@@ -82,10 +84,14 @@
         requests.push(this.$.uncachedBugsAjax.generateRequest());
       }
 
-      let promises = requests.map((r) => { return r.completes; });
+      let promises = requests.map((r) => {
+        return r.completes;
+      });
 
       this._activeRequests = requests;
-      Promise.all(promises).then(() => { this._bugsLoaded = true; });
+      Promise.all(promises).then(() => {
+        this._bugsLoaded = true;
+      });
     },
 
     _bugQueueLabelChanged: function() {
@@ -169,9 +175,13 @@
       });
     },
 
-    _haveNoBugs: function(bugs) { return !bugs || bugs.length == 0; },
+    _haveNoBugs: function(bugs) {
+      return !bugs || bugs.length == 0;
+    },
 
-    _haveNoErrors: function(error) { return !error; },
+    _haveNoErrors: function(error) {
+      return !error;
+    },
 
     _priorityText: function(pri) {
       if (this._validPriority(pri)) {
@@ -184,11 +194,15 @@
       return !bugsLoaded && this._haveNoErrors(error);
     },
 
-    _validPriority: function(pri) { return pri != this.UNSET_PRIORITY; },
+    _validPriority: function(pri) {
+      return pri != this.UNSET_PRIORITY;
+    },
 
     // Collapsing/expanding priority headers.
 
-    _computeCollapseId: function(pri) { return `collapsePri${pri}`; },
+    _computeCollapseId: function(pri) {
+      return `collapsePri${pri}`;
+    },
 
     _computeCollapseIcon: function(opened) {
       return opened ? 'remove' : 'add';

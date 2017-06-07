@@ -38,18 +38,19 @@
       }
       /* Styling checkboxes in CSS is a bit of a mess and required creating an
         element to replace the checkbox. */
-      .checkbox {
+      label.checkbox {
         cursor: pointer;
         display: flex;
         align-items: center;
       }
-      .checkbox input[type="checkbox"] {
+      input[type="checkbox"] {
+        cursor: pointer;
         visibility: hidden;
         width: 18px;
         height: 18px;
         margin-right: 8px;
       }
-      .checkbox input[type="checkbox"]::before {
+      input[type="checkbox"]::before {
         box-sizing: border-box;
         content: "\2714";
         visibility: visible;
@@ -65,7 +66,7 @@
         font-size: 20px;
         color: #fff;
       }
-      .checkbox input[type="checkbox"]:checked::before {
+      input[type="checkbox"]:checked::before {
         background: #3f51b5;
         border-color: #3f51b5;
       }

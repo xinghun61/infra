@@ -31,6 +31,7 @@
       }
       paper-toolbar {
         --paper-toolbar-background: black;
+        z-index: 99;
       }
       paper-toolbar a {
         color: #fff;
@@ -72,14 +73,17 @@
         padding-right: 1em;
       }
       .page-body {
-        @apply(--layout-vertical);
+        display: flex;
+        flex-direction: column;
         align-items: stretch;
         justify-content: flex-start;
         background: white;
         border-left: 1px solid #ddd;
-        padding: 1em 16px;
         min-height: 100%;
         flex-grow: 1;
+      }
+      .page-body-padded {
+        padding: 1em 16px;
       }
       .som-title {
         font-weight: bold;
@@ -177,9 +181,9 @@
               collapse-by-default="[[collapseByDefault]]"
               xsrf-token="[[xsrfToken]]"></som-alert-view>
           </template>
-          <som-help id="helpSOM" class="page-body"></som-help>
+          <som-help id="helpSOM" class="page-body page-body-padded"></som-help>
           <template is="dom-if" if="[[_showRotationCalendar]]">
-            <som-rotation-calendar id="rotationCalendar" class="page-body"></som-rotation-calendar>
+            <som-rotation-calendar id="rotationCalendar" class="page-body page-body-padded"></som-rotation-calendar>
           </template>
           <template is="dom-if" if="[[_showTestExpectations]]">
             <som-test-expectations class="page-body" id="testExpectations"></som-test-expectations>

@@ -259,7 +259,7 @@
     });
 
     test('filing a bug generates comment for new bug', function() {
-      let bugModel = {
+      let bugModel = [{
         title: "WebKit Win7 step failure",
         extension: {
           builders: [
@@ -283,7 +283,7 @@
             }
           ]
         }
-      };
+      }];
 
       assert.equal(element._commentForBug(bugModel),
         "WebKit Win7 step failure\n\n" +
@@ -312,7 +312,7 @@
 
       element.$.bug.value = 'bar';
       element.$.autosnooze.checked = false;
-      element._bugModel = {key: 'foo'};
+      element._fileBugModel = [{key: 'foo'}];
 
       element._saveBug();
 
@@ -322,6 +322,17 @@
           bugs: ['bar']
         }
       }]);
+    });
+
+    test('saving multiple bugs sends many annotations', function() {
+      let sendStub = sinon.stub(element, 'sendAnnotation');
+      element.$.bug.value = 'bar';
+      element.$.autosnooze.checked = false;
+      element._fileBugModel = [{key: 'foo'}, {key: 'bazzy'}];
+
+      element._saveBug();
+
+      sinon.assert.calledTwice(sendStub);
     });
 
     test('remove bug sends an annotation', function() {
@@ -357,7 +368,7 @@
 
       element.$.bug.value = 'bar';
       element.$.autosnooze.checked = true;
-      element._bugModel = {key: 'foo'};
+      element._fileBugModel = [{key: 'foo'}];
 
       element._saveBug();
 

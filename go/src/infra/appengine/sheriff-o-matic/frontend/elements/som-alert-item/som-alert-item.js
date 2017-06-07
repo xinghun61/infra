@@ -39,11 +39,21 @@
         type: Boolean,
         value: false,
       },
-      tree: {type: String, value: function() { return ''; }},
+      treeName: {
+        type: String,
+        value: function() {
+          return '';
+        },
+      },
       annotation: Object,
       selectedAlert: {
         tupe: String,
         value: '',
+      },
+      checked: {
+        type: Boolean,
+        value: false,
+        observer: '_alertChecked',
       },
       _commentsClass: {
         type: String,
@@ -53,7 +63,8 @@
         type: String,
         computed: '_computeCssClass(annotation.snoozed)',
       },
-      _duration: {type: String, computed: '_calculateDuration(tree, alert)'},
+      _duration:
+          {type: String, computed: '_calculateDuration(treeName, alert)'},
       _hasBugs: {
         type: Boolean,
         computed: '_computeHasBugs(annotation.bugs)',
@@ -77,7 +88,7 @@
       },
       _hasGroup: {
         type: Boolean,
-        computed: '_computeHasGroup(tree)',
+        computed: '_computeHasGroup(treeName)',
       },
       _hasUngroup: {
         type: Boolean,
@@ -85,13 +96,21 @@
       },
       _hasResolve: {
         type: Boolean,
-        computed: '_computeHasResolve(tree)',
+        computed: '_computeHasResolve(treeName)',
       },
       _startTime:
           {type: String, computed: '_formatTimestamp(alert.start_time)'},
-      _groupNameInput:
-          {type: Object, value: function() { return this.$.groupName; }},
+      _groupNameInput: {
+        type: Object,
+        value: function() {
+          return this.$.groupName;
+        }
+      },
       collapseByDefault: Boolean,
+    },
+
+    _alertChecked(isChecked) {
+      this.fire('checked');
     },
 
     _bugLabel: function(bug) {
@@ -118,7 +137,7 @@
       return 'https://crbug.com/' + bug;
     },
 
-    _calculateDuration(tree, alert) {
+    _calculateDuration(treeName, alert) {
       let date = moment(alert.start_time * 1000).tz('America/Los_Angeles');
       let duration =
           date.format('M/DD/YYYY, h:mm a z') + ' (' + date.fromNow() + ')';
@@ -143,7 +162,9 @@
       evt.preventDefault();
     },
 
-    _computeHasBugs: function(bugs) { return !!(bugs && bugs.length > 0); },
+    _computeHasBugs: function(bugs) {
+      return !!(bugs && bugs.length > 0);
+    },
 
     _computeCommentsClass: function(numComments) {
       if (numComments > 0) {
@@ -179,23 +200,33 @@
       return text + 'left';
     },
 
-    _computeCssClass: function(snoozed) { return snoozed ? 'snoozed' : ''; },
+    _computeCssClass: function(snoozed) {
+      return snoozed ? 'snoozed' : '';
+    },
 
     _computeSnoozeIcon: function(snoozed) {
       return snoozed ? 'alarm-off' : 'alarm';
     },
 
-    _isCrOSTree: function(tree) {
-      return tree && (tree == 'chromeos' || tree == 'gardener');
+    _isCrOSTree: function(treeName) {
+      return treeName && (treeName == 'chromeos' || treeName == 'gardener');
     },
 
-    _computeHasGroup: function(tree) { return this._isCrOSTree(tree); },
+    _computeHasGroup: function(treeName) {
+      return this._isCrOSTree(treeName);
+    },
 
-    _computeHasUngroup: function(alert) { return alert && !!alert.grouped; },
+    _computeHasUngroup: function(alert) {
+      return alert && !!alert.grouped;
+    },
 
-    _computeHasResolve: function(tree) { return this._isCrOSTree(tree); },
+    _computeHasResolve: function(treeName) {
+      return this._isCrOSTree(treeName);
+    },
 
-    _linkBug: function(evt) { this.fire('link-bug'); },
+    _linkBug: function(evt) {
+      this.fire('link-bug');
+    },
 
     _formatTimestamp: function(timestamp) {
       if (timestamp != undefined) {
@@ -209,12 +240,12 @@
              alert.links.length > 0;
     },
 
-    _hideActions: function(alertType, tree) {
-      return tree != 'trooper' && this.isTrooperAlertType(alertType);
+    _hideActions: function(alertType, treeName) {
+      return treeName != 'trooper' && this.isTrooperAlertType(alertType);
     },
 
-    _hideExamine: function(alertType, examining, tree) {
-      return examining || this._hideActions(alertType, tree);
+    _hideExamine: function(alertType, examining, treeName) {
+      return examining || this._hideActions(alertType, treeName);
     },
 
     _removeBug: function(evt) {
@@ -238,11 +269,17 @@
       evt.preventDefault();
     },
 
-    _group: function(evt) { this.fire('group'); },
+    _group: function(evt) {
+      this.fire('group');
+    },
 
-    _ungroup: function(evt) { this.fire('ungroup'); },
+    _ungroup: function(evt) {
+      this.fire('ungroup');
+    },
 
-    _resolve: function(evt) { this.fire('resolve'); },
+    _resolve: function(evt) {
+      this.fire('resolve');
+    },
 
     _updateGroupName: function(evt) {
       let value = evt.detail.keyboardEvent.target.value;
@@ -263,7 +300,9 @@
 
       if (alert.grouped && alert.alerts) {
         // This alert is a group, search for the selected sub-alert.
-        let subAlert = alert.alerts.find((a) => { return a.key == selected; });
+        let subAlert = alert.alerts.find((a) => {
+          return a.key == selected;
+        });
 
         if (subAlert) {
           // Return the selected alert.

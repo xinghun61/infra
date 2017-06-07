@@ -11,7 +11,7 @@
   <template>
     <style>
     </style>
-    <template is="dom-if" if="[[_showSheriffMessage(type, tree)]]">
+    <template is="dom-if" if="[[_showSheriffMessage(type, treeName)]]">
       <!--
         TODO: hide this if there's already a bug attached to this alert.
         The assumption being if it has a bug, it's actively being handled
@@ -21,7 +21,7 @@
         <a href="http://go/bug-a-trooper">go/bug-a-trooper</a>
       </div>
     </template>
-    <template is="dom-if" if="[[_showTrooperMessage(type, tree)]]">
+    <template is="dom-if" if="[[_showTrooperMessage(type, treeName)]]">
       <div>
          This [[type]] is a job for YOU. See the
          <a href="http://go/trooper">oncall playbook</a> for instructions on

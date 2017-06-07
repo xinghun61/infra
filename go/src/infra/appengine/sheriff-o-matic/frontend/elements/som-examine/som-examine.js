@@ -6,7 +6,9 @@
     properties: {
       alert: {
         type: Object,
-        value: function() { return {}; },
+        value: function() {
+          return {};
+        },
         observer: '_alertChanged',
       },
       selectedStep: {

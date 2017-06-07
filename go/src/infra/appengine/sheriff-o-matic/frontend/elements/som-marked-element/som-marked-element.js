@@ -7,8 +7,9 @@
       markdown: String,
     },
     ready: function() {
-      this.$.element.renderer =
-          (function(r) { r.link = this._getLinkRenderer(); }).bind(this);
+      this.$.element.renderer = (function(r) {
+                                  r.link = this._getLinkRenderer();
+                                }).bind(this);
     },
 
     _hrefIsAllowed: function(href) {

@@ -11,7 +11,7 @@
     properties: {
       extension: {
         type: Object,
-        value: function () {
+        value: function() {
           return {};
         },
       },
@@ -22,7 +22,9 @@
       },
     },
 
-    _isCrosFailure: function(type) { return type == 'cros-failure'; },
+    _isCrosFailure: function(type) {
+      return type == 'cros-failure';
+    },
 
     _haveBuilders: function(extension) {
       return extension && extension.builders && extension.builders.length > 0;
@@ -40,7 +42,9 @@
       }
 
       if (builder.count) {
-        return `[${builder.count} out of the last ${numBuilds} builds have failed]`;
+        return `[${builder.count} out of the last ${
+                                                    numBuilds
+                                                  } builds have failed]`;
       }
 
       if (numBuilds > 1) {
@@ -102,21 +106,29 @@
       }
     },
 
-    _finditConfidence: function(cl) { return cl.confidence.toString(); },
+    _finditConfidence: function(cl) {
+      return cl.confidence.toString();
+    },
 
     _haveSuspectCLs: function(extension) {
       return extension && extension.suspected_cls;
     },
 
-    _haveRevertCL: function(cl) { return cl && cl.revert_cl_url; },
+    _haveRevertCL: function(cl) {
+      return cl && cl.revert_cl_url;
+    },
 
     _haveRegressionRanges: function(regression_ranges) {
       return regression_ranges && regression_ranges.length > 0;
     },
 
-    _haveTests: function(tests) { return tests && tests.length > 0; },
+    _haveTests: function(tests) {
+      return tests && tests.length > 0;
+    },
 
-    _isFlaky: function(test) { return test && test.is_flaky; },
+    _isFlaky: function(test) {
+      return test && test.is_flaky;
+    },
 
     _linkForTest: function(reason, testName) {
       return testResultsURL + 'dashboards/' +
@@ -142,7 +154,9 @@
       return url + encodeURIComponent(query);
     },
 
-    _linkForCL: function(cl) { return 'https://crrev.com/' + cl; },
+    _linkForCL: function(cl) {
+      return 'https://crrev.com/' + cl;
+    },
 
     _showRegressionRange: function(range) {
       return range.positions && range.positions.length > 0 &&
@@ -173,8 +187,12 @@
       return len.toString() + ' tests failed';
     },
 
-    _textForCL: function(cl) { return cl.substring(0, 7); },
+    _textForCL: function(cl) {
+      return cl.substring(0, 7);
+    },
 
-    _hasSuspect: function(test) { return test && test.suspected_cls; },
+    _hasSuspect: function(test) {
+      return test && test.suspected_cls;
+    },
   });
 })();

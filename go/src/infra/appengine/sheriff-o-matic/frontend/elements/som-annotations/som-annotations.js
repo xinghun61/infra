@@ -12,26 +12,29 @@
       annotations: {
         notify: true,
         type: Object,
-        value: function() { return {}; },
+        value: function() {
+          return {};
+        },
         computed: '_computeAnnotations(_annotationsResp, localState)'
       },
       annotationError: {
         type: Object,
-        value: function() { return {}; },
+        value: function() {
+          return {};
+        },
       },
       // The raw response from the server of annotations.
       _annotationsResp: {
         type: Array,
-        value: function() { return []; },
+        value: function() {
+          return [];
+        },
       },
       _bugErrorMessage: String,
-      _bugInput: {type: Object, value: function() { return this.$.bug; }},
-      _bugModel: Object,
-      _fileBugLabels: {
-        type: Array,
-        computed: '_computeFileBugLabels(tree)',
-        value: function () {
-          return [];
+      _fileBugInput: {
+        type: Object,
+        value: function() {
+          return this.$.bug;
         },
       },
       collapseByDefault: Boolean,
@@ -47,12 +50,25 @@
         type: Boolean,
         computed: '_computeCommentsHidden(_commentsModelAnnotation)',
       },
-      _commentTextInput:
-          {type: Object, value: function() { return this.$.commentText; }},
+      _commentTextInput: {
+        type: Object,
+        value: function() {
+          return this.$.commentText;
+        }
+      },
       // TODO(zhangtiff): Change snooze time per tree.
       _defaultSnoozeTime: {
         type: Number,
         value: DEFAULT_SNOOZE_TIME_MIN,
+      },
+      _fileBugModel: Object,
+      _fileBugCallback: Function,
+      _fileBugLabels: {
+        type: Array,
+        computed: '_computeFileBugLabels(tree)',
+        value: function() {
+          return [];
+        },
       },
       _filedBug: {
         type: Boolean,
@@ -64,8 +80,13 @@
       _removeBugModel: Object,
       _snoozeErrorMessage: String,
       _snoozeModel: Object,
-      _snoozeTimeInput:
-          {type: Object, value: function() { return this.$.snoozeTime; }},
+      _snoozeCallback: Function,
+      _snoozeTimeInput: {
+        type: Object,
+        value: function() {
+          return this.$.snoozeTime;
+        }
+      },
       tree: {
         type: Object,
         value: function() {
@@ -78,7 +99,9 @@
       xsrfToken: String,
     },
 
-    ready: function() { this.fetchAnnotations(); },
+    ready: function() {
+      this.fetchAnnotations();
+    },
 
     fetch: function() {
       this.annotationError.action = 'Fetching all annotations';
@@ -132,7 +155,9 @@
 
               // We need to refresh our XSRF token!
               window.fetch('/api/v1/xsrf_token', {credentials: 'include'})
-                  .then((respData) => { return respData.json(); })
+                  .then((respData) => {
+                    return respData.json();
+                  })
                   .then((jsonData) => {
                     // Clone options because sinon.spy args from different calls
                     // to window.fetch clobber each other in this scenario.
@@ -194,14 +219,13 @@
 
     ////////////////////// Handlers ///////////////////////////
 
-    handleOpenedChange: function(evt) {
-      this.setLocalStateKey(evt.target.alert.key, {opened: evt.detail.value});
+    handleOpenedChange: function(alert, detail) {
+      this.setLocalStateKey(alert.key, {opened: detail.value});
     },
 
-    handleAnnotation: function(evt) {
+    handleAnnotation: function(alert, detail) {
       this.annotationError.action = 'Fetching all annotations';
-      this.sendAnnotation(evt.target.alert.key, evt.detail.type,
-                          evt.detail.change)
+      this.sendAnnotation(alert.key, detail.type, detail.change)
           .then((response) => {})
           .catch((error) => {
             let old = this.annotationError;
@@ -210,84 +234,98 @@
           });
     },
 
-    handleComment: function(evt) {
-      this._commentsModel = evt.target.alert;
+    handleComment: function(alert) {
+      this._commentsModel = alert;
       this._commentsErrorMessage = '';
       this.$.commentsDialog.open();
     },
 
-    handleLinkBug: function(evt) {
-      this._bugModel = evt.target.alert;
+    handleLinkBug: function(alerts, callback) {
+      this._fileBugCallback = callback;
+      this._fileBugModel = alerts;
+
+      let bugSummary = 'Bug filed from Sheriff-o-Matic';
+      if (alerts) {
+        if (alerts.length > 1) {
+          bugSummary = `${alerts[0].title} and ${alerts.length - 1} other alerts`;
+        } else if (alerts.length > 0) {
+          bugSummary = alerts[0].title;
+        }
+      }
       this.$.fileBugLink.href =
           'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=' +
-          this._fileBugLabels.join(',') + '&summary=' + this._bugModel.title +
-          '&comment=' + encodeURIComponent(this._commentForBug(this._bugModel));
+          this._fileBugLabels.join(',') + '&summary=' + bugSummary +
+          '&comment=' + encodeURIComponent(this._commentForBug(this._fileBugModel));
       this._filedBug = false;
       this._bugErrorMessage = '';
       this.$.bugDialog.open();
     },
 
-    handleRemoveBug: function(evt) {
+    handleRemoveBug: function(alert, detail) {
       this.$.removeBugDialog.open();
-      this._removeBugModel =
-          Object.assign({alert: evt.target.alert}, evt.detail);
+      this._removeBugModel = Object.assign({alert: alert}, detail);
       this._removeBugErrorMessage = '';
     },
 
-    handleSnooze: function(evt) {
-      this._snoozeModel = evt.target.alert;
+    handleSnooze: function(alerts, callback) {
+      this._snoozeCallback = callback;
+      this._snoozeModel = alerts;
       this.$.snoozeTime.value = this._defaultSnoozeTime;
       this._snoozeErrorMessage = '';
       this.$.snoozeDialog.open();
     },
 
-    handleGroup: function(evt, targets) {
-      this._groupModel = {alert: evt.target.alert, targets: targets};
+    handleGroup: function(alert, targets) {
+      this._groupModel = {alert: alert, targets: targets};
       this._groupErrorMessage = '';
       this.$.groupDialog.open();
     },
 
-    handleUngroup: function(evt) {
-      this._ungroupModel = evt.target.alert;
+    handleUngroup: function(alert) {
+      this._ungroupModel = alert;
       this._ungroupErrorMessage = '';
       this.$.ungroupDialog.open();
     },
 
     ////////////////////// Bugs ///////////////////////////
 
-    _commentForBug: function(bugModel) {
-      let result = bugModel.title + '\n\n';
-      if (bugModel.extension) {
-        if (bugModel.extension.builders &&
-            bugModel.extension.builders.length > 0) {
-          result += 'Builders failed on: ';
-          for (let i in bugModel.extension.builders) {
-            result += '\n- ' + bugModel.extension.builders[i].name + ': \n  ' +
-                      bugModel.extension.builders[i].url;
+    _commentForBug: function(alerts) {
+      return alerts.reduce((comment, alert) => {
+        let result = alert.title + '\n\n';
+        if (alert.extension) {
+          if (alert.extension.builders &&
+              alert.extension.builders.length > 0) {
+            result += 'Builders failed on: ';
+            for (let i in alert.extension.builders) {
+              result += '\n- ' + alert.extension.builders[i].name + ': \n  ' +
+                        alert.extension.builders[i].url;
+            }
+            result += '\n\n';
           }
-          result += '\n\n';
-        }
-        if (bugModel.extension.reasons &&
-            bugModel.extension.reasons.length > 0) {
-          result += 'Reasons: ';
-          for (let i in bugModel.extension.reasons) {
-            result += '\n' + bugModel.extension.reasons[i].url;
-            if (bugModel.extension.reasons[i].test_names) {
-              result += '\n' +
-                        'Tests:';
-              if (bugModel.extension.reasons[i].test_names) {
-                result += '\n* ' +
-                          bugModel.extension.reasons[i].test_names.join('\n* ');
+          if (alert.extension.reasons &&
+              alert.extension.reasons.length > 0) {
+            result += 'Reasons: ';
+            for (let i in alert.extension.reasons) {
+              result += '\n' + alert.extension.reasons[i].url;
+              if (alert.extension.reasons[i].test_names) {
+                result += '\n' +
+                          'Tests:';
+                if (alert.extension.reasons[i].test_names) {
+                  result += '\n* ' +
+                            alert.extension.reasons[i].test_names.join('\n* ');
+                }
               }
             }
+            result += '\n\n';
           }
-          result += '\n\n';
         }
-      }
-      return result;
+        return comment + result;
+      }, '');
     },
 
-    _fileBugClicked: function() { this._filedBug = true; },
+    _fileBugClicked: function() {
+      this._filedBug = true;
+    },
 
     _removeBug: function() {
       let model = this._removeBugModel;
@@ -298,42 +336,57 @@
                 this.$.removeBugDialog.close();
                 this._removeBugErrorMessage = '';
               },
-              (error) => { this._removeBugErrorMessage = error; });
+              (error) => {
+                this._removeBugErrorMessage = error;
+              });
     },
 
     _saveBug: function() {
-      // TODO(add proper error handling)
       let data = {bugs: [this.$.bug.value.trim()]};
       if (this.$.autosnooze.checked) {
         data.snoozeTime = Date.now() + ONE_MIN_MS * this._defaultSnoozeTime;
       }
-      this.sendAnnotation(this._bugModel.key, 'add', data)
-          .then(
-              (response) => {
-                this._bugErrorMessage = '';
-                this.$.bug.value = '';
-                this.$.bugDialog.close();
+      let promises = this._fileBugModel.map((alert) => {
+        return this.sendAnnotation(alert.key, 'add', data);
+      });
+      Promise.all(promises).then(
+          (response) => {
+            this._bugErrorMessage = '';
+            this.$.bug.value = '';
+            this.$.bugDialog.close();
 
-                this.setLocalStateKey(response.key, {opened: false});
-              },
-              (error) => { this._bugErrorMessage = error; });
+            this.setLocalStateKey(response.key, {opened: false});
+
+            if (this._fileBugCallback) {
+              this._fileBugCallback();
+            }
+          },
+          (error) => {
+            this._bugErrorMessage = error;
+          });
     },
 
     ////////////////////// Snooze ///////////////////////////
 
     _snooze: function() {
-      // TODO(add proper error handling)
-      this.sendAnnotation(
-              this._snoozeModel.key, 'add',
-              {snoozeTime: Date.now() + ONE_MIN_MS * this.$.snoozeTime.value})
-          .then(
-              (response) => {
-                this.$.snoozeTime.value = '';
-                this.$.snoozeDialog.close();
+      let promises = this._snoozeModel.map(
+          (alert) => {return this.sendAnnotation(alert.key, 'add', {
+            snoozeTime: Date.now() + ONE_MIN_MS * this.$.snoozeTime.value
+          })});
+      Promise.all(promises).then(
+          (response) => {
+            this.$.snoozeTime.value = '';
+            this.$.snoozeDialog.close();
 
-                this.setLocalStateKey(response.key, {opened: false});
-              },
-              (error) => { this._snoozeErrorMessage = error; });
+            this.setLocalStateKey(response.key, {opened: false});
+
+            if (this._snoozeCallback) {
+              this._snoozeCallback();
+            }
+          },
+          (error) => {
+            this._snoozeErrorMessage = error;
+          });
     },
 
     ////////////////////// Comments ///////////////////////////
@@ -378,6 +431,9 @@
 
     _computeFileBugLabels: function(tree) {
       let labels = ['Filed-Via-SoM'];
+      if (!tree) {
+        return labels;
+      }
       if (tree.name === 'android') {
         labels.push('Restrict-View-Google');
       }
@@ -387,7 +443,9 @@
       return labels;
     },
 
-    _computeHideDeleteComment(comment) { return comment.user != this.user; },
+    _computeHideDeleteComment(comment) {
+      return comment.user != this.user;
+    },
 
     _computeUsername(email) {
       if (!email) {
@@ -412,20 +470,25 @@
         comments: [evt.model.comment.index],
       });
       if (request) {
-        request.then((response) => {},
-                     (error) => { this._commentsErrorMessage = error; });
+        request.then((response) => {}, (error) => {
+          this._commentsErrorMessage = error;
+        });
       }
     },
 
     ////////////////////// Groups ///////////////////////////
-
-    _group: function() {
-      this._groupErrorMessage = '';
-
+    _group: function(evt) {
       // Group the current alert and all checked alerts.
-      let alerts =
-          this._groupModel.targets.filter((t) => { return t.checked; });
+      let alerts = this._groupModel.targets.filter((t) => {
+        return t.checked;
+      });
       alerts.push(this._groupModel.alert);
+
+      this.group(alerts);
+    },
+
+    group: function(alerts) {
+      this._groupErrorMessage = '';
 
       // Determine group ID.
       let groupAlert = null;
@@ -441,7 +504,9 @@
       let groupID = groupAlert ? groupAlert.key : this._generateUUID();
 
       // Determine ungrouped alerts to group.
-      alerts = alerts.filter((a) => { return !a.grouped; });
+      alerts = alerts.filter((a) => {
+        return !a.grouped;
+      });
 
       // Create annotation for each ungrouped alert key.
       for (let i in alerts) {
@@ -454,7 +519,9 @@
                   this.$.groupDialog.close();
                   alerts[i].checked = false;
                 },
-                (error) => { this._groupErrorMessage = error; });
+                (error) => {
+                  this._groupErrorMessage = error;
+                });
       }
     },
 
@@ -471,7 +538,9 @@
 
                     this.setLocalStateKey(response.key, {opened: false});
                   },
-                  (error) => { this._ungroupErrorMessage = error; });
+                  (error) => {
+                    this._ungroupErrorMessage = error;
+                  });
           // TODO(davidriley): Figure out why things remain checked.
           this._ungroupModel.alerts[i].checked = false;
         }

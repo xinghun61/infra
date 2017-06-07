@@ -5,7 +5,7 @@
     is: 'som-master-restarts',
 
     properties: {
-      tree: {
+      treeName: {
         type: String,
         observer: 'refresh',
       },
@@ -32,7 +32,9 @@
       },
     },
 
-    refresh: function() { this.$.masterRestarts.generateRequest(); },
+    refresh: function() {
+      this.$.masterRestarts.generateRequest();
+    },
 
     _computeHasError: function(json) {
       return !!json && Object.keys(json).length > 0;

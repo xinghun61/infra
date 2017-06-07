@@ -5,7 +5,7 @@
     is: 'som-tree-status',
 
     properties: {
-      tree: {
+      treeName: {
         type: String,
         observer: 'refresh',
       },
@@ -16,7 +16,7 @@
       },
       _hasStatusApp: {
         type: Boolean,
-        computed: '_computeHasStatusApp(tree, _statusApps)',
+        computed: '_computeHasStatusApp(treeName, _statusApps)',
       },
       _hideNotice: {
         type: Boolean,
@@ -35,7 +35,7 @@
       _statusJson: Object,
       _statusUrl: {
         type: String,
-        computed: '_computeStatusUrl(tree, _statusApps)',
+        computed: '_computeStatusUrl(treeName, _statusApps)',
       },
       // Processed JSON data
       _email: {
@@ -71,19 +71,19 @@
       return hasStatusApp && !!json && Object.keys(json).length > 0;
     },
 
-    _computeHasStatusApp: function(tree, statusApps) {
-      return tree in statusApps;
+    _computeHasStatusApp: function(treeName, statusApps) {
+      return treeName in statusApps;
     },
 
     _computeHideNotice: function(hasStatusApp, hasError) {
       return !hasStatusApp || hasError;
     },
 
-    _computeStatusUrl: function(tree, statusApps) {
+    _computeStatusUrl: function(treeName, statusApps) {
       if (!this._hasStatusApp) {
         return '';
       }
-      return statusApps[tree];
+      return statusApps[treeName];
     },
 
     // Processing JSON data for display

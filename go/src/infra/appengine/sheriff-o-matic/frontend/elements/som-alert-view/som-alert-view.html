@@ -6,6 +6,7 @@
 <link rel="import" href="../../elements/som-alert-type-behavior.html">
 <link rel="import" href="../../elements/som-annotation-manager-behavior.html">
 <link rel="import" href="../../elements/som-header-styles.html">
+<link rel="import" href="../../elements/som-input-styles.html">
 
 <link rel="import" href="../../elements/som-alert-item/som-alert-item.html">
 <link rel="import" href="../../elements/som-annotations/som-annotations.html">
@@ -18,10 +19,26 @@
 <dom-module id="som-alert-view">
   <template>
     <style include="som-header-styles"></style>
+    <style include="som-input-styles"></style>
     <style>
       #alertList {
         display: flex;
         flex-direction: column;
+      }
+      #bulkAlertActions {
+        position: fixed;
+        display: flex;
+        flex-direction: horizontal;
+        align-items: center;
+        width: 100%;
+        background: #fff;
+        padding: 0.5em 8px;;
+        z-index: 1;
+        border-bottom: 1px solid #ccc;
+        box-shadow: 0px 3px 5px #bbb;
+      }
+      #bulkAlertActions button:first-of-type {
+        margin-left: 32px;
       }
       #fetchAlertsError {
         color: #f00;
@@ -42,6 +59,11 @@
         color: #c00;
         margin-top: 0;
       }
+      .link {
+        cursor: pointer;
+        text-decoration: underline;
+        color: #0000ee;
+      }
       .notification {
         box-sizing: border-box;
         width: 100%;
@@ -54,6 +76,9 @@
         flex-grow: 0;
         flex-shrink: 0;
       }
+      iron-pages {
+        padding: 1em 16px;
+      }
     </style>
     <som-annotations id="annotations"
         annotations="{{annotations}}"
@@ -62,12 +87,19 @@
         local-state="{{localState}}"
         user="[[user]]"
         xsrf-token="{{xsrfToken}}"></som-annotations>
-
+    <div id="bulkAlertActions" hidden$="[[!_checkedAlerts.length]]">
+      You have selected [[_checkedAlerts.length]] alerts.
+      (<small class="link" on-tap="_uncheckAll">Unselect all?</small>)
+      <button on-tap="_handleLinkBugBulk">Link Bug to All</button>
+      <button on-tap="_handleSnoozeBulk">Snooze All</button>
+      <button on-tap="_handleGroupBulk"
+        hidden$="[[!_hasGroupAll(_checkedAlerts, tree)]]">Group All</button>
+    </div>
     <iron-pages attr-for-selected="id" selected="[[_currentAlertView]]">
       <div id="alertList">
         <div id="notifications" class="page-section">
-          <som-tree-status tree="[[tree.name]]" id="treeStatus"></som-tree-status>
-          <som-master-restarts tree="[[tree.name]]" id="masterRestarts"></som-master-restarts>
+          <som-tree-status tree-name="[[tree.name]]" id="treeStatus"></som-tree-status>
+          <som-master-restarts tree-name="[[tree.name]]" id="masterRestarts"></som-master-restarts>
           <div class="notification" hidden$="[[_isTrooperPage]]">
             Start at the top and try to clear all the alerts. For additional guidance, see:
             <span hidden$="[[!tree.help_link]]">
@@ -99,6 +131,7 @@
           <template is="dom-repeat" items="[[_computeCategories(_alerts, _isTrooperPage)]]" as="cat">
             <h2 class="category-title">
               <span>
+                <input type="checkbox" on-tap="_checkAll" class="category-checkbox" />
                 <span class="category-title-text">
                   [[_getCategoryTitle(cat, _isTrooperPage, trees)]] ([[_getCategoryCount(_alerts, cat, _isTrooperPage)]] total)
                 </span>
@@ -119,7 +152,7 @@
                   class="alert-item"
                   tabindex="0"
                   alert="[[alert]]"
-                  tree="[[tree.name]]"
+                  tree-name="[[tree.name]]"
                   selected="[[selected]]"
                   annotation="[[computeAnnotation(annotations, alert, collapseByDefault)]]"
                   link-style="[[linkStyle]]"
@@ -132,6 +165,7 @@
                   on-ungroup="_handleUngroup"
                   on-resolve="_handleResolve"
                   on-opened-change="_handleOpenedChange"
+                  on-checked="_handleChecked"
               ></som-alert-item>
             </template>
           </template>
@@ -146,7 +180,7 @@
       <div id="examineAlert">
         <som-alert-item
             alert="[[_examinedAlert]]"
-            tree="[[tree.name]]"
+            tree-name="[[tree.name]]"
             annotation="[[computeAnnotation(annotations, _examinedAlert)]]"
             link-style="[[linkStyle]]"
             on-annotation-change="_handleAnnotation"

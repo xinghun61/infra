@@ -37,12 +37,16 @@
       _staticPageList: {
         type: Array,
         computed: '_computeStaticPageList(staticPages)',
-        value: function() { return []; },
+        value: function() {
+          return [];
+        },
       },
       tree: Object,
       _treeList: {
         type: Array,
-        value: function() { return []; },
+        value: function() {
+          return [];
+        },
       },
       trees: {
         type: Object,
@@ -70,7 +74,9 @@
       },
     },
 
-    created: function() { this.async(this._refreshAsync, refreshDelayMs); },
+    created: function() {
+      this.async(this._refreshAsync, refreshDelayMs);
+    },
 
     _refresh: function() {
       this.$.fetchTrooper.generateRequest();
@@ -170,7 +176,9 @@
       if (!treeList) {
         return trees;
       }
-      treeList.forEach(function(tree) { trees[tree.name] = tree; });
+      treeList.forEach(function(tree) {
+        trees[tree.name] = tree;
+      });
       let defaultTree = this.defaultTree;
       if (this.path === '/') {
         if (defaultTree && defaultTree in trees) {
@@ -198,9 +206,13 @@
       return troopers;
     },
 
-    _formatDate(date) { return date.toISOString().substring(0, 10); },
+    _formatDate(date) {
+      return date.toISOString().substring(0, 10);
+    },
 
-    _formatDateShort(date) { return moment(date).format('MMM D'); },
+    _formatDateShort(date) {
+      return moment(date).format('MMM D');
+    },
 
     _onSelected: function(evt) {
       let pathIdentifier = evt.srcElement.value;

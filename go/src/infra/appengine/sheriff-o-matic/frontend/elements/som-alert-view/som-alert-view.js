@@ -14,33 +14,54 @@
       },
       _alerts: {
         type: Array,
-        value: function() { return []; },
+        value: function() {
+          return [];
+        },
         computed: `_computeAlerts(_alertsData.*, annotations, showInfraFailures,
               _isTrooperPage, collapseByDefault)`,
       },
       // Map of stream to data, timestamp of latest updated data.
       _alertsData: {
         type: Object,
-        value: function() { return {}; },
+        value: function() {
+          return {};
+        },
       },
       alertsTimes: {
         type: Object,
-        value: function() { return {}; },
+        value: function() {
+          return {};
+        },
         notify: true,
       },
       _alertStreams: {
         type: Array,
         computed: '_computeAlertStreams(tree)',
         observer: '_updateAlerts',
-        value: function() { return []; },
+        value: function() {
+          return [];
+        },
       },
       annotations: {
         type: Object,
-        value: function () {
+        value: function() {
           return {};
         },
       },
       _bugs: Array,
+      _checkedAlertKeys: {
+        type: Object,
+        value: function() {
+          return {};
+        },
+      },
+      _checkedAlerts: {
+        type: Array,
+        computed: '_computeCheckedAlerts(_alerts, _checkedAlertKeys)',
+        value: function() {
+          return [];
+        },
+      },
       _currentAlertView: {
         type: String,
         computed: '_computeCurrentAlertView(_examinedAlert)',
@@ -49,7 +70,9 @@
       _examinedAlert: {
         type: Object,
         computed: '_computeExaminedAlert(_alerts, examinedAlertKey)',
-        value: function() { return {}; },
+        value: function() {
+          return {};
+        },
       },
       examinedAlertKey: String,
       _fetchAlertsError: String,
@@ -84,7 +107,9 @@
       },
       _swarmingAlerts: {
         type: Object,
-        value: function() { return {}; },
+        value: function() {
+          return {};
+        },
       },
       _sections: {
         type: Object,
@@ -119,7 +144,9 @@
       xsrfToken: String,
     },
 
-    created: function() { this.async(this._refreshAsync, refreshDelayMs); },
+    created: function() {
+      this.async(this._refreshAsync, refreshDelayMs);
+    },
 
     ////////////////////// Refresh ///////////////////////////
 
@@ -197,8 +224,9 @@
     },
 
     _computeExaminedAlert: function(alerts, examinedAlertKey) {
-      let examinedAlert =
-          alerts.find((alert) => { return alert.key == examinedAlertKey; });
+      let examinedAlert = alerts.find((alert) => {
+        return alert.key == examinedAlertKey;
+      });
       // Two possibilities if examinedAlert is undefined:
       // 1. The alert key is bad.
       // 2. Alerts has not been ajaxed in yet.
@@ -263,7 +291,9 @@
       }
     },
 
-    _alertStreamVarName(stream) { return stream.replace('.', '_'); },
+    _alertStreamVarName(stream) {
+      return stream.replace('.', '_');
+    },
 
     _computeFetchingAlerts: function(activeRequests) {
       return activeRequests !== 0;
@@ -475,7 +505,9 @@
     },
 
     _mergeStage: function(mergedStages, stage, builders) {
-      let merged = mergedStages.find((s) => { return s.name == stage.name; });
+      let merged = mergedStages.find((s) => {
+        return s.name == stage.name;
+      });
 
       if (!merged) {
         merged = {
@@ -545,15 +577,20 @@
     _alertItemsWithCategory: function(alerts, annotations, category,
                                       isTrooperPage) {
       return alerts.filter(function(alert) {
-        if (isTrooperPage) {
-          return alert.tree == category;
-        } else if (category == AlertSeverity.InfraFailure) {
-          // Put trooperable alerts into "Infra failures" on sheriff views
-          return this.isTrooperAlertType(alert.type) ||
-                 alert.severity == category;
-        }
-        return alert.severity == category;
+        return this._alertHasCategory(alert, annotations, category,
+                                      isTrooperPage);
       }, this);
+    },
+
+    _alertHasCategory: function(alert, annotations, category, isTrooperPage) {
+      if (isTrooperPage) {
+        return alert.tree == category;
+      } else if (category == AlertSeverity.InfraFailure) {
+        // Put trooperable alerts into "Infra failures" on sheriff views
+        return this.isTrooperAlertType(alert.type) ||
+               alert.severity == category;
+      }
+      return alert.severity == category;
     },
 
     _computeCategories: function(alerts, isTrooperPage) {
@@ -655,41 +692,85 @@
     },
 
     _handleOpenedChange: function(evt) {
-      this.$.annotations.handleOpenedChange(evt);
+      this.$.annotations.handleOpenedChange(evt.target.get('alert'),
+                                            evt.detail);
     },
 
     _handleAnnotation: function(evt) {
-      this.$.annotations.handleAnnotation(evt);
+      this.$.annotations.handleAnnotation(evt.target.get('alert'), evt.detail);
     },
 
-    _handleComment: function(evt) { this.$.annotations.handleComment(evt); },
+    _handleComment: function(evt) {
+      this.$.annotations.handleComment(evt.target.get('alert'));
+    },
 
-    _handleLinkBug: function(evt) { this.$.annotations.handleLinkBug(evt); },
+    _handleLinkBug: function(evt) {
+      this.$.annotations.handleLinkBug([evt.target.get('alert')]);
+    },
+
+    _handleLinkBugBulk: function(evt) {
+      this.$.annotations.handleLinkBug(this._checkedAlerts,
+                                       this._uncheckAll.bind(this));
+    },
 
     _handleRemoveBug: function(evt) {
-      this.$.annotations.handleRemoveBug(evt);
+      this.$.annotations.handleRemoveBug(evt.target.get('alert'), evt.detail);
     },
 
-    _handleSnooze: function(evt) { this.$.annotations.handleSnooze(evt); },
+    _handleSnooze: function(evt) {
+      this.$.annotations.handleSnooze([evt.target.get('alert')]);
+    },
+
+    _handleSnoozeBulk: function(evt) {
+      this.$.annotations.handleSnooze(this._checkedAlerts,
+                                      this._uncheckAll.bind(this));
+    },
 
     _handleGroup: function(evt) {
+      let alert = evt.target.get('alert');
       this.$.annotations.handleGroup(
-          evt, this._computeGroupTargets(evt.target.alert, this._alerts));
+          alert, this._computeGroupTargets(alert, this._alerts));
     },
 
-    _handleUngroup: function(evt) { this.$.annotations.handleUngroup(evt); },
+    _handleGroupBulk: function(evt) {
+      this.$.annotations.group(this._checkedAlerts);
+      // Uncheck all alerts after a group... Otherwise, the checking behavior
+      // is weird.
+      this._uncheckAll();
+    },
+
+    _hasGroupAll: function(checkedAlerts, tree) {
+      // If more than two of the checked alerts are a group...
+      let groups = checkedAlerts.filter((alert) => {
+        return alert && alert.grouped;
+      });
+      return checkedAlerts.length > 1 && groups.length < 2 &&
+             this._isCrOSTree(tree.name);
+    },
+
+    _isCrOSTree: function(treeName) {
+      return treeName && (treeName == 'chromeos' || treeName == 'gardener');
+    },
+
+    _handleUngroup: function(evt) {
+      this.$.annotations.handleUngroup(evt.target.get('alert'));
+    },
 
     _handleResolve: function(evt) {
-      if (evt.target.alert.grouped) {
-        this._resolveAlerts(evt.target.tree, evt.target.alert.alerts);
+      let alert = evt.target.get('alert');
+      let tree = evt.target.get('tree');
+      if (alert.grouped) {
+        this._resolveAlerts(tree, alert.alerts);
       } else {
-        this._resolveAlerts(evt.target.tree, [evt.target.alert]);
+        this._resolveAlerts(tree, [alert]);
       }
     },
 
     _resolveAlerts: function(tree, alerts) {
       let url = '/api/v1/resolve/' + encodeURIComponent(tree);
-      let keys = alerts.map((a) => { return a.key; });
+      let keys = alerts.map((a) => {
+        return a.key;
+      });
       let request = {
         'keys': keys,
         'resolved': true,
@@ -703,12 +784,59 @@
       if (response.resolved) {
         let alerts = this._alertsData[response.tree];
         alerts = alerts.filter(function(alert) {
-          return !response.keys.find((key) => { return alert.key == key; });
+          return !response.keys.find((key) => {
+            return alert.key == key;
+          });
         });
         // Ensure that the modification is captured.
         this.set(['_alertsData', response.tree], alerts);
       }
       return response;
+    },
+
+    _computeCheckedAlerts: function(alerts, checkedAlertKeys) {
+      let checkedAlerts = [];
+      for (let i = 0; i < alerts.length; i++) {
+        let key = alerts[i].key;
+        if (key in checkedAlertKeys && checkedAlertKeys[key]) {
+          checkedAlerts.push(alerts[i]);
+        }
+      }
+      return checkedAlerts;
+    },
+
+    _handleChecked: function(evt) {
+      let keys = {};
+      let alerts = this.getElementsByClassName('alert-item');
+      for (let i = 0; i < alerts.length; i++) {
+        keys[alerts[i].alert.key] = alerts[i].checked;
+      }
+      this._checkedAlertKeys = {};
+      this._checkedAlertKeys = keys;
+    },
+
+    _uncheckAll: function(evt) {
+      let alerts = this.getElementsByClassName('alert-item');
+      for (let i = 0; i < alerts.length; i++) {
+        alerts[i].checked = false;
+      }
+
+      let categories = this.getElementsByClassName('category-checkbox');
+      for (let i = 0; i < categories.length; i++) {
+        categories[i].checked = false;
+      }
+    },
+
+    _checkAll: function(evt) {
+      let cat = evt.model.get('cat');
+      let checked = evt.target.checked;
+      let alerts = this.getElementsByClassName('alert-item');
+      for (let i = 0; i < alerts.length; i++) {
+        if (this._alertHasCategory(alerts[i].alert, this.annotations, cat,
+                                   this._isTrooperPage)) {
+          alerts[i].checked = checked;
+        }
+      }
     },
   });
 })();
