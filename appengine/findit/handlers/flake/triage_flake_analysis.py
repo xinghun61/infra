@@ -43,7 +43,6 @@ def _UpdateSuspectedFlakeAnalysis(key_urlsafe, triage_result, user_name):
 
 class TriageFlakeAnalysis(BaseHandler):
   PERMISSION_LEVEL = Permission.CORP_USER
-  LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = False
 
   @token.VerifyXSRFToken()
   def HandlePost(self):  # pragma: no cover

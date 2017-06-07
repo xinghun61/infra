@@ -145,7 +145,6 @@ def _UpdateSuspectedCLAndAnalysis(
 
 class TriageSuspectedCl(BaseHandler):
   PERMISSION_LEVEL = Permission.CORP_USER
-  LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = False
 
   @token.VerifyXSRFToken()
   def HandlePost(self):

@@ -1,4 +1,4 @@
-application: findit-for-me-dev
+application: findit-for-me-staging
 module: waterfall-backend
 version: 1
 runtime: python27

@@ -1,4 +1,4 @@
-application: findit-for-me-dev
+application: findit-for-me-staging
 version: 1
 runtime: python27
 api_version: 1
