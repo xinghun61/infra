@@ -11,7 +11,6 @@ from infra_libs import app
 from infra_libs import experiments
 from infra.services.service_manager import cloudtail_factory
 from infra.services.service_manager import config_watcher
-from infra.services.service_manager import root_setup
 
 
 class ServiceManager(app.BaseApplication):
@@ -59,13 +58,6 @@ class ServiceManager(app.BaseApplication):
         help='how frequently (in seconds) to restart failed services')
 
     parser.add_argument(
-        '--root-setup',
-        action='store_true',
-        help='if this is set service_manager will run once to initialise '
-             'configs in /etc and then exit immediately.  Used on GCE bots to '
-             'bootstrap service_manager')
-
-    parser.add_argument(
         '--cloudtail-path',
         default=default_cloudtail_path,
         help='path to the cloudtail binary (default %(default)s)')
@@ -81,9 +73,6 @@ class ServiceManager(app.BaseApplication):
     )
 
   def main(self, opts):
-    if opts.root_setup:
-      return root_setup.root_setup()
-
     if opts.cloudtail_path:
       cloudtail = cloudtail_factory.CloudtailFactory(
           opts.cloudtail_path,
