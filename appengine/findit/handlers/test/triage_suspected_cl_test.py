@@ -56,16 +56,19 @@ class TriageSuspectedClTest(wf_testcase.WaterfallTestCase):
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
-  def testSuccessfulTriage(self):
+  @mock.patch.object(
+      triage_suspected_cl.token, 'ValidateXSRFToken', return_value=True)
+  def testSuccessfulTriage(self, _):
     build_url = buildbot.CreateBuildUrl(
       self.master_name, self.builder_name, self.build_number_1)
-    response = self.test_app.get(
+    response = self.test_app.post(
       '/triage-suspected-cl',
       params={
         'url': build_url,
         'status': '0',
         'cl_info': 'chromium/rev1',
-        'format': 'json'
+        'xsrf_token': 'abc',
+        'format': 'json',
       })
     self.assertEquals(200, response.status_int)
     self.assertEquals(

@@ -10,6 +10,7 @@ This handler will mark the suspected flake result as correct or incorrect.
 from google.appengine.ext import ndb
 from google.appengine.api import users
 
+from gae_libs import token
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from libs import analysis_status
@@ -44,7 +45,8 @@ class TriageFlakeAnalysis(BaseHandler):
   PERMISSION_LEVEL = Permission.CORP_USER
   LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = False
 
-  def HandleGet(self):  # pragma: no cover
+  @token.VerifyXSRFToken()
+  def HandlePost(self):  # pragma: no cover
     """Sets the manual triage result for the suspected flake analysis."""
     key_urlsafe = self.request.get('key').strip()
     triage_result = self.request.get('triage_result')
@@ -60,6 +62,3 @@ class TriageFlakeAnalysis(BaseHandler):
         key_urlsafe, int(triage_result), user_name)
 
     return {'data': {'success': success}}
-
-  def HandlePost(self):  # pragma: no cover
-    return self.HandleGet()
