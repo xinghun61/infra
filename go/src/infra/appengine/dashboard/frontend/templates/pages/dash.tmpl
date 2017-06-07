@@ -20,6 +20,9 @@
   .key {
     padding: 10px 5px;
   }
+  .shadow {
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  }
   .table-container {
     float: left;
     padding: 20px 5px;
@@ -44,7 +47,16 @@
   .left-align {
     text-align: left;
     float: left;
-    width: 50%;
+    width: 100%;
+  }
+  main,
+  footer {
+    padding: 25px 50px;
+  }
+  .refresh {
+    text-align: right;
+    float: right;
+    font-size: .6em;
   }
   .refresh-message {
     color: grey;
@@ -52,13 +64,17 @@
   .right-align {
     text-align: right;
     float: right;
-    width: 50%;
+    width: 100%;
+  }
+  .service-name {
+    padding: 5px;
   }
   .subtext {
     font-size: .8em;
   }
   table {
     border-collapse: collapse;
+    width: 100%;
   }
   table,
   td,
@@ -74,7 +90,7 @@
     height: 30px;
   }
   .tree-banner{
-    padding: 5px;
+    padding: 10px;
   }
   .tree-open {
     background-color: #8FDF5F;
@@ -85,24 +101,17 @@
 </style>
 <link rel="stylesheet" type="text/css" href="/static/icons.css">
 <div class="container">
-  <header>
-    Chrome Operations Status Dashboard
+  <header class="shadow">Chrome Operations Status Dashboard
+    <span class="refresh">
+        <p class="refresh-message js-countdown"></p>
+        <a href="">(Refresh now)</a>
+    </span>
   </header>
   <main>
     <div class="tree-banner js-tree">
       <p class="js-tree-status"></p>
       <a class="js-tree-message" href="https://infra-status.appspot.com"></a>
     </div>
-    <p class="left-align subtext">All dates shown are using the local timezone</p>
-    <span class="right-align subtext">
-      <p class="refresh-message js-countdown"></p>
-      <a href="">(Refresh now)</a>
-    </span>
-    <p class="key subtext left-align">
-      <i class="green circle"></i> No issues<br/>
-      <i class="yellow circle"></i> Service disruption<br/>
-      <i class="red circle"></i> Service outage<br/>
-    </p>
     {{$dates := .Dates}}
     {{$older := .OlderDate}}
     {{$newer := .NewerDate}}
@@ -110,7 +119,7 @@
     {{if .ChopsServices}}
       <div class="table-container">
         <p class="subtext">Covered by a Service Level Agreement</p>
-        <table>
+        <table class="shadow">
           <tr>
             <th class="current">Current Status</th>
             {{range $dates}}
@@ -120,7 +129,9 @@
           {{range .ChopsServices}}
           {{$name := .Service.Name}}
             <tr>
-              <td class="js-{{$name}}"><a href={{.Service.SLA}}>{{.Service.Name}}</a></td>
+              <td class="js-{{$name}}">
+                <a class="service-name" href={{.Service.SLA}}>{{.Service.Name}}</a>
+              </td>
               <td class="table-body js-{{$name}}-incidents" colspan="7"></td>
             </tr>
           {{end}}
@@ -137,7 +148,7 @@
     {{if .NonSLAServices}}
       <div class="table-container">
         <p class="subtext">Not covered by a Service Level Agreement</p>
-        <table>
+        <table class="shadow">
           <tr>
             <th class="current">Current Status</th>
             {{range .Dates}}
@@ -147,7 +158,7 @@
           {{range .NonSLAServices}}
           {{$name := .Service.Name}}
             <tr>
-              <td class="js-{{$name}}">{{.Service.Name}}</td>
+              <td class="js-{{$name}}"><span class="service-name">{{.Service.Name}}</span></td>
               <td class="table-body js-{{$name}}-incidents" colspan="7"></td>
             </tr>
           {{end}}
@@ -159,10 +170,17 @@
           </tr>
         </table>
       {{end}}
-    </div>
+      </div>
+     <p class="left-align subtext">All dates shown are using the local timezone</p>
+     <p class="key subtext left-align">
+      <i class="green circle"></i> No issues<br/>
+      <i class="yellow circle"></i> Service disruption<br/>
+      <i class="red circle"></i> Service outage<br/>
+    </p>
+
   </main>
-  <footer>
-    <a class="right-align subtext" href="https://goo.gl/forms/8w2yEws8S8K7wlrq1">Send feedback</a>
+  <footer class="right-align subtext">
+    <a href="https://goo.gl/forms/8w2yEws8S8K7wlrq1">Send feedback</a>
   </footer>
 </div>
 <script src="/static/add-incidents.js"></script>
