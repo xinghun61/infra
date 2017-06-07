@@ -75,7 +75,7 @@ may cause errors and/or monitoring alerts to fire.
 Sheriff-o-Matic also has a staging server with the AppEngine ID
 sheriff-o-matic-staging. To deploy to staging:
 
-- run `make deploy`
+- run `make deploy-staging`
 - Optional: Go to the Versions section of the
 [App Engine Console](https://appengine.google.com/) and update the default
 version of the app.

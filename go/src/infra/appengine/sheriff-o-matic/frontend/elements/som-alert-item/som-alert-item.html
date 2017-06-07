@@ -193,11 +193,14 @@
               [<a href$="[[_helpLinkForAlert(alert)]]" target="_blank">Help</a>]
             </div>
           </div>
-          <div id="bugsList" hidden$="[[!_hasBugs]]" class="alert-links self-center flex">
-            <template is="dom-repeat" items="[[annotation.bugs]]" as="bug">
+          <div id="bugsList" hidden$="[[!_bugs.length]]" class="alert-links self-center flex">
+            <template is="dom-repeat" items="[[_bugs]]" as="bug">
               <div class="bug no-toggle">
-                <a target="_blank" href="[[_bugUrl(bug)]]">[[_bugLabel(bug)]]</a>
-                [[_bugSummary(bug, annotation.bugData)]]
+                <a target="_blank" href="https://crbug.com/[[bug.id]]">
+                  Bug [[bug.id]]
+                </a>
+                [[bug.summary]]
+                <em class="bug-status" hidden$="[[!bug.status]]">([[bug.status]])</em>
                 <iron-icon icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></iron-icon>
               </div>
             </template>

@@ -1,8 +1,6 @@
 (function() {
   'use strict';
 
-  const bugLinkRegExp = /([0-9]{3,})/;
-
   Polymer({
     is: 'som-alert-item',
     behaviors: [LinkifyBehavior, AlertTypeBehavior],
@@ -54,6 +52,9 @@
         type: Boolean,
         value: false,
         observer: '_alertChecked',
+      _bugs: {
+        type: Array,
+        computed: '_computeBugs(annotation)',
       },
       _commentsClass: {
         type: String,
@@ -63,13 +64,14 @@
         type: String,
         computed: '_computeCssClass(annotation.snoozed)',
       },
-      _duration:
-          {type: String, computed: '_calculateDuration(treeName, alert)'},
-      _hasBugs: {
-        type: Boolean,
-        computed: '_computeHasBugs(annotation.bugs)',
+      _duration: {
+        type: String,
+        computed: '_calculateDuration(treeName, alert)'
       },
-      _latestTime: {type: String, computed: '_formatTimestamp(alert.time)'},
+      _latestTime: {
+        type: String,
+        computed: '_formatTimestamp(alert.time)'
+      },
       _numComments: {
         type: Number,
         computed: '_computeNumComments(annotation.comments)',
@@ -113,28 +115,16 @@
       this.fire('checked');
     },
 
-    _bugLabel: function(bug) {
-      let bugId = bugLinkRegExp.exec(bug);
-
-      return !!bugId[0] ? `Bug ${bugId[0]}` : bug;
-    },
-
-    _bugSummary: function(bug, bugData) {
-      for (let i in bugData) {
-        if (bug == bugData[i].id) {
-          return bugData[i].summary;
+    _computeBugs: function(annotation) {
+      // bugData is a map with the bug ids used as keys.
+      let bugs = annotation.bugs;
+      if (!bugs) return [];
+      return bugs.map((bug) => {
+        if (bug in annotation.bugData) {
+          return annotation.bugData[bug];
         }
-      }
-      return '';
-    },
-
-    // This is for backwards compatibility with old bug data that is stored as
-    // URLs rather than ids.
-    _bugUrl: function(bug) {
-      if (bug.indexOf('http') == 0) {
-        return bug;
-      }
-      return 'https://crbug.com/' + bug;
+        return {'id': bug};
+      });
     },
 
     _calculateDuration(treeName, alert) {
@@ -160,10 +150,6 @@
     _comment: function(evt) {
       this.fire('comment');
       evt.preventDefault();
-    },
-
-    _computeHasBugs: function(bugs) {
-      return !!(bugs && bugs.length > 0);
     },
 
     _computeCommentsClass: function(numComments) {

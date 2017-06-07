@@ -163,9 +163,6 @@
         bugs: ['foo/bar']
       };
 
-      let labelStub = sinon.stub(element, '_bugLabel');
-      labelStub.onFirstCall().returns('');
-
       element.addEventListener('remove-bug', (evt) => {
         assert.equal(evt.detail.bug, 'foo/bar');
         done();
@@ -185,9 +182,6 @@
       element.annotation = {
         bugs: ["foo/bar"]
       };
-
-      let labelStub = sinon.stub(element, '_bugLabel');
-      labelStub.onFirstCall().returns('foo');
 
       flush(function () {
         assert.lengthOf(element.$.bugsList.querySelectorAll(".bug"), 1);
