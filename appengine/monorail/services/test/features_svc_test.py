@@ -329,17 +329,26 @@ class FeaturesServiceTest(unittest.TestCase):
     self.assertEqual(1, result_dict[12345][1].default_owner_id)
     self.assertEqual([2], result_dict[12345][1].add_cc_ids)
 
-  def testDeserializeRuleConsequence(self):
+  def testDeserializeRuleConsequence_Multiple(self):
     consequence = ('default_status:New default_owner_id:1 add_cc_id:2'
                    ' add_label:label1 add_label:label2 add_notify:admin')
     (default_status, default_owner_id, add_cc_ids, add_labels,
-     add_notify) = self.features_service._DeserializeRuleConsequence(
+     add_notify, warning) = self.features_service._DeserializeRuleConsequence(
         consequence)
     self.assertEqual('New', default_status)
     self.assertEqual(1, default_owner_id)
     self.assertEqual([2], add_cc_ids)
     self.assertEqual(['label1', 'label2'], add_labels)
     self.assertEqual(['admin'], add_notify)
+    self.assertEqual(None, warning)
+
+  def testDeserializeRuleConsequence_Warning(self):
+    consequence = ('warning:Do not use status:New if there is an owner')
+    (_status, _owner_id, _cc_ids, _labels, _notify,
+     warning) = self.features_service._DeserializeRuleConsequence(consequence)
+    self.assertEqual(
+        'Do not use status:New if there is an owner',
+        warning)
 
   def SetUpGetFilterRulesByProjectIDs(self):
     filterrule_rows = [

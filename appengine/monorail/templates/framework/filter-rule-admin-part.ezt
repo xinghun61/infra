@@ -49,6 +49,7 @@
          <option value="add_ccs" [is rules.action_type "add_ccs"]selected="selected"[end]>Add Cc:</option>
          <option value="add_labels" [is rules.action_type "add_labels"]selected="selected"[end]>Add labels:</option>
          <option value="also_notify" [is rules.action_type "also_notify"]selected="selected"[end]>Also notify email:</option>
+         <option value="warning" [is rules.action_type "warning"]selected="selected"[end]>Warn:</option>
        </select>
       [end]
     </td>
@@ -74,6 +75,7 @@
          <option value="add_ccs">Add Cc:</option>
          <option value="add_labels">Add labels:</option>
          <option value="also_notify">Also notify email:</option>
+         <option value="warning">Warn:</option>
        </select>
       [end]
     </td>

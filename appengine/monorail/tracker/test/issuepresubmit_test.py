@@ -55,27 +55,29 @@ class IssuePresubmitTest(unittest.TestCase):
     self.assertRaises(permissions.PermissionException,
                       self.servlet.AssertBasePermission, mr)
 
-
   def testPairDerivedValuesWithRuleExplanations_Nothing(self):
     proposed_issue = tracker_pb2.Issue()  # No derived values.
     traces = {}
     derived_users_by_id = {}
-    (derived_labels_and_why, derived_owner_and_why,
-     derived_cc_and_why) = issuepresubmit.PairDerivedValuesWithRuleExplanations(
+    actual = issuepresubmit.PairDerivedValuesWithRuleExplanations(
         proposed_issue, traces, derived_users_by_id)
+    (derived_labels_and_why, derived_owner_and_why,
+     derived_cc_and_why, warnings_and_why) = actual
     self.assertEqual([], derived_labels_and_why)
     self.assertEqual([], derived_owner_and_why)
     self.assertEqual([], derived_cc_and_why)
+    self.assertEqual([], warnings_and_why)
 
   def testPairDerivedValuesWithRuleExplanations_SomeValues(self):
     proposed_issue = tracker_pb2.Issue(
         derived_owner_id=111L, derived_cc_ids=[222L, 333L],
-        derived_labels=['aaa', 'zzz'])
+        derived_labels=['aaa', 'zzz'], warnings=['Watch out'])
     traces = {
         (tracker_pb2.FieldID.OWNER, 111L): 'explain 1',
         (tracker_pb2.FieldID.CC, 222L): 'explain 2',
         (tracker_pb2.FieldID.CC, 333L): 'explain 3',
         (tracker_pb2.FieldID.LABELS, 'aaa'): 'explain 4',
+        (tracker_pb2.FieldID.WARNING, 'Watch out'): 'explain 6',
         # There can be extra traces that are not used.
         (tracker_pb2.FieldID.LABELS, 'bbb'): 'explain 5',
         # If there is no trace for some derived value, why is None.
@@ -85,9 +87,10 @@ class IssuePresubmitTest(unittest.TestCase):
       222L: testing_helpers.Blank(email='two@example.com'),
       333L: testing_helpers.Blank(email='three@example.com'),
       }
-    (derived_labels_and_why, derived_owner_and_why,
-     derived_cc_and_why) = issuepresubmit.PairDerivedValuesWithRuleExplanations(
+    actual = issuepresubmit.PairDerivedValuesWithRuleExplanations(
         proposed_issue, traces, derived_users_by_id)
+    (derived_labels_and_why, derived_owner_and_why,
+     derived_cc_and_why, warnings_and_why) = actual
     self.assertEqual([
         {'value': 'aaa', 'why': 'explain 4'},
         {'value': 'zzz', 'why': None},
@@ -99,3 +102,6 @@ class IssuePresubmitTest(unittest.TestCase):
         {'value': 'two@example.com', 'why': 'explain 2'},
         {'value': 'three@example.com', 'why': 'explain 3'},
         ], derived_cc_and_why)
+    self.assertEqual([
+        {'value': 'Watch out', 'why': 'explain 6'},
+        ], warnings_and_why)

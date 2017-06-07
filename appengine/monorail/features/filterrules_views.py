@@ -42,3 +42,6 @@ class RuleView(template_helpers.PBProxy):
     elif rule_pb.add_notify_addrs:
       self.action_type = 'also_notify'
       self.action_value = ', '.join(rule_pb.add_notify_addrs)
+    elif rule_pb.warning:
+      self.action_type = 'warning'
+      self.action_value = rule_pb.warning

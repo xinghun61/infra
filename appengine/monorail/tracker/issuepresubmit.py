@@ -82,7 +82,6 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
           summary=parsed.summary, status=parsed.status,
           owner_id=parsed.users.owner_id, labels=parsed.labels,
           component_ids=component_ids, project_name=mr.project_name)
-      # TODO(jrobbins): also check for process warnings.
       traces = filterrules_helpers.ApplyFilterRules(
           mr.cnxn, self.services, proposed_issue, config)
       logging.info('proposed_issue is now: %r', proposed_issue)
@@ -95,7 +94,8 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
 
     with self.profiler.Phase('pair derived values with rule explanations'):
       (derived_labels_and_why, derived_owner_and_why,
-       derived_cc_and_why) = PairDerivedValuesWithRuleExplanations(
+       derived_cc_and_why, warnings_and_why
+       ) = PairDerivedValuesWithRuleExplanations(
           proposed_issue, traces, derived_users_by_id)
 
     return {
@@ -104,6 +104,7 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
         'derived_labels': derived_labels_and_why,
         'derived_owner_email': derived_owner_and_why,
         'derived_cc_emails': derived_cc_and_why,
+        'warnings': warnings_and_why,
         }
 
 
@@ -111,9 +112,9 @@ def PairDerivedValuesWithRuleExplanations(
     proposed_issue, traces, derived_users_by_id):
   """Pair up values and explanations into JSON objects."""
   derived_labels_and_why = [
-    {'value': lab,
-     'why': traces.get((tracker_pb2.FieldID.LABELS, lab))}
-    for lab in proposed_issue.derived_labels]
+      {'value': lab,
+       'why': traces.get((tracker_pb2.FieldID.LABELS, lab))}
+      for lab in proposed_issue.derived_labels]
   derived_owner_and_why = []
   if proposed_issue.derived_owner_id:
     derived_owner_and_why = [{
@@ -122,9 +123,15 @@ def PairDerivedValuesWithRuleExplanations(
             (tracker_pb2.FieldID.OWNER, proposed_issue.derived_owner_id)),
         }]
   derived_cc_and_why = [
-    {'value': derived_users_by_id[cc_id].email,
-     'why': traces.get((tracker_pb2.FieldID.CC, cc_id))}
-    for cc_id in proposed_issue.derived_cc_ids
-    if cc_id in derived_users_by_id and derived_users_by_id[cc_id].email]
+      {'value': derived_users_by_id[cc_id].email,
+       'why': traces.get((tracker_pb2.FieldID.CC, cc_id))}
+      for cc_id in proposed_issue.derived_cc_ids
+      if cc_id in derived_users_by_id and derived_users_by_id[cc_id].email]
 
-  return derived_labels_and_why, derived_owner_and_why, derived_cc_and_why
+  warnings_and_why = [
+      {'value': warning,
+       'why': traces.get((tracker_pb2.FieldID.WARNING, warning))}
+      for warning in proposed_issue.warnings]
+
+  return (derived_labels_and_why, derived_owner_and_why, derived_cc_and_why,
+          warnings_and_why)

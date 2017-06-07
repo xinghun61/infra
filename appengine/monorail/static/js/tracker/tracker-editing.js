@@ -1660,6 +1660,33 @@ function renderFilterRulesSection(section_id, heading, value_why_list) {
 
 
 /**
+ * Generate DOM for a filter rules preview section bullet list.
+ */
+function renderFilterRulesListSection(section_id, heading, value_why_list) {
+  var section = $(section_id);
+  while (section.firstChild) {
+    section.removeChild(section.firstChild);
+  }
+  if (value_why_list.length == 0) return false;
+
+  section.appendChild(document.createTextNode(heading + ': '));
+  var bulletList = document.createElement('ul');
+  section.appendChild(bulletList);
+  for (var i = 0; i < value_why_list.length; ++i) {
+    var listItem = document.createElement('li');
+    bulletList.appendChild(listItem);
+    var value = value_why_list[i].value;
+    var why = value_why_list[i].why;
+    var span = listItem.appendChild(
+        document.createElement('span'));
+    span.textContent = value;
+    if (why) span.setAttribute('title', why);
+  }
+  return true;
+}
+
+
+/**
  * Ask server to do a presubmit check and then display and warnings
  * as the user edits an issue.
  */
@@ -1690,8 +1717,11 @@ function onPresubmitResponse(event) {
       'preview_filterrules_owner', 'Owner', response.derived_owner_email);
   var derived_cc_emails = renderFilterRulesSection(
       'preview_filterrules_ccs', 'Cc', response.derived_cc_emails);
+  var warnings = renderFilterRulesListSection(
+      'preview_filterrules_warnings', 'Warnings', response.warnings);
 
-  if (derived_labels || derived_owner_email || derived_cc_emails) {
+  if (derived_labels || derived_owner_email || derived_cc_emails ||
+      warnings) {
       $('preview_filterrules_area').style.display = '';
   } else {
       $('preview_filterrules_area').style.display = 'none';

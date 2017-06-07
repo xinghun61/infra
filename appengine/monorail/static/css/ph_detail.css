@@ -501,3 +501,11 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   text-decoration-line: underline;
   text-decoration-style: dotted;
 }
+
+#preview_filterrules_warnings {
+  margin-top: 3px;
+}
+#preview_filterrules_warnings ul {
+  margin-top: 0;
+  list-style-type: none;
+}
