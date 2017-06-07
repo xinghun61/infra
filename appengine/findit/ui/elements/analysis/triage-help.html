@@ -1,0 +1,81 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<dom-module id="triage-help">
+  <template>
+    <style>
+      table {
+        text-align: center;
+        border-collapse: collapse;
+        border: 1px solid gray;
+      }
+      table th, table td {
+        padding: 5px;
+        border: 1px solid gray;
+      }
+    </style>
+
+    <template is="dom-if" if="[[requesting]]">
+      <div>Findit is checking green builds ... </div>
+    </template>
+    <template is="dom-if" if="[[!requesting]]">
+      <template is="dom-if" if="[[_isEmptyList(entries)]]">
+        <div>No clues found!</div>
+      </template>
+      <template is="dom-if" if="[[!_isEmptyList(entries)]]">
+        <div>
+          <table id="triage-help-result-table">
+            <thead>
+              <tr>
+                <th width="150">Suspect</th>
+                <th width="150">Possible Fixing CL</th>
+                <th width="100">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template is="dom-repeat" items="[[entries]]" as="info">
+                <tr>
+                  <td>
+                    <a href="[[info.fixed_cl_review_url]]" target="_blank">[[info.fixed_cl_commit_position]]</a>
+                    <br>
+                    <br>
+                    (build#: <a href="[[info.fixed_build_url]]" target="_blank">[[info.fixed_build_number]]</a>)
+                  </td>
+                  <td>
+                    <a href="[[info.fixing_cl_review_url]]" target="_blank">[[info.fixing_cl_commit_position]]</a>
+                    <br>
+                    <br>
+                    (build#: <a href="[[info.fixing_build_url]]" target="_blank">[[info.fixing_build_number]]</a>)
+                  </td>
+                  <td>[[info.action]]</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </template>
+    </template>
+  </template>
+
+  <script>
+    (function() {
+      'use strict';
+
+      Polymer({
+        is: 'triage-help',
+
+        properties: {
+          entries: {
+            type: Array,
+          },
+          requesting: {
+            type: Boolean,
+            value: false,
+          },
+        },
+
+        _isEmptyList: function(entries) {
+          return !entries || entries.length == 0;
+        },
+      });
+    })();
+  </script>
+</dom-module>

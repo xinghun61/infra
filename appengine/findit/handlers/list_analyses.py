@@ -99,6 +99,3 @@ class ListAnalyses(BaseHandler):
         'result_status': self.request.get('result_status', '-1')
     }
     return {'template': 'list_analyses.html', 'data': data}
-
-  def HandlePost(self):  # pragma: no cover
-    return self.HandleGet()

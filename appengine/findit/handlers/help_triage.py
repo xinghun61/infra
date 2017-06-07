@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from gae_libs import token
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
@@ -147,11 +148,9 @@ def _CheckReverts(master_name, builder_name, current_build_number):
 class HelpTriage(BaseHandler):
   PERMISSION_LEVEL = Permission.ADMIN
 
-  def HandleGet(self):  # pragma: no cover
-    return self.HandlePost()
-
+  @token.VerifyXSRFToken()
   def HandlePost(self):
-    """Gets information to help triage the analysis results.
+    """Returns information to help triage the analysis results.
 
     1. Checks if any CL in current build is reverted in later builds
     up until the first green build(included).

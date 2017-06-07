@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 import webapp2
 
 from testing_utils import testing
@@ -56,10 +57,13 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
       analyses.append(analysis)
     return analyses
 
-  def testCheckDuplicateFailuresHandler(self):
+  @mock.patch.object(check_duplicate_failures.token, 'ValidateXSRFToken',
+                     return_value=True)
+  def testCheckDuplicateFailuresHandler(self, _):
     self._CreateAnalyses('m', 'b', 5)
     self.mock_current_user(user_email='test@google.com', is_admin=True)
-    response = self.test_app.get('/check-duplicate-failures')
+    response = self.test_app.post('/check-duplicate-failures',
+                                  params={'xsrf_token': 'abc'})
     self.assertEqual(200, response.status_int)
 
   def testGetFailedStepsForEachCL(self):

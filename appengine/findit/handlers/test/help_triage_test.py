@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import json
+import mock
 import os
 import webapp2
 
@@ -231,7 +232,8 @@ class HelpTriageTest(testing.AppengineTestCase):
         self.master_name, self.builder_name, 118)
     self.assertEqual(expected_results, results)
 
-  def testHelpTriageHandler(self):
+  @mock.patch.object(help_triage.token, 'ValidateXSRFToken', return_value=True)
+  def testHelpTriageHandler(self, _):
     build_url = buildbot.CreateBuildUrl(
         self.master_name, self.builder_name, 121)
     analysis = WfAnalysis.Create(self.master_name, self.builder_name, 121)
@@ -247,19 +249,22 @@ class HelpTriageTest(testing.AppengineTestCase):
     }
     analysis.put()
 
-    response = self.test_app.get('/help-triage', params={'url': build_url})
+    response = self.test_app.post('/help-triage',
+                                  params={'url': build_url, 'xsrf_token': 'a'})
 
     self.assertEqual(200, response.status_int)
     self.assertEqual(EXPECTED_RESULTS_121, response.json_body)
 
-  def testHelpTriageHandlerReturnNoneForGreenBuild(self):
+  @mock.patch.object(help_triage.token, 'ValidateXSRFToken', return_value=True)
+  def testHelpTriageHandlerReturnNoneForGreenBuild(self, _):
     build_url = buildbot.CreateBuildUrl(
         self.master_name, self.builder_name, 123)
     build = WfBuild.Create(self.master_name, self.builder_name, 123)
     build.data = self._GetBuildInfo(self.master_name, self.builder_name, 123)
     build.put()
 
-    response = self.test_app.get('/help-triage', params={'url': build_url})
+    response = self.test_app.post('/help-triage',
+                                  params={'url': build_url, 'xsrf_token': 'a'})
     expected_results = {}
 
     self.assertEqual(200, response.status_int)

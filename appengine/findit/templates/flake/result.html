@@ -68,29 +68,6 @@
     findit.culpritGitHash = '{{ culprit.git_hash }}';
     findit.xsrfToken = '{{ xsrf_token }}';
 
-    function getTriageParameters(triageResult) {
-      parameters = {}
-      parameters['key'] = '{{ key }}';
-      parameters['triage_result'] = triageResult;
-      return parameters
-    }
-
-    function createTriageUrl(parameters) {
-      var params = [];
-      for(var key in parameters) {
-        if (parameters[key] != undefined) {
-          params.push(key + '=' + parameters[key])
-        }
-      }
-
-      if (params.length == 0) {
-        return '/waterfall/triage-flake-analysis'
-      } else {
-        params.push('format=json');
-        return '/waterfall/triage-flake-analysis?' + params.join('&');
-      }
-    };
-
     function GetDataPointByCommitPosition(commit_position) {
       var dataPoint = null;
       $.each(findit.passRates, function(index, value) {
@@ -327,7 +304,13 @@
     }
 
     function triageSuspectedFlake(triageResult) {
-      $.getJSON(createTriageUrl(getTriageParameters(triageResult)), function(data) {
+      var parameters = {
+        'format': 'json',
+        'key': '{{ key }}',
+        'triage_result': triageResult,
+        'xsrf_token': findit.xsrfToken,
+      };
+      $.post('/waterfall/triage-flake-analysis', parameters, function(data) {
         if (! data['success']) {
           alert('Failed to update datastore. Please refresh and try again.');
         } else {
@@ -505,8 +488,8 @@
               <td class="triage-cell"><a href="https://luci-milo.appspot.com/buildbot/{{ master_name }}/{{ builder_name }}/{{ suspected_flake.build_number }}" target="_blank">{{ suspected_flake.build_number }}</a></a></td>
             {% endif %}
             <td class="triage-cell">
-              <input type="radio" name="triage-radio-button" value="2" {{ "checked" if suspected_flake.triage_result == 2 else ""}} >Correct &nbsp;&nbsp;
-              <input type="radio" name="triage-radio-button" value="1" {{ "checked" if suspected_flake.triage_result == 1 else ""}}>Incorrect
+              <input type="radio" name="triage-radio-button" value="2" {{ 'checked' if suspected_flake.triage_result == 2 else '' }} >Correct &nbsp;&nbsp;
+              <input type="radio" name="triage-radio-button" value="1" {{ 'checked' if suspected_flake.triage_result == 1 else '' }}>Incorrect
             </td>
           </tr>
         </table>

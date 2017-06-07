@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Testing triage-help</title>
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<link rel="import" href="./triage-help.html">
+<body>
+  <div>
+    <div>Requesting:</div>
+    <div style="border: 1px solid; width: 300px">
+      <triage-help id="requesting"></triage-help>
+    </div>
+  </div>
+  <br>
+  <br>
+  <br>
+  <div>
+    <div>No findings:</div>
+    <div style="border: 1px solid; width: 300px">
+      <triage-help id="no-findings"></triage-help>
+    </div>
+  </div>
+  <br>
+  <br>
+  <br>
+  <div>
+    <div>Has findings:</div>
+    <div style="border: 1px solid; width: 800px">
+      <triage-help id="findings"></triage-help>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('requesting').requesting = true;
+    document.getElementById('no-findings').requesting = false;
+    document.getElementById('no-findings').entries = [];
+    document.getElementById('findings').requesting = false;
+    document.getElementById('findings').entries = [
+      {
+        'fixed_build_url': 'https://build.chromium.org/p/chromium.linux/builders/Linux Builder/builds/1234',
+        'fixed_build_number': 1234,
+        'fixed_cl_review_url': 'https://crrev.com/500000',
+        'fixed_cl_commit_position': 500000,
+        'fixing_build_url': 'https://build.chromium.org/p/chromium.linux/builders/Linux Builder/builds/1239',
+        'fixing_build_number': 1239,
+        'fixing_cl_review_url': 'https://crrev.com/500005',
+        'fixing_cl_commit_position': 500005,
+        'action': 'reverted',
+      },
+      {
+        'fixed_build_url': 'https://build.chromium.org/p/chromium.linux/builders/Linux Builder/builds/1204',
+        'fixed_build_number': 1204,
+        'fixed_cl_review_url': 'https://crrev.com/450500',
+        'fixed_cl_commit_position': 450500,
+        'fixing_build_url': 'https://build.chromium.org/p/chromium.linux/builders/Linux Builder/builds/1210',
+        'fixing_build_number': 1210,
+        'fixing_cl_review_url': 'https://crrev.com/450505',
+        'fixing_cl_commit_position': 450505,
+        'action': 'fixed',
+      },
+    ];
+  </script>
+</body>

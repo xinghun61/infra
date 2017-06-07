@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from gae_libs import token
 from gae_libs.handlers.base_handler import BaseHandler, Permission
 from model.wf_analysis import WfAnalysis
 from model import result_status
@@ -147,12 +148,10 @@ def _FetchAndSortUntriagedAnalyses():
 class CheckDuplicateFailures(BaseHandler):
   PERMISSION_LEVEL = Permission.ADMIN
 
-  def HandleGet(self):
+  @token.VerifyXSRFToken()
+  def HandlePost(self):
     """Checks the untriaged results and mark them as duplicates if they are."""
     analyses = _FetchAndSortUntriagedAnalyses()
 
     for analysis in analyses:
       _ModifyStatusIfDuplicate(analysis)
-
-  def HandlePost(self):  # pragma: no cover
-    return self.HandleGet()
