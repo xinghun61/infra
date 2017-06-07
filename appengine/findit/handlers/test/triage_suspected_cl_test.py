@@ -77,6 +77,28 @@ class TriageSuspectedClTest(wf_testcase.WaterfallTestCase):
       },
       response.json_body)
 
+  @mock.patch.object(
+      triage_suspected_cl.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(buildbot, 'ParseBuildUrl', return_value=None)
+  def testTriageFailed(self, *_):
+    build_url = buildbot.CreateBuildUrl(
+      self.master_name, self.builder_name, self.build_number_1)
+    response = self.test_app.post(
+      '/triage-suspected-cl',
+      params={
+        'url': build_url,
+        'status': '0',
+        'cl_info': 'chromium/rev1',
+        'xsrf_token': 'abc',
+        'format': 'json',
+      })
+    self.assertEquals(200, response.status_int)
+    self.assertEquals(
+      {
+        'success': False
+      },
+      response.json_body)
+
   def testUpdateSuspectedCLNonFirstTimeFailure(self):
     suspected_cl = WfSuspectedCL.Create(
         self.repo_name, self.revision_1, self.commit_position)
@@ -306,6 +328,11 @@ class TriageSuspectedClTest(wf_testcase.WaterfallTestCase):
         self.master_name, self.builder_name, self.build_number_1)
     self.assertEqual(
         analysis.result_status, result_status.PARTIALLY_CORRECT_FOUND)
+
+  def testAppendTriageHistoryRecordNoAnalysis(self):
+    self.assertIsNone(triage_suspected_cl._AppendTriageHistoryRecord(
+        self.master_name, self.builder_name, self.build_number_1,
+        None, suspected_cl_status.CORRECT, 'test'))
 
   def testAppendTriageHistoryRecordWithHistory(self):
     analysis = WfAnalysis.Create(

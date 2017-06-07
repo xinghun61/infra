@@ -106,7 +106,7 @@ def _AppendTriageHistoryRecord(
     master_name, builder_name, build_number, cl_info, cl_status, user_name):
 
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-  if not analysis:  # pragma: no cover
+  if not analysis:
     return
 
   triage_record = {
@@ -148,7 +148,7 @@ class TriageSuspectedCl(BaseHandler):
   LOGIN_REDIRECT_TO_DISTINATION_PAGE_FOR_GET = False
 
   @token.VerifyXSRFToken()
-  def HandlePost(self):  # pragma: no cover
+  def HandlePost(self):
     """Sets the manual triage result for the cl."""
     url = self.request.get('url').strip()
     build_info = buildbot.ParseBuildUrl(url)
