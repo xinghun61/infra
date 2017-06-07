@@ -31,20 +31,12 @@ def find_version(service_config):
 def _cipd_version_file_finder(service_config):
   """Load the CIPD VERSION.json file."""
 
-  filenames = [
-      service_config.get('cipd_version_file'),
-      os.path.join(service_config['root_directory'], 'CIPD_VERSION.json'),
-  ]
+  filename = service_config.get('cipd_version_file')
+  if not filename or not os.path.isfile(filename):
+    return None
 
-  for filename in filenames:
-    if not filename or not os.path.isfile(filename):
-      continue
-
-    with open(filename) as fh:
-      return json.load(fh)
-
-  # Probably not a CIPD package.
-  return None
+  with open(filename) as fh:
+    return json.load(fh)
 
 
 VERSION_FINDERS = {

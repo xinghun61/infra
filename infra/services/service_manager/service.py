@@ -224,7 +224,6 @@ class Service(object):
 
     self.config = service_config
     self.name = service_config['name']
-    self.root_directory = service_config['root_directory']
     self._cmd = service_config['cmd']
 
     self.stop_time = int(service_config.get('stop_time', 10))
@@ -386,11 +385,11 @@ class OwnService(Service):
   service_manager process.
   """
 
-  def __init__(self, state_directory, root_directory, **kwargs):
+  def __init__(self, state_directory, cipd_version_file, **kwargs):
     super(OwnService, self).__init__(state_directory, {
         'name': 'service_manager',
         'cmd': [],
-        'root_directory': root_directory,
+        'cipd_version_file': cipd_version_file,
     }, None, '', **kwargs)
     self._state_directory = state_directory
 

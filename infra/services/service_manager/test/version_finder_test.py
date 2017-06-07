@@ -14,8 +14,9 @@ class VersionFinderTest(unittest.TestCase):
 
   def setUp(self):
     self.path = tempfile.mkdtemp()
+    self.cipd_version_file = os.path.join(self.path, 'version-file')
     self.config = {
-        'root_directory': self.path,
+        'cipd_version_file': self.cipd_version_file,
     }
 
   def tearDown(self):
@@ -24,13 +25,8 @@ class VersionFinderTest(unittest.TestCase):
   def test_empty_directory(self):
     self.assertEqual({}, version_finder.find_version(self.config))
 
-  def test_missing_directory(self):
-    self.assertEqual({}, version_finder.find_version({
-        'root_directory': '/does/not/exist',
-    }))
-
   def test_cipd_version_file(self):
-    with open(os.path.join(self.path, 'CIPD_VERSION.json'), 'w') as fh:
+    with open(self.cipd_version_file, 'w') as fh:
       fh.write('{"package_name": "foo", "instance_id": "bar"}')
 
     self.assertEqual({'cipd_version_file': {
@@ -45,21 +41,3 @@ class VersionFinderTest(unittest.TestCase):
   def test_explicit_cipd_version_file_empty_string(self):
     self.config['cipd_version_file'] = ''
     self.assertEqual({}, version_finder.find_version(self.config))
-
-    with open(os.path.join(self.path, 'CIPD_VERSION.json'), 'w') as fh:
-      fh.write('{"package_name": "foo", "instance_id": "bar"}')
-
-    self.assertEqual({'cipd_version_file': {
-        'package_name': 'foo',
-        'instance_id': 'bar',
-    }}, version_finder.find_version(self.config))
-
-  def test_explicit_cipd_version_file(self):
-    self.config['cipd_version_file'] = os.path.join(self.path, 'foo')
-    with open(self.config['cipd_version_file'], 'w') as fh:
-      fh.write('{"package_name": "foo", "instance_id": "bar"}')
-
-    self.assertEqual({'cipd_version_file': {
-        'package_name': 'foo',
-        'instance_id': 'bar',
-    }}, version_finder.find_version(self.config))

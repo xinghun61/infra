@@ -37,11 +37,6 @@ def parse_config(content, filename='<unknown>'):
                  "field. File: %s", filename)
     error_occurred = True
 
-  if 'root_directory' not in config:
-    LOGGER.error("Working directory must be specified in the "
-                 "'root_directory' field. File: %s", filename)
-    error_occurred = True
-
   if 'cmd' not in config:
     LOGGER.error("Command to run must be specified in the 'cmd' "
                  "field. File: %s", filename)
@@ -55,6 +50,19 @@ def parse_config(content, filename='<unknown>'):
   # Make sure all arguments are passed as strings.
   if 'cmd' in config:
     config['cmd'] = [str(x) for x in config['cmd']]
+
+  # TODO(dsansome): Remove this support for the legacy root_directory option.
+  if config.get('root_directory'):
+    if config.get('cipd_version_file'):
+      LOGGER.error("'root_directory' and 'cipd_version_file' fields cannot "
+                   "both be specified.  File: %s", filename)
+      error_occurred = True
+    else:
+      LOGGER.warning("'root_directory' field is deprecated.  Please use "
+                     "'cipd_version_file' instead. File: %s", filename)
+      config['cipd_version_file'] = os.path.join(
+          config['root_directory'], 'CIPD_VERSION.json')
+      del config['root_directory']
 
   # 'environment', 'resources', 'stop_time', 'working_directory' are optional.
 
@@ -92,7 +100,7 @@ class ConfigWatcher(object):
   """
 
   def __init__(self, config_directory, config_poll_interval,
-               service_poll_interval, state_directory, root_directory,
+               service_poll_interval, state_directory, cipd_version_file,
                cloudtail, _sleep_fn=time.sleep):
     """
     Args:
@@ -119,7 +127,7 @@ class ConfigWatcher(object):
 
     self._sleep_fn = _sleep_fn
 
-    self._own_service = service.OwnService(state_directory, root_directory)
+    self._own_service = service.OwnService(state_directory, cipd_version_file)
 
   def run(self):
     """Runs continuously in this thread until stop() is called."""

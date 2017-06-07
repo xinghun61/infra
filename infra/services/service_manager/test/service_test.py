@@ -113,7 +113,7 @@ class ServiceTestBase(TestBase):
 
   _CONFIG_JSON = """{
       "name": "foo",
-      "root_directory": "/rootdir",
+      "cipd_version_file": "/rootdir/version",
       "cmd": ["bar", "one", "two", 42],
       "stop_time": 86,
       "working_directory": "/workingdir",
@@ -406,7 +406,7 @@ class ServiceTest(ServiceTestBase):
 class ServiceTestEmptyWorkingDirectory(ServiceTestBase):
   _CONFIG_JSON = """{
       "name": "foo",
-      "root_directory": "/rootdir",
+      "cipd_version_file": "/rootdir/version",
       "cmd": ["bar", "one", "two", 42],
       "stop_time": 86,
       "environment": {"MY_ENV": "hello"},
@@ -422,7 +422,7 @@ class ServiceTestEmptyWorkingDirectory(ServiceTestBase):
 class ServiceTestNullWorkingDirectory(ServiceTestBase):
   _CONFIG_JSON = """{
       "name": "foo",
-      "root_directory": "/rootdir",
+      "cipd_version_file": "/rootdir/version",
       "cmd": ["bar", "one", "two", 42],
       "stop_time": 86,
       "working_directory": null,
@@ -439,7 +439,7 @@ class ServiceTestNullWorkingDirectory(ServiceTestBase):
 class ServiceTestEmptyResources(ServiceTestBase):
   _CONFIG_JSON = """{
       "name": "foo",
-      "root_directory": "/rootdir",
+      "cipd_version_file": "/rootdir/version",
       "cmd": ["bar", "one", "two", 42],
       "stop_time": 86,
       "working_directory": "/workingdir",
@@ -456,7 +456,7 @@ class ServiceTestEmptyResources(ServiceTestBase):
 class ServiceTestNullResources(ServiceTestBase):
   _CONFIG_JSON = """{
       "name": "foo",
-      "root_directory": "/rootdir",
+      "cipd_version_file": "/rootdir/version",
       "cmd": ["bar", "one", "two", 42],
       "stop_time": 86,
       "working_directory": "/workingdir",
@@ -473,7 +473,7 @@ class ServiceTestNullResources(ServiceTestBase):
 class ServiceTestEmptyEnvironment(ServiceTestBase):
   _CONFIG_JSON = """{
       "name": "foo",
-      "root_directory": "/rootdir",
+      "cipd_version_file": "/rootdir/version",
       "cmd": ["bar", "one", "two", 42],
       "stop_time": 86,
       "working_directory": "/workingdir",
@@ -495,7 +495,7 @@ class ServiceTestEmptyEnvironment(ServiceTestBase):
 class ServiceTestNullEnvironment(ServiceTestBase):
   _CONFIG_JSON = """{
       "name": "foo",
-      "root_directory": "/rootdir",
+      "cipd_version_file": "/rootdir/version",
       "cmd": ["bar", "one", "two", 42],
       "stop_time": 86,
       "working_directory": "/workingdir",
@@ -549,10 +549,9 @@ class OwnServiceTest(TestBase):
     super(OwnServiceTest, self).setUp()
 
     self.root_directory = tempfile.mkdtemp()
+    self.cipd_version_file = os.path.join(self.root_directory, 'version')
 
-    self.s = service.OwnService(
-        self.state_directory,
-        self.root_directory)
+    self.s = service.OwnService(self.state_directory, self.cipd_version_file)
 
     self.mock_flock = mock.patch(
         'infra.libs.service_utils.daemon.flock', autospec=True).start()

@@ -24,12 +24,12 @@ class ServiceManager(app.BaseApplication):
     if sys.platform == 'win32':
       default_state_directory = 'C:\\chrome-infra\\service-state'
       default_config_directory = 'C:\\chrome-infra\\service-config'
-      default_root_directory = 'C:\\infra-python'
+      default_cipd_version_file = 'C:\\infra-python\\CIPD_VERSION.json'
       default_cloudtail_path = 'C:\\infra-python\\go\\bin\\cloudtail.exe'
     else:
       default_state_directory = '/var/run/infra-services'
       default_config_directory = '/etc/infra-services'
-      default_root_directory = '/opt/infra-python'
+      default_cipd_version_file = '/opt/infra-python/CIPD_VERSION.json'
       default_cloudtail_path = '/opt/infra-python/go/bin/cloudtail'
 
     parser.add_argument(
@@ -42,9 +42,12 @@ class ServiceManager(app.BaseApplication):
         help='directory to read JSON config files (default %(default)s)')
     parser.add_argument(
         '--root-directory',
-        default=default_root_directory,
-        help='directory where the service_manager package is deployed. If this '
-             'package is updated the process will exit')
+        help='deprecated and ignored')
+    parser.add_argument(
+        '--cipd-version-file',
+        default=default_cipd_version_file,
+        help='path to the version file for service_manager\'s own CIPD package.'
+             ' If this package is updated the process will exit')
 
     parser.add_argument(
         '--config-poll-interval',
@@ -93,7 +96,7 @@ class ServiceManager(app.BaseApplication):
         opts.config_poll_interval,
         opts.service_poll_interval,
         opts.state_directory,
-        opts.root_directory,
+        opts.cipd_version_file,
         cloudtail)
 
     def sigint_handler(_signal, _frame):
