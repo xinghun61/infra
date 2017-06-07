@@ -59,3 +59,11 @@ cron:
     min_backoff_seconds: 2.5
     max_doublings: 5
 
+- description: Update Chromium Perf alerts
+  url: /_cron/analyze/chromium.perf
+  schedule: every 10 minutes
+  target: analyzer
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
+

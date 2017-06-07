@@ -1,7 +1,7 @@
 runtime: go
 api_version: go1
 service: analyzer
-instance_class: F4
+instance_class: F4_1G
 
 handlers:
 - url: /_cron/analyze/.*

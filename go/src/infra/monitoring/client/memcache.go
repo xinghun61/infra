@@ -43,6 +43,10 @@ func (m *memcacheReader) Build(ctx context.Context, master *messages.MasterLocat
 				logging.Errorf(ctx, "failed to serialize build data, when saving to memcache: %s", err)
 				return res, nil
 			}
+			if len(data) > 1000000 {
+				logging.Errorf(ctx, "marshaled Build object too big for memcache (%d bytes)", len(data))
+				return res, nil
+			}
 			itm.SetValue(data)
 			if err = memcache.Set(ctx, itm); err != nil {
 				logging.Errorf(ctx, "failed to save build data to memcache: %s (%d bytes)", err, len(data))
