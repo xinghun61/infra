@@ -511,6 +511,33 @@ class DistributionMetricTest(TestBase):
       self.assertEqual(stream_kind, data_set.stream_kind)
       self.assertEqual(7, data.distribution_value.count)
 
+  def test_generate_geometric_distribution_with_scale(self):
+    bucketer = distribution.GeometricBucketer(growth_factor=10.0,
+                                              num_finite_buckets=10,
+                                              scale=0.1)
+    dists = [
+      (metrics.NonCumulativeDistributionMetric(
+           'test0', 'test', None, bucketer=bucketer),
+       metrics_pb2.GAUGE),
+      (metrics.CumulativeDistributionMetric(
+           'test1', 'test', None, bucketer=bucketer),
+       metrics_pb2.CUMULATIVE)
+    ]
+
+    for dist, stream_kind in dists:
+      data_set, data = self._test_distribution_proto(dist)
+
+      self.assertListEqual([1, 0, 4, 1, 0, 0, 1, 0, 0, 0, 0, 0],
+                           list(data.distribution_value.bucket_count))
+      self.assertEqual(
+          10, data.distribution_value.exponential_buckets.num_finite_buckets)
+      self.assertEqual(
+          10.0, data.distribution_value.exponential_buckets.growth_factor)
+      self.assertEqual(
+          0.1, data.distribution_value.exponential_buckets.scale)
+      self.assertEqual(stream_kind, data_set.stream_kind)
+      self.assertEqual(7, data.distribution_value.count)
+
   def test_add(self):
     m = metrics.CumulativeDistributionMetric('test', 'test', None)
     m.add(1)

@@ -73,7 +73,7 @@ class GeometricBucketerTest(BucketerTestBase):
     with self.assertRaises(ValueError):
       distribution.GeometricBucketer(num_finite_buckets=-1)
 
-  def test_small_scale(self):
+  def test_bad_growth_factors(self):
     with self.assertRaises(AssertionError):
       distribution.GeometricBucketer(growth_factor=-1)
     with self.assertRaises(AssertionError):
@@ -88,6 +88,17 @@ class GeometricBucketerTest(BucketerTestBase):
   def test_large_size(self):
     b = distribution.GeometricBucketer(growth_factor=4, num_finite_buckets=4)
     self.assertLowerBounds(b, [float('-Inf'), 1, 4, 16, 64, 256])
+
+  def test_scale(self):
+    b = distribution.GeometricBucketer(growth_factor=4, num_finite_buckets=4,
+                                       scale=.1)
+    # bucket lower bounds will be approximately [float('-Inf'), .1, .4, 1.6,
+    # 6.4, 25.6], but to avoid floating point errors affecting test assert on
+    # bucket_for_value instead of using assertLowerBounds.
+    self.assertEquals(0, b.bucket_for_value(float('-Inf')))
+    self.assertEquals(0, b.bucket_for_value(.05))
+    self.assertEquals(1, b.bucket_for_value(.2))
+    self.assertEquals(5, b.bucket_for_value(float('Inf')))
 
   def test_bucket_for_value(self):
     b = distribution.GeometricBucketer(growth_factor=2, num_finite_buckets=5)

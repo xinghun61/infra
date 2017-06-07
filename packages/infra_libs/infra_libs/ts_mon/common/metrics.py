@@ -458,7 +458,7 @@ class _DistributionMetricBase(Metric):
     # Copy the bucketer params.
     if value.bucketer.width == 0:
       pb.exponential_buckets.growth_factor = value.bucketer.growth_factor
-      pb.exponential_buckets.scale = 1.0
+      pb.exponential_buckets.scale = value.bucketer.scale
       pb.exponential_buckets.num_finite_buckets = (
           value.bucketer.num_finite_buckets)
     else:
