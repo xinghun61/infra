@@ -41,3 +41,7 @@ deploy-prod: build getversion
 deploy-staging: build getversion
 	gcloud app deploy --no-promote --no-stop-previous-version frontend/app.yaml backend/app.yaml dispatch.yaml cron.yaml --project sheriff-o-matic-staging --version $(VERS)
 	rm frontend/elements/som-app/som-app.vulcanized.html
+
+devserver: build
+	dev_appserver.py frontend/app.yaml backend/app.yaml
+

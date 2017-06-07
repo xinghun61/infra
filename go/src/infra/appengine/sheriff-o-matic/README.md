@@ -28,7 +28,7 @@ make deps
 
 To run locally from an infra.git checkout:
 ```sh
-./gae.py devserver
+make devserver
 ```
 
 To run tests:
