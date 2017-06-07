@@ -35,7 +35,7 @@ class ChromeCrashAnalysisTest(AppengineTestCase):
     self.assertIsNone(analysis.historical_metadata)
 
   def testInitializeWithCrashData(self):
-    findit = self.GetMockFindit()
+    predator = self.GetMockPredatorApp()
     channel = 'dummy channel'
     historical_metadata = []
     crash_data = self.GetDummyChromeCrashData(
@@ -61,10 +61,10 @@ class ChromeCrashAnalysisTest(AppengineTestCase):
       def dependency_rolls(self):
         return {}
 
-    findit.GetCrashData = mock.Mock(
+    predator.GetCrashData = mock.Mock(
         return_value=MockChromeCrashData(crash_data))
 
-    crash_data = findit.GetCrashData(crash_data)
+    crash_data = predator.GetCrashData(crash_data)
     analysis = ChromeCrashAnalysis()
     analysis.Initialize(crash_data)
     self.assertEqual(analysis.channel, channel)

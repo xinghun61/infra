@@ -34,7 +34,7 @@ except Exception:
 
 
 def RunPredator():
-  """Runs delta testing between 2 different Findit versions."""
+  """Runs delta testing between 2 different Predator versions."""
   argparser = argparse.ArgumentParser(
       description='Run Predator on a batch of crashes.')
 

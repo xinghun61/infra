@@ -10,7 +10,7 @@ from google.appengine.api import users
 
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.crash_data import CrashData
-from common.findit import Findit
+from common.predator_app import PredatorApp
 from common.model.crash_config import CrashConfig
 from common.model.crash_analysis import CrashAnalysis
 from gae_libs.testcase import TestCase
@@ -77,16 +77,16 @@ class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
         users.User(email='admin@chromium.org'), True, **DEFAULT_CONFIG_DATA)
     gae_ts_mon.reset_for_unittest(disable=True)
 
-  def GetMockFindit(self, get_repository=None, config=None,
-                    client_id='mock_client'):
+  def GetMockPredatorApp(self, get_repository=None, config=None,
+                         client_id='mock_client'):
     get_repository = (get_repository or
                       GitilesRepository.Factory(self.GetMockHttpClient()))
     config = config or CrashConfig.Get()
 
-    class MockFindit(Findit):  # pylint: disable=W0223
-      """Overwrite abstract method of Findit for testing."""
+    class MockPredatorApp(PredatorApp):  # pylint: disable=W0223
+      """Overwrite abstract method of PredatorApp for testing."""
       def __init__(self):
-        super(MockFindit, self).__init__(get_repository, config)
+        super(MockPredatorApp, self).__init__(get_repository, config)
 
       @classmethod
       def _ClientID(cls):
@@ -130,4 +130,4 @@ class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
       def identifiers(self):
         return 'crash_identifiers'
 
-    return MockFindit()
+    return MockPredatorApp()

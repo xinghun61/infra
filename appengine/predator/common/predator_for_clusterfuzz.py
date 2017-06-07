@@ -20,17 +20,17 @@ from analysis.linear.weight import MetaWeight
 from analysis.linear.weight import Weight
 from analysis.predator import Predator
 from analysis.type_enums import CrashClient
-from common.findit import Findit
+from common.predator_app import PredatorApp
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
 
 
-class FinditForClusterfuzz(Findit):
+class PredatorForClusterfuzz(PredatorApp):
   @classmethod
   def _ClientID(cls):
     return CrashClient.CLUSTERFUZZ
 
   def __init__(self, get_repository, config):
-    super(FinditForClusterfuzz, self).__init__(get_repository, config)
+    super(PredatorForClusterfuzz, self).__init__(get_repository, config)
     meta_weight = MetaWeight({
         'TouchCrashedFileMeta': MetaWeight({
             'MinDistance': Weight(1.),

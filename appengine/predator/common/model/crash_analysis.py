@@ -70,8 +70,8 @@ class CrashAnalysis(ndb.Model):
   # When the analysis was completed.
   completed_time = ndb.DateTimeProperty(indexed=False)
 
-  # Which version of findit produces this result.
-  findit_version = ndb.StringProperty(indexed=False)
+  # Which version of predator produces this result.
+  predator_version = ndb.StringProperty(indexed=False)
 
   ################### Properties for the analysis result. ###################
 
@@ -112,7 +112,7 @@ class CrashAnalysis(ndb.Model):
     self.status = analysis_status.PENDING
     self.started_time = None
     self.completed_time = None
-    self.findit_version = None
+    self.predator_version = None
     self.has_regression_range = None
     self.found_suspects = None
     self.solution = None

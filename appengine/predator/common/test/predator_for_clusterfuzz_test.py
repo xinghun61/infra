@@ -9,10 +9,10 @@ from analysis import detect_regression_range
 from analysis.clusterfuzz_parser import ClusterfuzzParser
 from analysis.crash_report import CrashReport
 from analysis.type_enums import CrashClient
-from common import findit
-from common import findit_for_chromecrash
+from common import predator_app
+from common import predator_for_chromecrash
 from common.appengine_testcase import AppengineTestCase
-from common.findit_for_clusterfuzz import FinditForClusterfuzz
+from common.predator_for_clusterfuzz import PredatorForClusterfuzz
 from common.model.crash_analysis import CrashAnalysis
 from common.model.crash_config import CrashConfig
 from common.model.fracas_crash_analysis import FracasCrashAnalysis
@@ -23,12 +23,12 @@ from libs.gitiles.gitiles_repository import GitilesRepository
 
 
 
-class FinditForClusterfuzzTest(AppengineTestCase):
+class PredatorForClusterfuzzTest(AppengineTestCase):
 
   def setUp(self):
-    super(FinditForClusterfuzzTest, self).setUp()
-    self._client = FinditForClusterfuzz(self.GetMockRepoFactory(),
-                                        CrashConfig.Get())
+    super(PredatorForClusterfuzzTest, self).setUp()
+    self._client = PredatorForClusterfuzz(self.GetMockRepoFactory(),
+                                          CrashConfig.Get())
 
   def testCheckPolicy(self):
     crash_data = self._client.GetCrashData(self.GetDummyClusterfuzzData(

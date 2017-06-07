@@ -178,8 +178,8 @@ def EvaluateDelta(git_hash1, git_hash2,
   """Evaluates delta between git_hash1 and git_hash2 on query results.
 
   Args:
-    git_hash1 (str): A git hash of findit repository.
-    git_hash2 (str): A git hash of findit repository.
+    git_hash1 (str): A git hash of predator repository.
+    git_hash2 (str): A git hash of predator repository.
     start_date (str): Run delta test on testcases after (including)
       the start_date, format should be '%Y-%m-%d'.
     end_date (str): Run delta test on testcases before (not including)
@@ -191,7 +191,7 @@ def EvaluateDelta(git_hash1, git_hash2,
     max_n: (int): Maximum total number of crashes.
     property_values (dict): Property values to query.
     batch_size (int): The size of crashes that can be queried at one time.
-    verbose (bool): If True, print all the findit results.
+    verbose (bool): If True, print all the predator results.
 
   Return:
     (deltas, triage_results, crash_count).
@@ -236,10 +236,10 @@ def EvaluateDeltaOnTestSet(git_hash1, git_hash2,
   """Evaluates delta between git_hash1 and git_hash2 on a set of Testcases.
 
   Args:
-    git_hash1 (str): A git hash of findit repository.
-    git_hash2 (str): A git hash of findit repository.
+    git_hash1 (str): A git hash of predator repository.
+    git_hash2 (str): A git hash of predator repository.
     testset_path (str): A local path to read testset from.
-    verbose (bool): If True, print all the findit results.
+    verbose (bool): If True, print all the predator results.
 
   Return:
     (deltas, triage_results, crash_count).

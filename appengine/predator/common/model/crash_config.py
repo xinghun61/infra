@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Findit for crash (ClusterFuzz & Fracas/Chromecrash) configuration."""
+"""Predator for crash (ClusterFuzz & Fracas/Chromecrash) configuration."""
 
 import re
 
@@ -106,7 +106,7 @@ class CrashConfig(VersionedConfig):
 
   # TODO: remove this property. It is only used by
   # model/crash/test/crash_config_test.py, and is no longer necessary for
-  # crash/findit_for_chromecrash.py, which compiles and caches things
+  # crash/predator_for_chromecrash.py, which compiles and caches things
   # on its own.
   @property
   def compiled_component_classifier(self):

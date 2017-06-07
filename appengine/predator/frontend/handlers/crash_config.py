@@ -41,6 +41,8 @@ def _IsListOfStrings(obj):
 
 
 def _ValidateChromeCrashConfig(chrome_crash_config):
+  # TODO(cweakliam): update the pubsub topic once we migrate predator project id
+  # from 'google.com: findit-for-me' to 'predator-for-me'
   """Checks that a chrome_crash__config dict is properly formatted.
 
   Args:

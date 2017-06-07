@@ -126,12 +126,12 @@ def NeedNewAnalysis(json_crash_data):
     need_analysis: True if a new analysis is needed; False otherwise.
     crash_data: CrashData of this crash.
   """
-  # N.B., must call FinditForClientID indirectly, for mock testing.
-  findit_client = crash_pipeline.FinditForClientID(
+  # N.B., must call PredatorForClientID indirectly, for mock testing.
+  predator_client = crash_pipeline.PredatorForClientID(
       json_crash_data['client_id'],
       CachedGitilesRepository.Factory(HttpClientAppengine()),
       CrashConfig.Get())
-  crash_data = findit_client.GetCrashData(json_crash_data)
+  crash_data = predator_client.GetCrashData(json_crash_data)
   # Detect the regression range, and decide if we actually need to
   # run a new analysis or not.
   if json_crash_data.get('redo'):
@@ -139,7 +139,7 @@ def NeedNewAnalysis(json_crash_data):
                  repr(json_crash_data['crash_identifiers']))
     return True, crash_data
 
-  return findit_client.NeedsNewAnalysis(crash_data), crash_data
+  return predator_client.NeedsNewAnalysis(crash_data), crash_data
 
 
 # TODO(http://crbug.com/659346): we don't cover anything after the
@@ -154,7 +154,7 @@ def StartNewAnalysis(client_id, identifiers):
   """
   logging.info('New %s analysis is scheduled for %s',
                client_id, repr(identifiers))
-  # N.B., we cannot pass ``findit_client`` directly to the _pipeline_cls,
+  # N.B., we cannot pass ``predator_client`` directly to the _pipeline_cls,
   # because it is not JSON-serializable (and there's no way to make it such,
   # since JSON-serializability is defined by JSON-encoders rather than
   # as methods on the objects being encoded).

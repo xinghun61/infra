@@ -33,7 +33,7 @@ class Culprit(namedtuple('Culprit',
       (analysis_result_dict, tag_dict)
       The analysis result is a dict like below:
       {
-          # Indicate if Findit found any suspects_cls, project,
+          # Indicate if Predator found any suspects_cls, project,
           # components or regression_range.
           "found": true,
           "suspected_project": "chromium-v8", # Which project is most suspected.
@@ -76,7 +76,7 @@ class Culprit(namedtuple('Culprit',
       be used instead.
 
       The tag dict are allowed key/value pairs to tag the analysis result
-      for query and monitoring purpose on Findit side. For allowed keys,
+      for query and monitoring purpose on Predator side. For allowed keys,
       please refer to crash_analysis.py and fracas_crash_analysis.py:
         For results with normal culprit-finding algorithm: {
             'found_suspects': True,

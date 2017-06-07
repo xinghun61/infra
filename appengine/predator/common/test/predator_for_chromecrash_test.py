@@ -15,11 +15,11 @@ from analysis.suspect import Suspect
 from analysis.stacktrace import CallStack
 from analysis.stacktrace import Stacktrace
 from analysis.type_enums import CrashClient
-from common import findit
-from common import findit_for_chromecrash
+from common import predator_app
+from common import predator_for_chromecrash
 from common.appengine_testcase import AppengineTestCase
-from common.findit_for_chromecrash import FinditForChromeCrash
-from common.findit_for_chromecrash import FinditForFracas
+from common.predator_for_chromecrash import PredatorForChromeCrash
+from common.predator_for_chromecrash import PredatorForFracas
 from common.model import crash_analysis
 from common.model.crash_config import CrashConfig
 from common.model.fracas_crash_analysis import FracasCrashAnalysis
@@ -33,55 +33,56 @@ from libs.gitiles.gitiles_repository import GitilesRepository
 MOCK_GET_REPOSITORY = lambda _: None # pragma: no cover
 
 
-class _FinditForChromeCrash(FinditForChromeCrash):  # pylint: disable = W
+class _PredatorForChromeCrash(PredatorForChromeCrash):  # pylint: disable = W
   # We allow overriding the default ``get_repository`` because one unittest
   # needs to.
   def __init__(self, get_repository=MOCK_GET_REPOSITORY, config=None):
-    super(_FinditForChromeCrash, self).__init__(get_repository, config)
+    super(_PredatorForChromeCrash, self).__init__(get_repository, config)
 
   @classmethod
   def _ClientID(cls): # pragma: no cover
     """Avoid throwing a NotImplementedError.
 
-    Since this method is called from ``FinditForChromeCrash.__init__``
+    Since this method is called from ``PredatorForChromeCrash.__init__``
     in order to construct the Azalea object, we need to not throw
-    exceptions since we want to be able to test the FinditForChromeCrash
+    exceptions since we want to be able to test the PredatorForChromeCrash
     class itself.
     """
     return 'ChromeCrash'
 
 
-def _FinditForFracas(config=None):
+def _PredatorForFracas(config=None):
   """A helper to pass in the standard pipeline class."""
-  return FinditForFracas(MOCK_GET_REPOSITORY, config or {})
+  return PredatorForFracas(MOCK_GET_REPOSITORY, config or {})
 
 
-class FinditForChromeCrashTest(AppengineTestCase):
+class PredatorForChromeCrashTest(AppengineTestCase):
 
   # TODO(wrengr): what was the purpose of this test? As written it's
   # just testing that mocking works. I'm guessing it was to check that
   # we fail when the analysis is for the wrong client_id; but if so,
   # then we shouldn't need to mock FindCulprit...
-  @mock.patch('common.findit_for_chromecrash.FinditForChromeCrash.FindCulprit')
+  @mock.patch(
+      'common.predator_for_chromecrash.PredatorForChromeCrash.FindCulprit')
   def testFindCulprit(self, mock_find_culprit):
     mock_find_culprit.return_value = None
 
     # TODO(wrengr): would be less fragile to call
-    # FinditForFracas.CreateAnalysis instead; though if I'm right about
+    # PredatorForFracas.CreateAnalysis instead; though if I'm right about
     # the original purpose of this test, then this is one of the few
     # places where calling FracasCrashAnalysis directly would actually
     # make sense.
     analysis = FracasCrashAnalysis.Create({'signature': 'sig'})
-    findit_client = _FinditForChromeCrash(
+    predator_client = _PredatorForChromeCrash(
         GitilesRepository.Factory(HttpClientAppengine()), CrashConfig.Get())
-    self.assertIsNone(findit_client.FindCulprit(analysis))
+    self.assertIsNone(predator_client.FindCulprit(analysis))
 
 
-class FinditForFracasTest(AppengineTestCase):
+class PredatorForFracasTest(AppengineTestCase):
 
   def setUp(self):
-    super(FinditForFracasTest, self).setUp()
-    self._client = _FinditForFracas(config=CrashConfig.Get())
+    super(PredatorForFracasTest, self).setUp()
+    self._client = _PredatorForFracas(config=CrashConfig.Get())
 
   def testCheckPolicyBlacklistSignature(self):
     raw_crash_data = self.GetDummyChromeCrashData(
@@ -116,7 +117,7 @@ class FinditForFracasTest(AppengineTestCase):
   def testGetAnalysis(self):
     crash_identifiers = {'signature': 'sig'}
     # TODO(wrengr): would be less fragile to call
-    # FinditForFracas.CreateAnalysis instead.
+    # PredatorForFracas.CreateAnalysis instead.
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.put()
     self.assertEqual(self._client.GetAnalysis(crash_identifiers), analysis)

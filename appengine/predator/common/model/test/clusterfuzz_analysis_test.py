@@ -29,7 +29,7 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
 
   def testInitializeWithCrashData(self):
     """Tests ``Initialize`` initialize all properties from crash data."""
-    findit = self.GetMockFindit()
+    predator = self.GetMockPredatorApp()
     raw_crash_data = self.GetDummyClusterfuzzData()
     class MockClusterfuzzData(ClusterfuzzData):
 
@@ -52,10 +52,10 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
       def dependency_rolls(self):
         return {}
 
-    findit.GetCrashData = mock.Mock(
+    predator.GetCrashData = mock.Mock(
         return_value=MockClusterfuzzData(raw_crash_data))
 
-    crash_data = findit.GetCrashData(raw_crash_data)
+    crash_data = predator.GetCrashData(raw_crash_data)
     analysis = ClusterfuzzAnalysis()
     analysis.Initialize(crash_data)
     self.assertEqual(analysis.crashed_type, crash_data.crashed_type)

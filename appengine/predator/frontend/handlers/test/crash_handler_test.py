@@ -17,8 +17,8 @@ from analysis.type_enums import CrashClient
 from common import crash_pipeline
 from common.appengine_testcase import AppengineTestCase
 from common.crash_pipeline import CrashWrapperPipeline
-from common.findit import Findit
-from common.findit_for_chromecrash import FinditForFracas
+from common.predator_app import PredatorApp
+from common.predator_for_chromecrash import PredatorForFracas
 from common.model.crash_analysis import CrashAnalysis
 from common.model.crash_config import CrashConfig
 from frontend.handlers import crash_handler
@@ -32,20 +32,20 @@ class CrashHandlerTest(AppengineTestCase):
   ], debug=True)
 
   def testNeedNewAnalysisIfIsARedo(self):
-    mock_findit = self.GetMockFindit()
-    with mock.patch('common.crash_pipeline.FinditForClientID') as mock_func:
-      mock_func.return_value = mock_findit
+    mock_predator_app = self.GetMockPredatorApp()
+    with mock.patch('common.crash_pipeline.PredatorForClientID') as mock_func:
+      mock_func.return_value = mock_predator_app
       need_new_analysis, _ = crash_handler.NeedNewAnalysis(
           self.GetDummyClusterfuzzData(redo=True))
 
       self.assertTrue(need_new_analysis)
 
-  @mock.patch('common.crash_pipeline.FinditForClientID')
+  @mock.patch('common.crash_pipeline.PredatorForClientID')
   def testDoNotNeedNewAnalysisIfNeedsNewAnalysisReturnsFalse(
-      self, mock_findit_for_client_ID):
-    mock_findit = self.GetMockFindit()
-    mock_findit.NeedsNewAnalysis = mock.Mock(return_value=False)
-    mock_findit_for_client_ID.return_value = mock_findit
+      self, mock_predator_app_for_client_ID):
+    mock_predator_app = self.GetMockPredatorApp()
+    mock_predator_app.NeedsNewAnalysis = mock.Mock(return_value=False)
+    mock_predator_app_for_client_ID.return_value = mock_predator_app
 
     need_new_analysis, _ = crash_handler.NeedNewAnalysis(
         self.GetDummyChromeCrashData())
@@ -53,12 +53,12 @@ class CrashHandlerTest(AppengineTestCase):
     # Check policy failed due to empty client config.
     self.assertFalse(need_new_analysis)
 
-  @mock.patch('common.crash_pipeline.FinditForClientID')
+  @mock.patch('common.crash_pipeline.PredatorForClientID')
   def testNeedNewAnalysisIfNeedsNewAnalysisReturnsTrue(
-      self, mock_findit_for_client_ID):
-    mock_findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
-    mock_findit.NeedsNewAnalysis = mock.Mock(return_value=True)
-    mock_findit_for_client_ID.return_value = mock_findit
+      self, mock_predator_app_for_client_ID):
+    mock_predator_app = self.GetMockPredatorApp(client_id=CrashClient.FRACAS)
+    mock_predator_app.NeedsNewAnalysis = mock.Mock(return_value=True)
+    mock_predator_app_for_client_ID.return_value = mock_predator_app
     self.assertTrue(crash_handler.NeedNewAnalysis(
         self.GetDummyChromeCrashData(client_id=CrashClient.FRACAS)))
 
@@ -71,13 +71,13 @@ class CrashHandlerTest(AppengineTestCase):
     mock_start.return_value = None
     crash_handler.StartNewAnalysis(client_id, crash_identifiers)
 
-  @mock.patch('common.findit.Findit._CheckPolicy')
+  @mock.patch('common.predator_app.PredatorApp._CheckPolicy')
   def testHandlePostDoesNotStartNewAnalysis(self, mock_check_policy):
     mock_check_policy.return_value = False
     json_crash_data = self.GetDummyClusterfuzzData()
-    mock_findit = self.GetMockFindit()
-    with mock.patch('common.crash_pipeline.FinditForClientID') as mock_func:
-      mock_func.return_value = mock_findit
+    mock_predator_app = self.GetMockPredatorApp()
+    with mock.patch('common.crash_pipeline.PredatorForClientID') as mock_func:
+      mock_func.return_value = mock_predator_app
       need_new_analysis, _ = crash_handler.NeedNewAnalysis(
           json_crash_data)
       self.assertFalse(need_new_analysis)
@@ -95,11 +95,11 @@ class CrashHandlerTest(AppengineTestCase):
   def testHandlePostStartNewAnalysis(self):
     json_crash_data = self.GetDummyClusterfuzzData(redo=True)
 
-    mock_findit = self.GetMockFindit()
-    with mock.patch(
-        'common.crash_pipeline.FinditForClientID') as mock_findit_for_client:
+    mock_predator_app = self.GetMockPredatorApp()
+    with mock.patch('common.crash_pipeline.PredatorForClientID') as (
+        mock_predator_app_for_client):
 
-      mock_findit_for_client.return_value = mock_findit
+      mock_predator_app_for_client.return_value = mock_predator_app
       _, crash_data = crash_handler.NeedNewAnalysis(json_crash_data)
 
       request_json_data = {

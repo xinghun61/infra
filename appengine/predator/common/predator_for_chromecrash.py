@@ -23,29 +23,29 @@ from analysis.linear.weight import MetaWeight
 from analysis.linear.weight import Weight
 from analysis.predator import Predator
 from analysis.type_enums import CrashClient
-from common.findit import Findit
+from common.predator_app import PredatorApp
 from common.model.cracas_crash_analysis import CracasCrashAnalysis
 from common.model.fracas_crash_analysis import FracasCrashAnalysis
 from gae_libs import appengine_util
 from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
 
 
-class FinditForChromeCrash(Findit):  # pylint: disable=W0223
+class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
   """Find culprits for crash reports from the Chrome Crash server."""
 
   @classmethod
   def _ClientID(cls): # pragma: no cover
-    if cls is FinditForChromeCrash:
-      logging.warning('FinditForChromeCrash is abstract, '
+    if cls is PredatorForChromeCrash:
+      logging.warning('PredatorForChromeCrash is abstract, '
           'but someone constructed an instance and called _ClientID')
     else:
       logging.warning(
-          'FinditForChromeCrash subclass %s forgot to implement _ClientID',
+          'PredatorForChromeCrash subclass %s forgot to implement _ClientID',
           cls.__name__)
     raise NotImplementedError()
 
   def __init__(self, get_repository, config):
-    super(FinditForChromeCrash, self).__init__(get_repository, config)
+    super(PredatorForChromeCrash, self).__init__(get_repository, config)
     meta_weight = MetaWeight({
         'TouchCrashedFileMeta': MetaWeight({
             'MinDistance': Weight(2.),
@@ -73,7 +73,7 @@ class FinditForChromeCrash(Findit):  # pylint: disable=W0223
 
   def _CheckPolicy(self, crash_data):
     """Checks if ``CrashData`` meets policy requirements."""
-    if not super(FinditForChromeCrash, self)._CheckPolicy(crash_data):
+    if not super(PredatorForChromeCrash, self)._CheckPolicy(crash_data):
       return False
 
     if crash_data.platform not in self.client_config[
@@ -93,8 +93,8 @@ class FinditForChromeCrash(Findit):  # pylint: disable=W0223
 
 
 # TODO(http://crbug.com/659346): we misplaced the coverage tests; find them!
-class FinditForCracas(  # pylint: disable=W0223
-    FinditForChromeCrash): # pragma: no cover
+class PredatorForCracas(  # pylint: disable=W0223
+    PredatorForChromeCrash): # pragma: no cover
 
   @classmethod
   def _ClientID(cls):
@@ -109,7 +109,7 @@ class FinditForCracas(  # pylint: disable=W0223
     return CracasCrashAnalysis.Get(crash_identifiers)
 
 
-class FinditForFracas(FinditForChromeCrash):  # pylint: disable=W0223
+class PredatorForFracas(PredatorForChromeCrash):  # pylint: disable=W0223
   @classmethod
   def _ClientID(cls):
     return CrashClient.FRACAS

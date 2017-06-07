@@ -11,7 +11,7 @@ from analysis.suspect import Suspect
 from analysis.type_enums import CrashClient
 from common import crash_pipeline
 from common.appengine_testcase import AppengineTestCase
-from common.findit_for_chromecrash import FinditForFracas
+from common.predator_for_chromecrash import PredatorForFracas
 from common.model.fracas_crash_analysis import FracasCrashAnalysis
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
@@ -35,7 +35,7 @@ class CrashPipelineTest(AppengineTestCase):
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
     self.assertEqual(analysis_status.ERROR, analysis.status)
 
-  @mock.patch('common.findit_for_chromecrash.FinditForFracas.FindCulprit')
+  @mock.patch('common.predator_for_chromecrash.PredatorForFracas.FindCulprit')
   def testFindCulpritFails(self, mock_find_culprit):
     crash_identifiers = self.GetDummyChromeCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
@@ -55,7 +55,7 @@ class CrashPipelineTest(AppengineTestCase):
     self.assertFalse(analysis.found_project)
     self.assertFalse(analysis.found_components)
 
-  @mock.patch('common.findit_for_chromecrash.FinditForFracas.FindCulprit')
+  @mock.patch('common.predator_for_chromecrash.PredatorForFracas.FindCulprit')
   def testFindCulpritSucceeds(self, mock_find_culprit):
     crash_identifiers = self.GetDummyChromeCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
@@ -111,9 +111,9 @@ class RerunPipelineTest(AppengineTestCase):
     rerun_pipeline.start_test()
     self.assertIsNone(rerun_pipeline.outputs.default.value, None)
 
-  @mock.patch('common.crash_pipeline.FinditForClientID')
-  def testRun(self, mock_findit_for_client):
-    mock_findit_for_client.return_value = None
+  @mock.patch('common.crash_pipeline.PredatorForClientID')
+  def testRun(self, mock_predator_for_client):
+    mock_predator_for_client.return_value = None
 
     client = CrashClient.CRACAS
     start_date = datetime(2017, 5, 19, 0, 0, 0)

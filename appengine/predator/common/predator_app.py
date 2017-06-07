@@ -18,16 +18,15 @@ from libs import time_util
 
 
 # TODO(http://crbug.com/659346): since most of our unit tests are
-# FinditForFracas-specific, wrengr moved them to findit_for_chromecrash_test.py.
+# PredatorForFracas-specific, wrengr moved them to
+# predator_for_chromecrash_test.py.
 # However, now we're missing coverage for most of this file (due to the
 # buggy way coverage is computed). Need to add a bunch of new unittests
 # to get coverage back up.
 
 # TODO: this class depends on ndb stuff, and should therefore move to
 # cr-culprit-finder/service/predator as part of the big reorganization.
-# This class should be renamed to avoid confustion between Findit and Predator.
-# Think of a good name (e.g.'PredatorApp') for this class.
-class Findit(object):
+class PredatorApp(object):
 
   def __init__(self, get_repository, config):
     """
@@ -81,11 +80,11 @@ class Findit(object):
     Returns:
       A string which is member of the CrashClient enumeration.
     """
-    if cls is Findit:
-      logging.warning('Findit is abstract, '
+    if cls is PredatorApp:
+      logging.warning('PredatorApp is abstract, '
           'but someone constructed an instance and called _ClientID')
     else:
-      logging.warning('Findit subclass %s forgot to implement _ClientID',
+      logging.warning('PredatorApp subclass %s forgot to implement _ClientID',
           cls.__name__)
     raise NotImplementedError()
 
@@ -158,7 +157,7 @@ class Findit(object):
 
     Some clients only support analysis for crashes on certain platforms
     or channels, etc. This method checks to see whether this client can
-    analyze the given crash. The default implementation on the Findit
+    analyze the given crash. The default implementation on the Predator
     base class returns None for everything, so that unsupported clients
     reject everything, as expected.
 
@@ -255,7 +254,7 @@ class Findit(object):
   # ``crash_identifiers``, or a CrashReport, rather than taking in the
   # whole model. And/or, we should just inline this there.
   # TODO(http://crbug.com/659346): coverage tests for this class, not
-  # just for FinditForFracas.
+  # just for PredatorForFracas.
   def FindCulprit(self, crash_report): # pragma: no cover
     """Given a ``CrashReport``, returns a ``Culprit``."""
     if crash_report.stacktrace is None:

@@ -77,7 +77,7 @@ class CrashAnalysisTest(AppengineTestCase):
     analysis.status = analysis_status.COMPLETED
     analysis.requested_time = datetime.utcnow()
     analysis.started_time = datetime.utcnow()
-    analysis.findit_version = ''
+    analysis.predator_version = ''
     analysis.has_regression_range = True
     analysis.found_suspects = True
     analysis.solution = ''
@@ -85,7 +85,7 @@ class CrashAnalysisTest(AppengineTestCase):
     self.assertIsNone(analysis.pipeline_status_path)
     self.assertEqual(analysis_status.PENDING, analysis.status)
     self.assertIsNone(analysis.started_time)
-    self.assertIsNone(analysis.findit_version)
+    self.assertIsNone(analysis.predator_version)
     self.assertIsNone(analysis.has_regression_range)
     self.assertIsNone(analysis.found_suspects)
     self.assertIsNone(analysis.solution)
@@ -129,8 +129,8 @@ class CrashAnalysisTest(AppengineTestCase):
         channel=channel, platform=platform,
         signature=signature, version=chrome_version,
         process_type='renderer')
-    findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
-    crash_data = findit.GetCrashData(raw_crash_data)
+    predator = self.GetMockPredatorApp(client_id=CrashClient.FRACAS)
+    crash_data = predator.GetCrashData(raw_crash_data)
     analysis = CrashAnalysis()
     analysis.Initialize(crash_data)
 
@@ -154,8 +154,8 @@ class CrashAnalysisTest(AppengineTestCase):
         signature=signature, version=chrome_version,
         regression_range=regression_range,
         process_type='renderer')
-    findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
-    crash_data = findit.GetCrashData(raw_crash_data)
+    predator = self.GetMockPredatorApp(client_id=CrashClient.FRACAS)
+    crash_data = predator.GetCrashData(raw_crash_data)
     analysis = CrashAnalysis()
     analysis.Initialize(crash_data)
 
@@ -215,9 +215,9 @@ class CrashAnalysisTest(AppengineTestCase):
         channel=channel, platform=platform,
         signature=signature, version=crashed_version,
         process_type='renderer')
-    findit = self.GetMockFindit(client_id=CrashClient.FRACAS)
-    crash_data = findit.GetCrashData(raw_crash_data)
-    findit.GetCrashData = mock.Mock(return_value=crash_data)
+    predator = self.GetMockPredatorApp(client_id=CrashClient.FRACAS)
+    crash_data = predator.GetCrashData(raw_crash_data)
+    predator.GetCrashData = mock.Mock(return_value=crash_data)
 
-    analysis.ReInitialize(findit)
+    analysis.ReInitialize(predator)
     self.assertEqual(analysis.signature, crash_data.signature)

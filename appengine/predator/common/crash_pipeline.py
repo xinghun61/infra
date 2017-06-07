@@ -9,8 +9,8 @@ import traceback
 from google.appengine.ext import ndb
 
 from analysis.type_enums import CrashClient
-from common import findit_for_chromecrash
-from common import findit_for_clusterfuzz
+from common import predator_for_chromecrash
+from common import predator_for_clusterfuzz
 from common import monitoring
 from common.exceptions import PredatorError
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
@@ -36,34 +36,33 @@ CLIENT_ID_TO_CRASH_ANALYSIS = {
 
 
 # TODO(http://crbug.com/659346): write complete coverage tests for this.
-def FinditForClientID(client_id, get_repository, config): # pragma: no cover
-  """Construct a Findit object from a client id string specifying the class.
+def PredatorForClientID(client_id, get_repository, config): # pragma: no cover
+  """Construct a ``PredatorApp`` from a client id string specifying the class.
 
-  We cannot pass Findit objects to the various methods in
-  ``crash.crash_pipeline``, because they are not JSON serializable. For
-  now, we just serialize Findit objects as their ``client_id``, and then
-  use this function to reconstruct them. Alas, this means we will lose
-  various other information stored in the Findit object (i.e., stuff that
-  comes from CrashConfig); which could lead to some hard-to-diagnose
-  coherency bugs, since the new Findit object will be based on the
-  CrashConfig at the time it's constructed, which may be different
-  than the CrashConfig at the time the previous Findit object was
-  constructed. In the future we should fix all this to serialize Findit
-  objects in a more robust way.
+  We cannot pass PredatorApp objects to the various methods in
+  ``crash.crash_pipeline``, because they are not JSON serializable. For now, we
+  just serialize PredatorApp objects as their ``client_id``, and then use this
+  function to reconstruct them. Alas, this means we will lose various other
+  information stored in the PredatorApp object (i.e., stuff that comes from
+  CrashConfig); which could lead to some hard-to-diagnose coherency bugs, since
+  the new PredatorApp object will be based on the CrashConfig at the time it's
+  constructed, which may be different than the CrashConfig at the time the
+  previous PredatorApp object was constructed. In the future we should fix all
+  this to serialize PredatorApp objects in a more robust way.
   """
   assert isinstance(client_id, (str, unicode)), (
-      'FinditForClientID: expected string or unicode, but got %s'
+      'PredatorForClientID: expected string or unicode, but got %s'
       % client_id.__class__.__name__)
   # TODO(wrengr): it'd be nice to replace this with a single lookup in
   # a dict; but that's buggy for some unknown reason.
   if client_id == CrashClient.FRACAS:
-    cls = findit_for_chromecrash.FinditForFracas
+    cls = predator_for_chromecrash.PredatorForFracas
   elif client_id == CrashClient.CRACAS: # pragma: no cover
-    cls = findit_for_chromecrash.FinditForCracas
+    cls = predator_for_chromecrash.PredatorForCracas
   elif client_id == CrashClient.CLUSTERFUZZ: # pragma: no cover
-    cls = findit_for_clusterfuzz.FinditForClusterfuzz
+    cls = predator_for_clusterfuzz.PredatorForClusterfuzz
   else: # pragma: no cover
-    raise ValueError('FinditForClientID: '
+    raise ValueError('PredatorForClientID: '
         'unknown or unsupported client %s' % client_id)
 
   return cls(get_repository, config)
@@ -91,13 +90,13 @@ def FinditForClientID(client_id, get_repository, config): # pragma: no cover
 # to their ``__init__`` must themselves be JSON-serializable. Alas,
 # in Python, JSON-serializability isn't a property of classes themselves,
 # but rather a property of the JSON-encoder object used to do the
-# serialization. Thus, we cannot pass a ``Findit`` object directly to
+# serialization. Thus, we cannot pass a ``PredatorApp`` object directly to
 # any of the methods here, but rather must instead pass the ``client_id``
-# (or whatever JSON dict), and then reconstruct the ``Findit`` object
+# (or whatever JSON dict), and then reconstruct the ``PredatorApp`` object
 # from that data.
 #
 # Moreover, the ``run`` and ``finalized`` methods are executed in separate
-# processes, so we'll actually end up reconstructing the ``Findit`` object
+# processes, so we'll actually end up reconstructing the ``PredatorApp`` object
 # twice. This also means ``run`` can't store anything in the pipeline
 # object and expect it to still be available in the ``finalized`` method.
 
@@ -105,14 +104,14 @@ class CrashBasePipeline(BasePipeline):
   def __init__(self, client_id, crash_identifiers):
     super(CrashBasePipeline, self).__init__(client_id, crash_identifiers)
     self._crash_identifiers = crash_identifiers
-    self._findit = FinditForClientID(
+    self._predator = PredatorForClientID(
         client_id,
         CachedGitilesRepository.Factory(HttpClientAppengine()),
         CrashConfig.Get())
 
   @property
   def client_id(self): # pragma: no cover
-    return self._findit.client_id
+    return self._predator.client_id
 
   def run(self, *args, **kwargs):
     raise NotImplementedError()
@@ -130,7 +129,7 @@ class CrashAnalysisPipeline(CrashBasePipeline):
   def _PutAbortedError(self):
     """Update the ndb.Model to indicate that this pipeline was aborted."""
     logging.error('Aborted analysis for %s', repr(self._crash_identifiers))
-    analysis = self._findit.GetAnalysis(self._crash_identifiers)
+    analysis = self._predator.GetAnalysis(self._crash_identifiers)
     analysis.status = analysis_status.ERROR
     analysis.put()
 
@@ -147,17 +146,17 @@ class CrashAnalysisPipeline(CrashBasePipeline):
                  json.dumps(self._crash_identifiers))
     # TODO(wrengr): shouldn't this method somehow call _NeedsNewAnalysis
     # to guard against race conditions?
-    analysis = self._findit.GetAnalysis(self._crash_identifiers)
+    analysis = self._predator.GetAnalysis(self._crash_identifiers)
 
     # Update the model's status to say we're in the process of doing analysis.
     analysis.pipeline_status_path = self.pipeline_status_path()
     analysis.status = analysis_status.RUNNING
     analysis.started_time = time_util.GetUTCNow()
-    analysis.findit_version = appengine_util.GetCurrentVersion()
+    analysis.predator_version = appengine_util.GetCurrentVersion()
     analysis.put()
 
     # Actually do the analysis.
-    culprit = self._findit.FindCulprit(analysis.ToCrashReport())
+    culprit = self._predator.FindCulprit(analysis.ToCrashReport())
     if culprit is not None:
       result, tags = culprit.ToDicts()
     else:
@@ -205,18 +204,19 @@ class PublishResultPipeline(CrashBasePipeline):
     recieving them here. Thus, we discard all the arguments to this method
     (except for ``self``, naturally).
     """
-    analysis = self._findit.GetAnalysis(self._crash_identifiers)
+    analysis = self._predator.GetAnalysis(self._crash_identifiers)
     if not analysis or not analysis.result or analysis.failed:
       logging.info('Can\'t publish result to %s because analysis failed:\n%s',
                    self.client_id, repr(self._crash_identifiers))
       return
 
-    result = self._findit.GetPublishableResult(self._crash_identifiers,
-                                               analysis)
+    result = self._predator.GetPublishableResult(self._crash_identifiers,
+                                                 analysis)
     messages_data = [json.dumps(result, sort_keys=True)]
 
-    # TODO(http://crbug.com/659354): remove Findit's dependency on CrashConfig.
-    client_config = self._findit.client_config
+    # TODO(http://crbug.com/659354): remove PredatorApp's dependency on
+    # CrashConfig.
+    client_config = self._predator.client_config
     # TODO(katesonia): Clean string uses in config.
     topic = client_config['analysis_result_pubsub_topic']
     pubsub_util.PublishMessagesToTopic(messages_data, topic)
@@ -271,7 +271,7 @@ class RerunPipeline(BasePipeline):  # pragma: no cover
         analysis.requested_time >= start_date).filter(
             analysis.requested_time < end_date)
 
-    client = FinditForClientID(
+    client = PredatorForClientID(
         client_id,
         CachedGitilesRepository.Factory(HttpClientAppengine()),
         CrashConfig.Get())

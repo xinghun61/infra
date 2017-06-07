@@ -25,7 +25,7 @@ from local_libs.local_cache import LocalCache
 from analysis.chromecrash_parser import ChromeCrashParser
 from analysis.clusterfuzz_parser import ClusterfuzzParser
 from analysis.type_enums import CrashClient
-from common.crash_pipeline import FinditForClientID
+from common.crash_pipeline import PredatorForClientID
 from common.model import crash_analysis
 from common.model.crash_config import CrashConfig
 from libs.cache_decorator import Cached
@@ -60,8 +60,8 @@ def StoreResults(crash, client_id, app_id, id_to_culprits, lock, config,
   retry = 0
   while retry < max_retry:
     try:
-      findit = FinditForClientID(client_id, LocalGitRepository, config)
-      culprit = findit.FindCulprit(crash.ToCrashReport())
+      predator = PredatorForClientID(client_id, LocalGitRepository, config)
+      culprit = predator.FindCulprit(crash.ToCrashReport())
       with lock:
         id_to_culprits[crash_id] = culprit
         if verbose:
