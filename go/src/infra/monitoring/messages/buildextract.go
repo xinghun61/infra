@@ -215,7 +215,7 @@ func (s *Step) IsOK() (bool, error) {
 func (s *Step) Result() (float64, error) {
 	if r, ok := s.Results[0].(float64); ok {
 		// This 0/1 check seems to be a convention or heuristic. A 0 or 1
-		// result is apparently "ok", accoring to the original python code.
+		// result is apparently "ok", according to the original python code.
 		return r, nil
 	}
 

@@ -87,12 +87,12 @@ func botAnalyzer(ctx context.Context, failures []*messages.BuildStep) ([]message
 
 	isStepFailure := make(map[string]bool)
 	for _, failure := range failures {
-		ok, err := failure.Step.IsOK()
+		res, err := failure.Step.Result()
 		if err != nil {
 			continue
 		}
 
-		if !ok {
+		if res > messages.ResultOK {
 			isStepFailure[failure.Step.Name] = true
 		}
 	}
@@ -114,7 +114,18 @@ func botAnalyzer(ctx context.Context, failures []*messages.BuildStep) ([]message
 			continue
 		}
 
-		isAffinityFailure[step.Name] = true
+		res, err := step.Result()
+		if err != nil {
+			continue
+		}
+
+		// Ignore steps which are just test failures. If all the tests
+		if res == messages.ResultInfraFailure {
+			isAffinityFailure[step.Name] = true
+		}
+
+		// If a step with a particular device id is passing, we don't consider the
+		// whole device to be broken.
 		if !isStepFailure[step.Name] {
 			deviceWithPassingTests[ID] = true
 		}
@@ -137,7 +148,7 @@ func botAnalyzer(ctx context.Context, failures []*messages.BuildStep) ([]message
 
 		ID := getBotID(f.Step)
 
-		if ID != "" && !deviceWithPassingTests[ID] {
+		if ID != "" && !deviceWithPassingTests[ID] && isAffinityFailure[f.Step.Name] {
 			botWithFailure = append(botWithFailure, ID)
 			// devFailure.Bots might not be fully populated yet, but because of the
 			// magic of pointers, this still works.

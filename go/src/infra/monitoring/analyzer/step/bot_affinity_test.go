@@ -122,6 +122,30 @@ func TestDeviceAnalyzer(t *testing.T) {
 			})
 		})
 
+		Convey("test failure, device affinity", func() {
+			steps := []messages.Step{
+				{
+					Name:    "first",
+					Results: stepFailure,
+				},
+				{
+					Name: "perf stepppp",
+					Text: []string{
+						"<br>Device Affinity: 4",
+					},
+					Results: stepFailure,
+				},
+			}
+
+			reasons, err := botAnalyzer(nil, makeSteps(steps))
+
+			So(err, ShouldBeNil)
+			So(reasons, ShouldResemble, []messages.ReasonRaw{
+				nil,
+				nil,
+			})
+		})
+
 		Convey("multiple perf steps", func() {
 			steps := []messages.Step{
 				{
@@ -243,21 +267,21 @@ func TestDeviceAnalyzer(t *testing.T) {
 					Text: []string{
 						"<br>Device Affinity: 4",
 					},
-					Results: stepFailure,
+					Results: infraFailure,
 				},
 				{
 					Name: "perf step 2",
 					Text: []string{
 						"<br>Device Affinity: 4",
 					},
-					Results: stepFailure,
+					Results: infraFailure,
 				},
 				{
 					Name: "perf step 3",
 					Text: []string{
 						"<br>Device Affinity: 4",
 					},
-					Results: stepFailure,
+					Results: infraFailure,
 				},
 			}
 
@@ -306,21 +330,21 @@ func TestDeviceAnalyzer(t *testing.T) {
 					Results: stepFailure,
 				},
 				{
-					Name: "perf step",
+					Name: "perf step 99",
 					Text: []string{
 						"<br>Device Affinity: 4",
 					},
 					Results: infraFailure,
 				},
 				{
-					Name: "perf step 2",
+					Name: "perf step 2 99",
 					Text: []string{
 						"<br>Device Affinity: 4",
 					},
 					Results: infraFailure,
 				},
 				{
-					Name: "perf step 3",
+					Name: "perf step 3 99",
 					Text: []string{
 						"<br>Device Affinity: 4",
 					},
