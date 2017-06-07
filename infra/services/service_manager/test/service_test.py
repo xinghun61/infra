@@ -212,7 +212,6 @@ class ServiceTest(ServiceTestBase):
           'pid': 777,
           'starttime': 888,
           'version': {'foo': 'bar'},
-          'args': ['bar', 'one', 'two', '42'],
           'cmd': ['bar', 'one', 'two', '42'], # Note: all args must be strings
       }, json.load(fh))
 

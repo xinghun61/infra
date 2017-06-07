@@ -122,11 +122,10 @@ class ProcessState(object):
       raise ProcessHasDifferentStartTime(
           filename, pid, pid_state.starttime, starttime)
 
-    # TODO(pgervais): get rid of 'args' when all services have been restarted.
     return cls(pid=pid,
                starttime=starttime,
                version=data.get('version'),
-               cmd=data.get('cmd', data.get('args')))
+               cmd=data.get('cmd'))
 
   @classmethod
   def from_pid(cls, pid):
@@ -148,7 +147,6 @@ class ProcessState(object):
         'starttime': self.starttime,
         'version': self.version,
         'cmd': self.cmd,
-        'args': self.cmd,  # ensuring backward-compatibility.
     })
     LOGGER.info('Writing state file %s: %s', filename, contents)
 
