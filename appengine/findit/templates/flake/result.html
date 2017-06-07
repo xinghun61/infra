@@ -450,6 +450,16 @@
         </table>
       </div>
     {% endif %}
+  {% if show_rerun_ui %}
+    <form action="/waterfall/flake" method="post">
+      <input type="hidden" name="debug" value="1" />
+      <input type="hidden" name="rerun" value="1" />
+      <input type="hidden" name="key" value="{{key}}" />
+      <input type="hidden" name="xsrf_token" value="{{xsrf_token}}" />
+      <input type="submit" value="Rerun Analysis" />
+    </form>
+  {% endif %}
+  <br>
     <br>
     <div>
       <b>Metadata:</b><br>

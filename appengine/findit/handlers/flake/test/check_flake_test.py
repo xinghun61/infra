@@ -246,6 +246,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         },
         'version_number': 1,
         'show_input_ui': False,
+        'show_rerun_ui': False,
         'culprit': {},
         'try_job_status': None,
         'last_attempted_swarming_task': {
@@ -374,6 +375,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         },
         'version_number': 1,
         'show_input_ui': False,
+        'show_rerun_ui': False,
         'culprit': {},
         'try_job_status': None,
         'last_attempted_swarming_task': {
@@ -705,3 +707,30 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.start_time = datetime.datetime(2017, 06, 06, 00, 00, 00)
     analysis.end_time = datetime.datetime(2017, 06, 06, 00, 43, 00)
     self.assertEqual('00:43:00', check_flake._GetDurationForAnalysis(analysis))
+
+  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  def testRequestRerunWhenAuthorized(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number - 1, step_name, test_name)
+    analysis.Save()
+
+    self.mock_current_user(user_email='test@google.com')
+
+    with mock.patch.object(CheckFlake,
+                           '_CreateAndScheduleFlakeAnalysis',
+                           return_value=(analysis, True)) as scheduler:
+      self.test_app.post('/waterfall/flake', params={
+        'url': buildbot.CreateBuildUrl(master_name, builder_name, build_number),
+        'step_name': step_name,
+        'test_name': test_name,
+        'rerun': '1',
+        'format': 'json'}, status=302)
+    scheduler.assert_called_with(master_name, builder_name,
+                                 build_number, step_name, test_name,
+                                 None, True)

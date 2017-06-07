@@ -179,13 +179,13 @@ def _GetDurationForAnalysis(analysis):
   if analysis.status == analysis_status.PENDING:
     return None
   return time_util.FormatDuration(
-        analysis.start_time, analysis.end_time or time_util.GetUTCNow())
+      analysis.start_time, analysis.end_time or time_util.GetUTCNow())
 
 
 class CheckFlake(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
-  def _ShowInputUI(self, analysis):
+  def _ShowCustomRunOptions(self, analysis):
     # TODO(lijeffrey): Remove checks for admin and debug flag once analyze
     # manual input for a regression range is implemented.
     return (users.is_current_user_admin() and
@@ -193,14 +193,10 @@ class CheckFlake(BaseHandler):
             analysis.status != analysis_status.RUNNING and
             analysis.try_job_status != analysis_status.RUNNING)
 
-
   def _ValidateInput(self, step_name, test_name, bug_id):
     """Ensures the input is valid and generates an error otherwise.
 
     Args:
-      master_name (str): The name of the master the flaky test was found on.
-      builder_name (str): The name of the builder the flaky test was found on.
-      build_number (str): The build number the flaky test was found on.
       step_name (str): The step the flaky test was found on.
       test_name (str): The name of the flaky test.
       bug_id (str): The bug number associated with the flaky test.
@@ -219,8 +215,44 @@ class CheckFlake(BaseHandler):
 
     return None
 
+  @staticmethod
+  def _CreateAndScheduleFlakeAnalysis(master_name, builder_name,
+                                      build_number, step_name, test_name,
+                                      bug_id, rerun=False):
+    # pylint: disable=unused-argument
+    """Create and schedule a flake analysis.
+
+    Args:
+      master_name (string): The name of the master.
+      builder_name (string): The name of the builder.
+      build_number (int): Build number to run against.
+      step_name (string): The name of the step.
+      test_name (string): The name of the test.
+      bug_id (int): The bug id.
+      rerun (boolean): Is this analysis a rerun.
+    Returns:
+      (analysis, scheduled) analysis is the new analysis created.
+      scheduled is returned from flake analysis service.
+    """
+    user_email = auth_util.GetUserEmail()
+    is_admin = auth_util.IsCurrentUserAdmin()
+
+    request = FlakeAnalysisRequest.Create(test_name, False, bug_id)
+    request.AddBuildStep(master_name, builder_name, build_number, step_name,
+                         time_util.GetUTCNow())
+    # TODO(wylieb): Give rerun parameter to scheduler and
+    # handle rerun from there.
+    scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
+        request, user_email, is_admin, triggering_sources.FINDIT_UI)
+
+    analysis = MasterFlakeAnalysis.GetVersion(
+        master_name, builder_name, build_number, step_name, test_name)
+
+    return analysis, scheduled
+
   @token.VerifyXSRFToken()
   def HandlePost(self):
+    # TODO(wylieb): Support key POST param here.
     build_url = self.request.get('url', '').strip()
     build_info = buildbot.ParseBuildUrl(build_url)
     if not build_info:
@@ -237,19 +269,14 @@ class CheckFlake(BaseHandler):
     if error:
       return error
 
+    rerun = self.request.get('rerun', '0').strip() == '1'
+
     build_number = int(build_number)
     bug_id = int(bug_id) if bug_id else None
-    user_email = auth_util.GetUserEmail()
-    is_admin = auth_util.IsCurrentUserAdmin()
 
-    request = FlakeAnalysisRequest.Create(test_name, False, bug_id)
-    request.AddBuildStep(master_name, builder_name, build_number, step_name,
-                         time_util.GetUTCNow())
-    scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
-        request, user_email, is_admin, triggering_sources.FINDIT_UI)
-
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, build_number, step_name, test_name)
+    (analysis, scheduled) = self._CreateAndScheduleFlakeAnalysis(
+        master_name, builder_name, build_number,
+        step_name, test_name, bug_id, rerun)
 
     if not analysis:
       if scheduled is None:
@@ -334,7 +361,8 @@ class CheckFlake(BaseHandler):
         'revision_level_number': revision_level_number,
         'error': analysis.error_message,
         'iterations_to_rerun': analysis.iterations_to_rerun,
-        'show_input_ui': self._ShowInputUI(analysis)
+        'show_input_ui': self._ShowCustomRunOptions(analysis),
+        'show_rerun_ui': self._ShowCustomRunOptions(analysis)
     }
 
     if (users.is_current_user_admin() and analysis.completed and
