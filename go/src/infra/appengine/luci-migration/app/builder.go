@@ -12,14 +12,11 @@ import (
 
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 
 	"infra/appengine/luci-migration/storage"
 )
-
-const internalAccessGroup = "luci-migration-internal-access"
 
 type builderViewModel struct {
 	Builder *storage.Builder
@@ -86,15 +83,6 @@ func builderPage(c context.Context, id storage.BuilderID) (*builderViewModel, er
 
 	default:
 		return nil, err
-	}
-
-	// Check access.
-	hasInternalAccess, err := auth.IsMember(c, internalAccessGroup)
-	if err != nil {
-		return nil, err
-	}
-	if !model.Builder.Public && !hasInternalAccess {
-		return nil, errNotFound
 	}
 
 	mig := model.Builder.Migration

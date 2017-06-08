@@ -34,7 +34,6 @@ type Builder struct {
 	Kind           string    `gae:"$kind,Builder"`
 	ID             BuilderID `gae:"$id"`
 	SchedulingType config.SchedulingType
-	Public         bool
 	OS             config.OS
 
 	IssueID IssueID

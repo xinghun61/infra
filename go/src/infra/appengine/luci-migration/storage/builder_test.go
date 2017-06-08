@@ -30,7 +30,6 @@ func TestBuilderMasterFilter(t *testing.T) {
 					Builder: "linux_chromium_rel_ng",
 				},
 				Migration: BuilderMigration{Status: StatusMigrated},
-				Public:    true,
 			},
 			&Builder{
 				ID: BuilderID{
@@ -38,7 +37,6 @@ func TestBuilderMasterFilter(t *testing.T) {
 					Builder: "linux_chromium_asan_rel_ng",
 				},
 				Migration: BuilderMigration{Status: StatusLUCINotWAI},
-				Public:    true,
 			},
 
 			&Builder{
@@ -47,7 +45,6 @@ func TestBuilderMasterFilter(t *testing.T) {
 					Builder: "mac_chromium_rel_ng",
 				},
 				Migration: BuilderMigration{Status: StatusMigrated},
-				Public:    true,
 			},
 		)
 		So(err, ShouldBeNil)

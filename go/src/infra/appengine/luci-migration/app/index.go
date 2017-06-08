@@ -5,14 +5,14 @@
 package app
 
 import (
+	"sort"
+
 	"golang.org/x/net/context"
 
 	"github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 
-	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 )
 
@@ -38,40 +38,16 @@ func handleIndexPage(c *router.Context) error {
 }
 
 func indexPage(c context.Context) (*indexViewModel, error) {
-	model := &indexViewModel{}
-
-	hasInternalAccess, err := auth.IsMember(c, internalAccessGroup)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get masters from config.
-	cfg, err := config.Get(c)
-	if err != nil {
-		return nil, err
-	}
-	model.Masters = make([]*indexMasterViewModel, 0, len(cfg.GetMasters()))
-	masterMap := make(map[string]*indexMasterViewModel, len(model.Masters))
-
-	for _, m := range cfg.GetMasters() {
-		if !m.Public && !hasInternalAccess {
-			continue
-		}
-		mvm := &indexMasterViewModel{Name: m.Name}
-		model.Masters = append(model.Masters, mvm)
-		masterMap[m.Name] = mvm
-	}
-
+	masters := map[string]*indexMasterViewModel{}
+	masterNames := []string{}
 	// Note: may have to cache this if we have a lot of builders.
 	q := datastore.NewQuery(storage.BuilderKind)
-	if !hasInternalAccess {
-		q = q.Eq("Public", true) // be paranoid
-	}
-	err = datastore.Run(c, q, func(b *storage.Builder) {
-		m := masterMap[b.ID.Master]
+	err := datastore.Run(c, q, func(b *storage.Builder) {
+		m := masters[b.ID.Master]
 		if m == nil {
-			// Perhaps an internal master.
-			return
+			m = &indexMasterViewModel{Name: b.ID.Master}
+			masters[b.ID.Master] = m
+			masterNames = append(masterNames, m.Name)
 		}
 
 		m.TotalBuilderCount++
@@ -83,11 +59,14 @@ func indexPage(c context.Context) (*indexViewModel, error) {
 		return nil, err
 	}
 
-	// Compute migration percentage.
-	for _, m := range model.Masters {
+	sort.Strings(masterNames)
+	model := &indexViewModel{Masters: make([]*indexMasterViewModel, len(masterNames))}
+	for i, name := range masterNames {
+		m := masters[name]
 		if m.TotalBuilderCount > 0 {
 			m.MigratedBuilderPercent = 100 * m.MigratedBuilderCount / m.TotalBuilderCount
 		}
+		model.Masters[i] = m
 	}
 
 	return model, nil

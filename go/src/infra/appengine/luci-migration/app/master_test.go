@@ -37,41 +37,14 @@ func TestMaster(t *testing.T) {
 		}
 
 		Convey("master not found", func() {
-			c = useConfig(c, ``)
 			_, err := handle(c)
 			So(err, ShouldEqual, errNotFound)
-		})
-
-		Convey("access denied", func() {
-			c := auth.WithState(c, &authtest.FakeState{
-				Identity: "user:user@example.com",
-			})
-			c = useConfig(c, `masters { name: "tryserver.chromium.linux" }`)
-
-			_, err := handle(c)
-			So(err, ShouldEqual, errNotFound)
-		})
-
-		Convey("access granted", func() {
-			c := auth.WithState(c, &authtest.FakeState{
-				Identity:       "user:user@example.com",
-				IdentityGroups: []string{internalAccessGroup},
-			})
-			c = useConfig(c, `masters { name: "tryserver.chromium.linux" }`)
-
-			_, err := handle(c)
-			So(err, ShouldBeNil)
 		})
 
 		Convey("works", func() {
 			c := auth.WithState(c, &authtest.FakeState{
 				Identity: "user:user@example.com",
 			})
-			c = useConfig(c, `
-				masters {
-					name: "tryserver.chromium.linux"
-					public: true
-				}`)
 
 			err := datastore.Put(
 				c,
@@ -80,7 +53,6 @@ func TestMaster(t *testing.T) {
 						Master:  "tryserver.chromium.linux",
 						Builder: "chromium_presubmit",
 					},
-					Public: true,
 				},
 				&storage.Builder{
 					ID: storage.BuilderID{
@@ -92,7 +64,6 @@ func TestMaster(t *testing.T) {
 						Correctness: 0.9,
 						Speed:       1.1,
 					},
-					Public: true,
 				},
 				&storage.Builder{
 					ID: storage.BuilderID{
@@ -104,7 +75,6 @@ func TestMaster(t *testing.T) {
 						Correctness: 1,
 						Speed:       1,
 					},
-					Public: true,
 				},
 			)
 			So(err, ShouldBeNil)

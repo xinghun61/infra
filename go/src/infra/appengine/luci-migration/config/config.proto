@@ -23,17 +23,15 @@ message Master {
     // Name of the master without "master." prefix, e.g.
     // "tryserver.chromium.linux".
     string name = 1;
-    // if true, pages related to this master will be publicly accessible.
-    bool public = 2;
     // SchedulingType defines how builders on this mastter will be analyzed.
-    SchedulingType scheduling_type = 3;
+    SchedulingType scheduling_type = 2;
     // OS defines "OS" Monorail label.
-    OS os = 4;
+    OS os = 3;
 
     // LuciBucket is the equivalent LUCI buildbucket bucket.
     // It is assumed to have "LUCI <buildbot_builder_name>" builders for each
     // Buildbot builder.
-    string luci_bucket = 5;
+    string luci_bucket = 4;
 }
 
 enum SchedulingType {

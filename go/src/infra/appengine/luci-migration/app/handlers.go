@@ -39,6 +39,8 @@ import (
 	"infra/appengine/luci-migration/flakiness"
 )
 
+const accessGroup = "luci-migration-access"
+
 var errNotFound = errors.New("not found")
 
 //// Routes.
@@ -169,6 +171,7 @@ func init() {
 	m := base.Extend(
 		templates.WithTemplates(prepareTemplates()),
 		auth.Authenticate(server.UsersAPIAuthMethod{}),
+		checkAccess,
 	)
 
 	r.GET("/", m, errHandler(handleIndexPage))
@@ -176,6 +179,30 @@ func init() {
 	r.GET("/masters/:master/builders/:builder/", m, errHandler(handleBuilderPage))
 
 	http.DefaultServeMux.Handle("/", r)
+}
+
+// checkAccess restricts all requests to publicAccessGroup group.
+func checkAccess(c *router.Context, next router.Handler) {
+	switch allow, err := auth.IsMember(c.Context, accessGroup); {
+	case err != nil:
+		logging.WithError(err).Errorf(c.Context, "cannot check %q membership", accessGroup)
+		http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
+
+	case allow:
+		next(c)
+
+	case auth.CurrentIdentity(c.Context) == identity.AnonymousIdentity:
+		loginURL, err := auth.LoginURL(c.Context, c.Request.URL.String())
+		if err != nil {
+			logging.WithError(err).Errorf(c.Context, "cannot get LoginURL")
+			http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
+		} else {
+			http.Redirect(c.Writer, c.Request, loginURL, http.StatusFound)
+		}
+
+	default:
+		http.Error(c.Writer, "Access denied", http.StatusForbidden)
+	}
 }
 
 func errHandler(f func(c *router.Context) error) router.Handler {

@@ -102,7 +102,6 @@ func (d *Builders) registerBuilder(c context.Context, master *config.Master, nam
 	builder := &storage.Builder{
 		ID:                     bid(master.Name, name),
 		SchedulingType:         master.SchedulingType,
-		Public:                 master.Public,
 		LUCIBuildbucketBucket:  master.LuciBucket,
 		LUCIBuildbucketBuilder: "LUCI " + name, // hardcode for now
 		OS: master.Os,

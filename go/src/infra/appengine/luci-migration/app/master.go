@@ -10,11 +10,9 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 
-	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 )
 
@@ -50,51 +48,21 @@ func handleMasterPage(c *router.Context) error {
 
 func masterPage(c context.Context, master string) (*masterViewModel, error) {
 	model := &masterViewModel{Name: master}
-
-	// Get master config.
-	cfg, err := config.Get(c)
-	if err != nil {
-		return nil, err
-	}
-	var masterCfg *config.Master
-	for _, m := range cfg.GetMasters() {
-		if m.Name == master {
-			masterCfg = m
-			break
-		}
-	}
-	if masterCfg == nil {
-		return nil, errNotFound
-	}
-
-	// Check access.
-	hasInternalAccess, err := auth.IsMember(c, internalAccessGroup)
-	if err != nil {
-		return nil, err
-	}
-	if !masterCfg.Public && !hasInternalAccess {
-		return nil, errNotFound
-	}
-
-	// Fetch builders.
 	q := datastore.NewQuery(storage.BuilderKind)
 	q = storage.BuilderMasterFilter(c, q, master)
-	if !hasInternalAccess {
-		q = q.Eq("Public", true) // be paranoid
-	}
-	err = datastore.Run(c, q, func(b *storage.Builder) {
-		if !b.Public && !hasInternalAccess {
-			return // be paranoid
-		}
-
+	err := datastore.Run(c, q, func(b *storage.Builder) {
 		model.Builders = append(model.Builders, masterBuilderViewModel{
 			Name:       b.ID.Builder,
 			ShowScores: b.Migration.Status != storage.StatusUnknown && b.Migration.Status != storage.StatusInsufficientData,
 			Migration:  b.Migration,
 		})
 	})
-	if err != nil {
+	switch {
+	case err != nil:
 		return nil, err
+	case len(model.Builders) == 0:
+		return nil, errNotFound
+	default:
+		return model, nil
 	}
-	return model, nil
 }

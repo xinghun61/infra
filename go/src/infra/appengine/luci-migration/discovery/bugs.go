@@ -77,15 +77,13 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 				"Type-Task",
 				"Pri-3",
 				"Master-" + excludeInvalid(builder.ID.Master),
+				"Restrict-View-Google",
 			},
 		},
 	}
 	if builder.OS != config.OS_UNSET_OS {
 		// Monorail tolerates all-caps OS names.
 		req.Issue.Labels = append(req.Issue.Labels, "OS-"+builder.OS.String())
-	}
-	if !builder.Public {
-		req.Issue.Labels = append(req.Issue.Labels, "Restrict-View-Google")
 	}
 
 	res, err := client.InsertIssue(c, req)

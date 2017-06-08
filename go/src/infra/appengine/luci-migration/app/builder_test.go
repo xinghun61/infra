@@ -48,32 +48,8 @@ func TestBuilder(t *testing.T) {
 			So(err, ShouldEqual, errNotFound)
 		})
 
-		Convey("access denied", func() {
-			err := datastore.Put(c, &storage.Builder{ID: id})
-			So(err, ShouldBeNil)
-
-			_, err = handle(c)
-			So(err, ShouldEqual, errNotFound)
-		})
-
-		Convey("access granted", func() {
-			c = auth.WithState(c, &authtest.FakeState{
-				Identity:       "user:user@example.com",
-				IdentityGroups: []string{internalAccessGroup},
-			})
-
-			err := datastore.Put(c, &storage.Builder{ID: id})
-			So(err, ShouldBeNil)
-
-			_, err = handle(c)
-			So(err, ShouldBeNil)
-		})
-
 		Convey("status unknown", func() {
-			err := datastore.Put(c, &storage.Builder{
-				ID:     id,
-				Public: true,
-			})
+			err := datastore.Put(c, &storage.Builder{ID: id})
 			So(err, ShouldBeNil)
 
 			model, err := handle(c)
@@ -83,7 +59,6 @@ func TestBuilder(t *testing.T) {
 		Convey("status known, but no BuilderMigrationDetails", func() {
 			err := datastore.Put(c, &storage.Builder{
 				ID:        id,
-				Public:    true,
 				Migration: storage.BuilderMigration{Status: storage.StatusLUCINotWAI},
 			})
 			So(err, ShouldBeNil)
@@ -95,8 +70,7 @@ func TestBuilder(t *testing.T) {
 
 		Convey("status known", func() {
 			builder := &storage.Builder{
-				ID:     id,
-				Public: true,
+				ID: id,
 				IssueID: storage.IssueID{
 					Hostname: "monorail-prod.appspot.com",
 					Project:  "chromium",
