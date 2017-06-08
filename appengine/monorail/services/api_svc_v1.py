@@ -83,7 +83,8 @@ def monorail_api_method(
         requester = endpoints.get_current_user()
         auth_client_ids, auth_emails = (
             client_config_svc.GetClientConfigSvc().GetClientIDEmails())
-        auth_client_ids.append(endpoints.API_EXPLORER_CLIENT_ID)
+        if settings.dev_mode:
+          auth_client_ids.append(endpoints.API_EXPLORER_CLIENT_ID)
         if self._services is None:
           self._set_services(service_manager.set_up_services())
         c_id, c_email = api_base_checks(
