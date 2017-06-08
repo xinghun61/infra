@@ -7,6 +7,7 @@
 package cipd
 
 var versionDirs = []string{
+	"/opt/cq-canary",
 	"/opt/cq-stable",
 	"/opt/infra-python",
 	"/opt/infra-tools", // authutil cipd version file is here
