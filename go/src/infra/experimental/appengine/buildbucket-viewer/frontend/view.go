@@ -83,7 +83,7 @@ func (bs buildStatus) aggregate(other buildStatus) buildStatus {
 	return bs
 }
 
-func getBuildStatus(b *bbapi.ApiBuildMessage) buildStatus {
+func getBuildStatus(b *bbapi.ApiCommonBuildMessage) buildStatus {
 	switch b.Status {
 	case "SCHEDULED":
 		return buildPending
@@ -354,7 +354,7 @@ func (r *buildSetRenderer) fetchViewSection(s *settings.View_Section) (*buildSet
 		failureReason = "INVALID_BUILD_DEFINITION"
 	}
 
-	searchBuilds, err := buildBucketSearch(r, r.bbService, s.Bucket, tags, result, failureReason, int(s.MaxBuilds))
+	searchBuilds, err := buildBucketSearch(r, r.bbService, s.Bucket, tags, s.Canary, result, failureReason, int(s.MaxBuilds))
 	if err != nil {
 		return nil, errors.Annotate(err).InternalReason("BuildBucket Search() error").Err()
 	}
@@ -530,7 +530,7 @@ func (r *buildSetRenderer) queryLatestForTags(c context.Context, bucket, extract
 		return "", errors.New("bucket is not defined")
 	}
 
-	builds, err := buildBucketSearch(c, r.bbService, []string{bucket}, tags, "", "", 1)
+	builds, err := buildBucketSearch(c, r.bbService, []string{bucket}, tags, settings.Trinary_UNSPECIFIED, "", "", 1)
 	if err != nil {
 		return "", errors.Annotate(err).InternalReason("failed to search for %(extract)q").
 			D("extract", extractTag).D("bucket", bucket).D("tags", tags).Err()

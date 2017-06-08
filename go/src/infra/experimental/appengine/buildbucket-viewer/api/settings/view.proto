@@ -17,6 +17,13 @@ message ProjectConfig {
   map<string, View> view = 2;
 }
 
+// Trinary is a trinary value.
+enum Trinary {
+  UNSPECIFIED = 0;
+  YES = 1;
+  NO = 2;
+}
+
 // View defines a specific build set view.
 message View {
   // The view title. If empty, a title will be generated.
@@ -102,6 +109,9 @@ message View {
     // The maximum number of builds to retrieve. If empty, builds will be pulled
     // up to an app-defined maximum.
     int32 max_builds = 9;
+
+    // If true, show canary builds.
+    Trinary canary = 10;
   }
   // The set of BuildBucket queries to represent in this view.
   repeated Section section = 2;

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"infra/experimental/appengine/buildbucket-viewer/api/settings"
+
 	bbapi "github.com/luci/luci-go/common/api/buildbucket/buildbucket/v1"
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
@@ -28,7 +30,7 @@ const (
 )
 
 func buildBucketSearch(c context.Context, svc *bbapi.Service, buckets []string, tags []string,
-	result, failureReason string, max int) ([]*bbapi.ApiBuildMessage, error) {
+	canary settings.Trinary, result, failureReason string, max int) ([]*bbapi.ApiCommonBuildMessage, error) {
 	if max <= 0 || max > maxBuildBucketResults {
 		max = maxBuildBucketResults
 	}
@@ -49,7 +51,7 @@ func buildBucketSearch(c context.Context, svc *bbapi.Service, buckets []string, 
 	defer cancelFunc()
 
 	var (
-		builds []*bbapi.ApiBuildMessage
+		builds []*bbapi.ApiCommonBuildMessage
 		curs   string
 	)
 	for {
@@ -72,6 +74,13 @@ func buildBucketSearch(c context.Context, svc *bbapi.Service, buckets []string, 
 		req = req.MaxBuilds(int64(remaining))
 		if curs != "" {
 			req = req.StartCursor(curs)
+		}
+
+		switch canary {
+		case settings.Trinary_YES:
+			req = req.Canary(true)
+		case settings.Trinary_NO:
+			req = req.Canary(false)
 		}
 
 		var res *bbapi.ApiSearchResponseMessage

@@ -40,7 +40,7 @@ func TestFlakiness(t *testing.T) {
 			}
 
 			err = json.NewEncoder(w).Encode(&buildbucket.ApiBuildResponseMessage{
-				Build: &buildbucket.ApiBuildMessage{Id: 123456789},
+				Build: &buildbucket.ApiCommonBuildMessage{Id: 123456789},
 			})
 			testCtx.So(err, ShouldBeNil)
 		}))

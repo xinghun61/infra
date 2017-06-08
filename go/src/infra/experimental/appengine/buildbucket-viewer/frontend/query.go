@@ -140,6 +140,9 @@ func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWri
 			}
 			cur.MaxBuilds = int32(mb)
 
+		case "canary": // Canary
+			cur.Canary = parseTrinary(param.value)
+
 		default:
 			return makeHTTPError(http.StatusBadRequest, errors.Reason("unknown parameter: %(param)q").D("param", param.key).Err())
 		}
@@ -159,4 +162,15 @@ func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWri
 		return errors.Annotate(err).InternalReason("failed to get build set renderer").Err()
 	}
 	return r.render(&view, resp)
+}
+
+func parseTrinary(v string) settings.Trinary {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "":
+		return settings.Trinary_UNSPECIFIED
+	case "n", "no", "f", "false", "0":
+		return settings.Trinary_NO
+	default:
+		return settings.Trinary_YES
+	}
 }
