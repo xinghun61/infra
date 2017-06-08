@@ -118,6 +118,10 @@
     },
 
     _computeBugsByPriority: function(bugs) {
+      // update last updated time as relative time
+      for(var i = 0; i < bugs.length; i++) {
+        bugs[i].updated = moment.tz(bugs[i].updated, 'Atlantic/Reykjavic').fromNow();
+      }
       let buckets = bugs.reduce((function(obj, b) {
                                   let p = this._computePriority(b);
                                   if (!(p in obj)) {
