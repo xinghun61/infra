@@ -38,8 +38,10 @@ func TestPEP425TagSelector(t *testing.T) {
 				"platform":    "linux-amd64",
 				"py_tag":      "cp27-cp27mu-manylinux1_x86_64",
 				"py_python":   "cp27",
+				"py_version":  "cp27",
 				"py_abi":      "cp27mu",
 				"py_platform": "manylinux1_x86_64",
+				"py_arch":     "manylinux1_x86_64",
 			},
 		},
 
@@ -88,8 +90,10 @@ func TestPEP425TagSelector(t *testing.T) {
 				"platform":    "mac-amd64",
 				"py_tag":      "cp27-cp27m-macosx_10_4_intel",
 				"py_python":   "cp27",
+				"py_version":  "cp27",
 				"py_abi":      "cp27m",
 				"py_platform": "macosx_10_4_intel",
+				"py_arch":     "macosx_10_4_intel",
 			},
 		},
 
@@ -103,8 +107,10 @@ func TestPEP425TagSelector(t *testing.T) {
 				"platform":    "linux-386",
 				"py_tag":      "py27-none-linux_i686",
 				"py_python":   "py27",
+				"py_version":  "py27",
 				"py_abi":      "none",
 				"py_platform": "linux_i686",
+				"py_arch":     "linux_i686",
 			},
 		},
 
@@ -118,8 +124,10 @@ func TestPEP425TagSelector(t *testing.T) {
 				"platform":    "linux-amd64",
 				"py_tag":      "py27-none-linux_x86_64",
 				"py_python":   "py27",
+				"py_version":  "py27",
 				"py_abi":      "none",
 				"py_platform": "linux_x86_64",
+				"py_arch":     "linux_x86_64",
 			},
 		},
 	}

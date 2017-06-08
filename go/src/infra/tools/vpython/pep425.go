@@ -210,12 +210,18 @@ func getPEP425CIPDTemplateForTag(tag *vpython.PEP425Tag) (map[string]string, err
 	template := make(map[string]string, 4)
 	if tag.Python != "" {
 		template["py_python"] = tag.Python
+
+		// TODO(dnj): Remove this once everything has been updated to "py_python".
+		template["py_version"] = tag.Python
 	}
 	if tag.Abi != "" {
 		template["py_abi"] = tag.Abi
 	}
 	if tag.Platform != "" {
 		template["py_platform"] = tag.Platform
+
+		// TODO(dnj): Remove this once everything has been updated to "py_platform".
+		template["py_arch"] = tag.Platform
 	}
 	if tag.Python != "" && tag.Abi != "" && tag.Platform != "" {
 		template["py_tag"] = tag.TagString()
