@@ -1078,6 +1078,16 @@ class SetStarForm(jsonfeed.JsonFeed):
     if not self.CheckPerm(mr, permissions.SET_STAR, art=issue):
       raise permissions.PermissionException(
           'You are not allowed to star issues')
+    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    granted_perms = tracker_bizobj.GetGrantedPerms(
+        issue, mr.auth.effective_ids, config)
+    permit_view = permissions.CanViewIssue(
+        mr.auth.effective_ids, mr.perms, mr.project, issue,
+        granted_perms=granted_perms)
+    if not permit_view:
+      logging.warning('Issue is %r', issue)
+      raise permissions.PermissionException(
+          'User is not allowed to view this issue, so cannot star it')
 
   def HandleRequest(self, mr):
     """Build up a dictionary of data values to use when rendering the page.

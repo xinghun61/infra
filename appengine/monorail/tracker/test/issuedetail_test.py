@@ -620,8 +620,8 @@ class SetStarFormTest(unittest.TestCase):
     self.servlet = issuedetail.SetStarForm(
         'req', 'res', services=self.services)
 
-  def testAssertBasePermission(self):
-    """Only users with SET_STAR could set star."""
+  def testAssertBasePermission_NormalIssue(self):
+    """Only allow users with SET_STAR."""
     local_id_1 = self.services.issue.CreateIssue(
         self.cnxn, self.services, self.project.project_id,
         'summary_1', 'status', 111L, [], [], [], [], 111L, 'description_1')
@@ -637,6 +637,25 @@ class SetStarFormTest(unittest.TestCase):
     mr.local_id = local_id_1
     self.servlet.AssertBasePermission(mr)
 
+  def testAssertBasePermission_RestrictedIssue(self):
+    """Only allow users with SET_STAR and who can view the issue."""
+    local_id_1 = self.services.issue.CreateIssue(
+        self.cnxn, self.services, self.project.project_id,
+        'summary_1', 'status', 111L, [], ['Restrict-View-Leet'],
+        [], [], 111L, 'description_1')
+    issue = self.services.issue.GetIssueByLocalID(
+        self.cnxn, self.project.project_id, local_id_1)
+    _, mr = testing_helpers.GetRequestObjects(
+        project=self.project,
+        perms=permissions.CONTRIBUTOR_ACTIVE_PERMISSIONSET)
+    mr.local_id = local_id_1
+    mr.auth.effective_ids = {333L}
+    # User cannot view the issue, so cannot star it.
+    self.assertRaises(permissions.PermissionException,
+                      self.servlet.AssertBasePermission, mr)
+    # Cc'd user can view the issue and has SET_STAR, so may star.
+    issue.cc_ids = [333L]
+    self.servlet.AssertBasePermission(mr)
 
 class IssueCommentDeletionTest(unittest.TestCase):
 
