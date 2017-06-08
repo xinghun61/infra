@@ -56,13 +56,6 @@
       }
     </style>
     <iron-ajax
-        auto
-        url="/api/v1/trees"
-        handle-as="json"
-        verbose
-        last-response="{{_treeList}}"
-    ></iron-ajax>
-    <iron-ajax
         id="fetchTrooper"
         auto
         url="https://build.chromium.org/p/chromium/current_trooper.txt"
@@ -80,7 +73,7 @@
         show-infra-failures="{{showInfraFailures}}"
         link-style="{{linkStyle}}"
         collapse-by-default="{{collapseByDefault}}"
-        default-tree="{{defaultTree}}"
+        default-tree="{{_defaultTree}}"
     ></som-settings>
 
     <h2 on-tap="toggleMenu" data-toggle-target="treeMenu">
@@ -88,7 +81,7 @@
       <iron-icon icon="remove" class="toggle-icon"></iron-icon>
     </h2>
     <iron-collapse id="treeMenu" opened no-animation>
-      <template is="dom-repeat" items="[[_treeList]]" as="tree">
+      <template is="dom-repeat" items="[[_treesList]]" as="tree">
         <div class="menu-item" value="[[tree.name]]" on-tap="_onSelected">
           [[tree.display_name]]
         </div>

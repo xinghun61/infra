@@ -44,7 +44,6 @@
         value: false,
         computed: '_computeShowTestExpectations(_selectedPage)',
       },
-      _trees: Object,
       _tree: {
         type: Object,
         computed: '_computeTree(_pathIdentifier, _trees)',
@@ -52,6 +51,11 @@
           return {};
         },
       },
+      _trees: {
+        type: Object,
+        computed: '_computeTrees(treesJson)',
+      },
+      treesJson: String,
       _treeLogo: {
         type: String,
         computed: '_computeTreeLogo(_tree)',
@@ -135,6 +139,18 @@
         return `/logos/${tree.name}`;
       }
       return null;
+    },
+
+    _computeTrees: function(json) {
+      let treeList = JSON.parse(json);
+      let trees = {};
+      if (!treeList) {
+        return trees;
+      }
+      treeList.forEach(function(tree) {
+        trees[tree.name] = tree;
+      });
+      return trees;
     },
 
     _computePathIdentifier: function(pathParts) {

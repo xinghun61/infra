@@ -104,6 +104,11 @@ func indexPage(ctx *router.Context) {
 		isStaging = false
 	}
 
+	trees, err := som.GetTrees(c)
+	if err != nil {
+		logging.Errorf(c, "while getting trees: %s", err)
+	}
+
 	data := map[string]interface{}{
 		"User":           user.Email(),
 		"LogoutUrl":      logoutURL,
@@ -111,6 +116,7 @@ func indexPage(ctx *router.Context) {
 		"IsStaging":      isStaging,
 		"XsrfToken":      tok,
 		"AnalyticsID":    AnalyticsID,
+		"Trees":          string(trees),
 	}
 
 	err = mainPage.Execute(w, data)
@@ -181,7 +187,6 @@ func init() {
 	protected := basemw.Extend(requireGoogler)
 
 	gaemiddleware.InstallHandlers(r)
-	r.GET("/api/v1/trees/", protected, som.GetTreesHandler)
 	r.GET("/api/v1/alerts/:tree", protected, som.GetAlertsHandler)
 	r.GET("/api/v1/restarts/:tree", protected, som.GetRestartingMastersHandler)
 	r.GET("/api/v1/xsrf_token", protected, getXSRFToken)

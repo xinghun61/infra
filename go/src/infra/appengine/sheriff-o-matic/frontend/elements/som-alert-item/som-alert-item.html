@@ -15,6 +15,7 @@
 
 <script src="../../bower_components/moment/min/moment.min.js"></script>
 <script src="../../bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
+
 <dom-module id="som-alert-item">
   <template>
     <style include="som-input-styles"></style>
@@ -42,6 +43,9 @@
      .alert-controls-buttons button {
        min-width: 80px;
        font-size: 0.9em;
+     }
+     .alert-controls-buttons button iron-icon {
+       color: #aaa;
      }
      .alert-expanded {
        border-top: 1px dotted #ddd;
@@ -77,18 +81,8 @@
      .comments-link-highlighted {
        color: #FF8C00;
      }
-     .comments-link-highlighted {
-       color: #FF8C00;
-     }
      .no-toggle {
        cursor: default;
-     }
-     .file-bug-icon,
-     .snooze-icon,
-     .group-icon,
-     .ungroup-icon,
-     .resolve-icon {
-       color: #aaa;
      }
      .snoozed {
        opacity: 0.5;
@@ -196,9 +190,7 @@
           <div id="bugsList" hidden$="[[!_bugs.length]]" class="alert-links self-center flex">
             <template is="dom-repeat" items="[[_bugs]]" as="bug">
               <div class="bug no-toggle">
-                <a target="_blank" href="https://crbug.com/[[bug.id]]">
-                  Bug [[bug.id]]
-                </a>
+                <a target="_blank" href="https://crbug.com/[[bug.id]]">Bug [[bug.id]]</a>
                 [[bug.summary]]
                 <em class="bug-status" hidden$="[[!bug.status]]">([[bug.status]])</em>
                 <iron-icon icon="close" title="Remove" id="remove[[index]]" on-tap="_removeBug"></iron-icon>
@@ -215,7 +207,7 @@
           </div>
         </div>
       </div>
-      <div id="collapse" hidden$="[[!annotation.opened]]" class="alert-expanded layout horizontal wrap">
+      <div id="collapse" hidden$="[[_isCollapsed]]" class="alert-expanded layout horizontal wrap">
         <div class="alert-controls layout horizontal center flex-child">
           <div class="layout vertical alert-controls-links">
             <a href$="[[treeName]]/examine/[[alert.key]]"

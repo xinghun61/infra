@@ -23,26 +23,19 @@ import (
 	"github.com/luci/luci-go/server/router"
 )
 
-// GetTreesHandler returns a JSON list of all the trees SoM knows about.
-func GetTreesHandler(ctx *router.Context) {
-	c, w := ctx.Context, ctx.Writer
-
+// GetTrees retrieves all trees from the DataStore.
+func GetTrees(c context.Context) ([]byte, error) {
 	q := datastore.NewQuery("Tree")
-	results := []*Tree{}
-	err := datastore.GetAll(c, q, &results)
+	trees := []*Tree{}
+	err := datastore.GetAll(c, q, &trees)
 	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, err.Error())
-		return
+		return nil, err
 	}
-
-	txt, err := json.Marshal(results)
+	bytes, err := json.Marshal(trees)
 	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, err.Error())
-		return
+		return nil, err
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(txt)
+	return bytes, nil
 }
 
 // GetTreeLogoHandler returns a signed URL to an image asset hosted on GCS.

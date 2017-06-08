@@ -79,19 +79,12 @@ func TestMain(t *testing.T) {
 			indexes := []*datastore.IndexDefinition{&alertsIdx, &revisionSummaryIdx}
 			datastore.GetTestable(c).AddIndexes(indexes...)
 
-			Convey("/trees", func() {
+			Convey("GetTrees", func() {
 				Convey("no trees yet", func() {
-					GetTreesHandler(&router.Context{
-						Context: c,
-						Writer:  w,
-						Request: makeGetRequest(),
-					})
+					trees, err := GetTrees(c)
 
-					r, err := ioutil.ReadAll(w.Body)
 					So(err, ShouldBeNil)
-					body := string(r)
-					So(w.Code, ShouldEqual, 200)
-					So(body, ShouldEqual, "[]")
+					So(string(trees), ShouldEqual, "[]")
 				})
 
 				tree := &Tree{
@@ -102,17 +95,10 @@ func TestMain(t *testing.T) {
 				datastore.GetTestable(c).CatchupIndexes()
 
 				Convey("basic tree", func() {
-					GetTreesHandler(&router.Context{
-						Context: c,
-						Writer:  w,
-						Request: makeGetRequest(),
-					})
+					trees, err := GetTrees(c)
 
-					r, err := ioutil.ReadAll(w.Body)
 					So(err, ShouldBeNil)
-					body := string(r)
-					So(w.Code, ShouldEqual, 200)
-					So(body, ShouldEqual, `[{"name":"oak","display_name":"Oak"}]`)
+					So(string(trees), ShouldEqual, `[{"name":"oak","display_name":"Oak"}]`)
 				})
 			})
 

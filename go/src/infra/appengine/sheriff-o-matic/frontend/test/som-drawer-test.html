@@ -30,15 +30,11 @@
 
       element.$.fetchTrooper.auto = false;
 
-      server.respondWith(
-        'GET',
-        '/api/v1/trees/', [
-          200,
-          responseHeaders.json,
-          '[{"name":"chromium", "display_name":"Chromium"}]'
-        ]
-      );
-
+      element.trees = {
+        'name': 'chromium',
+        'display_name': 'Chromium',
+      };
+      
       server.respondWith(
         'GET',
         'https://build.chromium.org/p/chromium/current_trooper.txt', [

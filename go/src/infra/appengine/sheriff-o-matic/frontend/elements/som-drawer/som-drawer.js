@@ -9,7 +9,7 @@
     is: 'som-drawer',
 
     properties: {
-      defaultTree: String,
+      _defaultTree: String,
       _isTrooperPage: {
         type: Boolean,
         computed: '_computeIsTrooperPage(tree.name)',
@@ -42,16 +42,10 @@
         },
       },
       tree: Object,
-      _treeList: {
+      trees: Object,
+      _treesList: {
         type: Array,
-        value: function() {
-          return [];
-        },
-      },
-      trees: {
-        type: Object,
-        notify: true,
-        computed: '_computeTrees(_treeList)',
+        computed: '_computeTreesList(trees)',
       },
       _trooperRotations: String,
       _troopers: {
@@ -73,6 +67,10 @@
         notify: true,
       },
     },
+
+    observers: [
+      '_navigateToDefaultTree(path, trees, _defaultTree)'
+    ],
 
     created: function() {
       this.async(this._refreshAsync, refreshDelayMs);
@@ -171,23 +169,8 @@
       return pageList;
     },
 
-    _computeTrees(treeList) {
-      let trees = {};
-      if (!treeList) {
-        return trees;
-      }
-      treeList.forEach(function(tree) {
-        trees[tree.name] = tree;
-      });
-      let defaultTree = this.defaultTree;
-      if (this.path === '/') {
-        if (defaultTree && defaultTree in trees) {
-          this.path = '/' + defaultTree;
-        } else {
-          this.path = '/help-som';
-        }
-      }
-      return trees;
+    _computeTreesList(trees) {
+      return Object.values(trees);
     },
 
     _computeTroopers(trooperRotations) {
@@ -214,12 +197,23 @@
       return moment(date).format('MMM D');
     },
 
+    _navigateToDefaultTree(path, trees, defaultTree) {
+      // Not a huge fan of watching path while also changing it, but without
+      // watching path, this fires before path has completely initialized,
+      // causing the default page to be overwritten.
+      if (path == '/') {
+        if (defaultTree && defaultTree in trees) {
+          this.path = '/' + defaultTree;
+        }
+      }
+    },
+
     _onSelected: function(evt) {
       let pathIdentifier = evt.srcElement.value;
       this.path = '/' + pathIdentifier;
 
       if (pathIdentifier && pathIdentifier in this.trees) {
-        this.defaultTree = pathIdentifier;
+        this._defaultTree = pathIdentifier;
       }
     },
 

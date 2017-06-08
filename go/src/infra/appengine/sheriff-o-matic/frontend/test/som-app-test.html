@@ -58,14 +58,7 @@
 
   suite('navigation', function() {
     setup(function() {
-      element._trees = {
-        'chromium': {
-          'name': 'chromium',
-        },
-        'chromium.perf': {
-          'name': 'chromium.perf',
-        },
-      };
+      element.treesJson = '[{"name": "chromium"}, {"name": "chromium.perf"}]';
       element.$.url.path = '/chromium';
     });
 
