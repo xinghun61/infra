@@ -9,6 +9,7 @@ import mock
 from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
+from libs import time_util
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
@@ -152,7 +153,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         recursive_flake_pipeline.NextBuildNumberPipeline,
         '',
-        expected_args=[analysis.key.urlsafe(), build_number, None, None],
+        expected_args=[analysis.key.urlsafe(), build_number, None, None, None],
         expected_kwargs={
             'step_metadata': None,
             'use_nearby_neighbor': False,
@@ -261,7 +262,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_pipeline.NextBuildNumberPipeline,
         '',
         expected_args=[analysis.key.urlsafe(), run_build_number,
-                       lower_bound_build_number, upper_bound_build_number],
+                       lower_bound_build_number, upper_bound_build_number,
+                       None],
         expected_kwargs={
             'step_metadata': None,
             'use_nearby_neighbor': False,
@@ -469,6 +471,22 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         analysis, 100, analysis_status.COMPLETED, None)
     self.assertEqual(analysis.suspected_flake_build_number, 100)
     self.assertIsNone(analysis.last_attempted_swarming_task_id)
+
+  @mock.patch.object(time_util, 'GetUTCNow',
+                     return_value=datetime(2017, 6, 7))
+  def testUpdateAnalysisStatusAndStartTime(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    recursive_flake_pipeline._UpdateAnalysisStatusAndStartTime(analysis)
+    self.assertEqual(analysis.status, analysis_status.RUNNING)
+
+  @mock.patch.object(time_util, 'GetUTCNow',
+                     return_value=datetime(2017, 6, 7))
+  def testUpdateAnalysisStatusAndStartTimeAlreadyRunning(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.start_time = datetime(2017, 6, 6)
+    analysis.status = analysis_status.RUNNING
+    recursive_flake_pipeline._UpdateAnalysisStatusAndStartTime(analysis)
+    self.assertEqual(analysis.start_time, datetime(2017, 6, 6))
 
   @mock.patch.object(
       recursive_flake_pipeline, '_HasSufficientConfidenceToRunTryJobs',
@@ -1114,7 +1132,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         recursive_flake_pipeline.NextBuildNumberPipeline,
         '',
-        expected_args=[analysis.key.urlsafe(), build_number, None, None],
+        expected_args=[analysis.key.urlsafe(), build_number, None, None, None],
         expected_kwargs={
             'step_metadata': None,
             'use_nearby_neighbor': False,

@@ -205,7 +205,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
       yield NextCommitPositionPipeline(
           urlsafe_flake_analysis_key, try_job.key.urlsafe(),
           lower_bound_commit_position, upper_bound_commit_position,
-          cache_name, dimensions)
+          user_specified_iterations, cache_name, dimensions)
 
 
 def _NormalizeDataPoints(data_points):

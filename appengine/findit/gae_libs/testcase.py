@@ -12,7 +12,7 @@ from libs.base_testcase import BaseTestCase
 class TestCase(BaseTestCase, testing.AppengineTestCase):  # pragma: no cover.
   # Setup the customized queues.
   taskqueue_stub_root_path = os.path.join(
-    os.path.dirname(__file__), os.path.pardir)
+      os.path.dirname(__file__), os.path.pardir)
 
   def MockPipeline(
       self, pipeline_class, result, expected_args, expected_kwargs=None):
@@ -28,9 +28,11 @@ class TestCase(BaseTestCase, testing.AppengineTestCase):  # pragma: no cover.
     """
     expected_kwargs = expected_kwargs or {}
 
-    def Mocked_run(_, *args, **kwargs):
+    def Mocked_run(pipeline_class_instance, *args, **kwargs):
       self.assertEqual(list(args), expected_args)
       self.assertEqual(kwargs, expected_kwargs)
+      if pipeline_class_instance.async:
+        pipeline_class_instance.complete(result)
       return result
 
     self.mock(pipeline_class, 'run', Mocked_run)
