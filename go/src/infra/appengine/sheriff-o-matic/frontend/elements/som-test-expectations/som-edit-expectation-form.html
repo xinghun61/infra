@@ -1,0 +1,89 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../elements/som-input-styles.html">
+<dom-module id="som-edit-expectation-form">
+  <template>
+    <style include="som-input-styles"></style>
+    <style>
+      .expectation-checkbox, .modifier-checkbox {
+        display: flex;
+        padding: 0.5em;
+        margin: 0.25em;
+        font-size: 9pt;
+      }
+      .expectation-checkbox input[type="checkbox"], .modifier-checkbox input[type="checkbox"] {
+        margin-right: 0.5em;
+        padding: 0;
+      }
+       .expectations, .modifiers, .bugs {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: baseline;
+        padding-left: 0.5em;
+      }
+      .edit-controls {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        flex-direction: row-reverse;
+        align-items: baseline;
+        padding-left: 0.5em;
+      }
+      label {
+        padding-left: 0.5em;
+        cursor: pointer;
+      }
+      label + input[type="checkbox"]:checked  {
+        font-weight: bold;
+      }
+      .bug-value {
+        display: flex;
+        flex-wrap: none;
+      }
+      .add-bug {
+        display: flex;
+      }
+    </style>
+    <div class="expectations">
+      Expected Results:
+      <template is="dom-repeat" items="[[expectationValues]]" as="val">
+        <div class="expectation-checkbox">
+          <label class="checkbox">
+            <input type="checkbox" id$="expect-[[val]]" value="[[val]]" on-tap="_toggleExpectation" checked="[[_expects(expectation, val)]]">
+            [[val]]
+          </label>
+        </div>
+      </template>
+    </div>
+    <div class="modifiers">
+      Modifiers:
+      <template is="dom-repeat" items="[[modifierValues]]" as="val">
+        <div class="modifier-checkbox">
+          <label class="checkbox">
+            <input type="checkbox" id="modifier-[[val]]" value="[[val]]" on-tap="_toggleModifier" checked="[[_hasModifier(expectation, val)]]">
+            [[val]]
+         </label>
+        </div>
+      </template>
+    </div>
+    <div class="bugs">
+       Bugs:
+       <template is="dom-repeat" items="[[expectation.Bugs]]" as="bug">
+        <div class="bug-value">
+          <a href$="[[bug]]" target="_new">[[bug]]</a>
+          <button on-tap="_removeBug" value="[[bug]]">Remove</button>
+        </div>
+      </template>
+    </div>
+    <div class="add-bug">
+      <input id="newBug" type="text" class="new-bug" placeholder="Bug ID or URL"></input>
+      <button on-tap="_addBug" class="add-bug">Add</button>
+    </div>
+    <div class="edit-controls">
+      <button value="Create change CL" id="submitButton" on-tap="_createChangeCL">Create change CL</button>
+      <button value="Cancel" id="cancelButton" on-tap="_cancelChangeCL">Cancel</button>
+    </div>
+  </template>
+  <script src="som-edit-expectation-form.js"></script>
+</dom-module>

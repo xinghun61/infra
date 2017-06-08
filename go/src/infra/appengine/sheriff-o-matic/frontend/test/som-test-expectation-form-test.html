@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/som-test-expectations/som-edit-expectation-form.html">
+<test-fixture id="basic">
+  <template>
+    <som-edit-expectation-form></som-edit-expecation-form>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+
+    let val = {
+      'FileName': 'third_party/WebKit/LayoutTests/TestExpectations',
+      'LineNumber': 1779,
+      'TestName': 'accessibility/aria-activedescendant.html',
+      'Bugs': ['crbug.com/620432'],
+      'Modifiers': null,
+      'Expectations': ['Failure'],
+    };
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('renders basic', function(done) {
+      element.expectation = val;
+      element.ready();
+      flush(() => {
+        assert.isDefined(element._editValue);
+	      assert.deepEqual(element._editValue, element.expectation);
+        assert.equal(element.modifierValues.length, element.querySelectorAll('.modifier-checkbox').length);
+        assert.equal(element.expectationValues.length, element.querySelectorAll('.expectation-checkbox').length)
+        assert.equal(val.Bugs.length, element.querySelectorAll('.bug-value').length)
+        done();
+      });
+    });
+  });
+})();
+</script>

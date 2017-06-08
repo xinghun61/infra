@@ -52,6 +52,7 @@
         type: Boolean,
         value: false,
         observer: '_alertChecked',
+      },
       _bugs: {
         type: Array,
         computed: '_computeBugs(annotation)',

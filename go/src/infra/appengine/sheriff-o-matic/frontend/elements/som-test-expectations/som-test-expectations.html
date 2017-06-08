@@ -7,6 +7,8 @@
 
 <link rel="import" href="../../elements/som-header-styles.html">
 
+<link rel="import" href="./som-edit-expectation-form.html">
+
 <dom-module id="som-test-expectations">
   <template>
     <style include="som-header-styles"></style>
@@ -35,7 +37,16 @@
         display: flex;
         flex-grow: 1;
       }
-      .testNameCell {
+      .details {
+        padding: 10px;
+        margin: 10px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14);
+        font-size: 20px;
+      }
+      .test-name-cell {
         overflow: hidden;
         text-overflow: ellipsis;
         font-family: monospace;
@@ -50,7 +61,10 @@
         last-response="{{_testExpectationsJson}}"
         debounce-duration="300"></iron-ajax>
     <div id="main">
-      <vaadin-grid items="[[_testExpectationsJson]]">
+      <vaadin-grid id="grid" items="[[_testExpectationsJson]]" on-active-item-changed="_onActiveItemChanged">
+        <template class="row-details">
+          <som-edit-expectation-form on-create-change-cl="_onCreateChangeCL" on-cancel-change-cl="_onCancelChangeCL" expectation="{{item}}"></som-edit-expectation>
+        </template>
         <vaadin-grid-column width="100px">
           <template class="header">
             <vaadin-grid-sorter path="FileName">Expectations File</vaadin-grid-sorter>
@@ -58,7 +72,7 @@
               <input placeholder="Filter" value="{{_filterFileName::input}}" focus-target>
             </vaadin-grid-filter>
           </template>
-          <template><a href="https://chromium.googlesource.com/chromium/src/+/master/[[item.FileName]]#[[item.LineNumber]]">[[_shortFileName(item.FileName)]]</a></template>
+          <template><a target="_blank" href="https://chromium.googlesource.com/chromium/src/+/master/[[item.FileName]]#[[item.LineNumber]]">[[_shortFileName(item.FileName)]]</a></template>
         </vaadin-grid-column>
         <vaadin-grid-column width="400px" flex>
           <template class="header">
@@ -68,7 +82,7 @@
             </vaadin-grid-filter>
           </template>
           <template>
-            <div class="testNameCell">
+            <div class="test-name-cell">
             <a target="_blank" title="[[item.TestName]]" href="https://chromium.googlesource.com/chromium/src/+/master/third_party/WebKit/LayoutTests/[[item.TestName]]">[[item.TestName]]</a>
             </div>
           </template>
@@ -100,7 +114,7 @@
           </template>
           <template>
           <template is="dom-repeat" items="[[item.Bugs]]" as="bug">
-            <a href="http://[[bug]]" target="_blank">[[bug]]</a>
+            <a target="_blank" href="http://[[bug]]">[[bug]]</a>
          </template>
          </template>
         </vaadin-grid-column>

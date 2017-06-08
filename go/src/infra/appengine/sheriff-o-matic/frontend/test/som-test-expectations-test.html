@@ -48,6 +48,25 @@
       });
     });
 
+    test('open edit form', function(done) {
+      let val = {
+        "FileName":"third_party/WebKit/LayoutTests/TestExpectations",
+        "LineNumber":1779,
+        "TestName":"accessibility/aria-activedescendant.html",
+        "Bugs":["crbug.com/620432"],
+        "Modifiers":null,
+        "Expectations":["Failure"]
+      };
+
+      element._testExpectationsJson = [val];
+      element.$.grid.selectItem(val);
+      flush(function() {
+        assert.notEqual('', element.$.main.textContent.trim());
+        done();
+      });
+    });
+
+
  });
 })();
 </script>
