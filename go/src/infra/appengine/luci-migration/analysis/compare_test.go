@@ -81,7 +81,6 @@ func TestCompare(t *testing.T) {
 			So(comp.Status, ShouldEqual, storage.StatusLUCINotWAI)
 			So(comp.StatusReason, ShouldEqual, "Incorrect")
 			So(comp.Correctness, ShouldAlmostEqual, 0.5)
-			So(comp.CorrectnessConfidence, ShouldAlmostEqual, 0.80)
 			So(comp.TotalGroups, ShouldEqual, 5)
 			So(comp.TrustworthyGroups, ShouldEqual, 4)
 			So(comp.FalseFailures, ShouldHaveLength, 1)
@@ -105,7 +104,6 @@ func TestCompare(t *testing.T) {
 			)
 			So(comp.Status, ShouldEqual, storage.StatusLUCIWAI)
 			So(comp.Correctness, ShouldAlmostEqual, 1)
-			So(comp.CorrectnessConfidence, ShouldAlmostEqual, 1)
 		})
 
 		Convey("LUCI is fast", func() {

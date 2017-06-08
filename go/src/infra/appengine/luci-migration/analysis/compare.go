@@ -73,7 +73,6 @@ func compare(groups []*group, minTrustworthyGroups int) *diff {
 	}
 	badGroups := len(comp.FalseSuccesses) + len(comp.FalseFailures)
 	comp.Correctness = 1.0 - float64(badGroups)/float64(comp.TrustworthyGroups)
-	comp.CorrectnessConfidence = float64(comp.TrustworthyGroups) / float64(comp.TotalGroups)
 
 	avgBuildbotTimeSecs /= float64(buildbotBuilds)
 	comp.AvgTimeDelta /= time.Duration(comp.TotalGroups)

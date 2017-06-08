@@ -35,7 +35,6 @@ that can be found in the LICENSE file. -->
             <td>
       {{if .ShowScores}}
               {{.Migration.Correctness | percent}}%
-              ({{.Migration.CorrectnessConfidence | percent}}% confidence)
       {{end}}
             </td>
             <td>{{if .ShowScores}}{{.Migration.Speed | percent}}%{{end}}</td>

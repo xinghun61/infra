@@ -20,11 +20,10 @@ import (
 // It does not answer *why* it is incorrect/slow.
 // For such lower level details, see BuilderMigrationDetails entity.
 type BuilderMigration struct {
-	AnalysisTime          time.Time // when migrated was evaluated
-	Status                MigrationStatus
-	Correctness           float64 // 1 means correct. <1 means incorrect
-	CorrectnessConfidence float64 // 1 means confident. <1 means less confident.
-	Speed                 float64 // 1 means as fast. <1 means slower. >1 means faster.
+	AnalysisTime time.Time // when migrated was evaluated
+	Status       MigrationStatus
+	Correctness  float64 // 1 means correct. <1 means incorrect
+	Speed        float64 // 1 means as fast. <1 means slower. >1 means faster.
 }
 
 // MigrationStatus describes a status of a builder migration at the highest
