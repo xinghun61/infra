@@ -93,6 +93,7 @@ class BucketMessage(messages.Message):
   config_file_content = messages.StringField(3)
   config_file_url = messages.StringField(4)
   config_file_rev = messages.StringField(5)
+  error = messages.MessageField(ErrorMessage, 10)
 
 
 def put_request_message_to_build_request(request):
