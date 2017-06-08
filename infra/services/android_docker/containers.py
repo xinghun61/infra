@@ -162,7 +162,12 @@ class DockerClient(object):
             image=image_name,
             hostname=container_hostname,
             volumes=volumes,
-            environment={_SWARMING_URL_ENV_VAR: swarming_url + '/bot_code'},
+            environment={
+                _SWARMING_URL_ENV_VAR: swarming_url + '/bot_code',
+                # When using libusb, adb lists devices it doesn't have access
+                # to. Avoid the ambiguity by disabling libusb mode.
+                'ADB_LIBUSB': '0',
+            },
             name=container_name,
             detach=True,  # Don't block until it exits.
         )
