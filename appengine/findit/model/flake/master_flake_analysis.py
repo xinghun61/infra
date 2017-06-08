@@ -171,6 +171,8 @@ class MasterFlakeAnalysis(
   @classmethod
   def Create(cls, master_name, builder_name, build_number, step_name,
              test_name):  # pragma: no cover.
+    # TODO(wylieb): Populate original_* fields with these, add test case for
+    # Create.
     return super(MasterFlakeAnalysis, cls).Create(
         MasterFlakeAnalysis._CreateAnalysisId(
             master_name, builder_name, build_number, step_name, test_name))

@@ -10,6 +10,7 @@ import webapp2
 import webtest
 
 from google.appengine.api import users
+from google.appengine.ext import ndb
 
 from handlers.flake import check_flake
 from handlers.flake.check_flake import CheckFlake
@@ -163,13 +164,22 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
          'Please log in with your @google.com account first.'),
         response.json_body.get('error_message'))
 
-  def testMissingKey(self):
+  def testMissingKeyGet(self):
     response = self.test_app.get(
         '/waterfall/flake', params={'format': 'json'}, status=404)
     self.assertEqual('No key was provided.',
                      response.json_body.get('error_message'))
 
-  def testAnalysisNotFound(self):
+  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  def testMissingKeyPost(self, _):
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    response = self.test_app.post(
+        '/waterfall/flake', params={'format': 'json', 'rerun': '1'}, status=404)
+    self.assertEqual('No key was provided.',
+                     response.json_body.get('error_message'))
+
+  def testAnalysisNotFoundGet(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.Save()
 
@@ -180,6 +190,23 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         '/waterfall/flake',
         params={'format': 'json', 'key': analysis.key.urlsafe()},
         status=404)
+    self.assertEqual('Analysis of flake is not found.',
+                     response.json_body.get('error_message'))
+
+  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  def testAnalysisNotFoundPost(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.Save()
+
+    # Simulate a deletion.
+    analysis.key.delete()
+
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    response = self.test_app.post(
+      '/waterfall/flake',
+      params={'format': 'json', 'rerun': '1', 'key': analysis.key.urlsafe()},
+      status=404)
     self.assertEqual('Analysis of flake is not found.',
                      response.json_body.get('error_message'))
 
@@ -708,6 +735,40 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.end_time = datetime.datetime(2017, 06, 06, 00, 43, 00)
     self.assertEqual('00:43:00', check_flake._GetDurationForAnalysis(analysis))
 
+  @mock.patch.object(check_flake.token, 'ValidateXSRFToken',
+                     return_value=True)
+  def testRerunFailsWhenUnauthorized(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.Save()
+
+    # Simulate a deletion.
+    analysis.key.delete()
+
+    self.mock_current_user(user_email='test@google.com', is_admin=False)
+
+    response = self.test_app.post(
+      '/waterfall/flake',
+      params={'format': 'json', 'rerun': '1', 'key': analysis.key.urlsafe()},
+      status=403)
+    self.assertEqual('Only admin is allowed to rerun.',
+                     response.json_body.get('error_message'))
+
+  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  def testRerunFailsWhenAlreadyRunning(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.RUNNING
+    analysis.Save()
+
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    response = self.test_app.post(
+      '/waterfall/flake',
+      params={'format': 'json', 'rerun': '1', 'key': analysis.key.urlsafe()},
+      status=400)
+    self.assertEqual(
+      'Cannot rerun analysis if one is currently running or pending.',
+      response.json_body.get('error_message'))
+
   @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
   def testRequestRerunWhenAuthorized(self, *_):
     master_name = 'm'
@@ -717,20 +778,24 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
 
     analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number - 1, step_name, test_name)
+        master_name, builder_name, build_number, step_name, test_name)
+    analysis.original_master_name = master_name
+    analysis.original_builder_name = builder_name
+    analysis.original_build_number = build_number
+    analysis.original_step_name = step_name
+    analysis.original_test_name = test_name
+    analysis.bug_id = 1
+    analysis.status = analysis_status.COMPLETED
+    analysis.try_job_status = analysis_status.COMPLETED
     analysis.Save()
 
-    self.mock_current_user(user_email='test@google.com')
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
 
-    with mock.patch.object(CheckFlake,
-                           '_CreateAndScheduleFlakeAnalysis',
+    with mock.patch.object(CheckFlake, '_CreateAndScheduleFlakeAnalysis',
                            return_value=(analysis, True)) as scheduler:
       self.test_app.post('/waterfall/flake', params={
-        'url': buildbot.CreateBuildUrl(master_name, builder_name, build_number),
-        'step_name': step_name,
-        'test_name': test_name,
+        'key': analysis.key.urlsafe(),
         'rerun': '1',
-        'format': 'json'}, status=302)
-    scheduler.assert_called_with(master_name, builder_name,
-                                 build_number, step_name, test_name,
-                                 None, True)
+        'format': 'json'})
+      scheduler.assert_called_with(master_name, builder_name, build_number,
+                                   step_name, test_name, 1, True)

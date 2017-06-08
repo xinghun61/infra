@@ -250,26 +250,59 @@ class CheckFlake(BaseHandler):
 
     return analysis, scheduled
 
+  @staticmethod
+  def _CanRerunAnalysis(analysis):
+    return not (analysis.status == analysis_status.RUNNING or
+                analysis.status == analysis_status.PENDING or
+                analysis.try_job_status == analysis_status.RUNNING or
+                analysis.try_job_status == analysis_status.PENDING)
+
   @token.VerifyXSRFToken()
   def HandlePost(self):
-    # TODO(wylieb): Support key POST param here.
-    build_url = self.request.get('url', '').strip()
-    build_info = buildbot.ParseBuildUrl(build_url)
-    if not build_info:
-      return self.CreateError('Unknown build info!', 400)
-    master_name, builder_name, build_number = build_info
-
-    step_name = self.request.get('step_name', '').strip()
-    test_name = self.request.get('test_name', '').strip()
-    bug_id = self.request.get('bug_id', '').strip()
-    # TODO(lijeffrey): Add support for force flag to trigger a rerun.
-
-    error = self._ValidateInput(step_name, test_name, bug_id)
-
-    if error:
-      return error
-
+    # Information needed to execute this endpoint, will be populated
+    # by the branches below.
     rerun = self.request.get('rerun', '0').strip() == '1'
+    if rerun:
+      # If the key has been specified, we can derive the above information
+      # from the analysis itself.
+      if not auth_util.IsCurrentUserAdmin():
+        return self.CreateError('Only admin is allowed to rerun.', 403)
+
+      key = self.request.get('key')
+      if not key:
+        return self.CreateError('No key was provided.', 404)
+
+      analysis = ndb.Key(urlsafe=key).get()
+      if not analysis:
+        return self.CreateError('Analysis of flake is not found.', 404)
+
+      if not self._CanRerunAnalysis(analysis):
+        return self.CreateError(
+          'Cannot rerun analysis if one is currently running or pending.', 400)
+
+      master_name = analysis.original_master_name
+      builder_name = analysis.original_builder_name
+      build_number = analysis.original_build_number
+      step_name = analysis.original_step_name
+      test_name = analysis.original_test_name
+      bug_id = analysis.bug_id
+
+    else:
+      # If the key hasn't been specified, then we get the information from
+      # other URL parameters.
+      build_url = self.request.get('url', '').strip()
+      build_info = buildbot.ParseBuildUrl(build_url)
+      if not build_info:
+        return self.CreateError('Unknown build info!', 400)
+      master_name, builder_name, build_number = build_info
+
+      step_name = self.request.get('step_name', '').strip()
+      test_name = self.request.get('test_name', '').strip()
+      bug_id = self.request.get('bug_id', '').strip()
+
+      error = self._ValidateInput(step_name, test_name, bug_id)
+      if error:
+        return error
 
     build_number = int(build_number)
     bug_id = int(bug_id) if bug_id else None
