@@ -16,6 +16,8 @@ message Config {
     string monorail_hostname = 2;
     // Buildbot master information is fetched from this instance.
     string buildbot_service_hostname = 3;
+    // Builds will be searched and scheduled on this instance of buildbucket.
+    string buildbucket_hostname = 4;
 }
 
 // A single buildbot master.

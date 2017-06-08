@@ -3,6 +3,10 @@ cron:
   url: /internal/cron/discover-builders
   schedule: every 1 hours
 
+- description: Analyze builders
+  url: /internal/cron/analyze-builders
+  schedule: every 1 hours
+
 - description: Update configs
   url: /admin/config/cache/manager
   schedule: every 10 minutes

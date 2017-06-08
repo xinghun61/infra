@@ -77,7 +77,7 @@ func (s MigrationStatus) String() string {
 
 // BuilderMigrationDetails describes a status of a builder migration at the low
 // level.
-// It is an datastore model.
+// It is a datastore model.
 //
 // Entity key. Parent is Builder entity. ID is constant "latest".
 type BuilderMigrationDetails struct {

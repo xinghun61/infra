@@ -71,18 +71,8 @@ func (b *BuilderID) String() string {
 	return b.Master + string(builderIDSep) + b.Builder
 }
 
-// ToProperty implements PropertyConverter.
-func (b *BuilderID) ToProperty() (datastore.Property, error) {
-	return datastore.MkProperty(b.String()), nil
-}
-
-// FromProperty implements PropertyConverter.
-func (b *BuilderID) FromProperty(p datastore.Property) error {
-	str, ok := p.Value().(string)
-	if !ok {
-		return fmt.Errorf("not a string")
-	}
-
+// Parse parses a builder ID from s. It is the opposite of String().
+func (b *BuilderID) Parse(str string) error {
 	sep := strings.IndexRune(str, builderIDSep)
 	if sep == -1 {
 		return errors.Reason("no %(sep)q in %(id)q").
@@ -94,4 +84,18 @@ func (b *BuilderID) FromProperty(p datastore.Property) error {
 	b.Master = str[:sep]
 	b.Builder = str[sep+1:]
 	return nil
+}
+
+// ToProperty implements PropertyConverter.
+func (b *BuilderID) ToProperty() (datastore.Property, error) {
+	return datastore.MkProperty(b.String()), nil
+}
+
+// FromProperty implements PropertyConverter.
+func (b *BuilderID) FromProperty(p datastore.Property) error {
+	str, ok := p.Value().(string)
+	if !ok {
+		return fmt.Errorf("not a string")
+	}
+	return b.Parse(str)
 }

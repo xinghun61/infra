@@ -1,4 +1,4 @@
-// Copyright 2016 The Chromium Authors. All rights reserved.
+// Copyright 2017 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -14,8 +14,10 @@ import (
 
 	"github.com/luci/gae/impl/memory"
 	"github.com/luci/luci-go/common/api/buildbucket/buildbucket/v1"
-
 	"github.com/luci/luci-go/common/errors"
+
+	"infra/appengine/luci-migration/bbutil"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -68,8 +70,8 @@ func TestFlakiness(t *testing.T) {
 				ParametersJson:    b.ParametersJSON,
 				Tags: []string{
 					"user_agent:luci-migration",
-					formatTag(origBuildIDTagKey, "54"),
-					formatTag(retryAttemptTagKey, "0"),
+					bbutil.FormatTag(origBuildIDTagKey, "54"),
+					bbutil.FormatTag(retryAttemptTagKey, "0"),
 					"buildset:patchsetX",
 					"master:masterX",
 				},
@@ -83,14 +85,14 @@ func TestFlakiness(t *testing.T) {
 				Result:         "FAILURE",
 				ParametersJSON: paramsExperimental,
 				Tags: []string{
-					formatTag(origBuildIDTagKey, "53"),
-					formatTag(retryAttemptTagKey, "0"),
+					bbutil.FormatTag(origBuildIDTagKey, "53"),
+					bbutil.FormatTag(retryAttemptTagKey, "0"),
 				},
 			}
 			err := HandleNotification(c, b, bbService)
 			So(err, ShouldBeNil)
 			So(actualBBRequest, ShouldNotBeNil) // did retry
-			So(formatTag(origBuildIDTagKey, "53"), ShouldBeIn, actualBBRequest.Tags)
+			So(bbutil.FormatTag(origBuildIDTagKey, "53"), ShouldBeIn, actualBBRequest.Tags)
 		})
 
 		Convey("does not retry too many times", func() {
@@ -100,8 +102,8 @@ func TestFlakiness(t *testing.T) {
 				Result:         "FAILURE",
 				ParametersJSON: paramsExperimental,
 				Tags: []string{
-					formatTag(origBuildIDTagKey, "53"),
-					formatTag(retryAttemptTagKey, "1"),
+					bbutil.FormatTag(origBuildIDTagKey, "53"),
+					bbutil.FormatTag(retryAttemptTagKey, "1"),
 				},
 			}
 			err := HandleNotification(c, b, bbService)

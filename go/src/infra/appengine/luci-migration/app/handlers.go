@@ -167,6 +167,8 @@ func init() {
 	gaemiddleware.InstallHandlersWithMiddleware(r, base)
 	r.GET("/internal/cron/discover-builders", base, errHandler(cronDiscoverBuilders))
 	r.POST("/_ah/push-handlers/buildbucket", base, taskHandler(handleBuildbucketPubSub))
+	r.GET("/internal/cron/analyze-builders", base, errHandler(cronAnalyzeBuilders))
+	r.POST("/internal/task/analyze-builder/*ignored", base, taskHandler(handleAnalyzeBuilder))
 
 	m := base.Extend(
 		templates.WithTemplates(prepareTemplates()),

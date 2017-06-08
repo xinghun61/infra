@@ -77,6 +77,7 @@ func (d *Builders) Discover(c context.Context, master *config.Master) error {
 	}
 
 	// New builders are discovered. Register them.
+	// This should always return nil.
 	return parallel.FanOutIn(func(work chan<- func() error) {
 		for i, name := range names {
 			if !exists.Get(i) {

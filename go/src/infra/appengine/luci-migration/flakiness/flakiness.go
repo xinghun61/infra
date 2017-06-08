@@ -27,6 +27,8 @@ import (
 	"github.com/luci/luci-go/common/api/buildbucket/buildbucket/v1"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
+
+	"infra/appengine/luci-migration/bbutil"
 )
 
 const (
@@ -46,7 +48,7 @@ type Build struct {
 
 // HandleNotification retires failed experimental LUCI builds at most 2 times.
 func HandleNotification(c context.Context, build *Build, bbService *buildbucket.Service) error {
-	if build.Result != "FAILURE" || !strings.HasPrefix(build.Bucket, "luci.") {
+	if build.Result != bbutil.ResultFailure || !strings.HasPrefix(build.Bucket, "luci.") {
 		return nil
 	}
 	// Note that result==FAILURE builds include infra-failed builds.
@@ -55,7 +57,7 @@ func HandleNotification(c context.Context, build *Build, bbService *buildbucket.
 	retryAttempt := -1
 	origBuildID := ""
 	for _, t := range build.Tags {
-		switch k, v := parseTag(t); k {
+		switch k, v := bbutil.ParseTag(t); k {
 		case retryAttemptTagKey:
 			var err error
 			retryAttempt, err = strconv.Atoi(v)
@@ -115,12 +117,12 @@ func retry(c context.Context, build *Build, attempt int, origBuildID string, bb 
 		ParametersJson:    build.ParametersJSON,
 		Tags: []string{
 			"user_agent:luci-migration",
-			formatTag(origBuildIDTagKey, origBuildID),
-			formatTag(retryAttemptTagKey, strconv.Itoa(attempt+1)),
+			bbutil.FormatTag(origBuildIDTagKey, origBuildID),
+			bbutil.FormatTag(retryAttemptTagKey, strconv.Itoa(attempt+1)),
 		},
 	}
 	for _, t := range build.Tags {
-		switch k, _ := parseTag(t); k {
+		switch k, _ := bbutil.ParseTag(t); k {
 		// Buildbucket has two types of tags: initial and auto-generated.
 		// The auto-generated tags, such as "builder", should not be included
 		// in the Put request because buildbucket server will generate upon
@@ -156,26 +158,4 @@ func retry(c context.Context, build *Build, attempt int, origBuildID string, bb 
 	}
 	logging.Infof(c, "retried build %s: %s", build.ID, resJSON)
 	return nil
-}
-
-// parseTag parses a buildbucket tag.
-//
-// If tag does not have ":", the whole tag because the the key with an empty
-// value.
-func parseTag(tag string) (k, v string) {
-	parts := strings.SplitN(tag, ":", 2)
-	k = parts[0]
-	if len(parts) > 1 {
-		v = parts[1]
-	} else {
-		// this tag is invalid. This should not happen in practice.
-		// Do not panic because this function is used for externally-supplied
-		// data.
-	}
-	return
-}
-
-// formatTag formats a tag from a key-value pair.
-func formatTag(k, v string) string {
-	return k + ":" + v
 }
