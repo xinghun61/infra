@@ -120,7 +120,7 @@
     _computeBugsByPriority: function(bugs) {
       // update last updated time as relative time
       for(var i = 0; i < bugs.length; i++) {
-        bugs[i].updated = moment.tz(bugs[i].updated, 'Atlantic/Reykjavic').fromNow();
+        bugs[i].updated = moment.tz(bugs[i].updated, 'Atlantic/Reykjavik').fromNow();
       }
       let buckets = bugs.reduce((function(obj, b) {
                                   let p = this._computePriority(b);
