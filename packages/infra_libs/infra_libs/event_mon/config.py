@@ -57,12 +57,6 @@ def add_argparse_options(parser):
                      'endpoint. Randomized exponential backoff is applied on '
                      'subsequent retries.')
 
-  # TODO(dsansome): Remove these flags.
-  group.add_argument('--event-mon-service-account-creds',
-                     help='Deprecated and ignored')
-  group.add_argument('--event-mon-service-accounts-creds-root',
-                     help='Deprecated and ignored')
-
 
 def process_argparse_options(args):  # pragma: no cover
   """Initializes event monitoring based on provided arguments.
