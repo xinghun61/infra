@@ -180,12 +180,12 @@
 
     test('has a bug list when annotation has bugs', function(done) {
       element.annotation = {
-        bugs: ["foo/bar"]
+        bugs: ['foo/bar']
       };
 
       flush(function () {
         assert.lengthOf(element.$.bugsList.querySelectorAll(".bug"), 1);
-        assert.equal('foo', element.$.bugsList.querySelector("a").textContent);
+        assert.equal('Bug foo/bar', element.$.bugsList.querySelector("a").textContent);
         assert.include(element.$.bugsList.querySelector("a").href, 'foo/bar');
         done();
       });
@@ -245,6 +245,26 @@
         assert.equal("(5)", element.$.commentsLink.textContent.trim());
         done();
       });
+    });
+
+    test('_isCollapsed is computed correctly', function() {
+      element.collapseByDefault = false;
+      element.openState = '';
+      element.annotation = {'snoozed': false};
+
+      assert.equal(false, element._isCollapsed);
+
+      element.collapseByDefault = true;
+      assert.equal(true, element._isCollapsed);
+
+      element.collapseByDefault = false;
+      assert.equal(false, element._isCollapsed);
+
+      element.annotation = {'snoozed': true};
+      assert.equal(true, element._isCollapsed);
+
+      element.openState = 'opened';
+      assert.equal(false, element._isCollapsed);
     });
   });
 })();

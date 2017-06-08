@@ -7,20 +7,10 @@
     }
     return resp.json();
   }
-  // Manages annotation state. Includes a localState object, which holds local
-  // annotations to alerts.
+  // Manages annotation state.
   AnnotationManagerBehavior = {
-    properties: {
-      // Local in browser annotations for alerts, like if the alert is collapsed
-      // or not.
-      localState: {
-        type: Object,
-        value: function() { return {}; },
-      },
-    },
-
     // Compute the annotation for a given alert.
-    computeAnnotation: function(annotations, alert, collapseByDefault) {
+    computeAnnotation: function(annotations, alert) {
       let key = alert.key;
 
       let ann = annotations[key];
@@ -32,7 +22,6 @@
       // checks weirdly falsey.
       returnVal.snoozed = false;
 
-      returnVal.opened = !collapseByDefault;
 
       if (ann) {
         if (ann.snoozeTime) {
@@ -62,34 +51,8 @@
         if (ann.group_id != undefined) {
           returnVal.groupID = ann.group_id;
         }
-
-        if (ann.opened !== undefined) {
-          returnVal.opened = ann.opened;
-        } else if (returnVal.snoozed) {
-          // Snoozed annotations are collapsed unless otherwise specified.
-          returnVal.opened = false;
-        }
       }
       return returnVal;
-    },
-
-    // Mutating local state. This exists because we often change the value of
-    // items in localState. The key to these items is the alert key, which often
-    // has periods in it, making calls to notifyPath not work. So, we follow
-    // the instructions at
-    // https://www.polymer-project.org/1.0/docs/devguide/model-data#override-dirty-check
-    mutateLocalState: function(callback){
-      let old = this.localState;
-      callback(old);
-      this.localState = {};
-      this.localState = old;
-    },
-
-    // Set a key in local state.
-    setLocalStateKey: function(key, newValues){
-      this.mutateLocalState((newState) => {
-        newState[key] = Object.assign(newState[key] || {}, newValues)
-      });
     },
   };
 </script>

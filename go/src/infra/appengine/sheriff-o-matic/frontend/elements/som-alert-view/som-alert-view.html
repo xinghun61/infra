@@ -150,11 +150,12 @@
             <template is="dom-repeat" items="[[_alertItemsWithCategory(_alerts, annotations, cat, _isTrooperPage)]]" as="alert">
               <som-alert-item
                   class="alert-item"
+                  data-category$="[[cat]]"
                   tabindex="0"
                   alert="[[alert]]"
                   tree-name="[[tree.name]]"
-                  selected="[[selected]]"
-                  annotation="[[computeAnnotation(annotations, alert, collapseByDefault)]]"
+                  annotation="[[computeAnnotation(annotations, alert)]]"
+                  collapse-by-default="[[collapseByDefault]]"
                   link-style="[[linkStyle]]"
                   on-annotation-change="_handleAnnotation"
                   on-comment="_handleComment"
@@ -164,7 +165,6 @@
                   on-group="_handleGroup"
                   on-ungroup="_handleUngroup"
                   on-resolve="_handleResolve"
-                  on-opened-change="_handleOpenedChange"
                   on-checked="_handleChecked"
               ></som-alert-item>
             </template>
@@ -181,7 +181,8 @@
         <som-alert-item
             alert="[[_examinedAlert]]"
             tree-name="[[tree.name]]"
-            annotation="[[computeAnnotation(annotations, _examinedAlert)]]"
+            annotation="[[computeAnnotation(annotations, alert)]]"
+            collapse-by-default="[[collapseByDefault]]"
             link-style="[[linkStyle]]"
             on-annotation-change="_handleAnnotation"
             on-comment="_handleComment"
@@ -189,7 +190,6 @@
             on-remove-bug="_handleRemoveBug"
             on-snooze="_handleSnooze"
             on-group="_handleGroup"
-            on-opened-change="_handleOpenedChange"
             examining
         ></som-alert-item>
         <som-examine alert="[[_examinedAlert]]" link-style="[[linkStyle]]"></som-examine>

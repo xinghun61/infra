@@ -15,7 +15,7 @@
         value: function() {
           return {};
         },
-        computed: '_computeAnnotations(_annotationsResp, localState)'
+        computed: '_computeAnnotations(_annotationsResp)'
       },
       annotationError: {
         type: Object,
@@ -179,22 +179,13 @@
 
     },
 
-    _computeAnnotations: function(annotationsJson, localState) {
+    _computeAnnotations: function(annotationsJson) {
       let annotations = {};
       annotationsJson = annotationsJson || [];
 
-      Object.keys(localState).forEach((key) => {
-        key = decodeURIComponent(key);
-        annotations[key] = localState[key];
-      });
-      annotationsJson.forEach((annotation) => {
-        // If we've already added something here through local state, copy that
-        // over.
-        let key = decodeURIComponent(annotation.key);
-        if (annotations[key]) {
-          Object.assign(annotation, annotations[key]);
-        }
-        annotations[key] = annotation;
+      annotationsJson.forEach((ann) => {
+        let key = decodeURIComponent(ann.key);
+        annotations[key] = ann;
       });
       return annotations;
     },
@@ -218,10 +209,6 @@
     },
 
     ////////////////////// Handlers ///////////////////////////
-
-    handleOpenedChange: function(alert, detail) {
-      this.setLocalStateKey(alert.key, {opened: detail.value});
-    },
 
     handleAnnotation: function(alert, detail) {
       this.annotationError.action = 'Fetching all annotations';
@@ -355,8 +342,6 @@
             this.$.bug.value = '';
             this.$.bugDialog.close();
 
-            this.setLocalStateKey(response.key, {opened: false});
-
             if (this._fileBugCallback) {
               this._fileBugCallback();
             }
@@ -377,8 +362,6 @@
           (response) => {
             this.$.snoozeTime.value = '';
             this.$.snoozeDialog.close();
-
-            this.setLocalStateKey(response.key, {opened: false});
 
             if (this._snoozeCallback) {
               this._snoozeCallback();
@@ -535,8 +518,6 @@
               .then(
                   (response) => {
                     this.$.ungroupDialog.close();
-
-                    this.setLocalStateKey(response.key, {opened: false});
                   },
                   (error) => {
                     this._ungroupErrorMessage = error;

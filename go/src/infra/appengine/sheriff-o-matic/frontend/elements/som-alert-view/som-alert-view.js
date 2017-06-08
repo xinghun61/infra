@@ -18,7 +18,7 @@
           return [];
         },
         computed: `_computeAlerts(_alertsData.*, annotations, showInfraFailures,
-              _isTrooperPage, collapseByDefault)`,
+              _isTrooperPage)`,
       },
       // Map of stream to data, timestamp of latest updated data.
       _alertsData: {
@@ -314,7 +314,7 @@
     },
 
     _computeAlerts: function(alertsData, annotations, showInfraFailures,
-                             isTrooperPage, collapseByDefault) {
+                             isTrooperPage) {
       if (!alertsData || !alertsData.base) {
         return [];
       }
@@ -338,7 +338,7 @@
         for (let i in alerts) {
           let alert = alerts[i];
           let ann =
-              this.computeAnnotation(annotations, alert, collapseByDefault);
+              this.computeAnnotation(annotations, alert);
           if (ann.groupID) {
             if (!(ann.groupID in groups)) {
               let group = {
@@ -358,7 +358,7 @@
 
               // Group name is stored using the groupID annotation.
               let groupAnn =
-                  this.computeAnnotation(annotations, group, collapseByDefault);
+                  this.computeAnnotation(annotations, group);
               if (groupAnn.groupID) {
                 group.title = groupAnn.groupID;
               }
@@ -399,8 +399,8 @@
       }
 
       allAlerts.sort((a, b) => {
-        let aAnn = this.computeAnnotation(annotations, a, collapseByDefault);
-        let bAnn = this.computeAnnotation(annotations, b, collapseByDefault);
+        let aAnn = this.computeAnnotation(annotations, a);
+        let bAnn = this.computeAnnotation(annotations, b);
 
         let aHasBugs = aAnn.bugs && aAnn.bugs.length > 0;
         let bHasBugs = bAnn.bugs && bAnn.bugs.length > 0;
@@ -659,24 +659,19 @@
 
     _collapseAll: function(evt) {
       let cat = evt.model.get('cat');
-      let alerts = this._alertItemsWithCategory(this._alerts, this.annotations,
-                                                cat, this._isTrooperPage);
-      this._toggleAlertsOpenedState(alerts, false);
+      let alerts = this._alertItemsByCategory(cat);
+      this._toggleAlertsOpenedState(alerts, 'closed');
     },
 
     _expandAll: function(evt) {
       let cat = evt.model.get('cat');
-      let alerts = this._alertItemsWithCategory(this._alerts, this.annotations,
-                                                cat, this._isTrooperPage);
-      this._toggleAlertsOpenedState(alerts, true);
+      let alerts = this._alertItemsByCategory(cat);
+      this._toggleAlertsOpenedState(alerts, 'opened');
     },
 
     _toggleAlertsOpenedState: function(alerts, opened) {
-      this.mutateLocalState((newState) => {
-        alerts.forEach((alr) => {
-          newState[alr.key] =
-              Object.assign(newState[alr.key] || {}, {opened: opened});
-        });
+      alerts.forEach((alert) => {
+        alert.openState = opened;
       });
     },
 
@@ -689,11 +684,6 @@
         return a.type == alert.type && a.key != alert.key &&
                (!alert.grouped || !a.grouped);
       });
-    },
-
-    _handleOpenedChange: function(evt) {
-      this.$.annotations.handleOpenedChange(evt.target.get('alert'),
-                                            evt.detail);
     },
 
     _handleAnnotation: function(evt) {
@@ -830,13 +820,16 @@
     _checkAll: function(evt) {
       let cat = evt.model.get('cat');
       let checked = evt.target.checked;
-      let alerts = this.getElementsByClassName('alert-item');
+
+      let alerts = this._alertItemsByCategory(cat);
       for (let i = 0; i < alerts.length; i++) {
-        if (this._alertHasCategory(alerts[i].alert, this.annotations, cat,
-                                   this._isTrooperPage)) {
-          alerts[i].checked = checked;
-        }
+        alerts[i].checked = checked;
       }
+    },
+
+    _alertItemsByCategory: function(cat) {
+      // Note that this is to retrieve full som-alert-items, not alert objects.
+      return this.querySelectorAll(`.alert-item[data-category="${cat}"]`);
     },
   });
 })();

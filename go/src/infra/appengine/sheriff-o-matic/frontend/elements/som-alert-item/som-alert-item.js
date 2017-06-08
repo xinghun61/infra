@@ -53,6 +53,10 @@
         value: false,
         observer: '_alertChecked',
       },
+      openState: {
+        type: String,
+        value: '',
+      },
       _bugs: {
         type: Array,
         computed: '_computeBugs(annotation)',
@@ -101,6 +105,10 @@
         type: Boolean,
         computed: '_computeHasResolve(treeName)',
       },
+      _isCollapsed: {
+        type: Boolean,
+        computed: '_computeIsCollapsed(openState, annotation, collapseByDefault)',
+      },
       _startTime:
           {type: String, computed: '_formatTimestamp(alert.start_time)'},
       _groupNameInput: {
@@ -121,7 +129,7 @@
       let bugs = annotation.bugs;
       if (!bugs) return [];
       return bugs.map((bug) => {
-        if (bug in annotation.bugData) {
+        if (annotation.bugData && bug in annotation.bugData) {
           return annotation.bugData[bug];
         }
         return {'id': bug};
@@ -236,11 +244,11 @@
     },
 
     _removeBug: function(evt) {
-      let bugId = evt.model.bug;
+      let bug = evt.model.bug;
       this.fire('remove-bug', {
-        bug: bugId,
-        summary: this._bugSummary(bugId, this.annotation.bugData),
-        url: this._bugUrl(bugId),
+        bug: String(bug.id),
+        summary: bug.summary,
+        url: 'https://crbug.com/' + bug.id,
       });
     },
 
@@ -315,17 +323,27 @@
       this.$.alertCollapse.updateSize(String(this.$.alertCollapse.scrollHeight) + 'px');
     },
 
+    _computeIsCollapsed: function(openState, annotation, collapseByDefault) {
+      // If opened is not defined, fall back to defaults based on annotation
+      // and collapseByDefault.
+      if (openState == 'opened') {
+        return false;
+      } else if (openState == 'closed') {
+        return true;
+      }
+      return annotation.snoozed || collapseByDefault;
+    },
+
     _toggle: function(evt) {
       let path = evt.path;
       for (let i = 0; i < path.length; i++) {
         let itm = path[i];
         if (itm.classList && itm.classList.contains('no-toggle')) {
-          // Clicking on a bug shouldn't affect toggled state.
+          // Clicking on a bug, checkbox, etc shouldn't affect toggled state.
           return;
         }
       }
-
-      this.fire('opened-change', {value: !this.annotation.opened});
+      this.openState = this._isCollapsed ? 'opened' : 'closed';
     },
   });
 })();
