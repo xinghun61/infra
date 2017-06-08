@@ -420,11 +420,25 @@ class MonorailApiTest(testing.EndpointsTestCase):
     with self.call_should_fail(403):
       self.call_api('issues_comments_insert', self.request)
 
-  def testIssuesCommentsInsert_Amendments(self):
+  def testIssuesCommentsInsert_CommentPermissionOnly(self):
+    """User has permission to comment, even though they cannot edit."""
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[], project_id=12345)
+
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 2)
+    self.services.issue.TestAddIssue(issue1)
+
+    self.request['content'] = 'This is just a comment'
+    resp = self.call_api('issues_comments_insert', self.request).json_body
+    self.assertEqual('requester@example.com', resp['author']['name'])
+    self.assertEqual('This is just a comment', resp['content'])
+
+  def testIssuesCommentsInsert_Amendments_Normal(self):
     """Insert comments with amendments."""
 
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[1],
         project_id=12345)
 
     issue1 = fake.MakeTestIssue(
@@ -450,6 +464,26 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.assertEqual('requester@example.com', resp['author']['name'])
     self.assertEqual('Updated', resp['updates']['status'])
     self.assertEqual(0, issue1.merged_into)
+
+  def testIssuesCommentsInsert_Amendments_NoPerms(self):
+    """Insert comments with amendments."""
+
+    project1 = self.services.project.TestAddProject(
+        'test-project', owner_ids=[], project_id=12345)
+
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 2, project_name='test-project')
+    self.services.issue.TestAddIssue(issue1)
+
+    self.request['updates'] = {
+        'summary': 'new summary',
+        }
+    with self.call_should_fail(403):
+      self.call_api('issues_comments_insert', self.request)
+
+    project1.contributor_ids = [1]  # Does not grant edit perm.
+    with self.call_should_fail(403):
+      self.call_api('issues_comments_insert', self.request)
 
   def testIssuesCommentsInsert_MergeInto(self):
     """Insert comment that merges an issue into another issue."""
@@ -484,7 +518,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
   def testIssuesCommentInsert_CustomFields(self):
     """Update custom field values."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
+        'test-project', owner_ids=[1],
         project_id=12345)
     issue1 = fake.MakeTestIssue(
         12345, 1, 'Issue 1', 'New', 2,
@@ -501,28 +535,66 @@ class MonorailApiTest(testing.EndpointsTestCase):
     resp = self.call_api('issues_comments_insert', self.request).json_body
     self.assertEqual('Updated', resp['updates']['status'])
 
-  def testIssuesCommentInsert_MoveToProject_Fail(self):
-    """Move issue to a different project and failed."""
+  def testIssuesCommentInsert_MoveToProject_NoPermsSrc(self):
+    """Don't move issue when user has no perms to edit issue."""
     self.services.project.TestAddProject(
-        'test-project', owner_ids=[2],
-        project_id=12345)
+        'test-project', owner_ids=[], project_id=12345)
     issue1 = fake.MakeTestIssue(
-        12345, 1, 'Issue 1', 'New', 2, labels=['Restrict-View-Google'],
+        12345, 1, 'Issue 1', 'New', 2, labels=[],
+        project_name='test-project')
+    self.services.issue.TestAddIssue(issue1)
+    self.services.project.TestAddProject(
+        'test-project2', owner_ids=[1], project_id=12346)
+
+    # The user has no permission in test-project.
+    self.request['projectId'] = 'test-project'
+    self.request['updates'] = {
+        'moveToProject': 'test-project2'}
+    with self.call_should_fail(403):
+      self.call_api('issues_comments_insert', self.request)
+
+  def testIssuesCommentInsert_MoveToProject_NoPermsDest(self):
+    """Don't move issue to a different project where user has no perms."""
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[1], project_id=12345)
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 2, labels=[],
+        project_name='test-project')
+    self.services.issue.TestAddIssue(issue1)
+    self.services.project.TestAddProject(
+        'test-project2', owner_ids=[], project_id=12346)
+
+    # The user has no permission in test-project2.
+    self.request['projectId'] = 'test-project'
+    self.request['updates'] = {
+        'moveToProject': 'test-project2'}
+    with self.call_should_fail(400):
+      self.call_api('issues_comments_insert', self.request)
+
+  def testIssuesCommentInsert_MoveToProject_NoSuchProject(self):
+    """Don't move issue to a different project that does not exist."""
+    project1 = self.services.project.TestAddProject(
+        'test-project', owner_ids=[2], project_id=12345)
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 2, labels=[],
         project_name='test-project')
     self.services.issue.TestAddIssue(issue1)
 
-    self.services.project.TestAddProject(
-        'test-project2', owner_ids=[1],
-        project_id=12346)
-    issue2 = fake.MakeTestIssue(
-        12346, 1, 'Issue 1', 'New', 2, project_name='test-project2')
-    self.services.issue.TestAddIssue(issue2)
-
-    # Project doesn't exist
+    # Project doesn't exist.
+    project1.owner_ids = [1, 2]
     self.request['updates'] = {
         'moveToProject': 'not exist'}
     with self.call_should_fail(400):
       self.call_api('issues_comments_insert', self.request)
+
+  def testIssuesCommentInsert_MoveToProject_SameProject(self):
+    """Don't move issue to the project it is already in."""
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[1], project_id=12345)
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 2, labels=[],
+        project_name='test-project')
+    self.services.issue.TestAddIssue(issue1)
 
     # The issue is already in destination
     self.request['updates'] = {
@@ -530,14 +602,19 @@ class MonorailApiTest(testing.EndpointsTestCase):
     with self.call_should_fail(400):
       self.call_api('issues_comments_insert', self.request)
 
-    # The user has no permission in test-project
-    self.request['projectId'] = 'test-project2'
-    self.request['updates'] = {
-        'moveToProject': 'test-project'}
-    with self.call_should_fail(400):
-      self.call_api('issues_comments_insert', self.request)
+  def testIssuesCommentInsert_MoveToProject_Restricted(self):
+    """Don't move restricted issue to a different project."""
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[1], project_id=12345)
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 2, labels=['Restrict-View-Google'],
+        project_name='test-project')
+    self.services.issue.TestAddIssue(issue1)
+    self.services.project.TestAddProject(
+        'test-project2', owner_ids=[1],
+        project_id=12346)
 
-    #  Restrict labels
+    #  Issue has restrict labels, so it cannot move.
     self.request['projectId'] = 'test-project'
     self.request['updates'] = {
         'moveToProject': 'test-project2'}

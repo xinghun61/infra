@@ -377,6 +377,12 @@ class MonorailApi(remote.Service):
 
     updates_dict = {}
     if request.updates:
+      if not permissions.CanEditIssue(
+          mar.auth.effective_ids, mar.perms, mar.project, issue,
+          mar.granted_perms):
+        raise permissions.PermissionException(
+            'User is not allowed to edit this issue (%s, %d)' %
+            (request.projectId, request.issueId))
       if request.updates.moveToProject:
         move_to = request.updates.moveToProject.lower()
         move_to_project = issuedetail.CheckMoveIssueRequest(
