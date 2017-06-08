@@ -42,6 +42,8 @@ type Builder struct {
 	LUCIBuildbucketBuilder string
 
 	Migration BuilderMigration
+
+	ExperimentPercentage int
 }
 
 // IssueID globally identifies a Monorail issue.

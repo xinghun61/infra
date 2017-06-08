@@ -5,18 +5,24 @@
 package app
 
 import (
+	"fmt"
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"golang.org/x/net/context"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 
 	"infra/appengine/luci-migration/storage"
 )
+
+const experimentPercentageFormValueName = "experimentPercentage"
 
 type builderViewModel struct {
 	Builder *storage.Builder
@@ -26,17 +32,25 @@ type builderViewModel struct {
 	Details           template.HTML
 }
 
-func handleBuilderPage(c *router.Context) error {
+func parseBuilderIDFromRequest(params *httprouter.Params) (storage.BuilderID, error) {
 	id := storage.BuilderID{
-		Master:  c.Params.ByName("master"),
-		Builder: c.Params.ByName("builder"),
+		Master:  params.ByName("master"),
+		Builder: params.ByName("builder"),
 	}
-	if id.Master == "" {
-		http.Error(c.Writer, "master unspecified in URL", http.StatusBadRequest)
-		return nil
+	var err error
+	switch {
+	case id.Master == "":
+		err = errors.New("master unspecified in URL")
+	case id.Builder == "":
+		err = errors.New("builder unspecified in URL")
 	}
-	if id.Builder == "" {
-		http.Error(c.Writer, "builder unspecified in URL", http.StatusBadRequest)
+	return id, err
+}
+
+func handleBuilderPage(c *router.Context) error {
+	id, err := parseBuilderIDFromRequest(&c.Params)
+	if err != nil {
+		http.Error(c.Writer, err.Error(), http.StatusBadRequest)
 		return nil
 	}
 
@@ -89,6 +103,54 @@ func builderPage(c context.Context, id storage.BuilderID) (*builderViewModel, er
 	model.StatusKnown = mig.Status != storage.StatusUnknown && model.Details != ""
 	model.StatusClassSuffix = migrationStatusLabelClassSuffix(mig.Status)
 	return model, nil
+}
+
+// handleBuilderPagePost handles POST request for the builder page.
+// It updates builder properties in the datastore.
+func handleBuilderPagePost(c *router.Context) error {
+	id, err := parseBuilderIDFromRequest(&c.Params)
+	if err != nil {
+		http.Error(c.Writer, err.Error(), http.StatusBadRequest)
+		return nil
+	}
+
+	percentageValue := c.Request.FormValue(experimentPercentageFormValueName)
+	percentage, err := strconv.Atoi(percentageValue)
+	if err != nil || percentage < 0 || percentage > 100 {
+		msg := fmt.Sprintf("invalid %s %q", experimentPercentageFormValueName, percentageValue)
+		http.Error(c.Writer, msg, http.StatusBadRequest)
+		return nil
+	}
+
+	notFound := false
+	err = datastore.RunInTransaction(c.Context, func(c context.Context) error {
+		builder := &storage.Builder{ID: id}
+		err := datastore.Get(c, builder)
+		switch {
+		case err == datastore.ErrNoSuchEntity:
+			notFound = true
+			return nil
+		case err != nil:
+			return err
+		default:
+			builder.ExperimentPercentage = percentage
+			return datastore.Put(c, builder)
+		}
+	}, nil)
+
+	switch {
+	case err != nil:
+		return err
+
+	case notFound:
+		http.NotFound(c.Writer, c.Request)
+		return nil
+
+	default:
+		logging.Infof(c.Context, "updated experiment percentage of %q to %d%%", &id, percentage)
+		http.Redirect(c.Writer, c.Request, c.Request.URL.String(), http.StatusFound)
+		return nil
+	}
 }
 
 // migrationStatusLabelClassSuffix returns a Bootstrap label class suffix for a

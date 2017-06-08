@@ -5,13 +5,18 @@
 package app
 
 import (
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"golang.org/x/net/context"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/auth/authtest"
+	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 
 	"infra/appengine/luci-migration/storage"
@@ -97,6 +102,43 @@ func TestBuilder(t *testing.T) {
 				StatusClassSuffix: "danger",
 				Details:           "almost",
 			})
+		})
+
+		Convey("set experiment percentage", func() {
+			builder := &storage.Builder{ID: id}
+			err := datastore.Put(c, builder)
+			So(err, ShouldBeNil)
+
+			rec := httptest.NewRecorder()
+			path := "/masters/tryserver.chromium.linux/builders/linux_chromium_rel_ng"
+			values := url.Values{}
+			values.Set(experimentPercentageFormValueName, "10")
+			err = handleBuilderPagePost(&router.Context{
+				Context: c,
+				Params: httprouter.Params{
+					httprouter.Param{
+						Key:   "master",
+						Value: "tryserver.chromium.linux",
+					},
+					httprouter.Param{
+						Key:   "builder",
+						Value: "linux_chromium_rel_ng",
+					},
+				},
+				Request: &http.Request{
+					URL:  &url.URL{Path: path},
+					Form: values,
+				},
+				Writer: rec,
+			})
+			So(err, ShouldBeNil)
+
+			res := rec.Result()
+			So(res.StatusCode, ShouldEqual, http.StatusFound)
+
+			err = datastore.Get(c, builder)
+			So(err, ShouldBeNil)
+			So(builder.ExperimentPercentage, ShouldEqual, 10)
 		})
 	})
 }

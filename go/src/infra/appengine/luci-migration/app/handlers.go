@@ -36,7 +36,7 @@ import (
 
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/discovery"
-	"infra/appengine/luci-migration/flakiness"
+	"infra/appengine/luci-migration/scheduling"
 )
 
 const accessGroup = "luci-migration-access"
@@ -132,7 +132,7 @@ func cronDiscoverBuilders(c *router.Context) error {
 
 func handleBuildbucketPubSub(c *router.Context) error {
 	var msg struct {
-		Build    flakiness.Build
+		Build    buildbucket.ApiCommonBuildMessage
 		Hostname string
 	}
 	if err := parsePubSubJSON(c.Request.Body, &msg); err != nil {
@@ -150,7 +150,7 @@ func handleBuildbucketPubSub(c *router.Context) error {
 	}
 	bb.BasePath = fmt.Sprintf("https://%s/api/buildbucket/v1/", msg.Hostname)
 
-	return flakiness.HandleNotification(c.Context, &msg.Build, bb)
+	return scheduling.HandleNotification(c.Context, &msg.Build, bb)
 }
 
 func init() {
@@ -175,10 +175,13 @@ func init() {
 		auth.Authenticate(server.UsersAPIAuthMethod{}),
 		checkAccess,
 	)
+	// All POST forms must be protected with XSRF token.
+	mxsrf := m.Extend(xsrf.WithTokenCheck)
 
 	r.GET("/", m, errHandler(handleIndexPage))
 	r.GET("/masters/:master/", m, errHandler(handleMasterPage))
 	r.GET("/masters/:master/builders/:builder/", m, errHandler(handleBuilderPage))
+	r.POST("/masters/:master/builders/:builder/", mxsrf, errHandler(handleBuilderPagePost))
 
 	http.DefaultServeMux.Handle("/", r)
 }

@@ -76,6 +76,16 @@ func BuildSet(b *buildbucket.ApiCommonBuildMessage) string {
 	return ""
 }
 
+// Builder returns the value of the "builder" tag in b, or "" if not found.
+func Builder(b *buildbucket.ApiCommonBuildMessage) string {
+	for _, t := range b.Tags {
+		if k, v := ParseTag(t); k == "builder" {
+			return v
+		}
+	}
+	return ""
+}
+
 // BuildSetURL converts a buildSet to a URL, if possible. Otherwise returns "".
 func BuildSetURL(buildSet string) string {
 	parts := strings.Split(buildSet, "/")

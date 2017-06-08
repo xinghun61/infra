@@ -4,6 +4,14 @@ that can be found in the LICENSE file. -->
 
 {{define "title"}}Builder {{.Model.Builder.ID.Builder}}{{end}}
 
+{{define "head"}}
+<style type="text/css">
+  #experimentPercentage {
+    width: 4em;
+  }
+</style>
+{{end}}
+
 {{define "content"}}
   {{with .Model}}
 <ol class="breadcrumb">
@@ -40,6 +48,17 @@ that can be found in the LICENSE file. -->
       <div>
         Tracking bug:
         <a href="{{.Builder.IssueID.URL}}">{{.Builder.IssueID.URL}}</a>
+      </div>
+
+      <div>
+        <form method="post" class="form-inline">
+          <input type="hidden" id="xsrf_token" name="xsrf_token" value="{{$.XsrfToken}}">
+          <div class="form-group">
+            <label for="experimentPercentage">Experiment percentage</label>
+            <input class="form-control" id="experimentPercentage" name="experimentPercentage" type="number" value="{{.Builder.ExperimentPercentage}}">
+          </div>
+          <button type="submit" class="btn btn-default">Update</button>
+        </form>
       </div>
 
     {{if not .StatusKnown}}
