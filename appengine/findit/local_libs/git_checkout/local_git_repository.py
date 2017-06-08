@@ -34,7 +34,7 @@ class LocalGitRepository(GitRepository):
   """Represents local checkout of git repository on chromium host.
 
   Note, to automatically check out internal repos which you have access to,
-  follow the instructions in 'go/internal-repo-checkout-setup'.
+  follow the internal instructions (or talk to katesonia@).
   """
   lock = threading.Lock()
   # Keep track all the updated repos, so every repo only get updated once.
