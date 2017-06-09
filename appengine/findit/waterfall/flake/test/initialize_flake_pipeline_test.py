@@ -14,25 +14,19 @@ from waterfall.test import wf_testcase
 from waterfall.test_info import TestInfo
 
 
+def _CreateAndSaveMasterFlakeAnalysis(master_name, builder_name, build_number,
+                                     step_name, test_name, status):
+  """Creates and saves a MasterFlakeAnalysis with the given information."""
+  analysis = MasterFlakeAnalysis.Create(
+    master_name, builder_name, build_number, step_name, test_name)
+  analysis.status = status
+  analysis.Save()
+
+
 class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
-  def _CreateAndSaveMasterFlakeAnalysis(
-      self, master_name, builder_name, build_number,
-      step_name, test_name, status):
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
-    analysis.status = status
-    analysis.Save()
-
   def testAnalysisIsNotNeededWhenNoneExistsAndNotAllowedToSchedule(self):
-    master_name = 'm'
-    builder_name = 'b 1'
-    build_number = 123
-    step_name = 's'
-    test_name = 't'
-
-    test = TestInfo(
-        master_name, builder_name, build_number, step_name, test_name)
+    test = TestInfo('m', 'b 1', 123, 's', 't')
     need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
         test, test, None, allow_new_analysis=False)
 
@@ -40,17 +34,10 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(analysis)
 
   def testAnalysisIsNeededWhenNoneExistsAndAllowedToSchedule(self):
-    master_name = 'm'
-    builder_name = 'b 1'
-    build_number = 123
-    step_name = 's'
-    test_name = 't'
-
     mocked_now = datetime(2017, 05, 01, 10, 10, 10)
     self.MockUTCNow(mocked_now)
 
-    test = TestInfo(
-        master_name, builder_name, build_number, step_name, test_name)
+    test = TestInfo('m', 'b 1', 123, 's', 't')
     need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
         test, test, None, user_email='test@google.com', allow_new_analysis=True)
 
@@ -65,7 +52,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     step_name = 's'
     test_name = 't'
-    self._CreateAndSaveMasterFlakeAnalysis(
+    _CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.ERROR)
 
@@ -82,16 +69,41 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(analysis)
     self.assertFalse(analysis.triggering_user_email_obscured)
     self.assertEqual(mocked_now, analysis.request_time)
-    self.assertTrue(analysis.version_number > 1)
+    self.assertEqual(analysis.version_number, 2)
 
-  def testAnalysisIsNotNeededForIncompletedAnalysis(self):
+  def testAnalysisIsNeededForCompletedAnalysisWithForce(self):
+    master_name = 'm'
+    builder_name = 'b 1'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    _CreateAndSaveMasterFlakeAnalysis(
+        master_name, builder_name, build_number, step_name,
+        test_name, status=analysis_status.COMPLETED)
+
+    mocked_now = datetime(2017, 05, 01, 10, 10, 10)
+    self.MockUTCNow(mocked_now)
+
+    test = TestInfo(
+        master_name, builder_name, build_number, step_name, test_name)
+    need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
+        test, test, None, user_email='test@google.com', allow_new_analysis=True,
+        force=True)
+
+    self.assertTrue(need_analysis)
+    self.assertIsNotNone(analysis)
+    self.assertFalse(analysis.triggering_user_email_obscured)
+    self.assertEqual(mocked_now, analysis.request_time)
+    self.assertEqual(analysis.version_number, 2)
+
+  def testAnalysisIsNotNeededForIncompleteAnalysis(self):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
     step_name = 's'
     test_name = 't'
     for status in [analysis_status.RUNNING, analysis_status.PENDING]:
-      self._CreateAndSaveMasterFlakeAnalysis(
+      _CreateAndSaveMasterFlakeAnalysis(
           master_name, builder_name, build_number,
           step_name, test_name, status=status)
 
@@ -107,14 +119,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch(
       'waterfall.flake.initialize_flake_pipeline.RecursiveFlakePipeline')
   def testStartPipelineForNewAnalysis(self, mocked_pipeline, _):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 124
-    step_name = 's'
-    test_name = 't'
-
-    test = TestInfo(
-        master_name, builder_name, build_number, step_name, test_name)
+    test = TestInfo('m', 'b 1', 123, 's', 't')
     analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
         test, test, bug_id=None, allow_new_analysis=True, force=False,
         queue_name=constants.DEFAULT_QUEUE)
@@ -132,7 +137,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
-    self._CreateAndSaveMasterFlakeAnalysis(
+    _CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name, test_name,
         status=analysis_status.COMPLETED)
 
