@@ -111,6 +111,7 @@ func TestScheduling(t *testing.T) {
 				So(actualParams, ShouldResemble, map[string]interface{}{
 					"builder_name": "linux_chromium_rel_ng",
 					"properties": map[string]interface{}{
+						"category": "cq_experimental",
 						"revision": "deadbeef",
 					},
 				})

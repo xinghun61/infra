@@ -126,6 +126,9 @@ func handleCompletedBuildbotBuild(c context.Context, build *buildbucket.ApiCommo
 	}
 	props["revision"] = revision
 
+	// Mark the build as experimental, so it does not confuse users of Rietveld and Gerrit.
+	props["category"] = "cq_experimental"
+
 	if marshalled, err := json.Marshal(parameters); err != nil {
 		return err
 	} else {
