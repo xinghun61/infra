@@ -74,20 +74,29 @@ def get_android_devices(filter_devices):
 
   # Scan for connected battors and link each one to its android device if any
   # are present.
+  battor_serial_map = {}
   try:
     battor_serial_map = battor_device_mapping.GenerateSerialMap()
+  except battor_error.BattOrError:
+    # No battors connected. Exit quietly since this is the case on most bots.
+    pass
+  except Exception:
+    logging.exception('Unable to scan for battors; none will be added.')
+  if battor_serial_map:
     # This loop may take several seconds, so log the performance.
     # TODO(bpastene): Maybe parallelize?
     start = time.time()
     for device in android_devices:
-      battor_tty_path = battor_device_mapping.GetBattOrPathFromPhoneSerial(
-          device.serial, serial_map=battor_serial_map)
+      try:
+        battor_tty_path = battor_device_mapping.GetBattOrPathFromPhoneSerial(
+            device.serial, serial_map=battor_serial_map)
+      except battor_error.BattOrError:
+        logging.exception(
+            'Unable to get battor path for device %s.', device.serial)
+        continue
       device.battor = BattorTTYDevice(
           battor_tty_path, battor_serial_map.get(device.serial, 'unknown'))
     logging.debug('Fetched battor serials in %.2fs.', time.time() - start)
-  except battor_error.BattOrError:
-    # No battors connected. Exit quietly since this is the case on most bots.
-    pass
 
   return android_devices
 

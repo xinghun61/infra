@@ -325,6 +325,54 @@ class TestGetDevices(TestDevice):
     self.assertEquals(devices[1].serial, 'serial2')
     self.assertEquals(devices[1].battor, None)
 
+  @mock.patch('devil.utils.battor_device_mapping.GenerateSerialMap')
+  @mock.patch('usb1.USBContext')
+  def test_get_devices_with_battor_error(self, mock_usb_context,
+                                         mock_generate_map):
+    d1 = self.libusb_device
+    d1.serial = 'serial1'
+    d2 = copy.copy(self.libusb_device)
+    d2.serial = 'serial2'
+    self.usb_context = FakeUSBContext([d1, d2])
+    mock_usb_context.return_value = self.usb_context
+    mock_generate_map.side_effect = Exception('omg error')
+    devices = usb_device.get_android_devices(None)
+
+    self.assertEquals(devices[0].serial, 'serial1')
+    self.assertEquals(devices[0].battor, None)
+    self.assertEquals(devices[1].serial, 'serial2')
+    self.assertEquals(devices[1].battor, None)
+
+  @mock.patch('devil.utils.battor_device_mapping.GetBattOrPathFromPhoneSerial')
+  @mock.patch('devil.utils.battor_device_mapping.GenerateSerialMap')
+  @mock.patch('usb1.USBContext')
+  def test_get_devices_with_battor_path_error(self, mock_usb_context,
+                                              mock_generate_map, mock_get_path):
+    d1 = self.libusb_device
+    d1.serial = 'serial1'
+    d2 = copy.copy(self.libusb_device)
+    d2.serial = 'serial2'
+    self.usb_context = FakeUSBContext([d1, d2])
+    mock_usb_context.return_value = self.usb_context
+    mock_generate_map.return_value = {
+        'serial1': 'battorSerial1', 'serial2': 'battorSerial2'}
+    def map_battor_serial_to_tty(device_serial, **kwargs):  # pragma: no cover
+      # pylint: disable=unused-argument
+      if device_serial == 'serial1':
+        return '/dev/ttyBattor1'
+      elif device_serial == 'serial2':
+        raise battor_error.BattOrError('omg battor error')
+      raise Exception('Unexpected device serial: %s', device_serial)
+    mock_get_path.side_effect = map_battor_serial_to_tty
+    devices = usb_device.get_android_devices(None)
+
+    self.assertEquals(len(devices), 2)
+    self.assertEquals(devices[0].serial, 'serial1')
+    self.assertEquals(devices[0].battor.serial, 'battorSerial1')
+    self.assertEquals(devices[0].battor.tty_path, '/dev/ttyBattor1')
+    self.assertEquals(devices[1].serial, 'serial2')
+    self.assertEquals(devices[1].battor, None)
+
 
 class TestGetPhysicalPorts(TestDevice):
   def setUp(self):
