@@ -140,6 +140,10 @@ func (f *fetcher) Fetch(c context.Context) ([]*group, error) {
 	go func() {
 		defer close(luciBuilds)
 		luciFetchErr = f.fetchLUCIBuilds(luciFetchCtx, luciBuilds)
+		if luciFetchErr == context.Canceled {
+			// This is expected. We should not return this from Fetch.
+			luciFetchErr = nil
+		}
 	}()
 
 	// joinBuilds will return when luciBuilds channel is closed.
