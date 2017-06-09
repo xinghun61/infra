@@ -192,6 +192,42 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(0, version)
     self.assertIsNone(step)
 
+  def testNeedNewAnalysisWithFreshEnoughPreviousAnalysisWithRerunFlag(self):
+    existing_request = FlakeAnalysisRequest.Create('flake', False, 123)
+    step1 = BuildStep.Create('m', 'b1', 11, 's', datetime(2016, 10, 01))
+    step1.swarmed = True
+    step1.supported = True
+    step1.scheduled = True
+    step2 = BuildStep.Create('m', 'b2', 12, 's', datetime(2016, 10, 01))
+    step2.swarmed = True
+    step2.supported = True
+    step2.scheduled = True
+    existing_request.supported = True
+    existing_request.swarmed = True
+    existing_request.build_steps = [step1, step2]
+    existing_request.Save()
+
+    request = FlakeAnalysisRequest.Create('flake', False, 123)
+    step3 = BuildStep.Create('m', 'b2', 20, 's', datetime(2016, 10, 01))
+    step3.swarmed = True
+    step3.supported = True
+    request.build_steps = [step3]
+    request.user_emails = ['test@google.com']
+
+    mocked_now = datetime(2016, 10, 01)
+    self.MockUTCNow(mocked_now)
+
+    version, step = flake_analysis_service._CheckForNewAnalysis(request, True)
+
+    self.assertEqual(1, version)
+    new_request = FlakeAnalysisRequest.GetVersion(key='flake', version=version)
+    self.assertEqual(['test@google.com'], new_request.user_emails)
+    self.assertFalse(new_request.user_emails_obscured)
+    self.assertEqual(datetime(2016, 10, 01), new_request.user_emails_last_edit)
+
+    self.assertIsNotNone(step)
+    self.assertTrue(step.scheduled)
+
   def testNeedNewAnalysisWithTooOldPreviousAnalysis(self):
     existing_request = FlakeAnalysisRequest.Create('flake', False, None)
     step1 = BuildStep.Create('m', 'b1', 11, 's', datetime(2016, 10, 01))
@@ -279,12 +315,12 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
                             mocked_GetVersion):
       self.assertTrue(flake_analysis_service.ScheduleAnalysisForFlake(
           request, user_email, True, triggering_source))
-      mocked_CheckForNewAnalysis.assert_called_once_with(request)
+      mocked_CheckForNewAnalysis.assert_called_once_with(request, False)
       mocked_ScheduleAnalysisIfNeeded.assert_called_once_with(
           normalized_test, original_test, bug_id=123,
           allow_new_analysis=True, manually_triggered=False,
           user_email=user_email, triggering_source=triggering_source,
-          queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+          queue_name=constants.WATERFALL_ANALYSIS_QUEUE, force=False)
       mocked_GetVersion.assert_called_once_with(key='flake', version=1)
       mocked_request.assert_has_calls([
           mock.call.analyses.append('key'),
@@ -320,10 +356,10 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
                         'GetVersion', return_value=None) as mocked_GetVersion:
       self.assertFalse(flake_analysis_service.ScheduleAnalysisForFlake(
           request, user_email, True, triggering_sources.FINDIT_UI))
-      mocked_CheckForNewAnalysis.assert_called_once_with(request)
+      mocked_CheckForNewAnalysis.assert_called_once_with(request, False)
       mocked_ScheduleAnalysisIfNeeded.assert_called_once_with(
           normalized_test, original_test, bug_id=123,
           allow_new_analysis=True, manually_triggered=False,
           user_email=user_email, triggering_source=triggering_source,
-          queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+          queue_name=constants.WATERFALL_ANALYSIS_QUEUE, force=False)
       mocked_GetVersion.assert_not_called()

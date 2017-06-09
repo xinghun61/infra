@@ -38,13 +38,13 @@ def _CheckFlakeSwarmedAndSupported(request):
   return swarmed, supported, build_step
 
 
-# TODO: merge in a ndb transaction.
-def _MergeNewRequestIntoExistingOne(new_request, existing_request):
+def _MergeNewRequestIntoExistingOne(new_request, existing_request, rerun=False):
   """Merges the new request into the existing request and creates a new record.
 
   Args:
     new_request (FlakeAnalysisRequest): The request to analyze a flake.
     existing_request (FlakeAnalysisRequest): The existing request in record.
+    rerun (bool): The admin has forced a rerun.
 
   Returns:
     (version_number, build_step)
@@ -57,19 +57,23 @@ def _MergeNewRequestIntoExistingOne(new_request, existing_request):
   # are attached to the same bug, start a new analysis with a different
   # configuration. For a configuration that was analyzed 7 days ago, reset it
   # to use the new reported step of the same configuration.
-  # TODO: move this setting to config.
+  # TODO: Move this setting to config.
+  # TODO: Refactor this method, and put it in FlakeAnalysisRequest.
   seconds_n_days = 7 * 24 * 60 * 60  # 7 days.
   candidate_supported_steps = []
-  need_updating = False
+  need_updating = rerun
   for step in new_request.build_steps:
     existing_step = None
     for s in existing_request.build_steps:
       if (step.master_name == s.master_name and
-          step.builder_name == s.builder_name):
+              step.builder_name == s.builder_name):
         existing_step = s
         break
 
-    if existing_step:
+    if rerun and existing_step:
+      candidate_supported_steps.append(existing_step)
+
+    if existing_step and not rerun:
       # If last reported flake at the existing step was too long ago, drop it
       # so that the new one is recorded.
       time_diff = step.reported_time - existing_step.reported_time
@@ -77,7 +81,7 @@ def _MergeNewRequestIntoExistingOne(new_request, existing_request):
         existing_request.build_steps.remove(existing_step)
         existing_step = None
 
-    if not existing_step:
+    if not existing_step and not rerun:
       need_updating = True
       existing_request.build_steps.append(step)
       if step.supported:
@@ -125,11 +129,12 @@ def _MergeNewRequestIntoExistingOne(new_request, existing_request):
   return existing_request.version_number, supported_build_step
 
 
-def _CheckForNewAnalysis(request):
+def _CheckForNewAnalysis(request, rerun=False):
   """Checks if a new analysis is needed for the requested flake.
 
   Args:
     request (FlakeAnalysisRequest): The request to analyze a flake.
+    rerun (bool): Indicates a forced rerun by admin.
 
   Returns:
     (version_number, build_step)
@@ -180,7 +185,7 @@ def _CheckForNewAnalysis(request):
     # configuration. For a configuration that was analyzed 7 days ago, reset it
     # to use the new reported step of the same configuration.
     # TODO: move this setting to config.
-    return _MergeNewRequestIntoExistingOne(request, existing_request)
+    return _MergeNewRequestIntoExistingOne(request, existing_request, rerun)
 
 
 def IsAuthorizedUser(user_email, is_admin):
@@ -190,7 +195,8 @@ def IsAuthorizedUser(user_email, is_admin):
       user_email.endswith('@google.com')))
 
 
-def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
+def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source,
+                             rerun=False):
   """Schedules an analysis on the flake in the given request if needed.
 
   Args:
@@ -199,6 +205,7 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
     is_admin (bool): Whether the requester is an admin.
     triggering_source (int): Where the request is coming from, either Findit
       UI (check flake page), pipeline (from analysis) or Findit API.
+    rerun (bool): This is a rerun, so force it to be run.
 
   Returns:
     True if an analysis was scheduled; False if a new analysis is not needed;
@@ -219,10 +226,9 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
   for build_step in request.build_steps:
     step_mapper.FindMatchingWaterfallStep(build_step, request.name)
 
-  version_number, build_step = _CheckForNewAnalysis(request)
+  version_number, build_step = _CheckForNewAnalysis(request, rerun)
   if version_number and build_step:
     # A new analysis is needed.
-    # TODO(lijeffrey): Add support for the force flag to trigger a rerun.
     logging.info('A new analysis is needed for: %s', build_step)
     normalized_test = TestInfo(
         build_step.wf_master_name, build_step.wf_builder_name,
@@ -236,7 +242,7 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source):
         normalized_test, original_test, bug_id=request.bug_id,
         allow_new_analysis=True, manually_triggered=manually_triggered,
         user_email=user_email, triggering_source=triggering_source,
-        queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+        queue_name=constants.WATERFALL_ANALYSIS_QUEUE, force=rerun)
     if analysis:
       # TODO: put this in a transaction.
       request = FlakeAnalysisRequest.GetVersion(
