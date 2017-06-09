@@ -48,11 +48,11 @@ func FormatTag(k, v string) string {
 }
 
 // ParseTimestamp parses a buildbucket timestamp.
-func ParseTimestamp(ts int64) time.Time {
-	if ts == 0 {
+func ParseTimestamp(usec int64) time.Time {
+	if usec == 0 {
 		return time.Time{}
 	}
-	return time.Unix(ts/1000000, 0)
+	return time.Unix(usec /1e6, (usec %1e6)*1e3)
 }
 
 // FormatTimestamp t converts to a buildbucket timestamp.
