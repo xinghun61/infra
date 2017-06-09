@@ -93,9 +93,9 @@ class ListAnalyses(BaseHandler):
 
     data = {
         'analyses': analyses,
-        'triage': self.request.get('triage', '-1'),
-        'days': self.request.get('days', '-1'),
-        'count': self.request.get('count', '-1'),
-        'result_status': self.request.get('result_status', '-1')
+        'triage': self.request.get('triage', ''),
+        'days': self.request.get('days', ''),
+        'count': self.request.get('count', ''),
+        'result_status': self.request.get('result_status', '')
     }
     return {'template': 'list_analyses.html', 'data': data}

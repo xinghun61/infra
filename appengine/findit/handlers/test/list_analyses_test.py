@@ -340,10 +340,10 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'result_status': 'Incorrect - Not Found'
             }
         ],
-        'triage': '-1',
-        'days': '-1',
-        'count': '-1',
-        'result_status': '-1'
+        'triage': '',
+        'days': '',
+        'count': '',
+        'result_status': ''
     }
 
     response_json = self.test_app.get('/list-analyses?format=json')
@@ -445,9 +445,9 @@ class ListAnalysesTest(testing.AppengineTestCase):
             }
         ],
         'triage': '1',
-        'days': '-1',
-        'count': '-1',
-        'result_status': '-1'
+        'days': '',
+        'count': '',
+        'result_status': ''
     }
 
     response_json = self.test_app.get('/list-analyses?format=json&triage=1')
@@ -495,10 +495,10 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'result_status': 'Incorrect - Found'
             }
         ],
-        'triage': '-1',
-        'days': '-1',
+        'triage': '',
+        'days': '',
         'count': '2',
-        'result_status': '-1'
+        'result_status': ''
     }
 
     response_json = self.test_app.get('/list-analyses?format=json&count=2')
@@ -528,9 +528,9 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'result_status': 'Incorrect - Found'
             }
         ],
-        'triage': '-1',
-        'days': '-1',
-        'count': '-1',
+        'triage': '',
+        'days': '',
+        'count': '',
         'result_status': '10'
     }
 
@@ -578,8 +578,8 @@ class ListAnalysesTest(testing.AppengineTestCase):
         ],
         'triage': '1',
         'days': '5',
-        'count': '-1',
-        'result_status': '-1'
+        'count': '',
+        'result_status': ''
     }
 
     response_json = self.test_app.get(
@@ -613,9 +613,9 @@ class ListAnalysesTest(testing.AppengineTestCase):
                 'result_status': 'Correct - Found'
             }
         ],
-        'triage': '-1',
+        'triage': '',
         'days': '6',
-        'count': '-1',
+        'count': '',
         'result_status': '0'
     }
 

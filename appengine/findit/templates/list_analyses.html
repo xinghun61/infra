@@ -8,39 +8,10 @@
   <link rel="import" href="/ui/elements/findit-app.html">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <script>
-    parameters = {
-      'triage': '{{triage}}' == '-1' ? undefined : '{{triage}}',
-      'days': '{{days}}' == '-1' ? undefined : '{{days}}',
-      'count': '{{count}}' == '-1' ? undefined : '{{count}}',
-      'result_status': '{{result_status}}' == '-1' ? undefined : '{{result_status}}'
-    };
-
-    function CreateUrl() {
-      var params = [];
-      for(var key in parameters) {
-        if (parameters[key] != undefined) {
-          params.push(key + '=' + parameters[key])
-        }
-      }
-
-      if (params.length == 0) {
-        return '/waterfall/list-analyses'
-      } else {
-        return '/waterfall/list-analyses?' + params.join('&');
-      }
-    }
 
     $(document).ready(function() {
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
-
-      if ('{{result_status}}' != '-1') {
-        $('#result_status').val('{{result_status}}');
-      }
-      $('#result_status').change(function() {
-        parameters['result_status'] = $(this).val() == 'default' ? undefined : $(this).val()
-        newUrl = CreateUrl();
-        window.location.replace(newUrl);
-      });
+      $('#result_status').val('{{result_status}}');
     });
   </script>
 </head>
@@ -56,17 +27,22 @@
           <th>Status</th>
           <th>Suspected CLs</th>
           <th>
-            <select id="result_status">
-              <option value="default">Result Status</option>
-              <option value="0">Correct - Found</option>
-              <option value="10">Incorrect - Found</option>
-              <option value="20">Incorrect - Not Found</option>
-              <option value="30">Untriaged - Found</option>
-              <option value="40">Untriaged - Not Found</option>
-              <option value="50">Correct - Not Found</option>
-              <option value="70">Flaky</option>
-              <option value="80">Unsupported</option>
-            </select>
+            <form id="list_failures" action="/waterfall/list-failures" method="get">
+              <select id="result_status" name="result_status" onchange="this.form.submit()">
+                <option value="">Result Status</option>
+                <option value="0">Correct - Found</option>
+                <option value="10">Incorrect - Found</option>
+                <option value="20">Incorrect - Not Found</option>
+                <option value="30">Untriaged - Found</option>
+                <option value="40">Untriaged - Not Found</option>
+                <option value="50">Correct - Not Found</option>
+                <option value="70">Flaky</option>
+                <option value="80">Unsupported</option>
+              </select>
+              <input type="hidden" name="triage" value="{{triage}}">
+              <input type="hidden" name="days" value="{{days}}">
+              <input type="hidden" name="count" value="{{count}}">
+            </form>
           </th>
         </tr>
 
