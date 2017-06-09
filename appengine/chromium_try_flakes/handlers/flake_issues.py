@@ -110,9 +110,11 @@ KNOWN_TROOPER_FLAKE_NAMES = [
 #  - Uncaught Exception: summary step referring to an exception in another
 #    step (duplicates failure)
 #  - Failure reason: similar to 'recipe failure reason'
+#  - analyze: because flakes are quite rare and most likely caused by some
+#    breakage in the tree, see http://crbug.com/725802 for more details.
 # There are additional rules for non-trivial cases in the FlakyRun.post method.
 IGNORED_STEPS = ['steps', 'presubmit', 'recipe failure reason', 'test results',
-                 'Uncaught Exception', 'Failure reason']
+                 'Uncaught Exception', 'Failure reason', 'analyze']
 
 
 def is_trooper_flake(flake_name):
