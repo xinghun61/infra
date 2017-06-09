@@ -25,9 +25,10 @@ def _UpdateSuspectedFlakeAnalysis(key_urlsafe, triage_result, user_name):
 
   if master_flake_analysis.culprit:
     suspect_info = {
-      'culprit_revision': master_flake_analysis.culprit.revision,
-      'culprit_commit_position': master_flake_analysis.culprit.commit_position,
-      'culprit_url': master_flake_analysis.culprit.url
+        'culprit_revision': master_flake_analysis.culprit.revision,
+        'culprit_commit_position':
+            master_flake_analysis.culprit.commit_position,
+        'culprit_url': master_flake_analysis.culprit.url
     }
   else:
     suspect_info = {
@@ -45,7 +46,7 @@ class TriageFlakeAnalysis(BaseHandler):
   PERMISSION_LEVEL = Permission.CORP_USER
 
   @token.VerifyXSRFToken()
-  def HandlePost(self):  # pragma: no cover
+  def HandlePost(self):
     """Sets the manual triage result for the suspected flake analysis."""
     key_urlsafe = self.request.get('key').strip()
     triage_result = self.request.get('triage_result')
