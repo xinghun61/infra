@@ -19,7 +19,7 @@ from infra_api_clients import logdog_util
 from waterfall.build_info import BuildInfo
 
 _HOST_NAME_PATTERN = (
-    r'https?://(?:build\.chromium\.org/p|uberchromegw\.corp\.google\.com/i)')
+    r'https?://(?:build\.chromium\.org/p|\w+\.\w+\.google\.com/i)')
 
 _MASTER_URL_PATTERN = re.compile(
     r'^%s/([^/]+)(?:/.*)?$' % _HOST_NAME_PATTERN)
