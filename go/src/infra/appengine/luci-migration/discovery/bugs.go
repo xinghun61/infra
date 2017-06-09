@@ -68,7 +68,7 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 		ProjectId: monorailProject,
 		SendEmail: true,
 		Issue: &monorail.Issue{
-			Status:      "Untriaged",
+			Status:      "Available",
 			Summary:     fmt.Sprintf("Migrate %q to LUCI", builder.ID.Builder),
 			Description: descBuf.String(),
 			Components:  []string{"Infra>Platform"},

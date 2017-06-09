@@ -97,7 +97,7 @@ https://app.example.com/masters/tryserver.chromium.linux/builders/linux_chromium
 			ProjectId: "chromium",
 			SendEmail: true,
 			Issue: &monorail.Issue{
-				Status:      "Untriaged",
+				Status:      "Available",
 				Summary:     "Migrate \"linux_chromium_asan_rel_ng\" to LUCI",
 				Description: expectedBugDescription,
 				Components:  []string{"Infra>Platform"},
