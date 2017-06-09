@@ -16,13 +16,17 @@ import (
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 	"github.com/luci/luci-go/server/templates"
 
 	"infra/appengine/luci-migration/storage"
 )
 
-const experimentPercentageFormValueName = "experimentPercentage"
+const (
+	experimentPercentageFormValueName = "experimentPercentage"
+	changeBuilderSettingsGroup        = "luci-migration-writers"
+)
 
 type builderViewModel struct {
 	Builder *storage.Builder
@@ -108,6 +112,14 @@ func builderPage(c context.Context, id storage.BuilderID) (*builderViewModel, er
 // handleBuilderPagePost handles POST request for the builder page.
 // It updates builder properties in the datastore.
 func handleBuilderPagePost(c *router.Context) error {
+	if allow, err := auth.IsMember(c.Context, changeBuilderSettingsGroup); err != nil {
+		return err
+	} else if !allow {
+		logging.Warningf(c.Context, "%s cannot change builder settings", auth.CurrentIdentity(c.Context))
+		http.Error(c.Writer, "Access denied", http.StatusForbidden)
+		return nil
+	}
+
 	id, err := parseBuilderIDFromRequest(&c.Params)
 	if err != nil {
 		http.Error(c.Writer, err.Error(), http.StatusBadRequest)
@@ -147,7 +159,10 @@ func handleBuilderPagePost(c *router.Context) error {
 		return nil
 
 	default:
-		logging.Infof(c.Context, "updated experiment percentage of %q to %d%%", &id, percentage)
+		logging.Infof(
+			c.Context,
+			"updated experiment percentage of %q to %d%% by %q",
+			&id, percentage, auth.CurrentIdentity(c.Context))
 		http.Redirect(c.Writer, c.Request, c.Request.URL.String(), http.StatusFound)
 		return nil
 	}

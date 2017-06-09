@@ -103,7 +103,6 @@ func TestBuilder(t *testing.T) {
 				Details:           "almost",
 			})
 		})
-
 		Convey("set experiment percentage", func() {
 			builder := &storage.Builder{ID: id}
 			err := datastore.Put(c, builder)
@@ -113,7 +112,7 @@ func TestBuilder(t *testing.T) {
 			path := "/masters/tryserver.chromium.linux/builders/linux_chromium_rel_ng"
 			values := url.Values{}
 			values.Set(experimentPercentageFormValueName, "10")
-			err = handleBuilderPagePost(&router.Context{
+			rc := &router.Context{
 				Context: c,
 				Params: httprouter.Params{
 					httprouter.Param{
@@ -130,15 +129,30 @@ func TestBuilder(t *testing.T) {
 					Form: values,
 				},
 				Writer: rec,
+			}
+
+			Convey("set experiment percentage", func() {
+				rc.Context = auth.WithState(rc.Context, &authtest.FakeState{
+					Identity:       "user:user@example.com",
+					IdentityGroups: []string{changeBuilderSettingsGroup},
+				})
+
+				err = handleBuilderPagePost(rc)
+				So(err, ShouldBeNil)
+
+				res := rec.Result()
+				So(res.StatusCode, ShouldEqual, http.StatusFound)
+
+				err = datastore.Get(c, builder)
+				So(err, ShouldBeNil)
+				So(builder.ExperimentPercentage, ShouldEqual, 10)
 			})
-			So(err, ShouldBeNil)
-
-			res := rec.Result()
-			So(res.StatusCode, ShouldEqual, http.StatusFound)
-
-			err = datastore.Get(c, builder)
-			So(err, ShouldBeNil)
-			So(builder.ExperimentPercentage, ShouldEqual, 10)
+			Convey("set experiment percentage: access denied", func() {
+				err = handleBuilderPagePost(rc)
+				So(err, ShouldBeNil)
+				res := rec.Result()
+				So(res.StatusCode, ShouldEqual, http.StatusForbidden)
+			})
 		})
 	})
 }
