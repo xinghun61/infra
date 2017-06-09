@@ -168,23 +168,21 @@
     <div id="root" class$="[[_cssClass]]">
       <div class="alert-title-bar horizontal layout justified" on-tap="_toggle">
         <div class="horizontal layout wrap">
-          <div class="layout horizontal flex-child">
-            <div class="alert-title">
-              <input id="checkbox" type="checkbox" hidden$="[[examining]]" class="no-toggle" checked="{{checked::change}}" />
-              <template is="dom-if" if="[[_hasUngroup]]">
-                <iron-a11y-keys target="[[_groupNameInput]]" keys="enter" on-keys-pressed="_updateGroupName"></iron-a11y-keys>
-                Group:
-                <paper-input id="groupName" value="[[alert.title]]" class="no-toggle">
-                </paper-input>
-                ([[alert.alerts.length]] alerts)
-              </template>
-              <template is="dom-if" if="[[!_hasUngroup]]">
-                <span id="snoozeTitle" hidden="[[!annotation.snoozed]]">Snoozed ([[_snoozeTimeLeft]]): </span>
-                <span id="alertTitle">[[alert.title]]</span>
-              </template>
-            </div>
-            <div id="handleLink" class="self-center" hidden$="[[!_helpLinkForAlert(alert)]]">
-              [<a href$="[[_helpLinkForAlert(alert)]]" target="_blank">Help</a>]
+          <div class="alert-title">
+            <input id="checkbox" type="checkbox" hidden$="[[examining]]" class="no-toggle" checked="{{checked::change}}" />
+            <template is="dom-if" if="[[_hasUngroup]]">
+              <iron-a11y-keys target="[[_groupNameInput]]" keys="enter" on-keys-pressed="_updateGroupName"></iron-a11y-keys>
+              Group:
+              <paper-input id="groupName" value="[[alert.title]]" class="no-toggle">
+              </paper-input>
+              ([[alert.alerts.length]] alerts)
+            </template>
+            <template is="dom-if" if="[[!_hasUngroup]]">
+              <span id="snoozeTitle" hidden="[[!annotation.snoozed]]">Snoozed ([[_snoozeTimeLeft]]): </span>
+              <span id="alertTitle">[[alert.title]]</span>
+            </template>
+            <div id="handleLink" hidden$="[[!_helpLinkForAlert(alert)]]">
+              (<a href$="[[_helpLinkForAlert(alert)]]" target="_blank">Help?</a>)
             </div>
           </div>
           <div id="bugsList" hidden$="[[!_bugs.length]]" class="alert-links self-center flex">
@@ -211,20 +209,19 @@
         <div class="alert-controls layout horizontal center flex-child">
           <div class="layout vertical alert-controls-links">
             <a href$="[[treeName]]/examine/[[alert.key]]"
-              hidden$="[[_hideExamine(alert.type, examining, treeName)]]">Examine</a>
+              hidden$="[[examining]]">Examine</a>
             <a href$="[[treeName]]" hidden$="[[!examining]]">[[treeName]]</a>
             <span class$="link [[_commentsClass]]" on-tap="_comment" id="commentsLink">
               <iron-icon icon="question-answer"></iron-icon> ([[_numComments]])
             </span>
           </div>
           <div class="alert-controls-buttons layout horizontal center flex-child wrap">
-            <button id="linkBug" on-tap="_linkBug" alt="Link a bug" hidden$="[[_hideActions(alert.type, treeName)]]">
+            <button id="linkBug" on-tap="_linkBug" alt="Link a bug">
               <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
               Link/File Bug
             </button>
-            <button id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze" hidden$="[[_hideActions(alert.type, treeName)]]">
-              <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]">
-              </iron-icon>
+            <button id="snooze" icon="[[_snoozeIcon]]" title$="[[_snoozeText]]" on-tap="_snooze">
+              <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]"></iron-icon>
               [[_snoozeText]]
             </button>
             <button id="group" on-tap="_group" alt="Group" hidden$="[[!_hasGroup]]">

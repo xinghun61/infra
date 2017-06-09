@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents.min.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/som-alert-category/som-alert-category.html">
+<test-fixture id="basic">
+  <template>
+    <som-alert-category></som-alert-category>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+  var element;
+
+  setup(function() {
+    element = fixture('basic');
+    sinon.stub(window, 'fetch');
+  });
+
+  teardown(function() {
+    window.fetch.restore();
+  });
+
+  suite('basic tests', function() {
+    test('renders titles', function(done) {
+      element.alerts = [{
+          'key': 'something',
+          'severity': 2,
+      }];
+
+      element.categoryTitle = 'Category';
+
+      flush(function() {
+        assert.equal(
+            element.$$('.category-title-text').textContent.trim(),
+            'Category (1 total)');
+        done();
+      });
+    });
+  });
+})();
+</script>

@@ -80,7 +80,6 @@
       user: String,
       collapseByDefault: Boolean,
       linkStyle: String,
-      showInfraFailures: Boolean,
       xsrfToken: String,
     },
 

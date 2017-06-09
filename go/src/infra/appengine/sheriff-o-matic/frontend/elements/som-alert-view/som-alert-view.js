@@ -17,8 +17,7 @@
         value: function() {
           return [];
         },
-        computed: `_computeAlerts(_alertsData.*, annotations, showInfraFailures,
-              _isTrooperPage)`,
+        computed: `_computeAlerts(_alertsData.*, annotations)`,
       },
       // Map of stream to data, timestamp of latest updated data.
       _alertsData: {
@@ -49,15 +48,8 @@
         },
       },
       _bugs: Array,
-      _checkedAlertKeys: {
-        type: Object,
-        value: function() {
-          return {};
-        },
-      },
       _checkedAlerts: {
         type: Array,
-        computed: '_computeCheckedAlerts(_alerts, _checkedAlertKeys)',
         value: function() {
           return [];
         },
@@ -65,7 +57,7 @@
       _currentAlertView: {
         type: String,
         computed: '_computeCurrentAlertView(_examinedAlert)',
-        value: 'alertList',
+        value: 'alertListPage',
       },
       _examinedAlert: {
         type: Object,
@@ -137,10 +129,6 @@
         value: false,
       },
       linkStyle: String,
-      showInfraFailures: {
-        type: Boolean,
-        value: false,
-      },
       xsrfToken: String,
     },
 
@@ -220,7 +208,7 @@
       if (examinedAlert && examinedAlert.key) {
         return 'examineAlert';
       }
-      return 'alertList';
+      return 'alertListPage';
     },
 
     _computeExaminedAlert: function(alerts, examinedAlertKey) {
@@ -313,8 +301,8 @@
       }
     },
 
-    _computeAlerts: function(alertsData, annotations, showInfraFailures,
-                             isTrooperPage) {
+    // TODO(zhangtiff): Refactor this function.
+    _computeAlerts: function(alertsData, annotations) {
       if (!alertsData || !alertsData.base) {
         return [];
       }
@@ -327,18 +315,11 @@
           continue;
         }
 
-        if (!isTrooperPage && !showInfraFailures) {
-          alerts = alerts.filter(function(alert) {
-            return alert.type !== 'infra-failure';
-          });
-        }
-
         let alertItems = [];
         let groups = {};
         for (let i in alerts) {
           let alert = alerts[i];
-          let ann =
-              this.computeAnnotation(annotations, alert);
+          let ann = this.computeAnnotation(annotations, alert);
           if (ann.groupID) {
             if (!(ann.groupID in groups)) {
               let group = {
@@ -574,23 +555,17 @@
 
     ////////////////////// Alert Categories ///////////////////////////
 
-    _alertItemsWithCategory: function(alerts, annotations, category,
-                                      isTrooperPage) {
+    _alertItemsWithCategory: function(alerts, category, isTrooperPage) {
       return alerts.filter(function(alert) {
-        return this._alertHasCategory(alert, annotations, category,
-                                      isTrooperPage);
+        if (isTrooperPage) {
+          return alert.tree == category;
+        } else if (category == AlertSeverity.InfraFailure) {
+          // Put trooperable alerts into "Infra failures" on sheriff views
+          return this.isTrooperAlertType(alert.type) ||
+                 alert.severity == category;
+        }
+        return alert.severity == category;
       }, this);
-    },
-
-    _alertHasCategory: function(alert, annotations, category, isTrooperPage) {
-      if (isTrooperPage) {
-        return alert.tree == category;
-      } else if (category == AlertSeverity.InfraFailure) {
-        // Put trooperable alerts into "Infra failures" on sheriff views
-        return this.isTrooperAlertType(alert.type) ||
-               alert.severity == category;
-      }
-      return alert.severity == category;
     },
 
     _computeCategories: function(alerts, isTrooperPage) {
@@ -638,42 +613,11 @@
       }[category];
     },
 
-    _getCategoryCount: function(alerts, category, isTrooperPage) {
-      let count = 0;
-      alerts.forEach(function(alert) {
-        let cat = alert.severity;
-        if (isTrooperPage) {
-          cat = alert.tree;
-        } else if (this.isTrooperAlertType(alert.type)) {
-          // Collapse all of these into "Infra failures".
-          cat = AlertSeverity.InfraFailure;
-        }
-        if (category == cat) {
-          count++;
-        }
-      }, this);
-      return count;
+    _isInfraFailuresSection: function(category, isTrooperPage) {
+      return !isTrooperPage && category === AlertSeverity.InfraFailure;
     },
 
     ////////////////////// Annotations ///////////////////////////
-
-    _collapseAll: function(evt) {
-      let cat = evt.model.get('cat');
-      let alerts = this._alertItemsByCategory(cat);
-      this._toggleAlertsOpenedState(alerts, 'closed');
-    },
-
-    _expandAll: function(evt) {
-      let cat = evt.model.get('cat');
-      let alerts = this._alertItemsByCategory(cat);
-      this._toggleAlertsOpenedState(alerts, 'opened');
-    },
-
-    _toggleAlertsOpenedState: function(alerts, opened) {
-      alerts.forEach((alert) => {
-        alert.openState = opened;
-      });
-    },
 
     _computeGroupTargets: function(alert, alerts) {
       // Valid group targets:
@@ -784,52 +728,20 @@
       return response;
     },
 
-    _computeCheckedAlerts: function(alerts, checkedAlertKeys) {
-      let checkedAlerts = [];
-      for (let i = 0; i < alerts.length; i++) {
-        let key = alerts[i].key;
-        if (key in checkedAlertKeys && checkedAlertKeys[key]) {
-          checkedAlerts.push(alerts[i]);
-        }
-      }
-      return checkedAlerts;
-    },
-
     _handleChecked: function(evt) {
-      let keys = {};
-      let alerts = this.getElementsByClassName('alert-item');
-      for (let i = 0; i < alerts.length; i++) {
-        keys[alerts[i].alert.key] = alerts[i].checked;
+      let categoryElements = this.getElementsByClassName('alert-category');
+      let checked = [];
+      for (let i = 0; i < categoryElements.length; i++) {
+        checked = checked.concat(categoryElements[i].checkedAlerts);
       }
-      this._checkedAlertKeys = {};
-      this._checkedAlertKeys = keys;
+      this._checkedAlerts = checked;
     },
 
     _uncheckAll: function(evt) {
-      let alerts = this.getElementsByClassName('alert-item');
-      for (let i = 0; i < alerts.length; i++) {
-        alerts[i].checked = false;
+      let categoryElements = this.getElementsByClassName('alert-category');
+      for (let i = 0; i < categoryElements.length; i++) {
+        categoryElements[i].uncheckAll();
       }
-
-      let categories = this.getElementsByClassName('category-checkbox');
-      for (let i = 0; i < categories.length; i++) {
-        categories[i].checked = false;
-      }
-    },
-
-    _checkAll: function(evt) {
-      let cat = evt.model.get('cat');
-      let checked = evt.target.checked;
-
-      let alerts = this._alertItemsByCategory(cat);
-      for (let i = 0; i < alerts.length; i++) {
-        alerts[i].checked = checked;
-      }
-    },
-
-    _alertItemsByCategory: function(cat) {
-      // Note that this is to retrieve full som-alert-items, not alert objects.
-      return this.querySelectorAll(`.alert-item[data-category="${cat}"]`);
     },
   });
 })();

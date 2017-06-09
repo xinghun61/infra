@@ -13,10 +13,6 @@
         type: String,
         notify: true,
       },
-      showInfraFailures: {
-        type: Boolean,
-        notify: true,
-      },
       linkStyle: {
         type: String,
         notify: true,

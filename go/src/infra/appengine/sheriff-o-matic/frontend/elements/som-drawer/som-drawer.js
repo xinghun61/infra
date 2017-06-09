@@ -62,10 +62,6 @@
         type: String,
         notify: true,
       },
-      showInfraFailures: {
-        type: Boolean,
-        notify: true,
-      },
     },
 
     observers: [

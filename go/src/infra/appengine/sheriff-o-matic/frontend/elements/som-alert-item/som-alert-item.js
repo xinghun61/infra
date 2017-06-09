@@ -39,11 +39,12 @@
       },
       treeName: {
         type: String,
-        value: function() {
-          return '';
-        },
+        value: '',
       },
-      annotation: Object,
+      annotation: {
+        type: Object,
+        value: {},
+      },
       selectedAlert: {
         tupe: String,
         value: '',
@@ -233,14 +234,6 @@
     _haveLinks: function(selected, alert) {
       return (selected || !alert.grouped) && alert && alert.links &&
              alert.links.length > 0;
-    },
-
-    _hideActions: function(alertType, treeName) {
-      return treeName != 'trooper' && this.isTrooperAlertType(alertType);
-    },
-
-    _hideExamine: function(alertType, examining, treeName) {
-      return examining || this._hideActions(alertType, treeName);
     },
 
     _removeBug: function(evt) {

@@ -70,7 +70,6 @@
         last-response="{{_sheriffRotations}}"
     ></iron-ajax>
     <som-settings
-        show-infra-failures="{{showInfraFailures}}"
         link-style="{{linkStyle}}"
         collapse-by-default="{{collapseByDefault}}"
         default-tree="{{_defaultTree}}"
@@ -128,10 +127,6 @@
       <iron-icon icon="remove" class="toggle-icon"></iron-icon>
     </h2>
     <iron-collapse id="settingsMenu" opened no-animation>
-      <label class="checkbox settings-item" hidden$=[[_isTrooperPage]]>
-        <input type="checkbox" checked="{{showInfraFailures::change}}" />
-        Show infra step failures
-      </label>
       <label class="checkbox settings-item">
         <input type="checkbox" checked="{{collapseByDefault::change}}" />
         Collapse alerts by default

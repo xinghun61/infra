@@ -52,38 +52,16 @@
         done();
       });
     });
-  });
 
-  suite('categories', function() {
-    test('renders severity groups', function(done) {
-      element.set(['_alertsData', 'test'], [{
-          'key': 'something',
-          'severity': 2,
-      }]);
+    test('computes tree groups for troopers', function() {
+      // Without display name.
+      assert.equal(element._getCategoryTitle('chromium', true, {}),
+          'chromium infra failures');
 
-      flush(function() {
-        assert.equal(
-            element.$$('.category-title-text').textContent.trim(),
-            element._getCategoryTitle(2) + ' (1 total)');
-        done();
-      });
-    });
-
-    test('renders tree groups for troopers', function(done) {
-      window.fetch.returns(Promise.resolve());
-      element.tree = {'name': 'trooper'};
-      element.set(['_alertsData', 'test'], [{
-          'key': 'something',
-          'severity': 2,
-          'tree': 'test',
-      }]);
-
-      flush(function() {
-        assert.equal(
-            element.$$('.category-title-text').textContent.trim(),
-              'test infra failures (1 total)');
-        done();
-      });
+      // With display name.
+      let trees = {'chromium': {'display_name': 'Chrome'}};
+      assert.equal(element._getCategoryTitle('chromium', true, trees),
+          'Chrome infra failures');
     });
   });
 

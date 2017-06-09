@@ -1,0 +1,85 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+
+<link rel="import" href="../../elements/som-annotation-manager-behavior.html">
+
+<link rel="import" href="../../elements/som-header-styles.html">
+<link rel="import" href="../../elements/som-input-styles.html">
+<link rel="import" href="../../elements/som-utility-styles.html">
+
+<link rel="import" href="../../elements/som-alert-item/som-alert-item.html">
+
+<dom-module id="som-alert-category">
+  <template>
+    <style include="som-header-styles"></style>
+    <style include="som-input-styles"></style>
+    <style include="som-utility-styles"></style>
+    <style>
+      #infra-failure-message {
+        padding: 1em 16px;
+        font-size: 1.1em;
+        border-bottom: 1px solid #ccc;
+      }
+      .alert-item {
+        box-sizing: border-box;
+        float: left;
+        width: 100%;
+        padding: 0.5em 0;
+      }
+    </style>
+    <h2 class="category-title">
+      <span>
+        <input type="checkbox" id="checkAll" on-tap="checkAll" class="category-checkbox" />
+        <span class="category-title-text">
+          [[categoryTitle]] ([[alerts.length]] total)
+        </span>
+        (<a href="/help-som" target="_blank">Help?</a>)
+      </span>
+      <div class="header-buttons">
+        <span class="collapse-button" on-tap="_collapseAll">
+          <iron-icon icon="remove"></iron-icon> Collapse all
+        </span>
+        /
+        <span class="collapse-button" on-tap="_expandAll">
+          <iron-icon icon="add"></iron-icon> Expand all
+        </span>
+        /
+        <span class="collapse-button" on-tap="_toggleCategory">
+          <iron-icon id="categoryToggleIcon" icon="[[_toggleIcon]]"></iron-icon>
+        </span>
+      </div>
+    </h2>
+    <template is="dom-if" if="[[isInfraFailuresSection]]">
+      <div id="infra-failure-message">
+        There are [[alerts.length]] infra failures currently
+         affecting your tree. Troopers should be working on them.
+        <span class="link" on-tap="_toggleCategory">
+          Click here to
+          <span hidden$=[[!_collapsed]]>show</span>
+          <span hidden$=[[_collapsed]]>hide</span>
+          the alerts.
+        </span>
+      </div>
+    </template>
+    <iron-collapse id="categoryAlerts" opened="[[!_collapsed]]" no-animation>
+      <template
+          is="dom-repeat"
+          items="[[alerts]]"
+          as="alert">
+        <som-alert-item
+            class="alert-item"
+            tabindex="0"
+            alert="[[alert]]"
+            tree-name="[[treeName]]"
+            annotation="[[computeAnnotation(annotations, alert)]]"
+            collapse-by-default="[[collapseByDefault]]"
+            link-style="[[linkStyle]]"
+            on-checked="_handleChecked"
+        ></som-alert-item>
+      </template>
+    </iron-collapse>
+  </template>
+  <script src="som-alert-category.js"></script>
+</dom-module>

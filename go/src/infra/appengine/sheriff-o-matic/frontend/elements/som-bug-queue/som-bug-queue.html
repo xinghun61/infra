@@ -7,6 +7,7 @@
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
 
 <link rel="import" href="../../elements/som-header-styles.html">
+<link rel="import" href="../../elements/som-utility-styles.html">
 
 <script src="../../bower_components/moment/min/moment.min.js"></script>
 <script src="../../bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
@@ -14,13 +15,11 @@
 <dom-module id="som-bug-queue">
   <template>
     <style include="som-header-styles"></style>
+    <style include="som-utility-styles"></style>
     <style>
       #main {
         background: white;
         margin-bottom: 1em;
-      }
-      .error {
-        color: red;
       }
       .error,
       #loadingBugs,

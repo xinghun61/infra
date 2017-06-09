@@ -7,8 +7,9 @@
 <link rel="import" href="../../elements/som-annotation-manager-behavior.html">
 <link rel="import" href="../../elements/som-header-styles.html">
 <link rel="import" href="../../elements/som-input-styles.html">
+<link rel="import" href="../../elements/som-utility-styles.html">
 
-<link rel="import" href="../../elements/som-alert-item/som-alert-item.html">
+<link rel="import" href="../../elements/som-alert-category/som-alert-category.html">
 <link rel="import" href="../../elements/som-annotations/som-annotations.html">
 <link rel="import" href="../../elements/som-bug-queue/som-bug-queue.html">
 <link rel="import" href="../../elements/som-master-restarts/som-master-restarts.html">
@@ -20,8 +21,9 @@
   <template>
     <style include="som-header-styles"></style>
     <style include="som-input-styles"></style>
+    <style include="som-utility-styles"></style>
     <style>
-      #alertList {
+      #alertListPage {
         display: flex;
         flex-direction: column;
       }
@@ -49,20 +51,8 @@
         padding-bottom: 0.5em;
         margin-bottom: 1em;
       }
-      .alert-item {
-        box-sizing: border-box;
-        float: left;
-        width: 100%;
-        padding: 0.5em 0;
-      }
       .error {
-        color: #c00;
         margin-top: 0;
-      }
-      .link {
-        cursor: pointer;
-        text-decoration: underline;
-        color: #0000ee;
       }
       .notification {
         box-sizing: border-box;
@@ -96,7 +86,7 @@
         hidden$="[[!_hasGroupAll(_checkedAlerts, tree)]]">Group All</button>
     </div>
     <iron-pages attr-for-selected="id" selected="[[_currentAlertView]]">
-      <div id="alertList">
+      <div id="alertListPage">
         <div id="notifications" class="page-section">
           <som-tree-status tree-name="[[tree.name]]" id="treeStatus"></som-tree-status>
           <som-master-restarts tree-name="[[tree.name]]" id="masterRestarts"></som-master-restarts>
@@ -129,45 +119,26 @@
             </div>
           </template>
           <template is="dom-repeat" items="[[_computeCategories(_alerts, _isTrooperPage)]]" as="cat">
-            <h2 class="category-title">
-              <span>
-                <input type="checkbox" on-tap="_checkAll" class="category-checkbox" />
-                <span class="category-title-text">
-                  [[_getCategoryTitle(cat, _isTrooperPage, trees)]] ([[_getCategoryCount(_alerts, cat, _isTrooperPage)]] total)
-                </span>
-                (<a href="/help-som" target="_blank">Help?</a>)
-              </span>
-              <div class="header-buttons">
-                <span class="collapse-button" on-tap="_collapseAll">
-                  <iron-icon icon="remove"></iron-icon> Collapse all
-                </span>
-                /
-                <span class="collapse-button" on-tap="_expandAll">
-                  <iron-icon icon="add"></iron-icon> Expand all
-                </span>
-              </div>
-            </h2>
-            <template is="dom-repeat" items="[[_alertItemsWithCategory(_alerts, annotations, cat, _isTrooperPage)]]" as="alert">
-              <som-alert-item
-                  class="alert-item"
-                  data-category$="[[cat]]"
-                  tabindex="0"
-                  alert="[[alert]]"
-                  tree-name="[[tree.name]]"
-                  annotation="[[computeAnnotation(annotations, alert)]]"
-                  collapse-by-default="[[collapseByDefault]]"
-                  link-style="[[linkStyle]]"
-                  on-annotation-change="_handleAnnotation"
-                  on-comment="_handleComment"
-                  on-link-bug="_handleLinkBug"
-                  on-remove-bug="_handleRemoveBug"
-                  on-snooze="_handleSnooze"
-                  on-group="_handleGroup"
-                  on-ungroup="_handleUngroup"
-                  on-resolve="_handleResolve"
-                  on-checked="_handleChecked"
-              ></som-alert-item>
-            </template>
+            <som-alert-category
+                id="alertCategory[[cat]]"
+                class="alert-category"
+                category-title="[[_getCategoryTitle(cat, _isTrooperPage, trees)]]"
+                alerts="[[_alertItemsWithCategory(_alerts, cat, _isTrooperPage)]]"
+                annotations="[[annotations]]"
+                tree-name="[[tree.name]]"
+                collapse-by-default="[[collapseByDefault]]"
+                is-infra-failures-section="[[_isInfraFailuresSection(cat, _isTrooperPage)]]"
+                link-style="[[linkStyle]]"
+                on-annotation-change="_handleAnnotation"
+                on-comment="_handleComment"
+                on-link-bug="_handleLinkBug"
+                on-remove-bug="_handleRemoveBug"
+                on-snooze="_handleSnooze"
+                on-group="_handleGroup"
+                on-ungroup="_handleUngroup"
+                on-resolve="_handleResolve"
+                on-checked="_handleChecked"
+            ></som-alert-category>
           </template>
         </div>
         <som-bug-queue
@@ -181,7 +152,7 @@
         <som-alert-item
             alert="[[_examinedAlert]]"
             tree-name="[[tree.name]]"
-            annotation="[[computeAnnotation(annotations, alert)]]"
+            annotation="[[computeAnnotation(annotations, _examinedAlert)]]"
             collapse-by-default="[[collapseByDefault]]"
             link-style="[[linkStyle]]"
             on-annotation-change="_handleAnnotation"
