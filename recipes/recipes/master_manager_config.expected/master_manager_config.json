@@ -12,6 +12,8 @@
       "{\"got_revision\": \"infra-data-master-manager\"}",
       "--git-cache-dir",
       "[CACHE]/git",
+      "--cleanup-dir",
+      "[CLEANUP]/bot_update",
       "--apply_issue_email_file",
       "/creds/rietveld/client_email",
       "--apply_issue_key_file",

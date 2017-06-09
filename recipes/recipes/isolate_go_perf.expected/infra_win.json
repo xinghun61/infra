@@ -12,6 +12,8 @@
       "{\"got_revision\": \"infra\"}",
       "--git-cache-dir",
       "[GIT_CACHE]",
+      "--cleanup-dir",
+      "[CLEANUP]\\bot_update",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",

@@ -12,6 +12,8 @@
       "{\"got_revision\": \"infra_internal\"}",
       "--git-cache-dir",
       "[CACHE]/git",
+      "--cleanup-dir",
+      "[CLEANUP]/bot_update",
       "--gerrit_repo",
       "https://chrome-internal.googlesource.com/infra/infra_internal",
       "--gerrit_ref",

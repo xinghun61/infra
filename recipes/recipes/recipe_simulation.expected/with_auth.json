@@ -37,6 +37,8 @@
       "{}",
       "--git-cache-dir",
       "[START_DIR]/_cache_dir",
+      "--cleanup-dir",
+      "[CLEANUP]/bot_update",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",

@@ -12,6 +12,8 @@
       "{\"got_revision\": \"infra\"}",
       "--git-cache-dir",
       "[CACHE]/git",
+      "--cleanup-dir",
+      "[CLEANUP]/bot_update",
       "--issue",
       "12853011",
       "--patchset",

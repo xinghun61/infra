@@ -12,6 +12,8 @@
       "{}",
       "--git-cache-dir",
       "[CACHE]/git",
+      "--cleanup-dir",
+      "[CLEANUP]/bot_update",
       "--gerrit_repo",
       "https://chromium.googlesource.com/playground/gerrit-cq/normal",
       "--gerrit_ref",

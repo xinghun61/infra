@@ -12,6 +12,8 @@
       "{\"got_revision\": \"infra\"}",
       "--git-cache-dir",
       "[CACHE]/git",
+      "--cleanup-dir",
+      "[CLEANUP]/bot_update",
       "--gerrit_repo",
       "https://chromium.googlesource.com/infra/infra",
       "--gerrit_ref",
