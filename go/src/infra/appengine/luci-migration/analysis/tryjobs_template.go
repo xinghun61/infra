@@ -31,9 +31,9 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
 <ol>
   {{range .}}
   <li>
-    <p>Build set for
+    <p>Build group for
       {{if .KeyURL -}}
-        <a href="{{.KeyURL}}">{{.Key}}</a>
+        <a href="{{.KeyURL}}">{{.KeyURL}}</a>
       {{- else -}}
         {{.Key}}
       {{- end}}
