@@ -52,7 +52,7 @@ func (d *Builders) Discover(c context.Context, master *config.Master) error {
 	names, err := d.fetchBuilderNames(c, master)
 	if err != nil {
 		return errors.Annotate(err).Reason("could not fetch builder names from master %(master)s").
-			D("master", master).
+			D("master", master.Name).
 			Err()
 	}
 

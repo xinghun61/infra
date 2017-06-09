@@ -72,7 +72,7 @@ func handleCompletedBuildbotBuild(c context.Context, build *buildbucket.ApiCommo
 	case err == datastore.ErrNoSuchEntity:
 		return nil // no, we don't care about it
 	case err != nil:
-		return errors.Annotate(err).Reason("could not read builder %(id)d").D("id", &builder.ID).Err()
+		return errors.Annotate(err).Reason("could not read builder %(id)s").D("id", &builder.ID).Err()
 	}
 	if builder.SchedulingType != config.SchedulingType_TRYJOBS {
 		// we don't support non-tryjob yet
@@ -168,7 +168,7 @@ func handleFailedLUCIBuild(c context.Context, build *buildbucket.ApiCommonBuildM
 
 	// Do at most 2 attempts.
 	case attempt >= 1:
-		logging.Infof(c, "enough retries for build %d", buildbotBuildID)
+		logging.Infof(c, "enough retries for build %s", buildbotBuildID)
 		return nil
 	}
 
