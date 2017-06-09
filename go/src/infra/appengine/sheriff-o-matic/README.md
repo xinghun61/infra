@@ -15,7 +15,12 @@ npm install -g bower
 If you don't have npm or node installed yet, make sure you do so using
 `gclient runhooks` to pick up infra's CIPD packages for nodejs and
 npm (avoid using other installation methods, as they won't match what
-the builders and other infra devs have installed).
+the builders and other infra devs have installed). *Then* make sure you've
+run 
+```
+eval `../../../../env.py`
+``` 
+in that shell window.
 
 ## Getting up and running
 
