@@ -19,13 +19,13 @@ import (
 // It is produced by compare and consumed by tmplDetails.
 type diff struct {
 	storage.BuilderMigration
-	StatusReason         string
-	TotalGroups          int
-	TrustworthyGroups    int
-	FalseFailures        []*group
-	FalseSuccesses       []*group
-	AvgTimeDelta         time.Duration // Average overhead of LUCI across patchsets.
-	MinBuildCreationDate time.Time
+	StatusReason      string
+	TotalGroups       int
+	TrustworthyGroups int
+	FalseFailures     []*group
+	FalseSuccesses    []*group
+	AvgTimeDelta      time.Duration // Average overhead of LUCI across patchsets.
+	MinBuildAge       time.Duration
 }
 
 func (d *diff) UntrustworthyGroups() int {

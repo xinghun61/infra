@@ -74,7 +74,7 @@ that can be found in the LICENSE file. -->
     {{else}}
       <div>
         Status: <span class="label label-{{.StatusClassSuffix}}">{{.Builder.Migration.Status}}</span>
-        as of {{.Builder.Migration.AnalysisTime}}
+        as of {{.RelAnalysisTime | durationString}} ago
       </div>
       <div>
         Estimated LUCI Correctness:

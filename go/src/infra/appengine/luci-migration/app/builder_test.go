@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -21,6 +22,7 @@ import (
 
 	"infra/appengine/luci-migration/storage"
 
+	"github.com/luci/luci-go/common/clock"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -82,9 +84,10 @@ func TestBuilder(t *testing.T) {
 					ID:       54,
 				},
 				Migration: storage.BuilderMigration{
-					Status:      storage.StatusLUCINotWAI,
-					Correctness: 0.9,
-					Speed:       1.1,
+					AnalysisTime: clock.Now(c).UTC().Add(-time.Hour),
+					Status:       storage.StatusLUCINotWAI,
+					Correctness:  0.9,
+					Speed:        1.1,
 				},
 			}
 			migrationDetails := &storage.BuilderMigrationDetails{
@@ -100,6 +103,7 @@ func TestBuilder(t *testing.T) {
 				Builder:           builder,
 				StatusKnown:       true,
 				StatusClassSuffix: "danger",
+				RelAnalysisTime:   time.Hour,
 				Details:           "almost",
 			})
 		})

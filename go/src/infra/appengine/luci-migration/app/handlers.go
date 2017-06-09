@@ -34,6 +34,7 @@ import (
 
 	"infra/monorail"
 
+	"infra/appengine/luci-migration/common"
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/discovery"
 	"infra/appengine/luci-migration/scheduling"
@@ -57,6 +58,7 @@ func prepareTemplates() *templates.Bundle {
 			"percent": func(v float64) interface{} {
 				return int(100 * v)
 			},
+			"durationString": common.DurationString,
 		},
 		DefaultArgs: func(c context.Context) (templates.Args, error) {
 			loginURL, err := auth.LoginURL(c, "/")

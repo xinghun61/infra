@@ -89,7 +89,7 @@ func (t *Tryjobs) analyze(c context.Context, buildbotBuilder, luciBuilder Bucket
 
 	comp := compare(groups, t.MinTrustworthyGroups)
 	comp.AnalysisTime = clock.Now(c)
-	comp.MinBuildCreationDate = f.MinCreationDate
+	comp.MinBuildAge = comp.AnalysisTime.Sub(f.MinCreationDate)
 	return comp, nil
 }
 

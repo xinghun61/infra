@@ -45,6 +45,14 @@ func (s groupSide) avgDuration() time.Duration {
 	return avg / time.Duration(len(s))
 }
 
+// Age returns duration from most recent build completion to now.
+func (s groupSide) Age() time.Duration {
+	if len(s) == 0 {
+		return 0
+	}
+	return time.Now().Sub(bbutil.ParseTimestamp(s[len(s)-1].CompletedTs))
+}
+
 // success returns true if at least one build succeeded, otherwise false.
 func (s groupSide) success() bool {
 	for _, b := range s {

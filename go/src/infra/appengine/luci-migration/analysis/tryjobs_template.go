@@ -3,6 +3,8 @@ package analysis
 import (
 	"html/template"
 	"time"
+
+	"infra/appengine/luci-migration/common"
 )
 
 // tmplDetails is an HTML template that consumes a comparison struct and
@@ -15,12 +17,14 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
 		}
 		return x
 	},
+	"durationString": common.DurationString,
 }).Parse(`
 {{define "buildResults"}}
   {{- range $index, $b := . -}}
     {{- if gt $index 0}}, {{end -}}
 <a href="{{$b.Url}}">{{$b.Result}}</a>
-  {{- end -}}
+  {{- end }}
+{{.Age | durationString}} ago.
 {{end}}
 
 {{define "groups"}}
@@ -44,8 +48,8 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
 <ul>
   <li>Status: {{.Status}}</li>
   <li>Status reason: {{.StatusReason}}</li>
-  {{- if not .MinBuildCreationDate.IsZero -}}
-  <li>Considered builds since {{.MinBuildCreationDate}}</li>
+  {{- if gt .MinBuildAge 0 -}}
+  <li>Considered builds at most {{.MinBuildAge | durationString}} old</li>
   {{- end -}}
   </li>
   <li>
@@ -60,9 +64,9 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
     analyzed {{.TotalGroups}} build groups:
     on average LUCI is
     {{if gt .AvgTimeDelta 0 -}}
-    <span style="color:red">{{.AvgTimeDelta}} slower</span>
+    <span style="color:red">{{.AvgTimeDelta | durationString}} slower</span>
     {{- else -}}
-    <span style="color:green">{{abs .AvgTimeDelta}} faster</span>
+    <span style="color:green">{{abs .AvgTimeDelta | durationString}} faster</span>
     {{- end}}
     than Buildbot
   </li>

@@ -12,7 +12,6 @@ import (
 	"infra/appengine/luci-migration/bbutil"
 	"infra/appengine/luci-migration/storage"
 
-	"github.com/luci/luci-go/common/clock/testclock"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -26,7 +25,7 @@ func TestCompare(t *testing.T) {
 		compareAndRender := func(groups ...*group) *diff {
 			comp := compare(groups, 0)
 			// assert renders
-			comp.MinBuildCreationDate = testclock.TestRecentTimeUTC.Add(time.Hour * 24 * 7)
+			comp.MinBuildAge = time.Hour * 24 * 7
 			So(tmplDetails.Execute(ioutil.Discard, comp), ShouldBeNil)
 			return comp
 		}

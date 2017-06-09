@@ -52,7 +52,7 @@ func ParseTimestamp(usec int64) time.Time {
 	if usec == 0 {
 		return time.Time{}
 	}
-	return time.Unix(usec /1e6, (usec %1e6)*1e3)
+	return time.Unix(usec/1e6, (usec%1e6)*1e3)
 }
 
 // FormatTimestamp t converts to a buildbucket timestamp.

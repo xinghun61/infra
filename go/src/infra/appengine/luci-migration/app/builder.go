@@ -21,6 +21,9 @@ import (
 	"github.com/luci/luci-go/server/templates"
 
 	"infra/appengine/luci-migration/storage"
+	"time"
+
+	"github.com/luci/luci-go/common/clock"
 )
 
 const (
@@ -33,6 +36,7 @@ type builderViewModel struct {
 
 	StatusKnown       bool
 	StatusClassSuffix string // Bootstrap label class suffix
+	RelAnalysisTime   time.Duration
 	Details           template.HTML
 }
 
@@ -106,6 +110,7 @@ func builderPage(c context.Context, id storage.BuilderID) (*builderViewModel, er
 	mig := model.Builder.Migration
 	model.StatusKnown = mig.Status != storage.StatusUnknown && model.Details != ""
 	model.StatusClassSuffix = migrationStatusLabelClassSuffix(mig.Status)
+	model.RelAnalysisTime = clock.Now(c).Sub(model.Builder.Migration.AnalysisTime)
 	return model, nil
 }
 
