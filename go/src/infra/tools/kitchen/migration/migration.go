@@ -35,14 +35,25 @@ func transformChromiumTryserverMasterBuilder(master, builder string) (string, st
 	oldBuilder := strings.TrimPrefix(builder, prefix)
 	var oldMaster string
 	switch {
-	case strings.HasPrefix(oldBuilder, "linux_"):
-		oldMaster = "tryserver.chromium.linux"
-	case strings.HasPrefix(oldBuilder, "mac_"):
+	case strings.Contains(oldBuilder, "_angle_"):
+		oldMaster = "tryserver.chromium.angle"
+
+	case
+		strings.HasPrefix(oldBuilder, "android_"),
+		strings.HasPrefix(oldBuilder, "linux_android_"),
+		oldBuilder == "cast_shell_android":
+
+		oldMaster = "tryserver.chromium.android"
+
+	case strings.HasPrefix(oldBuilder, "mac_"), strings.HasPrefix(oldBuilder, "ios-"):
 		oldMaster = "tryserver.chromium.mac"
-	case strings.HasPrefix(oldBuilder, "win_"):
+
+	case strings.HasPrefix(oldBuilder, "win"):
+		// The prefix is not "win_" because some builders start with "win<number>".
 		oldMaster = "tryserver.chromium.win"
+
 	default:
-		return master, builder
+		oldMaster = "tryserver.chromium.linux"
 	}
 	return oldMaster, oldBuilder
 }

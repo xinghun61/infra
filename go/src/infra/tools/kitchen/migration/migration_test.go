@@ -16,9 +16,13 @@ func TestMigration(t *testing.T) {
 
 	Convey("transformProperties", t, func() {
 		expectedMasters := map[string]string{
-			"linux_chromium_rel_ng": "tryserver.chromium.linux",
-			"mac_chromium_rel_ng":   "tryserver.chromium.mac",
-			"win_chromium_rel_ng":   "tryserver.chromium.win",
+			"linux_chromium_rel_ng":     "tryserver.chromium.linux",
+			"mac_chromium_rel_ng":       "tryserver.chromium.mac",
+			"win_chromium_rel_ng":       "tryserver.chromium.win",
+			"mac_angle_rel_ng":          "tryserver.chromium.angle",
+			"android_unswarmed_n5x_rel": "tryserver.chromium.android",
+			"cast_shell_android":        "tryserver.chromium.android",
+			"linux_android_dbg_ng":      "tryserver.chromium.android",
 		}
 		for builder, expectedMaster := range expectedMasters {
 			builder := builder
@@ -50,15 +54,6 @@ func TestMigration(t *testing.T) {
 			So(TransformProperties(props), ShouldBeNil)
 			So(props["mastername"], ShouldEqual, "luci.chromium.try")
 			So(props["buildername"], ShouldEqual, "linux_chromium_rel_ng")
-		})
-		Convey("noop if builder isn't known", func() {
-			props := map[string]interface{}{
-				"mastername":  "luci.chromium.try",
-				"buildername": "LUCI my builder",
-			}
-			So(TransformProperties(props), ShouldBeNil)
-			So(props["mastername"], ShouldEqual, "luci.chromium.try")
-			So(props["buildername"], ShouldEqual, "LUCI my builder")
 		})
 		Convey("noop if master isn't known", func() {
 			props := map[string]interface{}{
