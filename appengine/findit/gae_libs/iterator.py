@@ -7,12 +7,10 @@
 DEFAULT_BATCH_SIZE = 1000
 
 
-# TODO(katesonia): Move this to gae_libs.
-# TODO(crbug.com/662540): Add unittests.
 def Iterate(query,
             projection=None,
             batch_size=DEFAULT_BATCH_SIZE,
-            batch_run=False):  # pragma: no cover.
+            batch_run=False):
   """Iterates entities queried by query.
 
   Args:
