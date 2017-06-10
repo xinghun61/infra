@@ -24,7 +24,7 @@ import (
 )
 
 // DefaultMaxGroups is the default number of build groups to fetch.
-const DefaultMaxGroups = 200
+const DefaultMaxGroups = 100
 
 // BucketBuilder is a combination of a build bucket and a builder name.
 type BucketBuilder struct {
