@@ -166,8 +166,8 @@ func handleFailedLUCIBuild(c context.Context, build *buildbucket.ApiCommonBuildM
 	case attempt < 0 || buildSet == "":
 		return nil // we don't recognize this build
 
-	// Do at most 2 attempts.
-	case attempt >= 1:
+	// Do at most 3 attempts.
+	case attempt >= 2:
 		logging.Infof(c, "enough retries for build %s", buildbotBuildID)
 		return nil
 	}
