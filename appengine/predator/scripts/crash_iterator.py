@@ -71,7 +71,7 @@ def IterateCrashes(client_id,
       cls.query(), cls.requested_time, start_date, end_date,
       property_values=property_values)
 
-  # According to go/in-with-cursor-query-prob, the query must be sorted by key
+  # According to https://goo.gl/5BgxQt, the query must be sorted by key
   # to make a query with both ``IN`` operation and cursor.
   query = query.order(-cls.requested_time, cls.key)
   for crash in local_iterator.ScriptIterate(

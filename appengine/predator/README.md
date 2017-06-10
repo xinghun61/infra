@@ -1,6 +1,6 @@
 # Predator
 
-[go/predator-site](https://sites.google.com/a/chromium.org/cr-culprit-finder/predator)
+[Predator site](https://sites.google.com/a/chromium.org/cr-culprit-finder/predator)
 
 Predator is a culprit finder for Chrome crashes identified or reported on
 [ClusterFuzz](https://cluster-fuzz.appspot.com), [Fracas] and [Cracas]. Key features include:
