@@ -7,7 +7,7 @@
 from libs import time_util
 
 
-class Commit(object):  # pragma: no cover
+class Commit(object):
 
   def __init__(self, patchset_id, revision, timestamp):
     # A string such as '20001'.
@@ -25,7 +25,7 @@ class Commit(object):  # pragma: no cover
     }
 
 
-class CommitAttempt(object):  # pragma: no cover
+class CommitAttempt(object):
 
   def __init__(self, patchset_id, user_email, timestamp):
     # A string such as '20001'.
@@ -43,7 +43,7 @@ class CommitAttempt(object):  # pragma: no cover
     }
 
 
-class Revert(object):  # pragma: no cover
+class Revert(object):
 
   def __init__(self, patchset_id, reverting_cl, reverting_user_email,
                timestamp):
@@ -68,7 +68,7 @@ class Revert(object):  # pragma: no cover
     return result
 
 
-class ClInfo(object):  # pragma: no cover
+class ClInfo(object):
 
   def __init__(self, server_hostname, change_id):
     # The host name for the code review site this cl is on.
@@ -135,17 +135,17 @@ class ClInfo(object):  # pragma: no cover
 
   def GetPatchsetIdByRevision(self, revision):
     for commit in self.commits:
-      if commit.revision == revision:  # pragma: no branch
+      if commit.revision == revision:
         return commit.patchset_id
-    return None  # pragma: no cover
+    return None
 
   def GetRevertCLsByRevision(self, revision):
     patchset_id = self.GetPatchsetIdByRevision(revision)
-    if not patchset_id:  # pragma: no cover
+    if not patchset_id:
       return None
 
     reverts_for_revision = []
     for revert in self.reverts:
-      if revert.patchset_id == patchset_id:  # pragma: no branch
+      if revert.patchset_id == patchset_id:
         reverts_for_revision.append(revert)
     return reverts_for_revision
