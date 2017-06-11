@@ -60,9 +60,13 @@ func FormatTimestamp(t time.Time) int64 {
 	return t.UnixNano() / 1000
 }
 
-// Duration returns duration from build creation to build compeltion.
-func Duration(b *buildbucket.ApiCommonBuildMessage) time.Duration {
-	return ParseTimestamp(b.CompletedTs).Sub(ParseTimestamp(b.CreatedTs))
+// RunDuration returns duration from build start to build completion
+// if available, otherwise 0.
+func RunDuration(b *buildbucket.ApiCommonBuildMessage) time.Duration {
+	if b.CompletedTs == 0 || b.StartedTs == 0 {
+		return 0
+	}
+	return ParseTimestamp(b.CompletedTs).Sub(ParseTimestamp(b.StartedTs))
 }
 
 // BuildSet returns the value of the "buildset" tag in b, or "" if not found.

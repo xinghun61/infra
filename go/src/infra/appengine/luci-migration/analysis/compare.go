@@ -18,22 +18,27 @@ import (
 // diff is a result of comparison of LUCI and Buildbot tryjobs.
 // It is produced by compare and consumed by tmplDetails.
 type diff struct {
+	MinBuildAge time.Duration
+
 	storage.BuilderMigration
-	StatusReason      string
-	TotalGroups       int
-	TrustworthyGroups int
+	StatusReason string
+
+	TotalGroups int
+
+	CorrectnessGroups int
 	FalseFailures     []*group
 	FalseSuccesses    []*group
-	AvgTimeDelta      time.Duration // Average overhead of LUCI across patchsets.
-	MinBuildAge       time.Duration
+
+	AvgTimeDeltaGroups int
+	AvgTimeDelta       time.Duration // Average overhead of LUCI across patchsets.
 }
 
-func (d *diff) UntrustworthyGroups() int {
-	return d.TotalGroups - d.TrustworthyGroups
+func (d *diff) RejectedCorrectnessGroups() int {
+	return d.TotalGroups - d.CorrectnessGroups
 }
 
 // compare compares Buildbot and LUCI builds within groups.
-func compare(groups []*group, minTrustworthyGroups int) *diff {
+func compare(groups []*group, minCorrectnessGroups int) *diff {
 	comp := &diff{
 		BuilderMigration: storage.BuilderMigration{AnalysisTime: time.Now().UTC()},
 		TotalGroups:      len(groups),
@@ -43,7 +48,7 @@ func compare(groups []*group, minTrustworthyGroups int) *diff {
 	avgBuildbotTimeSecs := 0.0
 	for _, g := range groups {
 		if g.trustworthy() {
-			comp.TrustworthyGroups++
+			comp.CorrectnessGroups++
 			if luciSuccess := g.LUCI.success(); luciSuccess != g.Buildbot.success() {
 				if luciSuccess {
 					comp.FalseSuccesses = append(comp.FalseSuccesses, g)
@@ -53,14 +58,19 @@ func compare(groups []*group, minTrustworthyGroups int) *diff {
 			}
 		}
 
-		comp.AvgTimeDelta += g.LUCI.avgDuration() - g.Buildbot.avgDuration()
-		buildbotBuilds += len(g.Buildbot)
+		if ld, bd := g.LUCI.avgRunDuration(), g.Buildbot.avgRunDuration(); ld > 0 && bd > 0 {
+			comp.AvgTimeDelta += ld - bd
+			comp.AvgTimeDeltaGroups++
+		}
 		for _, b := range g.Buildbot {
-			avgBuildbotTimeSecs += bbutil.Duration(b).Seconds()
+			if d := bbutil.RunDuration(b); d > 0 {
+				avgBuildbotTimeSecs += d.Seconds()
+				buildbotBuilds++
+			}
 		}
 	}
 
-	if comp.TrustworthyGroups == 0 || comp.TrustworthyGroups < minTrustworthyGroups {
+	if comp.CorrectnessGroups == 0 || comp.CorrectnessGroups < minCorrectnessGroups {
 		comp.Status = storage.StatusInsufficientData
 		comp.StatusReason = ("Insufficient LUCI and Buildbot builds that " +
 			"share same patchsets and can be used for correctness estimation")
@@ -72,10 +82,10 @@ func compare(groups []*group, minTrustworthyGroups int) *diff {
 		return comp
 	}
 	badGroups := len(comp.FalseSuccesses) + len(comp.FalseFailures)
-	comp.Correctness = 1.0 - float64(badGroups)/float64(comp.TrustworthyGroups)
+	comp.Correctness = 1.0 - float64(badGroups)/float64(comp.CorrectnessGroups)
 
 	avgBuildbotTimeSecs /= float64(buildbotBuilds)
-	comp.AvgTimeDelta /= time.Duration(comp.TotalGroups)
+	comp.AvgTimeDelta /= time.Duration(comp.AvgTimeDeltaGroups)
 	buildbotSpeed := 1.0 / avgBuildbotTimeSecs
 	luciSpeed := 1.0 / (avgBuildbotTimeSecs + comp.AvgTimeDelta.Seconds())
 	comp.Speed = luciSpeed / buildbotSpeed

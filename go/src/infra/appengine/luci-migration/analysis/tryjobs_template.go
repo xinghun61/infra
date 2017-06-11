@@ -31,15 +31,15 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
 <ol>
   {{range .}}
   <li>
-    <p>Build group for
+    <div>Build group for
       {{if .KeyURL -}}
         <a href="{{.KeyURL}}">{{.KeyURL}}</a>
       {{- else -}}
         {{.Key}}
       {{- end}}
-    <p>
-    <p>Buildbot: {{template "buildResults" .Buildbot}}</p>
-    <p>LUCI: {{template "buildResults" .LUCI}}</p>
+    </div>
+    <div>Buildbot: {{template "buildResults" .Buildbot}}</div>
+    <div>LUCI: {{template "buildResults" .LUCI}}</div>
   </li>
   {{end}}
 </ol>
@@ -55,20 +55,20 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
   <li>
     <strong>Correctness</strong>:
     analyzed {{.TotalGroups}} build groups,
-    rejected {{.UntrustworthyGroups}} of them:
+    rejected {{.RejectedCorrectnessGroups}} of them:
     {{len .FalseFailures}} have false failures,
     {{len .FalseSuccesses}} have false successes
   </li>
   <li>
     <strong>Speed</strong>:
-    analyzed {{.TotalGroups}} build groups:
+    analyzed {{.AvgTimeDeltaGroups}} build groups:
     on average LUCI is
     {{if gt .AvgTimeDelta 0 -}}
     <span style="color:red">{{.AvgTimeDelta | durationString}} slower</span>
     {{- else -}}
     <span style="color:green">{{abs .AvgTimeDelta | durationString}} faster</span>
     {{- end}}
-    than Buildbot
+    than Buildbot, according to build run durations.
   </li>
 </ul>
 

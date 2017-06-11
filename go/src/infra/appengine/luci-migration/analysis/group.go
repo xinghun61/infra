@@ -34,15 +34,19 @@ func (g *group) trustworthy() bool {
 // groupSide is a list of builds ordered from oldest to newest
 type groupSide []*buildbucket.ApiCommonBuildMessage
 
-func (s groupSide) avgDuration() time.Duration {
-	if len(s) == 0 {
+func (s groupSide) avgRunDuration() time.Duration {
+	avg := time.Duration(0)
+	count := 0
+	for _, b := range s {
+		if d := bbutil.RunDuration(b); d > 0 {
+			avg += d
+			count++
+		}
+	}
+	if count == 0 {
 		return 0
 	}
-	avg := time.Duration(0)
-	for _, b := range s {
-		avg += bbutil.Duration(b)
-	}
-	return avg / time.Duration(len(s))
+	return avg / time.Duration(count)
 }
 
 // Age returns duration from most recent build completion to now.

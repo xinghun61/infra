@@ -166,7 +166,7 @@ func TestAnalyze(t *testing.T) {
 			So(gmap["set1"].Buildbot.success(), ShouldBeFalse)
 			So(gmap["set1"].LUCI, ShouldHaveLength, 3)
 			So(gmap["set1"].LUCI.success(), ShouldBeFalse)
-			So(gmap["set1"].LUCI.avgDuration(), ShouldEqual, 20*time.Minute)
+			So(gmap["set1"].LUCI.avgRunDuration(), ShouldEqual, 20*time.Minute)
 
 			So(gmap["set2"], ShouldNotBeNil)
 			So(gmap["set2"].Buildbot, ShouldHaveLength, 2)
