@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 
-class SwarmingTaskRequest(object):  # pragma: no cover. Tested indirectly.
+class SwarmingTaskRequest(object):
   """Represents a task request on Swarming server."""
 
   def __init__(self):

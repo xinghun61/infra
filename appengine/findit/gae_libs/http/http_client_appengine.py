@@ -11,7 +11,7 @@ from gae_libs.http import auth_util
 from libs.http.retry_http_client import RetryHttpClient
 
 
-class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
+class HttpClientAppengine(RetryHttpClient):
   """A http client for running on appengine."""
 
   def __init__(self, follow_redirects=True,
@@ -21,6 +21,8 @@ class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
     self.authenticator = authenticator
 
   def _ShouldLogError(self, status_code):
+    if status_code == 200:
+      return False
     if not self.no_error_logging_statuses:
       return True
     return status_code not in self.no_error_logging_statuses
@@ -32,16 +34,11 @@ class HttpClientAppengine(RetryHttpClient):  # pragma: no cover
     # For google hosts, add Oauth2.0 token to authenticate the requests.
     headers.update(self.authenticator.GetHttpHeadersFor(url))
 
-    if method in (urlfetch.POST, urlfetch.PUT):
-      result = urlfetch.fetch(
-          url, payload=data, method=method, headers=headers, deadline=timeout,
-          follow_redirects=self.follow_redirects, validate_certificate=True)
-    else:
-      result = urlfetch.fetch(
-          url, headers=headers, deadline=timeout,
-          follow_redirects=self.follow_redirects, validate_certificate=True)
+    result = urlfetch.fetch(
+        url, payload=data, method=method, headers=headers, deadline=timeout,
+        follow_redirects=self.follow_redirects, validate_certificate=True)
 
-    if (result.status_code != 200 and self._ShouldLogError(result.status_code)):
+    if self._ShouldLogError(result.status_code):
       logging.error('Request to %s resulted in %d, headers:%s', url,
                     result.status_code, json.dumps(result.headers.items()))
 
