@@ -71,53 +71,23 @@ ndb.Model.to_dict = to_dict
 
 
 class TryserverBuilders(ndb.Model):
-  JSON_SOURCES = {
-    'client.gyp': [
-      'http://build.chromium.org/p/client.gyp/json/builders?trybots=true'
-    ],
-    'client.skia': [
-      'http://build.chromium.org/p/client.skia/json/trybots'
-    ],
-    'client.skia.android': [
-      'http://build.chromium.org/p/client.skia.android/json/trybots'
-    ],
-    'client.skia.compile': [
-      'http://build.chromium.org/p/client.skia.compile/json/trybots'
-    ],
-    'client.skia.fyi': [
-      'http://build.chromium.org/p/client.skia.fyi/json/trybots'
-    ],
-    'tryserver.blink': [
-      'http://build.chromium.org/p/tryserver.blink/json/builders'
-    ],
-    'tryserver.chromium.android': [
-      'http://build.chromium.org/p/tryserver.chromium.android/json/builders'
-    ],
-    'tryserver.chromium.mac': [
-      'http://build.chromium.org/p/tryserver.chromium.mac/json/builders'
-    ],
-    'tryserver.chromium.linux': [
-      'http://build.chromium.org/p/tryserver.chromium.linux/json/builders'
-    ],
-    'tryserver.chromium.win': [
-      'http://build.chromium.org/p/tryserver.chromium.win/json/builders'
-    ],
-    'tryserver.client.mojo': [
-      'http://build.chromium.org/p/tryserver.client.mojo/json/builders'
-    ],
-    'tryserver.client.syzygy': [
-      'http://build.chromium.org/p/tryserver.client.syzygy/json/builders'
-    ],
-    'tryserver.libyuv': [
-      'http://build.chromium.org/p/tryserver.libyuv/json/builders'
-    ],
-    'tryserver.v8': [
-      'http://build.chromium.org/p/tryserver.v8/json/builders'
-    ],
-    'tryserver.webrtc': [
-      'http://build.chromium.org/p/tryserver.webrtc/json/builders'
-    ],
-  }
+  MASTERS = [
+    'client.gyp',
+    'client.skia',
+    'client.skia.android',
+    'client.skia.compile',
+    'client.skia.fyi',
+    'tryserver.blink',
+    'tryserver.chromium.android',
+    'tryserver.chromium.mac',
+    'tryserver.chromium.linux',
+    'tryserver.chromium.win',
+    'tryserver.client.mojo',
+    'tryserver.client.syzygy',
+    'tryserver.libyuv',
+    'tryserver.v8',
+    'tryserver.webrtc',
+  ]
 
   MEMCACHE_KEY = 'default_builders'
   MEMCACHE_TRYSERVERS_KEY = 'tryservers'
@@ -185,28 +155,30 @@ class TryserverBuilders(ndb.Model):
     if new_json_contents:
       logging.info('received builders from swarmbucket: %r', new_json_contents)
 
-    for tryserver, json_urls in cls.JSON_SOURCES.iteritems():
-      for json_url in json_urls:
-        result = urlfetch.fetch(json_url, deadline=60)
-        parsed_json = json.loads(result.content)
-        for builder in parsed_json:
-          # Exclude triggered bots: they are not to be triggered directly but
-          # by another bot.
-          if 'triggered' in builder:
-            continue
+    for tryserver in cls.MASTERS:
+      result = urlfetch.fetch(
+          'https://chrome-build-extract.appspot.com/get_master/%s?json=true'
+          % tryserver, deadline=60)
+      parsed_json = json.loads(result.content)
+      builders = parsed_json['builders']
+      for builder, data in builders.iteritems():
+        # Exclude triggered bots: they are not to be triggered directly but
+        # by another bot.
+        if 'triggered' in builder:
+          continue
 
-          # Skip bisect bots to declutter the UI.
-          if 'bisect' in builder:
-            continue
+        # Skip bisect bots to declutter the UI.
+        if 'bisect' in builder:
+          continue
 
-          # Skip Findit try bots.
-          if 'variable' in builder:
-            continue
+        # Skip Findit try bots.
+        if 'variable' in builder:
+          continue
 
-          category = parsed_json[builder].get('category')
-          bucket_name = 'master.%s' % tryserver
-          new_json_contents.setdefault(bucket_name, {}).setdefault(
-              category, []).append(builder)
+        category = data.get('category')
+        bucket_name = 'master.%s' % tryserver
+        new_json_contents.setdefault(bucket_name, {}).setdefault(
+            category, []).append(builder)
 
     instance = cls.get_instance()
     instance.json_contents = json.dumps(new_json_contents)
