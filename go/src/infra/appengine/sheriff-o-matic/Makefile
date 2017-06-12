@@ -31,7 +31,7 @@ bower-cipd: deps
 	cipd pkg-register ./cipd/bower_components.cipd
 
 getversion:
-	$(eval VERS := $(shell ../../../../../luci/appengine/components/tools/calculate_version.py))
+	$(eval VERS := $(shell ../../../../../luci/appengine/components/tools/calculate_version.py | cut -c 1-35))
 	echo version is $(VERS)
 
 deploy-prod: build getversion
