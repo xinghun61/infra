@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 <title>Testing heuristic-hints</title>
-<script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+<script src="/ui/js/common.js"></script>
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
 <link rel="import" href="/bower_components/polymer/polymer.html">
 <link rel="import" href="/ui/elements/app-messages.html">
 <body>
@@ -14,12 +15,16 @@
       <div>
         Message Code:
         <select id="message-code">
-          <option value="100">100</option>
-          <option value="200">200</option>
+          <option value="100">No Permission</option>
+          <option value="200">Score Explanation</option>
+          <option value="300">Re-analyze flake with a given range</option>
+          <option value="400">Build Analysis Status</option>
+          <option value="500">Culprit Analysis Status</option>
+          <option value="1">Preformat</option>
           <option value="0">Undefined</option>
         </select>
         <br>
-        <button id="fire" type="button" on-click="fireMessageEvent">Fire Message Event</button>
+        <button id="fire" type="button" on-click="fireMessageEvent">Show Message</button>
       </div>
     </template>
 
@@ -32,7 +37,21 @@
             if (message_code == '0')
               message_code = undefined;
             console.log('Message code:' + message_code);
-            this.fire('message', {'predefined_code': message_code, 'text': 'Pure text message'});
+            if (message_code != '1')
+              displayMessage(message_code, 'Pure text message', null);
+            else {
+              var jsonData = {
+                'key1': {
+                  'key21': ['a', 'b'],
+                  'key22': ['a', 'b'],
+                  'key23': ['a', 'b'],
+                  'key24': ['a', 'b'],
+                  'key25': ['a', 'b'],
+                  'key26': ['a', 'b'],
+                }
+              };
+              displayMessage(null, JSON.stringify(jsonData, null, 2), 'Json Data', true);
+            }
           },
         });
       });

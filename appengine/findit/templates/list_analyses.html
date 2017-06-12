@@ -4,12 +4,12 @@
   <title>Compile & Test failures</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
-  <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="/ui/elements/findit-app.html">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script>
 
-    $(document).ready(function() {
+    $(function() {
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
       $('#result_status').val('{{result_status}}');
     });

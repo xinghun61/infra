@@ -36,6 +36,8 @@
       }
     </style>
 
+    <app-messages></app-messages>
+
     <app-header-layout>
       <app-header slot="header" fixed>
         <app-toolbar>
@@ -71,7 +73,6 @@
         <template is="dom-if" if="[[pageHeader]]">
           <h1>[[pageHeader]]</h1>
         </template>
-        <app-messages></app-messages>
         <slot></slot>
       <div>
     </app-header-layout>

@@ -197,7 +197,8 @@ class BaseHandler(webapp2.RequestHandler):
 
     # Not add user login/logout info in unit tests environment to avoid updating
     # too many existing testcases.
-    if not appengine_util.IsInUnitTestEnvironment():
+    if (not appengine_util.IsInUnitTestEnvironment() and
+        not self.request.get('concise') == '1'):
       data['user_info'] = auth_util.GetUserInfo(
           self.request.referer or self.request.url or '/')
       # If not yet, generate one xsrf token for the login user.

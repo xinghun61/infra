@@ -26,6 +26,8 @@
     </template>
   </template>
 
+  <script src="../js/common.js"></script>
+
   <script>
    (function() {
      'use strict';
@@ -56,9 +58,13 @@
          },
        },
 
-       attached : function() {
-         if ((!this.email || !this.email.endsWith('@google.com')) && this.loginRequired) {
-           this.fire('message', {'predefined_code': 100});
+       observers: [
+         'checkPermission(email, loginRequired)',
+       ],
+
+       checkPermission: function(email, loginRequired) {
+         if ((!email || !email.endsWith('@google.com')) && loginRequired) {
+           displayMessage(100);  // Permission.
          }
        },
      });

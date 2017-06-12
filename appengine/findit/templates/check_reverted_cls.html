@@ -4,9 +4,7 @@
   <title>Check Reverted CLs</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
-  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script>
     function createUrl(parameters) {
       var params = [];
@@ -32,7 +30,7 @@
       e.preventDefault();
     };
 
-    $(document).ready(function() {
+    $(function() {
       $('#submit').click(processSuspectedCLsBetweenDateRange);
     });
   </script>

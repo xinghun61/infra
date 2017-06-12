@@ -3,7 +3,8 @@
   <meta charset="UTF-8">
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <title> Analysis of Flaky Test</title>
-  <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <script src="/ui/js/common.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="/ui/elements/findit-app.html">
   <style type="text/css">
     .container {
@@ -52,9 +53,9 @@
       text-align: left;
     }
   </style>
-  <link rel="stylesheet" type="text/css" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
   <script src="/js/flot/jquery.flot.min.js"></script>
   <script src="/js/flot/jquery.flot.resize.min.js"></script>
   <script src="/js/flot/jquery.flot.symbol.min.js"></script>
@@ -257,7 +258,7 @@
       }
 
       var dataPointSelected = false;
-      $('#flake-data').bind('plothover', function(event, pos, item) {
+      $('#flake-data').on('plothover', function(event, pos, item) {
         if (dataPointSelected)
           return;  // A data point is selected due to a click.
 
@@ -267,7 +268,7 @@
           $('#data-point-tooltip').hide();
         }
       });
-      $('#flake-data').bind('plotclick', function(event, pos, item) {
+      $('#flake-data').on('plotclick', function(event, pos, item) {
         if (item) {
           dataPointSelected = true;  // Set selected data point upon click.
           showTooltipForDataPoint(item);
@@ -296,10 +297,9 @@
 
     function handleLogin(httpStatus) {
       if (httpStatus == 401 || xhr.status == 403) {
-        var event = new CustomEvent('message', {'detail': {'predefined_code': 100}});
-        document.dispatchEvent(event);
+        displayMessage(100);  // Permission.
       } else {
-        alert('Unknown error.');
+        displayMessage(null, 'Please refresh the page and try again.', 'Unknown Error');
       }
     }
 
@@ -316,7 +316,7 @@
         } else {
           $('#flake_result_triaged').text('Feedback has been recorded. Thank you!');
         }
-      }).error(function(xhr) {
+      }).fail(function(xhr) {
         handleLogin(xhr.status);
       });
     }
@@ -335,12 +335,12 @@
           'xsrf_token': findit.xsrfToken,
       };
       $.post('/waterfall/flake/analyze_regression_range', params, function(data) {
-      }).error(function(xhr) {
+      }).fail(function(xhr) {
         handleLogin(xhr.status);
       });
     }
 
-    $(document).ready(function() {
+    $(function() {
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
 
       DrawFlakeTrend();
@@ -348,14 +348,8 @@
         triageSuspectedFlake($(this).val());
       });
 
-      $('#range-help-explanation-dialog').dialog({
-        autoOpen: false,
-        modal: true,
-        width: 600,
-      });
-
       $('.range-help-info').click(function() {
-        $('#range-help-explanation-dialog').dialog('open');
+        displayMessage(300); // Hint to re-analyze with a given range.
       });
 
       $('#analyze-regression-range-button').click(analyzeRegressionRange);
@@ -540,16 +534,6 @@
         </table>
       </div>
     {% endif %}
-    <div id="range-help-explanation-dialog" title="Choose a range or point to analyze">
-      Want to analyze a specific range?<br>
-      <ul>
-        <li>Choose a commit position range and enter it into the Lower bound/Upper bound text fields</li>
-        <li>To specify a single point, enter a commit position in either lower/upper bound, or enter the same commit position for both</li>
-        <li>Optional: specify the number of iterations to rerun swarming. Findit tasks have a maximum of three hours to complete, so please use values below 800 to ensure the task completes successfully
-        <li>Press Analyze range</li>
-        <li>If the lower bound is found to be stable and upper bound flaky, Findit will attempt to identify the culprit CL that caused the flakiness</li>
-      </ul>
-    </div>
   </findit-app>
 </body>
 </html>

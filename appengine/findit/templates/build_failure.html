@@ -4,7 +4,9 @@
   <title>{% block title %}{% endblock %} Failure</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
-  <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <script src="/ui/js/common.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <link rel="import" href="/ui/elements/analysis/triage-help.html">
   <link rel="import" href="/ui/elements/findit-app.html">
   {% block head %}{% endblock head %}
@@ -29,9 +31,6 @@
     }
     {% block style %}{% endblock style %}
   </style>
-  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
   <script>
     var findit = {};
     findit.analysisCompleted = '{{analysis_completed}}' == 'True';
@@ -45,10 +44,9 @@
 
     function handleLogin(httpStatus) {
       if (httpStatus == 401 || httpStatus == 403) {
-        var event = new CustomEvent('message', {'detail': {'predefined_code': 100}});
-        document.dispatchEvent(event);
+        displayMessage(100); // Permission error.
       } else {
-        alert('Unknown error. Please refresh the page and try again!');
+        displayMessage(null, 'Unknown error. Please refresh the page and try again!');
       }
     }
 
@@ -62,11 +60,11 @@
       };
       $.post('/waterfall/triage-suspected-cl', parameters, function(data) {
         if (! data['success']) {
-          alert('Failed to update datastore. Please refresh and try again.');
+          displayMessage(null, 'Failed to update datastore. Please refresh and try again.');
         } else {
           $('#cl-result-triaged').text('Feedback has been recorded. Thank you!')
         }
-      }).error(function(xhr) {
+      }).fail(function(xhr) {
         handleLogin(xhr.status);
       });
     }
@@ -77,6 +75,7 @@
         'url': findit.buildUrl,
         'xsrf_token': findit.xsrfToken,
         'format': 'json',
+        'concise': 1,
       };
       document.getElementById('triage-help-result').requesting = true;
       $('#triage-help-result-container').show();
@@ -84,14 +83,14 @@
         document.getElementById('triage-help-result').entries = data;
         document.getElementById('triage-help-result').requesting = false;
         $('#triage-help-button').prop('disabled', false);
-      }).error(function(xhr) {
+      }).fail(function(xhr) {
         handleLogin(xhr.status);
       });
     }
 
     {% block functions %}{% endblock functions %}
 
-    $(document).ready(function() {
+    $(function() {
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
 
       if (!findit.analysisCompleted) {
@@ -119,8 +118,7 @@
       }
 
       $('.score-info').click(function() {
-        var event = new CustomEvent('message', {'detail': {'predefined_code': 200}});
-        document.dispatchEvent(event);
+        displayMessage(200); // Score Explanation.
       });
     });
   </script>
@@ -182,8 +180,8 @@
                 <td>{{ suspected_cl.confidence }}</td>
                 <td>
                   {% set cl_info = suspected_cl.repo_name + '/' + suspected_cl.revision %}
-                  <input type="radio" cl-info="{{ cl_info }}" value="0" {{'checked' if suspected_cl.status == 0 else ''}} onchange="triageSuspectedCL(this)">Correct &nbsp;&nbsp;
-                  <input type="radio" cl-info="{{ cl_info }}" value="1" {{'checked' if suspected_cl.status == 1 else ''}} onchange="triageSuspectedCL(this)">Incorrect
+                  <input type="radio" name="{{ cl_info }}" value="0" {{'checked' if suspected_cl.status == 0 else ''}} onchange="triageSuspectedCL(this)">Correct &nbsp;&nbsp;
+                  <input type="radio" name="{{ cl_info }}" value="1" {{'checked' if suspected_cl.status == 1 else ''}} onchange="triageSuspectedCL(this)">Incorrect
                 </td>
               </tr>
             {% endfor %}

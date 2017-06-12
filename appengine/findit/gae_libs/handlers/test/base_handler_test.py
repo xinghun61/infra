@@ -163,10 +163,21 @@ class PermissionTest(testing.AppengineTestCase):
 
     self.assertEqual('abc', response.json_body['xsrf_token'])
 
-  def testNotIncludeUserEmail(self):
+  @mock.patch('gae_libs.appengine_util.IsInProduction')
+  def testNotIncludeUserEmail(self, mocked_IsInProduction):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
+    mocked_IsInProduction.side_effect = [False]
     self.mock_current_user(user_email='test@google.com')
     response = self.test_app.get('/permission?format=json')
+    self.assertEquals(200, response.status_int)
+    self.assertEquals({}, response.json_body)
+
+  @mock.patch('gae_libs.appengine_util.IsInProduction')
+  def testNotIncludeUserInfoForConciseResponse(self, mocked_IsInProduction):
+    PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
+    mocked_IsInProduction.side_effect = [True]
+    self.mock_current_user(user_email='test@google.com')
+    response = self.test_app.get('/permission?format=json&concise=1')
     self.assertEquals(200, response.status_int)
     self.assertEquals({}, response.json_body)
 

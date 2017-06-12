@@ -3,8 +3,8 @@
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <title>Findit</title>
   <meta charset="utf-8">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-  <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="/ui/elements/findit-app.html">
   <script>
   function decodeTestName(testName) {
@@ -16,7 +16,7 @@
     return testName;
   }
 
-  $(document).ready(function() {
+  $(function() {
     document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
 
     $('#test-name').on('change paste', function() {

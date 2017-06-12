@@ -18,8 +18,8 @@ from waterfall import build_util
 from waterfall.build_info import BuildInfo
 
 
-EXPECTED_RESULTS_120 = {
-    '598ed4fa15e6a1d0d92b2b7df04fc31ab5d6e829': {
+EXPECTED_RESULTS_120 = [
+    {
         'fixed_cl_review_url': 'https://codereview.chromium.org/12578123',
         'fixing_build_url': (
             'https://luci-milo.appspot.com/buildbot/m/b/121'),
@@ -34,7 +34,22 @@ EXPECTED_RESULTS_120 = {
         'action': 'Reverted',
         'fixing_revision': '598sd489df74g125svf35s04fc3'
     },
-    '062a6f974d7c08d27902060c241149ce193e4dd5': {
+    {
+        'fixed_cl_review_url': 'https://codereview.chromium.org/1263223005',
+        'fixing_build_url': (
+            'https://luci-milo.appspot.com/buildbot/m/b/122'),
+        'fixed_build_url': (
+            'https://luci-milo.appspot.com/buildbot/m/b/120'),
+        'fixed_build_number': 120,
+        'fixing_cl_review_url': 'https://codereview.chromium.org/1280463003',
+        'fixing_cl_commit_position': 342014,
+        'fixed_cl_commit_position': 341976,
+        'fixed_revision': '584de1b73f811bcdb98eae1fb0d92b2b7df04fc3',
+        'fixing_build_number': 122,
+        'action': 'Reverted',
+        'fixing_revision': '123456671bcdb98eae1fb0d92b2b7df04fc3'
+    },
+    {
         'fixed_cl_review_url': 'https://codereview.chromium.org/1268183002',
         'fixing_build_url': (
             'https://luci-milo.appspot.com/buildbot/m/b/121'),
@@ -49,22 +64,7 @@ EXPECTED_RESULTS_120 = {
         'action': 'Reverted',
         'fixing_revision': '123456789c08d27902060c241149ce193e4dd5dd'
     },
-    '584de1b73f811bcdb98eae1fb0d92b2b7df04fc3': {
-        'fixed_cl_review_url': 'https://codereview.chromium.org/1263223005',
-        'fixing_build_url': (
-            'https://luci-milo.appspot.com/buildbot/m/b/122'),
-        'fixed_build_url': (
-            'https://luci-milo.appspot.com/buildbot/m/b/120'),
-        'fixed_build_number': 120,
-        'fixing_cl_review_url': 'https://codereview.chromium.org/1280463003',
-        'fixing_cl_commit_position': 342014,
-        'fixed_cl_commit_position': 341976,
-        'fixed_revision': '584de1b73f811bcdb98eae1fb0d92b2b7df04fc3',
-        'fixing_build_number': 122,
-        'action': 'Reverted',
-        'fixing_revision': '123456671bcdb98eae1fb0d92b2b7df04fc3'
-    },
-    '3e4aaaa45c528d4ab0670331a6c0ebfc4f3ab8e6': {
+    {
         'fixed_cl_review_url': 'https://codereview.chromium.org/1260813007',
         'fixing_build_url': (
             'https://luci-milo.appspot.com/buildbot/m/b/123'),
@@ -78,26 +78,11 @@ EXPECTED_RESULTS_120 = {
         'fixing_build_number': 123,
         'action': 'Reverted',
         'fixing_revision': '123455668d4ab0670331a6c0ebfc4f3ab8e6'
-    }
-}
+    },
+]
 
-EXPECTED_RESULTS_121 = {
-    '3e4aaaa45c528d4ab0670331a6c0ebfc4f3ab8e6': {
-        'fixed_cl_review_url': 'https://codereview.chromium.org/1260813007',
-        'fixing_build_url': (
-            'https://luci-milo.appspot.com/buildbot/m/b/123'),
-        'fixed_build_url': (
-            'https://luci-milo.appspot.com/buildbot/m/b/120'),
-        'fixed_build_number': 120,
-        'fixing_cl_review_url': 'https://codereview.chromium.org/1280463100',
-        'action': 'Reverted',
-        'fixed_cl_commit_position': 341978,
-        'fixed_revision': '3e4aaaa45c528d4ab0670331a6c0ebfc4f3ab8e6',
-        'fixing_build_number': 123,
-        'fixing_cl_commit_position': 332070,
-        'fixing_revision': '123455668d4ab0670331a6c0ebfc4f3ab8e6'
-    },
-    '584de1b73f811bcdb98eae1fb0d92b2b7df04fc3': {
+EXPECTED_RESULTS_121 = [
+    {
         'fixed_cl_review_url': 'https://codereview.chromium.org/1263223005',
         'fixing_build_url': (
             'https://luci-milo.appspot.com/buildbot/m/b/122'),
@@ -112,7 +97,22 @@ EXPECTED_RESULTS_121 = {
         'fixing_cl_commit_position': 342014,
         'fixing_revision': '123456671bcdb98eae1fb0d92b2b7df04fc3'
     },
-    '123456789c08d27902060c241149ce193e4dd5dd': {
+    {
+        'fixed_cl_review_url': 'https://codereview.chromium.org/1260813007',
+        'fixing_build_url': (
+            'https://luci-milo.appspot.com/buildbot/m/b/123'),
+        'fixed_build_url': (
+            'https://luci-milo.appspot.com/buildbot/m/b/120'),
+        'fixed_build_number': 120,
+        'fixing_cl_review_url': 'https://codereview.chromium.org/1280463100',
+        'action': 'Reverted',
+        'fixed_cl_commit_position': 341978,
+        'fixed_revision': '3e4aaaa45c528d4ab0670331a6c0ebfc4f3ab8e6',
+        'fixing_build_number': 123,
+        'fixing_cl_commit_position': 332070,
+        'fixing_revision': '123455668d4ab0670331a6c0ebfc4f3ab8e6'
+    },
+    {
         'fixed_cl_review_url': 'https://codereview.chromium.org/1280463006',
         'fixing_build_url': (
             'https://luci-milo.appspot.com/buildbot/m/b/122'),
@@ -127,7 +127,7 @@ EXPECTED_RESULTS_121 = {
         'fixing_cl_commit_position': 332062,
         'fixing_revision': '062a6f974d7c01234569ce193e4dd5'
     }
-}
+]
 
 
 def _MockGetChangeLog(repo, revision):
@@ -219,7 +219,7 @@ class HelpTriageTest(testing.AppengineTestCase):
   def testCheckRevertsReturnNoneWhenNoGreenBuild(self):
     self._CreateAnalysis(124, 124)
 
-    expected_results = {}
+    expected_results = []
     results = help_triage._CheckReverts(
         self.master_name, self.builder_name, 124)
     self.assertEqual(expected_results, results)
@@ -227,7 +227,7 @@ class HelpTriageTest(testing.AppengineTestCase):
   def testCheckRevertsReturnNoneWhenNoReverts(self):
     self._CreateAnalysis(118, 118)
 
-    expected_results = {}
+    expected_results = []
     results = help_triage._CheckReverts(
         self.master_name, self.builder_name, 118)
     self.assertEqual(expected_results, results)
@@ -249,8 +249,14 @@ class HelpTriageTest(testing.AppengineTestCase):
     }
     analysis.put()
 
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
     response = self.test_app.post('/help-triage',
-                                  params={'url': build_url, 'xsrf_token': 'a'})
+                                  params={
+                                      'url': build_url,
+                                      'concise': 1,
+                                      'xsrf_token': 'a',
+                                  })
 
     self.assertEqual(200, response.status_int)
     self.assertEqual(EXPECTED_RESULTS_121, response.json_body)
@@ -263,9 +269,15 @@ class HelpTriageTest(testing.AppengineTestCase):
     build.data = self._GetBuildInfo(self.master_name, self.builder_name, 123)
     build.put()
 
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
     response = self.test_app.post('/help-triage',
-                                  params={'url': build_url, 'xsrf_token': 'a'})
-    expected_results = {}
+                                  params={
+                                      'url': build_url,
+                                      'concise': 1,
+                                      'xsrf_token': 'a',
+                                  })
+    expected_results = []
 
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_results, response.json_body)

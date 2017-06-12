@@ -4,9 +4,10 @@
   <title>Try Job Dashboard</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
-  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
+  <script src="/ui/js/common.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
   <script>
     function createUrl(parameters) {
       var params = [];
@@ -33,20 +34,14 @@
       e.preventDefault();
     };
 
-    $(document).ready(function() {
-      $('#buildbucket-response-dialog').dialog({
-        autoOpen: false,
-        modal: true,
-        width: 1200,
-      });
-      $('.show-response').each(function() {
-        $(this).click(function() {
-          var lastBuildbucketResponseRawText = $(this).attr('data-text');
-          var lastBuildbucketResponseJson = JSON.parse(lastBuildbucketResponseRawText);
-          var lastBuildbucketResponseFormattedString = JSON.stringify(lastBuildbucketResponseJson, null, 2);
-          $('#buildbucket-response').text(lastBuildbucketResponseFormattedString);
-          $('#buildbucket-response-dialog').dialog('open');
-        })
+    $(function() {
+      document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+
+      $('.show-response').click(function() {
+        var lastBuildbucketResponseRawText = $(this).attr('data-text');
+        var lastBuildbucketResponseJson = JSON.parse(lastBuildbucketResponseRawText);
+        var lastBuildbucketResponseFormattedString = JSON.stringify(lastBuildbucketResponseJson, null, 2);
+        displayMessage(null, lastBuildbucketResponseFormattedString, 'Buildbucket Response', true);
       });
       $('#submit').click(requestData);
       if ('{{ category }}') {
@@ -56,174 +51,173 @@
   </script>
 </head>
 <body>
-  <form>
-    Start date
-    <input type="date" id="start_date" value={{ start_date }}></input>
-    End date
-    <input type="date" id="end_date" value={{ end_date }}></input>
-    Try job category:
-    <select id="category">
-      <option value="both" selected="selected">both</option>
-      <option value="flake">flake</option>
-      <option value="waterfall">waterfall</option>
-    </select>
-    <input type="submit" id="submit"></input>
-  </form>
-  <br>
-  <b>In progress</b>
-  <div>
-    {% if try_jobs_in_progress %}
-      <table>
-        <tr>
-          <th>Master</th>
-          <th>Builder</th>
-          <th>Link to Analysis</th>
-          <th>Try Job Type</th>
-          <th>Request Time</th>
-          <th>Pending Time</th>
-          <th>Elapsed Time</th>
-          <th>Status</th>
-          <th>Try Job URL</th>
-          <th>Last Buildbucket Response</th>
-        </tr>
-        <tbody>
-          {% for try_job_display_data in try_jobs_in_progress %}
-            <tr>
-              <td>{{ try_job_display_data.master_name }}</td>
-              <td>{{ try_job_display_data.builder_name }}</td>
-              <td>
-                {% if try_job_display_data.build_number %}
-                   <a href="/waterfall/failure?url=https://luci-milo.appspot.com/buildbot/{{try_job_display_data.master_name}}/{{try_job_display_data.builder_name}}
-/{{try_job_display_data.build_number}}" target="_blank">{{try_job_display_data.build_number}}
-                    </a>
-                {% endif %}
-              </td>
-              <td>{{ try_job_display_data.try_job_type }}</td>
-              <td>{{ try_job_display_data.request_time or try_job_display_data.created_time }}</td>
-              <td>{{ try_job_display_data.pending_time }}</td>
-              <td>{{ try_job_display_data.elapsed_time }}</td>
-              <td>{{ try_job_display_data.status }}</td>
-              <td>
-                {% if try_job_display_data.try_job_url %}
-                  <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
-                {% endif %}
-              </td>
-              <td>
-                <button class="show-response" id="in_progress_response_{{ loop.index }}" data-text="{{ try_job_display_data.last_buildbucket_response }}">show</button>
-              </td>
-            </tr>
-          {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-      No try-jobs currently in progress withinin the date range requested
-    {% endif %}
-  </div>
-  <br>
-  <b>Try jobs with error</b>
-  <div>
-    {% if try_jobs_with_error %}
-      <table>
-        <tr>
-          <th>Master</th>
-          <th>Builder</th>
-          <th>Link to Analysis</th>
-          <th>Try Job Type</th>
-          <th>Request Time</th>
-          <th>Pending Time</th>
-          <th>Execution Time</th>
-          <th>Error Message</th>
-          <th>Try Job URL</th>
-          <th>Last Buildbucket Response</th>
-        </tr>
-        <tbody>
-          {% for try_job_display_data in try_jobs_with_error %}
-            <tr>
-              <td>{{ try_job_display_data.master_name }}</td>
-              <td>{{ try_job_display_data.builder_name }}</td>
-              <td>
-                {% if try_job_display_data.build_number %}
-                   <a href="/waterfall/build-failure?url=https://luci-milo.appspot.com/buildbot/{{try_job_display_data.master_name}}/{{try_job_display_data.builder_name}}
-/{{try_job_display_data.build_number}}" target="_blank">{{try_job_display_data.build_number}}
-                    </a>
-                {% endif %}
-              </td>
-              <td>{{ try_job_display_data.try_job_type }}</td>
-              <td>{{ try_job_display_data.request_time }}</td>
-              <td>{{ try_job_display_data.pending_time }}</td>
-              <td>{{ try_job_display_data.execution_time }}</td>
-              <td>{{ try_job_display_data.error }}</td>
-              <td>
-                {% if try_job_display_data.try_job_url %}
-                  <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
-                {% endif %}
-              </td>
-              <td>
-                <button class="show-response" id="error_response_{{ loop.index }}" data-text="{{ try_job_display_data.last_buildbucket_response }}">show</button>
-              </td>
-            </tr>
-          {% endfor %}
+  <findit-app id="app">
+    <form>
+      Start date
+      <input type="date" id="start_date" value={{ start_date }}></input>
+      End date
+      <input type="date" id="end_date" value={{ end_date }}></input>
+      Try job category:
+      <select id="category">
+        <option value="both" selected="selected">both</option>
+        <option value="flake">flake</option>
+        <option value="waterfall">waterfall</option>
+      </select>
+      <input type="submit" id="submit"></input>
+    </form>
+    <br>
+    <b>In progress</b>
+    <div>
+      {% if try_jobs_in_progress %}
+        <table>
+          <tr>
+            <th>Master</th>
+            <th>Builder</th>
+            <th>Link to Analysis</th>
+            <th>Try Job Type</th>
+            <th>Request Time</th>
+            <th>Pending Time</th>
+            <th>Elapsed Time</th>
+            <th>Status</th>
+            <th>Try Job URL</th>
+            <th>Last Buildbucket Response</th>
+          </tr>
+          <tbody>
+            {% for try_job_display_data in try_jobs_in_progress %}
+              <tr>
+                <td>{{ try_job_display_data.master_name }}</td>
+                <td>{{ try_job_display_data.builder_name }}</td>
+                <td>
+                  {% if try_job_display_data.build_number %}
+                     <a href="/waterfall/failure?url=https://luci-milo.appspot.com/buildbot/{{try_job_display_data.master_name}}/{{try_job_display_data.builder_name}}
+  /{{try_job_display_data.build_number}}" target="_blank">{{try_job_display_data.build_number}}
+                      </a>
+                  {% endif %}
+                </td>
+                <td>{{ try_job_display_data.try_job_type }}</td>
+                <td>{{ try_job_display_data.request_time or try_job_display_data.created_time }}</td>
+                <td>{{ try_job_display_data.pending_time }}</td>
+                <td>{{ try_job_display_data.elapsed_time }}</td>
+                <td>{{ try_job_display_data.status }}</td>
+                <td>
+                  {% if try_job_display_data.try_job_url %}
+                    <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
+                  {% endif %}
+                </td>
+                <td>
+                  <button class="show-response" id="in_progress_response_{{ loop.index }}" data-text="{{ try_job_display_data.last_buildbucket_response }}">show</button>
+                </td>
+              </tr>
+            {% endfor %}
         </tbody>
       </table>
-    {% else %}
-      No try-jobs were detected to have errors within the date range requested
-    {% endif %}
-  </div>
-  <br>
-  <b>Completed</b>
-  <div>
-    {% if successfully_completed_try_jobs %}
-      <table>
-        <tr>
-          <th>Master</th>
-          <th>Builder</th>
-          <th>Link to Analysis</th>
-          <th>Try Job Type</th>
-          <th>Request Time</th>
-          <th>Pending Time</th>
-          <th>Execution Time</th>
-          <th>Per-commit Execution Time</th>
-          <th>Culprit Found</th>
-          <th>Try Job URL</th>
-          <th>Last Buildbucket Response</th>
-        </tr>
-        <tbody>
-          {% for try_job_display_data in successfully_completed_try_jobs %}
-            <tr>
-              <td>{{ try_job_display_data.master_name }}</td>
-              <td>{{ try_job_display_data.builder_name }}</td>
-              <td>
-                {% if try_job_display_data.build_number %}
-                   <a href="/waterfall/build-failure?url=https://luci-milo.appspot.com/buildbot/{{try_job_display_data.master_name}}/{{try_job_display_data.builder_name}}
-/{{try_job_display_data.build_number}}" target="_blank">{{try_job_display_data.build_number}}
-                    </a>
-                {% elif try_job_display_data.analysis_key %}
-                   <a href="/waterfall/flake?key={{ try_job_display_data.analysis_key }}" target="_blank">link</a>
-                {% endif %}
-              </td>
-              <td>{{ try_job_display_data.try_job_type }}</td>
-              <td>{{ try_job_display_data.request_time }}</td>
-              <td>{{ try_job_display_data.pending_time }}</td>
-              <td>{{ try_job_display_data.execution_time }}</td>
-              <td>{{ try_job_display_data.execution_time_per_commit }}</td>
-              <td>{{ try_job_display_data.culprit_found }}</td>
-              <td>
-                {% if try_job_display_data.try_job_url %}
-                  <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
-                {% endif %}
-              </td>
-              <td>
-                <button class="show-response" id="completed_response_{{ loop.index }}" data-text="{{ try_job_display_data.last_buildbucket_response }}">show</button>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% else %}
-      No try-jobs have completed within the time range requested
-    {% endif %}
-  </div>
-  <div id="buildbucket-response-dialog" title="Buildbucket response">
-    <pre id="buildbucket-response"></pre>
-  </div>
+      {% else %}
+        No try-jobs currently in progress withinin the date range requested
+      {% endif %}
+    </div>
+    <br>
+    <b>Try jobs with error</b>
+    <div>
+      {% if try_jobs_with_error %}
+        <table>
+          <tr>
+            <th>Master</th>
+            <th>Builder</th>
+            <th>Link to Analysis</th>
+            <th>Try Job Type</th>
+            <th>Request Time</th>
+            <th>Pending Time</th>
+            <th>Execution Time</th>
+            <th>Error Message</th>
+            <th>Try Job URL</th>
+            <th>Last Buildbucket Response</th>
+          </tr>
+          <tbody>
+            {% for try_job_display_data in try_jobs_with_error %}
+              <tr>
+                <td>{{ try_job_display_data.master_name }}</td>
+                <td>{{ try_job_display_data.builder_name }}</td>
+                <td>
+                  {% if try_job_display_data.build_number %}
+                     <a href="/waterfall/build-failure?url=https://luci-milo.appspot.com/buildbot/{{try_job_display_data.master_name}}/{{try_job_display_data.builder_name}}
+  /{{try_job_display_data.build_number}}" target="_blank">{{try_job_display_data.build_number}}
+                      </a>
+                  {% endif %}
+                </td>
+                <td>{{ try_job_display_data.try_job_type }}</td>
+                <td>{{ try_job_display_data.request_time }}</td>
+                <td>{{ try_job_display_data.pending_time }}</td>
+                <td>{{ try_job_display_data.execution_time }}</td>
+                <td>{{ try_job_display_data.error }}</td>
+                <td>
+                  {% if try_job_display_data.try_job_url %}
+                    <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
+                  {% endif %}
+                </td>
+                <td>
+                  <button class="show-response" id="error_response_{{ loop.index }}" data-text="{{ try_job_display_data.last_buildbucket_response }}">show</button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        No try-jobs were detected to have errors within the date range requested
+      {% endif %}
+    </div>
+    <br>
+    <b>Completed</b>
+    <div>
+      {% if successfully_completed_try_jobs %}
+        <table>
+          <tr>
+            <th>Master</th>
+            <th>Builder</th>
+            <th>Link to Analysis</th>
+            <th>Try Job Type</th>
+            <th>Request Time</th>
+            <th>Pending Time</th>
+            <th>Execution Time</th>
+            <th>Per-commit Execution Time</th>
+            <th>Culprit Found</th>
+            <th>Try Job URL</th>
+            <th>Last Buildbucket Response</th>
+          </tr>
+          <tbody>
+            {% for try_job_display_data in successfully_completed_try_jobs %}
+              <tr>
+                <td>{{ try_job_display_data.master_name }}</td>
+                <td>{{ try_job_display_data.builder_name }}</td>
+                <td>
+                  {% if try_job_display_data.build_number %}
+                     <a href="/waterfall/build-failure?url=https://luci-milo.appspot.com/buildbot/{{try_job_display_data.master_name}}/{{try_job_display_data.builder_name}}
+  /{{try_job_display_data.build_number}}" target="_blank">{{try_job_display_data.build_number}}
+                      </a>
+                  {% elif try_job_display_data.analysis_key %}
+                     <a href="/waterfall/flake?key={{ try_job_display_data.analysis_key }}" target="_blank">link</a>
+                  {% endif %}
+                </td>
+                <td>{{ try_job_display_data.try_job_type }}</td>
+                <td>{{ try_job_display_data.request_time }}</td>
+                <td>{{ try_job_display_data.pending_time }}</td>
+                <td>{{ try_job_display_data.execution_time }}</td>
+                <td>{{ try_job_display_data.execution_time_per_commit }}</td>
+                <td>{{ try_job_display_data.culprit_found }}</td>
+                <td>
+                  {% if try_job_display_data.try_job_url %}
+                    <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
+                  {% endif %}
+                </td>
+                <td>
+                  <button class="show-response" id="completed_response_{{ loop.index }}" data-text="{{ try_job_display_data.last_buildbucket_response }}">show</button>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        No try-jobs have completed within the time range requested
+      {% endif %}
+    </div>
+  </findit-app>
 </body>

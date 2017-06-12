@@ -4,7 +4,9 @@
   <title>Flaky Tests</title>
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
-  <script src="/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
+  <script src="/ui/js/common.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <link rel="import" href="/ui/elements/findit-app.html">
   <style type="text/css">
     .truncated {
@@ -32,9 +34,6 @@
       cursor: pointer;
     }
   </style>
-  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/themes/smoothness/jquery-ui.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.1/jquery-ui.min.js"></script>
   <script>
     function getParameters() {
       parameters = {}
@@ -94,7 +93,7 @@
       requestFilteredResults(e);
     };
 
-    $(document).ready(function() {
+    $(function() {
       $(document).on('click', '.previous, .next', function() {
         loadPage($(this));
       });
@@ -106,36 +105,26 @@
       $('#filter_results').click(handleFilterResults);
 
       if ('{{ cursor }}' == '') {
-        $('.next').attr('disabled', 'disabled');
+        $('.next').prop('disabled', true);
         $('.next').addClass('disabled');
       } else {
-        $('#next-button_bottom').removeAttr('disabled');
-        $('#next-button_top').removeAttr('disabled');
+        $('#next-button_bottom').prop('disabled', false);
+        $('#next-button_top').prop('disabled', false);
       }
 
       if ('{{ prev_cursor }}' == '') {
-        $('.previous').attr('disabled', 'disabled');
+        $('.previous').prop('disabled', true);
         $('.previous').addClass('disabled');
       } else {
-        $('.previous').removeAttr('disabled');
+        $('.previous').prop('disabled', false);
       }
 
-      $('#swarming-rerun-status-explanation-dialog').dialog({
-        autoOpen: false,
-        modal: true,
-        width: 600,
-      });
       $('.swarming-rerun-status-info').click(function() {
-        $('#swarming-rerun-status-explanation-dialog').dialog('open');
+        displayMessage(400);  // Explanation of Build Analysis Status.
       });
 
-      $('#try-job-status-explanation-dialog').dialog({
-        autoOpen: false,
-        modal: true,
-        width: 600,
-      });
       $('.try-job-status-info').click(function() {
-        $('#try-job-status-explanation-dialog').dialog('open');
+        displayMessage(500);  // Explanation of Culprit Analysis Status.
       });
 
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
@@ -147,15 +136,15 @@
     <form method="get" action="/waterfall/list-flakes">
       <table>
         <tr>
-          <td style="text-align:right">Step:</td>
-          <td>
-            <input type="text" name="step_name" id="step_name" size="100" value="{{ step_name_filter }}" placeholder="unit_tests on Mac-10.9"/>
-          </td>
-        </tr>
-        <tr>
           <td style="text-align:right">Test:</td>
           <td>
             <input type="text" name="test_name" id="test_name" size="100" value="{{ test_name_filter }}" placeholder="DesktopEngagementServiceTest.TestTimeoutDiscount"/>
+          </td>
+        </tr>
+        <tr>
+          <td style="text-align:right">Step (Optional):</td>
+          <td>
+            <input type="text" name="step_name" id="step_name" size="100" value="{{ step_name_filter }}" placeholder="unit_tests on Mac-10.9"/>
           </td>
         </tr>
       </table>
@@ -168,7 +157,7 @@
         <input type="date" id="end_date" value={{ end_date }}></input>
       </form>
       {% endif %}
-      <input type="submit" value="Filter" id="filter_results">
+      <input type="submit" value="Search" id="filter_results">
       <br>
     </form>
     <br>
@@ -245,25 +234,6 @@
     <div>
       <button class="previous">Previous</button>
       <button class="next">Next</button>
-    </div>
-    <div id="swarming-rerun-status-explanation-dialog" title="Build Analysis Status">
-      Swarming tasks are triggered on a series of builds to identify the build that may contain the CL that introduced test flakiness
-      <ul>
-        <li>Pending: A request for a build-level analysis has been made, however tasks have not yet begun</li>
-        <li>Running: Build-level analysis is in progress</li>
-        <li>Completed: Build-level analysis is complete</li>
-        <li>Error: The analysis was halted due to an unexpected error</li>
-      </ul>
-    </div>
-    <div id="try-job-status-explanation-dialog" title="Culprit Analysis Status">
-      Try jobs are triggered on the regression range of a build suspected to contain the CL that introduced test flakiness.
-      <ul>
-        <li>Running: A suspected build number has been identified and try jobs analysis is running</li>
-        <li>Completed: Try job analysis is complete</li>
-        <li>Error: The analysis was halted due to an unexpected error</li>
-        <li>Skipped: Try jobs will not be triggered either due to no suspected build being identified, insufficient confidence in the suspected build, or build-level analysis ending in error</li>
-        <li>(Blank): Try job analysis has not yet begun, since analysis at the build level is still in progress</li>
-      </ul>
     </div>
   <findit-app>
 </body>

@@ -69,8 +69,8 @@ def _CheckReverts(master_name, builder_name, current_build_number):
   """Checks each cl in current build to see if some of them are reverted.
 
   Returns:
-      {
-          'c9cc182781484f9010f062859cda048afef': {
+      [
+          {
               'action': 'Reverted',
               'fixed_cl_commit_position': '341992',
               'fixed_revision': 'c9cc182781484f9010f062859cda048afef',
@@ -88,17 +88,16 @@ def _CheckReverts(master_name, builder_name, current_build_number):
                   'https://luci-milo.appspot.com/buildbot/m/b/2')
           },
           ...
-      }
+      ]
   """
-  data = {}
-  reverted_cls = {}
+  reverted_cls = []
   blamed_cls = {}
   steps_pass = False
 
   build_number, current_failed_steps = _GetFirstFailedBuild(
       master_name, builder_name, current_build_number)
   if not build_number:
-    return data
+    return []
 
   while not steps_pass:
     # Breaks the loop after the first green build
@@ -106,7 +105,7 @@ def _CheckReverts(master_name, builder_name, current_build_number):
     build = build_util.DownloadBuildData(
         master_name, builder_name, build_number)
     if not build or not build.data:
-      return data
+      return []
 
     build_info = buildbot.ExtractBuildInfo(
         master_name, builder_name, build_number, build.data)
@@ -138,11 +137,11 @@ def _CheckReverts(master_name, builder_name, current_build_number):
         cls_info['fixing_build_number'] = build_number
         cls_info['fixing_build_url'] = (
             buildbot.CreateBuildUrl(master_name, builder_name, build_number))
-        reverted_cls[fixed_revision] = cls_info
+        reverted_cls.append(cls_info)
     build_number += 1
-  if reverted_cls:
-    data = reverted_cls
-  return data
+
+  reverted_cls.sort(key=lambda x: x['fixed_cl_commit_position'])
+  return reverted_cls
 
 
 class HelpTriage(BaseHandler):
