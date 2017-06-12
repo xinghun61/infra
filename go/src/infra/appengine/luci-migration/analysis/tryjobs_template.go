@@ -4,6 +4,9 @@ import (
 	"html/template"
 	"time"
 
+	"github.com/luci/luci-go/common/api/buildbucket/buildbucket/v1"
+
+	"infra/appengine/luci-migration/bbutil"
 	"infra/appengine/luci-migration/common"
 )
 
@@ -18,11 +21,21 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
 		return x
 	},
 	"durationString": common.DurationString,
+	"result": func(b *buildbucket.ApiCommonBuildMessage) string {
+		switch b.Result {
+		case bbutil.ResultFailure:
+			return b.FailureReason
+		case bbutil.ResultCanceled:
+			return b.CancelationReason
+		default:
+			return b.Result
+		}
+	},
 }).Parse(`
 {{define "buildResults"}}
   {{- range $index, $b := . -}}
     {{- if gt $index 0}}, {{end -}}
-<a href="{{$b.Url}}">{{$b.Result}}</a>
+<a href="{{$b.Url}}">{{$b | result}}</a>
   {{- end }}
 {{.Age | durationString}} ago.
 {{end}}

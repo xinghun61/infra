@@ -19,6 +19,8 @@ const (
 	ResultFailure = "FAILURE"
 	// ResultSuccess means a build succeeded.
 	ResultSuccess = "SUCCESS"
+	// ResultCanceled means a build was cancelled or timed out.
+	ResultCanceled = "CANCELED"
 	// TagBuildSet is a key of a tag used to group builds together.
 	// For tryjobs, it specifies the patchset.
 	TagBuildSet = "buildset"
