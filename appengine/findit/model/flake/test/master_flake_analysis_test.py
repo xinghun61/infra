@@ -263,6 +263,9 @@ class MasterFlakeAnalysisTest(TestCase):
     self.assertEqual(
         [analysis.data_points[-1]],
         analysis.GetDataPointsWithinBuildNumberRange(110, 120))
+    self.assertEqual(
+        analysis.data_points,
+        analysis.GetDataPointsWithinBuildNumberRange(None, None))
 
   def testGetDataPointsWithinBuildNumberRangeNoDataPoints(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

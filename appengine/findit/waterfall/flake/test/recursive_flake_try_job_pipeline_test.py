@@ -162,7 +162,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                 'failures': [test_name],
                 'valid': True,
                 'pass_fail_counts': {
-                    'test_name': {
+                    test_name: {
                         'pass_count': 28,
                         'fail_count': 72
                     }
@@ -170,6 +170,13 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             }
         }
     }
+    report = {
+        'report': {
+            'result': try_job_result
+        }
+    }
+    try_job.flake_results.append(report)
+    try_job.put()
 
     self.MockPipeline(
         recursive_flake_try_job_pipeline.ScheduleFlakeTryJobPipeline,
@@ -201,6 +208,12 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         user_specified_iterations, _DEFAULT_CACHE_NAME, None)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
+
+    self.assertIsNotNone(
+        FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
+                        revision))
+    self.assertIsNone(analysis.last_attempted_revision)
+    self.assertIsNone(analysis.last_attempted_swarming_task_id)
 
   def testRecursiveFlakeTryJobPipelineDoNotStartIfError(self):
     master_name = 'm'
@@ -497,6 +510,154 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(analysis.culprit)
     self.assertEqual(analysis_status.ERROR, analysis.try_job_status)
     self.assertIsNone(analysis.result_status)
+
+  def testGetTryJobNew(self):
+    existing_try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
+    existing_try_job.put()
+    self.assertEqual(
+        existing_try_job,
+        recursive_flake_try_job_pipeline._GetTryJob(
+            'm', 'b', 's', 't', 'a1b2c3d4'))
+
+  def testGetTryJobExisting(self):
+    try_job = recursive_flake_try_job_pipeline._GetTryJob(
+        'm', 'b', 's', 't', 'e5f6a1b2')
+    self.assertIsNotNone(try_job)
+    self.assertEqual(try_job.git_hash, 'e5f6a1b2')
+
+  def testNeedANewTryJob(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
+    self.assertTrue(recursive_flake_try_job_pipeline._NeedANewTryJob(
+        analysis, try_job, 200, True))
+    self.assertTrue(recursive_flake_try_job_pipeline._NeedANewTryJob(
+        analysis, try_job, 200, False))
+
+  def testNeedANewTryJobWithExistingFlakyTryJob(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = {
+        'try_job_rerun': {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98
+        }
+    }
+    try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
+    try_job.flake_results = [
+        {
+            'report': {
+                'result': {
+                    'a1b2c3d4': {
+                        's': {
+                            'pass_fail_counts': {
+                                't': {
+                                    'pass_count': 60,
+                                    'fail_count': 40
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+    self.assertFalse(recursive_flake_try_job_pipeline._NeedANewTryJob(
+        analysis, try_job, 200, False))
+
+  def testNeedANewTryJobWithExistingStableTryJobInsufficientIterations(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = {
+        'try_job_rerun': {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98
+        }
+    }
+    try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
+    try_job.flake_results = [
+        {
+            'report': {
+                'result': {
+                    'a1b2c3d4': {
+                        's': {
+                            'pass_fail_counts': {
+                                't': {
+                                    'pass_count': 99,
+                                    'fail_count': 1
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+    self.assertTrue(recursive_flake_try_job_pipeline._NeedANewTryJob(
+        analysis, try_job, 200, False))
+
+  def testNeedANewTryJobWithExistingStableTryJobSufficientIterations(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = {
+        'try_job_rerun': {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98
+        }
+    }
+    try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
+    try_job.flake_results = [
+        {
+            'report': {
+                'result': {
+                    'a1b2c3d4': {
+                        's': {
+                            'pass_fail_counts': {
+                                't': {
+                                    'pass_count': 200,
+                                    'fail_count': 0
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+    self.assertFalse(recursive_flake_try_job_pipeline._NeedANewTryJob(
+        analysis, try_job, 200, False))
+
+  def testNeedANewTryJobWithExistingTryJobNonexistentTest(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = {
+        'try_job_rerun': {
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98
+        }
+    }
+    try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
+    try_job.flake_results = [
+        {
+            'report': {
+                'result': {
+                    'a1b2c3d4': {
+                        's': {}
+                    }
+                }
+            }
+        }
+    ]
+    self.assertFalse(recursive_flake_try_job_pipeline._NeedANewTryJob(
+        analysis, try_job, 200, False))
+
+  def testSetAnalysisTryJobStatusRunning(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    recursive_flake_try_job_pipeline._SetAnalysisTryJobStatus(
+        analysis, analysis_status.RUNNING)
+    self.assertEqual(analysis.try_job_status, analysis_status.RUNNING)
+
+  def testSetAnalysisTryJobStatusRunningAlreadyRunning(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.try_job_status = analysis_status.RUNNING
+    recursive_flake_try_job_pipeline._SetAnalysisTryJobStatus(
+        analysis, analysis_status.RUNNING)
+    self.assertEqual(analysis.try_job_status, analysis_status.RUNNING)
 
   def testGetTryJobDataPointsNoTryJobsYet(self):
     suspected_flake_build_number = 12345

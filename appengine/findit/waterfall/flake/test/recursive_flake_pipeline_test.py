@@ -17,6 +17,7 @@ from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import build_util
 from waterfall import swarming_util
+
 from waterfall.flake import lookback_algorithm
 from waterfall.flake import recursive_flake_pipeline
 from waterfall.flake import recursive_flake_try_job_pipeline
@@ -461,6 +462,33 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, master_build_number, step_name, test_name)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
+  def testShouldRunTryJobsNoSuspectedBuild(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertFalse(
+        recursive_flake_pipeline._ShouldRunTryJobs(analysis, None, True))
+    self.assertFalse(
+        recursive_flake_pipeline._ShouldRunTryJobs(analysis, None, False))
+
+  @mock.patch.object(
+      recursive_flake_pipeline, '_HasSufficientConfidenceToRunTryJobs',
+      return_value=True)
+  def testShouldRunTryJobsSufficientConfidence(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertTrue(
+        recursive_flake_pipeline._ShouldRunTryJobs(analysis, 123, True))
+    self.assertTrue(
+        recursive_flake_pipeline._ShouldRunTryJobs(analysis, 123, False))
+
+  @mock.patch.object(
+      recursive_flake_pipeline, '_HasSufficientConfidenceToRunTryJobs',
+      return_value=False)
+  def testShouldRunTryJobsUserForce(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertTrue(
+        recursive_flake_pipeline._ShouldRunTryJobs(analysis, 123, True))
+    self.assertFalse(
+        recursive_flake_pipeline._ShouldRunTryJobs(analysis, 123, False))
+
   @mock.patch.object(
       recursive_flake_pipeline, '_HasSufficientConfidenceToRunTryJobs',
       return_value=True)
@@ -471,6 +499,23 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         analysis, 100, analysis_status.COMPLETED, None)
     self.assertEqual(analysis.suspected_flake_build_number, 100)
     self.assertIsNone(analysis.last_attempted_swarming_task_id)
+
+  def testUserSpecifiedRange(self):
+    self.assertTrue(recursive_flake_pipeline._UserSpecifiedRange(123, 125))
+    self.assertFalse(recursive_flake_pipeline._UserSpecifiedRange(None, 123))
+    self.assertFalse(recursive_flake_pipeline._UserSpecifiedRange(123, None))
+    self.assertFalse(recursive_flake_pipeline._UserSpecifiedRange(None, None))
+
+  @mock.patch.object(
+      recursive_flake_pipeline.confidence, 'SteppinessForBuild',
+      return_value=0.6)
+  def testGetBuildConfidenceScore(self, _):
+    self.assertIsNone(
+        recursive_flake_pipeline._GetBuildConfidenceScore(None, []))
+    self.assertEqual(
+        0.6,
+        recursive_flake_pipeline._GetBuildConfidenceScore(
+            123, [DataPoint(), DataPoint()]))
 
   @mock.patch.object(time_util, 'GetUTCNow',
                      return_value=datetime(2017, 6, 7))

@@ -64,13 +64,54 @@ def _HasSufficientConfidenceToRunTryJobs(analysis):
   return analysis.confidence_in_suspected_build >= minimum_confidence_score
 
 
+def _ShouldRunTryJobs(analysis, suspected_build, user_specified_range):
+  """Whether try jobs are expected to run.
+
+    In order for try jobs to run, a suspected build must be identified. If the
+    suspected build is identified as part of analyzing a user-specified range,
+    try jobs will be run regardless of confidence.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The analysis being run.
+    suspected_build (int): A suspected build in which the flakiness started, or
+        None.
+    user_specified_range (bool): Whether a user supplied a regression range to
+        analyze.
+  """
+  return (suspected_build is not None and
+          (user_specified_range or
+           _HasSufficientConfidenceToRunTryJobs(analysis)))
+
+
 def _UpdateAnalysisStatusUponCompletion(
-    analysis, suspected_build, status, error, build_confidence_score=None):
+    analysis, suspected_build, status, error, build_confidence_score=None,
+    user_specified_range=False):
+  """Sets an analysis' fields upon cessation of an analysis.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The analysis to update.
+    suspected_build (int): The build number that the flakiness is suspected to
+        have begun in. None if not found.
+    status (int): The analysis status to set to.
+    error (dict): Any detected errors during the analysis, or None.
+    build_confidence_score (float): The confidence score associated with the
+        suspected build. Can be None if no suspected build was identified.
+    user_specified_range (bool): Whether the user supplied a rerun of a specific
+        range, which will force try jobs to start regardless of confidence.
+  """
   analysis.end_time = time_util.GetUTCNow()
   analysis.status = status
-  analysis.confidence_in_suspected_build = build_confidence_score
-  analysis.try_job_status = analysis_status.SKIPPED
-  analysis.suspected_flake_build_number = suspected_build
+
+  if (suspected_build is not None and
+      suspected_build != analysis.suspected_flake_build_number):
+    # In case the user specified a region to analyze, only update the suspected
+    # build if one was found within the user's range and it is different from
+    # what Findit had originally found.
+    analysis.confidence_in_suspected_build = build_confidence_score
+    analysis.suspected_flake_build_number = suspected_build
+
+  analysis.try_job_status = analysis.try_job_status or analysis_status.SKIPPED
+
   analysis.result_status = (
       result_status.NOT_FOUND_UNTRIAGED if suspected_build is None else
       result_status.FOUND_UNTRIAGED)
@@ -83,7 +124,7 @@ def _UpdateAnalysisStatusUponCompletion(
     analysis.last_attempted_swarming_task_id = None
     analysis.last_attempted_build_number = None
 
-    if _HasSufficientConfidenceToRunTryJobs(analysis):
+    if _ShouldRunTryJobs(analysis, suspected_build, user_specified_range):
       # Analysis is not finished yet: try jobs are about to be run.
       analysis.try_job_status = None
       analysis.end_time = None
@@ -92,7 +133,7 @@ def _UpdateAnalysisStatusUponCompletion(
 
 
 def _UpdateAnalysisStatusAndStartTime(analysis):
-  if analysis.status != analysis_status.RUNNING:  # pragma: no branch
+  if analysis.status != analysis_status.RUNNING:
     analysis.status = analysis_status.RUNNING
     analysis.start_time = time_util.GetUTCNow()
     analysis.put()
@@ -638,6 +679,45 @@ def _IsFinished(next_build_number, earliest_build_number,
           not iterations_to_rerun)
 
 
+def _UserSpecifiedRange(lower_bound_build_number, upper_bound_build_number):
+  """Determines whether or not try jobs should be run based on user input.
+
+  Args:
+    lower_bound_build_number (int): The lower-bound build number corresponding
+        to a user-specified commit position, or None if part of an automatic
+        analysis.
+    upper_bound_build_number (int): The upper-bound build number corresponding
+        to a user-specified commit position, or None if part of an automatic
+        analysis.
+
+  Returns:
+    Bool whether or not a user specified a range. Used to force try jobs to run
+        regardless of confidence.
+  """
+  return (lower_bound_build_number is not None and
+          upper_bound_build_number is not None)
+
+
+def _GetBuildConfidenceScore(suspected_build, data_points):
+  """Gets a confidence score for a suspected build.
+
+  Args:
+    suspected_build (int): The suspected build number that flakiness started in.
+        Can be None if not identified.
+    data_points (list): A list of DataPoint() entities to calculate stepinness
+        and determine a confidence score.
+
+  Returns:
+    Float between 0 and 1 representing confidence in the suspected build number
+        or None if not found.
+  """
+  if suspected_build is None:
+    return None
+
+  return confidence.SteppinessForBuild(
+      data_points, suspected_build)
+
+
 class NextBuildNumberPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
@@ -709,19 +789,25 @@ class NextBuildNumberPipeline(BasePipeline):
     if _IsFinished(next_build_number, earliest_build_number,
                    latest_build_number, updated_iterations_to_rerun):
       # Use steppiness as the confidence score.
-      build_confidence_score = (confidence.SteppinessForBuild(
-          analysis.data_points, suspected_build) if suspected_build is not None
-                                else None)
+      build_confidence_score = _GetBuildConfidenceScore(
+          suspected_build, data_points_within_range)
+
+      # Force try jobs to run if the user supplied a regression range and a
+      # suspected build was identified as a result.
+      user_specified_range = _UserSpecifiedRange(
+          lower_bound_build_number, upper_bound_build_number)
 
       # Update suspected build and the confidence score.
       _UpdateAnalysisStatusUponCompletion(
           analysis, suspected_build, analysis_status.COMPLETED,
-          None, build_confidence_score=build_confidence_score)
+          None, build_confidence_score=build_confidence_score,
+          user_specified_range=user_specified_range)
 
       if build_confidence_score is None:
         logging.info(('Skipping try jobs due to no suspected flake build being '
                       'identified'))
-      elif not _HasSufficientConfidenceToRunTryJobs(analysis):
+      elif not (_HasSufficientConfidenceToRunTryJobs(analysis) or
+                user_specified_range):
         logging.info(('Skipping try jobs due to insufficient confidence in '
                       'suspected build'))
       else:

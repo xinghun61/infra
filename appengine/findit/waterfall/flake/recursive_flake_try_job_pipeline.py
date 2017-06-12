@@ -9,8 +9,8 @@ from google.appengine.ext import ndb
 from common import constants
 from common.waterfall import failure_type
 from gae_libs import appengine_util
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
@@ -73,11 +73,30 @@ def UpdateAnalysisUponCompletion(
 
 
 @ndb.transactional
-def _CreateTryJobEntity(
+def _GetTryJob(
     master_name, builder_name, step_name, test_name, revision):
-  try_job = FlakeTryJob.Create(
+  """Gets or creates a FlakeTryJob for the specified configuration.
+
+    If a try job from a previous run with this configuration was already run,
+    reuse the entity. Else create a new one.
+
+  Args:
+    master_name (string): The master name of the analysis this try job is for.
+    builder_name (string): The builder name of the analysis this try job is for.
+    step_name (string): The step that the flaky test was found on.
+    test_name (string): The name of the flaky test.
+    revision (string): The chromium revision/git hash that this try job will be
+        analyzing.
+
+  Returns:
+    FlakeTryJobData representing the try job.
+  """
+  try_job = FlakeTryJob.Get(
       master_name, builder_name, step_name, test_name, revision)
-  try_job.put()
+  if not try_job:
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, revision)
+    try_job.put()
   return try_job
 
 
@@ -86,6 +105,61 @@ def _GetIterationsToRerun(user_specified_iterations, analysis):
           analysis.algorithm_parameters.get(
               'try_job_rerun', {}).get('iterations_to_rerun',
                                        _DEFAULT_ITERATIONS_TO_RERUN))
+
+
+def _NeedANewTryJob(analysis, try_job, required_iterations, rerun):
+  """Determines whether or not a try job needs to be run.
+
+    A try job needs to be run if:
+    1. It is to generate a data point on a build configuration and revision
+       for which there is no existing data.
+    2. A data point exists for the revision, but it is stable and run against
+       too few iterations.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The flake analysis for which try jobs are
+        analyzing.
+    try_job (FlakeTryJob): A flake try job entity.
+    rerun (bool): Whether or not to force a rerun regardless of the need to.
+  """
+  if rerun or not try_job.flake_results:
+    # Either this is a redo from scratch or a brand new try job.
+    return True
+
+  step_name = try_job.step_name
+  test_name = try_job.test_name
+  revision = try_job.git_hash
+  result = try_job.flake_results[-1]['report']['result'][revision][step_name]
+  pass_fail_counts = result.get('pass_fail_counts', {})
+
+  if pass_fail_counts:
+    # The existing try job attempt completed successfully.
+    test_results = pass_fail_counts[test_name]
+    pass_count = test_results['pass_count']
+    fail_count = test_results['fail_count']
+    tries = pass_count + fail_count
+    pass_rate = float(pass_count) / tries
+    lower_flake_threshold = analysis.algorithm_parameters[
+        'try_job_rerun']['lower_flake_threshold']
+    upper_flake_threshold = analysis.algorithm_parameters[
+        'try_job_rerun']['upper_flake_threshold']
+
+    if (lookback_algorithm.IsStable(
+        pass_rate, lower_flake_threshold, upper_flake_threshold) and
+        tries < required_iterations):
+      # Stable results with insufficient iterations are not reliable and should
+      # be rerun.
+      return True
+
+  # Either the test does not exist at the revision, test is stable with
+  # sufficient iterations, or is flaky. No need for a new try job.
+  return False
+
+
+def _SetAnalysisTryJobStatus(analysis, desired_status):
+  # Sets an analysis' try_job_status to desired_status.
+  if analysis.try_job_status != desired_status:
+    analysis.try_job_status = desired_status
 
 
 class RecursiveFlakeTryJobPipeline(BasePipeline):
@@ -147,7 +221,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, urlsafe_flake_analysis_key, commit_position, revision,
           lower_bound_commit_position, upper_bound_commit_position,
-          user_specified_iterations, cache_name, dimensions):
+          user_specified_iterations, cache_name, dimensions, rerun=False):
     """Runs a try job at a revision to determine its flakiness.
 
     Args:
@@ -166,6 +240,8 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
           waterfall bots on the trybots.
       dimensions (list): A list of strings in the format
           ["key1:value1", "key2:value2"].
+      rerun (bool): Whether or not a full rerun of this analysis is being
+          requested.
     """
     analysis = ndb.Key(urlsafe=urlsafe_flake_analysis_key).get()
     assert analysis
@@ -175,33 +251,35 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
       # successfully.
       return
 
-    # TODO(lijeffrey): support force/rerun.
-
-    try_job = _CreateTryJobEntity(
+    try_job = _GetTryJob(
         analysis.master_name, analysis.builder_name,
         analysis.canonical_step_name, analysis.test_name, revision)
 
-    if analysis.try_job_status != analysis_status.RUNNING:  # pragma: no branch
-      # Set try_job_status as RUNNING to indicate the analysis is in try-job
-      # mode.
-      analysis.try_job_status = analysis_status.RUNNING
-    analysis.last_attempted_revision = revision
-    analysis.put()
+    if _NeedANewTryJob(analysis, try_job, user_specified_iterations, rerun):
+      _SetAnalysisTryJobStatus(analysis, analysis_status.RUNNING)
+      analysis.last_attempted_revision = revision
+      analysis.put()
 
-    with pipeline.InOrder():
       iterations = _GetIterationsToRerun(user_specified_iterations, analysis)
-      try_job_id = yield ScheduleFlakeTryJobPipeline(
-          analysis.master_name, analysis.builder_name,
-          analysis.canonical_step_name, analysis.test_name, revision,
-          analysis.key.urlsafe(), cache_name, dimensions, iterations)
 
-      try_job_result = yield MonitorTryJobPipeline(
-          try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
+      with pipeline.InOrder():
+        try_job_id = yield ScheduleFlakeTryJobPipeline(
+            analysis.master_name, analysis.builder_name,
+            analysis.canonical_step_name, analysis.test_name, revision,
+            analysis.key.urlsafe(), cache_name, dimensions, iterations)
 
-      yield ProcessFlakeTryJobResultPipeline(
-          revision, commit_position, try_job_result, try_job.key.urlsafe(),
-          urlsafe_flake_analysis_key)
+        try_job_result = yield MonitorTryJobPipeline(
+            try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
 
+        yield ProcessFlakeTryJobResultPipeline(
+            revision, commit_position, try_job_result, try_job.key.urlsafe(),
+            urlsafe_flake_analysis_key)
+
+        yield NextCommitPositionPipeline(
+            urlsafe_flake_analysis_key, try_job.key.urlsafe(),
+            lower_bound_commit_position, upper_bound_commit_position,
+            user_specified_iterations, cache_name, dimensions)
+    else:
       yield NextCommitPositionPipeline(
           urlsafe_flake_analysis_key, try_job.key.urlsafe(),
           lower_bound_commit_position, upper_bound_commit_position,

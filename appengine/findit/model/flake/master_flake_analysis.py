@@ -274,6 +274,9 @@ class MasterFlakeAnalysis(
     Returns:
       A list of DataPoins filtered by the input commit positions.
     """
+    if lower_bound_build_number is None and upper_bound_build_number is None:
+      return self.data_points
+
     lower_bound = self.GetCommitPositionOfBuild(lower_bound_build_number) or 0
     upper_bound = self.GetCommitPositionOfBuild(
         upper_bound_build_number) or float('inf')
