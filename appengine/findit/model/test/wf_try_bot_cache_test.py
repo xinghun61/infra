@@ -12,32 +12,32 @@ class WfTryBotCacheTest(wf_testcase.WaterfallTestCase):
     bot_id = 'fake_slave_123'
     cache = WfTryBotCache.Get('new_cache_empty')
     self.assertFalse(cache.recent_bots)
-    cache.AddBot(bot_id)
+    cache.AddBot(bot_id, 123, 456)
     self.assertIn(bot_id, cache.recent_bots)
 
   def testNoDuplicates(self):
     cache = WfTryBotCache.Get('new_cache_no_dupes')
     self.assertFalse(cache.recent_bots)
     bot_id = 'fake_slave_123'
-    cache.AddBot(bot_id)
-    cache.AddBot(bot_id)
-    cache.AddBot(bot_id)
+    cache.AddBot(bot_id, 123, 456)
+    cache.AddBot(bot_id, 124, 456)
+    cache.AddBot(bot_id, 125, 456)
     self.assertEqual(1, len(cache.recent_bots))
 
   def testMoveToFront(self):
     cache = WfTryBotCache.Get('new_cache_move_to_front')
     cache.recent_bots = ['bot1', 'bot2']
-    cache.AddBot('bot2')
+    cache.AddBot('bot2', 123, 456)
     self.assertEqual(['bot2', 'bot1'], cache.recent_bots)
 
   def testTruncateList(self):
     init_cache = WfTryBotCache.Get('popular_cache')
-    init_cache.recent_bots = ['bot%d' % x for x in
-                         range(WfTryBotCache.MAX_RECENT_BOTS)]
+    for i in range(WfTryBotCache.MAX_RECENT_BOTS):
+        init_cache.AddBot('bot%d' % i, i, i+1)
     init_cache.put()
     cache = WfTryBotCache.Get('popular_cache')
     self.assertEqual(WfTryBotCache.MAX_RECENT_BOTS, len(cache.recent_bots))
-    cache.AddBot('fake_slave_123')
+    cache.AddBot('fake_slave_123', 123, 456)
     self.assertEqual(WfTryBotCache.MAX_RECENT_BOTS, len(cache.recent_bots))
     self.assertEqual('fake_slave_123', cache.recent_bots[0])
 

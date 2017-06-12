@@ -19,8 +19,10 @@ from google.appengine.api.urlfetch_errors import ConnectionClosedError
 from google.appengine.ext import ndb
 
 from common.waterfall import buildbucket_client
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http import auth_util
 from infra_api_clients import logdog_util
+from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_step import WfStep
 from waterfall import monitoring
@@ -75,6 +77,17 @@ EXIT_CODE_DESCRIPTIONS = {
     SOME_TESTS_FAILED: 'Some tests failed',
     TASK_FAILED: 'Swarming task failed',
 }
+
+# Swarming URL templates.
+BOT_LIST_URL = 'https://%s/_ah/api/swarming/v1/bots/list%s'
+BOT_COUNT_URL = 'https://%s/_ah/api/swarming/v1/bots/count%s'
+NEW_TASK_URL = 'https://%s/_ah/api/swarming/v1/tasks/new'
+TASK_ID_URL = 'https://%s/_ah/api/swarming/v1/task/%s/request'
+TASK_RESULT_URL = 'https://%s/_ah/api/swarming/v1/task/%s/result'
+
+
+def _SwarmingHost():
+  return waterfall_config.GetSwarmingSettings().get('server_host')
 
 
 def _GetBackoffSeconds(retry_backoff, tries, maximum_retry_interval):
@@ -199,10 +212,7 @@ def _SendRequestToServer(url, http_client, post_data=None):
 
 def GetSwarmingTaskRequest(task_id, http_client):
   """Returns an instance of SwarmingTaskRequest representing the given task."""
-  swarming_server_host = waterfall_config.GetSwarmingSettings().get(
-      'server_host')
-  url = ('https://%s/_ah/api/swarming/v1/task/%s/request') % (
-      swarming_server_host, task_id)
+  url = TASK_ID_URL % (_SwarmingHost(), task_id)
   content, error = _SendRequestToServer(url, http_client)
 
   # TODO(lijeffrey): Handle/report error in calling functions.
@@ -230,10 +240,8 @@ def TriggerSwarmingTask(request, http_client):
 
   request.tags.extend(['findit:1', 'project:Chromium', 'purpose:post-commit'])
 
-  url = 'https://%s/_ah/api/swarming/v1/tasks/new' % swarming_settings.get(
-      'server_host')
   response_data, error = _SendRequestToServer(
-      url, http_client, request.Serialize())
+      NEW_TASK_URL % _SwarmingHost(), http_client, request.Serialize())
 
   if not error:
     return json.loads(response_data)['task_id'], None
@@ -301,8 +309,7 @@ def _GenerateIsolatedData(outputs_ref):
 
 def GetSwarmingTaskResultById(task_id, http_client):
   """Gets swarming result, checks state and returns outputs ref if needed."""
-  base_url = ('https://%s/_ah/api/swarming/v1/task/%s/result') % (
-      waterfall_config.GetSwarmingSettings().get('server_host'), task_id)
+  base_url = TASK_RESULT_URL % (_SwarmingHost(), task_id)
   json_data = {}
 
   data, error = _SendRequestToServer(base_url, http_client)
@@ -576,6 +583,15 @@ def GetIsolatedOutputForTask(task_id, http_client):
     return None
   return output_json
 
+
+def _DimensionsToQueryString(dimensions):
+  dimension_list = ['%s:%s' % (k, v) for k, v in dimensions.iteritems()]
+  dimension_qs = '&dimensions='.join(dimension_list)
+  # Url looks like 'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/bots
+  # /count?dimensions=os:Windows-7-SP1&dimensions=cpu:x86-64'
+  return '?dimensions=%s' % dimension_qs
+
+
 def GetSwarmingBotCounts(dimensions, http_client):
   """Gets number of swarming bots for certain dimensions.
 
@@ -589,15 +605,7 @@ def GetSwarmingBotCounts(dimensions, http_client):
   if not dimensions:
     return {}
 
-  swarming_server_host = waterfall_config.GetSwarmingSettings().get(
-      'server_host')
-  url = 'https://%s/_ah/api/swarming/v1/bots/count' % swarming_server_host
-
-  dimension_list = ['%s:%s' % (k, v) for k, v in dimensions.iteritems()]
-  dimension_url = '&dimensions='.join(dimension_list)
-  # Url looks like 'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/bots
-  # /count?dimensions=os:Windows-7-SP1&dimensions=cpu:x86-64'
-  url = '%s?dimensions=%s' % (url, dimension_url)
+  url = BOT_COUNT_URL % (_SwarmingHost(), _DimensionsToQueryString(dimensions))
 
   content, error = _SendRequestToServer(url, http_client)
   if error or not content:
@@ -688,24 +696,115 @@ def GetBuilderCacheName(build):
   return None
 
 
+def GetAllBotsWithCache(dimensions, cache_name, http_client):
+  dimensions['caches'] = cache_name
+  url = BOT_LIST_URL % (_SwarmingHost(), _DimensionsToQueryString(dimensions))
+
+  content, error = _SendRequestToServer(url, http_client)
+  if error or not content:
+    return []
+
+  content_data = json.loads(content)
+  return content_data.get('items', [])
+
+
+def _OnlyAvailable(bots):
+  return [
+      b for b in bots if not (
+          b.get('task_id') or
+          b.get('is_dead') or
+          b.get('quarantined') or
+          b.get('deleted')
+      )
+  ]
+
+
+def _HaveCommitPositionInLocalGitCache(bots, commit_position):
+  result = []
+  for b in bots:
+    bot_id = b.get('bot_id')
+    if WfTryBot.Get(bot_id).newest_synced_revision >= commit_position:
+      result.append(b)
+  return result
+
+
+def _SortByDistanceToCommitPosition(bots, cache_name, commit_position,
+                                    include_later):
+  cache_stats = WfTryBotCache.Get(cache_name)
+  def _distance(bot_id):
+    local_cp = cache_stats.checked_out_commit_positions.get(bot_id, 0)
+    return commit_position - local_cp
+  if include_later:
+    distance = lambda x: abs(_distance(x))
+  else:
+    distance = _distance
+  result = sorted([b for b in bots if distance(b['bot_id']) >= 0],
+                  key=lambda x: distance(x['bot_id']))
+  return result
+
+
+def _ClosestEarlier(bots, cache_name, commit_position):
+  result = _SortByDistanceToCommitPosition(
+      bots, cache_name, commit_position, False)
+  return result[0] if result else None
+
+
+def _ClosestLater(bots, cache_name, commit_position):
+  result = _SortByDistanceToCommitPosition(
+      bots, cache_name, commit_position, True)
+  return result[0] if result else None
+
+
 def AssignWarmCacheHost(tryjob, cache_name, http_client):
-  """Choose a host that already posesses the named cache requested.
+  """Selects the best possible slave for a given tryjob.
 
-  This applies if the job is being triggered on a swarming-backed builder and
-  a cache name is specified.
+  We try to get as many of the following conditions as possible:
+   - The bot is available,
+   - The bot has the named cached requested by the tryjob,
+   - The revision to test has already been fetched to the bot's local git cache,
+   - The currently checked out revision at the named cache is the closest
+     to the revision to test, and if possible it's earlier to it (so that
+     bot_update only moves forward, preferably)
+  If a match is found, it is added to the tryjob parameter as a dimension.
 
-  The strategy to select a host that has the cache is to try them in the order
-  of how recently they used the cache and see if they are available.
+  Args:
+    tryjob (buildbucket_client.TryJob): The ready-to-be-scheduled job.
+    cache_name (str): Previously computed name of the cache to match the
+        referred build's builder and master.
+    http_client: http_client to use for swarming and gitiles requests.
   """
   if not tryjob.is_swarmbucket_build:
     return
-  recent_bots = WfTryBotCache.Get(cache_name).recent_bots
-  # TODO(robertocn): Optimize this selection strategy.
-  for bot_id in recent_bots:
-    request_dimensions = dict([x.split(':', 1) for x in tryjob.dimensions])
-    request_dimensions['id'] = bot_id
-    counts = GetSwarmingBotCounts(request_dimensions, http_client)
-    if counts['available']:
-      tryjob.dimensions = ['%s:%s' % (k, v) for k, v in
-                           request_dimensions.iteritems()]
+  request_dimensions = dict([x.split(':', 1) for x in tryjob.dimensions])
+  bots_with_cache = _OnlyAvailable(
+      GetAllBotsWithCache(request_dimensions, cache_name, http_client)
+  )
+  if bots_with_cache:
+    git_repo = CachedGitilesRepository(
+         http_client,
+        'https://chromium.googlesource.com/chromium/src.git')
+    target_commit_position = git_repo.GetChangeLog(
+        tryjob.revision).commit_position
+
+    bots_with_rev = _HaveCommitPositionInLocalGitCache(
+        bots_with_cache, target_commit_position)
+    if not bots_with_rev:
+      tryjob.dimensions.append('id:' + bots_with_cache[0]['bot_id'])
       return
+
+    bots_with_latest_earlier_rev_checked_out = _ClosestEarlier(
+        bots_with_rev, cache_name, target_commit_position)
+    if bots_with_latest_earlier_rev_checked_out:
+      tryjob.dimensions.append(
+          'id:' + bots_with_latest_earlier_rev_checked_out['bot_id'])
+      return
+
+    bots_with_earliest_later_rev_checked_out = _ClosestLater(
+        bots_with_rev, cache_name, target_commit_position)
+    if bots_with_earliest_later_rev_checked_out:
+      tryjob.dimensions.append(
+          'id:' + bots_with_earliest_later_rev_checked_out['bot_id'])
+      return
+
+    tryjob.dimensions.append('id:' + bots_with_rev[0]['bot_id'])
+    return

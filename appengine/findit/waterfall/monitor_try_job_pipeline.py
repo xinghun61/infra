@@ -15,6 +15,7 @@ from common.waterfall import failure_type
 from common.waterfall import try_job_error
 from common.waterfall.buildbucket_client import BuildbucketBuild
 from gae_libs import appengine_util
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
@@ -200,12 +201,47 @@ def _UpdateLastBuildbucketResponse(try_job_data, build):
     try_job_data.put()
 
 
-def _RecordCacheStats(build):
+def _RecordCacheStats(build, report):
+  """Save the bot's state at the end of a successful.
+
+  This function aims to save the following data in the data store:
+   - The last revision that the bot synced to under the specific work
+     directory (named cache) it used for its local checkout.
+   - The latest revision fetched into the bot's local git cache, which is shared
+     accross all work directories.
+
+  These are saved as commit positions rather than revision hashes for faster
+  comparisons when selecting a bot for new tryjobs.
+  """
   bot = swarming_util.GetBot(build)
   cache_name = swarming_util.GetBuilderCacheName(build)
   if bot and cache_name:
+    git_repo = CachedGitilesRepository(
+        HttpClientAppengine(),
+        'https://chromium.googlesource.com/chromium/src.git')
+
+    last_checked_out_revision = report.get('last_checked_out_revision')
+    last_checked_out_cp = (
+        git_repo.GetChangeLog(last_checked_out_revision).commit_position
+        if last_checked_out_revision else None)
+
+    cached_revision = report.get('previously_cached_revision')
+    cached_cp= git_repo.GetChangeLog(
+        cached_revision).commit_position if cached_revision else None
+
+    bad_revision = json.loads(build.response.get('parameters_json', '{}')
+                              ).get('properties', {}).get('bad_revision')
+    bad_cp = git_repo.GetChangeLog(
+        bad_revision).commit_position if bad_revision else None
+
+    # If the bad_revision is later than the previously cached revision, that
+    # means that the bot had to sync with the remote repository, and the local
+    # git cache was updated to that revision at least.
+    latest_synced_cp = max(bad_cp, cached_cp)
+
     cache_stats = WfTryBotCache.Get(cache_name)
-    cache_stats.AddBot(bot)
+    cache_stats.AddBot(bot, last_checked_out_cp, latest_synced_cp)
+
     # TODO(robertocn): Record the time it took to complete the task
     # with a cold or warm cache.
     cache_stats.put()
@@ -453,7 +489,7 @@ class MonitorTryJobPipeline(BasePipeline):
           report = json.loads(swarming_util.GetStepLog(
               try_job_id, 'report', HttpClientAppengine(), 'report'))
           if report:
-            _RecordCacheStats(build)
+            _RecordCacheStats(build, report)
         except (ValueError, TypeError) as e:  # pragma: no cover
           report = {}
           logging.exception(

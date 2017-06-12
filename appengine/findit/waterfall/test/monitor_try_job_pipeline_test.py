@@ -9,9 +9,11 @@ import mock
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from common.waterfall import try_job_error
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
+from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall import buildbot
@@ -1125,3 +1127,48 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     # Reload from ID to get all internal properties in sync.
     pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
     pipeline.finalized()
+
+  @mock.patch('waterfall.swarming_util.GetBot', return_value='BotName')
+  @mock.patch('waterfall.swarming_util.GetBuilderCacheName',
+              return_value='CacheName')
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  def testRecordCacheStats(self, mock_cl, *_):
+    cases = [
+        (None, None, '100', 100),
+        ('100', '100', '200', 200),
+        ('100', '200', '100', 200),
+        ('200', '200', '100', 200),
+        ('100', '200', '300', 300)
+    ]
+    for (checked_out_revision,
+         cached_revision,
+         bad_revision,
+         synced_revision) in cases:
+      mock_commit_position = mock.PropertyMock()
+      mock_commit_position.side_effect = filter(None, [
+          int(checked_out_revision) if checked_out_revision else None,
+          int(cached_revision) if cached_revision else None,
+          int(bad_revision) if bad_revision else None,
+      ])
+      type(mock_cl.return_value).commit_position = mock_commit_position
+      build = buildbucket_client.BuildbucketBuild({
+          'parameters_json': json.dumps(
+              {
+                  'properties':{
+                      'bad_revision': bad_revision
+                  }
+              }
+          )
+      })
+      report = {
+          'last_checked_out_revision': checked_out_revision,
+           'previously_cached_revision': cached_revision
+      }
+      with mock.patch(
+          'model.wf_try_bot_cache.WfTryBotCache.AddBot'
+      ) as mock_add_bot:
+        monitor_try_job_pipeline._RecordCacheStats(build, report)
+        mock_add_bot.assert_called_once_with(
+            'BotName',
+             int(checked_out_revision) if checked_out_revision else None,
+             synced_revision)

@@ -19,6 +19,7 @@ from infra_api_clients import logdog_util
 from libs.http.retry_http_client import RetryHttpClient
 from model.wf_config import FinditConfig
 from model.wf_step import WfStep
+from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
 from waterfall import swarming_util
 from waterfall import waterfall_config
@@ -33,6 +34,16 @@ class MockBuild(object):
 
 MOCK_BUILDS = [(None, MockBuild({'tags': [
               'swarming_tag:log_location:logdog://host/project/path']}))]
+
+ALL_BOTS = [{'bot_id': 'bot%d' % b} for b in range(10)]
+SOME_BOTS = [{'bot_id': 'bot%d' % b} for b in range(3)]
+ONE_BOT = [{'bot_id': 'bot%d' % b} for b in range(1)]
+
+
+class MockTryJob(object):
+  is_swarmbucket_build = True
+  dimensions = ['os:OS', 'cpu:CPU']
+  revision = 'a1b2c3d4'
 
 
 class SwarmingHttpClient(RetryHttpClient):
@@ -1090,57 +1101,180 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(swarming_util.GetBuilderCacheName(MockBuildbucketBuild))
 
   @mock.patch.object(swarming_util, '_SendRequestToServer')
-  def testAssignWarmCacheHost(self, mock_fn):
-    class MockTryJob(object):
-      is_swarmbucket_build = True
-      dimensions = []
-
-    cache_name = 'some_cache_name'
-    content_data = {
-        'count': '1',
-        'dead': '0',
-        'quarantined': '0',
-        'busy': '1'
-    }
-    mock_fn.return_value = (json.dumps(content_data), None)
-    WfTryBotCache.Get(cache_name).recent_bots = ['slave1']
-    try_job_1 = MockTryJob()
-    swarming_util.AssignWarmCacheHost(try_job_1, cache_name,
-                                      SwarmingHttpClient())
-    self.assertFalse(try_job_1.dimensions)
-
-    content_data = {
-        'count': '1',
-        'dead': '0',
-        'quarantined': '0',
-        'busy': '0'
-    }
-    mock_fn.return_value = (json.dumps(content_data), None)
-    try_job_2 = MockTryJob()
-    try_job_2.dimensions.append('misc:dimension')
-    swarming_util.AssignWarmCacheHost(try_job_2, cache_name,
-                                      SwarmingHttpClient())
-    # We should at least have one dimension here
-    self.assertTrue(try_job_2.dimensions)
-    self.assertTrue(isinstance(try_job_2.dimensions, list))
-    id_found = False
-    for dimension in try_job_2.dimensions:
-      key, value = dimension.split(':', 1)
-      if key == 'id':
-        id_found = True
-      self.assertTrue(value)
-      self.assertTrue(isinstance(value, basestring))
-      self.assertTrue(key)
-      self.assertTrue(isinstance(key, basestring))
-    self.assertTrue(id_found)
-
-  @mock.patch.object(swarming_util, '_SendRequestToServer')
   def testSelectWarmCacheNoOp(self, mock_fn):
-    class MockTryJob(object):
+    class MockTryJobBuildbot(object):
       is_swarmbucket_build = False
-    try_job_buildbot = MockTryJob()
+    try_job_buildbot = MockTryJobBuildbot()
     cache_name = 'some_other_cache_name'
     WfTryBotCache.Get(cache_name).recent_bots = ['slave1']
     swarming_util.AssignWarmCacheHost(try_job_buildbot, cache_name,
                                       SwarmingHttpClient())
     self.assertFalse(mock_fn.called)
+
+  @mock.patch.object(swarming_util, '_SendRequestToServer',
+                     return_value=(None, {'code': 1, 'message': 'error'}))
+  def testGetAllBotsWithCacheError(self, _):
+    dimensions = {
+      'os': 'OS',
+      'cpu': 'cpu'
+    }
+    self.assertEqual([], swarming_util.GetAllBotsWithCache(
+        dimensions, 'cache_name', self.http_client))
+
+  @mock.patch.object(swarming_util, '_SendRequestToServer')
+  def testGetAllBotsWithCache(self, mock_fn):
+
+    dimensions = {
+      'os': 'OS',
+      'cpu': 'cpu'
+    }
+
+    content_data = {
+        'items': [
+            {'bot_id': 'bot_1'}
+        ]
+    }
+    mock_fn.return_value = (json.dumps(content_data), None)
+    self.assertEqual(content_data['items'], swarming_util.GetAllBotsWithCache(
+        dimensions, 'cache_name', self.http_client))
+
+  def testOnlyAvailable(self):
+    all_bots = [
+        {'bot_id': 'bot1', 'task_id': '123abc000'},
+        {'bot_id': 'bot2', 'is_dead': True},
+        {'bot_id': 'bot3', 'quarantined': True},
+        {'bot_id': 'bot4', 'deleted': True},
+        {'bot_id': 'bot5'}
+    ]
+    self.assertEqual(
+        [{'bot_id': 'bot5'}],
+        swarming_util._OnlyAvailable(all_bots)
+    )
+
+  def testHaveCommitPositionInLocalGitCache(self):
+    bots = [{'bot_id': 'bot%d' % i} for i in range(10)]
+    bot5 = WfTryBot.Get('bot5')
+    bot5.newest_synced_revision = 100
+    bot5.put()
+    self.assertEqual(
+        [{'bot_id': 'bot5'}],
+        swarming_util._HaveCommitPositionInLocalGitCache(bots, 1)
+    )
+
+  def testSortByDistanceToCommitPosition(self):
+    cache_name = 'cache_name'
+    cache_stats = WfTryBotCache.Get(cache_name)
+    cache_stats.AddBot('bot1', 80, 80)
+    cache_stats.AddBot('bot2', 90, 90)
+    cache_stats.AddBot('bot3', 110, 110)
+    cache_stats.AddBot('bot4', 120, 120)
+    cache_stats.put()
+    bots = [{'bot_id': 'bot%d' % i} for i in range(1, 5)]
+    closest = swarming_util._ClosestEarlier(
+        bots, cache_name, 70)
+    self.assertFalse(closest)
+    closest = swarming_util._ClosestLater(
+        bots, cache_name, 70)
+    self.assertEqual({'bot_id':'bot1'}, closest)
+
+    sorted_bots = swarming_util._SortByDistanceToCommitPosition(
+        bots, cache_name, 100, False)
+    self.assertEqual({'bot_id':'bot2'}, sorted_bots[0])
+    sorted_bots = swarming_util._SortByDistanceToCommitPosition(
+        bots, cache_name, 121, False)
+    self.assertEqual({'bot_id':'bot4'}, sorted_bots[0])
+
+
+  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
+              return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+              return_value=SOME_BOTS)
+  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+              return_value=SOME_BOTS)
+  @mock.patch('waterfall.swarming_util._ClosestEarlier',
+              return_value=ONE_BOT[0])
+  @mock.patch('waterfall.swarming_util._ClosestLater',
+              return_value=ONE_BOT[0])
+  @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
+  def testAssignWarmCacheHost(self, *_):
+    cache_name = 'cache_name'
+    tryjob = MockTryJob()
+    swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
+
+    # No bots with cache, check no bot id
+    # No bots with rev, check bot_id of only bot with cache
+    # No bots with earlier rev, check bot_id with earliest later rev
+    # Bot with earlier rev gets assigned.
+
+  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
+              return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+              return_value=SOME_BOTS)
+  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+              return_value=SOME_BOTS)
+  @mock.patch('waterfall.swarming_util._ClosestEarlier',
+              return_value=ONE_BOT[0])
+  @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
+  def testAssignWarmCacheHostEarlier(self, *_):
+    cache_name = 'cache_name'
+    tryjob = MockTryJob()
+    swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
+    self.assertEqual('id:bot0', tryjob.dimensions[2])
+
+  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
+              return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+              return_value=SOME_BOTS)
+  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+              return_value=SOME_BOTS)
+  @mock.patch('waterfall.swarming_util._ClosestEarlier',
+              return_value=None)
+  @mock.patch('waterfall.swarming_util._ClosestLater',
+              return_value=ONE_BOT[0])
+  @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
+  def testAssignWarmCacheHostLater(self, *_):
+    cache_name = 'cache_name'
+    tryjob = MockTryJob()
+    swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
+    self.assertEqual('id:bot0', tryjob.dimensions[2])
+
+  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
+              return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+              return_value=SOME_BOTS)
+  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+              return_value=ONE_BOT)
+  @mock.patch('waterfall.swarming_util._ClosestEarlier',
+              return_value=None)
+  @mock.patch('waterfall.swarming_util._ClosestLater',
+              return_value=None)
+  @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
+  def testAssignWarmCacheHostNoCheckedOutRevision(self, *_):
+    cache_name = 'cache_name'
+    tryjob = MockTryJob()
+    swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
+    self.assertEqual('id:bot0', tryjob.dimensions[2])
+
+  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
+              return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+              return_value=ONE_BOT)
+  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+              return_value=[])
+  @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
+  def testAssignWarmCacheHostNoCachedRevision(self, *_):
+    cache_name = 'cache_name'
+    tryjob = MockTryJob()
+    swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
+    self.assertEqual('id:bot0', tryjob.dimensions[2])
+
+  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
+              return_value=[])
+  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+              return_value=[])
+  @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
+  def testAssignWarmCacheHostBrandNewCache(self, *_):
+    cache_name = 'cache_name'
+    tryjob = MockTryJob()
+    swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
+    self.assertEqual(2, len(tryjob.dimensions))

@@ -4,6 +4,26 @@
 
 from google.appengine.ext import ndb
 
+class WfTryBot(ndb.Model):
+  """Represents a single bot in the pool.
+
+  Useful to keep state about the bot shared accross different builders that use
+  it. Such as the local git cache.
+  """
+  newest_synced_revision = ndb.IntegerProperty(indexed=False)
+
+  @staticmethod
+  def Get(bot_id):
+    key = ndb.Key('WfTryBot', bot_id)
+    result = key.get()
+    if not result:
+      result = WfTryBot(
+          key=key,
+          newest_synced_revision=None)
+      result.put()
+    return result
+
+
 class WfTryBotCache(ndb.Model):
   """Represents a named cache on swarming-backed trybots.
 
@@ -27,6 +47,10 @@ class WfTryBotCache(ndb.Model):
   cold_cache_times = ndb.JsonProperty(indexed=False, compressed=True)
   warm_cache_times = ndb.JsonProperty(indexed=False, compressed=True)
 
+  # This dict maps a bot_id to the last revision it synced to.
+  checked_out_commit_positions = ndb.JsonProperty(indexed=False,
+                                                  compressed=False)
+
   @staticmethod
   def Get(cache_name):
     key = ndb.Key('WfTryBotCache', cache_name)
@@ -36,15 +60,22 @@ class WfTryBotCache(ndb.Model):
           key=key,
           recent_bots=[],
           cold_cache_times=[],
-          warm_cache_times=[])
+          warm_cache_times=[],
+          checked_out_commit_positions={})
       result.put()
     return result
 
-  def AddBot(self, bot_id):
-    """Adds a bot to the front of self.recent_bots, truncate if necessary."""
+  def AddBot(self, bot_id, checked_out_cp, cached_cp):
+    """Records a bot's used cache and cached/checked out revisions."""
 
     # Initialize if necessary.
     self.recent_bots = self.recent_bots or []
+    self.checked_out_commit_positions = self.checked_out_commit_positions or {}
+
+    self.checked_out_commit_positions[bot_id] = checked_out_cp
+    bot = WfTryBot.Get(bot_id)
+    bot.newest_synced_revision = cached_cp
+    bot.put()
 
     # If the bot is already at the front of the list do nothing.
     if self.recent_bots and self.recent_bots[0] == bot_id:
@@ -58,6 +89,12 @@ class WfTryBotCache(ndb.Model):
     # Truncate to size.
     if len(self.recent_bots) > self.MAX_RECENT_BOTS:
       self.recent_bots = self.recent_bots[:self.MAX_RECENT_BOTS]
+      # Truncate checked_out_commit_positions as well.
+      # Use .keys() explicitly rather than iterating over the dictionary because
+      # the clause may remove elements.
+      for bot_id in self.checked_out_commit_positions.keys():
+        if bot_id not in self.recent_bots:
+          del(self.checked_out_commit_positions[bot_id])
 
   def AddCacheTime(self, t, cold=False):
     times = self.cold_cache_times if cold else self.warm_cache_times
