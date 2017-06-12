@@ -46,10 +46,8 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
 {{end}}
 
 <ul>
-  <li>Status: {{.Status}}</li>
   <li>Status reason: {{.StatusReason}}</li>
   {{- if gt .MinBuildAge 0 -}}
-  <li>Considered builds at most {{.MinBuildAge | durationString}} old</li>
   {{- end -}}
   </li>
   <li>
@@ -70,6 +68,7 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
     {{- end}}
     than Buildbot, according to build run durations.
   </li>
+  <li>Considered builds at most {{.MinBuildAge | durationString}} old</li>
 </ul>
 
 {{if .FalseFailures}}
