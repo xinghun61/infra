@@ -696,8 +696,7 @@ def GetBuilderCacheName(build):
   return None
 
 
-def GetAllBotsWithCache(dimensions, cache_name, http_client):
-  dimensions['caches'] = cache_name
+def GetBotsByDimension(dimensions, http_client):
   url = BOT_LIST_URL % (_SwarmingHost(), _DimensionsToQueryString(dimensions))
 
   content, error = _SendRequestToServer(url, http_client)
@@ -708,7 +707,12 @@ def GetAllBotsWithCache(dimensions, cache_name, http_client):
   return content_data.get('items', [])
 
 
-def _OnlyAvailable(bots):
+def GetAllBotsWithCache(dimensions, cache_name, http_client):
+  dimensions['caches'] = cache_name
+  return GetBotsByDimension(dimensions, http_client)
+
+
+def OnlyAvailable(bots):
   return [
       b for b in bots if not (
           b.get('task_id') or
@@ -776,7 +780,7 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
   if not tryjob.is_swarmbucket_build:
     return
   request_dimensions = dict([x.split(':', 1) for x in tryjob.dimensions])
-  bots_with_cache = _OnlyAvailable(
+  bots_with_cache = OnlyAvailable(
       GetAllBotsWithCache(request_dimensions, cache_name, http_client)
   )
   if bots_with_cache:

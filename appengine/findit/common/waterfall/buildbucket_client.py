@@ -133,6 +133,7 @@ class BuildbucketError(object):
   INVALID_INPUT = 'INVALID_INPUT'
 
   def __init__(self, raw_json_data):
+    self.response = raw_json_data
     self.reason = raw_json_data.get('reason')
     self.message = raw_json_data.get('message')
 

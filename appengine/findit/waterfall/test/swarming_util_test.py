@@ -1148,7 +1148,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     ]
     self.assertEqual(
         [{'bot_id': 'bot5'}],
-        swarming_util._OnlyAvailable(all_bots)
+        swarming_util.OnlyAvailable(all_bots)
     )
 
   def testHaveCommitPositionInLocalGitCache(self):
@@ -1187,7 +1187,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
               return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+  @mock.patch('waterfall.swarming_util.OnlyAvailable',
               return_value=SOME_BOTS)
   @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
               return_value=SOME_BOTS)
@@ -1208,7 +1208,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
               return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+  @mock.patch('waterfall.swarming_util.OnlyAvailable',
               return_value=SOME_BOTS)
   @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
               return_value=SOME_BOTS)
@@ -1223,7 +1223,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
               return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+  @mock.patch('waterfall.swarming_util.OnlyAvailable',
               return_value=SOME_BOTS)
   @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
               return_value=SOME_BOTS)
@@ -1240,7 +1240,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
               return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+  @mock.patch('waterfall.swarming_util.OnlyAvailable',
               return_value=SOME_BOTS)
   @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
               return_value=ONE_BOT)
@@ -1257,7 +1257,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
               return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+  @mock.patch('waterfall.swarming_util.OnlyAvailable',
               return_value=ONE_BOT)
   @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
               return_value=[])
@@ -1270,7 +1270,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
               return_value=[])
-  @mock.patch('waterfall.swarming_util._OnlyAvailable',
+  @mock.patch('waterfall.swarming_util.OnlyAvailable',
               return_value=[])
   @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
   def testAssignWarmCacheHostBrandNewCache(self, *_):
