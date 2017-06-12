@@ -35,7 +35,7 @@ CPYTHON_PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium6'
+CPYTHON_PACKAGE_VERSION_SUFFIX = '.chromium7'
 
 GIT_REPO_URL = (
     'https://chromium.googlesource.com/external/github.com/git/git')
@@ -91,6 +91,12 @@ class SupportPrefix(object):
 
   class Source(_SourceBase):
 
+    def __new__(cls, *args, **kwargs):
+      include_prefix = kwargs.pop('include_prefix', None)
+      src = super(SupportPrefix.Source, cls).__new__(cls, *args, **kwargs)
+      src.include_prefix = include_prefix or src.prefix
+      return src
+
     def _expand(self):
       exp = [self]
       for dep in self.deps:
@@ -99,7 +105,7 @@ class SupportPrefix(object):
 
     @property
     def cppflags(self):
-      return ['-I%s/include' % (s.prefix,) for s in self._expand()]
+      return ['-I%s/include' % (s.include_prefix,) for s in self._expand()]
 
     @property
     def ldflags(self):
@@ -133,11 +139,23 @@ class SupportPrefix(object):
     'infra/third_party/source/termcap': 'version:1.3.1',
     'infra/third_party/source/zlib': 'version:1.2.11',
     'infra/third_party/source/curl': 'version:7.54.0',
+    'infra/third_party/pip-packages': 'version:9.0.1',
+  }
+
+  # The name and versions of the universal wheels in "pip-packages" that should
+  # be installed alongside "pip".
+  #
+  # This will be versioned with _SOURCES's "pip-packages" entry.
+  _PIP_PACKAGES_WHEELS = {
+    'pip': '9.0.1',
+    'setuptools': '36.0.1',
+    'wheel': '0.30.0a0',
   }
 
   def __init__(self, base):
     self._base = base
-    self._built = None
+    self._sources_installed = False
+    self._built = {}
 
   @staticmethod
   def update_mac_autoconf(env):
@@ -150,39 +168,48 @@ class SupportPrefix(object):
         'ac_cv_func_clock_gettime': 'n',
     })
 
-  def _ensure_sources(self, api):
+  def ensure_sources(self, api):
     sources = self._base.join('sources')
-    if self._built is None:
+    if not self._sources_installed:
       api.cipd.ensure(sources, self._SOURCES)
-      self._built = {}
+      self._sources_installed = True
     return sources
 
-  def _ensure_and_build_once(self, api, name, tag, build_fn):
-    sources = self._ensure_sources(api)
-    key = (name, tag)
-    prefix = self._built.get(key)
-    if prefix:
-      return prefix
+  def _build_once(self, api, key, build_fn):
+    result = self._built.get(key)
+    if result:
+      return result
 
-    base = '%s-%s' % (name, tag.lstrip('version:'))
-    archive = sources.join('%s.tar.gz' % (base,))
+    build_name = '-'.join(e for e in key if e)
+    workdir = self._base.join(build_name)
 
-    workdir = self._base.join(base)
-    api.shutil.makedirs('mkdir', workdir)
+    with api.step.nest(build_name):
+      api.shutil.makedirs('workdir', workdir)
 
-    prefix = workdir.join('prefix')
-    with api.step.nest(base):
       with api.context(cwd=workdir):
-        api.step('extract', ['tar', '-xzf', archive])
-      build = workdir.join(base) # Archive is extracted here.
+        self._built[key] = build_fn()
+    return self._built[key]
+
+  def _ensure_and_build_archive(self, api, name, tag, build_fn, variant=None):
+    sources = self.ensure_sources(api)
+    base = '%s-%s' % (name, tag.lstrip('version:'))
+
+    def build_archive():
+      archive = sources.join('%s.tar.gz' % (base,))
+      prefix = api.context.cwd.join('prefix')
+
+      api.step('extract', ['tar', '-xzf', archive])
+      build = api.context.cwd.join(base) # Archive is extracted here.
 
       try:
         with api.context(cwd=build):
           build_fn(prefix)
       finally:
         pass
-    self._built[key] = prefix
-    return prefix
+      return prefix
+
+    key = (base, variant)
+    return self._build_once(api, key, build_archive)
 
   def _build_openssl(self, api, tag, shell=False):
     def build_fn(prefix):
@@ -209,12 +236,12 @@ class SupportPrefix(object):
       api.step('install', ['make', 'install_sw'])
 
     return self.Source(
-        prefix=self._ensure_and_build_once(api, 'openssl', tag, build_fn),
+        prefix=self._ensure_and_build_archive(api, 'openssl', tag, build_fn),
         libs=['ssl', 'crypto'],
         deps=[],
         shared_deps=[])
 
-  def ensure_static_openssl(self, api):
+  def ensure_openssl(self, api):
     return self._build_openssl(api, 'version:1.1.0e')
 
   def ensure_mac_native_openssl(self, api):
@@ -229,7 +256,7 @@ class SupportPrefix(object):
       ] + (configure_args or []))
       api.step('make', ['make', 'install'])
     return self.Source(
-        prefix=self._ensure_and_build_once(api, name, tag, build_fn),
+        prefix=self._ensure_and_build_archive(api, name, tag, build_fn),
         deps=deps or [],
         libs=libs or [name],
         shared_deps=shared_deps or [])
@@ -249,7 +276,7 @@ class SupportPrefix(object):
     if api.platform.is_mac:
       configure_args += ['--with-darwinssl']
     elif api.platform.is_linux:
-      ssl = self.ensure_static_openssl(api)
+      ssl = self.ensure_openssl(api)
       env['LIBS'] = ' '.join(['-ldl', '-lpthread'])
       configure_args += ['--with-ssl=%s' % (str(ssl.prefix),)]
       deps += [ssl]
@@ -272,6 +299,23 @@ class SupportPrefix(object):
 
   def ensure_autoconf(self, api):
     return self._generic_build(api, 'autoconf', 'version:2.69')
+
+  def ensure_pip_installer(self, api):
+    """Returns information about the pip installation.
+
+    Returns: (get_pip, links_path, wheels)
+      get_pip (Path): Path to the "get-pip.py" script.
+      links (Path): Path to the links directory containing all installation
+          wheels.
+      wheels (dict): key/value mapping of "pip" installation packages names
+          and their verisons.
+    """
+    sources = self.ensure_sources(api)
+    return (
+        sources.join('get-pip.py'),
+        sources,
+        self._PIP_PACKAGES_WHEELS,
+    )
 
 
 @recipe_api.composite_step
@@ -398,7 +442,7 @@ def PackagePythonForUnix(api):
 
       # On Linux, we will statically compile OpenSSL into the binary, since we
       # want to be generally system/library agnostic.
-      ssl = support.ensure_static_openssl(api)
+      ssl = support.ensure_openssl(api)
       probe_default_ssl_ca_certs = True
       ssl_cppflags = ' '.join(ssl.cppflags)
       ssl_static = ' '.join(ssl.full_static)
@@ -425,10 +469,6 @@ def PackagePythonForUnix(api):
 
     # Augment the Python installation.
     python_libdir = target_dir.join('lib', 'python2.7')
-    api.shutil.copy(
-        'install usercustomize.py',
-        api.resource('python_usercustomize.py'),
-        python_libdir.join('usercustomize.py'))
 
     if probe_default_ssl_ca_certs:
       with api.step.nest('provision SSL'):
@@ -449,6 +489,35 @@ def PackagePythonForUnix(api):
             'write ssl.py',
             ssl_py,
             ssl_py_content)
+
+    # Install "pip", "setuptools", and "wheel". The explicit versions are those
+    # that are included in the package.
+    target_python = target_dir.join('bin', 'python')
+    get_pip, links, wheels = support.ensure_pip_installer(api)
+    api.m.step(
+        'pip',
+        [
+          target_python,
+          get_pip,
+          # "--prefix" is flawed, still cleans system versions.
+          '--ignore-installed',
+          '--no-cache-dir',
+          '--no-index',
+          '--find-links', links,
+          '--prefix', target_dir,
+        ] + ['%s==%s' % (k, v) for k, v in sorted(wheels.items())],
+    )
+
+    # Cleanup!
+    for path_tuple in (
+        ('include',),
+        ('lib', 'libpython2.7.a'),
+        ('lib', 'python2.7', 'test'),
+        ('lib', 'python2.7', 'config'),
+        ):
+      api.file.rmtree(
+          'cleanup %s' % ('/'.join(path_tuple),),
+          target_dir.join(*path_tuple))
 
   base_env = {}
   if api.platform.is_mac:

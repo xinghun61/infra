@@ -60,7 +60,7 @@
       "search",
       "infra/python/cpython/mac-amd64",
       "-tag",
-      "version:2.1.2.chromium6",
+      "version:2.1.2.chromium7",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -69,7 +69,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium6",
+    "name": "python.cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium7",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -175,7 +175,7 @@
       "-root",
       "[START_DIR]/python/_support/sources",
       "-ensure-file",
-      "infra/third_party/source/autoconf version:2.69\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
+      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -190,6 +190,10 @@
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:9.0.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/pip-packages\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.69----\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/autoconf\"@@@",
@@ -224,6 +228,17 @@
     ]
   },
   {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "name": "python.readline-7.0",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
     "cmd": [
       "python",
       "-u",
@@ -235,9 +250,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.makedirs mkdir",
+    "name": "python.readline-7.0.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@python.inline@@@@",
       "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
       "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
@@ -248,17 +263,6 @@
       "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
       "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
       "@@@STEP_LOG_END@python.inline@@@"
-    ]
-  },
-  {
-    "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "name": "python.readline-7.0",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -305,6 +309,17 @@
     ]
   },
   {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "name": "python.termcap-1.3.1",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
     "cmd": [
       "python",
       "-u",
@@ -316,9 +331,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.makedirs mkdir (2)",
+    "name": "python.termcap-1.3.1.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@python.inline@@@@",
       "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
       "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
@@ -329,17 +344,6 @@
       "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
       "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
       "@@@STEP_LOG_END@python.inline@@@"
-    ]
-  },
-  {
-    "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "name": "python.termcap-1.3.1",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -386,6 +390,17 @@
     ]
   },
   {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "name": "python.zlib-1.2.11",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
     "cmd": [
       "python",
       "-u",
@@ -397,9 +412,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.makedirs mkdir (3)",
+    "name": "python.zlib-1.2.11.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@python.inline@@@@",
       "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
       "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
@@ -410,17 +425,6 @@
       "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
       "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
       "@@@STEP_LOG_END@python.inline@@@"
-    ]
-  },
-  {
-    "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "name": "python.zlib-1.2.11",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -484,6 +488,17 @@
     ]
   },
   {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "name": "python.openssl-0.9.8zh",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
     "cmd": [
       "python",
       "-u",
@@ -495,9 +510,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.makedirs mkdir (4)",
+    "name": "python.openssl-0.9.8zh.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_NEST_LEVEL@2@@@",
       "@@@STEP_LOG_LINE@python.inline@@@@",
       "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
       "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
@@ -508,17 +523,6 @@
       "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
       "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
       "@@@STEP_LOG_END@python.inline@@@"
-    ]
-  },
-  {
-    "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "name": "python.openssl-0.9.8zh",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
