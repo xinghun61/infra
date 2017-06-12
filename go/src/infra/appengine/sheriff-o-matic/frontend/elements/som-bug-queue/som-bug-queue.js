@@ -53,6 +53,14 @@
         value: false,
         computed: '_computeShowNoBugs(bugs, _bugsLoaded, _bugQueueJsonError)',
       },
+      _toggleSectionIcon: {
+        type: String,
+        computed: '_computeToggleSectionIcon(_opened)',
+      },
+      _opened: {
+        type: Boolean,
+        value: true,
+      },
       _uncachedBugsJson: {
         type: Object,
         value: null,
@@ -204,7 +212,7 @@
       return pri != this.UNSET_PRIORITY;
     },
 
-    // Collapsing/expanding priority headers.
+    ////////////////////// Collapsing by priority ///////////////////////////
 
     _computeCollapseId: function(pri) {
       return `collapsePri${pri}`;
@@ -236,6 +244,8 @@
         this.$$('#toggleIconPri' + pri).icon =
             this._computeCollapseIcon(collapse.opened);
       }
+
+      this._opened = true;
     },
 
     _togglePriorityCollapse: function(evt) {
@@ -251,6 +261,16 @@
         this.$$('#toggleIconPri' + pri).icon =
             this._computeCollapseIcon(collapse.opened);
       }
+    },
+
+    ////////////////////// Collapsing the section ///////////////////////////
+
+    _computeToggleSectionIcon(opened) {
+      return opened ? 'unfold-less' : 'unfold-more';
+    },
+
+    _toggleSection: function() {
+      this._opened = !this._opened;
     },
   });
 })();

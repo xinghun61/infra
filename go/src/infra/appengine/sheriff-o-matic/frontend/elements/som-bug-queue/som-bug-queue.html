@@ -17,10 +17,6 @@
     <style include="som-header-styles"></style>
     <style include="som-utility-styles"></style>
     <style>
-      #main {
-        background: white;
-        margin-bottom: 1em;
-      }
       .error,
       #loadingBugs,
       #noBugs {
@@ -90,47 +86,53 @@
           <span class="collapse-button" on-tap="_expandAll">
             <iron-icon icon="add"></iron-icon> Expand all
           </span>
+          /
+          <span class="collapse-button" on-tap="_toggleSection">
+            <iron-icon id="toggleSectionIcon" icon="[[_toggleSectionIcon]]"></iron-icon>
+          </span>
         </div>
       </h2>
-      <div class="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
-        Error fetching bug queue: [[_bugQueueJsonError.error]]
-      </div>
-      <template dom-if="[[_isTrooperQueue]]">
-        <div class="error" hidden$="[[_haveNoErrors(_uncachedBugsJsonError)]]">
-          Error fetching uncached bugs. Bugs displayed may be stale or incomplete:
-          [[_uncachedBugsJsonError.error]]
+      <iron-collapse opened="[[_opened]]" no-animation>
+        <div class="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
+          Error fetching bug queue: [[_bugQueueJsonError.error]]
         </div>
-      </template>
-      <div id="loadingBugs" hidden$="[[!_showBugsLoading(_bugsLoaded, _bugQueueJsonError)]]"><paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bug Queue... </div>
-      <div id="noBugs" hidden$="[[!_showNoBugs]]">No bugs in the queue!</div>
-      <template is="dom-repeat" items="[[_bugsByPriority]]" as="bucket">
-        <h4 on-tap="_togglePriorityCollapse" class="priority-header">
-          <iron-icon
-            icon="[[_computeCollapseIcon(_defaultOpenState)]]"
-            id$="toggleIconPri[[bucket.priority]]"></iron-icon>
-          [[_priorityText(bucket.priority)]] ([[bucket.bugs.length]] total)
-        </h4>
-        <iron-collapse id$="[[_computeCollapseId(bucket.priority)]]" opened="[[_defaultOpenState]]" no-animation>
-          <template is="dom-repeat" items="[[bucket.bugs]]" as="bug">
-            <div class="bug">
-              <div class="summary-box">
-                <a href="http://crbug.com/[[bug.id]]" target="_blank" title="[[bug.summary]]" class="summary">[[bug.summary]]</a>
-                <template is="dom-repeat" items="[[_filterBugLabels(bug.labels, bugQueueLabel)]]" as="label">
-                  <a href="https://bugs.chromium.org/p/chromium/issues/list?q=label:[[label]]"
-                    class="bug-label" target="_blank">[[label]]</a>
+        <template dom-if="[[_isTrooperQueue]]">
+          <div class="error" hidden$="[[_haveNoErrors(_uncachedBugsJsonError)]]">
+            Error fetching uncached bugs. Bugs displayed may be stale or incomplete:
+            [[_uncachedBugsJsonError.error]]
+          </div>
+        </template>
+        <div id="loadingBugs" hidden$="[[!_showBugsLoading(_bugsLoaded, _bugQueueJsonError)]]"><paper-spinner active="[[!_bugsLoaded]]"></paper-spinner> Loading Bug Queue... </div>
+        <div id="noBugs" hidden$="[[!_showNoBugs]]">No bugs in the queue!</div>
+        <template is="dom-repeat" items="[[_bugsByPriority]]" as="bucket">
+          <h4 on-tap="_togglePriorityCollapse" class="priority-header">
+            <iron-icon
+              icon="[[_computeCollapseIcon(_defaultOpenState)]]"
+              id$="toggleIconPri[[bucket.priority]]"></iron-icon>
+            [[_priorityText(bucket.priority)]] ([[bucket.bugs.length]] total)
+          </h4>
+          <iron-collapse id$="[[_computeCollapseId(bucket.priority)]]" opened="[[_defaultOpenState]]" no-animation>
+            <template is="dom-repeat" items="[[bucket.bugs]]" as="bug">
+              <div class="bug">
+                <div class="summary-box">
+                  <a href="http://crbug.com/[[bug.id]]" target="_blank" title="[[bug.summary]]" class="summary">[[bug.summary]]</a>
+                  <template is="dom-repeat" items="[[_filterBugLabels(bug.labels, bugQueueLabel)]]" as="label">
+                    <a href="https://bugs.chromium.org/p/chromium/issues/list?q=label:[[label]]"
+                      class="bug-label" target="_blank">[[label]]</a>
+                  </template>
+                </div>
+                <a href="http://crbug.com/[[bug.id]]" target="_blank">Bug [[bug.id]]</a>
+                ([[bug.status]]<template is="dom-if" if="[[bug.owner.name]]">,
+                [[bug.owner.name]]</template>)
+                <template is="dom-if" if="[[_validPriority(bucket.priority)]]">
+                  (Pri-[[bucket.priority]])
                 </template>
+                <a target="_blank" title="[[bug.updated]]" class="updated">Last update: [[bug.updated]]</a>
               </div>
-              <a href="http://crbug.com/[[bug.id]]" target="_blank">Bug [[bug.id]]</a>
-              ([[bug.status]]<template is="dom-if" if="[[bug.owner.name]]">,
-              [[bug.owner.name]]</template>)
-              <template is="dom-if" if="[[_validPriority(bucket.priority)]]">
-                (Pri-[[bucket.priority]])
-              </template>
-              <a target="_blank" title="[[bug.updated]]" class="updated">Last update: [[bug.updated]]</a>
-            </div>
-          </template>
-        </iron-collapse>
-      </template>
+            </template>
+          </iron-collapse>
+        </template>
+      </iron-collapse>
     </div>
   </template>
   <script src="som-bug-queue.js"></script>

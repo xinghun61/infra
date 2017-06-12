@@ -35,6 +35,14 @@
         type: String,
         value: 'remove',
       },
+      _toggleSectionIcon: {
+        type: String,
+        computed: '_computeToggleSectionIcon(_opened)',
+      },
+      _opened: {
+        type: Boolean,
+        value: true,
+      },
     },
 
     toggleDead: function() {
@@ -50,13 +58,20 @@
           this._computeIcon(this.$.quarantinedBotsList.opened);
     },
 
+    _toggleSection: function() {
+      this._opened = !this._opened;
+    },
+
     _computeHideBots: function(bots) {
       return !bots || bots.length == 0;
     },
 
     _collapseAll: function() {
-      this.$.deadBotsList.opened = false;
-      this.$.quarantinedBotsList.opened = false;
+      let deadBots = this.$.deadBotsList;
+      let quarantinedBots = this.$.quarantinedBotsList;
+
+      deadBots.opened = false;
+      quarantinedBots.opened = false;
 
       this._toggleDeadIcon = this._computeIcon(this.$.deadBotsList.opened);
       this._toggleQuarantinedIcon =
@@ -70,6 +85,12 @@
       this._toggleDeadIcon = this._computeIcon(this.$.deadBotsList.opened);
       this._toggleQuarantinedIcon =
           this._computeIcon(this.$.quarantinedBotsList.opened);
+
+      this._opened = true;
+    },
+
+    _computeToggleSectionIcon(opened) {
+      return opened ? 'unfold-less' : 'unfold-more';
     },
 
     _computeIcon(opened) {

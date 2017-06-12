@@ -18,6 +18,7 @@
         },
       },
       categoryTitle: String,
+      treeName: String,
       _checkedAlertKeys: {
         type: Object,
         value: function() {
@@ -36,16 +37,15 @@
         type: Boolean,
         value: false,
       },
-      // Note that this is the collapsed state of the whole category.
-      _collapsed: {
-        type: Boolean,
-        value: false,
-      },
       _toggleIcon: {
         type: String,
-        computed: '_computeToggleIcon(_collapsed)',
+        computed: '_computeToggleIcon(_opened)',
       },
-      treeName: String,
+      // Note that this is the collapsed state of the whole category.
+      _opened: {
+        type: Boolean,
+        value: true,
+      },
       isInfraFailuresSection: {
         type: Boolean,
         value: false,
@@ -101,33 +101,31 @@
 
     _collapseAll: function(evt) {
       let alerts = this.getElementsByClassName('alert-item');
-      this._toggleAlertsOpenedState(alerts, 'closed');
+      for (let i = 0; i < alerts.length; i++) {
+        alerts[i].openState = 'closed';
+      }
     },
 
     _expandAll: function(evt) {
       let alerts = this.getElementsByClassName('alert-item');
-      this._toggleAlertsOpenedState(alerts, 'opened');
-      this._collapsed = false;
-    },
-
-    _toggleAlertsOpenedState: function(alerts, opened) {
       for (let i = 0; i < alerts.length; i++) {
-        alerts[i].openState = opened;
+        alerts[i].openState = 'opened';
       }
+      this._opened = true;
     },
 
     ////////////////////// Collapsing the Category ///////////////////////////
 
-    _computeToggleIcon: function(collapsed) {
-      return collapsed ? 'unfold-more' : 'unfold-less';
+    _computeToggleIcon: function(opened) {
+      return opened ? 'unfold-less' : 'unfold-more';
     },
 
     _initializeCollapseState: function(isInfraFailuresSection) {
-      this._collapsed = isInfraFailuresSection;
+      this._opened = !isInfraFailuresSection;
     },
 
     _toggleCategory: function(evt) {
-      this._collapsed = !this._collapsed;
+      this._opened = !this._opened;
     },
   });
 })();

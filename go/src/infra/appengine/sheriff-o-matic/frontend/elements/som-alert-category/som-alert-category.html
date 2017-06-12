@@ -17,6 +17,11 @@
     <style include="som-input-styles"></style>
     <style include="som-utility-styles"></style>
     <style>
+      #categoryAlerts {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+      }
       #infra-failure-message {
         padding: 1em 16px;
         font-size: 1.1em;
@@ -24,8 +29,6 @@
       }
       .alert-item {
         box-sizing: border-box;
-        float: left;
-        width: 100%;
         padding: 0.5em 0;
       }
     </style>
@@ -57,13 +60,13 @@
          affecting your tree. Troopers should be working on them.
         <span class="link" on-tap="_toggleCategory">
           Click here to
-          <span hidden$=[[!_collapsed]]>show</span>
-          <span hidden$=[[_collapsed]]>hide</span>
+          <span hidden$=[[_opened]]>show</span>
+          <span hidden$=[[!_opened]]>hide</span>
           the alerts.
         </span>
       </div>
     </template>
-    <iron-collapse id="categoryAlerts" opened="[[!_collapsed]]" no-animation>
+    <iron-collapse id="categoryAlerts" opened="[[_opened]]" no-animation>
       <template
           is="dom-repeat"
           items="[[alerts]]"

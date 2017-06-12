@@ -30,38 +30,44 @@
         <span class="collapse-button" on-tap="_expandAll">
           <iron-icon icon="add"></iron-icon> Expand all
         </span>
+        /
+        <span class="collapse-button" on-tap="_toggleSection">
+          <iron-icon id="toggleSectionIcon" icon="[[_toggleSectionIcon]]"></iron-icon>
+        </span>
       </div>
     </h2>
 
-    <div id="dead" class="botsList" hidden$="[[_hideDeadBots]]">
-      <h4 on-click="toggleDead"><iron-icon icon="[[_toggleDeadIcon]]"></iron-icon> 💀 Dead ([[bots.dead.length]])</h4>
-      <iron-collapse id="deadBotsList" no-animation opened>
-        <div><a target="_blank" href="https://chromium-swarm.appspot.com/botlist?f=status%3Adead">Complete list</a></div><br>
-        <template is="dom-repeat" items="[[bots.dead]]" as="bot">
-          <span class="dead">
-            <a target="_blank" href="https://chromium-swarm.appspot.com/bot?id=[[bot.bot_id]]">[[bot.bot_id]]</a>
-          </span>
-        </template>
-      </iron-collapse>
-    </div>
+    <iron-collapse opened="[[_opened]]" no-animation>
+      <div id="dead" class="botsList" hidden$="[[_hideDeadBots]]">
+        <h4 on-click="toggleDead"><iron-icon icon="[[_toggleDeadIcon]]"></iron-icon> 💀 Dead ([[bots.dead.length]])</h4>
+        <iron-collapse id="deadBotsList" no-animation opened>
+          <div><a target="_blank" href="https://chromium-swarm.appspot.com/botlist?f=status%3Adead">Complete list</a></div><br>
+          <template is="dom-repeat" items="[[bots.dead]]" as="bot">
+            <span class="dead">
+              <a target="_blank" href="https://chromium-swarm.appspot.com/bot?id=[[bot.bot_id]]">[[bot.bot_id]]</a>
+            </span>
+          </template>
+        </iron-collapse>
+      </div>
 
-    <div id="quarantined" class="botsList" hidden$="[[_hideQuarantinedBots]]">
-      <h4 on-click="toggleQuarantined"><iron-icon icon="[[_toggleQuarantinedIcon]]"></iron-icon> 😷 Quarantined ([[bots.quarantined.length]])</h4>
-      <iron-collapse id="quarantinedBotsList"  no-animation opened>
-        <div><a target="_blank" href="https://chromium-swarm.appspot.com/botlist?f=status%3Aquarantined">Complete list</a></div><br>
-        <template is="dom-repeat" items="[[bots.quarantined]]" as="bot">
-          <span class="quarantined">
-            <a target="_blank" href="https://chromium-swarm.appspot.com/bot?id=[[bot.bot_id]]">[[bot.bot_id]]</a>
-          </span>
-        </template>
-      </iron-collapse>
-    </div>
+      <div id="quarantined" class="botsList" hidden$="[[_hideQuarantinedBots]]">
+        <h4 on-click="toggleQuarantined"><iron-icon icon="[[_toggleQuarantinedIcon]]"></iron-icon> 😷 Quarantined ([[bots.quarantined.length]])</h4>
+        <iron-collapse id="quarantinedBotsList"  no-animation opened>
+          <div><a target="_blank" href="https://chromium-swarm.appspot.com/botlist?f=status%3Aquarantined">Complete list</a></div><br>
+          <template is="dom-repeat" items="[[bots.quarantined]]" as="bot">
+            <span class="quarantined">
+              <a target="_blank" href="https://chromium-swarm.appspot.com/bot?id=[[bot.bot_id]]">[[bot.bot_id]]</a>
+            </span>
+          </template>
+        </iron-collapse>
+      </div>
 
-    <div id="errors" hidden$="[[_hideErrors]]">
-      <template is="dom-repeat" items="[[bots.errors]]" as="error">
-        <div class="error">Error getting swarming bot data: [[error]]</div>
-      </template>
-    </div>
+      <div id="errors" hidden$="[[_hideErrors]]">
+        <template is="dom-repeat" items="[[bots.errors]]" as="error">
+          <div class="error">Error getting swarming bot data: [[error]]</div>
+        </template>
+      </div>
+    </iron-collapse>
   </template>
 
   <script src="som-swarming-bots.js"></script>
