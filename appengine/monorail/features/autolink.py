@@ -74,6 +74,15 @@ _IS_IMPLIED_LINK_RE = re.compile(
     r'(/[^\s<]*)?',  # Allow anything, check with validation code.
     re.UNICODE)
 
+# This regex matches text that looks like an email address.
+# Example: user@example.com
+# These get linked to the user profile page if it exists, otherwise
+# they become a mailto:.
+_IS_IMPLIED_EMAIL_RE = re.compile(
+    r'\b[a-z]((-|\.)?[a-z0-9])+@'  # Username@
+    r'[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b',  # Domain
+    re.UNICODE)
+
 # These are allowed in links, but if any of closing delimiters appear
 # at the end of the link, and the opening one is not part of the link,
 # then trim off the closing delimiters.
@@ -88,6 +97,71 @@ _LINK_TRAILING_CHARS = [
     ('[', ']'),
     ('{', '}'),
     ]
+
+
+def LinkifyEmail(_mr, autolink_regex_match, component_ref_artifacts):
+  """Examine a textual reference and replace it with a hyperlink or not.
+
+  This is a callback for use with the autolink feature.  The function
+  parameters are standard for this type of callback.
+
+  Args:
+    _mr: unused information parsed from the HTTP request.
+    autolink_regex_match: regex match for the textual reference.
+    component_ref_artifacts: unused result of call to GetReferencedUsers.
+
+  Returns:
+    A list of TextRuns with tag=a linking to the user profile page of
+    any defined users, otherwise a mailto: link is generated.
+  """
+  email = autolink_regex_match.group(0)
+
+  if not validate.IsValidEmail(email):
+    return [template_helpers.TextRun(email)]
+
+  if email in component_ref_artifacts:
+    href = '/u/%s' % email
+  else:
+    href = 'mailto:' + email
+
+  result = [template_helpers.TextRun(email, tag='a', href=href)]
+  return result
+
+
+def CurryGetReferencedUsers(services):
+  """Return a function to get ref'd users with these services objects bound.
+
+  Currying is a convienent way to give the callback access to the services
+  objects, but without requiring that all possible services objects be passed
+  through the autolink registry and functions.
+
+  Args:
+    services: connection to the user persistence layer.
+
+  Returns:
+    A ready-to-use function that accepts the arguments that autolink
+    expects to pass to it.
+  """
+
+  def GetReferencedUsers(mr, emails):
+    """Return a dict of users referenced by these comments.
+
+    Args:
+      mr: commonly used info parsed from the request.
+      ref_tuples: email address strings for each user
+          that is mentioned in the comment text.
+
+    Returns:
+      A dictionary {email: user_pb} including all existing users.
+    """
+    user_id_dict = services.user.LookupExistingUserIDs(mr.cnxn, emails)
+    users_by_id = services.user.GetUsersByIDs(mr.cnxn, user_id_dict.values())
+    users_by_email = {
+      email: users_by_id[user_id]
+      for email, user_id in user_id_dict.iteritems()}
+    return users_by_email
+
+  return GetReferencedUsers
 
 
 def Linkify(_mr, autolink_regex_match, _component_ref_artifacts):
@@ -211,10 +285,10 @@ _SINGLE_ISSUE_REF_RE = re.compile(r"""
 
 
 def CurryGetReferencedIssues(services):
-  """Return a function to get ref'd issues with these persist objects bound.
+  """Return a function to get ref'd issues with these services objects bound.
 
-  Currying is a convienent way to give the callback access to the persist
-  objects, but without requiring that all possible persist objects be passed
+  Currying is a convienent way to give the callback access to the services
+  objects, but without requiring that all possible services objects be passed
   through the autolink registry and functions.
 
   Args:
@@ -534,13 +608,19 @@ def RegisterAutolink(services):
       {_IS_A_LINK_RE: Linkify})
 
   services.autolink.RegisterComponent(
-      '03-tracker-regular',
+      '03-linkify-user-profiles-or-mailto',
+      CurryGetReferencedUsers(services),
+      lambda _mr, match: [match.group(0)],
+      {_IS_IMPLIED_EMAIL_RE: LinkifyEmail})
+
+  services.autolink.RegisterComponent(
+      '04-tracker-regular',
       CurryGetReferencedIssues(services),
       ExtractProjectAndIssueIdsNormal,
       {_ISSUE_REF_RE: ReplaceIssueRefNormal})
 
   services.autolink.RegisterComponent(
-      '04-linkify-shorthand',
+      '05-linkify-shorthand',
       lambda request, mr: None,
       lambda mr, match: None,
       {_IS_A_SHORT_LINK_RE: Linkify,
@@ -548,7 +628,7 @@ def RegisterAutolink(services):
        })
 
   services.autolink.RegisterComponent(
-      '05-versioncontrol',
+      '06-versioncontrol',
       GetReferencedRevisions,
       ExtractRevNums,
       {_GIT_HASH_RE: ReplaceRevisionRef,

@@ -136,6 +136,48 @@ class AutolinkTest(unittest.TestCase):
     self.assertEqual('example.org', result[4].href)
 
 
+class EmailAutolinkTest(unittest.TestCase):
+
+  def setUp(self):
+    self.user_1 = 'fake user'  # Note: no User fields are accessed.
+
+  def DoLinkify(self, content, filter_re=autolink._IS_IMPLIED_EMAIL_RE):
+    """Calls the LinkifyEmail method and returns the result.
+
+    Args:
+      content: string with a hyperlink.
+
+    Returns:
+      A list of TextRuns with some runs having the embedded email hyperlinked.
+      Or, None if no link was detected.
+    """
+    match = filter_re.search(content)
+    if not match:
+      return None
+
+    return autolink.LinkifyEmail(None, match, {'one@example.com': self.user_1})
+
+  def testLinkifyEmail(self):
+    """Test that an address is autolinked when put in the given context."""
+    test = 'one@ or @one'
+    result = self.DoLinkify('Have you met %s' % test)
+    self.assertEqual(None, result)
+
+    test = 'one@example.com'
+    result = self.DoLinkify('Have you met %s' % test)
+    self.assertEqual('/u/' + test, result[0].href)
+    self.assertEqual(test, result[0].content)
+
+    test = 'alias@example.com'
+    result = self.DoLinkify('Please also CC %s' % test)
+    self.assertEqual('mailto:' + test, result[0].href)
+    self.assertEqual(test, result[0].content)
+
+    result = self.DoLinkify('Reviewed-By: Test Person <%s>' % test)
+    self.assertEqual('mailto:' + test, result[0].href)
+    self.assertEqual(test, result[0].content)
+
+
 class URLAutolinkTest(unittest.TestCase):
 
   def DoLinkify(self, content, filter_re=autolink._IS_A_LINK_RE):
@@ -153,7 +195,6 @@ class URLAutolinkTest(unittest.TestCase):
       return None
 
     return autolink.Linkify(None, match, None)
-
 
   def testLinkify(self):
     """Test that given url is autolinked when put in the given context."""
