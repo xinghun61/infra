@@ -22,9 +22,8 @@ type masterViewModel struct {
 }
 
 type masterBuilderViewModel struct {
-	Name       string
+	*storage.Builder
 	ShowScores bool
-	Migration  storage.BuilderMigration
 }
 
 func handleMasterPage(c *router.Context) error {
@@ -52,9 +51,8 @@ func masterPage(c context.Context, master string) (*masterViewModel, error) {
 	q = storage.BuilderMasterFilter(c, q, master)
 	err := datastore.Run(c, q, func(b *storage.Builder) {
 		model.Builders = append(model.Builders, masterBuilderViewModel{
-			Name:       b.ID.Builder,
+			Builder:    b,
 			ShowScores: b.Migration.Status != storage.StatusUnknown && b.Migration.Status != storage.StatusInsufficientData,
-			Migration:  b.Migration,
 		})
 	})
 	switch {

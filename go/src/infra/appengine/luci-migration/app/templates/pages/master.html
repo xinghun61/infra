@@ -21,6 +21,7 @@ that can be found in the LICENSE file. -->
           <tr>
             <td>Builder</td>
             <td>Migration Status</td>
+            <td>Experiment percentage</td>
             <td>LUCI Correctness</td>
             <td>LUCI Speed</td>
           </tr>
@@ -29,9 +30,10 @@ that can be found in the LICENSE file. -->
     {{range .Builders}}
           <tr>
             <td>
-              <a href="builders/{{.Name}}">{{.Name}}</a>
+              <a href="builders/{{.ID.Builder}}">{{.ID.Builder}}</a>
             </td>
             <td>{{.Migration.Status}}</td>
+            <td>{{.ExperimentPercentage}}%</td>
             <td>
       {{if .ShowScores}}
               {{.Migration.Correctness | percent}}%

@@ -46,37 +46,39 @@ func TestMaster(t *testing.T) {
 				Identity: "user:user@example.com",
 			})
 
-			err := datastore.Put(
-				c,
-				&storage.Builder{
-					ID: storage.BuilderID{
-						Master:  "tryserver.chromium.linux",
-						Builder: "chromium_presubmit",
-					},
+			presubmit := &storage.Builder{
+				ID: storage.BuilderID{
+					Master:  "tryserver.chromium.linux",
+					Builder: "chromium_presubmit",
 				},
-				&storage.Builder{
-					ID: storage.BuilderID{
-						Master:  "tryserver.chromium.linux",
-						Builder: "linux_chromium_asan_rel_ng",
-					},
-					Migration: storage.BuilderMigration{
-						Status:      storage.StatusLUCINotWAI,
-						Correctness: 0.9,
-						Speed:       1.1,
-					},
+				Kind: storage.BuilderKind,
+			}
+
+			asanRelNg := &storage.Builder{
+				ID: storage.BuilderID{
+					Master:  "tryserver.chromium.linux",
+					Builder: "linux_chromium_asan_rel_ng",
 				},
-				&storage.Builder{
-					ID: storage.BuilderID{
-						Master:  "tryserver.chromium.linux",
-						Builder: "linux_chromium_rel_ng",
-					},
-					Migration: storage.BuilderMigration{
-						Status:      storage.StatusMigrated,
-						Correctness: 1,
-						Speed:       1,
-					},
+				Kind: storage.BuilderKind,
+				Migration: storage.BuilderMigration{
+					Status:      storage.StatusLUCINotWAI,
+					Correctness: 0.9,
+					Speed:       1.1,
 				},
-			)
+			}
+			relNg := &storage.Builder{
+				ID: storage.BuilderID{
+					Master:  "tryserver.chromium.linux",
+					Builder: "linux_chromium_rel_ng",
+				},
+				Kind: storage.BuilderKind,
+				Migration: storage.BuilderMigration{
+					Status:      storage.StatusMigrated,
+					Correctness: 1,
+					Speed:       1,
+				},
+			}
+			err := datastore.Put(c, presubmit, asanRelNg, relNg)
 			So(err, ShouldBeNil)
 
 			model, err := handle(c)
@@ -85,25 +87,15 @@ func TestMaster(t *testing.T) {
 				Name: "tryserver.chromium.linux",
 				Builders: []masterBuilderViewModel{
 					{
-						Name: "chromium_presubmit",
+						Builder: presubmit,
 					},
 					{
-						Name:       "linux_chromium_asan_rel_ng",
+						Builder:    asanRelNg,
 						ShowScores: true,
-						Migration: storage.BuilderMigration{
-							Status:      storage.StatusLUCINotWAI,
-							Correctness: 0.9,
-							Speed:       1.1,
-						},
 					},
 					{
-						Name:       "linux_chromium_rel_ng",
+						Builder:    relNg,
 						ShowScores: true,
-						Migration: storage.BuilderMigration{
-							Status:      storage.StatusMigrated,
-							Correctness: 1,
-							Speed:       1,
-						},
 					},
 				},
 			})
