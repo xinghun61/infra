@@ -279,6 +279,3 @@ import:
   subpackages:
   - client
   - api/types
-- package: github.com/aryann/difflib
-  version: master
-  repo: https://chromium.googlesource.com/external/github.com/aryann/difflib.git
