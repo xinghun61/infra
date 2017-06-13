@@ -623,3 +623,65 @@ class ListAnalysesTest(testing.AppengineTestCase):
         '/list-analyses?format=json&result_status=0&days=6')
     self.assertEqual(200, response_json.status_int)
     self.assertEqual(expected_result, response_json.json_body)
+
+  def testResultStatusIsNotSpecified(self):
+    expected_result = {
+        'analyses': [
+            {
+                'master_name': 'chromium.linux',
+                'builder_name': 'Linux GN',
+                'build_number': 26120,
+                'build_start_time': self.stored_dates.get(10),
+                'failure_type': 'test',
+                'status': 70,
+                'status_description': 'Completed',
+                'suspected_cls': [
+                    {
+                        'repo_name': 'chromium',
+                        'revision': 'r99_10',
+                        'commit_position': None,
+                        'url': None
+                    }
+                ],
+                'result_status': 'Correct - Found'
+            },
+            {
+                'master_name': 'm',
+                'builder_name': 'b',
+                'build_number': 1,
+                'build_start_time': None,
+                'failure_type': 'test',
+                'status': 70,
+                'status_description': 'Completed',
+                'suspected_cls': [
+                    {
+                        'repo_name': 'chromium',
+                        'revision': 'r99_1',
+                        'commit_position': None,
+                        'url': None
+                    }
+                ],
+                'result_status': 'Incorrect - Found'
+            },
+            {
+                'master_name': 'm',
+                'builder_name': 'b',
+                'build_number': 3,
+                'build_start_time': None,
+                'failure_type': 'test',
+                'status': 70,
+                'status_description': 'Completed',
+                'suspected_cls': [],
+                'result_status': 'Incorrect - Not Found'
+            }
+        ],
+        'triage': '',
+        'days': '',
+        'count': '',
+        'result_status': ''
+    }
+
+    response_json = self.test_app.get(
+        '/list-analyses?format=json&result_status=')
+    self.assertEqual(200, response_json.status_int)
+    self.assertEqual(expected_result, response_json.json_body)

@@ -33,7 +33,11 @@ class ListAnalyses(BaseHandler):
         days. This parameter will turn off triage parameter and display all the
         results regardless of result_status.
     """
-    status_code = int(self.request.get('result_status', '-1'))
+    try:
+      status_code = int(self.request.get('result_status', '-1'))
+    except ValueError:
+      status_code = -1
+
     if status_code >= 0:
       analysis_query = WfAnalysis.query(WfAnalysis.result_status == status_code)
     elif self.request.get('triage') == '1':
