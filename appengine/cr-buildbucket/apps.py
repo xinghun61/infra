@@ -8,6 +8,12 @@ Function 'frontend.initialize' must be called from a separate module
 not imported in tests.
 """
 
+from components import utils
+utils.fix_protobuf_package()
+
+# Assert that "google.protobuf" imports.
+import google.protobuf
+
 import main
 
 html, endpoints, backend = main.initialize()
