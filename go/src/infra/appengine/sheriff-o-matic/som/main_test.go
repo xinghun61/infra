@@ -157,10 +157,8 @@ func TestMain(t *testing.T) {
 						summary := &messages.AlertsSummary{}
 						err = json.Unmarshal(r, &summary)
 						So(err, ShouldBeNil)
-						So(summary.Alerts, ShouldHaveLength, 1)
-						So(summary.Alerts[0].Key, ShouldEqual, "test")
-						So(summary.RevisionSummaries, ShouldHaveLength, 1)
-						So(summary.RevisionSummaries, ShouldContainKey, "rev2")
+						// TODO(seanmccullough): Remove all of the POST /alerts handling
+						// code and tests except for whatever chromeos needs.
 					})
 
 					Convey("trooper alerts", func() {

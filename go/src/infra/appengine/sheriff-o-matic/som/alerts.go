@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -55,10 +56,9 @@ func GetAlertsHandler(ctx *router.Context) {
 		return
 	}
 
-	// TODO(seanmccullough): remove this check once we turn down a-d and only
-	// use the cron tasks for alerts for all trees. See crbug.com/705074
-
-	if tree == "chromium" || tree == "ios" || tree == "android" || tree == "official_android" {
+	// This should be removed at some point, once the cron analyzers are modified
+	// to write to tree and not milo.tree.
+	if !strings.HasPrefix(tree, "chromeos") {
 		tree = "milo." + tree
 	}
 
