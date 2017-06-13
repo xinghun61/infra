@@ -1,3 +1,51 @@
+# Release Notes sheriff-o-matic 2017-06-13
+
+- 18 commits, 10 bugs affected since 5cb2ae6 (2017-06-06T22:22:23Z)
+- 4 Authors:
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+  - renjietang@google.com
+  - martiniss@chromium.org
+
+## Changes in this release
+
+- [[som] Increase frequency of chromium.perf cron analyzer runs](https://chromium-review.googlesource.com/534653) (seanmccullough@chromium.org)
+- [[som] Default chromium.perf to use the GAE cron analyzer alerts.](https://chromium-review.googlesource.com/533639) (seanmccullough@chromium.org)
+- [[som] Add a stripped-down WCT test runner for running in CI.](https://chromium-review.googlesource.com/529988) (seanmccullough@chromium.org)
+- [SoM: Make all top level sections collapsible.](https://chromium-review.googlesource.com/530032) (zhangtiff@google.com)
+- [[som] Truncate GAE version strings to 35 chars.](https://chromium-review.googlesource.com/531734) (seanmccullough@chromium.org)
+- [SoM: Make infra failures/other alert sections collapsible and refactored alert categories into a separate element.](https://chromium-review.googlesource.com/529966) (zhangtiff@google.com)
+- [add note about eval env.py](https://chromium-review.googlesource.com/529667) (seanmccullough@chromium.org)
+- [SoM: Move alert opened/closed state from annotations to som-alert-item.](https://chromium-review.googlesource.com/527934) (zhangtiff@google.com)
+- [SoM: Load trees directly into som-app instead of through AJAX.](https://chromium-review.googlesource.com/528419) (zhangtiff@google.com)
+- [[som]fix typo in timezone](https://chromium-review.googlesource.com/528230) (renjietang@google.com)
+- [created a function that computes the elapsed time since last update instead of showing the absolute UTC time.](https://chromium-review.googlesource.com/516464) (renjietang@google.com)
+- [[som] Add LayoutTest expectation editing form.](https://chromium-review.googlesource.com/528058) (seanmccullough@chromium.org)
+- [[som] Strip unused fields from Build messages, add cromium.perf to cron](https://chromium-review.googlesource.com/526476) (seanmccullough@chromium.org)
+- [SoM: Make linked bugs show status.](https://chromium-review.googlesource.com/527662) (zhangtiff@google.com)
+- [[som] fix make devserver to not generate the vulcanized index file.](https://chromium-review.googlesource.com/527418) (seanmccullough@chromium.org)
+- [SoM: Add bulk annotation actions.](https://chromium-review.googlesource.com/524026) (zhangtiff@google.com)
+- [[som] update Makefile, README.md for new frontend/backend split](https://chromium-review.googlesource.com/527514) (seanmccullough@chromium.org)
+- [AD: Only count infra failures for bot affinity](https://chromium-review.googlesource.com/527310) (martiniss@chromium.org)
+
+
+## Bugs updated, by author
+- martiniss@chromium.org:
+  -  [https://crbug.com/730004](https://crbug.com/730004)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/413053](https://crbug.com/413053)
+  -  [https://crbug.com/603982](https://crbug.com/603982)
+  -  [https://crbug.com/689284](https://crbug.com/689284)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/717713](https://crbug.com/717713)
+  -  [https://crbug.com/717717](https://crbug.com/717717)
+  -  [https://crbug.com/718127](https://crbug.com/718127)
+  -  [https://crbug.com/725237](https://crbug.com/725237)
+  -  [https://crbug.com/730315](https://crbug.com/730315)
+  -  [https://crbug.com/730319](https://crbug.com/730319)
+
 # Release Notes sheriff-o-matic 2017-06-06
 
 - 7 commits, 1 bugs affected since 98ca199 (2017-05-30T23:02:13Z)
