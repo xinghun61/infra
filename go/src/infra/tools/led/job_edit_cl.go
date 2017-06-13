@@ -102,7 +102,7 @@ func (r *rietveldCL) getProperties() map[string]interface{} {
 		"rietveld":      "https://" + r.host,
 		"issue":         strconv.FormatUint(r.issue, 10),
 		"patchset":      strconv.FormatUint(r.patchset, 10),
-		"project":       r.project,
+		"patch_project": r.project,
 		"blamelist":     []string{r.blame},
 		"patch_storage": "rietveld",
 	}
@@ -251,8 +251,8 @@ func (ejd *EditJobDefinition) ChromiumCL(ctx context.Context, authClient *http.C
 		// wipe out all the old properties
 		toDel := []string{
 			"blamelist", "issue", "patch_gerrit_url", "patch_issue", "patch_project",
-			"patch_project", "patch_ref", "patch_repository_url", "patch_set",
-			"patch_storage", "patchset", "repository", "rietveld",
+			"patch_ref", "patch_repository_url", "patch_set", "patch_storage",
+			"patchset", "repository", "rietveld",
 		}
 		for _, key := range toDel {
 			delete(u.RecipeProperties, key)
