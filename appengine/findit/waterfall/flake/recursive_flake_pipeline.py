@@ -774,6 +774,7 @@ class NextBuildNumberPipeline(BasePipeline):
     next_build_number, suspected_build, updated_iterations_to_rerun = (
         lookback_algorithm.GetNextRunPointNumber(
             data_points, algorithm_settings))
+
     if updated_iterations_to_rerun and user_specified_iterations is None:
       # The lookback algorithm determined the build needs to be rerun with more
       # iterations.

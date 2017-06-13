@@ -321,23 +321,20 @@
       });
     }
 
-    function analyzeRegressionRange() {
-      var lowerBoundCommitPosition = $('#lower-bound-commit-position').val();
-      var upperBoundCommitPosition = $('#upper-bound-commit-position').val();
-      var iterationsToRerun = $('#iterations-to-rerun').val();
-      alert('Analyze regression range is not yet implemented.');
-      var params = {
-          'format': 'json',
-          'lower_bound_commit_position': lowerBoundCommitPosition,
-          'upper_bound_commit_position': upperBoundCommitPosition,
-          'iterations_to_rerun': iterationsToRerun,
-          'key': findit.analysisKey,
-          'xsrf_token': findit.xsrfToken,
-      };
-      $.post('/waterfall/flake/analyze_regression_range', params, function(data) {
-      }).fail(function(xhr) {
-        handleLogin(xhr.status);
-      });
+    function validateRegressionRangeRerunForm() {
+      var lowerBound = document.forms["regression_range_rerun"]["lower_bound_commit_position"];
+      var upperBound = document.forms["regression_range_rerun"]["upper_bound_commit_position"];
+      var iterations = document.forms["regression_range_rerun"]["iterations_to_rerun"];
+
+      if (lowerBound != '' and isNaN(lowerBound)) {
+        alert('If specified, the lower bound commit position must be an integer');
+      }
+      if (upperBound != '' and isNaN(upperBound)) {
+        alert('If specified, the upper bound commit position must be an integer');
+      }
+      if (isNaN(iterations)) {
+        alert('The number of iterations to run each test must be an integer');
+      }
     }
 
     $(function() {
@@ -351,8 +348,6 @@
       $('.range-help-info').click(function() {
         displayMessage(300); // Hint to re-analyze with a given range.
       });
-
-      $('#analyze-regression-range-button').click(analyzeRegressionRange);
     });
   </script>
 </head>
@@ -432,17 +427,21 @@
       </div>
     </div>
     {% if show_input_ui %}
-      <div>
-        <table>
-          <tr>
-            <td>Analyze a commit position range (<a class="range-help-info" href="javascript:">?</a>):</td>
-            <td><input type="text" id="lower-bound-commit-position" placeholder="Lower bound" size="10"</td>
-            <td><input type="text" id="upper-bound-commit-position" placeholder="Upper bound" size="10"</td>
-            <td> # Iterations:<input type="text" id="iterations-to-rerun" value={{ iterations_to_rerun }} size="1"<td>
-            <td><button id="analyze-regression-range-button">Analyze</button></td>
-          </tr>
-        </table>
-      </div>
+      <form action="/waterfall/flake/analyze_regression_range" name="regression_range_rerun" onsubmit="validateRegressionRangeRerunForm()" method="post">
+        <div>
+          <input type="hidden" name="xsrf_token" value="{{ xsrf_token }}" />
+          <input type="hidden" name="key" value="{{ key }}" />
+          <table>
+            <tr>
+              <td>Analyze a commit position range (<a class="range-help-info" href="javascript:">?</a>):</td>
+              <td><input type="text" name="lower_bound_commit_position" placeholder="Lower bound" size="10"</td>
+              <td><input type="text" name="upper_bound_commit_position" placeholder="Upper bound" size="10"</td>
+              <td> # Iterations:<input type="text" name="iterations_to_rerun" placeholder="{{ iterations_to_rerun }}" value={{ iterations_to_rerun }} size="1"<td>
+              <td><input type="submit" value="Analyze"></td>
+            </tr>
+          </table>
+        </div>
+      </form>
     {% endif %}
   {% if show_rerun_ui %}
     <form action="/waterfall/flake" method="post">

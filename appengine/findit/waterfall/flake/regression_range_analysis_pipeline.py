@@ -2,12 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
-from gae_libs.pipeline_wrapper import pipeline
+import logging
 
-from waterfall import build_util
+from google.appengine.ext import ndb
+
+from gae_libs.http.http_client_appengine import HttpClientAppengine
+from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import pipeline
+from libs import analysis_status
 from waterfall import buildbot
+from waterfall import build_util
 from waterfall.flake.lookback_algorithm import IsStable
+from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
+
+
+_RUNNING_STATUSES = [analysis_status.PENDING, analysis_status.RUNNING]
 
 
 class _CommitPositionRange():
@@ -217,7 +226,7 @@ def _GetNearestBuild(master_name, builder_name, lower_bound_build_number,
   return _GetBuildInfo(master_name, builder_name, upper_bound)
 
 
-def _GetEarliestContainingBuild(commit_position, master_flake_analysis):
+def _GetEarliestContainingBuildNumber(commit_position, master_flake_analysis):
   """Gets the nearest build number containing commit_position within range.
 
     If the requested commit position falls before build number 0, 0 is returned.
@@ -251,10 +260,10 @@ def _GetEarliestContainingBuild(commit_position, master_flake_analysis):
         commit_position, build_numbers_to_commit_positions)
 
   if lower_bound is not None and lower_bound == upper_bound:
-    return _GetBuildInfo(master_name, builder_name, upper_bound)
+    return lower_bound
 
-  return _GetNearestBuild(
-      master_name, builder_name, lower_bound, upper_bound, commit_position)
+  return _GetNearestBuild(master_name, builder_name, lower_bound, upper_bound,
+                          commit_position).build_number
 
 
 def _RemoveStablePointsWithinRange(
@@ -281,5 +290,41 @@ def _RemoveStablePointsWithinRange(
     analysis.put()
 
 
-# TODO(lijeffrey): Start a pipline to call into recursive flake pipeline to
-# analyze the specified range.
+def _CanStartManualAnalysis(analysis):
+  return (analysis.status not in _RUNNING_STATUSES and
+          analysis.try_job_status not in  _RUNNING_STATUSES)
+
+
+class RegressionRangeAnalysisPipeline(BasePipeline):
+
+  # Arguments number differs from overridden method - pylint: disable=W0221
+  # Unused argument - pylint: disable=W0613
+  def run(self, analysis_urlsafe_key, lower_bound_commit_position,
+          upper_bound_commit_position, iterations_to_rerun):
+    analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
+    assert analysis
+
+    if not _CanStartManualAnalysis(analysis):
+      return
+
+    lower_bound_build_number = _GetEarliestContainingBuildNumber(
+        lower_bound_commit_position, analysis)
+    upper_bound_build_number = _GetEarliestContainingBuildNumber(
+        upper_bound_commit_position, analysis)
+    step_metadata = buildbot.GetStepLog(
+        analysis.master_name, analysis.builder_name, analysis.build_number,
+        analysis.step_name, HttpClientAppengine(), 'step_metadata')
+
+    _RemoveStablePointsWithinRange(
+        analysis, lower_bound_build_number, upper_bound_build_number,
+        iterations_to_rerun)
+
+    logging.info('Analyzing manually-input regression range [%d:%d]',
+                 lower_bound_commit_position, upper_bound_commit_position)
+    logging.info('Nearest build number range: [%d:%d]',
+                 lower_bound_build_number, upper_bound_build_number)
+
+    yield RecursiveFlakePipeline(
+        analysis_urlsafe_key, upper_bound_build_number,
+        lower_bound_build_number, upper_bound_build_number, iterations_to_rerun,
+        step_metadata=step_metadata)
