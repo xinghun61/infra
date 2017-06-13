@@ -5,8 +5,6 @@
 package analysis
 
 import (
-	"encoding/json"
-	"strings"
 	"time"
 
 	"go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
@@ -76,29 +74,17 @@ func (s groupSide) trustworthy() bool {
 	}
 
 	// If there are no successful builds and less than 3 trustworthy failures,
-	// consider this result not suitable for correctness estimation.
-	trustworthyFailures := 0
+	// consider this result too vulnerable to flakes.
+	failures := 0
 	for _, b := range s {
-		if b.Result != bbutil.ResultFailure {
-			continue
-		}
-
-		// Exclude expired Swarming tasks.
-		var resultDetails struct {
-			Swarming struct {
-				TaskResult struct {
-					State string
-				} `json:"task_result"`
+		if b.Result == bbutil.ResultFailure {
+			failures++
+			if failures >= 3 {
+				return true
 			}
 		}
-		dec := json.NewDecoder(strings.NewReader(b.ResultDetailsJson))
-		if dec.Decode(&resultDetails) == nil && resultDetails.Swarming.TaskResult.State == "EXPIRED" {
-			continue
-		}
-
-		trustworthyFailures++
 	}
-	return trustworthyFailures >= 3
+	return false
 }
 
 func (s groupSide) reverse() {
