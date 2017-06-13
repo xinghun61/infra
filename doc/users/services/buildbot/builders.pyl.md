@@ -228,7 +228,7 @@ name](/doc/users/recipes.md).
 This is a *required* field that indicates which scheduler will be used
 to schedule builds on the builder.
 
-The field have must be set to either `None` or to one of the keys in the
+The field must be set to either `None` or to one of the keys in the
 top-level `schedulers` dict. If it is set to None, then the builder will
 only be schedulable via buildbucket; in this situation, the master must
 have top-level `buildbucket_bucket` and `service_account_file` values
@@ -300,6 +300,9 @@ more times every day). The scheduler dict must also have the "hour" and
 commits to the given repo. The scheduler dict must also have the "git-repo-url"
 field.
 
+`git_poller_any` like above, but can schedule builds for multiple branches. The
+`"branch"` field may contain a list of uncompiled regular expressions.
+
 `repo_poller` behaves the same as `git_poller`, but uses repo rather than git
 (repo being the meta repository used in projects such as Android or ChromiumOS).
 The scheduler dict must also have the `"repo_url"` field.
@@ -315,10 +318,14 @@ and polled for changes.
 ### branch
 
 This is an *optional* field that is used if the scheduler type is
-"git_poller" or "repo_poller". It must not be present otherwise.
+"git_poller", "git_poller_any" or "repo_poller". It must not be present
+otherwise.
 
 It must contain a string value that is the branch name in the repo to watch.
 If it is not specified, it defaults to "master".
+
+For "git_poller_any" also a list of uncompiled regular expressions is
+supported.
 
 ### repo_url
 
