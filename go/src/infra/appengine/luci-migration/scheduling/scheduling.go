@@ -241,6 +241,9 @@ func withLock(c context.Context, buildID int64, f func() error) error {
 func schedule(c context.Context, req *buildbucket.ApiPutRequestMessage, service *buildbucket.Service) error {
 	req.Tags = append(req.Tags, "user_agent:luci-migration")
 	res, err := service.Put(req).Context(c).Do()
+	if err == nil && res.Error != nil {
+		err = errors.New(res.Error.Message)
+	}
 	if err != nil {
 		if err, ok := err.(*googleapi.Error); ok && (err.Code == http.StatusForbidden || err.Code == http.StatusNotFound) {
 			// Retries won't help. Return a non-transient error.
