@@ -127,7 +127,7 @@ func (c *cmdEdit) Run(a subcommands.Application, args []string, env subcommands.
 		return ejd.Finalize()
 	})
 	if err != nil {
-		logging.WithError(err).Errorf(ctx, "fatal")
+		errors.Log(ctx, err)
 		return 1
 	}
 

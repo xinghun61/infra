@@ -185,9 +185,8 @@ func (c *cmdEditRecipeBundle) Run(a subcommands.Application, args []string, env 
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 	authOpts, err := c.validateFlags(ctx, args)
 	if err != nil {
-		logging.Errorf(ctx, "bad arguments: %s", err)
-		fmt.Fprintln(os.Stderr)
-		subcommands.CmdHelp.CommandRun().Run(a, []string{"edit-recipe-bundle"}, env)
+		logging.Errorf(ctx, "bad arguments: %s\n\n", err)
+		c.GetFlags().Usage()
 		return 1
 	}
 
@@ -223,7 +222,7 @@ func (c *cmdEditRecipeBundle) Run(a subcommands.Application, args []string, env 
 		return ejd.Finalize()
 	})
 	if err != nil {
-		logging.WithError(err).Errorf(ctx, "fatal")
+		errors.Log(ctx, err)
 		return 1
 	}
 

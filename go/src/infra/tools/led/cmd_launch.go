@@ -6,7 +6,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"time"
 
@@ -62,21 +61,20 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 	authOpts, err := c.validateFlags(ctx, args)
 	if err != nil {
-		logging.Errorf(ctx, "bad arguments: %s", err)
-		fmt.Fprintln(os.Stderr)
-		subcommands.CmdHelp.CommandRun().Run(a, []string{"launch"}, env)
+		logging.Errorf(ctx, "bad arguments: %s\n\n", err)
+		c.GetFlags().Usage()
 		return 1
 	}
 
 	jd, err := decodeJobDefinition(ctx)
 	if err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		errors.Log(ctx, err)
 		return 1
 	}
 
 	authenticator, authClient, swarm, err := newSwarmClient(ctx, authOpts, jd.SwarmingHostname)
 	if err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		errors.Log(ctx, err)
 		return 1
 	}
 
@@ -95,7 +93,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 
 	isoFlags, err := getIsolatedFlags(swarm)
 	if err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		errors.Log(ctx, err)
 		return 1
 	}
 
@@ -104,7 +102,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	logging.Infof(ctx, "building swarming task")
 	st, err := jd.GetSwarmingNewTask(ctx, uid, arc)
 	if err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		errors.Log(ctx, err)
 		return 1
 	}
 	logging.Infof(ctx, "building swarming task: done")
@@ -112,7 +110,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	if c.dump {
 		err := json.NewEncoder(os.Stdout).Encode(st)
 		if err != nil {
-			logging.Errorf(ctx, "fatal error: %s", err)
+			errors.Log(ctx, err)
 			return 1
 		}
 		return 0
@@ -121,7 +119,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 	logging.Infof(ctx, "launching swarming task")
 	req, err := swarm.Tasks.New(st).Do()
 	if err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		errors.Log(ctx, err)
 		return 1
 	}
 	logging.Infof(ctx, "launching swarming task: done")

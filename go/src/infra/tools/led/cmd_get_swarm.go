@@ -6,7 +6,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 
 	"golang.org/x/net/context"
@@ -70,22 +69,21 @@ func (c *cmdGetSwarm) Run(a subcommands.Application, args []string, env subcomma
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 	authOpts, err := c.validateFlags(ctx, args)
 	if err != nil {
-		logging.Errorf(ctx, "bad arguments: %s", err)
-		fmt.Fprintln(os.Stderr)
-		subcommands.CmdHelp.CommandRun().Run(a, []string{"get-swarm"}, env)
+		logging.Errorf(ctx, "bad arguments: %s\n\n", err)
+		c.GetFlags().Usage()
 		return 1
 	}
 
 	logging.Infof(ctx, "getting task definition")
 	_, _, swarm, err := newSwarmClient(ctx, authOpts, c.swarmingHost)
 	if err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		errors.Log(ctx, err)
 		return 1
 	}
 
 	req, err := swarm.Task.Request(c.taskID).Do()
 	if err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		errors.Log(ctx, err)
 		return 1
 	}
 
@@ -102,7 +100,7 @@ func (c *cmdGetSwarm) Run(a subcommands.Application, args []string, env subcomma
 		//ServiceAccount: req.ServiceAccount,
 	})
 	if err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		errors.Log(ctx, err)
 		return 1
 	}
 	jd.SwarmingHostname = c.swarmingHost
@@ -112,7 +110,7 @@ func (c *cmdGetSwarm) Run(a subcommands.Application, args []string, env subcomma
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(jd); err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		errors.Log(ctx, err)
 		return 1
 	}
 

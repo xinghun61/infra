@@ -135,16 +135,15 @@ func (c *cmdGetBuilder) Run(a subcommands.Application, args []string, env subcom
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 	authOpts, bucket, builder, err := c.validateFlags(ctx, args)
 	if err != nil {
-		logging.Errorf(ctx, "bad arguments: %s", err)
-		fmt.Fprintln(os.Stderr)
-		subcommands.CmdHelp.CommandRun().Run(a, []string{"get-builder"}, env)
+		logging.Errorf(ctx, "bad arguments: %s\n\n", err)
+		c.GetFlags().Usage()
 		return 1
 	}
 
 	logging.Infof(ctx, "getting builder definition")
 	jd, err := c.grabBuilderDefinition(ctx, bucket, builder, authOpts)
 	if err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		errors.Log(ctx, err)
 		return 1
 	}
 	logging.Infof(ctx, "getting builder definition: done")
@@ -152,7 +151,7 @@ func (c *cmdGetBuilder) Run(a subcommands.Application, args []string, env subcom
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(jd); err != nil {
-		logging.Errorf(ctx, "fatal error: %s", err)
+		errors.Log(ctx, err)
 		return 1
 	}
 

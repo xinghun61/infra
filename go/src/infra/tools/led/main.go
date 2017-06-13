@@ -110,6 +110,7 @@ The spec (as it is) for JobDefinition is at:
 			editCmd(),
 			editSystemCmd(),
 			editRecipeBundleCmd(authDefaults),
+			editCrCLCmd(authDefaults),
 
 			// commands to launch swarming tasks.
 			launchCmd(authDefaults),

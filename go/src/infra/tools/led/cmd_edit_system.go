@@ -8,6 +8,7 @@ import (
 	"github.com/maruel/subcommands"
 
 	"github.com/luci/luci-go/common/cli"
+	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/flag/stringlistflag"
 	"github.com/luci/luci-go/common/flag/stringmapflag"
 	"github.com/luci/luci-go/common/logging"
@@ -60,7 +61,7 @@ func (c *cmdEditSystem) Run(a subcommands.Application, args []string, env subcom
 		return ejd.Finalize()
 	})
 	if err != nil {
-		logging.WithError(err).Errorf(ctx, "fatal")
+		errors.Log(ctx, err)
 		return 1
 	}
 

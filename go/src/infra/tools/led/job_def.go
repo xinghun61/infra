@@ -75,6 +75,8 @@ type Userland struct {
 	RecipeName       string                 `json:"recipe_name"`
 	RecipeProperties map[string]interface{} `json:"recipe_properties"`
 
+	ChangeListURL string `json:"changelist_url"`
+
 	Dimensions map[string]string `json:"dimensions"`
 }
 
