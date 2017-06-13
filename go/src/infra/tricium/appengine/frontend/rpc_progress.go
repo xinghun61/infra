@@ -7,7 +7,6 @@ package frontend
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	ds "github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/logging"
@@ -44,38 +43,44 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 }
 
 func progress(c context.Context, runID int64) (tricium.State, []*tricium.AnalyzerProgress, error) {
-	run := &track.Run{ID: runID}
+	requestKey := ds.NewKey(c, "AnalyzeRequest", "", runID, nil)
+	requestRes := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
+	if err := ds.Get(c, requestRes); err != nil {
+		return tricium.State_PENDING, nil, fmt.Errorf("failed to get AnalyzeRequestResult: %v", err)
+	}
+	run := &track.WorkflowRun{ID: 1, Parent: requestKey}
 	if err := ds.Get(c, run); err != nil {
-		return tricium.State_PENDING, nil, fmt.Errorf("failed to read run entry: %v", err)
+		return tricium.State_PENDING, nil, fmt.Errorf("failed to get AnalyzeRequestResult: %v", err)
 	}
-	runKey := ds.NewKey(c, "Run", "", runID, nil)
-	var analyzers []*track.AnalyzerInvocation
-	q := ds.NewQuery("AnalyzerInvocation").Ancestor(runKey)
-	if err := ds.GetAll(c, q, &analyzers); err != nil {
-		return tricium.State_PENDING, nil, fmt.Errorf("failed to read analyzer invocations: %v", err)
+	runKey := ds.KeyForObj(c, run)
+	// TODO(emso): extract a common GetAnalyzerRunsForWorkflowRun function
+	var analyzers []*track.AnalyzerRun
+	for _, analyzerName := range run.Analyzers {
+		analyzers = append(analyzers, &track.AnalyzerRun{ID: analyzerName, Parent: runKey})
 	}
-	var workers []*track.WorkerInvocation
-	q = ds.NewQuery("WorkerInvocation").Ancestor(runKey)
-	if err := ds.GetAll(c, q, &workers); err != nil {
-		return tricium.State_PENDING, nil, fmt.Errorf("failed to read worker invocations: %v", err)
+	if err := ds.Get(c, analyzers); err != nil {
+		return tricium.State_PENDING, nil, fmt.Errorf("failed to get AnalyzerRun entities: %v", err)
+	}
+	var workerResults []*track.WorkerRunResult
+	for _, analyzer := range analyzers {
+		analyzerKey := ds.KeyForObj(c, analyzer)
+		for _, workerName := range analyzer.Workers {
+			workerKey := ds.NewKey(c, "WorkerRun", workerName, 0, analyzerKey)
+			workerResults = append(workerResults, &track.WorkerRunResult{ID: 1, Parent: workerKey})
+		}
+	}
+	if err := ds.Get(c, workerResults); err != nil && err != ds.ErrNoSuchEntity {
+		return tricium.State_PENDING, nil, fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
 	}
 	res := []*tricium.AnalyzerProgress{}
-	for _, w := range workers {
+	for _, wr := range workerResults {
 		res = append(res, &tricium.AnalyzerProgress{
-			Analyzer:          extractAnalyzerName(w.Name),
-			Platform:          w.Platform,
-			State:             w.State,
-			SwarmingTaskId:    fmt.Sprintf("%s/task?id=%s", w.SwarmingURL, w.TaskID),
-			NumResultComments: int32(w.NumResultComments),
+			Analyzer:       wr.Analyzer,
+			Platform:       wr.Platform,
+			State:          wr.State,
+			SwarmingTaskId: fmt.Sprintf("%s/task?id=%s", run.SwarmingServerURL, wr.SwarmingTaskID),
+			NumComments:    int32(wr.NumComments),
 		})
 	}
-	return run.State, res, nil
-}
-
-func extractAnalyzerName(worker string) string {
-	parts := strings.SplitN(worker, "_", 2)
-	if len(parts) == 0 {
-		return worker
-	}
-	return parts[0]
+	return requestRes.State, res, nil
 }

@@ -35,30 +35,30 @@ func landingPageHandler(c *router.Context) {
 
 func resultsHandler(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
-	r, err := runs(c, config.LuciConfigServer)
+	r, err := requests(c, config.LuciConfigServer)
 	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to retrieve runs")
+		logging.WithError(err).Errorf(c, "failed to retrieve requests")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	templates.MustRender(c, w, "pages/results.html", map[string]interface{}{
-		"Runs": r,
+		"Requests": r,
 	})
 }
 
-// runs returns list of runs for projects readable to the current user.
-func runs(c context.Context, cp config.ProviderAPI) ([]*track.Run, error) {
-	// TODO(emso): This only lists the last 20 runs, when the UI is ready improve to list more.
-	var runs []*track.Run
-	q := ds.NewQuery("Run").Order("-Received").Limit(20)
-	if err := ds.GetAll(c, q, &runs); err != nil {
-		logging.WithError(err).Errorf(c, "failed to read run entries from datastore")
+// requests returns list of workflow runs for projects readable to the current user.
+func requests(c context.Context, cp config.ProviderAPI) ([]*track.AnalyzeRequest, error) {
+	// TODO(emso): This only lists the last 20 requests, when the UI is ready improve to list more.
+	var requests []*track.AnalyzeRequest
+	q := ds.NewQuery("AnalyzeRequest").Order("-Received").Limit(20)
+	if err := ds.GetAll(c, q, &requests); err != nil {
+		logging.WithError(err).Errorf(c, "failed to get AnalyzeRequest entities: %v", err)
 		return nil, err
 	}
-	// Only include readable runs.
+	// Only include readable Analyze requests.
 	checked := map[string]bool{}
-	var rs []*track.Run
-	for _, r := range runs {
+	var rs []*track.AnalyzeRequest
+	for _, r := range requests {
 		if _, ok := checked[r.Project]; !ok {
 			pc, err := cp.GetProjectConfig(c, r.Project)
 			if err != nil {
@@ -103,7 +103,7 @@ func analyzeFormHandler(ctx *router.Context) {
 	}
 	logging.Infof(c, "Analyzer handler successfully completed, run ID: %s", res.RunId)
 	templates.MustRender(c, w, "pages/index.html", map[string]interface{}{
-		"StatusMsg": fmt.Sprintf("Analysis request sent. Run ID: %s", res.RunId),
+		"StatusMsg": fmt.Sprintf("Analysis request sent, run ID: %s", res.RunId),
 	})
 	w.WriteHeader(http.StatusOK)
 }

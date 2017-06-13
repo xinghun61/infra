@@ -77,10 +77,8 @@ func trigger(c context.Context, req *admin.TriggerRequest, wp config.WorkflowCac
 	b, err = proto.Marshal(&admin.WorkerLaunchedRequest{
 		RunId:             req.RunId,
 		Worker:            req.Worker,
-		IsolateServerUrl:  workflow.IsolateServer,
 		IsolatedInputHash: req.IsolatedInputHash,
-		SwarmingServerUrl: workflow.SwarmingServer,
-		TaskId:            taskID,
+		SwarmingTaskId:    taskID,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to encode worker launched request: %v", err)

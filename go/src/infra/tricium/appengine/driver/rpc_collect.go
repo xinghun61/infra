@@ -54,7 +54,6 @@ func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowCac
 	b, err := proto.Marshal(&admin.WorkerDoneRequest{
 		RunId:              req.RunId,
 		Worker:             req.Worker,
-		IsolateServerUrl:   wf.IsolateServer,
 		IsolatedOutputHash: isolatedOutput,
 		ExitCode:           exitCode,
 	})

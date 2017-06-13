@@ -41,25 +41,29 @@ func (r *TriciumServer) Results(c context.Context, req *tricium.ResultsRequest) 
 }
 
 func results(c context.Context, runID int64) (*tricium.Data_Results, bool, error) {
-	run := &track.Run{ID: runID}
-	if err := ds.Get(c, run); err != nil {
-		return nil, false, fmt.Errorf("failed to read run entry: %v", err)
-	}
-	runKey := ds.NewKey(c, "Run", "", runID, nil)
-	var comments []*track.ResultComment
-	q := ds.NewQuery("ResultComment").Ancestor(runKey)
+	requestKey := ds.NewKey(c, "AnalyzeRequest", "", runID, nil)
+	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
+	// TODO(emso): Extract common GetCommentsForWorkflowRun function.
+	var comments []*track.Comment
+	q := ds.NewQuery("Comment").Ancestor(runKey)
 	if err := ds.GetAll(c, q, &comments); err != nil {
-		return nil, false, fmt.Errorf("failed to read result comments: %v", err)
+		return nil, false, fmt.Errorf("failed to get comments: %v", err)
 	}
 	isMerged := false
 	res := &tricium.Data_Results{}
 	for _, comment := range comments {
-		if comment.Included {
+		commentKey := ds.KeyForObj(c, comment)
+		cr := &track.CommentSelection{ID: 1, Parent: commentKey}
+		if err := ds.Get(c, cr); err != nil {
+			return nil, false, fmt.Errorf("failed to get CommentSelection: %v", err)
+		}
+		if cr.Included {
 			comm := &tricium.Data_Comment{}
-			if err := json.Unmarshal([]byte(comment.Comment), comm); err != nil {
-				return nil, false, fmt.Errorf("failed to unmarshal result comment: %v", err)
+			if err := json.Unmarshal(comment.Comment, comm); err != nil {
+				return nil, false, fmt.Errorf("failed to unmarshal comment: %v", err)
 			}
 			res.Comments = append(res.Comments, comm)
+			res.Platforms |= comment.Platforms
 		} else {
 			isMerged = true
 		}

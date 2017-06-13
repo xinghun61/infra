@@ -6,7 +6,6 @@ package tracker
 
 import (
 	"fmt"
-	"strings"
 
 	ds "github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/logging"
@@ -45,86 +44,123 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 	}
 	// Prepare analyzer and worker invocation tracking entries to store.
 	aw := extractAnalyzerWorkerStructure(c, wf)
-	logging.Infof(c, "Extracted analyzer/worker entries for tracking: %#v", aw)
-	return ds.RunInTransaction(c, func(c context.Context) (err error) {
-		run := &track.Run{ID: req.RunId}
-		if err := ds.Get(c, run); err != nil {
-			return fmt.Errorf("failed to retrieve run entry (run ID: %d): %v", run.ID, err)
+	logging.Debugf(c, "Extracted analyzer/worker entries for tracking: %#v", aw)
+	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
+	if err := ds.RunInTransaction(c, func(c context.Context) (err error) {
+		// Store the root of the workflow.
+		run := &track.WorkflowRun{
+			ID:                1,
+			Parent:            requestKey,
+			IsolateServerURL:  wf.IsolateServer,
+			SwarmingServerURL: wf.SwarmingServer,
 		}
+		if err := ds.Get(c, run); err != nil {
+			return fmt.Errorf("failed to get WorkflowRun entity (run ID: %d): %v", run.ID, err)
+		}
+		runKey := ds.KeyForObj(c, run)
 		ops := []func() error{
-			// Notify reporter.
+			// Update AnalyzeRequestResult to RUNNING.
 			func() error {
-				switch run.Reporter {
-				case tricium.Reporter_GERRIT:
-					// TOOD(emso): push notification to the Gerrit reporter
-				default:
-					// Do nothing.
+				r := &track.AnalyzeRequestResult{
+					ID:     1,
+					Parent: requestKey,
+					State:  tricium.State_RUNNING,
+				}
+				if err := ds.Put(c, r); err != nil {
+					return fmt.Errorf("failed to mark request as launched: %v", err)
 				}
 				return nil
 			},
-			// Update Run state to launched.
+			// Update WorkflowRun state to RUNNING.
 			func() error {
-				run.State = tricium.State_RUNNING
-				if err := ds.Put(c, run); err != nil {
+				r := &track.WorkflowRunResult{
+					ID:     1,
+					Parent: runKey,
+					State:  tricium.State_RUNNING,
+				}
+				if err := ds.Put(c, r); err != nil {
 					return fmt.Errorf("failed to mark workflow as launched: %v", err)
 				}
 				return nil
 			},
-			// Store analyzer and worker invocation entries for tracking.
+			// Store analyzer and worker run entities for tracking.
 			func() error {
 				entities := make([]interface{}, 0, len(aw))
 				for _, v := range aw {
-					v.Analyzer.Parent = ds.KeyForObj(c, run)
-					entities = append(entities, v.Analyzer)
-				}
-				for _, v := range aw {
-					for _, vv := range v.Workers {
-						vv.Parent = ds.KeyForObj(c, v.Analyzer)
-						entities = append(entities, vv)
+					v.Analyzer.Parent = runKey
+					analyzerKey := ds.KeyForObj(c, v.Analyzer)
+					entities = append(entities, []interface{}{
+						v.Analyzer,
+						&track.AnalyzerRunResult{
+							ID:     1,
+							Parent: analyzerKey,
+							Name:   v.Analyzer.ID,
+							State:  tricium.State_PENDING,
+						},
+					}...)
+					for _, worker := range v.Workers {
+						worker.Parent = analyzerKey
+						entities = append(entities, worker)
+						workerKey := ds.KeyForObj(c, worker)
+						entities = append(entities, []interface{}{
+							worker,
+							&track.WorkerRunResult{
+								ID:     1,
+								Name:   worker.ID,
+								Parent: workerKey,
+								State:  tricium.State_PENDING,
+							},
+						}...)
 					}
 				}
 				if err := ds.Put(c, entities); err != nil {
-					return fmt.Errorf("failed to store analyzer and worker entries: %v", err)
+					return fmt.Errorf("failed to store analyzer and worker entities: %v", err)
 				}
 				return nil
 			},
 		}
 		return common.RunInParallel(ops)
-	}, nil)
+	}, nil); err != nil {
+		return err
+	}
+	// Notify reporter.
+	request := &track.AnalyzeRequest{ID: req.RunId}
+	if err := ds.Get(c, request); err != nil {
+		return fmt.Errorf("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err)
+	}
+	switch request.Reporter {
+	case tricium.Reporter_GERRIT:
+		// TOOD(emso): push notification to the Gerrit reporter
+	default:
+		// Do nothing.
+	}
+	return nil
 }
 
 type analyzerToWorkers struct {
-	Analyzer *track.AnalyzerInvocation
-	Workers  []*track.WorkerInvocation
+	Analyzer *track.AnalyzerRun
+	Workers  []*track.WorkerRun
 }
 
 // extractAnalyzerWorkerStructure extracts analyzer-*worker structure from workflow config.
 func extractAnalyzerWorkerStructure(c context.Context, wf *admin.Workflow) map[string]*analyzerToWorkers {
 	m := map[string]*analyzerToWorkers{}
 	for _, w := range wf.Workers {
-		analyzer := strings.Split(w.Name, "_")[0]
+		analyzer, err := track.ExtractAnalyzerName(w.Name)
+		if err != nil {
+			logging.Errorf(c, "Failed to extract analyzer name: %v", err)
+		}
 		a, ok := m[analyzer]
 		if !ok {
-			a = &analyzerToWorkers{
-				Analyzer: &track.AnalyzerInvocation{
-					ID:    analyzer,
-					Name:  analyzer,
-					State: tricium.State_PENDING,
-				},
-			}
+			a = &analyzerToWorkers{Analyzer: &track.AnalyzerRun{ID: analyzer}}
 			m[analyzer] = a
 		}
-		aw := &track.WorkerInvocation{
-			ID:       w.Name,
-			Name:     w.Name,
-			State:    tricium.State_PENDING,
-			Platform: w.ProvidesForPlatform,
-		}
+		aw := &track.WorkerRun{ID: w.Name, Platform: w.ProvidesForPlatform}
 		for _, n := range w.Next {
 			aw.Next = append(aw.Next, n)
 		}
 		a.Workers = append(a.Workers, aw)
-		logging.Infof(c, "Found analyzer/worker: %v", a)
+		logging.Debugf(c, "Found analyzer/worker: %v", a)
 	}
 	return m
 }

@@ -54,51 +54,50 @@ func TestWorkerDoneRequest(t *testing.T) {
 		ctx := tt.Context()
 
 		// Add pending run entry.
-		run := &track.Run{
-			State: tricium.State_PENDING,
-		}
-		err := ds.Put(ctx, run)
-		So(err, ShouldBeNil)
-
-		runID := run.ID
+		request := &track.AnalyzeRequest{}
+		So(ds.Put(ctx, request), ShouldBeNil)
+		requestKey := ds.KeyForObj(ctx, request)
+		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
+		So(ds.Put(ctx, run), ShouldBeNil)
+		runKey := ds.KeyForObj(ctx, run)
+		So(ds.Put(ctx, &track.WorkflowRunResult{
+			ID:     1,
+			Parent: runKey,
+			State:  tricium.State_PENDING,
+		}), ShouldBeNil)
 
 		// Mark workflow as launched.
-		err = workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
-			RunId: runID,
+		err := workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
+			RunId: request.ID,
 		}, mockWorkflowProvider{})
 		So(err, ShouldBeNil)
 
 		// Mark worker as launched.
 		err = workerLaunched(ctx, &admin.WorkerLaunchedRequest{
-			RunId:  runID,
+			RunId:  request.ID,
 			Worker: fileIsolator,
 		})
 		So(err, ShouldBeNil)
 
 		// Mark worker as done.
 		err = workerDone(ctx, &admin.WorkerDoneRequest{
-			RunId:    runID,
+			RunId:    request.ID,
 			Worker:   fileIsolator,
 			ExitCode: 0,
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 
 		Convey("Marks worker as done", func() {
-			_, analyzerKey, workerKey := createKeys(ctx, runID, fileIsolator)
-			w := &track.WorkerInvocation{
-				ID:     workerKey.StringID(),
-				Parent: workerKey.Parent(),
-			}
-			err = ds.Get(ctx, w)
+			analyzerName, err := track.ExtractAnalyzerName(fileIsolator)
 			So(err, ShouldBeNil)
-			So(w.State, ShouldEqual, tricium.State_SUCCESS)
-			a := &track.AnalyzerInvocation{
-				ID:     analyzerKey.StringID(),
-				Parent: analyzerKey.Parent(),
-			}
-			err = ds.Get(ctx, a)
-			So(err, ShouldBeNil)
-			So(a.State, ShouldEqual, tricium.State_SUCCESS)
+			analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
+			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, analyzerKey)
+			wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
+			So(ds.Get(ctx, wr), ShouldBeNil)
+			So(wr.State, ShouldEqual, tricium.State_SUCCESS)
+			ar := &track.AnalyzerRunResult{ID: 1, Parent: analyzerKey}
+			So(ds.Get(ctx, ar), ShouldBeNil)
+			So(ar.State, ShouldEqual, tricium.State_SUCCESS)
 		})
 		// TODO(emso): multi-platform analyzer is half done, analyzer stays launched
 	})

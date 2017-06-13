@@ -7,7 +7,6 @@ package tracker
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	ds "github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/logging"
@@ -30,9 +29,6 @@ func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest
 	if req.Worker == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing worker")
 	}
-	if req.IsolateServerUrl == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolate server URL")
-	}
 	if req.IsolatedOutputHash == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing output hash")
 	}
@@ -44,62 +40,70 @@ func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest
 }
 
 func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.IsolateAPI) error {
-	logging.Infof(c, "[tracker] Worker done (run ID: %d, worker: %s)", req.RunId, req.Worker)
-	runKey, analyzerKey, workerKey := createKeys(c, req.RunId, req.Worker)
-	worker := &track.WorkerInvocation{
-		ID:     workerKey.StringID(),
-		Parent: workerKey.Parent(),
-	}
-	// Collect and process isolated output.
-	resultsStr, err := isolator.FetchIsolatedResults(c, req.IsolateServerUrl, req.IsolatedOutputHash)
+	logging.Debugf(c, "[tracker] Worker done (run ID: %d, worker: %s)", req.RunId, req.Worker)
+	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
+	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
+	analyzerName, err := track.ExtractAnalyzerName(req.Worker)
 	if err != nil {
-		return fmt.Errorf("failed to fetch isolated worker resul: %v", err)
+		return fmt.Errorf("failed to extract analyzer name: %v", err)
+	}
+	analyzerKey := ds.NewKey(c, "AnalyzerRun", analyzerName, 0, runKey)
+	workerKey := ds.NewKey(c, "WorkerRun", req.Worker, 0, analyzerKey)
+	// Collect and process isolated output.
+	run := &track.WorkflowRun{ID: 1, Parent: requestKey}
+	if err := ds.Get(c, run); err != nil {
+		return fmt.Errorf("failed to get WorkflowRun: %v", err)
+	}
+	resultsStr, err := isolator.FetchIsolatedResults(c, run.IsolateServerURL, req.IsolatedOutputHash)
+	if err != nil {
+		return fmt.Errorf("failed to fetch isolated worker result: %v", err)
 	}
 	logging.Infof(c, "Fetched isolated result: %q", resultsStr)
 	results := tricium.Data_Results{}
 	if err := json.Unmarshal([]byte(resultsStr), &results); err != nil {
 		return fmt.Errorf("failed to unmarshal results data: %v", err)
 	}
-	comments := []*track.ResultComment{}
+	comments := []*track.Comment{}
 	for _, comment := range results.Comments {
 		json, err := json.Marshal(comment)
 		if err != nil {
 			return fmt.Errorf("failed to marshal comment data: %v", err)
 		}
-		key := ds.NewKey(c, "ResultComment", req.Worker, 0, workerKey)
-		comments = append(comments, &track.ResultComment{
-			ID:        key.StringID(),
-			Parent:    key.Parent(),
-			Comment:   string(json),
+		comments = append(comments, &track.Comment{
+			Parent:    workerKey,
+			Comment:   json,
 			Category:  comment.Category,
 			Platforms: results.Platforms,
-			Included:  true, // excluded later if needed
 		})
 	}
-	// Update worker state.
+	// Compute state of this worker that is done.
 	workerState := tricium.State_SUCCESS
 	if req.ExitCode != 0 {
 		workerState = tricium.State_FAILURE
 	}
-	// Prepare to update state of analyzer invocation.
-	analyzer := &track.AnalyzerInvocation{
-		ID:     analyzerKey.StringID(),
-		Parent: analyzerKey.Parent(),
+	// Compute state of parent analyzer.
+	analyzer := &track.AnalyzerRun{ID: analyzerName, Parent: runKey}
+	if err := ds.Get(c, analyzer); err != nil {
+		return fmt.Errorf("failed to get AnalyzerRun entity: %v", err)
 	}
-	var workers []*track.WorkerInvocation
-	if err := ds.GetAll(c, ds.NewQuery("WorkerInvocation").Ancestor(analyzerKey), &workers); err != nil {
-		return fmt.Errorf("failed to retrieve worker invocations: %v", err)
+	workerResults := []*track.WorkerRunResult{}
+	for _, workerName := range analyzer.Workers {
+		workerKey := ds.NewKey(c, "WorkerRun", workerName, 0, analyzerKey)
+		workerResults = append(workerResults, &track.WorkerRunResult{ID: 1, Parent: workerKey})
+	}
+	if err := ds.Get(c, workerResults); err != nil {
+		return fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
 	}
 	analyzerState := tricium.State_SUCCESS
-	for _, w := range workers {
-		if w.Name == req.Worker {
-			w.State = workerState // Setting state to what we will store in the below transaction.
+	for _, wr := range workerResults {
+		if wr.Name == req.Worker {
+			wr.State = workerState // Setting state to what we will store in the below transaction.
 		}
 		// When all workers are done, aggregate the result.
 		// All worker SUCCESSS -> analyzer SUCCESS
 		// One or more workers FAILURE -> analyzer FAILURE
-		if tricium.IsDone(w.State) {
-			if w.State == tricium.State_FAILURE {
+		if tricium.IsDone(wr.State) {
+			if wr.State == tricium.State_FAILURE {
 				analyzerState = tricium.State_FAILURE
 			}
 		} else {
@@ -115,23 +119,25 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		// Comments are included by default. For conflicting comments, select which comments
 		// to include and set other comments include to false.
 	}
-	// Prepare to update run state.
-	run := &track.Run{ID: runKey.IntID()}
-	var analyzers []*track.AnalyzerInvocation
-	if err := ds.GetAll(c, ds.NewQuery("AnalyzerInvocation").Ancestor(runKey), &analyzers); err != nil {
-		return fmt.Errorf("failed to retrieve analyzer invocations: %v", err)
+	// Compute run state.
+	var analyzerResults []*track.AnalyzerRunResult
+	for _, analyzerName := range run.Analyzers {
+		analyzerKey := ds.NewKey(c, "AnalyzerRun", analyzerName, 0, runKey)
+		analyzerResults = append(analyzerResults, &track.AnalyzerRunResult{ID: 1, Parent: analyzerKey})
 	}
-	analyzerName := strings.Split(req.Worker, "_")[0]
+	if err := ds.Get(c, analyzerResults); err != nil {
+		return fmt.Errorf("failed to retrieve AnalyzerRunResult entities: %v", err)
+	}
 	runState := tricium.State_SUCCESS
-	for _, a := range analyzers {
-		if a.Name == analyzerName {
-			a.State = analyzerState // Setting state to what will be stored in the below transaction.
+	for _, ar := range analyzerResults {
+		if ar.Name == analyzerName {
+			ar.State = analyzerState // Setting state to what will be stored in the below transaction.
 		}
 		// When all analyzers are done, aggregate the result.
 		// All analyzers SUCCESSS -> run SUCCESS
 		// One or more analyzers FAILURE -> run FAILURE
-		if tricium.IsDone(a.State) {
-			if a.State == tricium.State_FAILURE {
+		if tricium.IsDone(ar.State) {
+			if ar.State == tricium.State_FAILURE {
 				runState = tricium.State_FAILURE
 			}
 		} else {
@@ -140,76 +146,87 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			break
 		}
 	}
-	return ds.RunInTransaction(c, func(c context.Context) (err error) {
-		ops := []func() error{
-			// Notify reporter.
-			func() error {
-				switch run.Reporter {
-				case tricium.Reporter_GERRIT:
-					// TOOD(emso): push notification to the Gerrit reporter
-				default:
-					// Do nothing.
+	ops := []func() error{
+		// Add comments.
+		func() error {
+			if err := ds.Put(c, comments); err != nil {
+				return fmt.Errorf("failed to add Comment entries: %v", err)
+			}
+			entities := make([]interface{}, 0, len(comments)*2)
+			for _, comment := range comments {
+				commentKey := ds.KeyForObj(c, comment)
+				entities = append(entities, []interface{}{
+					&track.CommentSelection{
+						ID:       1,
+						Parent:   commentKey,
+						Included: true, // TODO(emso): merging
+					},
+					&track.CommentFeedback{ID: 1, Parent: commentKey},
+				}...)
+			}
+			if err := ds.Put(c, entities); err != nil {
+				return fmt.Errorf("failed to add CommentSelection/CommentFeedback entries: %v", err)
+			}
+			return nil
+		},
+		// Update worker state, isolated output, and number of result comments.
+		func() error {
+			wr := &track.WorkerRunResult{
+				ID:             1,
+				Parent:         workerKey,
+				State:          workerState,
+				IsolatedOutput: req.IsolatedOutputHash,
+				NumComments:    len(results.Comments),
+			}
+			if err := ds.Put(c, wr); err != nil {
+				return fmt.Errorf("failed to update WorkerRunResult: %v", err)
+			}
+			return nil
+		},
+		// Update analyzer state.
+		func() error {
+			ar := &track.AnalyzerRunResult{ID: 1, Parent: analyzerKey}
+			if err := ds.Get(c, ar); err != nil {
+				return fmt.Errorf("failed to get AnalyzerRunResult (analyzer:%s): %v", analyzerName, err)
+			}
+			if ar.State != analyzerState {
+				ar.State = analyzerState
+				if err := ds.Put(c, ar); err != nil {
+					return fmt.Errorf("failed to update AnalyzerRunResult: %v", err)
 				}
-				return nil
-			},
-			// Add result comments.
-			func() error {
-				if err := ds.Put(c, comments); err != nil {
-					return fmt.Errorf("failed to add result comments: %v", err)
+			}
+			return nil
+		},
+		// Update run state.
+		func() error {
+			rr := &track.WorkflowRunResult{ID: 1, Parent: runKey}
+			if err := ds.Get(c, rr); err != nil {
+				return fmt.Errorf("failed to get WorkflowRunResult entry: %v", err)
+			}
+			if rr.State != runState {
+				rr.State = runState
+				if err := ds.Put(c, rr); err != nil {
+					return fmt.Errorf("failed to update WorkflowRunResult entry: %v", err)
 				}
-				return nil
-			},
-			// Update worker state, isolated output, and number of result comments.
-			func() error {
-				if err := ds.Get(c, worker); err != nil {
-					return fmt.Errorf("failed to retrieve worker: %v", err)
-				}
-				if worker.State != workerState {
-					worker.State = workerState
-				}
-				worker.IsolateServerURL = req.IsolateServerUrl
-				worker.IsolatedOutput = req.IsolatedOutputHash
-				worker.NumResultComments = len(results.Comments)
-				if err := ds.Put(c, worker); err != nil {
-					return fmt.Errorf("failed to mark worker as done-*: %v", err)
-				}
-				return nil
-			},
-			// Update analyzer state.
-			func() error {
-				if err := ds.Get(c, analyzer); err != nil {
-					return fmt.Errorf("failed to retrieve analyzer: %v", err)
-				}
-				if analyzer.State != analyzerState {
-					analyzer.State = analyzerState
-					if err := ds.Put(c, analyzer); err != nil {
-						return fmt.Errorf("failed to mark analyzer as done-*: %v", err)
-					}
-				}
-				return nil
-			},
-			// Update run state. Stay in the main thread for this fourth operation.
-			func() error {
-				if err := ds.Get(c, run); err != nil {
-					return fmt.Errorf("failed to retrieve run: %v", err)
-				}
-				if run.State != runState {
-					run.State = runState
-					if err := ds.Put(c, run); err != nil {
-						return fmt.Errorf("failed to mark run as done-*: %v", err)
-					}
-				}
-				return nil
-			},
-		}
+			}
+			return nil
+		},
+	}
+	if err := ds.RunInTransaction(c, func(c context.Context) (err error) {
 		return common.RunInParallel(ops)
-	}, nil)
-}
-
-func createKeys(c context.Context, runID int64, worker string) (*ds.Key, *ds.Key, *ds.Key) {
-	runKey := ds.NewKey(c, "Run", "", runID, nil)
-	// Assuming that the analyzer name is included in the worker name, before the first underscore.
-	analyzerName := strings.Split(worker, "_")[0]
-	analyzerKey := ds.NewKey(c, "AnalyzerInvocation", analyzerName, 0, runKey)
-	return runKey, analyzerKey, ds.NewKey(c, "WorkerInvocation", worker, 0, analyzerKey)
+	}, nil); err != nil {
+		return err
+	}
+	// Notify reporter.
+	request := &track.AnalyzeRequest{ID: req.RunId}
+	if err := ds.Get(c, request); err != nil {
+		return fmt.Errorf("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err)
+	}
+	switch request.Reporter {
+	case tricium.Reporter_GERRIT:
+		// TOOD(emso): push notification to the Gerrit reporter
+	default:
+		// Do nothing.
+	}
+	return nil
 }

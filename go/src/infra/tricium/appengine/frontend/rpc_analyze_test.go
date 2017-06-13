@@ -83,7 +83,7 @@ func TestAnalyze(t *testing.T) {
 			})
 
 			Convey("Adds tracking of run", func() {
-				r, err := runs(ctx, &mockConfigProvider{})
+				r, err := requests(ctx, &mockConfigProvider{})
 				So(err, ShouldBeNil)
 				So(len(r), ShouldEqual, 1)
 			})

@@ -113,10 +113,10 @@ message AnalyzerProgress {
   // The Swarming task ID running the analyzer worker.
   string swarming_task_id = 4;
 
-  // Number of result comments.
+  // Number of comments.
   //
-  // For analyzers that are done and produce result comments.
-  int32 num_result_comments = 5;
+  // For analyzers that are done and produce comments.
+  int32 num_comments = 5;
 }
 
 message ResultsRequest {

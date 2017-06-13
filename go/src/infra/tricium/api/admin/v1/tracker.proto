@@ -40,10 +40,8 @@ message WorkflowLaunchedResponse {
 message WorkerLaunchedRequest {
   int64 run_id = 1;
   string worker = 2;
-  string isolate_server_url = 3;
-  string isolated_input_hash = 4;
-  string swarming_server_url = 5;
-  string task_id = 6;
+  string isolated_input_hash = 3;
+  string swarming_task_id = 4;
 }
 
 message WorkerLaunchedResponse {
@@ -57,9 +55,8 @@ message WorkerLaunchedResponse {
 message WorkerDoneRequest {
   int64 run_id = 1;
   string worker = 2;
-  string isolate_server_url = 3;
-  string isolated_output_hash = 4;
-  int64 exit_code = 5;
+  string isolated_output_hash = 3;
+  int64 exit_code = 4;
 }
 
 message WorkerDoneResponse {

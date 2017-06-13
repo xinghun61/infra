@@ -28,16 +28,10 @@ func (*trackerServer) WorkerLaunched(c context.Context, req *admin.WorkerLaunche
 	if req.Worker == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing worker")
 	}
-	if req.IsolateServerUrl == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolate server URL")
-	}
 	if req.IsolatedInputHash == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing isolated input hash")
 	}
-	if req.SwarmingServerUrl == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing swarming URL")
-	}
-	if req.TaskId == "" {
+	if req.SwarmingTaskId == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing swarming task ID")
 	}
 	if err := workerLaunched(c, req); err != nil {
@@ -47,62 +41,65 @@ func (*trackerServer) WorkerLaunched(c context.Context, req *admin.WorkerLaunche
 }
 
 func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
-	logging.Infof(c, "[tracker] Worker launched (run ID: %d, worker: %s, taskID: %s, IsolatedInput: %s)", req.RunId, req.Worker, req.TaskId, req.IsolatedInputHash)
-	_, analyzerKey, workerKey := createKeys(c, req.RunId, req.Worker)
-	logging.Infof(c, "[tracker] Looking up worker, key: %s", workerKey)
-	run := &track.Run{ID: req.RunId}
-	if err := ds.Get(c, run); err != nil {
-		return fmt.Errorf("failed to retrieve run entry (run ID: %d): %v", run.ID, err)
+	logging.Debugf(c, "[tracker] Worker launched (run ID: %d, worker: %s, taskID: %s, IsolatedInput: %s)", req.RunId, req.Worker, req.SwarmingTaskId, req.IsolatedInputHash)
+	// Compute needed keys.
+	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
+	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
+	analyzerName, err := track.ExtractAnalyzerName(req.Worker)
+	if err != nil {
+		return fmt.Errorf("failed to extract analyzer name: %v", err)
 	}
-	return ds.RunInTransaction(c, func(c context.Context) (err error) {
-		ops := []func() error{
-			// Notify reporter.
-			func() error {
-				switch run.Reporter {
-				case tricium.Reporter_GERRIT:
-					// TOOD(emso): push notification to the Gerrit reporter
-				default:
-					// Do nothing.
+	analyzerKey := ds.NewKey(c, "AnalyzerRun", analyzerName, 0, runKey)
+	workerKey := ds.NewKey(c, "WorkerRun", req.Worker, 0, analyzerKey)
+	ops := []func() error{
+		// Update worker state to launched.
+		func() error {
+			wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
+			if err := ds.Get(c, wr); err != nil {
+				return fmt.Errorf("failed to get WorkerRunResult: %v", err)
+			}
+			if wr.State == tricium.State_PENDING {
+				wr.State = tricium.State_RUNNING
+				wr.IsolatedInput = req.IsolatedInputHash
+				wr.SwarmingTaskID = req.SwarmingTaskId
+				if err := ds.Put(c, wr); err != nil {
+					return fmt.Errorf("failed to update WorkerRunResult: %v", err)
 				}
-				return nil
-			},
-			// Update worker state to launched.
-			func() error {
-				w := &track.WorkerInvocation{
-					ID:     workerKey.StringID(),
-					Parent: workerKey.Parent(),
+			} else {
+				logging.Warningf(c, "worker not in PENDING state when launched, run.ID: %d, worker: %s", req.RunId, req.Worker)
+			}
+			return nil
+		},
+		// Maybe update analyzer state to launched.
+		func() error {
+			ar := &track.AnalyzerRunResult{ID: 1, Parent: analyzerKey}
+			if err := ds.Get(c, ar); err != nil {
+				return fmt.Errorf("failed to get AnalyzerRunResult: %v", err)
+			}
+			if ar.State == tricium.State_PENDING {
+				ar.State = tricium.State_RUNNING
+				if err := ds.Put(c, ar); err != nil {
+					return fmt.Errorf("failed to update AnalyzerRunResult to launched: %v", err)
 				}
-				if err := ds.Get(c, w); err != nil {
-					return fmt.Errorf("failed to retrieve worker: %v", err)
-				}
-				w.State = tricium.State_RUNNING
-				w.IsolateServerURL = req.IsolateServerUrl
-				w.IsolatedInput = req.IsolatedInputHash
-				w.TaskID = req.TaskId
-				w.SwarmingURL = req.SwarmingServerUrl
-				if err := ds.Put(c, w); err != nil {
-					return fmt.Errorf("failed to mark worker as launched: %v", err)
-				}
-				return nil
-			},
-			// Maybe update analyzer state to launched.
-			func() error {
-				a := &track.AnalyzerInvocation{
-					ID:     analyzerKey.StringID(),
-					Parent: analyzerKey.Parent(),
-				}
-				if err := ds.Get(c, a); err != nil {
-					return fmt.Errorf("failed to retrieve analyzer: %v", err)
-				}
-				if a.State == tricium.State_PENDING {
-					a.State = tricium.State_RUNNING
-					if err := ds.Put(c, a); err != nil {
-						return fmt.Errorf("failed to mark analyzer as launched: %v", err)
-					}
-				}
-				return nil
-			},
-		}
+			}
+			return nil
+		},
+	}
+	if err := ds.RunInTransaction(c, func(c context.Context) (err error) {
 		return common.RunInParallel(ops)
-	}, nil)
+	}, nil); err != nil {
+		return nil
+	}
+	// Notify reporter.
+	request := &track.AnalyzeRequest{ID: req.RunId}
+	if err := ds.Get(c, request); err != nil {
+		return fmt.Errorf("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err)
+	}
+	switch request.Reporter {
+	case tricium.Reporter_GERRIT:
+		// TODO(emso): push notification to the Gerrit reporter
+	default:
+		// Do nothing.
+	}
+	return nil
 }

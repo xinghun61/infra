@@ -22,44 +22,45 @@ func TestWorkerLaunchedRequest(t *testing.T) {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
 
-		// Add pending run entry.
-		run := &track.Run{
-			State: tricium.State_PENDING,
-		}
-		err := ds.Put(ctx, run)
-		So(err, ShouldBeNil)
+		// Add pending workflow run entity.
+		request := &track.AnalyzeRequest{}
+		So(ds.Put(ctx, request), ShouldBeNil)
+		requestKey := ds.KeyForObj(ctx, request)
+		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
+		So(ds.Put(ctx, run), ShouldBeNil)
+		runKey := ds.KeyForObj(ctx, run)
+		So(ds.Put(ctx, &track.WorkflowRunResult{
+			ID:     1,
+			Parent: runKey,
+			State:  tricium.State_PENDING,
+		}), ShouldBeNil)
 
-		runID := run.ID
-
-		// Mark workflow as launched and add tracking entries for workers.
-		err = workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
-			RunId: runID,
+		// Mark workflow as launched and add tracking entities for workers.
+		err := workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
+			RunId: request.ID,
 		}, mockWorkflowProvider{})
 		So(err, ShouldBeNil)
 
 		// Mark worker as launched.
 		err = workerLaunched(ctx, &admin.WorkerLaunchedRequest{
-			RunId:  runID,
+			RunId:  request.ID,
 			Worker: fileIsolator,
 		})
 		So(err, ShouldBeNil)
 
 		Convey("Marks worker as launched", func() {
-			_, analyzerKey, workerKey := createKeys(ctx, runID, fileIsolator)
-			w := &track.WorkerInvocation{
-				ID:     workerKey.StringID(),
-				Parent: workerKey.Parent(),
-			}
-			err = ds.Get(ctx, w)
+			analyzerName, err := track.ExtractAnalyzerName(fileIsolator)
 			So(err, ShouldBeNil)
-			So(w.State, ShouldEqual, tricium.State_RUNNING)
-			a := &track.AnalyzerInvocation{
-				ID:     analyzerKey.StringID(),
-				Parent: analyzerKey.Parent(),
-			}
-			err = ds.Get(ctx, a)
+			analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
+			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, analyzerKey)
+			wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
+			err = ds.Get(ctx, wr)
 			So(err, ShouldBeNil)
-			So(a.State, ShouldEqual, tricium.State_RUNNING)
+			So(wr.State, ShouldEqual, tricium.State_RUNNING)
+			ar := &track.AnalyzerRunResult{ID: 1, Parent: analyzerKey}
+			err = ds.Get(ctx, ar)
+			So(err, ShouldBeNil)
+			So(ar.State, ShouldEqual, tricium.State_RUNNING)
 		})
 	})
 }
