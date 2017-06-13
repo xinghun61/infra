@@ -288,3 +288,6 @@ import:
 - package: github.com/fedesog/webdriver
   repo: https://chromium.googlesource.com/external/github.com/fedesog/webdriver.git
   version: master
+- package: github.com/aryann/difflib
+  repo: https://chromium.googlesource.com/external/github.com/aryann/difflib.git
+  version: master
