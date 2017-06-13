@@ -899,8 +899,8 @@ class SwarmingTest(BaseTest):
           'state': 'EXPIRED',
         },
         'status': model.BuildStatus.COMPLETED,
-        'result': model.BuildResult.FAILURE,
-        'failure_reason': model.FailureReason.INFRA_FAILURE,
+        'result': model.BuildResult.CANCELED,
+        'cancelation_reason': model.CancelationReason.TIMEOUT,
       },
       {
         'task_result': {
