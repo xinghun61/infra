@@ -25,7 +25,7 @@ func (s *dashboardService) UpdateOpenIncidents(ctx context.Context, req *dashpb.
 		return nil, grpc.Errorf(codes.InvalidArgument, "name field in ChopsService was empty")
 	}
 
-	incidentsByID := make(map[string]dashpb.Incident, len(req.ChopsService.Incidents))
+	incidentsByID := make(map[string]dashpb.ChopsIncident, len(req.ChopsService.Incidents))
 	for _, incident := range req.ChopsService.Incidents {
 		incidentsByID[incident.Id] = *incident
 	}

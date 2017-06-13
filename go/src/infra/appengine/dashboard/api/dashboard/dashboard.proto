@@ -21,10 +21,10 @@ message UpdateOpenIncidentsRequest {
 }
 
 message UpdateOpenIncidentsResponse {
-  repeated Incident open_incidents = 1;
+  repeated ChopsIncident open_incidents = 1;
 }
 
-message Incident {
+message ChopsIncident {
   string id = 1;
   bool open = 2;
   int64 start_time = 3;
@@ -34,6 +34,6 @@ message Incident {
 
 message ChopsService {
   string name = 1;
-  repeated Incident incidents = 2;
+  repeated ChopsIncident incidents = 2;
   string sla = 3;
 }
