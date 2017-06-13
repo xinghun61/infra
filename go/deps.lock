@@ -1,8 +1,8 @@
-hash: 7489caa8f65fa3c1caf5009452621ded11d17fc59fae52734fc92452b147731f
-updated: 2017-06-08T14:36:48.00998216+10:00
+hash: 13253e06afbdcca6c20790727e983873ec6a4823a7f557b54da15f3fc9c5f5b1
+updated: 2017-06-13T09:26:36.011225364-07:00
 imports:
 - name: cloud.google.com/go
-  version: 8cac5d779aae29f0d47135a42038d5d5b8d694f6
+  version: b4e9a381a01e953e880e6d2cf7fd02d412977cae
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -34,11 +34,14 @@ imports:
 - name: github.com/dustin/go-humanize
   version: 259d2a102b871d17f30e3cd9881a642961a1e486
   repo: https://chromium.googlesource.com/external/github.com/dustin/go-humanize.git
+- name: github.com/fedesog/webdriver
+  version: 6f14c445a22cbbd7a136733ac3bc0e91b97cd97a
+  repo: https://chromium.googlesource.com/external/github.com/fedesog/webdriver.git
 - name: github.com/go-ole/go-ole
   version: 02d3668a0cf01f58411cc85cd37c174c257ec7c2
   repo: https://chromium.googlesource.com/external/github.com/go-ole/go-ole.git
 - name: github.com/go-sql-driver/mysql
-  version: e3f0fdcf52770a162d5a4540ddb8d9957ff456d1
+  version: a825be04c652d01442384e9dcdf2cdc3f1eda67f
   repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
 - name: github.com/golang/lint
   version: c5fb716d6688a859aae56d26d3e6070808df29f7
@@ -58,10 +61,10 @@ imports:
   subpackages:
   - query
 - name: github.com/googleapis/gax-go
-  version: 9af46dd5a1713e8b5cd71106287eba3cefdde50b
+  version: 84ed26760e7f6f80887a2fbfb50db3cc415d2cea
   repo: https://chromium.googlesource.com/external/github.com/googleapis/gax-go.git
 - name: github.com/gopherjs/gopherjs
-  version: 7cde3d36aea3e1b3be7827c4dcbe6bbae73d012e
+  version: dc374d32704510cb387457180ca9d5193978b555
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
   subpackages:
   - js
@@ -199,7 +202,7 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: 59a0b19b5533c7977ddeb86b017bf507ed407b12
+  version: dfe83d419c9403b40b19d08cdba2afec27b002f7
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -216,15 +219,15 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: b9e8d468b01f806830d387bd9a1fe96dc68129d1
+  version: 0b25a408a50076fbbcae6b7ac0ea5fbb0b085e79
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - windows
 - name: golang.org/x/text
-  version: ab6d1c143672de99b9dfde433b7f6affb278cc74
+  version: 3491b61b9edc56653ad4333e605e2908e46a036b
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 2a3bccfb1bf676aea1cfefb8eae1c7f4c566d22d
+  version: 011098bb9222df9796d1d4c85a8772f0bf39d741
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -237,7 +240,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 6c19dbe22b093b1af49977109ab4c13274e7fcd8
+  version: 324744a33f1f37e63dd1695cfb3ec9a3e4a1cb05
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -270,7 +273,7 @@ imports:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: 06c984861f3044e61f84671f9fe660da0fdf4997
+  version: a94a7ac054dc76e5ab6cf170a9d82faba8aaf33f
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes

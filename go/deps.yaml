@@ -285,3 +285,6 @@ import:
 - package: github.com/gorilla/context
   repo: https://github.com/gorilla/context
   version: v1.1
+- package: github.com/fedesog/webdriver
+  repo: https://chromium.googlesource.com/external/github.com/fedesog/webdriver.git
+  version: master
