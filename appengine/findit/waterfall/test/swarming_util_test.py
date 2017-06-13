@@ -1273,7 +1273,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch('waterfall.swarming_util.OnlyAvailable',
               return_value=[])
   @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
-  def testAssignWarmCacheHostBrandNewCache(self, *_):
+  def disabled_testAssignWarmCacheHostBrandNewCache(
+      self, *_):  # pragma: no cover.
     cache_name = 'cache_name'
     tryjob = MockTryJob()
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
