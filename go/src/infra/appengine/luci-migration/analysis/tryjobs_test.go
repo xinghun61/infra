@@ -18,6 +18,7 @@ import (
 	"github.com/luci/luci-go/common/clock/testclock"
 
 	"infra/appengine/luci-migration/bbutil"
+	"infra/appengine/luci-migration/bbutil/buildset"
 	"infra/appengine/luci-migration/storage"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -73,9 +74,13 @@ func TestAnalyze(t *testing.T) {
 		So(err, ShouldBeNil)
 		bbService.BasePath = bbServer.URL
 
+		psAbsent := false
 		tryjobs := &Tryjobs{
 			Buildbucket: bbService,
 			MaxBuildAge: time.Hour * 24 * 7,
+			patchSetAbsent: func(context.Context, *http.Client, *buildset.BuildSet) (bool, error) {
+				return psAbsent, nil
+			},
 		}
 
 		buildbotBuilder := BucketBuilder{Bucket: "master.tryserver.chromium.linux", Builder: "linux_chromium_rel_ng"}
@@ -131,6 +136,27 @@ func TestAnalyze(t *testing.T) {
 			So(mig.Correctness, ShouldAlmostEqual, 1.0)
 		})
 
+		Convey("Ignores Rietveld patchsets that don't exist", func() {
+			psAbsent = true
+
+			const buildSetPrefix = "patch/rietveld/rietveld.example.com/1/"
+
+			luciSearchResults = []*buildbucket.ApiCommonBuildMessage{
+				build(buildSetPrefix+"1", time.Hour, failure),
+
+				build(buildSetPrefix+"2", time.Hour, failure),
+				build(buildSetPrefix+"2", time.Hour, success),
+
+				build(buildSetPrefix+"3", time.Hour, success),
+				build(buildSetPrefix+"3", time.Hour, success),
+			}
+			mockBuildbotBuilds(buildSetPrefix+"1", time.Hour, failure)
+			mockBuildbotBuilds(buildSetPrefix+"2", time.Hour, failure, success)
+			mockBuildbotBuilds(buildSetPrefix+"3", time.Hour, failure, success)
+			mig := analyze()
+			So(mig.Status, ShouldEqual, storage.StatusInsufficientData)
+		})
+
 		Convey("fetch", func() {
 			luciSearchResults = []*buildbucket.ApiCommonBuildMessage{
 				build("set1", 10*time.Minute, failure),
@@ -152,6 +178,9 @@ func TestAnalyze(t *testing.T) {
 				LUCI:        luciBuilder,
 				Buildbot:    buildbotBuilder,
 				MaxGroups:   DefaultMaxGroups,
+				patchSetAbsent: func(context.Context, *http.Client, *buildset.BuildSet) (bool, error) {
+					return false, nil
+				},
 			}
 			groups, err := f.Fetch(c)
 			So(err, ShouldBeNil)

@@ -6,7 +6,6 @@
 package bbutil
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -87,20 +86,5 @@ func Builder(b *buildbucket.ApiCommonBuildMessage) string {
 			return v
 		}
 	}
-	return ""
-}
-
-// BuildSetURL converts a buildSet to a URL, if possible. Otherwise returns "".
-func BuildSetURL(buildSet string) string {
-	parts := strings.Split(buildSet, "/")
-	if len(parts) >= 5 && parts[0] == "patch" {
-		switch parts[1] {
-		case "rietveld":
-			return fmt.Sprintf("https://%s/%s/#ps%s", parts[2], parts[3], parts[4])
-		case "gerrit":
-			return fmt.Sprintf("https://%s/c/%s/%s", parts[2], parts[3], parts[4])
-		}
-	}
-
 	return ""
 }

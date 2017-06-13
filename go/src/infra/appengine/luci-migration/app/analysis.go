@@ -90,6 +90,7 @@ func handleAnalyzeBuilder(c *router.Context) error {
 	logging.Infof(c.Context, "analyzing %q", &builder.ID)
 	started := clock.Now(c.Context)
 	tryjobs := analysis.Tryjobs{
+		HTTP:                 httpClient,
 		Buildbucket:          bb,
 		MaxGroups:            analysis.DefaultMaxGroups,
 		MinTrustworthyGroups: analysis.DefaultMaxGroups / 2,

@@ -7,6 +7,7 @@ package analysis
 
 import (
 	"bytes"
+	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -20,6 +21,7 @@ import (
 	"github.com/luci/luci-go/common/sync/parallel"
 
 	"infra/appengine/luci-migration/bbutil"
+	"infra/appengine/luci-migration/bbutil/buildset"
 	"infra/appengine/luci-migration/storage"
 )
 
@@ -39,6 +41,7 @@ func (b BucketBuilder) String() string {
 
 // Tryjobs compares LUCI and Buildbot tryjobs.
 type Tryjobs struct {
+	HTTP                 *http.Client
 	Buildbucket          *buildbucket.Service
 	MinTrustworthyGroups int // minimum number of build groups to analyze correctness
 
@@ -49,6 +52,9 @@ type Tryjobs struct {
 	MaxGroups int
 	// MaxBuildAge, if >0, is the maximum age of builds to consider.
 	MaxBuildAge time.Duration
+
+	// mocked in tests
+	patchSetAbsent patchSetAbsenceChecker
 }
 
 // Analyze compares buildbot and LUCI tryjobs.
@@ -71,10 +77,12 @@ func (t *Tryjobs) analyze(c context.Context, buildbotBuilder, luciBuilder Bucket
 	logging.Infof(c, "comparing %q to %q", luciBuilder, buildbotBuilder)
 
 	f := fetcher{
-		Buildbucket: t.Buildbucket,
-		LUCI:        luciBuilder,
-		Buildbot:    buildbotBuilder,
-		MaxGroups:   t.MaxGroups,
+		HTTP:           t.HTTP,
+		Buildbucket:    t.Buildbucket,
+		LUCI:           luciBuilder,
+		Buildbot:       buildbotBuilder,
+		MaxGroups:      t.MaxGroups,
+		patchSetAbsent: t.patchSetAbsent,
 	}
 	if f.MaxGroups <= 0 {
 		f.MaxGroups = DefaultMaxGroups
@@ -94,10 +102,14 @@ func (t *Tryjobs) analyze(c context.Context, buildbotBuilder, luciBuilder Bucket
 }
 
 type fetcher struct {
+	HTTP            *http.Client
 	Buildbucket     *buildbucket.Service
 	MaxGroups       int
 	Buildbot, LUCI  BucketBuilder
 	MinCreationDate time.Time
+
+	// mocked in tests
+	patchSetAbsent patchSetAbsenceChecker
 }
 
 // fetchGroup is an intermediate representation of a group.
@@ -163,6 +175,7 @@ func (f *fetcher) Fetch(c context.Context) ([]*group, error) {
 }
 
 // fetchLUCIBuilds fetches completed LUCI builds until c is cancelled.
+// Ignores builds for non-existing patchsets.
 func (f *fetcher) fetchLUCIBuilds(c context.Context, builds buildChan) error {
 	req := f.Buildbucket.Search()
 	req.Bucket(f.LUCI.Bucket)
@@ -171,7 +184,45 @@ func (f *fetcher) fetchLUCIBuilds(c context.Context, builds buildChan) error {
 	if cap(builds) > 0 {
 		req.MaxBuilds(int64(cap(builds)))
 	}
-	return bbutil.Search(c, req, f.MinCreationDate, builds)
+
+	foundBuilds := make(buildChan, cap(builds))
+	var searchErr error
+	go func() {
+		defer close(foundBuilds)
+		searchErr = bbutil.Search(c, req, f.MinCreationDate, foundBuilds)
+	}()
+
+	// check that Rietveld patchsets still exist.
+	psAbsent := f.patchSetAbsent
+	if psAbsent == nil {
+		psAbsent = patchSetAbsent // real one
+	}
+	absentCache := make(map[string]bool, f.MaxGroups*2)
+	for b := range foundBuilds {
+		bs := bbutil.BuildSet(b)
+		absent, ok := absentCache[bs]
+		if !ok {
+			// Serialize all requests to Rietveld b/c
+			// 1) This code is much simpler this way
+			// 2) We don't want to hammer Rietveld too much
+			// 3) The channel of builds is buffered, so underlying fetching
+			//    of LUCI builds and following fetching of Buildbot builds
+			//    won't be entirely blocked.
+			var err error
+			absent, err = psAbsent(c, f.HTTP, buildset.Parse(bs))
+			if err != nil {
+				return err
+			}
+			absentCache[bs] = absent
+		}
+		if absent {
+			logging.Debugf(c, "skipped build %d: patchset %s does not exist", b.Id, bs)
+		} else {
+			builds <- b
+		}
+	}
+
+	return searchErr
 }
 
 // joinBuilds listens to luciBuilds channel and for each buildset fetches
@@ -205,7 +256,7 @@ func (f *fetcher) joinBuilds(c context.Context, luciBuilds buildChan, stop func(
 			if g == nil {
 				g = &fetchGroup{}
 				g.Key = buildSet
-				g.KeyURL = bbutil.BuildSetURL(buildSet)
+				g.KeyURL = buildset.Parse(buildSet).URL()
 				groups[buildSet] = g
 				result = append(result, &g.group)
 

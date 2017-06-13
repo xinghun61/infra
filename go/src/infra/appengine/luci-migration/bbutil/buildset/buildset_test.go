@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package bbutil
+package buildset
 
 import (
 	"testing"
@@ -13,17 +13,17 @@ import (
 func TestBBUtil(t *testing.T) {
 	t.Parallel()
 
-	Convey("BBUtil", t, func() {
+	Convey("BuildSet", t, func() {
 		So(
-			BuildSetURL("patch/rietveld/codereview.chromium.org/2841003002/1"),
+			Parse("patch/rietveld/codereview.chromium.org/2841003002/1").URL(),
 			ShouldEqual,
 			"https://codereview.chromium.org/2841003002/#ps1",
 		)
 		So(
-			BuildSetURL("patch/gerrit/chromium-review.googlesource.com/1/2"),
+			Parse("patch/gerrit/chromium-review.googlesource.com/1/2").URL(),
 			ShouldEqual,
 			"https://chromium-review.googlesource.com/c/1/2",
 		)
-		So(BuildSetURL("trash"), ShouldEqual, "")
+		So(Parse("trash").URL(), ShouldEqual, "")
 	})
 }
