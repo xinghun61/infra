@@ -279,3 +279,9 @@ import:
   subpackages:
   - client
   - api/types
+- package: github.com/gorilla/mux
+  repo: https://github.com/gorilla/mux
+  version: v1.3.0
+- package: github.com/gorilla/context
+  repo: https://github.com/gorilla/context
+  version: v1.1
