@@ -112,6 +112,23 @@ class GerritAgentTestCase(unittest.TestCase):
         read_only=True)
 
   @mock.patch.object(requests.Session, 'request')
+  def test_with_timeout(self, mock_request):
+    mock_request.return_value = _create_mock_return(
+        '%s[]' % GERRIT_JSON_HEADER, 200)
+    g = gerrit_api.Gerrit('chromium-review.googlesource.com',
+                          gerrit_api.Credentials(auth=MOCK_AUTH),
+                          timeout=(1, 2))
+    g._request(method='GET', request_path='/self')
+    mock_request.assert_called_once_with(
+        data=None,
+        method='GET',
+        params=None,
+        url='https://chromium-review.googlesource.com/a/self',
+        headers=HEADERS,
+        hooks=g._instrumentation_hooks,
+        timeout=(1, 2))
+
+  @mock.patch.object(requests.Session, 'request')
   def test_request_no_leading_slash(self, mock_method):
     mock_method.return_value = _create_mock_return(
         '%s[]' % GERRIT_JSON_HEADER, 200)
@@ -124,7 +141,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/changes/'
              '?q=query:no_results'),
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     self.assertEqual(result, (200, []))
 
   @mock.patch.object(gerrit_api.Gerrit, '_sleep')
@@ -157,7 +175,8 @@ class GerritAgentTestCase(unittest.TestCase):
         params=None,
         url='https://chromium-review.googlesource.com/a/accounts/self',
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     expected_result = {
         '_account_id': 1000096,
         'name': 'John Doe',
@@ -177,7 +196,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com'
              '/a/accounts/does.not%40exist.com'),
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     self.assertEqual(result, None)
 
   @mock.patch.object(requests.Session, 'request')
@@ -200,7 +220,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/groups/'
              'test-group/members'),
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     expected_result = [{
         '_account_id': 1000057,
         'name': 'Jane Roe',
@@ -234,7 +255,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/groups/'
              'test-group/members.add'),
         headers=HEADERS_WITH_CONTENT_TYPE,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     expected_result = [{
         '_account_id': 1000057,
         'name': 'Jane Roe',
@@ -273,7 +295,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/groups/'
              'test-group/members.delete'),
         headers=HEADERS_WITH_CONTENT_TYPE,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     expected_result = [{
         '_account_id': 1000057,
         'name': 'Jane Roe',
@@ -313,7 +336,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/projects/'
              'project/parent'),
         headers=HEADERS_WITH_CONTENT_TYPE,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     self.assertEqual(result, 'parent')
 
   @mock.patch.object(requests.Session, 'request')
@@ -335,7 +359,8 @@ class GerritAgentTestCase(unittest.TestCase):
         params={'q':'project:test owner:test@chromium.org', 'o': ['MESSAGES']},
         url='https://chromium-review.googlesource.com/a/changes/',
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     self.assertEquals(result, [TEST_CHANGE_INFO])
 
   @mock.patch.object(requests.Session, 'request')
@@ -351,7 +376,8 @@ class GerritAgentTestCase(unittest.TestCase):
                 'o': ['CURRENT_REVISION', 'LABELS', 'MESSAGES']},
         url='https://chromium-review.googlesource.com/a/changes/',
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     self.assertEquals(result, [TEST_CHANGE_INFO])
 
   @mock.patch.object(requests.Session, 'request')
@@ -377,7 +403,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/changes/'
              'test%2Fproject~weird%2Fbranch~hash/detail'),
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     self.assertEquals(result, info_without_revisions)
 
   @mock.patch.object(requests.Session, 'request')
@@ -407,7 +434,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/changes/'
              'test%2Fproject~weird%2Fbranch~hash/detail'),
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     self.assertEquals(result, info_with_files)
 
   @mock.patch.object(requests.Session, 'request')
@@ -427,7 +455,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/changes/'
              'test%2Fproject~weird%2Fbranch~hash/detail'),
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     self.assertEquals(result, info_without_revisions)
 
 
@@ -459,7 +488,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/changes/'
              'test%2Fproject~weird%2Fbranch~hash/detail'),
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     self.assertEquals(result, info)
 
   @mock.patch.object(requests.Session, 'request')
@@ -475,7 +505,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/changes/'
              'test%2Fproject~weird%2Fbranch~hash/detail'),
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     self.assertEquals(result, TEST_CHANGE_INFO)
 
   @mock.patch.object(requests.Session, 'request')
@@ -489,7 +520,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/changes/'
              'unknown~branch~hash/detail'),
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     self.assertEquals(result, None)
 
   @mock.patch.object(requests.Session, 'request')
@@ -514,7 +546,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/changes/'
              'change_id/revisions/revision_id/review'),
         headers=HEADERS_WITH_CONTENT_TYPE,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
 
   @mock.patch.object(requests.Session, 'request')
   def test_set_review_only_label(self, mock_method):
@@ -530,7 +563,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/changes/'
              'change_id/revisions/revision_id/review'),
         headers=HEADERS_WITH_CONTENT_TYPE,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
 
   @mock.patch.object(requests.Session, 'request')
   def test_set_review_unexpected_response(self, mock_method):
@@ -551,7 +585,8 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/changes/'
              'change_id/revisions/current_revision_id/submit'),
         headers=HEADERS_WITH_CONTENT_TYPE,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
 
   @mock.patch.object(requests.Session, 'request')
   def test_submit_revision_revision_conflict(self, mock_method):
@@ -580,6 +615,7 @@ class GerritAgentTestCase(unittest.TestCase):
         url=('https://chromium-review.googlesource.com/a/changes/'
              'change_id/revisions/revision_id/related'),
         headers=HEADERS,
-        hooks=self.gerrit._instrumentation_hooks)
+        hooks=self.gerrit._instrumentation_hooks,
+        timeout=None)
     with self.assertRaises(gerrit_api.UnexpectedResponseException):
       self.gerrit.get_related_changes('change_id', 'revision_id')

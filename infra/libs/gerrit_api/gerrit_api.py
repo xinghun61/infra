@@ -66,15 +66,21 @@ class Gerrit(object):
     creds (Credentials): provides credentials for the Gerrit host.
     throttle_delay_sec (int): minimal time delay between two requests, to
       avoid hammering the Gerrit server.
+    read_only (bool): if True, mutating methods will raise
+      AccessViolationException.
+    timeout (float or tuple of floats): passed as is to requests library.
+      None by default, which means block forever.
   """
 
-  def __init__(self, host, creds, throttle_delay_sec=0, read_only=False):
+  def __init__(self, host, creds, throttle_delay_sec=0, read_only=False,
+               timeout=None):
     self._auth_header = 'Basic %s' % (
         base64.b64encode('%s:%s' % creds[host]))
     self._url_base = 'https://%s/a' % host.rstrip('/')
     self._throttle = throttle_delay_sec
     self._read_only = read_only
     self._last_call_ts = None
+    self._timeout = timeout
     self.session = requests.Session()
     # Do not use cookies with Gerrit. This breaks interaction with Google's
     # Gerrit instances. Do not use cookies as advised by the Gerrit team.
@@ -135,7 +141,8 @@ class Gerrit(object):
         params=params,
         data=body,
         headers=headers,
-        hooks=self._instrumentation_hooks)
+        hooks=self._instrumentation_hooks,
+        timeout=self._timeout)
 
     # Gerrit prepends )]}' to response.
     prefix = ')]}\'\n'
