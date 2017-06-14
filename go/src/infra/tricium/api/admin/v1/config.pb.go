@@ -9,6 +9,7 @@ It is generated from these files:
 	infra/tricium/api/admin/v1/config.proto
 	infra/tricium/api/admin/v1/driver.proto
 	infra/tricium/api/admin/v1/launcher.proto
+	infra/tricium/api/admin/v1/reporter.proto
 	infra/tricium/api/admin/v1/tracker.proto
 	infra/tricium/api/admin/v1/workflow.proto
 
@@ -23,6 +24,12 @@ It has these top-level messages:
 	CollectResponse
 	LaunchRequest
 	LaunchResponse
+	ReportLaunchedRequest
+	ReportLaunchedResponse
+	ReportCompletedRequest
+	ReportCompletedResponse
+	ReportResultsRequest
+	ReportResultsResponse
 	WorkflowLaunchedRequest
 	WorkflowLaunchedResponse
 	WorkerLaunchedRequest

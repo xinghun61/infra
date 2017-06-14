@@ -68,14 +68,14 @@ type AnalyzeRequest struct {
 	Received time.Time
 	// The project of the request.
 	Project string
-	// Reporter to use for progress updates and results.
-	Reporter tricium.Reporter
 	// File paths listed in the request.
 	Paths []string `gae:",noindex"`
 	// Git repository hosting files in the request.
 	GitRepo string `gae:",noindex"`
 	// Git ref to use in the Git repo.
 	GitRef string `gae:",noindex"`
+	// Reporter to use for progress updates and results.
+	Reporter tricium.Reporter
 }
 
 // AnalyzeRequestResult tracks the state of a tricium.Analyze request.
@@ -117,6 +117,11 @@ type WorkflowRunResult struct {
 	//
 	// This state is an aggregation of the run state of triggered analyzers.
 	State tricium.State
+	// Number of comments produced for this analyzer.
+	// If results were merged, then this is the merged number of results.
+	NumComments int
+	// If the results for this analyzer were merged.
+	HasMergedResults bool
 }
 
 // AnalyzerRun declares a request to execute an analyzer.
@@ -147,6 +152,14 @@ type AnalyzerRunResult struct {
 	//
 	// This state is an aggregation of the run state of triggered analyzer workers.
 	State tricium.State
+
+	// Number of comments produced for this analyzer.
+	//
+	// If results were merged, then this is the merged number of results.
+	NumComments int
+
+	// If the results for this analyzer were merged.
+	HasMergedResults bool
 }
 
 // WorkerRun declare a request to execute an analyzer worker.

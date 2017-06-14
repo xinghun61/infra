@@ -19,6 +19,8 @@ import (
 	"infra/tricium/appengine/common"
 )
 
+// TODO(emso): rename package to triciumtest
+
 // Testing is a high-level testing object.
 type Testing struct {
 }

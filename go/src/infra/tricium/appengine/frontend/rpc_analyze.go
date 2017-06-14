@@ -76,10 +76,10 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	request := &track.AnalyzeRequest{
 		Received: clock.Now(c).UTC(),
 		Project:  req.Project,
-		Reporter: req.Reporter,
 		Paths:    req.Paths,
 		GitRepo:  repo,
 		GitRef:   req.GitRef,
+		Reporter: req.Reporter,
 	}
 	requestRes := &track.AnalyzeRequestResult{
 		ID:    1,

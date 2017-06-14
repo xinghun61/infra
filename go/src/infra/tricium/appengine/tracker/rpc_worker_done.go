@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
 	ds "github.com/luci/gae/service/datastore"
+	tq "github.com/luci/gae/service/taskqueue"
 	"github.com/luci/luci-go/common/logging"
 
 	"golang.org/x/net/context"
@@ -224,7 +226,31 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	}
 	switch request.Reporter {
 	case tricium.Reporter_GERRIT:
-		// TOOD(emso): push notification to the Gerrit reporter
+		if tricium.IsDone(analyzerState) {
+			b, err := proto.Marshal(&admin.ReportResultsRequest{
+				RunId:    req.RunId,
+				Analyzer: analyzer.ID,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to encode ReportResults request: %v", err)
+			}
+			t := tq.NewPOSTTask("/gerrit-reporter/internal/results", nil)
+			t.Payload = b
+			if err = tq.Add(c, common.GerritReporterQueue, t); err != nil {
+				return fmt.Errorf("failed to enqueue reporter results request: %v", err)
+			}
+		}
+		if tricium.IsDone(runState) {
+			b, err := proto.Marshal(&admin.ReportCompletedRequest{RunId: req.RunId})
+			if err != nil {
+				return fmt.Errorf("failed to encode ReportCompleted request: %v", err)
+			}
+			t := tq.NewPOSTTask("/gerrit-reporter/internal/completed", nil)
+			t.Payload = b
+			if err = tq.Add(c, common.GerritReporterQueue, t); err != nil {
+				return fmt.Errorf("failed to enqueue reporter complete request: %v", err)
+			}
+		}
 	default:
 		// Do nothing.
 	}

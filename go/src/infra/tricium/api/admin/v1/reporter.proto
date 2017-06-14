@@ -1,0 +1,42 @@
+// Copyright 2017 The Chromium Authors. All rights reserved. Use of this source
+// code is governed by a BSD-style license that can be found in the LICENSE
+// file.
+
+syntax = "proto3";
+
+package admin;
+
+// Reporter implements the internal reporter API.
+service Reporter {
+
+  // ReportLaunch reports that Tricium has launched a workflow.
+  rpc ReportLaunched(ReportLaunchedRequest) returns (ReportLaunchedResponse);
+
+  // ReportCompleted reports that a Tricium workflow has completed.
+  rpc ReportCompleted(ReportCompletedRequest) returns (ReportCompletedResponse);
+
+  // ReportResults reports Tricium results.
+  rpc ReportResults(ReportResultsRequest) returns (ReportResultsResponse);
+}
+
+message ReportLaunchedRequest {
+  int64 run_id = 1;
+}
+
+message ReportLaunchedResponse {
+}
+
+message ReportCompletedRequest {
+  int64 run_id = 1;
+}
+
+message ReportCompletedResponse {
+}
+
+message ReportResultsRequest {
+  int64 run_id = 1;
+  string analyzer = 2;
+}
+
+message ReportResultsResponse {
+}

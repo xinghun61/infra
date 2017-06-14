@@ -29,7 +29,7 @@ type Workflow struct {
 func (m *Workflow) Reset()                    { *m = Workflow{} }
 func (m *Workflow) String() string            { return proto.CompactTextString(m) }
 func (*Workflow) ProtoMessage()               {}
-func (*Workflow) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{0} }
+func (*Workflow) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{0} }
 
 func (m *Workflow) GetServiceAccount() string {
 	if m != nil {
@@ -93,7 +93,7 @@ type Worker struct {
 func (m *Worker) Reset()                    { *m = Worker{} }
 func (m *Worker) String() string            { return proto.CompactTextString(m) }
 func (*Worker) ProtoMessage()               {}
-func (*Worker) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{1} }
+func (*Worker) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{1} }
 
 func (m *Worker) GetName() string {
 	if m != nil {
@@ -177,9 +177,9 @@ func init() {
 	proto.RegisterType((*Worker)(nil), "admin.Worker")
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/admin/v1/workflow.proto", fileDescriptor4) }
+func init() { proto.RegisterFile("infra/tricium/api/admin/v1/workflow.proto", fileDescriptor5) }
 
-var fileDescriptor4 = []byte{
+var fileDescriptor5 = []byte{
 	// 442 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x92, 0x3f, 0x6f, 0xdb, 0x30,
 	0x10, 0xc5, 0xa1, 0x2a, 0x76, 0x9c, 0x73, 0xec, 0x04, 0xec, 0x1f, 0x08, 0x1e, 0x52, 0x35, 0x45,

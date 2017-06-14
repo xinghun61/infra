@@ -7,7 +7,9 @@ package tracker
 import (
 	"fmt"
 
+	"github.com/golang/protobuf/proto"
 	ds "github.com/luci/gae/service/datastore"
+	tq "github.com/luci/gae/service/taskqueue"
 	"github.com/luci/luci-go/common/logging"
 
 	"golang.org/x/net/context"
@@ -130,7 +132,13 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 	}
 	switch request.Reporter {
 	case tricium.Reporter_GERRIT:
-		// TOOD(emso): push notification to the Gerrit reporter
+		b, err := proto.Marshal(&admin.ReportLaunchedRequest{RunId: req.RunId})
+		if err != nil {
+			return fmt.Errorf("failed to encode report launched request: %v", err)
+		}
+		t := tq.NewPOSTTask("/gerrit-reporter/internal/launched", nil)
+		t.Payload = b
+		return tq.Add(c, common.GerritReporterQueue, t)
 	default:
 		// Do nothing.
 	}

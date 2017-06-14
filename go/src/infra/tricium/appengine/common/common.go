@@ -37,11 +37,14 @@ const (
 	// LauncherQueue specifies the name of the launcher task queue.
 	LauncherQueue = "launcher-queue"
 
-	// DriverQueue specified the name of the driver task queue.
+	// DriverQueue specifies the name of the driver task queue.
 	DriverQueue = "driver-queue"
 
-	// TrackerQueue specified the name of the tracker task queue.
+	// TrackerQueue specifies the name of the tracker task queue.
 	TrackerQueue = "tracker-queue"
+
+	// GerritReporterQueue specifies the name of the Gerrit reporter task queue.
+	GerritReporterQueue = "gerrit-reporter-queue"
 )
 
 // TODO(emso): Use string IDs every where and use a ID translation scheme between
