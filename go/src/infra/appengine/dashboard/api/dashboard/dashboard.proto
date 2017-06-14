@@ -9,6 +9,7 @@ package dashboard;
 // The ChromeOps statuses service definition.
 service ChopsServiceStatus {
   rpc UpdateOpenIncidents (UpdateOpenIncidentsRequest) returns (UpdateOpenIncidentsResponse) {}
+  rpc GetAllServicesData (GetAllServicesDataRequest) returns (GetAllServicesDataResponse){}
 }
 
 enum Severity {
@@ -22,6 +23,17 @@ message UpdateOpenIncidentsRequest {
 
 message UpdateOpenIncidentsResponse {
   repeated ChopsIncident open_incidents = 1;
+}
+
+message GetAllServicesDataRequest {
+  // A unix timestamp to indicate the upper limit of the seven-day query range.
+  // A value of 0 indicates interest in incidents that occurred in the last 7 days.
+  int64 upto_time = 1;
+}
+
+message GetAllServicesDataResponse {
+  repeated ChopsService services = 1;
+  repeated ChopsService nonsla_services = 2;
 }
 
 message ChopsIncident {

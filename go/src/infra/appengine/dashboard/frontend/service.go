@@ -7,6 +7,7 @@ package dashboard
 import (
 	dashpb "infra/appengine/dashboard/api/dashboard"
 	"infra/appengine/dashboard/backend"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -18,7 +19,7 @@ type dashboardService struct{}
 
 func (s *dashboardService) UpdateOpenIncidents(ctx context.Context, req *dashpb.UpdateOpenIncidentsRequest) (*dashpb.UpdateOpenIncidentsResponse, error) {
 	if req.ChopsService == nil {
-		return nil, grpc.Errorf(codes.InvalidArgument, "chopsService field was empty")
+		return nil, grpc.Errorf(codes.InvalidArgument, "ChopsService field was empty")
 	}
 	serviceName := req.ChopsService.Name
 	if serviceName == "" {
@@ -53,5 +54,35 @@ func (s *dashboardService) UpdateOpenIncidents(ctx context.Context, req *dashpb.
 
 	return &dashpb.UpdateOpenIncidentsResponse{
 		OpenIncidents: req.ChopsService.Incidents,
+	}, nil
+}
+
+func (s *dashboardService) GetAllServicesData(ctx context.Context, req *dashpb.GetAllServicesDataRequest) (*dashpb.GetAllServicesDataResponse, error) {
+	// Parse UptoTime field
+	var lastDate time.Time
+	if req.UptoTime == 0 {
+		lastDate = time.Now()
+	} else {
+		lastDate = time.Unix(req.UptoTime, 0)
+	}
+	firstDate := lastDate.AddDate(0, 0, -6)
+
+	slaTemplateService, nonSLATemplateService, err := createServicesPageData(ctx, firstDate, lastDate)
+	if err != nil {
+		return nil, grpc.Errorf(codes.Internal, "error collecting data from datastore - %s", err)
+	}
+	chopsServices := make([]*dashpb.ChopsService, len(slaTemplateService))
+	for i, templateService := range slaTemplateService {
+		chopsServices[i] = ConvertToChopsService(&templateService.Service, templateService.Incidents)
+	}
+
+	nonSLAChopsServices := make([]*dashpb.ChopsService, len(nonSLATemplateService))
+	for i, templateService := range nonSLATemplateService {
+		nonSLAChopsServices[i] = ConvertToChopsService(&templateService.Service, templateService.Incidents)
+	}
+
+	return &dashpb.GetAllServicesDataResponse{
+		Services:       chopsServices,
+		NonslaServices: nonSLAChopsServices,
 	}, nil
 }

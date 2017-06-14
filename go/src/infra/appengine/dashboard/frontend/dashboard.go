@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
 	"github.com/luci/luci-go/common/logging"
@@ -21,7 +19,6 @@ import (
 	"github.com/luci/luci-go/server/templates"
 
 	dashpb "infra/appengine/dashboard/api/dashboard"
-	"infra/appengine/dashboard/backend"
 )
 
 var templateBundle = &templates.Bundle{
@@ -50,49 +47,6 @@ func init() {
 	dashpb.RegisterChopsServiceStatusServer(&api, &dashboardService{})
 	discovery.Enable(&api)
 	api.InstallHandlers(r, gaemiddleware.BaseProd())
-}
-
-// TemplateService bundles a backend.Service with its backend.ServiceIncident children.
-type TemplateService struct {
-	Service   backend.Service
-	Incidents []backend.ServiceIncident
-}
-
-func createServicesPageData(c context.Context, after time.Time, before time.Time) (sla []TemplateService, nonSLA []TemplateService, err error) {
-	services, e := backend.GetAllServices(c)
-	if e != nil {
-		logging.Errorf(c, "error getting Service entities %s", e)
-		return nil, nil, e
-	}
-
-	for _, service := range services {
-		closedQueryOpts := &backend.QueryOptions{
-			After:  after,
-			Before: before,
-			Status: backend.IncidentStatusClosed,
-		}
-		closedIncidents, e := backend.GetServiceIncidents(c, service.ID, closedQueryOpts)
-		if err != nil {
-			logging.Errorf(c, "error getting ServiceIncident entities %s", e)
-			return nil, nil, e
-		}
-		openQueryOpts := &backend.QueryOptions{
-			Status: backend.IncidentStatusOpen,
-		}
-		openIncidents, e := backend.GetServiceIncidents(c, service.ID, openQueryOpts)
-		if err != nil {
-			logging.Errorf(c, "error getting ServiceIncident entities %s", e)
-			return nil, nil, e
-		}
-		templateService := TemplateService{service, append(openIncidents, closedIncidents...)}
-		if service.SLA == "" {
-			nonSLA = append(nonSLA, templateService)
-		} else {
-			sla = append(sla, templateService)
-		}
-	}
-	return
-
 }
 
 func dashboard(ctx *router.Context) {
