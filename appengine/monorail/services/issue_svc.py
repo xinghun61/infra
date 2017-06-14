@@ -1040,7 +1040,7 @@ class IssueService(object):
       blocked_on_remove=None, blocking_add=None, blocking_remove=None,
       merged_into=None, index_now=False, comment=None, summary=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
-      timestamp=None):
+      is_description=False, timestamp=None):
     """Update the issue in the database and return a set of update tuples.
 
     Args:
@@ -1074,6 +1074,7 @@ class IssueService(object):
       rules: optional list of preloaded FilterRule PBs for this project.
       predicate_asts: optional list of QueryASTs for the rules.  If rules are
           provided, then predicate_asts should also be provided.
+      is_description: True if the comment is a new description for the issue.
       timestamp: int timestamp set during testing, otherwise defaults to
           int(time.time()).
 
@@ -1288,7 +1289,7 @@ class IssueService(object):
 
     comment_pb = self.CreateIssueComment(
         cnxn, project_id, issue.local_id, reporter_id, comment,
-        amendments=amendments, commit=False)
+        amendments=amendments, is_description=is_description, commit=False)
     self._UpdateIssuesModified(
         cnxn, iids_to_invalidate, modified_timestamp=issue.modified_timestamp,
         invalidate=invalidate)

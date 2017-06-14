@@ -131,6 +131,7 @@ class Update(messages.Message):
   components = messages.StringField(10, repeated=True)
   moveToProject = messages.StringField(11)
   fieldValues = messages.MessageField(FieldValue, 12, repeated=True)
+  is_description = messages.BooleanField(13)
 
 
 class ProjectIssueConfig(messages.Message):
@@ -160,6 +161,7 @@ class IssueCommentWrapper(messages.Message):
   published = message_types.DateTimeField(7)
   updates = messages.MessageField(Update, 8)
   kind = messages.StringField(9)
+  is_description = messages.BooleanField(10)
 
 
 class IssueWrapper(messages.Message):

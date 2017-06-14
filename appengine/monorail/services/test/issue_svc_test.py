@@ -785,7 +785,7 @@ class IssueServiceTest(unittest.TestCase):
             ('proj', 2), None, default_project_name='proj')]
     self.services.issue.CreateIssueComment(
         self.cnxn, 789, 1, commenter_id, 'comment text',
-        amendments=amendments, commit=False)
+        amendments=amendments, commit=False, is_description=False)
     self.services.issue._UpdateIssuesModified(
         self.cnxn, {issue.issue_id, target_issue.issue_id},
         modified_timestamp=self.now, invalidate=True)

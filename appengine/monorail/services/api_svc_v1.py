@@ -3,7 +3,17 @@
 # license that can be found in the LICENSE file or at
 # https://developers.google.com/open-source/licenses/bsd
 
-"""API service"""
+"""API service.
+
+To manually test this API locally, use the following steps:
+1. Start the development server via 'make serve'.
+2. Start a new Chrome session via the command-line:
+  PATH_TO_CHROME --user-data-dir=/tmp/test \
+  --unsafely-treat-insecure-origin-as-secure=http://localhost:8080
+3. Visit http://localhost:8080/_ah/api/explorer
+4. Click shield icon in the omnibar and allow unsafe scripts.
+5. Click on the "Services" menu item in the API Explorer.
+"""
 
 import datetime
 import endpoints
@@ -393,6 +403,7 @@ class MonorailApi(remote.Service):
 
       updates_dict['summary'] = request.updates.summary
       updates_dict['status'] = request.updates.status
+      updates_dict['is_description'] = request.updates.is_description
       if request.updates.owner:
         if request.updates.owner == framework_constants.NO_USER_NAME:
           updates_dict['owner'] = framework_constants.NO_USER_SPECIFIED
@@ -483,6 +494,7 @@ class MonorailApi(remote.Service):
         merged_into=updates_dict.get('merged_into'),
         index_now=False,
         comment=request.content,
+        is_description=updates_dict.get('is_description'),
         summary=updates_dict.get('summary'),
     )
 

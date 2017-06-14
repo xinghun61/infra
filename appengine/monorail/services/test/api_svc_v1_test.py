@@ -535,6 +535,24 @@ class MonorailApiTest(testing.EndpointsTestCase):
     resp = self.call_api('issues_comments_insert', self.request).json_body
     self.assertEqual('Updated', resp['updates']['status'])
 
+  def testIssuesCommentInsert_IsDescription(self):
+    """Add a new issue description."""
+    self.services.project.TestAddProject(
+        'test-project', owner_ids=[1], project_id=12345)
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 2, project_name='test-project')
+    self.services.issue.TestAddIssue(issue1)
+    # Note: the initially issue description will be "Issue 1".
+
+    self.request['content'] = 'new desc'
+    self.request['updates'] = {'is_description': True}
+    resp = self.call_api('issues_comments_insert', self.request).json_body
+    self.assertEqual('new desc', resp['content'])
+    comments = self.services.issue.GetCommentsForIssue('cnxn', issue1.issue_id)
+    self.assertEqual(2, len(comments))
+    self.assertTrue(comments[1].is_description)
+    self.assertEqual('new desc', comments[1].content)
+
   def testIssuesCommentInsert_MoveToProject_NoPermsSrc(self):
     """Don't move issue when user has no perms to edit issue."""
     self.services.project.TestAddProject(

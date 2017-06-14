@@ -1372,7 +1372,7 @@ class IssueService(object):
       blocked_on_remove=None, blocking_add=None, blocking_remove=None,
       merged_into=None, index_now=False, comment=None, summary=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
-      timestamp=None):
+      is_description=False, timestamp=None):
     # Return a bogus amendments list if any of the fields changed
     amendments = []
     comment_pb = tracker_pb2.IssueComment()
@@ -1391,7 +1391,7 @@ class IssueService(object):
 
     comment_pb = self.CreateIssueComment(
         cnxn, project_id, issue.local_id, reporter_id, comment,
-        amendments=amendments)
+        amendments=amendments, is_description=is_description)
 
     self.indexer_called = index_now
     return amendments, comment_pb

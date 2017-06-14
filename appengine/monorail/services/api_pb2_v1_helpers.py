@@ -251,7 +251,8 @@ def convert_comment(issue, comment, mar, services, granted_perms):
       id=comment.sequence,
       published=datetime.datetime.fromtimestamp(comment.timestamp),
       updates=convert_amendments(issue, comment.amendments, mar, services),
-      kind='monorail#issueComment')
+      kind='monorail#issueComment',
+      is_description=comment.is_description)
 
 
 def convert_attachment(attachment):
