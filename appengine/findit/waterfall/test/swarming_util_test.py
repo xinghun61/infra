@@ -41,9 +41,10 @@ ONE_BOT = [{'bot_id': 'bot%d' % b} for b in range(1)]
 
 
 class MockTryJob(object):
-  is_swarmbucket_build = True
-  dimensions = ['os:OS', 'cpu:CPU']
-  revision = 'a1b2c3d4'
+  def __init__(self):
+    self.is_swarmbucket_build = True
+    self.dimensions = ['os:OS', 'cpu:CPU']
+    self.revision = 'a1b2c3d4'
 
 
 class SwarmingHttpClient(RetryHttpClient):
@@ -1273,8 +1274,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch('waterfall.swarming_util.OnlyAvailable',
               return_value=[])
   @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
-  def disabled_testAssignWarmCacheHostBrandNewCache(
-      self, *_):  # pragma: no cover.
+  def testAssignWarmCacheHostBrandNewCache(self, *_):
     cache_name = 'cache_name'
     tryjob = MockTryJob()
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)

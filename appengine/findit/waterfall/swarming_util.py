@@ -783,7 +783,7 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
   bots_with_cache = OnlyAvailable(
       GetAllBotsWithCache(request_dimensions, cache_name, http_client)
   )
-  if bots_with_cache:  # pragma: no branch.
+  if bots_with_cache:
     git_repo = CachedGitilesRepository(
          http_client,
         'https://chromium.googlesource.com/chromium/src.git')
