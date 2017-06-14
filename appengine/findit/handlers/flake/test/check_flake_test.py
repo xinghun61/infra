@@ -789,6 +789,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.try_job_status = analysis_status.COMPLETED
     analysis.Save()
 
+    original_key = analysis.key
+
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     with mock.patch.object(CheckFlake, '_CreateAndScheduleFlakeAnalysis',
@@ -799,3 +801,5 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'format': 'json'})
       scheduler.assert_called_with(master_name, builder_name, build_number,
                                    step_name, test_name, 1, True)
+      self.assertNotEqual(original_key, analysis.key)
+      self.assertEqual(analysis.version_number, 2)

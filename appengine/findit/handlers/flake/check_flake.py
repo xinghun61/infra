@@ -286,7 +286,8 @@ class CheckFlake(BaseHandler):
       step_name = analysis.original_step_name
       test_name = analysis.original_test_name
       bug_id = analysis.bug_id
-
+      analysis.Reset()
+      analysis.Save();
     else:
       # If the key hasn't been specified, then we get the information from
       # other URL parameters.
