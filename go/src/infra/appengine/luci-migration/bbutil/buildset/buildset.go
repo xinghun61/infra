@@ -10,8 +10,8 @@ import (
 // RietveldPatchset is Rietveld patchset.
 type RietveldPatchset struct {
 	Hostname string
-	Issue    int
-	Patchset int
+	Issue    int64
+	Patchset int64
 }
 
 // URL returns patchset URL.
@@ -22,8 +22,8 @@ func (p *RietveldPatchset) URL() string {
 // GerritPatchset is a Gerrit patchset.
 type GerritPatchset struct {
 	Hostname string
-	Change   int
-	Patchset int
+	Change   int64
+	Patchset int64
 }
 
 // URL returns patchset URL.
@@ -56,8 +56,8 @@ func (b *BuildSet) URL() string {
 func Parse(buildSet string) *BuildSet {
 	parts := strings.Split(buildSet, "/")
 	if len(parts) >= 5 && parts[0] == "patch" {
-		change, changeErr := strconv.Atoi(parts[3])
-		patch, patchErr := strconv.Atoi(parts[4])
+		change, changeErr := strconv.ParseInt(parts[3], 10, 64)
+		patch, patchErr := strconv.ParseInt(parts[4], 10, 64)
 		if changeErr == nil && patchErr == nil {
 			switch parts[1] {
 			case "rietveld":
