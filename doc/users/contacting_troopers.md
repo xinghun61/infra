@@ -95,9 +95,6 @@ depot-tools-auth login https://chromereviews.googleplex.com
 
 # Restart chromium.fyi master in 15 minutes.
 cit restart chromium.fyi -r <current trooper> [-b <bug number>]
-
-# Restart chromium.fyi at the end of the PST/PDT work day (6:30PM).
-cit restart chromium.fyi --eod -r <current trooper> [-b <bug number>]
 ```
 
 Note: if you're not in the committers list CQ will try it first and
