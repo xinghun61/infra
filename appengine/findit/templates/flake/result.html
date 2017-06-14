@@ -321,22 +321,6 @@
       });
     }
 
-    function validateRegressionRangeRerunForm() {
-      var lowerBound = document.forms["regression_range_rerun"]["lower_bound_commit_position"];
-      var upperBound = document.forms["regression_range_rerun"]["upper_bound_commit_position"];
-      var iterations = document.forms["regression_range_rerun"]["iterations_to_rerun"];
-
-      if (lowerBound != '' and isNaN(lowerBound)) {
-        alert('If specified, the lower bound commit position must be an integer');
-      }
-      if (upperBound != '' and isNaN(upperBound)) {
-        alert('If specified, the upper bound commit position must be an integer');
-      }
-      if (isNaN(iterations)) {
-        alert('The number of iterations to run each test must be an integer');
-      }
-    }
-
     $(function() {
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
 
@@ -427,7 +411,7 @@
       </div>
     </div>
     {% if show_input_ui %}
-      <form action="/waterfall/flake/analyze_regression_range" name="regression_range_rerun" onsubmit="validateRegressionRangeRerunForm()" method="post">
+      <form action="/waterfall/flake/analyze_regression_range" name="regression_range_rerun" method="post">
         <div>
           <input type="hidden" name="xsrf_token" value="{{ xsrf_token }}" />
           <input type="hidden" name="key" value="{{ key }}" />
