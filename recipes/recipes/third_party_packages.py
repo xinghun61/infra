@@ -49,7 +49,7 @@ GIT_FOR_WINDOWS_ASSET_RES = {
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-GIT_PACKAGE_VERSION_SUFFIX = '.chromium9'
+GIT_PACKAGE_VERSION_SUFFIX = '.chromium10'
 
 
 def RunSteps(api):
@@ -551,13 +551,16 @@ def PackageGit(api):
 def PackageGitForUnix(api, workdir, support):
   """Builds Git on Unix and uploads it to a CIPD server."""
 
-  def install(target_dir, _tag):
+  def install(target_dir, tag):
     # Apply any applicable patches.
-    patch = api.resource('git_2_13_0.posix.patch')
-    api.git(
+    patches = [api.resource('git_patches').join(x) for x in (
+        '0001-exec_cmd-self-resolution-and-relative-pathing.patch',
+        '0002-Infra-specific-extensions.patch',
+    )]
+    api.git(*[
         '-c', 'user.name=third_party_packages',
         '-c', 'user.email=third_party_packages@example.com',
-        'am', patch)
+        'am'] + patches)
 
     curl = support.ensure_curl(api)
     zlib = support.ensure_zlib(api)
@@ -571,9 +574,23 @@ def PackageGitForUnix(api, workdir, support):
     support_bin = autoconf.prefix.join('bin')
 
     # cwd is source checkout
-    env = {
-        'PATH': api.path.pathsep.join([str(support_bin), '%(PATH)s']),
+    perl_lib_path = 'share/perl'
+    env_prefixes = {
+        'PATH': [support_bin],
     }
+    env = {
+        # This causes Git's Perl module MakeMaker build to install the Git Perl
+        # module at a known path (<package>/share/perl) instead of a path that
+        # is derived from the build system's Perl version. This, in turn, lets
+        # us reference it as a relative path later in our custom "config.mak"
+        # entry (see PERL_LIB_PATH).
+        'PERL_MM_OPT': ' '.join([
+          'INSTALLSITELIB=$(PREFIX)/%s' % (perl_lib_path,),
+        ]),
+    }
+
+    # Extra environment additions for "configure" step.
+    configure_env = {}
 
     cppflags = []
     ldflags = [
@@ -598,6 +615,11 @@ def PackageGitForUnix(api, workdir, support):
       'gitexecdir = libexec/git-core',
       'template_dir = share/git-core/templates',
       'sysconfdir = etc',
+
+      # This is a custom Infra directive that can be used to instruct Git to
+      # export a deployment-relative path for Perl script imports. See custom
+      # patches for more details.
+      'PERL_LIB_PATH = %s' % (perl_lib_path,),
 
       # CIPD doesn't support hardlinks, so hardlinks become copies of the
       # original file. Use symlinks instead.
@@ -627,13 +649,13 @@ def PackageGitForUnix(api, workdir, support):
 
       # autoconf and make needs these flags to properly detect the build
       # environment.
-      env['LIBS'] = extra_libs
+      configure_env['LIBS'] = extra_libs
       custom_make_entries += [
           'EXTLIBS = %s' % (extra_libs,),
       ]
     elif api.platform.is_mac:
-      env['MACOSX_DEPLOYMENT_TARGET'] = '10.6'
-      support.update_mac_autoconf(env)
+      configure_env['MACOSX_DEPLOYMENT_TARGET'] = '10.6'
+      support.update_mac_autoconf(configure_env)
 
       # Linking "libcurl" using "--with-darwinssl" requires that we include
       # the Foundation and Security frameworks.
@@ -643,9 +665,9 @@ def PackageGitForUnix(api, workdir, support):
       # linking dynamic or, worse, not seeing them at all.
       ldflags += zlib.full_static + curl.full_static
 
-    env['CPPFLAGS'] = ' '.join(cppflags)
-    env['CFLAGS'] = ' '.join(cflags)
-    env['LDFLAGS'] = ' '.join(ldflags)
+    configure_env['CPPFLAGS'] = ' '.join(cppflags)
+    configure_env['CFLAGS'] = ' '.join(cflags)
+    configure_env['LDFLAGS'] = ' '.join(ldflags)
 
     # Write our custom make entries. The "config.mak" file gets loaded AFTER
     # all the default, automatic (configure), and uname (system) entries get
@@ -655,14 +677,25 @@ def PackageGitForUnix(api, workdir, support):
         api.context.cwd.join('config.mak'),
         '\n'.join(custom_make_entries + []))
 
-    with api.context(env=env):
-      api.step('make configure', ['make', 'configure'])
-      api.step('configure', [
-        './configure',
-        '--prefix', target_dir,
-        ])
+    # Write the "version" file into "checkout". This is used by the
+    # "GIT-VERSION-GEN" script to pull the Git version. We name ours after
+    # the Git tag that we pulled and our Chromium-specific suffix, e.g.:
+    # v2.12.2.chromium4
+    api.shutil.write(
+        'Version file',
+        api.context.cwd.join('version'),
+        '%s%s' % (tag, GIT_PACKAGE_VERSION_SUFFIX))
 
-    api.step('make install', ['make', 'install'])
+    with api.context(env_prefixes=env_prefixes, env=env):
+      api.step('make configure', ['make', 'configure'])
+
+      with api.context(env=configure_env):
+        api.step('configure', [
+          './configure',
+          '--prefix', target_dir,
+          ])
+
+      api.step('make install', ['make', 'install'])
 
   tag = api.properties.get('git_release_tag')
   if not tag:

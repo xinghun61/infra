@@ -159,13 +159,13 @@
       "search",
       "infra/git/mac-amd64",
       "-tag",
-      "version:2.12.2.2.chromium9",
+      "version:2.12.2.2.chromium10",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/mac-amd64 version:2.12.2.2.chromium9",
+    "name": "git.cipd search infra/git/mac-amd64 version:2.12.2.2.chromium10",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -259,7 +259,8 @@
       "-c",
       "user.email=third_party_packages@example.com",
       "am",
-      "RECIPE[infra::third_party_packages].resources/git_2_13_0.posix.patch"
+      "RECIPE[infra::third_party_packages].resources/git_patches/0001-exec_cmd-self-resolution-and-relative-pathing.patch",
+      "RECIPE[infra::third_party_packages].resources/git_patches/0002-Infra-specific-extensions.patch"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
@@ -533,11 +534,25 @@
       "python",
       "-u",
       "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
-      "RUNTIME_PREFIX = YesPlease\ngitexecdir = libexec/git-core\ntemplate_dir = share/git-core/templates\nsysconfdir = etc\nNO_INSTALL_HARDLINKS = YesPlease\nNO_GECOS_IN_PWENT = YesPlease",
+      "RUNTIME_PREFIX = YesPlease\ngitexecdir = libexec/git-core\ntemplate_dir = share/git-core/templates\nsysconfdir = etc\nPERL_LIB_PATH = share/perl\nNO_INSTALL_HARDLINKS = YesPlease\nNO_GECOS_IN_PWENT = YesPlease",
       "[START_DIR]/git/checkout/config.mak"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "name": "git.Makefile specialization",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "v2.12.2.2.chromium10",
+      "[START_DIR]/git/checkout/version"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "name": "git.Version file",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -549,13 +564,12 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
-      "CFLAGS": "-flto",
-      "CPPFLAGS": "-I[START_DIR]/git/_support/curl-7.54.0/prefix/include -I[START_DIR]/git/_support/zlib-1.2.11/prefix/include",
-      "LDFLAGS": "-flto -framework Foundation -framework Security [START_DIR]/git/_support/zlib-1.2.11/prefix/lib/libz.a [START_DIR]/git/_support/curl-7.54.0/prefix/lib/libcurl.a",
-      "MACOSX_DEPLOYMENT_TARGET": "10.6",
-      "PATH": "[START_DIR]/git/_support/autoconf-2.69/prefix/bin:<PATH>",
-      "ac_cv_func_clock_gettime": "n",
-      "ac_cv_func_getentropy": "n"
+      "PERL_MM_OPT": "INSTALLSITELIB=$(PREFIX)/share/perl"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/git/_support/autoconf-2.69/prefix/bin"
+      ]
     },
     "name": "git.make configure",
     "~followup_annotations": [
@@ -574,9 +588,14 @@
       "CPPFLAGS": "-I[START_DIR]/git/_support/curl-7.54.0/prefix/include -I[START_DIR]/git/_support/zlib-1.2.11/prefix/include",
       "LDFLAGS": "-flto -framework Foundation -framework Security [START_DIR]/git/_support/zlib-1.2.11/prefix/lib/libz.a [START_DIR]/git/_support/curl-7.54.0/prefix/lib/libcurl.a",
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
-      "PATH": "[START_DIR]/git/_support/autoconf-2.69/prefix/bin:<PATH>",
+      "PERL_MM_OPT": "INSTALLSITELIB=$(PREFIX)/share/perl",
       "ac_cv_func_clock_gettime": "n",
       "ac_cv_func_getentropy": "n"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/git/_support/autoconf-2.69/prefix/bin"
+      ]
     },
     "name": "git.configure",
     "~followup_annotations": [
@@ -589,6 +608,14 @@
       "install"
     ],
     "cwd": "[START_DIR]/git/checkout",
+    "env": {
+      "PERL_MM_OPT": "INSTALLSITELIB=$(PREFIX)/share/perl"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/git/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
     "name": "git.make install",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -631,7 +658,7 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
       "-tag",
-      "version:2.12.2.2.chromium9"
+      "version:2.12.2.2.chromium10"
     ],
     "name": "git.register infra/git/mac-amd64",
     "~followup_annotations": [

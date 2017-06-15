@@ -1,0 +1,50 @@
+From 27cc33c1d477ae0e955c1752d2c1489f2b67f405 Mon Sep 17 00:00:00 2001
+From: Dan Jacques <dnj@chromium.org>
+Date: Wed, 14 Jun 2017 08:36:47 -0700
+Subject: [PATCH 2/2] Infra-specific extensions.
+
+---
+ Makefile   | 6 ++++++
+ exec_cmd.c | 9 +++++++++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/Makefile b/Makefile
+index 8cd9190cf3..e7e565c379 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1606,6 +1606,12 @@ ifdef NO_INSTALL_HARDLINKS
+ 	export NO_INSTALL_HARDLINKS
+ endif
+ 
++ifndef NO_PERL
++ifdef PERL_LIB_PATH
++	BASIC_CFLAGS += -DGIT_PERL_LIB_PATH="\"$(PERL_LIB_PATH)\""
++endif
++endif
++
+ ### profile feedback build
+ #
+ 
+diff --git a/exec_cmd.c b/exec_cmd.c
+index a7416bc457..6a9bc45ec9 100644
+--- a/exec_cmd.c
++++ b/exec_cmd.c
+@@ -148,6 +148,15 @@ void git_set_exec_path(const char *exec_path)
+ 	 * Propagate this setting to external programs.
+ 	 */
+ 	setenv(EXEC_PATH_ENVIRONMENT, exec_path, 1);
++
++  /** Infra: Propagate values to scripts. */
++#if defined(RUNTIME_PREFIX) && defined(GIT_PERL_LIB_PATH)
++  setenv("GITPERLLIB", system_path(GIT_PERL_LIB_PATH), 1);
++#endif
++#if defined(RUNTIME_PREFIX)
++  setenv("GIT_TEXTDOMAINDIR", system_path(GIT_LOCALE_PATH), 1);
++#endif
++  /** END Infra */
+ }
+ 
+ 
+-- 
+2.13.1.chromium9
+

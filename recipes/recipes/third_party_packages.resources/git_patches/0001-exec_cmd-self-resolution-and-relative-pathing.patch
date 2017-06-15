@@ -1,0 +1,381 @@
+From b46d7787b214e8dd99c2fedd90ae603d1018e40a Mon Sep 17 00:00:00 2001
+From: Dan Jacques <dnj@google.com>
+Date: Fri, 9 Jun 2017 08:09:51 -0700
+Subject: [PATCH 1/2] exec_cmd: self-resolution and relative pathing.
+
+Enable Git to resolve its own binary location using a variety of
+OS-specific and generic methods, including:
+- procfs via "/proc/self/exe" (Linux)
+- _NSGetExecutablePath (Darwin)
+- argv0, if absolute (all, including Windows).
+
+This is used to enable RUNTIME_PREFIX support for non-Windows systems,
+notably Linux and Darwin. When configured with RUNTIME_PREFIX, Git will
+do a best-effort resolution of its executable path and automatically use
+this as its "exec_path" for relative helper and data lookups, unless
+explicitly overridden.
+
+Git will also always export and consume its resolved "exec_path" using
+the EXEC_PATH_ENVIRONMENT regardless of whether the user has overridden
+it, simplifying future lookups and ensuring consistency in Git tooling
+execution.
+
+Signed-off-by: Dan Jacques <dnj@google.com>
+---
+ Makefile         |  14 ++++++-
+ common-main.c    |   4 +-
+ config.mak       |  10 +++++
+ config.mak.uname |   4 ++
+ exec_cmd.c       | 116 +++++++++++++++++++++++++++++++++++++++++++++++++------
+ exec_cmd.h       |   4 +-
+ gettext.c        |   3 +-
+ git.c            |   2 +-
+ 8 files changed, 138 insertions(+), 19 deletions(-)
+ create mode 100644 config.mak
+
+diff --git a/Makefile b/Makefile
+index 7c621f7f76..8cd9190cf3 100644
+--- a/Makefile
++++ b/Makefile
+@@ -432,6 +432,7 @@ ARFLAGS = rcs
+ #   mandir
+ #   infodir
+ #   htmldir
++#   localedir
+ # This can help installing the suite in a relocatable way.
+ 
+ prefix = $(HOME)
+@@ -455,6 +456,7 @@ pathsep = :
+ mandir_relative = $(patsubst $(prefix)/%,%,$(mandir))
+ infodir_relative = $(patsubst $(prefix)/%,%,$(infodir))
+ htmldir_relative = $(patsubst $(prefix)/%,%,$(htmldir))
++localedir_relative = $(patsubst $(prefix)/%,%,$(localedir))
+ 
+ export prefix bindir sharedir sysconfdir gitwebdir localedir
+ 
+@@ -1545,6 +1547,14 @@ ifdef HAVE_GETDELIM
+ 	BASIC_CFLAGS += -DHAVE_GETDELIM
+ endif
+ 
++ifdef PROCFS_EXECUTABLE_PATH
++	BASIC_CFLAGS += '-DPROCFS_EXECUTABLE_PATH="$(PROCFS_EXECUTABLE_PATH)"'
++endif
++
++ifdef HAVE_NS_GET_EXECUTABLE_PATH
++	BASIC_CFLAGS += -DHAVE_NS_GET_EXECUTABLE_PATH
++endif
++
+ ifeq ($(TCLTK_PATH),)
+ NO_TCLTK = NoThanks
+ endif
+@@ -1627,6 +1637,7 @@ bindir_relative_SQ = $(subst ','\'',$(bindir_relative))
+ mandir_relative_SQ = $(subst ','\'',$(mandir_relative))
+ infodir_relative_SQ = $(subst ','\'',$(infodir_relative))
+ localedir_SQ = $(subst ','\'',$(localedir))
++localedir_relative_SQ = $(subst ','\'',$(localedir_relative))
+ gitexecdir_SQ = $(subst ','\'',$(gitexecdir))
+ template_dir_SQ = $(subst ','\'',$(template_dir))
+ htmldir_relative_SQ = $(subst ','\'',$(htmldir_relative))
+@@ -2043,6 +2054,7 @@ endif
+ exec_cmd.sp exec_cmd.s exec_cmd.o: GIT-PREFIX
+ exec_cmd.sp exec_cmd.s exec_cmd.o: EXTRA_CPPFLAGS = \
+ 	'-DGIT_EXEC_PATH="$(gitexecdir_SQ)"' \
++	'-DGIT_LOCALE_PATH="$(localedir_relative_SQ)"' \
+ 	'-DBINDIR="$(bindir_relative_SQ)"' \
+ 	'-DPREFIX="$(prefix_SQ)"'
+ 
+@@ -2060,7 +2072,7 @@ attr.sp attr.s attr.o: EXTRA_CPPFLAGS = \
+ 
+ gettext.sp gettext.s gettext.o: GIT-PREFIX
+ gettext.sp gettext.s gettext.o: EXTRA_CPPFLAGS = \
+-	-DGIT_LOCALE_PATH='"$(localedir_SQ)"'
++	-DGIT_LOCALE_PATH='"$(localedir_relative_SQ)"'
+ 
+ http-push.sp http.sp http-walker.sp remote-curl.sp imap-send.sp: SPARSE_FLAGS += \
+ 	-DCURL_DISABLE_TYPECHECK
+diff --git a/common-main.c b/common-main.c
+index 6a689007e7..6516a1f89f 100644
+--- a/common-main.c
++++ b/common-main.c
+@@ -32,12 +32,12 @@ int main(int argc, const char **argv)
+ 	 */
+ 	sanitize_stdfds();
+ 
++	git_resolve_executable_dir(argv[0]);
++
+ 	git_setup_gettext();
+ 
+ 	attr_start();
+ 
+-	git_extract_argv0_path(argv[0]);
+-
+ 	restore_sigpipe_to_default();
+ 
+ 	return cmd_main(argc, argv);
+diff --git a/config.mak b/config.mak
+new file mode 100644
+index 0000000000..40454de3e4
+--- /dev/null
++++ b/config.mak
+@@ -0,0 +1,10 @@
++RUNTIME_PREFIX = YesPlease
++gitexecdir = libexec/git-core
++template_dir = share/git-core/templates
++sysconfdir = etc
++NO_INSTALL_HARDLINKS = YesPlease
++NO_GECOS_IN_PWENT = YesPlease
++EXTLIBS = -lcurl -ldl -lpthread -lssl -lcrypto -lz
++
++# TODO: Propagate me
++PERL_LIB_PATH = share/perl
+diff --git a/config.mak.uname b/config.mak.uname
+index 192629f143..93a9c15261 100644
+--- a/config.mak.uname
++++ b/config.mak.uname
+@@ -36,6 +36,7 @@ ifeq ($(uname_S),Linux)
+ 	NEEDS_LIBRT = YesPlease
+ 	HAVE_GETDELIM = YesPlease
+ 	SANE_TEXT_GREP=-a
++	PROCFS_EXECUTABLE_PATH = /proc/self/exe
+ endif
+ ifeq ($(uname_S),GNU/kFreeBSD)
+ 	HAVE_ALLOCA_H = YesPlease
+@@ -108,6 +109,7 @@ ifeq ($(uname_S),Darwin)
+ 	BASIC_CFLAGS += -DPRECOMPOSE_UNICODE
+ 	BASIC_CFLAGS += -DPROTECT_HFS_DEFAULT=1
+ 	HAVE_BSD_SYSCTL = YesPlease
++	HAVE_NS_GET_EXECUTABLE_PATH = YesPlease
+ endif
+ ifeq ($(uname_S),SunOS)
+ 	NEEDS_SOCKET = YesPlease
+@@ -211,6 +213,7 @@ ifeq ($(uname_S),OpenBSD)
+ 	BASIC_LDFLAGS += -L/usr/local/lib
+ 	HAVE_PATHS_H = YesPlease
+ 	HAVE_BSD_SYSCTL = YesPlease
++	PROCFS_EXECUTABLE_PATH = /proc/curproc/file
+ endif
+ ifeq ($(uname_S),MirBSD)
+ 	NO_STRCASESTR = YesPlease
+@@ -229,6 +232,7 @@ ifeq ($(uname_S),NetBSD)
+ 	USE_ST_TIMESPEC = YesPlease
+ 	HAVE_PATHS_H = YesPlease
+ 	HAVE_BSD_SYSCTL = YesPlease
++	PROCFS_EXECUTABLE_PATH = /proc/curproc/exe
+ endif
+ ifeq ($(uname_S),AIX)
+ 	DEFAULT_PAGER = more
+diff --git a/exec_cmd.c b/exec_cmd.c
+index fb94aeba9c..a7416bc457 100644
+--- a/exec_cmd.c
++++ b/exec_cmd.c
+@@ -4,8 +4,12 @@
+ #include "argv-array.h"
+ #define MAX_ARGS	32
+ 
++#if defined(RUNTIME_PREFIX) && defined(HAVE_NS_GET_EXECUTABLE_PATH)
++#include <mach-o/dyld.h>
++#endif
++
+ static const char *argv_exec_path;
+-static const char *argv0_path;
++static const char *executable_path;
+ 
+ char *system_path(const char *path)
+ {
+@@ -20,13 +24,13 @@ char *system_path(const char *path)
+ 		return xstrdup(path);
+ 
+ #ifdef RUNTIME_PREFIX
+-	assert(argv0_path);
+-	assert(is_absolute_path(argv0_path));
++	assert(executable_path);
++	assert(is_absolute_path(executable_path));
+ 
+ 	if (!prefix &&
+-	    !(prefix = strip_path_suffix(argv0_path, GIT_EXEC_PATH)) &&
+-	    !(prefix = strip_path_suffix(argv0_path, BINDIR)) &&
+-	    !(prefix = strip_path_suffix(argv0_path, "git"))) {
++	    !(prefix = strip_path_suffix(executable_path, GIT_EXEC_PATH)) &&
++	    !(prefix = strip_path_suffix(executable_path, BINDIR)) &&
++	    !(prefix = strip_path_suffix(executable_path, "git"))) {
+ 		prefix = PREFIX;
+ 		trace_printf("RUNTIME_PREFIX requested, "
+ 				"but prefix computation failed.  "
+@@ -38,20 +42,106 @@ char *system_path(const char *path)
+ 	return strbuf_detach(&d, NULL);
+ }
+ 
+-void git_extract_argv0_path(const char *argv0)
++/* Resolves executable path from argv[0] if it is absolute. */
++static int git_get_exec_path_from_argv0(struct strbuf *buf, const char *argv0)
+ {
+ 	const char *slash;
+ 
+ 	if (!argv0 || !*argv0)
+-		return;
++		return 1;
+ 
+ 	slash = find_last_dir_sep(argv0);
++	if (slash) {
++		trace_printf("Determined executable path from argv0: %s\n", argv0);
++		strbuf_add_absolute_path(buf, argv0);
++		return 0;
++	}
++	return 1;
++}
++
++#if defined(RUNTIME_PREFIX) && defined(PROCFS_EXECUTABLE_PATH)
++/* Resolves executable path by exanining "/proc/self/exe". */
++static int git_get_exec_path_procfs(struct strbuf *buf)
++{
++	char *path = realpath(PROCFS_EXECUTABLE_PATH, NULL);
++
++	if (path) {
++		trace_printf("Determined executable path from procfs: %s\n", path);
++		strbuf_addstr(buf, path);
++		free(path);
++		return 0;
++	}
++	return 1;
++}
++#endif
++
++
++#if defined(RUNTIME_PREFIX) && defined(HAVE_NS_GET_EXECUTABLE_PATH)
++/* Resolves executable path by querying Mac applicaton stack. */
++static int git_get_exec_path_mac(struct strbuf *buf)
++{
++	char path[PATH_MAX];
++	uint32_t size = sizeof(path);
++	if (!_NSGetExecutablePath(path, &size)) {
++		trace_printf("Determined executable path from Mac: %s\n", path);
++		strbuf_addstr(buf, path);
++		return 0;
++	}
++	return 1;
++}
++#endif
++
++/* Resolves the absolute path of the current executable. */
++static char *git_get_exec_path(const char *argv0)
++{
++	struct strbuf buf = STRBUF_INIT;
++
++	if (
++#if defined(RUNTIME_PREFIX) && defined(PROCFS_EXECUTABLE_PATH)
++	    git_get_exec_path_procfs(&buf) &&
++#endif
++#if defined(RUNTIME_PREFIX) && defined(HAVE_NS_GET_EXECUTABLE_PATH)
++	    git_get_exec_path_mac(&buf) &&
++#endif
++	    git_get_exec_path_from_argv0(&buf, argv0))
++		return NULL;
+ 
+-	if (slash)
+-		argv0_path = xstrndup(argv0, slash - argv0);
++	if (strbuf_normalize_path(&buf)) {
++		trace_printf("Could not normalize path: %s\n", buf.buf);
++		strbuf_release(&buf);
++		return NULL;
++	}
++
++	return strbuf_detach(&buf, NULL);
++}
++
++void git_resolve_executable_dir(const char *argv0)
++{
++	char *resolved;
++	const char *slash;
++	const char *path;
++
++	if ((path = getenv(EXEC_PATH_ENVIRONMENT)) != NULL) {
++		trace_printf("Determined executable path from ENV: %s\n", path);
++		executable_path = path;
++	} else {
++		resolved = git_get_exec_path(argv0);
++		if (!resolved) {
++			trace_printf("Could not determine executable path from: "
++					"%s\n", argv0);
++			return;
++		}
++
++		slash = find_last_dir_sep(resolved);
++		if (slash)
++			resolved[slash - resolved] = '\0';
++
++		executable_path = resolved;
++	}
++	trace_printf("Determined executable path: %s\n", executable_path);
+ }
+ 
+-void git_set_argv_exec_path(const char *exec_path)
++void git_set_exec_path(const char *exec_path)
+ {
+ 	argv_exec_path = exec_path;
+ 	/*
+@@ -89,10 +179,12 @@ static void add_path(struct strbuf *out, const char *path)
+ 
+ void setup_path(void)
+ {
++	const char *exec_path = git_exec_path();
+ 	const char *old_path = getenv("PATH");
+ 	struct strbuf new_path = STRBUF_INIT;
+ 
+-	add_path(&new_path, git_exec_path());
++	git_set_exec_path(exec_path);
++	add_path(&new_path, exec_path);
+ 
+ 	if (old_path)
+ 		strbuf_addstr(&new_path, old_path);
+diff --git a/exec_cmd.h b/exec_cmd.h
+index ff0b48048a..2522453cda 100644
+--- a/exec_cmd.h
++++ b/exec_cmd.h
+@@ -3,8 +3,8 @@
+ 
+ struct argv_array;
+ 
+-extern void git_set_argv_exec_path(const char *exec_path);
+-extern void git_extract_argv0_path(const char *path);
++extern void git_set_exec_path(const char *exec_path);
++extern void git_resolve_executable_dir(const char *path);
+ extern const char *git_exec_path(void);
+ extern void setup_path(void);
+ extern const char **prepare_git_cmd(struct argv_array *out, const char **argv);
+diff --git a/gettext.c b/gettext.c
+index db727ea020..f4c90742cf 100644
+--- a/gettext.c
++++ b/gettext.c
+@@ -3,6 +3,7 @@
+  */
+ 
+ #include "git-compat-util.h"
++#include "exec_cmd.h"
+ #include "gettext.h"
+ #include "strbuf.h"
+ #include "utf8.h"
+@@ -160,7 +161,7 @@ void git_setup_gettext(void)
+ 	const char *podir = getenv("GIT_TEXTDOMAINDIR");
+ 
+ 	if (!podir)
+-		podir = GIT_LOCALE_PATH;
++		podir = system_path(GIT_LOCALE_PATH);
+ 	bindtextdomain("git", podir);
+ 	setlocale(LC_MESSAGES, "");
+ 	setlocale(LC_TIME, "");
+diff --git a/git.c b/git.c
+index 8ff44f081d..c9726a7083 100644
+--- a/git.c
++++ b/git.c
+@@ -96,7 +96,7 @@ static int handle_options(const char ***argv, int *argc, int *envchanged)
+ 		 */
+ 		if (skip_prefix(cmd, "--exec-path", &cmd)) {
+ 			if (*cmd == '=')
+-				git_set_argv_exec_path(cmd + 1);
++				git_set_exec_path(cmd + 1);
+ 			else {
+ 				puts(git_exec_path());
+ 				exit(0);
+-- 
+2.13.1.chromium9
+
