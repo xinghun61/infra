@@ -26,6 +26,7 @@ import (
 var (
 	chromedriverBin = flag.String("chromedriver", "", "location of chromedriver binary. Install from https://sites.google.com/a/chromium.org/chromedriver/downloads")
 	baseDir         = flag.String("base", "", "location of elements to test")
+	persist         = flag.Bool("persist", false, "keep server running")
 )
 
 const (
@@ -110,16 +111,20 @@ func main() {
 			return
 		}
 
-		session.Delete()
-		chromeDriver.Stop()
-
 		if req.Failures > 0 {
 			logging.Errorf(ctx, "Done: %d Passes, %d Failures", req.Passes, req.Failures)
-			os.Exit(-1)
+		} else {
+			logging.Infof(ctx, "Done: %d Passes, %d Failures", req.Passes, req.Failures)
 		}
 
-		logging.Infof(ctx, "Done: %d Passes, %d Failures", req.Passes, req.Failures)
-		doneCh <- true
+		if !*persist {
+			session.Delete()
+			chromeDriver.Stop()
+			doneCh <- true
+			if req.Failures > 0 {
+				os.Exit(-1)
+			}
+		}
 	})
 
 	fs := http.FileServer(http.Dir(*baseDir))
@@ -138,6 +143,7 @@ func main() {
 
 	addr := <-addrCh
 	testURL := fmt.Sprintf("http://%s/test/?wct=go", addr)
+
 	err = session.Url(testURL)
 	if err != nil {
 		logging.Errorf(ctx, "opening url for session: %v", err)
