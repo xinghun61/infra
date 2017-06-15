@@ -1279,3 +1279,22 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     tryjob = MockTryJob()
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
     self.assertEqual(2, len(tryjob.dimensions))
+
+  def testDimensionsToQueryString(self):
+    self.assertEqual(
+        swarming_util._DimensionsToQueryString({
+            'bot_id': 'slave1'
+        }), swarming_util._DimensionsToQueryString(['bot_id:slave1']))
+    self.assertEqual(
+        '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
+        # Use Ordered dict to preserve the order of the dimensions.
+        swarming_util._DimensionsToQueryString(
+            collections.OrderedDict([
+                ('bot_id', 'slave1'),
+                ('cpu', 'x86_64'),
+                ('os', 'Mac')
+            ])))
+    self.assertEqual(
+        '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
+        swarming_util._DimensionsToQueryString(
+            ['bot_id:slave1', 'cpu:x86_64', 'os:Mac']))

@@ -585,7 +585,10 @@ def GetIsolatedOutputForTask(task_id, http_client):
 
 
 def _DimensionsToQueryString(dimensions):
-  dimension_list = ['%s:%s' % (k, v) for k, v in dimensions.iteritems()]
+  if isinstance(dimensions, dict):
+    dimension_list = ['%s:%s' % (k, v) for k, v in dimensions.iteritems()]
+  else:
+    dimension_list = dimensions
   dimension_qs = '&dimensions='.join(dimension_list)
   # Url looks like 'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/bots
   # /count?dimensions=os:Windows-7-SP1&dimensions=cpu:x86-64'
