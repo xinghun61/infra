@@ -264,7 +264,7 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testRemoveStablePointsFromAnalysisWithinRange(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_settings = {
+    analysis.algorithm_parameters = {
         'swarming_rerun': {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98
@@ -319,7 +319,7 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
     analysis.status = analysis_status.COMPLETED
     analysis.try_job_status = analysis_status.SKIPPED
-    analysis.algorithm_settings = {
+    analysis.algorithm_parameters = {
         'swarming_rerun': {
             'iterations_to_rerun': 100,
         }
@@ -374,7 +374,7 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testRemoveStablePointsFromAnalysisWithinRangeNoChanges(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_settings = {
+    analysis.algorithm_parameters = {
         'swarming_rerun': {
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98
@@ -404,7 +404,7 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 150, 's', 't')
     analysis.status = analysis_status.COMPLETED
     analysis.try_job_status = analysis_status.SKIPPED
-    analysis.algorithm_settings = {
+    analysis.algorithm_parameters = {
         'swarming_rerun': {
             'iterations_to_rerun': 100,
             'lower_flake_threshold': 0.02,

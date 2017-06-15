@@ -10,8 +10,8 @@ from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
-from waterfall import buildbot
 from waterfall import build_util
+from waterfall import buildbot
 from waterfall.flake.lookback_algorithm import IsStable
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 
@@ -270,7 +270,7 @@ def _RemoveStablePointsWithinRange(
     analysis, lower_bound_build_number, upper_bound_build_number,
     minimum_iterations):
   """Clears an analysis' data points within a commit position range."""
-  algorithm_settings = analysis.algorithm_settings.get('swarming_rerun')
+  algorithm_settings = analysis.algorithm_parameters.get('swarming_rerun')
   lower_flake_threshold = algorithm_settings.get('lower_flake_threshold')
   upper_flake_threshold = algorithm_settings.get('upper_flake_threshold')
 
