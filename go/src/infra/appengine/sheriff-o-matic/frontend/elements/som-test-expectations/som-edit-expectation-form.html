@@ -44,34 +44,53 @@
       .add-bug {
         display: flex;
       }
+      .bugs {
+        flex-direction: column;
+      }
+      .field-name {
+        font-weight: bold;
+      }
+      .test-name {
+        font-size: 12pt;
+        font-weight: bold;
+        font-family: monospace;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 1em;
+      }
+      #main {
+        display: flex;
+        flex-direction: column;
+      }
     </style>
+    <div id="main">
+    <div class="test-name">[[_editValue.TestName]]</div>
+    <div class="field-name">Expected Results (any of the following):</div>
     <div class="expectations">
-      Expected Results:
       <template is="dom-repeat" items="[[expectationValues]]" as="val">
         <div class="expectation-checkbox">
           <label class="checkbox">
-            <input type="checkbox" id$="expect-[[val]]" value="[[val]]" on-tap="_toggleExpectation" checked="[[_expects(expectation, val)]]">
+            <input type="checkbox" id$="expect-[[val]]" value="[[val]]" on-tap="_toggleExpectation" checked="[[_expects(_editValue, val)]]">
             [[val]]
           </label>
         </div>
       </template>
     </div>
+    <div class="field-name">Modifiers:</div>
     <div class="modifiers">
-      Modifiers:
       <template is="dom-repeat" items="[[modifierValues]]" as="val">
         <div class="modifier-checkbox">
           <label class="checkbox">
-            <input type="checkbox" id="modifier-[[val]]" value="[[val]]" on-tap="_toggleModifier" checked="[[_hasModifier(expectation, val)]]">
+            <input type="checkbox" id="modifier-[[val]]" value="[[val]]" on-tap="_toggleModifier" checked="[[_hasModifier(_editValue, val)]]">
             [[val]]
          </label>
         </div>
       </template>
     </div>
+    <div class="field-name">Bugs:</div>
     <div class="bugs">
-       Bugs:
-       <template is="dom-repeat" items="[[expectation.Bugs]]" as="bug">
+       <template is="dom-repeat" items="[[_editValue.Bugs]]" as="bug">
         <div class="bug-value">
-          <a href$="[[bug]]" target="_new">[[bug]]</a>
+          <a href$="http://[[bug]]" target="_blank">[[bug]]</a>
           <button on-tap="_removeBug" value="[[bug]]">Remove</button>
         </div>
       </template>
@@ -84,6 +103,7 @@
       <button value="Create change CL" id="submitButton" on-tap="_createChangeCL">Create change CL</button>
       <button value="Cancel" id="cancelButton" on-tap="_cancelChangeCL">Cancel</button>
     </div>
+  </div>
   </template>
   <script src="som-edit-expectation-form.js"></script>
 </dom-module>

@@ -54,13 +54,25 @@
     },
 
     _onCreateChangeCL: function(evt) {
-      Object.assign(this.$.grid.expandedItems[0], evt.detail.newValue);
-      this.$.grid.expandedItems = [];
-      this.set('_testExpectationsJson', this._testExpectationsJson);
+      let expectation = this._testExpectationsJson.find((t) => {
+        // TODO: test if this filtering is necessary due to references.
+        return t.TestName == this.$.editExpectationForm.expectation.TestName;
+      }, this);
+      Object.assign(expectation, evt.detail.newValue);
+      // TODO: activity indicator?
+      this.$.editDialog.toggle();
     },
 
     _onCancelChangeCL: function(evt) {
-      this.$.grid.expandedItems = [];
+      this.$.editDialog.toggle();
+    },
+
+    _onStartEdit: function(evt) {
+      let expectation = this._testExpectationsJson.find((t) => {
+        return t.TestName == evt.target.value;
+      });
+      this.$.editExpectationForm.set('expectation', expectation);
+      this.$.editDialog.toggle();
     },
   });
 })();

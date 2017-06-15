@@ -3,6 +3,7 @@
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../../bower_components/vaadin-grid/all-imports.html">
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
 
 <link rel="import" href="../../elements/som-header-styles.html">
@@ -52,6 +53,10 @@
         font-family: monospace;
         font-size: 9pt;
       }
+      paper-dialog {
+        padding: 0 2em 0 2em;
+        max-width: 800px;
+      }
     </style>
     <iron-ajax
         id="testExpectationsAjax"
@@ -60,11 +65,11 @@
         last-error="{{_testExpectationsJsonError}}"
         last-response="{{_testExpectationsJson}}"
         debounce-duration="300"></iron-ajax>
+    <paper-dialog id="editDialog" modal>
+      <som-edit-expectation-form id="editExpectationForm" on-create-change-cl="_onCreateChangeCL" on-cancel-change-cl="_onCancelChangeCL"></som-edit-expectation>
+    </paper-dialog>
     <div id="main">
       <vaadin-grid id="grid" items="[[_testExpectationsJson]]" on-active-item-changed="_onActiveItemChanged">
-        <template class="row-details">
-          <som-edit-expectation-form on-create-change-cl="_onCreateChangeCL" on-cancel-change-cl="_onCancelChangeCL" expectation="{{item}}"></som-edit-expectation>
-        </template>
         <vaadin-grid-column width="100px">
           <template class="header">
             <vaadin-grid-sorter path="FileName">Expectations File</vaadin-grid-sorter>
@@ -113,10 +118,16 @@
             </vaadin-grid-filter>
           </template>
           <template>
-          <template is="dom-repeat" items="[[item.Bugs]]" as="bug">
-            <a target="_blank" href="http://[[bug]]">[[bug]]</a>
+            <template is="dom-repeat" items="[[item.Bugs]]" as="bug">
+              <a target="_blank" href="http://[[bug]]">[[bug]]</a>
+           </template>
          </template>
-         </template>
+        </vaadin-grid-column>
+        <vaadin-grid-column>
+          <template class="header"></template>
+          <template>
+            <button on-tap="_onStartEdit" value="[[item.TestName]]">Edit</button>
+          </template>
         </vaadin-grid-column>
       </vaadin-grid>
     </div>

@@ -8,6 +8,11 @@
       expectation: {
         type: Object,
         value: null,
+        observer: 'expectationChanged',
+      },
+      _editValue: {
+        type: Object,
+        value: function() { return {}; },
         notify: true,
       },
       expectationValues: {
@@ -26,7 +31,6 @@
           'NeedsManualRebaseline',
         ],
       },
-
       modifierValues: {
         type: Array,
         value: [
@@ -34,6 +38,7 @@
           'Mac10.9',
           'Mac10.10',
           'Mac10.11',
+          'Mac10.12',
           'Retina',
           'Win',
           'Win7',
@@ -49,16 +54,15 @@
       },
     },
 
-    ready: function(evt) {
-      this._editValue = Object.assign({}, this.expectation);
-    },
-
     expectationChanged: function(evt) {
-      this._editValue = Object.assign({}, this.expectation);
+      // Make a copy of the expectation to edit in this form. Modify only
+      // the copy, so we can cancel, or fire an edited event with old
+      // and new values set in the details.
+      this._editValue = JSON.parse(JSON.stringify(this.expectation));
     },
 
     _addBug: function(evt) {
-      this.push('value.Bugs', this.$.newBug.value);
+      this.push('_editValue.Bugs', this.$.newBug.value);
       this.$.newBug.value = '';
     },
 
@@ -71,7 +75,7 @@
     },
 
     _removeBug: function(evt) {
-      this.arrayDelete('expectation.Bugs', evt.target.value);
+      this.arrayDelete('_editValue.Bugs', evt.target.value);
     },
 
     _toggleExpectation: function(evt) {
@@ -122,6 +126,8 @@
     },
 
     _cancelChangeCL: function(evt) {
+      // Reset form fields to the original values.
+      this.expectationChanged();
       this.fire('cancel-change-cl');
     },
 
