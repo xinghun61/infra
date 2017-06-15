@@ -17,6 +17,11 @@ var Known = []*Master{
 		Groups:     []string{"Unused"},
 	},
 	{
+		Name:       "ChromiumAndroidFyi",
+		Identifier: "chromium.android.fyi",
+		Groups:     []string{"Unused"},
+	},
+	{
 		Name:       "ChromiumChromiumOS",
 		Identifier: "chromium.chromiumos",
 		Groups:     []string{"@ToT ChromeOS"},
