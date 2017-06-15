@@ -7,6 +7,7 @@ import mock
 
 from common import constants
 from libs import analysis_status
+from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import buildbot
 from waterfall.flake import initialize_flake_pipeline
@@ -21,6 +22,7 @@ def _CreateAndSaveMasterFlakeAnalysis(master_name, builder_name, build_number,
     master_name, builder_name, build_number, step_name, test_name)
   analysis.status = status
   analysis.Save()
+  return analysis
 
 
 class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
@@ -77,9 +79,15 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     step_name = 's'
     test_name = 't'
-    _CreateAndSaveMasterFlakeAnalysis(
+
+    analysis = _CreateAndSaveMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name,
         test_name, status=analysis_status.COMPLETED)
+    data_point = DataPoint()
+    data_point.pass_rate = .5
+    data_point.build_number = 100
+    analysis.data_points.append(data_point)
+    analysis.Save()
 
     mocked_now = datetime(2017, 05, 01, 10, 10, 10)
     self.MockUTCNow(mocked_now)
@@ -94,7 +102,8 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(analysis)
     self.assertFalse(analysis.triggering_user_email_obscured)
     self.assertEqual(mocked_now, analysis.request_time)
-    self.assertEqual(analysis.version_number, 2)
+    self.assertEqual(analysis.version_number, 3)
+    self.assertFalse(analysis.data_points)
 
   def testAnalysisIsNotNeededForIncompleteAnalysis(self):
     master_name = 'm'

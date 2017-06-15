@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 import time
 
 from libs import analysis_status
@@ -37,6 +38,41 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     task_id = pipeline.run(
         master_name, builder_name, build_number, step_name, tests)
     self.assertEqual('task_id', task_id)
+
+  def testNoNewSwarmingTaskIsNeededButForceSpecified(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    step_name = 's'
+    tests = ['a.b']
+
+    swarming_task = WfSwarmingTask.Create(
+        master_name, builder_name, build_number, step_name)
+    swarming_task.status = analysis_status.RUNNING
+    swarming_task.task_id = 'task_id'
+    swarming_task.put()
+
+    pipeline = TriggerSwarmingTaskPipeline()
+    task_id = pipeline.run(
+        master_name, builder_name, build_number, step_name, tests, force=True)
+    self.assertNotEqual('task_id', task_id)
+
+  def testNeedSwarmingTaskWhenOneExistsButForceSpecified(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    step_name = 's'
+
+    swarming_task = WfSwarmingTask.Create(
+      master_name, builder_name, build_number, step_name)
+    swarming_task.status = analysis_status.RUNNING
+    swarming_task.task_id = 'task_id'
+    swarming_task.put()
+
+    pipeline = TriggerSwarmingTaskPipeline()
+    with mock.patch.object(pipeline, '_GetSwarmingTask',
+                           return_value=swarming_task):
+      self.assertTrue(pipeline._NeedANewSwarmingTask(force=True))
 
   def testWaitingForTheTaskId(self):
     master_name = 'm'

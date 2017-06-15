@@ -349,7 +349,7 @@ class RecursiveFlakePipeline(BasePipeline):
       self, analysis_urlsafe_key, preferred_run_build_number,
       lower_bound_build_number, upper_bound_build_number,
       user_specified_iterations, step_metadata=None, manually_triggered=False,
-      use_nearby_neighbor=False, step_size=0, retries=0):
+      use_nearby_neighbor=False, step_size=0, retries=0, force=False):
     """Pipeline to determine and analyze the regression range of a flaky test.
 
     Args:
@@ -388,7 +388,7 @@ class RecursiveFlakePipeline(BasePipeline):
         analysis_urlsafe_key, preferred_run_build_number,
         lower_bound_build_number, upper_bound_build_number,
         user_specified_iterations, step_metadata, manually_triggered,
-        use_nearby_neighbor, step_size, retries)
+        use_nearby_neighbor, step_size, retries, force)
     self.analysis_urlsafe_key = ndb.Key(urlsafe=analysis_urlsafe_key)
     analysis = self.analysis_urlsafe_key.get()
     assert analysis
@@ -407,6 +407,7 @@ class RecursiveFlakePipeline(BasePipeline):
     self.use_nearby_neighbor = use_nearby_neighbor
     self.step_size = step_size
     self.retries = retries
+    self.force = force
 
   def _StartOffPSTPeakHours(self, *args, **kwargs):
     """Starts the pipeline off PST peak hours if not triggered manually."""
@@ -462,7 +463,7 @@ class RecursiveFlakePipeline(BasePipeline):
           lower_bound_build_number, upper_bound_build_number,
           user_specified_iterations, step_metadata=None,
           manually_triggered=False, use_nearby_neighbor=False, step_size=0,
-          retries=0):
+          retries=0, force=False):
     """Pipeline to determine and analyze the regression range of a flaky test.
 
     Args:
@@ -493,6 +494,8 @@ class RecursiveFlakePipeline(BasePipeline):
           use_nearby_neighbor is True.
       retries (int): Number of retries of this pipeline. If reties exceeds the
           _MAX_RETRY_TIMES, start this pipeline off peak hours.
+      force (bool): Force this build to run from scratch,
+          a rerun by an admin will trigger this.
 
     Returns:
       A dict of lists for reliable/flaky tests.
@@ -519,7 +522,8 @@ class RecursiveFlakePipeline(BasePipeline):
 
       task_id = yield TriggerFlakeSwarmingTaskPipeline(
           self.master_name, self.builder_name, actual_run_build_number,
-          self.step_name, [self.test_name], iterations, hard_timeout_seconds)
+          self.step_name, [self.test_name], iterations, hard_timeout_seconds,
+          force=force)
 
       with pipeline.InOrder():
         yield ProcessFlakeSwarmingTaskResultPipeline(
