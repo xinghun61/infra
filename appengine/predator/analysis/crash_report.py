@@ -13,7 +13,7 @@ class _FrozenDict(dict):
   The goal of this class is to render a ``dict`` hashable, so
   that it can be used as a key in other ``dict``s, so that in
   turn we can use our ``MemoizedFunction`` on functions taking
-  ``CrashReportWithDependencies`` as an argument.
+  ``CrashReport`` as an argument.
 
   For now, we simply define the ``__hash__`` method and assume clients
   will not try to mutate instances after they have been stored as keys

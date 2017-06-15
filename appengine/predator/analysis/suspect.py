@@ -23,7 +23,7 @@ class Suspect(object):
                confidence=None, reasons=None, changed_files=None):
     if not isinstance(confidence, (int, float, type(None))): # pragma: no cover
       raise TypeError(
-          'In the ``confidence`` argument to the Result constructor, '
+          'In the ``confidence`` argument to the Suspect constructor, '
           'expected a number or None, but got a %s object instead.'
           % confidence.__class__.__name__)
     self.changelog = changelog

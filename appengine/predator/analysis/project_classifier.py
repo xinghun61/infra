@@ -37,7 +37,7 @@ class ProjectClassifier(object):
     """Determines which project is responsible for this crash stack.
 
     Args:
-      suspects (list of Suspect): culprit suspects.
+      crash_stack (CallStack): The crash_stack of the Stacktrace for this crash.
 
     Returns:
       The name of the most-suspected project; or the empty string on failure.
