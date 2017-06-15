@@ -339,7 +339,7 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(), upper_bound_build_number,
             lower_bound_build_number, upper_bound_build_number,
             iterations_to_rerun, {'dimensions': {'os': 'OS'}}, False, False, 0,
-            0, False],
+            0],
         expected_kwargs={})
 
     pipeline_job = RegressionRangeAnalysisPipeline(
@@ -450,7 +450,7 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(), upper_bound_build_number,
             lower_bound_build_number, upper_bound_build_number,
             input_iterations_to_rerun, {'dimensions': {'os': 'OS'}}, False,
-            False, 0, 0, False],
+            False, 0, 0],
         expected_kwargs={})
     self.MockPipeline(
         NextBuildNumberPipeline, '',
