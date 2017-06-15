@@ -56,6 +56,7 @@ from infra_libs.ts_mon.common.errors import MonitoringNoConfiguredMonitorError
 from infra_libs.ts_mon.common.errors import MonitoringNoConfiguredTargetError
 
 from infra_libs.ts_mon.common.helpers import ScopedIncrementCounter
+from infra_libs.ts_mon.common.helpers import ScopedMeasureTime
 
 from infra_libs.ts_mon.common.interface import close
 from infra_libs.ts_mon.common.interface import flush
