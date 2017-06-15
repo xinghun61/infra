@@ -22,11 +22,11 @@ type mockGerritAPI struct {
 	LastComments []*track.Comment
 }
 
-func (m *mockGerritAPI) PostReviewMessage(c context.Context, host, ref, msg string) error {
+func (m *mockGerritAPI) PostReviewMessage(c context.Context, host, change, revision, msg string) error {
 	m.LastMsg = msg
 	return nil
 }
-func (m *mockGerritAPI) PostRobotComments(c context.Context, host, ref string, comments []*track.Comment) error {
+func (m *mockGerritAPI) PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error {
 	m.LastComments = comments
 	return nil
 }

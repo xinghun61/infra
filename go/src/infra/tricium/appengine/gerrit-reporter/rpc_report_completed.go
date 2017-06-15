@@ -67,5 +67,5 @@ func reportCompleted(c context.Context, req *admin.ReportCompletedRequest, gerri
 		buf.WriteString(fmt.Sprintf("  %s: %d\n", ar.Name, ar.NumComments))
 	}
 	msg := fmt.Sprintf("Tricium finished analyzing patch set and found %d results (run ID: %d).\n%s", n, req.RunId, buf.String())
-	return gerrit.PostReviewMessage(c, request.GitRepo, request.GitRef, msg)
+	return gerrit.PostReviewMessage(c, request.GitRepo, request.GerritChange, request.GerritRevision, msg)
 }

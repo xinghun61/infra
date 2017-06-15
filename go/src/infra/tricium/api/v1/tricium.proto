@@ -51,6 +51,12 @@ message AnalyzeRequest {
   // Note that progress and results can be accessed via the Tricium
   // API regardless of whether a reporter has been included in the request.
   Reporter reporter = 4;
+
+  // Gerrit details for the Gerrit reporter; change and revision.
+  //
+  // These fields are required if the Gerrit reporter is selected.
+  string gerrit_change = 5;
+  string gerrit_revision = 6;
 }
 
 message AnalyzeResponse {

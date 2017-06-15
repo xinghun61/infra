@@ -76,6 +76,9 @@ type AnalyzeRequest struct {
 	GitRef string `gae:",noindex"`
 	// Reporter to use for progress updates and results.
 	Reporter tricium.Reporter
+	// Gerrit details for when the Gerrit reporter is selected.
+	GerritChange   string `gae:",noindex"`
+	GerritRevision string `gae:",noindex"`
 }
 
 // AnalyzeRequestResult tracks the state of a tricium.Analyze request.

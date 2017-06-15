@@ -49,6 +49,14 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	if len(req.Paths) == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
+	if req.Reporter == tricium.Reporter_GERRIT {
+		if req.GerritChange == "" {
+			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit change")
+		}
+		if req.GerritRevision == "" {
+			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit revision")
+		}
+	}
 	runID, code, err := analyze(c, req, config.LuciConfigServer)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "analyze failed: %v", err)
@@ -80,6 +88,10 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		GitRepo:  repo,
 		GitRef:   req.GitRef,
 		Reporter: req.Reporter,
+	}
+	if req.Reporter == tricium.Reporter_GERRIT {
+		request.GerritChange = req.GerritChange
+		request.GerritRevision = req.GerritRevision
 	}
 	requestRes := &track.AnalyzeRequestResult{
 		ID:    1,
