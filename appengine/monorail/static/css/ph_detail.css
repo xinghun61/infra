@@ -502,10 +502,14 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   text-decoration-style: dotted;
 }
 
-#preview_filterrules_warnings {
+#preview_filterrules_warnings, #preview_filterrules_errors {
   margin-top: 3px;
 }
-#preview_filterrules_warnings ul {
+#preview_filterrules_warnings ul, #preview_filterrules_errors ul {
   margin-top: 0;
   list-style-type: none;
+}
+
+#preview_filterrules_errors ul {
+  color: red;
 }

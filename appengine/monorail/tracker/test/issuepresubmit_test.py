@@ -62,22 +62,27 @@ class IssuePresubmitTest(unittest.TestCase):
     actual = issuepresubmit.PairDerivedValuesWithRuleExplanations(
         proposed_issue, traces, derived_users_by_id)
     (derived_labels_and_why, derived_owner_and_why,
-     derived_cc_and_why, warnings_and_why) = actual
+     derived_cc_and_why, warnings_and_why, errors_and_why) = actual
     self.assertEqual([], derived_labels_and_why)
     self.assertEqual([], derived_owner_and_why)
     self.assertEqual([], derived_cc_and_why)
     self.assertEqual([], warnings_and_why)
+    self.assertEqual([], errors_and_why)
 
   def testPairDerivedValuesWithRuleExplanations_SomeValues(self):
     proposed_issue = tracker_pb2.Issue(
         derived_owner_id=111L, derived_cc_ids=[222L, 333L],
-        derived_labels=['aaa', 'zzz'], warnings=['Watch out'])
+        derived_labels=['aaa', 'zzz'],
+        derived_warnings=['Watch out'],
+        derived_errors=['Status Assigned requires an owner'])
     traces = {
         (tracker_pb2.FieldID.OWNER, 111L): 'explain 1',
         (tracker_pb2.FieldID.CC, 222L): 'explain 2',
         (tracker_pb2.FieldID.CC, 333L): 'explain 3',
         (tracker_pb2.FieldID.LABELS, 'aaa'): 'explain 4',
         (tracker_pb2.FieldID.WARNING, 'Watch out'): 'explain 6',
+        (tracker_pb2.FieldID.ERROR,
+         'Status Assigned requires an owner'): 'explain 7',
         # There can be extra traces that are not used.
         (tracker_pb2.FieldID.LABELS, 'bbb'): 'explain 5',
         # If there is no trace for some derived value, why is None.
@@ -90,7 +95,7 @@ class IssuePresubmitTest(unittest.TestCase):
     actual = issuepresubmit.PairDerivedValuesWithRuleExplanations(
         proposed_issue, traces, derived_users_by_id)
     (derived_labels_and_why, derived_owner_and_why,
-     derived_cc_and_why, warnings_and_why) = actual
+     derived_cc_and_why, warnings_and_why, errors_and_why) = actual
     self.assertEqual([
         {'value': 'aaa', 'why': 'explain 4'},
         {'value': 'zzz', 'why': None},
@@ -105,3 +110,6 @@ class IssuePresubmitTest(unittest.TestCase):
     self.assertEqual([
         {'value': 'Watch out', 'why': 'explain 6'},
         ], warnings_and_why)
+    self.assertEqual([
+        {'value': 'Status Assigned requires an owner', 'why': 'explain 7'},
+        ], errors_and_why)

@@ -4,4 +4,5 @@
   <div id="preview_filterrules_owner"></div>
   <div id="preview_filterrules_ccs"></div>
   <div id="preview_filterrules_warnings"></div>
+  <div id="preview_filterrules_errors"></div>
 </div>

@@ -164,7 +164,7 @@ def ApplyGivenRules(cnxn, services, issue, config, rules, predicate_asts):
   """
   (derived_owner_id, derived_status, derived_cc_ids,
    derived_labels, derived_notify_addrs, traces,
-   new_warnings) = _ComputeDerivedFields(
+   new_warnings, new_errors) = _ComputeDerivedFields(
        cnxn, services, issue, config, rules, predicate_asts)
 
   # Remember any derived values.
@@ -173,7 +173,8 @@ def ApplyGivenRules(cnxn, services, issue, config, rules, predicate_asts):
   issue.derived_cc_ids = derived_cc_ids
   issue.derived_labels = derived_labels
   issue.derived_notify_addrs = derived_notify_addrs
-  issue.warnings = new_warnings
+  issue.derived_warnings = new_warnings
+  issue.derived_errors = new_errors
 
   return traces
 
@@ -190,10 +191,10 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
     predicate_asts: QueryAST PB for each rule.
 
   Returns:
-    A 6-tuple of derived values for owner_id, status, cc_ids, labels,
-    notify_addrs, and traces.  These values are the result of applying all
-    rules in order.  Filter rules only produce derived values that do not
-    conflict with the explicit field values of the issue.
+    A 8-tuple of derived values for owner_id, status, cc_ids, labels,
+    notify_addrs, traces, warnings, and errors.  These values are the result
+    of applying all rules in order.  Filter rules only produce derived values
+    that do not conflict with the explicit field values of the issue.
   """
   excl_prefixes = [
       prefix.lower() for prefix in config.exclusive_label_prefixes]
@@ -217,6 +218,7 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
   derived_notify_addrs = []
   traces = {}  # {(field_id, new_value): explanation_str}
   new_warnings = []
+  new_errors = []
 
   def AddLabelConsideringExclusivePrefixes(label):
     lab_lower = label.lower()
@@ -258,7 +260,8 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
   # that early rules that set those can affect later rules that check them.
   for rule, predicate_ast in zip(rules, predicate_asts):
     (rule_owner_id, rule_status, rule_add_cc_ids,
-     rule_add_labels, rule_add_notify, rule_add_warning) = _ApplyRule(
+     rule_add_labels, rule_add_notify, rule_add_warning,
+     rule_add_error) = _ApplyRule(
          cnxn, services, rule, predicate_ast, issue, label_set, config)
 
     # logging.info(
@@ -298,8 +301,13 @@ def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):
       traces[(tracker_pb2.FieldID.WARNING, rule_add_warning)] = (
         'Added by rule: IF %s THEN ADD WARNING' % rule.predicate)
 
+    if rule_add_error:
+      new_errors.append(rule_add_error)
+      traces[(tracker_pb2.FieldID.ERROR, rule_add_error)] = (
+        'Added by rule: IF %s THEN ADD ERROR' % rule.predicate)
+
   return (derived_owner_id, derived_status, derived_cc_ids, derived_labels,
-          derived_notify_addrs, traces, new_warnings)
+          derived_notify_addrs, traces, new_warnings, new_errors)
 
 
 def EvalPredicate(
@@ -364,9 +372,9 @@ def _ApplyRule(
     logging.info('rule adds: %r', rule_pb.add_labels)
     return (rule_pb.default_owner_id, rule_pb.default_status,
             rule_pb.add_cc_ids, rule_pb.add_labels,
-            rule_pb.add_notify_addrs, rule_pb.warning)
+            rule_pb.add_notify_addrs, rule_pb.warning, rule_pb.error)
   else:
-    return None, None, [], [], [], None
+    return None, None, [], [], [], None, None
 
 
 def _ApplyCond(
@@ -600,8 +608,9 @@ def _HasText(rule_text, issue_values):
   return False
 
 
-def MakeRule(predicate, default_status=None, default_owner_id=None,
-             add_cc_ids=None, add_labels=None, add_notify=None, warning=None):
+def MakeRule(
+    predicate, default_status=None, default_owner_id=None, add_cc_ids=None,
+    add_labels=None, add_notify=None, warning=None, error=None):
   """Make a FilterRule PB with the supplied information.
 
   Args:
@@ -611,6 +620,8 @@ def MakeRule(predicate, default_status=None, default_owner_id=None,
     add_cc_ids: optional cc ids to set if rule fires.
     add_labels: optional label strings to set if rule fires.
     add_notify: optional notify email addresses to set if rule fires.
+    warning: optional string for a software development process warning.
+    error: optional string for a software development process error.
 
   Returns:
     A new FilterRule PB.
@@ -630,6 +641,8 @@ def MakeRule(predicate, default_status=None, default_owner_id=None,
     rule_pb.add_notify_addrs = add_notify
   if warning:
     rule_pb.warning = warning
+  if error:
+    rule_pb.error = error
 
   return rule_pb
 
@@ -727,6 +740,9 @@ def _ParseOneRule(
 
   elif action_type == 'warning':
     rule = MakeRule(predicate, warning=action_value)
+
+  elif action_type == 'error':
+    rule = MakeRule(predicate, error=action_value)
 
   else:
     logging.info('unexpected action type, probably tampering:%r', action_type)

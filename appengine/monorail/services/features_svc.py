@@ -57,7 +57,8 @@ CONSEQUENCE_RE = re.compile(
     r'(add_cc_id:(?P<add_cc_id>\d+))|'
     r'(add_label:(?P<add_label>\w+))|'
     r'(add_notify:(?P<add_notify>\w+))|'
-    r'(warning:(?P<warning>.+))'  # Warnings consume the rest of the string.
+    r'(warning:(?P<warning>.+))|'  # Warnings consume the rest of the string.
+    r'(error:(?P<error>.+))'  # Errors consume the rest of the string.
     )
 
 class HotlistTwoLevelCache(caches.AbstractTwoLevelCache):
@@ -407,11 +408,13 @@ class FeaturesService(object):
     for filterrule_row in sorted(filterrule_rows):
       project_id, _rank, predicate, consequence = filterrule_row
       (default_status, default_owner_id, add_cc_ids, add_labels,
-       add_notify, warning) = self._DeserializeRuleConsequence(consequence)
+       add_notify, warning, error) = self._DeserializeRuleConsequence(
+          consequence)
       rule = filterrules_helpers.MakeRule(
           predicate, default_status=default_status,
           default_owner_id=default_owner_id, add_cc_ids=add_cc_ids,
-          add_labels=add_labels, add_notify=add_notify, warning=warning)
+          add_labels=add_labels, add_notify=add_notify, warning=warning,
+          error=error)
       result_dict[project_id].append(rule)
 
     return result_dict
@@ -419,7 +422,7 @@ class FeaturesService(object):
   def _DeserializeRuleConsequence(self, consequence):
     """Decode the THEN-part of a filter rule."""
     (default_status, default_owner_id, add_cc_ids, add_labels,
-     add_notify, warning) = None, None, [], [], [], None
+     add_notify, warning, error) = None, None, [], [], [], None, None
     for match in CONSEQUENCE_RE.finditer(consequence):
       if match.group('default_status'):
         default_status = match.group('default_status')
@@ -433,9 +436,11 @@ class FeaturesService(object):
         add_notify.append(match.group('add_notify'))
       elif match.group('warning'):
         warning = match.group('warning')
+      elif match.group('error'):
+        error = match.group('error')
 
     return (default_status, default_owner_id, add_cc_ids, add_labels,
-            add_notify, warning)
+            add_notify, warning, error)
 
   def _GetFilterRulesByProjectIDs(self, cnxn, project_ids):
     """Return {project_id: [FilterRule, ...]} for the specified projects."""
@@ -464,6 +469,8 @@ class FeaturesService(object):
       assignments.append('add_notify:%s' % add_notify)
     if rule.warning:
       assignments.append('warning:%s' % rule.warning)
+    if rule.error:
+      assignments.append('error:%s' % rule.error)
 
     return ' '.join(assignments)
 

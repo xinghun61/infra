@@ -45,3 +45,6 @@ class RuleView(template_helpers.PBProxy):
     elif rule_pb.warning:
       self.action_type = 'warning'
       self.action_value = rule_pb.warning
+    elif rule_pb.error:
+      self.action_type = 'error'
+      self.action_value = rule_pb.error

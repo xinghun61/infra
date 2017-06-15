@@ -94,7 +94,7 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
 
     with self.profiler.Phase('pair derived values with rule explanations'):
       (derived_labels_and_why, derived_owner_and_why,
-       derived_cc_and_why, warnings_and_why
+       derived_cc_and_why, warnings_and_why, errors_and_why
        ) = PairDerivedValuesWithRuleExplanations(
           proposed_issue, traces, derived_users_by_id)
 
@@ -105,6 +105,7 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
         'derived_owner_email': derived_owner_and_why,
         'derived_cc_emails': derived_cc_and_why,
         'warnings': warnings_and_why,
+        'errors': errors_and_why,
         }
 
 
@@ -131,7 +132,12 @@ def PairDerivedValuesWithRuleExplanations(
   warnings_and_why = [
       {'value': warning,
        'why': traces.get((tracker_pb2.FieldID.WARNING, warning))}
-      for warning in proposed_issue.warnings]
+      for warning in proposed_issue.derived_warnings]
+
+  errors_and_why = [
+      {'value': error,
+       'why': traces.get((tracker_pb2.FieldID.ERROR, error))}
+      for error in proposed_issue.derived_errors]
 
   return (derived_labels_and_why, derived_owner_and_why, derived_cc_and_why,
-          warnings_and_why)
+          warnings_and_why, errors_and_why)

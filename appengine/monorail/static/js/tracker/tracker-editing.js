@@ -1719,15 +1719,15 @@ function onPresubmitResponse(event) {
       'preview_filterrules_ccs', 'Cc', response.derived_cc_emails);
   var warnings = renderFilterRulesListSection(
       'preview_filterrules_warnings', 'Warnings', response.warnings);
+  var errors = renderFilterRulesListSection(
+      'preview_filterrules_errors', 'Errors', response.errors);
 
   if (derived_labels || derived_owner_email || derived_cc_emails ||
-      warnings) {
+      warnings || errors) {
       $('preview_filterrules_area').style.display = '';
   } else {
       $('preview_filterrules_area').style.display = 'none';
   }
-
-  // TODO(jrobbins): display process warnings here.
 }
 
 function HTL_deleteHotlist(form) {
