@@ -827,15 +827,6 @@ function TKR_setUpLabelStore(labelDefs) {
     for (var i = 0; i < comps.length; i++) {
       var prefix_parts = comps[i].value.split('-');
       var label_prefix = prefix_parts[0].toLowerCase();
-      if (comps[i].value.startsWith('Restrict-')) {
-        if (!prefix.toLowerCase().startsWith('r')) {
-          // Consider restriction labels iff user has started typing.
-          continue;
-        }
-        if (prefix_parts.length > 1) {
-          label_prefix += '-' + prefix_parts[1].toLowerCase();
-        }
-      }
       if (FindInArray(TKR_exclPrefixes, label_prefix) == -1 ||
           TKR_usedPrefixes[label_prefix] == undefined ||
           TKR_usedPrefixes[label_prefix].length == 0 ||
