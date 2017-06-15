@@ -133,6 +133,17 @@ func (ejd *EditJobDefinition) Env(env map[string]string) {
 	})
 }
 
+// Priority edits the swarming task priority.
+func (ejd *EditJobDefinition) Priority(priority int64) {
+	if priority < 0 {
+		return
+	}
+	ejd.tweakSystemland(func(s *Systemland) error {
+		s.SwarmingTask.Priority = priority
+		return nil
+	})
+}
+
 // Properties edits the recipe properties.
 func (ejd *EditJobDefinition) Properties(props map[string]string) {
 	if len(props) == 0 {

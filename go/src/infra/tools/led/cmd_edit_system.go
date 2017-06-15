@@ -35,6 +35,8 @@ func editSystemCmd() *subcommands.Command {
 			ret.Flags.Var(&ret.prefixPathEnv, "ppe",
 				"(repeatable) override a -prefix-path-env entry. Using a value like '!value' will remove a path entry.")
 
+			ret.Flags.Int64Var(&ret.priority, "p", -1, "set the swarming task priority (0-255), lower is faster to scheduler.")
+
 			return ret
 		},
 	}
@@ -48,6 +50,7 @@ type cmdEditSystem struct {
 	environment   stringmapflag.Value
 	cipdPackages  stringmapflag.Value
 	prefixPathEnv stringlistflag.Flag
+	priority      int64
 }
 
 func (c *cmdEditSystem) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -58,6 +61,7 @@ func (c *cmdEditSystem) Run(a subcommands.Application, args []string, env subcom
 		ejd.Env(c.environment)
 		ejd.CipdPkgs(c.cipdPackages)
 		ejd.PrefixPathEnv(c.prefixPathEnv)
+		ejd.Priority(c.priority)
 		return ejd.Finalize()
 	})
 	if err != nil {

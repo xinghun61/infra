@@ -22,6 +22,7 @@ import (
 )
 
 const generateLogdogToken = "TRY_RECIPE_GENERATE_LOGDOG_TOKEN"
+const ledJobNamePrefix = "led: "
 
 // JobDefinitionFromNewTaskRequest generates a new JobDefinition by parsing the
 // given SwarmingRpcsNewTaskRequest. It expects that the
@@ -99,6 +100,12 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 				ret.S.KitchenArgs.Properties = nil
 			}
 		}
+	}
+
+	// prepend the name by default. This can be removed by manually editing the
+	// job definition before launching it.
+	if !strings.HasPrefix(ret.S.SwarmingTask.Name, ledJobNamePrefix) {
+		ret.S.SwarmingTask.Name = ledJobNamePrefix + ret.S.SwarmingTask.Name
 	}
 
 	return ret, nil
