@@ -22,10 +22,11 @@ type FullResult struct {
 
 	// These fields are optional.
 
-	ChromiumRev *string `json:"chromium_revision,omitempty"`
-	PathDelim   *string `json:"path_delimiter,omitempty"`
-	Interrupted *bool   `json:"interrupted,omitempty"`
-	BlinkRev    *string `json:"blink_revision,omitempty"`
+	ChromiumRev   *string                  `json:"chromium_revision,omitempty"`
+	PathDelim     *string                  `json:"path_delimiter,omitempty"`
+	Interrupted   *bool                    `json:"interrupted,omitempty"`
+	BlinkRev      *string                  `json:"blink_revision,omitempty"`
+	TestLocations *map[string]TestLocation `json:"test_locations,omitempty"`
 
 	// These fields are layout test specific.
 
@@ -42,6 +43,12 @@ type FullResult struct {
 	NumPasses      *int `json:"num_passes,omitempty"`
 	NumRegressions *int `json:"num_regressions,omitempty"`
 	Skips          *int `json:"skips,omitempty"`
+}
+
+// TestLocation describes a location of a single test.
+type TestLocation struct {
+	File string `json:"file"`
+	Line int    `json:"line"`
 }
 
 // AggregateResult converts fr to an AggregateResult. The returned

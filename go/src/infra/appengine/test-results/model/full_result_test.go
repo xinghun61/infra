@@ -59,6 +59,16 @@ func TestFullResult(t *testing.T) {
 				"Q": 11,
 			},
 			ChromiumRev: &chromiumrev,
+			TestLocations: &map[string]TestLocation{
+				"Foo.Bar": {
+					File: "foo/file.cc",
+					Line: 123,
+				},
+				"Foo.Baz": {
+					File: "foo/file.cc",
+					Line: 452,
+				},
+			},
 		}
 
 		Convey("FullTestLeaf", func() {

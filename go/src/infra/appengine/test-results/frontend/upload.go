@@ -281,6 +281,19 @@ func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 	return datastore.Put(c, &tf)
 }
 
+func uploadTestLocations(c context.Context, testLocs *map[string]model.TestLocation) {
+	if serializedTestLocs, err := json.Marshal(testLocs); err != nil {
+		logging.WithError(err).Errorf(c, "Failed to serialize test_locations")
+	} else {
+		// TODO(sergiyb): Implement actual upload. For now we need to measure
+		// serialized size to determine whether we can pass this via taskqueue
+		// params and move all processing to a different handler or whether we have
+		// to do some processing as part of upload handler.
+		logging.Debugf(c, "Size of serialized test_locations dict is %d",
+			len(serializedTestLocs))
+	}
+}
+
 // updateFullResults puts the supplied data as "full_results.json"
 // to the datastore, and updates corresponding "results.json" and
 // "results-small.json" files in the datastore.
@@ -298,6 +311,15 @@ func updateFullResults(c context.Context, data io.Reader) error {
 		logging.WithError(err).Errorf(c, "updateFullResults: unmarshal JSON")
 		return statusError{err, http.StatusBadRequest}
 	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	testLocs := f.TestLocations
+	f.TestLocations = nil // remove test locations to reduce NDB storage costs
+	go func() {
+		defer wg.Done()
+		uploadTestLocations(c, testLocs)
+	}()
 
 	if f.Builder != p.Builder {
 		err := errors.New("Builder in query params does not match uploaded JSON")
@@ -331,8 +353,6 @@ func updateFullResults(c context.Context, data io.Reader) error {
 		}
 		return statusError{err, code}
 	}
-
-	wg := sync.WaitGroup{}
 
 	wg.Add(1)
 	go func() {
