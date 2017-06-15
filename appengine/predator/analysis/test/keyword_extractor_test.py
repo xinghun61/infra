@@ -17,7 +17,16 @@ from analysis.type_enums import LanguageType
 
 class FilePathExtractorTest(AnalysisTestCase):
 
-  def testCall(self):
+  def testCallWhenThereIsNoStacktrace(self):
+    """Tests ``__call__`` when there is no stacktrace in crash_report."""
+    crash_report = CrashReport(None, None, None, None, (None, None), None, None)
+
+    file_path_extractor = FilePathExtractor()
+    keywords = file_path_extractor(crash_report)
+    self.assertEqual(keywords, {})
+
+  def testCallWhenThereIsStacktrace(self):
+    """Tests ``__call__`` when there is stacktrace in crash_report."""
     file_paths = set(['a.cc', 'b.cc', 'c.cc'])
     frames = []
     for index, file_path in enumerate(file_paths):

@@ -46,9 +46,8 @@ class Culprit(namedtuple('Culprit',
                   "project_path": "third_party/pdfium",
                   "author": "who@chromium.org",
                   "time": "2015-08-17 03:38:16",
-                  "reason": "a plain string with '\n' as line break to expla..."
-                  "reason": [('MinDistance', 1, 'minimum distance is 0.'),
-                             ('TopFrame', 0.9, 'top frame is2nd frame.')],
+                  "reasons": [('MinDistance', 1, 'minimum distance is 0.'),
+                              ('TopFrame', 0.9, 'top frame is2nd frame.')],
                   "changed_files": [
                       {"file": "file_name1.cc",
                        "blame_url": "https://...",

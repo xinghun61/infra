@@ -8,6 +8,7 @@ import gae_ts_mon
 
 from backend.handlers import rerun_analysis
 from backend.handlers import update_component_config
+from backend.handlers import update_inverted_index
 from gae_libs.pipeline_wrapper import pipeline_handlers
 
 
@@ -19,7 +20,9 @@ gae_ts_mon.initialize(pipeline_backend_application)
 backend_handler_mappings = [
     ('/process/update-component-config',
      update_component_config.UpdateComponentConfig),
-    ('/process/rerun-analysis', rerun_analysis.RerunAnalysis)
+    ('/process/rerun-analysis', rerun_analysis.RerunAnalysis),
+    ('/process/update-inverted-index',
+     update_inverted_index.UpdateInvertedIndex),
 ]
 backend_app = webapp2.WSGIApplication(backend_handler_mappings, debug=False)
 gae_ts_mon.initialize(backend_app)

@@ -3,6 +3,10 @@ cron:
   url: /internal/cron/ts_mon/send
   schedule: every 1 minutes
 
-- description: Sunday evening to update directory mapping of components
+- description: Update directory mapping of components every sunday
   url: /process/update-component-config
   schedule: every sunday 21:00
+
+- description: Update inverted index everyday.
+  url: /process/update-inverted-index
+  schedule: every 24 hours

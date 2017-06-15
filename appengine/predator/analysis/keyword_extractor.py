@@ -24,8 +24,9 @@ class FilePathExtractor(KeywordExtractor):
 
   def __call__(self, crash_report):
     file_paths = defaultdict(int)
-    for callstack in crash_report.stacktrace.stacks:
-      for frame in callstack.frames:
-        file_paths[os.path.join(frame.dep_path, frame.file_path)] += 1
+    if crash_report.stacktrace:
+      for callstack in crash_report.stacktrace.stacks:
+        for frame in callstack.frames:
+          file_paths[os.path.join(frame.dep_path, frame.file_path)] += 1
 
     return dict(file_paths)

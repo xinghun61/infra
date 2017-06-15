@@ -64,3 +64,11 @@ class InvertedIndex(ndb.Model):
   @classmethod
   def Create(cls, keyword):
     return cls(key=cls._CreateKey(keyword))
+
+
+class ChromeCrashInvertedIndex(InvertedIndex):
+  pass
+
+
+class ClusterfuzzInvertedIndex(InvertedIndex):
+  pass
