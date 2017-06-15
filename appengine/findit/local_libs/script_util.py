@@ -23,26 +23,37 @@ TASK_QUEUE = None
 GIT_HASH_PATTERN = re.compile(r'^[0-9a-fA-F]{40}$')
 
 
-def SetUpSystemPaths(root_dir=None):  # pragma: no cover
-  """Sets system paths so as to import modules in findit, third_party and
-  appengine."""
-  root_dir = root_dir or os.path.join(
-      os.path.dirname(os.path.realpath(__file__)), os.path.pardir)
-  first_party_dir = os.path.join(root_dir, 'first_party')
-  third_party_dir = os.path.join(root_dir, 'third_party')
-  appengine_sdk_dir = os.path.join(root_dir, os.path.pardir,
-                                   os.path.pardir, os.path.pardir,
-                                   'google_appengine')
+def SetAppEnginePaths(root_dir=None):
+  """Inserts appengine sdk paths of infra to system paths."""
+  # If no root directory is provided, default to findit root directory.
+  root_dir = root_dir or os.path.realpath(os.path.join(
+      os.path.dirname(__file__), os.path.pardir))
+
+  appengine_sdk_dir = os.path.realpath(os.path.join(
+      root_dir, os.path.pardir, os.path.pardir, os.path.pardir,
+      'google_appengine'))
 
   sys.path.insert(1, appengine_sdk_dir)
 
   import dev_appserver
   dev_appserver.fix_sys_path()
 
-  # Add Findit root dir to sys.path so that modules in Findit is available.
+
+def SetUpSystemPaths(root_dir=None):  # pragma: no cover
+  """Inserts root path, first_party, third_party and appengine sdk paths."""
+  # If no root directory is provided, default to findit root directory.
+  root_dir = root_dir or os.path.realpath(os.path.join(
+      os.path.dirname(__file__), os.path.pardir))
+  SetAppEnginePaths(root_dir)
+
+  first_party_dir = os.path.join(root_dir, 'first_party')
+  third_party_dir = os.path.join(root_dir, 'third_party')
+
+  # Add root dir to sys.path so that modules of the corresponding project is
+  # available.
   if not root_dir in sys.path:
     sys.path.insert(1, root_dir)
-  # Add App Engine SDK dir to sys.path.
+  # Add first party and third party libraries to sys.path.
   if not third_party_dir in sys.path:
     sys.path.insert(1, third_party_dir)
   if not first_party_dir in sys.path:
