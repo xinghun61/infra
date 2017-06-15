@@ -184,6 +184,9 @@ class CrashAnalysisPipeline(CrashBasePipeline):
                           'client_id': self.client_id})
 
     analysis.status = analysis_status.COMPLETED
+    logging.info('Found %s analysis result for %s: \n%s', self.client_id,
+                 repr(self._crash_identifiers),
+                 json.dumps(analysis.result, indent=2, sort_keys=True))
     analysis.put()
 
 
@@ -257,38 +260,30 @@ class CrashWrapperPipeline(BasePipeline): # pragma: no cover
       yield PublishResultPipeline(self._client_id, self._crash_identifiers)
 
 
-# TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
-class RerunPipeline(BasePipeline):  # pragma: no cover
-  """Reruns analysis of all crash analyses in a time range."""
+class RerunPipeline(BasePipeline):
 
-  def run(self, client_id, start_date, end_date):
-    analysis = CLIENT_ID_TO_CRASH_ANALYSIS.get(client_id)
-    if not analysis:
-      return
+  # Arguments number differs from overridden method - pylint: disable=W0221
+  def run(self, client_id, crash_keys):
+    """Reruns analysis for a batch of crashes.
 
-    query = analysis.query()
-    query = query.filter(
-        analysis.requested_time >= start_date).filter(
-            analysis.requested_time < end_date)
-
+    Args:
+      client_id (CrashClient): The client whose crash we should iterate.
+      crash_keys (list): A list of urlsafe encodings of crash keys.
+    """
     client = PredatorForClientID(
         client_id,
         CachedGitilesRepository.Factory(HttpClientAppengine()),
         CrashConfig.Get())
-    updated_crashes = []
-    logging.info('query: %s' % str(query))
-    for crash in Iterate(query):
-      logging.info('Download crash %s', str(crash))
+
+    updated = []
+    for key in crash_keys:
+      key = ndb.Key(urlsafe=key)
+      crash = key.get()
       crash.ReInitialize(client)
-      crash.key = analysis._CreateKey(crash.identifiers)
-      updated_crashes.append(crash)
+      updated.append(crash)
 
-    ndb.put_multi(updated_crashes)
+    ndb.put_multi(updated)
 
-    for crash in updated_crashes:
+    for crash in updated:
       logging.info('Initialize analysis for crash %s', crash.identifiers)
-      try:
-        yield CrashAnalysisPipeline(client_id, crash.identifiers)
-      except Exception:
-        logging.exception(traceback.format_exc())
-        return
+      yield CrashAnalysisPipeline(client_id, crash.identifiers)

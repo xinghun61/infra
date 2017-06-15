@@ -34,9 +34,9 @@ queue:
 
 - name: rerun-queue
   mode: push
-  rate: 1/s
+  rate: 20/s
   bucket_size: 100
-  max_concurrent_requests: 15
+  max_concurrent_requests: 10
   retry_parameters:
-    min_backoff_seconds: 15
+    min_backoff_seconds: 10
     task_retry_limit: 3

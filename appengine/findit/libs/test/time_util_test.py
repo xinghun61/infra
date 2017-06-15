@@ -107,6 +107,24 @@ class TimeUtilTest(unittest.TestCase):
         (datetime(2017, 3, 15, 0, 0, 0), datetime(2017, 3, 16, 0, 0, 0)),
         time_util.GetStartEndDates('2017-03-15', '2017-03-16'))
 
+  @mock.patch.object(time_util, 'GetMostRecentUTCMidnight',
+                     return_value=datetime(2017, 3, 19, 0, 0, 0))
+  def testGetStartEndDatesDefaultStartDefaultEnd(self, _):
+    default_start = datetime(2017, 3, 15, 0, 0, 0)
+    default_end = datetime(2017, 3, 16, 0, 0, 0)
+    self.assertEqual((default_start, default_end),
+                     time_util.GetStartEndDates(None, None,
+                                                default_start=default_start,
+                                                default_end=default_end))
+    self.assertEqual(
+        (default_start, datetime(2017, 3, 20, 0, 0, 0)),
+        time_util.GetStartEndDates(None, '2017-03-19',
+                                   default_start=default_start))
+
+    self.assertEqual(
+        (datetime(2017, 3, 18, 0, 0, 0), default_end),
+        time_util.GetStartEndDates('2017-03-18', None,
+                                   default_end=default_end))
 
   @mock.patch.object(time_util, 'GetUTCNow',
                      return_value=datetime(2017, 4, 27, 8, 0, 0))

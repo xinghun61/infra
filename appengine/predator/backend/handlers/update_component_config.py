@@ -15,7 +15,7 @@ from common.model.crash_config import CrashConfig
 from gae_libs.handlers.base_handler import BaseHandler, Permission
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 
-# CloudStorage of latest component/team informatio in OWNERS files.
+# CloudStorage of latest component/team information in OWNERS files.
 # (Automatically updated by cron job).
 OWNERS_MAPPING_URL = (
     'https://storage.googleapis.com/chromium-owners/component_map.json')

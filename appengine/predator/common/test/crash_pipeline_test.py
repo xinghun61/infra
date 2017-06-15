@@ -6,6 +6,8 @@ from datetime import datetime
 from datetime import timedelta
 import mock
 
+from google.appengine.ext import ndb
+
 from analysis.culprit import Culprit
 from analysis.suspect import Suspect
 from analysis.type_enums import CrashClient
@@ -100,26 +102,48 @@ class CrashPipelineTest(AppengineTestCase):
 class RerunPipelineTest(AppengineTestCase):
   app_module = pipeline_handlers._APP
 
-  def testRunForUnsupportClient(self):
-    client = 'dummy_client'
-    start_date = datetime(2017, 5, 19, 0, 0, 0)
-    end_date = datetime(2017, 5, 20, 0, 0, 0)
+  def setUp(self):
+    super(RerunPipelineTest, self).setUp()
+    self.crash_analyses = [FracasCrashAnalysis.Create({'signature': 'sig1'}),
+                           FracasCrashAnalysis.Create({'signature': 'sig2'}),
+                           FracasCrashAnalysis.Create({'signature': 'sig3'})]
+    self.crash_analyses[0].requested_time = datetime(2017, 6, 1, 2, 0, 0)
+    self.crash_analyses[1].requested_time = datetime(2017, 6, 5, 9, 0, 0)
+    self.crash_analyses[2].requested_time = datetime(2017, 6, 10, 3, 0, 0)
 
-    self.MockPipeline(crash_pipeline.RerunPipeline, None,
-                      [client, start_date, end_date])
-    rerun_pipeline = crash_pipeline.RerunPipeline(client, start_date, end_date)
-    rerun_pipeline.start_test()
-    self.assertIsNone(rerun_pipeline.outputs.default.value, None)
+    self.crash_analyses[0].identifiers = 'sig1'
+    self.crash_analyses[1].identifiers = 'sig2'
+    self.crash_analyses[2].identifiers = 'sig3'
 
+    ndb.put_multi(self.crash_analyses)
+
+  @mock.patch('common.model.fracas_crash_analysis.'
+              'FracasCrashAnalysis.ReInitialize')
   @mock.patch('common.crash_pipeline.PredatorForClientID')
-  def testRun(self, mock_predator_for_client):
-    mock_predator_for_client.return_value = None
+  def testPipelineRun(self, mock_predator_for_client, mock_reinitialize):
+    """Test ``RerunPipeline`` runs as expected."""
+    client = CrashClient.FRACAS
+    crash_keys = [self.crash_analyses[0].key.urlsafe()]
+    self.MockPipeline(crash_pipeline.CrashAnalysisPipeline, None,
+                      [client, self.crash_analyses[0].identifiers])
+    pipeline = crash_pipeline.RerunPipeline(client, crash_keys)
+    pipeline.start()
+    self.execute_queued_tasks()
+    self.assertTrue(mock_predator_for_client.called)
+    self.assertEqual(mock_reinitialize.call_count, 1)
 
-    client = CrashClient.CRACAS
-    start_date = datetime(2017, 5, 19, 0, 0, 0)
-    end_date = datetime(2017, 5, 20, 0, 0, 0)
-
-    self.MockPipeline(crash_pipeline.RerunPipeline, None,
-                      [client, start_date, end_date])
-    rerun_pipeline = crash_pipeline.RerunPipeline(client, start_date, end_date)
-    rerun_pipeline.start_test()
+  #@mock.patch('common.model.fracas_crash_analysis.'
+  #            'FracasCrashAnalysis.ReInitialize')
+  #@mock.patch('common.crash_pipeline.PredatorForClientID')
+  #def testPipelineRunRaiseException(self, mock_predator_for_client,
+  #                                  mock_reinitialize):
+  #  """Test ``RerunPipeline`` raises exception."""
+  #  crash_keys = [crash.key.urlsafe() for crash in self.crash_analyses]
+  #  def raiseException(*_):
+  #    raise Exception('OOM!')
+  #  #mock_run.side_effect = raiseException
+  #  self.mock(crash_pipeline.CrashAnalysisPipeline, 'run', raiseException)
+  #  with self.assertRaisesRegexp(Exception, 'OOM!'):
+  #    pipeline = crash_pipeline.RerunPipeline(CrashClient.FRACAS, crash_keys)
+  #    pipeline.start()
+  #    self.execute_queued_tasks()

@@ -102,7 +102,7 @@ def GetMostRecentUTCMidnight():
   return datetime.combine(GetUTCNow(), time.min)
 
 
-def GetStartEndDates(start, end):
+def GetStartEndDates(start, end, default_start=None, default_end=None):
   """Gets start and end dates for handlers that specify date ranges."""
   midnight_today = GetMostRecentUTCMidnight()
   midnight_yesterday = midnight_today - timedelta(days=1)
@@ -110,13 +110,19 @@ def GetStartEndDates(start, end):
 
   if not start and not end:
     # If neither start nor end specified, range is everything since yesterday.
-    return midnight_yesterday, midnight_tomorrow
+    # If ``default_start`` and ``default_end`` are specified, the range is from
+    # ``default_start`` to ``default_end``.
+    return default_start or midnight_yesterday, default_end or midnight_tomorrow
   elif not start and end:
-    # If only end is specified, range is everything up until then.
-    return None, midnight_tomorrow
+    # If only end is specified, range is everything up until then. If
+    # ``default_start`` is specified, range is since ``default_start`` until
+    # ``end``.
+    return default_start or None, midnight_tomorrow
   elif start and not end:
-    # If only start is specified, range is everything since then.
-    return DatetimeFromString(start), midnight_tomorrow
+    # If only start is specified, range is everything since then. If
+    # ``default_end`` is specified, the range is everything since ``start``
+    # until ``default_end``.
+    return DatetimeFromString(start), default_end or midnight_tomorrow
 
   # Both start and end are specified, range is everything in between.
   return (DatetimeFromString(start), DatetimeFromString(end))
