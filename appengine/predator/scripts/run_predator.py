@@ -12,7 +12,7 @@ import threading
 import traceback
 import zlib
 
-_CRASH_QUERIES_DIR = os.path.dirname(os.path.realpath(__file__))
+_SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 _ROOT_DIR = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), os.path.pardir)
 _FIRST_PARTY_DIR = os.path.join(_ROOT_DIR, 'first_party')
@@ -34,8 +34,7 @@ from local_libs.git_checkout.local_git_repository import LocalGitRepository
 
 # TODO(crbug.com/662540): Add unittests.
 
-PREDATOR_RESULTS_DIRECTORY = os.path.join(_CRASH_QUERIES_DIR,
-                                          'predator_results')
+PREDATOR_RESULTS_DIRECTORY = os.path.join(_SCRIPT_DIR, '.predator_results')
 _TOP_N_FRAMES = 7
 
 try:
@@ -117,6 +116,7 @@ def GetCulprits(crashes, client_id, app_id, verbose=False):  # pragma: no cover.
 def GetCulpritsOnRevisionKeyGenerator(
     func, args, kwargs,  # pylint: disable=W0613
     namespace=None):  # pragma: no cover.
+
   crashes = args[0]
   git_hash = args[1]
   crash_keys = [crash.key.urlsafe() for crash in crashes.itervalues()]
@@ -149,7 +149,7 @@ def GetCulpritsOnRevision(crashes, git_hash, client_id, app_id,
   print '***************************'
   with open(os.devnull, 'w') as null_handle:
     subprocess.check_call(
-        'cd %s; git checkout %s' % (_CRASH_QUERIES_DIR, git_hash),
+        'cd %s; git checkout %s' % (_SCRIPT_DIR, git_hash),
         stdout=null_handle,
         stderr=null_handle,
         shell=True)
@@ -159,7 +159,7 @@ def GetCulpritsOnRevision(crashes, git_hash, client_id, app_id,
   with open(input_path, 'wb') as f:
     f.write(zlib.compress(pickle.dumps(crashes)))
 
-  run_predator_path = os.path.join(_CRASH_QUERIES_DIR, 'run-predator.py')
+  run_predator_path = os.path.join(_SCRIPT_DIR, 'run-predator.py')
   args = ['python', run_predator_path, '--input-path', input_path,
           '--result-path', output_path, '--client', client_id, '--app', app_id]
   if verbose:

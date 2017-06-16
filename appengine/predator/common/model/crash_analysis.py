@@ -14,7 +14,7 @@ from gae_libs import appengine_util
 from libs import analysis_status
 from libs import time_util
 
-_FEEDBACK_URL_TEMPLATE = 'https://%s/crash/%s-result-feedback?key=%s'
+_FEEDBACK_URL_TEMPLATE = 'https://%s/%s/result-feedback?key=%s'
 
 
 class CrashAnalysis(ndb.Model):

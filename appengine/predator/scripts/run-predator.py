@@ -12,7 +12,7 @@ import threading
 import traceback
 import zlib
 
-_CRASH_QUERIES_DIR = os.path.dirname(os.path.realpath(__file__))
+_SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 _ROOT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
 _FIRST_PARTY_DIR = os.path.join(_ROOT_DIR, 'first_party')
 sys.path.insert(1, _FIRST_PARTY_DIR)
@@ -24,9 +24,8 @@ from local_libs import remote_api
 from google.appengine.ext import ndb
 
 from scripts.run_predator import GetCulprits
+from scripts.run_predator import PREDATOR_RESULTS_DIRECTORY
 
-PREDATOR_RESULTS_DIRECTORY = os.path.join(_CRASH_QUERIES_DIR,
-                                          'predator_results')
 try:
   os.makedirs(PREDATOR_RESULTS_DIRECTORY)
 except Exception:

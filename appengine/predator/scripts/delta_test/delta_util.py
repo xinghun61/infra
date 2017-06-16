@@ -25,9 +25,8 @@ script_util.SetUpSystemPaths(_ROOT_DIR)
 
 from gae_libs import appengine_util
 
-# TODO(katesonia): move host to predator host after migration.
 _FEEDBACK_URL_TEMPLATE = (
-    'https://%s.appspot.com/crash/%s-result-feedback?key=%s')
+    'https://%s.appspot.com/%s/result-feedback?key=%s')
 GIT_HASH_PATTERN = re.compile(r'^[0-9a-fA-F]{40}$')
 
 
