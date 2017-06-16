@@ -147,10 +147,6 @@ class GerritPoller(Poller):
       f.write(self.gerrit.GenerateTimeStamp(timestamp))
     self.__last_seen = timestamp
 
-  def _WarmUpHandlers(self):
-    for handler in self.handlers:
-      handler.WarmUp()
-
   def _ProcessGitLogEntry(self, log_entry):
     if log_entry.ignored:
       self.logger.debug('Not processing ignored commit %s.', log_entry.commit)
@@ -180,8 +176,6 @@ class GerritPoller(Poller):
                         self.__class__.__name__, type(handler))
 
   def execute(self):
-    self._WarmUpHandlers()
-
     extra_fields = ['CURRENT_COMMIT', 'CURRENT_REVISION']
     if self.with_paths:
       extra_fields.append('CURRENT_FILES')

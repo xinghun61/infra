@@ -19,8 +19,5 @@ class BasePollerHandler(object):
     # logger set on the poller).
     self.logger = None
 
-  def WarmUp(self):
-    pass
-
   def ProcessLogEntry(self, log_entry):
     pass
