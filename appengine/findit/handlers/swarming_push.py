@@ -8,15 +8,15 @@ import json
 import logging
 
 from google.appengine.api import taskqueue
-from google.appengine.ext import ndb
 
 from common import constants
-from common.waterfall.pubsub_callback import GetVerificationToken
 from gae_libs import appengine_util
+from gae_libs import token
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from model.wf_swarming_task import WfSwarmingTask
 from model.flake.flake_swarming_task import FlakeSwarmingTask
+from waterfall import waterfall_config
 
 
 class SwarmingPush(BaseHandler):
@@ -30,19 +30,26 @@ class SwarmingPush(BaseHandler):
     except ValueError:
       envelope = json.loads(self.request.params.get('data'))
     try:
-      token = envelope['message']['attributes']['auth_token']
-      if token != GetVerificationToken():
-        return {'return_code': 400}
+      auth_token = envelope['message']['attributes']['auth_token']
       payload = base64.b64decode(envelope['message']['data'])
       # Expected payload format:
       # json.dumps({
       #   'task_id': '123412342130498',  #Swarming task id
       #   'userdata': json.dumps({
       #       'Message-Type': 'SwarmingTaskStatusChange'}),
+      #       'Notification-Id': 'notification_id'
       #       # Plus any data from MakePubsubCallback
       #   })
       message = json.loads(payload)
       user_data = json.loads(message['userdata'])
+      notification_id = user_data.get('Notification-Id', '')
+      swarming_hour_limit = waterfall_config.GetSwarmingSettings().get(
+          'server_retry_timeout_hours', 2)
+      if not token.ValidateAuthToken(
+          'swarming_pubsub', auth_token, 'swarming', action_id=notification_id,
+          valid_hours=swarming_hour_limit):
+        return {'return_code': 400}
+
       task_id = message['task_id']
 
       if user_data['Message-Type'] == 'SwarmingTaskStatusChange':

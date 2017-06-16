@@ -8,6 +8,8 @@ import mock
 import webapp2
 
 from common.waterfall import buildbucket_client
+from common.waterfall import pubsub_callback
+from gae_libs import token
 from handlers import periodic_bot_update
 from waterfall import swarming_util
 from waterfall.test import wf_testcase
@@ -44,7 +46,10 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
     self.assertIn('builds', response.json_body)
     self.assertIn('errors', response.json_body)
 
-  def testBotUpdateTryJob(self):
+  @mock.patch.object(pubsub_callback, 'GetTryJobTopic',
+                     return_value='projects/findit-for-me/topics/jobs')
+  @mock.patch.object(token, 'GenerateAuthToken', return_value='auth_token')
+  def testBotUpdateTryJob(self, *_):
     request_linux = periodic_bot_update._BotUpdateTryJob('bot1', 'Linux')
     self.assertEqual({
         'parameters_json': json.dumps({
@@ -69,8 +74,9 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
         'bucket': 'luci.chromium.try',
         'pubsub_callback': {
             'topic': 'projects/findit-for-me/topics/jobs',
-            'auth_token': 'https://goo.gl/yYhr29',
-            'user_data': '{"Message-Type": "BuildbucketStatusChange"}'
+            'auth_token': 'auth_token',
+            'user_data': '{"Notification-Id": "",'
+                         ' "Message-Type": "BuildbucketStatusChange"}'
         },
         'tags': ['user_agent:findit']
     }, request_linux.ToBuildbucketRequest())

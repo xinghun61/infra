@@ -4,42 +4,37 @@
 
 import json
 
+from gae_libs import token
 from waterfall import waterfall_config
 
 
-# TODO(robertocn): Remove these dummy values once the change is deployed and the
-# config is saved to the data store.
-_DUMMY_VERIFICATION_TOKEN = 'https://goo.gl/yYhr29'
-_DUMMY_TRY_JOB_TOPIC = 'projects/findit-for-me/topics/jobs'
-_DUMMY_SWARMING_TOPIC = 'projects/findit-for-me/topics/swarm'
-
-
-def GetVerificationToken():  # pragma: no cover
-  return waterfall_config.GetTryJobSettings().get(
-      'pubsub_token', _DUMMY_VERIFICATION_TOKEN)
-
+def GetVerificationToken(
+    key_name, notification_id, action_id):  # pragma: no cover
+  return token.GenerateAuthToken(key_name, notification_id, action_id=action_id)
 
 def GetTryJobTopic():  # pragma: no cover
-  return waterfall_config.GetTryJobSettings().get(
-      'pubsub_topic', _DUMMY_TRY_JOB_TOPIC)
+  return waterfall_config.GetTryJobSettings().get('pubsub_topic')
 
 
 def GetSwarmingTopic():  # pragma: no cover
-  return waterfall_config.GetTryJobSettings().get(
-      'pubsub_swarming_topic', _DUMMY_SWARMING_TOPIC)
+  return waterfall_config.GetTryJobSettings().get('pubsub_swarming_topic')
 
 
-def MakeTryJobPubsubCallback():  # pragma: no cover
+def MakeTryJobPubsubCallback(notification_id):  # pragma: no cover
   """Creates callback for buildbucket to notify us of status changes."""
-  user_data = json.dumps({'Message-Type': 'BuildbucketStatusChange'})
+  user_data = json.dumps({'Message-Type': 'BuildbucketStatusChange',
+                          'Notification-Id': notification_id})
   return {'topic': GetTryJobTopic(),
-          'auth_token': GetVerificationToken(),
+          'auth_token': GetVerificationToken(
+              'try_job_pubsub', 'try_job', notification_id),
           'user_data': user_data}
 
 
-def MakeSwarmingPubsubCallback():  # pragma: no cover
+def MakeSwarmingPubsubCallback(notification_id):  # pragma: no cover
   """Creates callback for swarming to notify us of status changes."""
-  user_data = json.dumps({'Message-Type': 'SwarmingTaskStatusChange'})
+  user_data = json.dumps({'Message-Type': 'SwarmingTaskStatusChange',
+                          'Notification-Id': notification_id})
   return {'topic': GetSwarmingTopic(),
-          'auth_token': GetVerificationToken(),
+          'auth_token': GetVerificationToken(
+              'swarming_pubsub', 'swarming', notification_id),
           'user_data': user_data}

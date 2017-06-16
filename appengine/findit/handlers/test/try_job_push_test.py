@@ -12,6 +12,7 @@ import webapp2
 from testing_utils import testing
 
 from common.waterfall import pubsub_callback
+from gae_libs import token
 from handlers.try_job_push import TryJobPush
 from model.wf_try_job_data import WfTryJob
 from model.wf_try_job_data import WfTryJobData
@@ -25,13 +26,14 @@ class TryJobPushTest(testing.AppengineTestCase):
     super(TryJobPushTest, self).setUp()
 
   # Send well formed notification for job that does not exist
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
   @mock.patch('logging.warning')
-  def testTryJobPushMissingJob(self, logging_mock):
+  def testTryJobPushMissingJob(self, logging_mock, _):
     self.test_app.post('/pubsub/tryjobpush', params={
         'data': json.dumps({
             'message':{
                 'attributes':{
-                    'auth_token': pubsub_callback.GetVerificationToken(),
+                    'auth_token': 'auth_token',
                     'build_id': '12345',
                 },
                 'data': base64.b64encode(json.dumps({
@@ -48,7 +50,8 @@ class TryJobPushTest(testing.AppengineTestCase):
 
 
   # ill formed notification (bad token)
-  def testTryJobPushBadToken(self):
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=False)
+  def testTryJobPushBadToken(self, _):
     # We expect a 400 error, and a webtest.webtest.AppError (not in path,
     # catching plain Exception)
     with self.assertRaisesRegexp(Exception, '.*400.*'):
@@ -59,7 +62,12 @@ class TryJobPushTest(testing.AppengineTestCase):
                       'auth_token': 'BadTokenString',
                       'build_id': '12345',  # Shouldn't matter
                   },
-                  'data': base64.b64encode('Hello World!'), # Shouldn't matter.
+                  'data': base64.b64encode(json.dumps({
+                      'build': {'id': '12345'},
+                      'user_data': json.dumps({
+                          'Message-Type': 'BuildbucketStatusChange',
+                      }),
+                  })),
               },
           }),
         'format': 'json',
@@ -79,7 +87,8 @@ class TryJobPushTest(testing.AppengineTestCase):
       })
 
   # Send notification with unsupported message-type
-  def testTryJobPushUnsupportedMessageType(self):
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  def testTryJobPushUnsupportedMessageType(self, _):
     # We expect a 500 error, and a webtest.webtest.AppError (not in path,
     # catching plain Exception)
     with self.assertRaisesRegexp(Exception, '.*500.*'):
@@ -87,7 +96,7 @@ class TryJobPushTest(testing.AppengineTestCase):
           'data': json.dumps({
               'message':{
                   'attributes':{
-                      'auth_token': pubsub_callback.GetVerificationToken(),
+                      'auth_token': 'auth_token',
                       'build_id': '8988270260466361040',
                   },
                   'data': base64.b64encode(json.dumps({
@@ -103,7 +112,8 @@ class TryJobPushTest(testing.AppengineTestCase):
       })
 
   # Send well formed notification
-  def testTryJobPush(self):
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  def testTryJobPush(self, _):
     try_job_in_progress = WfTryJobData.Create(12345)
     try_job_in_progress.try_job_key = WfTryJob.Create('m', 'b', 1).key
     try_job_in_progress.try_job_type = 'compile'
@@ -119,7 +129,7 @@ class TryJobPushTest(testing.AppengineTestCase):
           'data': json.dumps({
               'message':{
                   'attributes':{
-                      'auth_token': pubsub_callback.GetVerificationToken(),
+                      'auth_token': 'auth_token',
                       'build_id': 12345,
                   },
                   'data': base64.b64encode(json.dumps({
@@ -134,8 +144,9 @@ class TryJobPushTest(testing.AppengineTestCase):
       })
       mock_queue.assert_called_once()
 
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
   @mock.patch('logging.warning')
-  def testTryJobPushMissingCallback(self, logging_mock):
+  def testTryJobPushMissingCallback(self, logging_mock, _):
     try_job_in_progress = WfTryJobData.Create(12345)
     try_job_in_progress.try_job_key = WfTryJob.Create('m', 'b', 1).key
     try_job_in_progress.try_job_type = 'compile'
@@ -152,7 +163,7 @@ class TryJobPushTest(testing.AppengineTestCase):
         'data': json.dumps({
             'message':{
                 'attributes': {
-                    'auth_token': pubsub_callback.GetVerificationToken(),
+                    'auth_token': 'auth_token',
                     'build_id': 12345,
                 },
                 'data': base64.b64encode(json.dumps({
@@ -166,6 +177,3 @@ class TryJobPushTest(testing.AppengineTestCase):
         'format': 'json',
     })
     self.assertTrue(logging_mock.called)
-
-  def testTopicExists(self):
-    self.assertIsNotNone(pubsub_callback.GetTryJobTopic())

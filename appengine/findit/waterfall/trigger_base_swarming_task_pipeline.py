@@ -45,7 +45,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     if hard_timeout_seconds:
       new_request.execution_timeout_secs = hard_timeout_seconds
 
-    _pubsub_callback = MakeSwarmingPubsubCallback()
+    _pubsub_callback = MakeSwarmingPubsubCallback(self.pipeline_id)
     new_request.pubsub_topic = _pubsub_callback.get('topic')
     new_request.pubsub_auth_token = _pubsub_callback.get('auth_token')
     new_request.pubsub_userdata = _pubsub_callback.get('user_data')

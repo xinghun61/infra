@@ -63,7 +63,7 @@ class TryJob(collections.namedtuple(
       parameters['swarming']['override_builder_cfg']['dimensions'] = (
           self.dimensions)
 
-  def ToBuildbucketRequest(self):
+  def ToBuildbucketRequest(self, notification_id=''):
     parameters_json = {
         'builder_name': self.builder_name,
         'properties': self.properties,
@@ -91,7 +91,7 @@ class TryJob(collections.namedtuple(
         'bucket': _GetBucketName(self.master_name),
         'parameters_json': json.dumps(parameters_json),
         'tags': tags,
-        'pubsub_callback': MakeTryJobPubsubCallback(),
+        'pubsub_callback': MakeTryJobPubsubCallback(notification_id),
     }
 
   @property
@@ -161,11 +161,13 @@ def _ConvertFuturesToResults(json_results):
   return results
 
 
-def TriggerTryJobs(try_jobs):
+def TriggerTryJobs(try_jobs, notification_id=''):
   """Triggers try-job in a batch.
 
   Args:
     try_jobs (list): a list of TryJob instances.
+    notification_id (str): id of the pipeline that trigger the try job.
+      It could be empty if the try job is triggered by periodic_bot_update.
 
   Returns:
     A list of tuple (error, build) in the same order as the given try-jobs.
@@ -181,7 +183,8 @@ def TriggerTryJobs(try_jobs):
   for try_job in try_jobs:
     status_code, content = HttpClientAppengine().Put(
         _BUILDBUCKET_PUT_GET_ENDPOINT,
-        json.dumps(try_job.ToBuildbucketRequest()), headers=headers)
+        json.dumps(
+            try_job.ToBuildbucketRequest(notification_id)), headers=headers)
     if status_code == 200:  # pragma: no cover
       json_results.append(json.loads(content))
     else:

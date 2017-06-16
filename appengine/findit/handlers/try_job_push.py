@@ -11,11 +11,11 @@ from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
 from common import constants
-from common.waterfall.pubsub_callback import GetVerificationToken
 from gae_libs import appengine_util
+from gae_libs import token
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
-from model.base_try_job_data import BaseTryJobData
+from waterfall import waterfall_config
 
 
 class TryJobPush(BaseHandler):
@@ -29,9 +29,7 @@ class TryJobPush(BaseHandler):
     except ValueError:
       envelope = json.loads(self.request.params.get('data'))
     try:
-      token = envelope['message']['attributes']['auth_token']
-      if token != GetVerificationToken():
-        return {'return_code': 400}
+      auth_token = envelope['message']['attributes']['auth_token']
       build_id = envelope['message']['attributes']['build_id']
       payload = base64.b64decode(envelope['message']['data'])
       # Expected payload format:
@@ -42,10 +40,18 @@ class TryJobPush(BaseHandler):
       #   },
       #   'user_data': json.dumps({
       #       'Message-Type': 'BuildbucketStatusChange'}),
+      #       'Notification-Id': 'notification_id',
       #       # Plus any data from MakePubsubCallback
       #   })
       message = json.loads(payload)
       user_data = json.loads(message['user_data'])
+      notification_id = user_data.get('Notification-Id', '')
+      try_job_hour_limit = waterfall_config.GetTryJobSettings().get(
+          'job_timeout_hours', 10)
+      if not token.ValidateAuthToken(
+          'try_job_pubsub', auth_token, 'try_job', action_id=notification_id,
+          valid_hours=try_job_hour_limit):
+        return {'return_code': 400}
 
       if user_data['Message-Type'] == 'BuildbucketStatusChange':
         for kind in ['WfTryJobData', 'FlakeTryJobData']:

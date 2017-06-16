@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import base64
+from datetime import datetime
 import mock
 
 import webapp2
@@ -10,6 +12,7 @@ from testing_utils import testing
 
 from gae_libs import token
 from gae_libs.handlers import base_handler
+from libs import time_util
 
 
 class DummyHandler(base_handler.BaseHandler):
@@ -51,7 +54,10 @@ class TokenTest(testing.AppengineTestCase):
     your_key = token.SecretKey.GetSecretKey('you')
     self.assertNotEqual(my_key, your_key)
 
-  def testGeneratedXSRFTokenIsValidForSameUserAndSameAction(self):
+  @mock.patch.object(time_util, 'GetUTCNow')
+  def testGeneratedXSRFTokenIsValidForSameUserAndSameAction(self, mock_now):
+    mock_now.side_effect = [datetime(2017, 6, 13, 0, 0, 0),
+                            datetime(2017, 6, 13, 0, 1, 0)]
     xsrf_token = token.GenerateXSRFToken('email', 'action')
     self.assertTrue(token.ValidateXSRFToken('email', xsrf_token, 'action'))
 
@@ -111,3 +117,35 @@ class TokenTest(testing.AppengineTestCase):
     mocked_ValidateXSRFToken.assert_called_once_with(
         'test@google.com', 'token', 'test')
     self.assertEqual({'key': 'value'}, response.json_body)
+
+
+  @mock.patch.object(time_util, 'GetUTCNow',
+                     return_value=datetime(2017, 06, 13, 0, 0, 0))
+  def testValidateAuthTokenSucceed(self, _):
+    tested_token = token.GenerateAuthToken('key', 'email')
+    self.assertTrue(token.ValidateAuthToken('key', tested_token, 'email'))
+
+  def testValidateAuthTokenNoToken(self):
+    self.assertFalse(token.ValidateAuthToken('key', None, 'email'))
+
+  def testValidateAuthTokenDateInvalid(self):
+    tested_token = base64.urlsafe_b64encode('token')
+    self.assertFalse(token.ValidateAuthToken('key', tested_token, 'email'))
+
+  @mock.patch.object(time_util, 'GetUTCNow',
+                     return_value=datetime(2017, 06, 13, 2, 0, 0))
+  def testValidateAuthTokenExpired(self, _):
+    tested_token = token.GenerateAuthToken(
+        'key', 'email', when=datetime(2017, 06, 13, 0, 0, 0))
+
+    self.assertFalse(token.ValidateAuthToken('key', tested_token, 'email'))
+
+  @mock.patch.object(time_util, 'GetUTCNow',
+                     return_value=datetime(2017, 06, 13, 0, 0, 0))
+  def testValidateAuthTokenLengthDifferent(self, _):
+    token_created_timestamp = time_util.ConvertToTimestamp(
+        datetime(2017, 06, 13, 0, 0, 0))
+    tested_token = base64.urlsafe_b64encode(
+        'token:' + str(token_created_timestamp))
+
+    self.assertFalse(token.ValidateAuthToken('key', tested_token, 'email'))

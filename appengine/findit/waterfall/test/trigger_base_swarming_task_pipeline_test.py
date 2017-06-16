@@ -2,8 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 import time
 
+from common.waterfall import pubsub_callback
+from gae_libs import token
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.wf_swarming_task import WfSwarmingTask
@@ -64,7 +67,10 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name, tests)
     self.assertEqual('task_id', task_id)
 
-  def testTriggerANewSwarmingTask(self):
+  @mock.patch.object(pubsub_callback, 'GetSwarmingTopic',
+                     return_value='projects/findit-for-me/topics/swarm')
+  @mock.patch.object(token, 'GenerateAuthToken', return_value='auth_token')
+  def testTriggerANewSwarmingTask(self, *_):
     def MockedDownloadSwarmingTaskData(*_):
       return [{'task_id': '1'}, {'task_id': '2'}]
     self.mock(swarming_util, 'ListSwarmingTasksDataByTags',
@@ -119,6 +125,11 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 'a_tests on platform'
     tests = ['a.b', 'a.c']
 
+    pipeline = TriggerSwarmingTaskPipeline()
+    pipeline.start_test()
+    new_task_id = pipeline.run(
+        master_name, builder_name, build_number, step_name, tests)
+
     expected_new_request_json = {
         'expiration_secs': 3600,
         'name': 'new_task_name',
@@ -153,14 +164,12 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
             'purpose:identify-flake',
         ],
         'user': '',
-        'pubsub_auth_token': 'https://goo.gl/yYhr29',
+        'pubsub_auth_token': 'auth_token',
         'pubsub_topic': 'projects/findit-for-me/topics/swarm',
-        'pubsub_userdata': '{"Message-Type": "SwarmingTaskStatusChange"}',
+        'pubsub_userdata': '{"Notification-Id": "%s", "Message-Type": '
+                           '"SwarmingTaskStatusChange"}' % pipeline.pipeline_id,
     }
 
-    pipeline = TriggerSwarmingTaskPipeline()
-    new_task_id = pipeline.run(
-        master_name, builder_name, build_number, step_name, tests)
     self.assertEqual('new_task_id', new_task_id)
     self.assertEqual(expected_new_request_json, new_request_json)
 

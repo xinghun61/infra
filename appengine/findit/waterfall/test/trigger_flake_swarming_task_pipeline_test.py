@@ -85,6 +85,7 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     iterations = 200
 
     flake_pipeline = TriggerFlakeSwarmingTaskPipeline()
+    flake_pipeline.start_test()
     task = flake_pipeline._CreateSwarmingTask(
         master_name, builder_name, build_number, step_name, test_name)
     task.task_id = 'task_id1'
