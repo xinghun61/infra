@@ -173,8 +173,11 @@ class InboundEmail(webapp2.RequestHandler):
 
     # If the email is an alert, switch to the alert handling path.
     if is_alert:
+        trooper_email = _GetTrooperEmail()
+        trooper_email = self.services.user.LookupParentEmail(cnxn,
+            trooper_email)
         self.ProcessAlert(cnxn, project, project_addr, from_addr, author_addr,
-            author_id, subject, body, incident_id)
+            author_id, subject, body, incident_id, owner_email=trooper_email)
         return None
 
     # This email is a response to an email about a comment.
@@ -187,7 +190,7 @@ class InboundEmail(webapp2.RequestHandler):
 
   def ProcessAlert(
       self, cnxn, project, project_addr, from_addr, author_addr,
-      author_id, subject, body, incident_id):
+      author_id, subject, body, incident_id, owner_email=None):
     """Examine an an alert issue email and create an issue based on the email.
 
     Args:
@@ -202,6 +205,7 @@ class InboundEmail(webapp2.RequestHandler):
       body: string email body text of the reply email.
       incident_id: string containing an optional unique incident used to
           de-dupe alert issues.
+      owner_email: string email address of the user the bug will be assigned to.
 
     Returns:
       A list of follow-up work items, e.g., to notify other users of
@@ -213,19 +217,25 @@ class InboundEmail(webapp2.RequestHandler):
     """
     # Make sure the email address is whitelisted.
     if not from_addr.endswith(settings.alert_whitelisted_suffixes):
-        logging.info('Unauthorized %s tried to send alert to %s',
+      logging.info('Unauthorized %s tried to send alert to %s',
                      from_addr, project_addr)
-        return None
+      return None
 
     # Create the actual issue from the email data.
     # TODO(zhangtiff): Set labels, components, etc based on email content.
     cc_ids = []
-    status = 'new'
-    owner = None
-    labels = ['Infra-Troopers', 'Restrict-View-Google']
+    status = 'Available'
+
+    labels = ['Infra-Troopers-Alerts', 'Restrict-View-Google', 'Priority-2']
     field_values = []
     component_ids = []
     body = 'Filed by %s on behalf of %s\n\n%s' % (author_addr, from_addr, body)
+
+    owner_id = None
+    if owner_email:
+      owner_id = self.services.user.LookupUserID(cnxn, owner_email,
+          autocreate=True)
+      status = 'Assigned'
 
     if incident_id:
       incident_label = 'Incident-Id-' + incident_id
@@ -258,7 +268,7 @@ class InboundEmail(webapp2.RequestHandler):
             return None
 
     self.services.issue.CreateIssue(
-        cnxn, self.services, project.project_id, subject, status, owner,
+        cnxn, self.services, project.project_id, subject, status, owner_id,
         cc_ids, labels, field_values, component_ids, author_id, body)
     self.services.project.UpdateRecentActivity(cnxn, project.project_id)
 
@@ -325,6 +335,19 @@ class InboundEmail(webapp2.RequestHandler):
     uia.Parse(cnxn, project.project_name, author_id, lines, self.services,
               strip_quoted_lines=True)
     uia.Run(cnxn, self.services, allow_edit=allow_edit)
+
+
+def _GetTrooperEmail():
+  # TODO(zhangtiff): Replace this with a Stubby call to Oncallator.
+  trooper_url = 'https://build.chromium.org/p/chromium/current_trooper.txt'
+
+  # Trooper response format: primary_trooper,secondary_trooper
+  resp = urllib.urlopen(trooper_url)
+
+  if resp.getcode() == 200:
+    return resp.read().split(',')[0] + '@google.com'
+
+  return None
 
 
 def _MakeErrorMessageReplyTask(

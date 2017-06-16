@@ -217,9 +217,9 @@ class InboundEmailTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(self.services.issue, 'CreateIssue')
     self.services.issue.CreateIssue(
-        self.cnxn, self.services, self.project.project_id, 'issue title', 'new',
-        None, [], ['Infra-Troopers', 'Restrict-View-Google',
-        'Incident-Id-incident-1'], [], [], 111L,
+        self.cnxn, self.services, self.project.project_id, 'issue title',
+        'Available', None, [], ['Infra-Troopers-Alerts', 'Restrict-View-Google',
+        'Priority-2', 'Incident-Id-incident-1'], [], [], 111L,
         'Filed by user@example.com on behalf of user@google.com\n\nissue body'
         ).AndReturn(None)
 
