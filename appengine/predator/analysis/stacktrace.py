@@ -94,6 +94,7 @@ class ProfilerStackFrame(namedtuple('ProfilerStackFrame',
     if index is None:
       raise TypeError('The index must be an int')
 
+    callee_lines = tuple(callee_lines) if callee_lines else None
     return super(cls, ProfilerStackFrame).__new__(
         cls, int(index), difference, log_change_factor, responsible, dep_path,
         function, file_path, raw_file_path, repo_url, function_start_line,
@@ -101,6 +102,50 @@ class ProfilerStackFrame(namedtuple('ProfilerStackFrame',
 
   def BlameUrl(self, revision):
     return _BlameUrl(self, revision)
+
+  @staticmethod
+  def Parse(frame_dict, index, deps):
+    """Convert frame dict into ``ProfilerStackFrame`` object.
+
+    Args:
+      frame_dict (dict): Dict representing a stack frame from UMA Sampling
+        Profiler.
+      index (int): Index (or depth) of the frame in the call stack.
+      deps (dict): Map dependency path to its corresponding Dependency.
+    Returns: ``ProfilerStackFrame`` object and ``LanguageType`` of the frame.
+    """
+    difference = frame_dict['difference']
+    log_change_factor = frame_dict['log_change_factor']
+    responsible = frame_dict['responsible']
+    is_java = False
+    # the following fields may not be present
+    raw_file_path = frame_dict.get('filename')
+    if raw_file_path:
+      is_java = raw_file_path.endswith('.java')
+      dep_path, normalized_file_path, repo_url = (
+          parse_util.GetDepPathAndNormalizedFilePath(raw_file_path,
+                                                     deps, is_java))
+    else:
+      dep_path = None
+      normalized_file_path = None
+      repo_url = None
+
+    function_name = frame_dict.get('function_name')
+    function_start_line = frame_dict.get('function_start_line')
+    callee_lines = frame_dict.get('callee_lines')
+    if callee_lines:
+      callee_lines = [CalleeLine(callee_line_dict['line'],
+                                 callee_line_dict['sample_fraction'])
+                      for callee_line_dict in callee_lines]
+
+    frame_object = ProfilerStackFrame(index, difference, log_change_factor,
+                                      responsible, dep_path, function_name,
+                                      normalized_file_path, raw_file_path,
+                                      repo_url, function_start_line,
+                                      callee_lines)
+    language_type = LanguageType.JAVA if is_java else LanguageType.CPP
+
+    return frame_object, language_type
 
 
 class StackFrame(namedtuple('StackFrame',
