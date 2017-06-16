@@ -58,7 +58,7 @@ func GetAlertsHandler(ctx *router.Context) {
 
 	// This should be removed at some point, once the cron analyzers are modified
 	// to write to tree and not milo.tree.
-	if !strings.HasPrefix(tree, "chromeos") {
+	if !strings.HasPrefix(tree, "chromeos") && tree != "gardener" {
 		tree = "milo." + tree
 	}
 
