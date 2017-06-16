@@ -242,6 +242,18 @@ class ServletTest(unittest.TestCase):
     help_data = self.page_class.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])
 
+  def testGatherHelpData_YouAreBouncing(self):
+    project = fake.Project(project_name='proj')
+    _request, mr = testing_helpers.GetRequestObjects(
+        path='/p/proj', project=project)
+    mr.auth.user_pb.email_bounce_timestamp = 1497647529
+    help_data = self.page_class.GatherHelpData(mr, {})
+    self.assertEqual('your_email_bounced', help_data['cue'])
+
+    mr.auth.user_pb.dismissed_cues = ['your_email_bounced']
+    help_data = self.page_class.GatherHelpData(mr, {})
+    self.assertEqual(None, help_data['cue'])
+
   def testGatherDebugData_Visibility(self):
     project = fake.Project(
         project_name='testtest', state=project_pb2.ProjectState.LIVE)

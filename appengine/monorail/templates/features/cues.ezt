@@ -115,6 +115,13 @@
        "[logged_in_user.avail_message_short]".
     [end]
 
+    [# Cue card to inform user that email to them bounced and that they must reset.]
+    [is cue "your_email_bounced"]
+       <b>Action required:</b>
+       An email to you bounced.  Once you can reliably receive email, clear the
+       <a href="[logged_in_user.profile_url]">bouncing status</a>.
+    [end]
+
     [# Cue card to tell users what it means to star a hotlist]
     [is cue "explain_hotlist_starring"]
         <b>Note:</b>

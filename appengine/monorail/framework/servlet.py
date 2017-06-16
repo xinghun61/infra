@@ -779,9 +779,12 @@ class Servlet(webapp2.RequestHandler):
     dismissed = []
     if mr.auth.user_pb:
       dismissed = mr.auth.user_pb.dismissed_cues
-    if (mr.auth.user_pb.vacation_message and
-        'you_are_on_vacation' not in dismissed):
-      help_data['cue'] = 'you_are_on_vacation'
+      if (mr.auth.user_pb.vacation_message and
+          'you_are_on_vacation' not in dismissed):
+        help_data['cue'] = 'you_are_on_vacation'
+      if (mr.auth.user_pb.email_bounce_timestamp and
+          'your_email_bounced' not in dismissed):
+        help_data['cue'] = 'your_email_bounced'
 
     return help_data
 
