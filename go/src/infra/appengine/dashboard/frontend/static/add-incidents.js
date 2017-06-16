@@ -6,9 +6,9 @@
 
   // Alert matches alert values passed in by the pageData.
   const Alert = {
-    RED: 0,
-    YELLOW: 1,
-    GREEN: 2,
+    RED: 1,
+    YELLOW: 2,
+    GREEN: 3,
   };
 
   const IconClass = {

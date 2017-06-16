@@ -13,8 +13,9 @@ service ChopsServiceStatus {
 }
 
 enum Severity {
-    RED = 0;
-    YELLOW = 1;
+  UNDEFINED = 0;
+  RED = 1;
+  YELLOW = 2;
 }
 
 message UpdateOpenIncidentsRequest {

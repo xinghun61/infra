@@ -19,8 +19,10 @@ import (
 type Severity int
 
 const (
+	// Ignore first value, 0. Start assignments at iota=1 to match dashpb.Severity.
+	_ Severity = iota
 	// SeverityRed represents paging alerts.
-	SeverityRed Severity = iota
+	SeverityRed
 	// SeverityYellow represents email alerts.
 	SeverityYellow
 )
