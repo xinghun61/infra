@@ -108,6 +108,15 @@ CREATE TABLE User2Project (
 ) ENGINE=INNODB;
 
 
+CREATE TABLE LinkedAccount (
+  parent_email VARCHAR(255) NOT NULL,  -- lowercase
+  child_email VARCHAR(255) NOT NULL,  -- lowercase
+
+  KEY (parent_email),
+  UNIQUE KEY (child_email)
+) ENGINE=INNODB;
+
+
 CREATE TABLE ExtraPerm (
   project_id SMALLINT UNSIGNED NOT NULL,
   user_id INT UNSIGNED NOT NULL,

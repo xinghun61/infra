@@ -26,6 +26,7 @@ USER_TABLE_NAME = 'User'
 ACTIONLIMIT_TABLE_NAME = 'ActionLimit'
 DISMISSEDCUES_TABLE_NAME = 'DismissedCues'
 HOTLISTVISITHISTORY_TABLE_NAME = 'HotlistVisitHistory'
+LINKEDACCOUNT_TABLE_NAME = 'LinkedAccount'
 
 USER_COLS = [
     'user_id', 'email', 'is_site_admin', 'notify_issue_change',
@@ -40,6 +41,7 @@ ACTIONLIMIT_COLS = [
     'period_hard_limit']
 DISMISSEDCUES_COLS = ['user_id', 'cue']
 HOTLISTVISITHISTORY_COLS = ['hotlist_id', 'user_id', 'viewed']
+LINKEDACCOUNT_COLS = ['parent_email', 'child_email']
 
 
 class UserTwoLevelCache(caches.AbstractTwoLevelCache):
@@ -162,6 +164,7 @@ class UserService(object):
     self.dismissedcues_tbl = sql.SQLTableManager(DISMISSEDCUES_TABLE_NAME)
     self.hotlistvisithistory_tbl = sql.SQLTableManager(
         HOTLISTVISITHISTORY_TABLE_NAME)
+    self.linkedaccount_tbl = sql.SQLTableManager(LINKEDACCOUNT_TABLE_NAME)
 
     # Like a dictionary {user_id: email}
     self.email_cache = cache_manager.MakeCache('user', max_size=50000)
@@ -483,6 +486,21 @@ class UserService(object):
          self.hotlistvisithistory_tbl.Delete(
              cnxn, user_id=user_id, where=[('viewed < %s', [cut_off_date])],
              commit=commit)
+
+  def LookupParentEmail(self, cnxn, child_email):
+      """Get the parent address linked to a child address.
+
+      Args:
+        cnxn: connection to SQL database.
+        child_email: String @google.com email address.
+
+      Returns:
+        String @chromium.org email address associated with the child address.
+      """
+      parent_email = self.linkedaccount_tbl.SelectValue(cnxn, 'parent_email',
+          child_email=child_email)
+      return parent_email
+
 
   def UpdateUserSettings(
       self, cnxn, user_id, user, notify=None, notify_starred=None,

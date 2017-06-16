@@ -884,7 +884,7 @@ UPDATE IssueRelation SET rank = 0 WHERE kind = 'blockedon';
 DO NOT RUN THIS STATEMENT ON PROD OR STAGING.  It is fine for localhost
 but be warned that it will lock the db for some time if you have gigs of data in
 these tables.
-ALTER TABLE Issue 
+ALTER TABLE Issue
   ADD COLUMN owner_modified INT,
   ADD COLUMN status_modified INT,
   ADD COLUMN component_modified INT;
@@ -1105,3 +1105,14 @@ ALTER TABLE Comment ADD INDEX (commenter_id, deleted_by, issue_id);
 2017-05-12: Add user preference to ping issue starrers.
 
 ALTER TABLE User ADD COLUMN notify_starred_ping BOOLEAN DEFAULT FALSE;
+
+================================================================
+2017-06-15: Add table to map @google.com to @chromium.org accounts.
+
+CREATE TABLE LinkedAccount (
+  parent_email VARCHAR(255) NOT NULL,  -- lowercase
+  child_email VARCHAR(255) NOT NULL,  -- lowercase
+
+  KEY (parent_email),
+  UNIQUE KEY (child_email)
+) ENGINE=INNODB;

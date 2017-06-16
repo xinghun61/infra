@@ -37,6 +37,7 @@ def MakeUserService(cache_manager, my_mox):
   user_service.actionlimit_tbl = my_mox.CreateMock(sql.SQLTableManager)
   user_service.dismissedcues_tbl = my_mox.CreateMock(sql.SQLTableManager)
   user_service.hotlistvisithistory_tbl = my_mox.CreateMock(sql.SQLTableManager)
+  user_service.linkedaccount_tbl = my_mox.CreateMock(sql.SQLTableManager)
   return user_service
 
 
@@ -284,6 +285,19 @@ class UserServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
     self.user_service.TrimUserVisitedHotlists(self.cnxn, commit=False)
     self.mox.VerifyAll()
+
+  def SetUpLookupParentEmail(self):
+    self.user_service.linkedaccount_tbl.SelectValue(
+        self.cnxn, 'parent_email', child_email='test@google.com').AndReturn(
+            'test@chromium.org')
+
+  def testLookupParentEmail(self):
+    self.SetUpLookupParentEmail()
+    self.mox.ReplayAll()
+    parent_email = self.user_service.LookupParentEmail(self.cnxn,
+        'test@google.com')
+    self.mox.VerifyAll()
+    self.assertEqual('test@chromium.org', parent_email)
 
   def testUpdateUserSettings(self):
     self.SetUpUpdateUser()
