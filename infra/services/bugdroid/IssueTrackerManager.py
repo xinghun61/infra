@@ -130,10 +130,8 @@ def build_client(discovery_url, http, api_name, api_version):
   return client
 
 
-class IssueTrackerManager(object):
-  '''
-  classdocs
-  '''
+class MonorailIssueTrackerManager(object):
+
   CAN_ALL = 'all'
   CAN_OPEN = 'open'
   CAN_MY_OPEN_BUGS = 'owned'
@@ -142,15 +140,16 @@ class IssueTrackerManager(object):
   CAN_NEW = 'new'
   CAN_VERIFY = 'to-verify'
 
-  def __init__(self, client_id, client_secret, project_name,
-               credential_store='phosting.dat', service_acct=False):
+  def __init__(self, project_name, credential_store='monorail.dat',
+               client_id="", client_secret="", service_acct=False,
+               discovery_url=MONORAIL_PROD_URL):
     '''
      Constructor
     '''
     self.project_name = project_name
-    self._empty_owner_value = '----'
+    self._empty_owner_value = ''
 
-    with open(credential_store) as data_file:    
+    with open(credential_store) as data_file:
       creds_data = json.load(data_file)
 
     credentials = OAuth2Credentials(
@@ -160,19 +159,23 @@ class IssueTrackerManager(object):
         'python-issue-tracker-manager/2.0')
 
     if credentials is None or credentials.invalid == True:
-      api_scope = 'https://www.googleapis.com/auth/projecthosting'
+      if not client_id or not client_secret:
+        raise Exception(
+            'Failed to create credentials from credential store: %s. '
+            'To authenticate and write fresh credentials to the store, '
+            'create MonorailIssueTrackerManager with valid |client_id| '
+            'and |client_secret| arguments.' % credential_store)
+      api_scope = 'https://www.googleapis.com/auth/userinfo.email'
       credentials = self._authenticate(storage=None,
                                        service_acct=service_acct,
                                        client_id=client_id,
                                        client_secret=client_secret,
                                        api_scope=api_scope)
 
-    http = httplib2.Http()
+    http = httplib2_utils.InstrumentedHttp('monorail:%s' % self.project_name)
     http = credentials.authorize(http)
 
-    discovery_url = ('https://www.googleapis.com/discovery/v1/apis/{api}/'
-                     '{apiVersion}/rest')
-    self.client = build_client(discovery_url, http, 'projecthosting', 'v2')
+    self.client = build_client(discovery_url, http, 'monorail', 'v1')
 
   def _authenticate(self, storage, service_acct, client_id,
                     client_secret, api_scope):
@@ -316,7 +319,7 @@ class IssueTrackerManager(object):
 
   def getLastComment(self, issue_id):
     total_results = self.getCommentCount(issue_id)
-    feed = self.client.issues().comments().list( 
+    feed = self.client.issues().comments().list(
         projectId=self.project_name,
         issueId=issue_id,
         startIndex=total_results-1,
@@ -387,43 +390,3 @@ class IssueTrackerManager(object):
               feed['totalResults'])
     else:
       return [], 0
-
-
-class MonorailIssueTrackerManager(IssueTrackerManager):
-
-  def __init__(self, project_name, credential_store='monorail.dat',
-               client_id="", client_secret="", service_acct=False,
-               discovery_url=MONORAIL_PROD_URL):
-    '''
-     Constructor
-    '''
-    self.project_name = project_name
-    self._empty_owner_value = ''
-
-    with open(credential_store) as data_file:    
-      creds_data = json.load(data_file)
-
-    credentials = OAuth2Credentials(
-        None, creds_data['client_id'], creds_data['client_secret'],
-        creds_data['refresh_token'], None,
-        'https://accounts.google.com/o/oauth2/token',
-        'python-issue-tracker-manager/2.0')
-
-    if credentials is None or credentials.invalid == True:
-      if not client_id or not client_secret:
-        raise Exception(
-            'Failed to create credentials from credential store: %s. '
-            'To authenticate and write fresh credentials to the store, '
-            'create MonorailIssueTrackerManager with valid |client_id| '
-            'and |client_secret| arguments.' % credential_store)
-      api_scope = 'https://www.googleapis.com/auth/userinfo.email'
-      credentials = self._authenticate(storage=None,
-                                       service_acct=service_acct,
-                                       client_id=client_id,
-                                       client_secret=client_secret,
-                                       api_scope=api_scope)
-
-    http = httplib2_utils.InstrumentedHttp('monorail:%s' % self.project_name)
-    http = credentials.authorize(http)
-
-    self.client = build_client(discovery_url, http, 'monorail', 'v1')

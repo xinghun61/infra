@@ -38,10 +38,6 @@ PATH_URL_TEMPLATES = {
     }
 # pylint: enable=C0301
 
-CODESITE_PROJECTS = [
-    'brillo', 'chrome-os-partner',
-]
-
 
 loggers = {}
 
@@ -243,14 +239,9 @@ class Bugdroid(object):
     """Get (or create) the IssueTrackerManager for the given project."""
     # Lazy load all of the trackers (so nothing gets specified up front)
     if not use_cache or project not in self.trackers:
-      if project in CODESITE_PROJECTS:
-        itm = IssueTrackerManager.IssueTrackerManager(
-            client_id=None, client_secret=None,
-            project_name=project, credential_store=self.credentials_db)
-      else:
-        itm = IssueTrackerManager.MonorailIssueTrackerManager(
-            client_id=None, client_secret=None,
-            project_name=project, credential_store=self.credentials_db)
+      itm = IssueTrackerManager.MonorailIssueTrackerManager(
+          client_id=None, client_secret=None,
+          project_name=project, credential_store=self.credentials_db)
       self.trackers[project] = itm
     return self.trackers[project]
 
