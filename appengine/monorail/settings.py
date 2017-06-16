@@ -87,8 +87,10 @@ hotlist_creation_restriction = site_pb2.UserTypeRestriction.ANYONE
 # Text that mentions these words as shorthand host names will be autolinked
 # regardless of the lack of "https://" or ".com".
 autolink_shorthand_hosts = [
-    'go', 'g', 'b', 't', 'o', 'omg', 'cl', 'cr',
-    'shortn', 'who', 'teams',
+    'go', 'g', 'shortn', 'who', 'teams',
+    ]
+autolink_numeric_shorthand_hosts = [
+    'b', 't', 'o', 'omg', 'cl', 'cr',
     ]
 
 

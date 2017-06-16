@@ -248,6 +248,32 @@ class URLAutolinkTest(unittest.TestCase):
     self.assertEqual('http://' + test, result[0].href)
     self.assertEqual(test, result[0].content)
 
+    test = 'b/12345'
+    result = self.DoLinkify(
+      '%s' % test, filter_re=autolink._IS_A_NUMERIC_SHORT_LINK_RE)
+    self.assertEqual('http://' + test, result[0].href)
+    self.assertEqual(test, result[0].content)
+
+    test = 'http://b/12345'
+    result = self.DoLinkify(
+      '%s' % test, filter_re=autolink._IS_A_NUMERIC_SHORT_LINK_RE)
+    self.assertEqual(test, result[0].href)
+    self.assertEqual(test, result[0].content)
+
+    test = '/b/12345'
+    result = self.DoLinkify('%s' % test, filter_re=autolink._IS_A_SHORT_LINK_RE)
+    self.assertIsNone(result)
+
+    test = '/b/12345'
+    result = self.DoLinkify(
+      '%s' % test, filter_re=autolink._IS_A_NUMERIC_SHORT_LINK_RE)
+    self.assertIsNone(result)
+
+    test = 'b/secondFileInDiff'
+    result = self.DoLinkify(
+      '%s' % test, filter_re=autolink._IS_A_NUMERIC_SHORT_LINK_RE)
+    self.assertIsNone(result)
+
   def testLinkify_ImpliedLink(self):
     """Test that text with .com, .org, .net, and .edu are linked."""
     test = 'google.org'
@@ -265,12 +291,11 @@ class URLAutolinkTest(unittest.TestCase):
     result = self.DoLinkify('%s' % test, filter_re=autolink._IS_IMPLIED_LINK_RE)
     self.assertEqual(None, result)
 
-    # We do not link the NNTP scheme, but the domain name part of it can be
-    # linked as an HTTP link.
+    # We do not link the NNTP scheme, and the domain name part of it will not
+    # be linked as an HTTP link because it is preceeded by "/".
     test = 'nntp://news.google.com'
     result = self.DoLinkify('%s' % test, filter_re=autolink._IS_IMPLIED_LINK_RE)
-    self.assertEqual('http://news.google.com', result[0].href)
-    self.assertEqual('news.google.com', result[0].content)
+    self.assertIsNone(result)
 
   def testLinkify_Context(self):
     """Test that surrounding syntax is not considered part of the url."""

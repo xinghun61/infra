@@ -50,10 +50,16 @@ _LINKIFY_SCHEMES = r'https?://|ftp://|mailto:'
 # Example: go/monorail
 # The scheme is optional, and if it is missing we add it to the link.
 _IS_A_SHORT_LINK_RE = re.compile(
-    r'\b(%s)?'     # Scheme is optional for short links.
+    r'(?<![-/._])\b(%s)?'     # Scheme is optional for short links.
     r'(%s)'        # The list of know shorthand links from settings.py
     r'/([^\s<]+)'  # Allow anything, checked with validation code.
     % (_LINKIFY_SCHEMES, '|'.join(settings.autolink_shorthand_hosts)),
+    re.UNICODE)
+_IS_A_NUMERIC_SHORT_LINK_RE = re.compile(
+    r'(?<![-/._])\b(%s)?'     # Scheme is optional for short links.
+    r'(%s)'        # The list of know shorthand links from settings.py
+    r'/([0-9]+)'  # Allow digits only for these domains.
+    % (_LINKIFY_SCHEMES, '|'.join(settings.autolink_numeric_shorthand_hosts)),
     re.UNICODE)
 
 # This regex matches fully-formed URLs, starting with a scheme.
@@ -70,7 +76,7 @@ _IS_A_LINK_RE = re.compile(
 # Example: crrev.com
 # Since the scheme is not specified, we prepend "http://".
 _IS_IMPLIED_LINK_RE = re.compile(
-    r'\b[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b'  # Domain.
+    r'(?<![-/._])\b[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b'  # Domain.
     r'(/[^\s<]*)?',  # Allow anything, check with validation code.
     re.UNICODE)
 
@@ -624,6 +630,7 @@ def RegisterAutolink(services):
       lambda request, mr: None,
       lambda mr, match: None,
       {_IS_A_SHORT_LINK_RE: Linkify,
+       _IS_A_NUMERIC_SHORT_LINK_RE: Linkify,
        _IS_IMPLIED_LINK_RE: Linkify,
        })
 
