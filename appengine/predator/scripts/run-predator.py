@@ -67,7 +67,7 @@ def RunPredator():
   argparser.add_argument(
       '--app',
       '-a',
-      default=os.getenv('APP_ID', 'predator-for-me-staging'),
+      default=os.getenv('APP_ID', 'predator-for-me'),
       help=('App id of the App engine app that query needs to access. '
             'Defualts to predator-for-me-staging. You can also set enviroment '
             'variable by \'export APP_ID=your-app-id\' to replace '

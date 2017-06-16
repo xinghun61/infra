@@ -101,7 +101,8 @@ class LocalGitRepository(GitRepository):
           # Disable verbose of cd and git pull.
           with open(os.devnull, 'w') as null_handle:
             subprocess.check_call(
-                'cd %s && git pull' % self.real_repo_path,
+                'cd %s && git fetch --tags && git merge FETCH_HEAD' %
+                self.real_repo_path,
                 stdout=null_handle, stderr=null_handle, shell=True)
         except subprocess.CalledProcessError as e:  # pragma: no cover.
           raise Exception(
