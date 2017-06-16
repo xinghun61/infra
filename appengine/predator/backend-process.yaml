@@ -34,6 +34,7 @@ skip_files:
 - ^(.*/)?.*\.md$
 - __init__.py
 - frontend/.*
+- scripts/.*
 
 libraries:
 - name: webapp2
