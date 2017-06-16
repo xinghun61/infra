@@ -10,17 +10,20 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"sync"
 	"time"
 
 	"cloud.google.com/go/bigquery"
+	"github.com/luci/luci-go/common/tsmon/field"
+	"github.com/luci/luci-go/common/tsmon/metric"
 	"golang.org/x/net/context"
 )
 
 var id idGenerator
 
 type idGenerator struct {
-	mu      *sync.Mutex
+	mu      sync.Mutex
 	counter int
 	prefix  string
 }
@@ -103,9 +106,14 @@ func (u Uploader) Put(ctx context.Context, src interface{}) error {
 
 func prepareSrc(s bigquery.Schema, src interface{}) []*bigquery.StructSaver {
 	var srcs []interface{}
-	if sl, ok := src.([]interface{}); ok {
-		srcs = sl
-	} else {
+
+	switch reflect.ValueOf(src).Kind() {
+	case reflect.Slice:
+		v := reflect.ValueOf(src)
+		for i := 0; i < v.Len(); i++ {
+			srcs = append(srcs, v.Index(i).Interface())
+		}
+	case reflect.Struct:
 		srcs = []interface{}{src}
 	}
 
@@ -128,4 +136,150 @@ func (id *idGenerator) generateInsertID() string {
 	insertID := fmt.Sprintf("%s:%d", id.prefix, id.counter)
 	id.counter++
 	return insertID
+}
+
+// BatchUploader contains the necessary data for asynchronously sending batches
+// of event row data to BigQuery.
+type BatchUploader struct {
+	// TickC is a channel used by BatchUploader to prompt upload(). Set
+	// TickC before the first call to Stage. A <-chan time.Time with a
+	// ticker can be constructed with time.NewTicker(time.Duration).C. If
+	// left unset, the default upload interval is one minute.
+	TickC <-chan time.Time
+	// tick holds the default ticker
+	tick *time.Ticker
+	// UploadsMetricName is a string used to create a tsmon Counter metric
+	// for event upload attempts via Put, e.g.
+	// "/chrome/infra/commit_queue/events/count". Set UploadMetricName
+	// before the first call to Stage. If left unset, no metric will be
+	// created.
+	UploadMetricName string
+	// uploads is the Counter metric described by UploadMetricName. It
+	// contains a field "status" set to either "success" or "failure."
+	uploads metric.Counter
+
+	u       eventUploader
+	ctx     context.Context
+	stopc   chan struct{}
+	wg      sync.WaitGroup
+	started bool
+
+	mu      sync.Mutex
+	pending []interface{}
+}
+
+func (bu *BatchUploader) start() {
+	if bu.UploadMetricName != "" {
+		name := bu.UploadMetricName
+		desc := "Upload attempts; status is 'success' or 'failure'"
+		field := field.String("status")
+		bu.uploads = metric.NewCounterIn(bu.ctx, name, desc, nil, field)
+	}
+
+	if bu.TickC == nil {
+		bu.tick = time.NewTicker(time.Minute)
+		bu.TickC = bu.tick.C
+	}
+
+	bu.wg.Add(1)
+	go func() {
+		defer bu.wg.Done()
+		for {
+			select {
+			case <-bu.TickC:
+				bu.upload()
+			case <-bu.stopc:
+				return
+			}
+		}
+	}()
+}
+
+// NewBatchUploader constructs a new BatchUploader, which may optionally be
+// further configured by setting its exported fields before the first call to
+// Stage. Its Close method should be called when it is no longer needed.
+func NewBatchUploader(ctx context.Context, u eventUploader) (*BatchUploader, error) {
+	bu := &BatchUploader{
+		u:     u,
+		ctx:   ctx,
+		stopc: make(chan struct{}),
+	}
+	return bu, nil
+}
+
+// Stage stages one or more rows for sending to BigQuery. src is expected to
+// be a struct matching the schema in Uploader, or a slice containing
+// such structs. Stage returns immediately and batches of rows will be sent to
+// BigQuery at regular intervals according to the configuration of TickC.
+func (bu *BatchUploader) Stage(src interface{}) {
+	bu.mu.Lock()
+	defer bu.mu.Unlock()
+
+	if !bu.started {
+		bu.start()
+		bu.started = true
+	}
+
+	switch reflect.ValueOf(src).Kind() {
+	case reflect.Slice:
+		v := reflect.ValueOf(src)
+		for i := 0; i < v.Len(); i++ {
+			bu.pending = append(bu.pending, v.Index(i).Interface())
+		}
+	case reflect.Struct:
+		bu.pending = append(bu.pending, src)
+	}
+}
+
+// upload streams a batch of event rows to BigQuery. Put takes care of retrying,
+// so if it returns an error there is either an issue with the data it is trying
+// to upload, or BigQuery itself is experiencing a failure. So, we don't retry.
+func (bu *BatchUploader) upload() {
+	bu.mu.Lock()
+	pending := bu.pending
+	bu.pending = nil
+	bu.mu.Unlock()
+
+	if len(pending) == 0 {
+		return
+	}
+
+	var succeeded, failed int64
+
+	if err := bu.u.Put(bu.ctx, pending); err != nil {
+		log.Printf("eventupload: Uploader.Put: %v", err)
+		if merr, ok := err.(bigquery.PutMultiError); ok {
+			failed = int64(len(merr))
+		} else {
+			failed = int64(len(pending))
+		}
+		bu.updateUploads(failed, "failure")
+	}
+
+	succeeded = int64(len(pending)) - failed
+	bu.updateUploads(succeeded, "success")
+}
+
+func (bu *BatchUploader) updateUploads(count int64, status string) {
+	if bu.uploads == nil || count == 0 {
+		return
+	}
+	err := bu.uploads.Add(bu.ctx, count, status)
+	if err != nil {
+		log.Printf("eventupload: metric.Counter.Add: %v", err)
+	}
+}
+
+// Close flushes any pending event rows and releases any resources held by the
+// uploader. Close should be called when the logger is no longer needed.
+func (bu *BatchUploader) Close() {
+	close(bu.stopc)
+	bu.wg.Wait()
+
+	// Final upload.
+	bu.upload()
+
+	if bu.tick != nil {
+		bu.tick.Stop()
+	}
 }
