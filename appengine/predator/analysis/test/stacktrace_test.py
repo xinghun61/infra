@@ -6,6 +6,7 @@ from analysis.analysis_testcase import AnalysisTestCase
 from analysis.callstack_detectors import StartOfCallStack
 from analysis.stacktrace import CallStack
 from analysis.stacktrace import CallStackBuffer
+from analysis.stacktrace import ProfilerStackFrame
 from analysis.stacktrace import StackFrame
 from analysis.stacktrace import Stacktrace
 from analysis.stacktrace import StacktraceBuffer
@@ -31,6 +32,21 @@ class CallStackTest(AnalysisTestCase):
     self.assertEqual(
         StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [1, 2]).ToString(),
         '#0 0xXXX in func src/f.cc:1:1')
+
+  def testBlameUrlForProfilerStackFrame(self):
+    """Tests that ``ProfilerStackFrame.BlameUrl`` generates the correct url."""
+    frame = ProfilerStackFrame(0, 0, float('inf'), False, 'src/', 'func',
+                               'f.cc', 'src/f.cc')
+    self.assertEqual(frame.BlameUrl('1'), None)
+
+    frame = frame._replace(repo_url = 'https://repo_url')
+    self.assertEqual(frame.BlameUrl('1'), 'https://repo_url/+blame/1/f.cc')
+
+  def testFailureWhenProfilerStackFrameIndexIsNone(self):
+    """Tests that a TypeError is raised when the ``index`` is ``None``."""
+    with self.assertRaises(TypeError):
+      ProfilerStackFrame(None, 0, float('inf'), False, 'src/', 'func',
+                         'f.cc', 'src/f.cc')
 
   def testBlameUrlForStackFrame(self):
     frame = StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [])

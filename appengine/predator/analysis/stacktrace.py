@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from collections import namedtuple
-import copy
 import math
 import re
 
@@ -24,6 +23,84 @@ CALLSTACK_FORMAT_TO_PATTERN = {
 FRAME_INDEX_PATTERN = re.compile(r'\s*#(\d+)\s.*')
 
 _DEFAULT_FORMAT_TYPE = CallStackFormatType.DEFAULT
+
+
+def _BlameUrl(stackframe, revision):
+  """The URL to the git blame of this stackframe's file."""
+  if not stackframe.repo_url or not stackframe.dep_path:
+    return None
+
+  return '%s/+blame/%s/%s' % (stackframe.repo_url, revision,
+                              stackframe.file_path)
+
+
+class CalleeLine(namedtuple('CalleeLine', ['line', 'sample_fraction'])):
+  """A line in a function where the next function in the stack is invoked.
+
+  Attributes:
+    line (int): The line number where the next function is invoked.
+    sample_fraction (float): The fraction of stacks in the profiler sample where
+      that function is invoked. Number from 0 to 1.
+  """
+  pass
+
+
+class ProfilerStackFrame(namedtuple('ProfilerStackFrame',
+    ['index', 'difference', 'log_change_factor', 'responsible', 'dep_path',
+     'function', 'file_path', 'raw_file_path', 'repo_url',
+     'function_start_line', 'callee_lines'])):
+  """Represents a frame in a stacktrace produced by a performance profiler.
+
+  Represents the difference in performance for a given stack frame between one
+  version of the code and another.
+
+  Attributes:
+    index (int): The depth of this frame in the call tree.
+    difference (float): Execution time difference in seconds. Will be positive
+      for regressions, negative for improvements.
+    log_change_factor (float): The log of the relative change factor of the
+      execution time (>0 for regressions, <0 for improvements). The relative
+      change factor is the ratio of the function's execution time in the new
+      release to its execution time in the old release. This will be Infinity if
+      the execution time in the old release is 0 and -Infinity if the execution
+      time of the new release is 0.
+    responsible (bool): Whether this node is responsible for the difference.
+    dep_path (str): Path of the dep this frame represents, for example,
+      'src/', 'src/v8', 'src/skia'...etc.
+
+    # The remaining fields will be absent from frames with no symbol information
+    # and will default to None.
+
+    function (str): The name of the function in this frame.
+    file_path (str): Normalized path of the file, with parts dep_path and parts
+      before it stripped, for example, api.cc.
+    raw_file_path (str): Original path of the file, normalized to start from the
+      root of the Chromium repository, for example,
+      src/v8/src/heap/incremental-marking-job.cc.
+    repo_url (str): Repo url of this frame.
+    function_start_line (int): The line number for the first line of the
+      function.
+    callee_lines (tuple of CalleeLines): Lines in this function where the next
+    function in the stack are invoked, along with the fraction of samples
+    distributed between them. E.g.:
+      (CalleeLine(line=490, sample_fraction=0.9),
+       CalleeLine(line=511, sample_fraction=0.1))
+  """
+  __slots__ = ()
+
+  def __new__(cls, index, difference, log_change_factor, responsible,
+              dep_path=None, function=None, file_path=None, raw_file_path=None,
+              repo_url=None, function_start_line=None, callee_lines=None):
+    if index is None:
+      raise TypeError('The index must be an int')
+
+    return super(cls, ProfilerStackFrame).__new__(
+        cls, int(index), difference, log_change_factor, responsible, dep_path,
+        function, file_path, raw_file_path, repo_url, function_start_line,
+        callee_lines)
+
+  def BlameUrl(self, revision):
+    return _BlameUrl(self, revision)
 
 
 class StackFrame(namedtuple('StackFrame',
@@ -71,13 +148,9 @@ class StackFrame(namedtuple('StackFrame',
     return frame_str
 
   def BlameUrl(self, revision):
-    if not self.repo_url or not self.dep_path:
-      return None
-
-    blame_url = '%s/+blame/%s/%s' % (self.repo_url, revision, self.file_path)
+    blame_url = _BlameUrl(self, revision)
     if self.crashed_line_numbers:
       blame_url += '#%d' % self.crashed_line_numbers[0]
-
     return blame_url
 
   def __str__(self):
