@@ -75,8 +75,9 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
         'pubsub_callback': {
             'topic': 'projects/findit-for-me/topics/jobs',
             'auth_token': 'auth_token',
-            'user_data': '{"Notification-Id": "",'
-                         ' "Message-Type": "BuildbucketStatusChange"}'
+            'user_data': json.dumps({
+                'Message-Type': 'BuildbucketStatusChange',
+                'Notification-Id': ''})
         },
         'tags': ['user_agent:findit']
     }, request_linux.ToBuildbucketRequest())

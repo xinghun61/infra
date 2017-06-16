@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import mock
 import time
 
@@ -166,8 +167,9 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
         'user': '',
         'pubsub_auth_token': 'auth_token',
         'pubsub_topic': 'projects/findit-for-me/topics/swarm',
-        'pubsub_userdata': '{"Notification-Id": "%s", "Message-Type": '
-                           '"SwarmingTaskStatusChange"}' % pipeline.pipeline_id,
+        'pubsub_userdata': json.dumps({
+            'Message-Type': 'SwarmingTaskStatusChange',
+            'Notification-Id': pipeline.pipeline_id}),
     }
 
     self.assertEqual('new_task_id', new_task_id)
