@@ -1,8 +1,8 @@
-hash: 13253e06afbdcca6c20790727e983873ec6a4823a7f557b54da15f3fc9c5f5b1
-updated: 2017-06-13T09:26:36.011225364-07:00
+hash: 600fb005fffe3a2b26d7d56b4af0fa9c0c1973147b6f87ff35ae46f0769ab40e
+updated: 2017-06-16T09:41:27.51508952-07:00
 imports:
 - name: cloud.google.com/go
-  version: b4e9a381a01e953e880e6d2cf7fd02d412977cae
+  version: 7daafdb2f4a3defdef2154a45709c2126c6f0436
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -12,6 +12,9 @@ imports:
 - name: github.com/andygrunwald/go-gerrit
   version: 2218433d58297b329bab310da0b289a9decab80a
   repo: https://chromium.googlesource.com/external/github.com/andygrunwald/go-gerrit.git
+- name: github.com/aryann/difflib
+  version: a1a4dd44eb11820695fbe83e00fb2301ee6eb54c
+  repo: https://chromium.googlesource.com/external/github.com/aryann/difflib.git
 - name: github.com/bradfitz/gomemcache
   version: 1952afaa557dc08e8e0d89eafab110fb501c1a2b
   repo: https://chromium.googlesource.com/external/github.com/bradfitz/gomemcache.git
@@ -41,7 +44,7 @@ imports:
   version: 02d3668a0cf01f58411cc85cd37c174c257ec7c2
   repo: https://chromium.googlesource.com/external/github.com/go-ole/go-ole.git
 - name: github.com/go-sql-driver/mysql
-  version: a825be04c652d01442384e9dcdf2cdc3f1eda67f
+  version: 8fefef06da7707b5a3cda42195a6b409c9c9ab5c
   repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
 - name: github.com/golang/lint
   version: c5fb716d6688a859aae56d26d3e6070808df29f7
@@ -49,7 +52,7 @@ imports:
   subpackages:
   - golint
 - name: github.com/golang/protobuf
-  version: 5a0f697c9ed9d68fef0116532c6e05cfeae00e55
+  version: e325f446bebc2998605911c0a2650d9920361d4a
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
@@ -202,7 +205,7 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: dfe83d419c9403b40b19d08cdba2afec27b002f7
+  version: ddf80d0970594e2e4cccf5a98861cad3d9eaa4cd
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -219,15 +222,15 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: 0b25a408a50076fbbcae6b7ac0ea5fbb0b085e79
+  version: fb4cac33e3196ff7f507ab9b2d2a44b0142f5b5a
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - windows
 - name: golang.org/x/text
-  version: 3491b61b9edc56653ad4333e605e2908e46a036b
+  version: 9e2f80a6ba7ed4ba13e0cd4b1f094bf916875735
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 011098bb9222df9796d1d4c85a8772f0bf39d741
+  version: 34f7837286c0bd1ea0d50c06fbf585a7090dbd4e
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -273,7 +276,7 @@ imports:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: a94a7ac054dc76e5ab6cf170a9d82faba8aaf33f
+  version: c6b96641801f2f7fd8085f01bff103564d84bb57
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
