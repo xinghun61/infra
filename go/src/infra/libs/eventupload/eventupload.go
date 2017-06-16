@@ -158,14 +158,14 @@ type BatchUploader struct {
 	// contains a field "status" set to either "success" or "failure."
 	uploads metric.Counter
 
-	u       eventUploader
-	ctx     context.Context
-	stopc   chan struct{}
-	wg      sync.WaitGroup
-	started bool
+	u     eventUploader
+	ctx   context.Context
+	stopc chan struct{}
+	wg    sync.WaitGroup
 
 	mu      sync.Mutex
 	pending []interface{}
+	started bool
 }
 
 func (bu *BatchUploader) start() {
