@@ -68,12 +68,6 @@ def GenerateAuthToken(key_name, user_id, action_id='', when=None):
       '%s%s%d' % (digest, _DELIMITER, when_timestamp))
 
 
-def GenerateXSRFToken(user_email, action_id=''):
-  """Generates a XSRF token for the given user and action."""
-  return GenerateAuthToken(
-      'site', user_email, action_id=action_id)
-
-
 def ValidateAuthToken(
     key_name, token, user_id, action_id='', valid_hours=1):
   """Validates a token.
@@ -118,12 +112,6 @@ def ValidateAuthToken(
   return True
 
 
-def ValidateXSRFToken(user_email, xsrf_token, action_id=''):
-  """Returns True if the XSRF token is valid for the given user and action."""
-  return ValidateAuthToken(
-      'site', xsrf_token, user_email, action_id=action_id)
-
-
 class AddXSRFToken(object):
   """A decorator to add a XSRF token to the response for the handler."""
 
@@ -136,7 +124,7 @@ class AddXSRFToken(object):
       user_email = auth_util.GetUserEmail()
       if not user_email:
         return result
-      xsrf_token = GenerateXSRFToken(user_email, self._action_id)
+      xsrf_token = GenerateAuthToken('site', user_email, self._action_id)
       result = result or {}
       result['data'] = result.get('data', {})
       result['data']['xsrf_token'] = xsrf_token
@@ -156,7 +144,8 @@ class VerifyXSRFToken(object):
       user_email = auth_util.GetUserEmail()
       xsrf_token = str(handler.request.get('xsrf_token'))
       if (not user_email or
-          not ValidateXSRFToken(user_email, xsrf_token, self._action_id)):
+          not ValidateAuthToken(
+              'site', user_email, xsrf_token, self._action_id)):
         return handler.CreateError(
             'Invalid XSRF token. Please log in or refresh the page first.',
             return_code=403)

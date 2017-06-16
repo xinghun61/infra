@@ -57,7 +57,7 @@ class TriageSuspectedClTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
   @mock.patch.object(
-      triage_suspected_cl.token, 'ValidateXSRFToken', return_value=True)
+      triage_suspected_cl.token, 'ValidateAuthToken', return_value=True)
   def testSuccessfulTriage(self, _):
     build_url = buildbot.CreateBuildUrl(
       self.master_name, self.builder_name, self.build_number_1)
@@ -78,7 +78,7 @@ class TriageSuspectedClTest(wf_testcase.WaterfallTestCase):
       response.json_body)
 
   @mock.patch.object(
-      triage_suspected_cl.token, 'ValidateXSRFToken', return_value=True)
+      triage_suspected_cl.token, 'ValidateAuthToken', return_value=True)
   @mock.patch.object(buildbot, 'ParseBuildUrl', return_value=None)
   def testTriageFailed(self, *_):
     build_url = buildbot.CreateBuildUrl(

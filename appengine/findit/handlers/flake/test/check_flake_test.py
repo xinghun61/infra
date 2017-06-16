@@ -33,7 +33,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       ('/waterfall/flake', check_flake.CheckFlake),
   ], debug=True)
 
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testPostWithBadUrl(self, _):
     response = self.test_app.post(
         '/waterfall/flake',
@@ -48,7 +48,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         'Unknown build info!', response.json_body.get('error_message'))
 
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testPostWithoutStepName(self, _):
     response = self.test_app.post(
         '/waterfall/flake',
@@ -64,7 +64,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
                      return_value=False)
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testNotScheduleAnalysisButExistingAnalysisWasDeleted(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -109,7 +109,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
                      return_value=True)
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testCorpUserCanScheduleANewAnalysis(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -138,7 +138,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_surfix))
 
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testNoneCorpUserCanNotScheduleANewAnalysis(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -170,7 +170,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('No key was provided.',
                      response.json_body.get('error_message'))
 
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testMissingKeyPost(self, _):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
@@ -193,7 +193,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('Analysis of flake is not found.',
                      response.json_body.get('error_message'))
 
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testAnalysisNotFoundPost(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.Save()
@@ -286,7 +286,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEquals(200, response.status_int)
     self.assertEqual(expected_check_flake_result, response.json_body)
 
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=False)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=False)
   def testRejectRequestWithInvalidXSRFToken(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -306,7 +306,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'Invalid XSRF token. Please log in or refresh the page first.',
         response.json_body.get('error_message'))
 
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
                      return_value=False)
   def testRequestAnalysisWhenThereIsExistingAnalysis(self, *_):
@@ -417,7 +417,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
                      return_value=False)
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testRequestUnsupportedAnalysis(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -735,7 +735,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.end_time = datetime.datetime(2017, 06, 06, 00, 43, 00)
     self.assertEqual('00:43:00', check_flake._GetDurationForAnalysis(analysis))
 
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken',
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken',
                      return_value=True)
   def testRerunFailsWhenUnauthorized(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
@@ -753,7 +753,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('Only admin is allowed to rerun.',
                      response.json_body.get('error_message'))
 
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testRerunFailsWhenAlreadyRunning(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.status = analysis_status.RUNNING
@@ -769,7 +769,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       'Cannot rerun analysis if one is currently running or pending.',
       response.json_body.get('error_message'))
 
-  @mock.patch.object(check_flake.token, 'ValidateXSRFToken', return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testRequestRerunWhenAuthorized(self, *_):
     master_name = 'm'
     builder_name = 'b'

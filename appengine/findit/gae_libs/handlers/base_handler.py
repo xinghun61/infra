@@ -203,8 +203,8 @@ class BaseHandler(webapp2.RequestHandler):
           self.request.referer or self.request.url or '/')
       # If not yet, generate one xsrf token for the login user.
       if not data.get('xsrf_token') and data.get('user_info', {}).get('email'):
-        data['xsrf_token'] = token.GenerateXSRFToken(
-            data.get('user_info', {}).get('email'))
+        data['xsrf_token'] = token.GenerateAuthToken(
+            'site', data.get('user_info', {}).get('email'))
 
     self._SendResponse(template, data, return_code, cache_expiry)
 

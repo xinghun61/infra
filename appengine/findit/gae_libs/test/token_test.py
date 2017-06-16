@@ -58,64 +58,66 @@ class TokenTest(testing.AppengineTestCase):
   def testGeneratedXSRFTokenIsValidForSameUserAndSameAction(self, mock_now):
     mock_now.side_effect = [datetime(2017, 6, 13, 0, 0, 0),
                             datetime(2017, 6, 13, 0, 1, 0)]
-    xsrf_token = token.GenerateXSRFToken('email', 'action')
-    self.assertTrue(token.ValidateXSRFToken('email', xsrf_token, 'action'))
+    xsrf_token = token.GenerateAuthToken('key', 'email', 'action')
+    self.assertTrue(token.ValidateAuthToken(
+        'key', xsrf_token, 'email', 'action'))
 
   def testGeneratedXSRFTokenIsInvalidForSameUserButDifferentAction(self):
-    xsrf_token = token.GenerateXSRFToken('email', 'action1')
-    self.assertFalse(token.ValidateXSRFToken('email', xsrf_token, 'action2'))
+    xsrf_token = token.GenerateAuthToken('key', 'email', 'action1')
+    self.assertFalse(token.ValidateAuthToken(
+        'key', 'email', xsrf_token, 'action2'))
 
   def testGeneratedXSRFTokenIsInvalidForDifferentUserButSameAction(self):
-    xsrf_token = token.GenerateXSRFToken('email1', 'action')
-    self.assertFalse(token.ValidateXSRFToken('email2', xsrf_token, 'action'))
+    xsrf_token = token.GenerateAuthToken('email1', 'action')
+    self.assertFalse(token.ValidateAuthToken('email2', xsrf_token, 'action'))
 
   def testGeneratedXSRFTokenIsInvalidForDifferentUserAndAction(self):
-    xsrf_token = token.GenerateXSRFToken('email1', 'action1')
-    self.assertFalse(token.ValidateXSRFToken('email2', xsrf_token, 'action2'))
+    xsrf_token = token.GenerateAuthToken('email1', 'action1')
+    self.assertFalse(token.ValidateAuthToken('email2', xsrf_token, 'action2'))
 
-  @mock.patch('gae_libs.token.GenerateXSRFToken')
+  @mock.patch('gae_libs.token.GenerateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: None)
-  def testNotAddXSRFTokenIfUserNotLogin(self, mocked_GenerateXSRFToken):
-    mocked_GenerateXSRFToken.side_effect = ['']
+  def testNotAddXSRFTokenIfUserNotLogin(self, mocked_GenerateAuthToken):
+    mocked_GenerateAuthToken.side_effect = ['']
     response = self.test_app.get('/test-token?format=json')
     self.assertEqual(200, response.status_int)
-    mocked_GenerateXSRFToken.assert_not_called()
+    mocked_GenerateAuthToken.assert_not_called()
     self.assertEqual({'key': 'value'}, response.json_body)
 
-  @mock.patch('gae_libs.token.GenerateXSRFToken')
+  @mock.patch('gae_libs.token.GenerateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: 'test@google.com')
-  def testAddXSRFTokenIfUserLogin(self, mocked_GenerateXSRFToken):
-    mocked_GenerateXSRFToken.side_effect = ['token']
+  def testAddXSRFTokenIfUserLogin(self, mocked_GenerateAuthToken):
+    mocked_GenerateAuthToken.side_effect = ['token']
     response = self.test_app.get('/test-token?format=json')
     self.assertEqual(200, response.status_int)
     self.assertEqual({'key': 'value', 'xsrf_token': 'token'},
                      response.json_body)
-    mocked_GenerateXSRFToken.assert_not_called()
+    mocked_GenerateAuthToken.assert_not_called()
 
-  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: None)
-  def testInvalidXSRFTokenIfUserNotLogin(self, mocked_ValidateXSRFToken):
+  def testInvalidXSRFTokenIfUserNotLogin(self, mocked_ValidateAuthToken):
     self.test_app.post(
         '/test-token?format=json', {'xsrf_token': 'token'}, status=403)
-    mocked_ValidateXSRFToken.assert_not_called()
+    mocked_ValidateAuthToken.assert_not_called()
 
-  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: 'test@google.com')
-  def testInvalidXSRFTokenForUserLogin(self, mocked_ValidateXSRFToken):
-    mocked_ValidateXSRFToken.side_effect = [False]
+  def testInvalidXSRFTokenForUserLogin(self, mocked_ValidateAuthToken):
+    mocked_ValidateAuthToken.side_effect = [False]
     self.test_app.post(
         '/test-token?format=json', {'xsrf_token': 'token'}, status=403)
-    mocked_ValidateXSRFToken.assert_called_once_with(
-        'test@google.com', 'token', 'test')
+    mocked_ValidateAuthToken.assert_called_once_with(
+        'site', 'test@google.com', 'token', 'test')
 
-  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: 'test@google.com')
-  def testValidXSRFTokenForUserLogin(self, mocked_ValidateXSRFToken):
-    mocked_ValidateXSRFToken.side_effect = [True]
+  def testValidXSRFTokenForUserLogin(self, mocked_ValidateAuthToken):
+    mocked_ValidateAuthToken.side_effect = [True]
     response = self.test_app.post(
         '/test-token?format=json', {'xsrf_token': 'token'}, status=200)
-    mocked_ValidateXSRFToken.assert_called_once_with(
-        'test@google.com', 'token', 'test')
+    mocked_ValidateAuthToken.assert_called_once_with(
+        'site', 'test@google.com', 'token', 'test')
     self.assertEqual({'key': 'value'}, response.json_body)
 
 

@@ -57,7 +57,7 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
       analyses.append(analysis)
     return analyses
 
-  @mock.patch.object(check_duplicate_failures.token, 'ValidateXSRFToken',
+  @mock.patch.object(check_duplicate_failures.token, 'ValidateAuthToken',
                      return_value=True)
   def testCheckDuplicateFailuresHandler(self, _):
     self._CreateAnalyses('m', 'b', 5)

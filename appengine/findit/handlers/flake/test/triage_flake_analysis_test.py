@@ -31,7 +31,7 @@ class TriageFlakeAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(analysis.correct_culprit)
 
   @mock.patch.object(
-      triage_flake_analysis.token, 'ValidateXSRFToken', return_value=True)
+      triage_flake_analysis.token, 'ValidateAuthToken', return_value=True)
   def testPostWithTriageResults(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.status = analysis_status.COMPLETED
@@ -51,7 +51,7 @@ class TriageFlakeAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({'success': True}, response.json_body)
 
   @mock.patch.object(
-      triage_flake_analysis.token, 'ValidateXSRFToken', return_value=True)
+      triage_flake_analysis.token, 'ValidateAuthToken', return_value=True)
   def testPostMissingParameters(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.status = analysis_status.COMPLETED

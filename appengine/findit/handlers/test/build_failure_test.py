@@ -270,10 +270,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                                  params={'url': build_url})
     self.assertEquals(200, response.status_int)
 
-  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  @mock.patch('gae_libs.token.ValidateAuthToken')
   def testInvalidBuildUrlForPostRequest(
-      self, mocked_ValidateXSRFToken):
-    mocked_ValidateXSRFToken.side_effect = [True]
+      self, mocked_ValidateAuthToken):
+    mocked_ValidateAuthToken.side_effect = [True]
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     build_url = 'an/invalid/url'
@@ -285,10 +285,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         'Url "%s" is not pointing to a build.' % build_url,
         response.json_body.get('error_message'))
 
-  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  @mock.patch('gae_libs.token.ValidateAuthToken')
   def testNonAdminCannotRequestAnalysisOfFailureOnUnsupportedMaster(
-      self, mocked_ValidateXSRFToken):
-    mocked_ValidateXSRFToken.side_effect = [True]
+      self, mocked_ValidateAuthToken):
+    mocked_ValidateAuthToken.side_effect = [True]
     master_name = 'm2'
     builder_name = 'b 1'
     build_number = 123
@@ -304,10 +304,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         self.test_app.post, '/failure',
         params={'url': build_url, 'xsrf_token': 'abc'})
 
-  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  @mock.patch('gae_libs.token.ValidateAuthToken')
   def testCorpUserCanViewAnalysisOfFailureOnUnsupportedMaster(
-      self, mocked_ValidateXSRFToken):
-    mocked_ValidateXSRFToken.side_effect = [True]
+      self, mocked_ValidateAuthToken):
+    mocked_ValidateAuthToken.side_effect = [True]
     master_name = 'm2'
     builder_name = 'b 1'
     build_number = 123
@@ -328,9 +328,9 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(0, len(self.taskqueue_stub.get_filtered_tasks()))
 
   @mock.patch.object(build_util, 'GetBuildInfo', return_value=None)
-  @mock.patch('gae_libs.token.ValidateXSRFToken')
-  def testCannotGetBuildInfo(self, mocked_ValidateXSRFToken,  _):
-    mocked_ValidateXSRFToken.side_effect = [True]
+  @mock.patch('gae_libs.token.ValidateAuthToken')
+  def testCannotGetBuildInfo(self, mocked_ValidateAuthToken,  _):
+    mocked_ValidateAuthToken.side_effect = [True]
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
@@ -348,10 +348,10 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         self.test_app.post, '/failure',
         params={'url': build_url, 'xsrf_token': 'abc'})
 
-  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch.object(build_util, 'GetBuildInfo')
-  def testCannotRerunIncompleteBuild(self, mock_fn, mocked_ValidateXSRFToken):
-    mocked_ValidateXSRFToken.side_effect = [True]
+  def testCannotRerunIncompleteBuild(self, mock_fn, mocked_ValidateAuthToken):
+    mocked_ValidateAuthToken.side_effect = [True]
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
@@ -373,11 +373,11 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
         self.test_app.post, '/failure',
         params={'url': build_url, 'force': '1', 'xsrf_token': 'abc'})
 
-  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(
-      self, mock_fn, mocked_ValidateXSRFToken):
-    mocked_ValidateXSRFToken.side_effect = [True]
+      self, mock_fn, mocked_ValidateAuthToken):
+    mocked_ValidateAuthToken.side_effect = [True]
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -397,11 +397,11 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(1, len(self.taskqueue_stub.get_filtered_tasks()))
 
-  @mock.patch('gae_libs.token.ValidateXSRFToken')
+  @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testNotEveryoneCanRequestNewAnalysisOfFailureOnSupportedMaster(
-      self, mock_fn, mocked_ValidateXSRFToken):
-    mocked_ValidateXSRFToken.side_effect = [True]
+      self, mock_fn, mocked_ValidateAuthToken):
+    mocked_ValidateAuthToken.side_effect = [True]
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123

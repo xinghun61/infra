@@ -916,10 +916,10 @@ class ConfigTest(testing.AppengineTestCase):
                      config._FormatTimestamp(
                          datetime.datetime(2016, 2, 25, 1, 2, 3, 123456)))
 
-  @mock.patch('gae_libs.token.ValidateXSRFToken')
-  def testPostConfigurationSettings(self, mocked_ValidateXSRFToken):
+  @mock.patch('gae_libs.token.ValidateAuthToken')
+  def testPostConfigurationSettings(self, mocked_ValidateAuthToken):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    mocked_ValidateXSRFToken.side_effect = [True]
+    mocked_ValidateAuthToken.side_effect = [True]
 
     params = {
         'format': 'json',
