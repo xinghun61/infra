@@ -234,8 +234,6 @@ def commit(
       'names': ', '.join([s.name for s in specs]),
       'reason': reason,
   }
-  if bug:
-    desc += '\nBUG=%s' % bug
   tbr_whom = 'an owner'
   if reviewers:
     google, other = autocomplete_and_partition(reviewers)
@@ -248,6 +246,8 @@ def commit(
 
     tbr_whom = ', '.join(google)
     desc += '\nTBR=%s' % tbr_whom
+  if bug:
+    desc += '\n\nBug: %s' % bug
   subprocess.check_call(
       ['git', 'commit', '--all', '--message', desc], cwd=target)
 
