@@ -8,14 +8,15 @@ from datetime import timedelta
 import os
 import sys
 
-ROOT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
-                        os.path.pardir)
-sys.path.insert(1, ROOT_DIR)
+_ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__),
+                             os.path.pardir, os.path.pardir))
+_FIRST_PARTY_DIR = os.path.join(_ROOT_DIR, 'first_party')
+sys.path.insert(1, _FIRST_PARTY_DIR)
 from local_libs import script_util
-script_util.SetUpSystemPaths()
+script_util.SetUpSystemPaths(_ROOT_DIR)
 
-from crash.type_enums import CrashClient
-from util_scripts.crash_queries.crash_printer import crash_printer
+from analysis.type_enums import CrashClient
+from scripts.crash_printer import crash_printer
 
 _DATETIME_FORMAT = '%Y-%m-%d'
 _TODAY = date.today().strftime(_DATETIME_FORMAT)
