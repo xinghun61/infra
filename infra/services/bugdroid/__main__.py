@@ -109,12 +109,12 @@ def update_data(http):
 def parse_args(args):  # pragma: no cover
   parser = argparse.ArgumentParser('./run.py %s' % __package__)
   parser.add_argument('-c', '--configfile',
-                 help='Local JSON poller configuration file to override '
-                      'confilg file from luci-config.')
-  parser.add_argument('-d', '--credentials_db',
-                 help='File to use for Codesite OAuth2 credentials storage.')
+      help='Local JSON poller configuration file to override '
+           'config file from luci-config.')
+  parser.add_argument('-d', '--credentials_db', required=True,
+      help='File to use for Monorail OAuth2 credentials storage.')
   parser.add_argument('--datadir', default=DATADIR,
-                 help='Directory where persistent app data should be stored.')
+      help='Directory where persistent app data should be stored.')
 
   logs.add_argparse_options(parser)
   ts_mon.add_argparse_options(parser)
@@ -153,7 +153,7 @@ def main(args):  # pragma: no cover
     DEFAULT_LOGGER.info('Creating data directory.')
     os.makedirs(opts.datadir)
 
-  with open(opts.credentials_db) as data_file:    
+  with open(opts.credentials_db) as data_file:
     creds_data = json.load(data_file)
 
   # Use local json file
@@ -169,7 +169,7 @@ def main(args):  # pragma: no cover
       task=outer_loop_iteration,
       sleep_timeout=lambda: 60.0,
       **loop_opts)
- 
+
   # In case local json file is used, do not upload
   if not opts.configfile:
     if not update_data(_create_http(creds_data)):
