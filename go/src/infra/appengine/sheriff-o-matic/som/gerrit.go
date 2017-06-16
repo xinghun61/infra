@@ -43,7 +43,7 @@ func createCL(client *gerrit.Client, project, branch, subject string, fileConten
 		return "", err
 	}
 
-	// Add the changes to the new CL. Woulc be nice if Gerrit API had a bulk op for this.
+	// Add the changes to the new CL. Would be nice if Gerrit API had a bulk op for this.
 	for path, contents := range fileContents {
 		_, err = client.Changes.ChangeFileContentInChangeEdit(change.ChangeID, path, contents)
 		if err != nil {
@@ -58,5 +58,5 @@ func createCL(client *gerrit.Client, project, branch, subject string, fileConten
 		return "", err
 	}
 
-	return change.ChangeID, nil
+	return change.ID, nil
 }

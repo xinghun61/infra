@@ -32,9 +32,15 @@ type ExpectationStatement struct {
 	Expectations []string
 	// Original line content.
 	Original string
+	// Dirty indicates that fields have changed since Original was parsed.
+	Dirty bool
 }
 
 func (e *ExpectationStatement) String() string {
+	if !e.Dirty {
+		return e.Original
+	}
+
 	if e.TestName == "" {
 		return e.Comment
 	}

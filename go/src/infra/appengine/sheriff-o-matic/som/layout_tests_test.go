@@ -56,3 +56,27 @@ func TestGetLayoutTestsHandler(t *testing.T) {
 		})
 	})
 }
+
+func TestPostLayoutExpectationHandler(t *testing.T) {
+	Convey("basic", t, func() {
+		c := gaetesting.TestingContext()
+		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+			return giMock{dummy.Info(), "", time.Now(), nil}
+		})
+		gt := &testhelper.MockGitilesTransport{Responses: map[string]string{}}
+		c = urlfetch.Set(c, gt)
+		w := httptest.NewRecorder()
+
+		ctx := &router.Context{
+			Context: c,
+			Writer:  w,
+			Request: makePostRequest(""),
+		}
+
+		Convey("empty body, error", func() {
+			PostLayoutExpectationHandler(ctx)
+
+			So(w.Code, ShouldEqual, http.StatusInternalServerError)
+		})
+	})
+}

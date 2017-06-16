@@ -55,12 +55,33 @@
 
     _onCreateChangeCL: function(evt) {
       let expectation = this._testExpectationsJson.find((t) => {
-        // TODO: test if this filtering is necessary due to references.
         return t.TestName == this.$.editExpectationForm.expectation.TestName;
       }, this);
       Object.assign(expectation, evt.detail.newValue);
-      // TODO: activity indicator?
-      this.$.editDialog.toggle();
+
+      let formData = {
+        TestName: expectation.TestName,
+        Expectations: expectation.Expectations,
+        Modifiers: expectation.Modifiers,
+        Bugs: expectation.Bugs,
+        XsrfToken: window.xsrfToken,
+      };
+
+      fetch('/api/v1/testexpectation', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: JSON.stringify(formData),
+      }).then((resp) => {
+        if (resp.ok) {
+          this.$.editDialog.toggle();
+        } else {
+          // TODO: indicate failure in the dialog.
+          window.console.error('Non-OK response for updating expectation', resp);
+        }
+      }).catch((error) => {
+        window.console.error('Failed to update layout expectation: ', error);
+        this.$.editDialog.toggle();
+      });
     },
 
     _onCancelChangeCL: function(evt) {

@@ -41,6 +41,7 @@ func TestUpdateExpectations(t *testing.T) {
 						{
 							TestName:     "/third_party/test_name",
 							Expectations: []string{"PASS"},
+							Dirty:        true,
 						},
 					},
 				},

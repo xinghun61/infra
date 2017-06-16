@@ -60,7 +60,8 @@ func TestGerritClient(t *testing.T) {
 					Subject:  "subject",
 					Status:   "DRAFT",
 					Topic:    "",
-					ChangeID: "1234",
+					ChangeID: "chromium~whatever1234",
+					ID:       "1234",
 				})
 				fmt.Fprintf(w, ")]}'\n%s", string(marshalled))
 				created = true

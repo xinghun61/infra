@@ -134,7 +134,10 @@ func TestParse(t *testing.T) {
 		}
 
 		for _, test := range tests {
-			p := NewParser(bytes.NewBufferString(test.input))
+			p := NewStringParser(test.input)
+			if test.expected != nil {
+				test.expected.Original = test.input
+			}
 			stmt, err := p.Parse()
 			So(err, ShouldResemble, test.err)
 			So(stmt, ShouldResemble, test.expected)

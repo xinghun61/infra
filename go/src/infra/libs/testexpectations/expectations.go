@@ -112,6 +112,7 @@ func (fs *FileSet) UpdateExpectation(es *ExpectationStatement) error {
 				exp.Expectations = es.Expectations
 				exp.Modifiers = es.Modifiers
 				exp.Bugs = es.Bugs
+				exp.Dirty = true
 			}
 		}
 	}
@@ -125,8 +126,7 @@ func (fs *FileSet) ToCL() map[string]string {
 	for _, file := range fs.Files {
 		for _, s := range file.Expectations {
 			// Only include files with modified lines in the CL.
-			// TODO(seanmccullough): Consider using explicity dirty bits.
-			if s.String() != s.Original {
+			if s.Dirty {
 				ret[file.Path] = file.String()
 			}
 		}
