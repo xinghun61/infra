@@ -35,11 +35,11 @@ of configuration:
 1.  overall per-master
 2.  per-builder
 3.  per-scheduler
-4.  per-bot
+4.  per-bot/bot pool
 
-The keys in the dict should follow that order; within each section, all
-required keys should appear first (sorted alphabetically), then all
-optional keys (sorted alphabetically).
+The keys in the dict should follow that order; within each section,
+required keys should generally precede alternate keys, but things should
+be ordered in the way that reads best.
 
 Bots are usually collected into *pools*, so that they can be load
 balanced. Every bot in the pool has the same configuration.
@@ -49,7 +49,7 @@ Side note: buildbot used to call things "slaves" instead of "bots", and
 lots of Chromium docs still use "slave".
 
 For compatibility with older versions of builders.pyl, if the file contains
-a field called "slave_port", then any field named "bot_X" mustbe called
+a field called "slave_port", then any field named "bot_X" must be called
 "slave_X" instead. Once all of the builders.pyl files have been updated,
 this support will be dropped.
 ***
@@ -63,15 +63,16 @@ Here's a simple file containing all of the required fields:
   "master_base_class": "Master1",
   "master_port": 20100,
   "master_port_alt": 40100,
-  "bot_port": 30100,
   "templates": ["../master.chromium/templates"],
+  "bot_port": 30100,
 
   "builders": {
-     "Chromium Mojo Linux": {
-       "recipe": "chromium_mojo",
+     "Linux": {
+       "recipe": "chromium",
        "scheduler": "chromium_src_commits",
-       "bot_pools": ["linux_precise"],
-       "category": "0builders",
+       "os": "linux",
+       "version": "precise",
+       "bot": "vm1-m1",
      },
   },
 
@@ -79,17 +80,6 @@ Here's a simple file containing all of the required fields:
     "chromium_src_commits": {
       "type": "git_poller",
       "git_repo_url": "https://chromium.googlesource.com/chromium/src.git",
-    },
-  },
-
-  "bot_pools": {
-    "linux_precise": {
-      "bot_data": {
-        "bits": 64,
-        "os": "linux",
-        "version": "precise",
-      },
-      "bots": ["vm{1..50}-m1"],
     },
   },
 }
@@ -164,6 +154,20 @@ For example, if the builders.pyl file was in
 [masters/master.client.crashpad](https://chromium.googlesource.com/chromium/tools/build/+/master/masters/master.client.crashpad/builders.pyl),
 the master-classname would default to ClientCrashpad.
 
+### pubsub_service_account_file
+
+Similar to service_account_file, this is also an *optional* field but
+must be present if the builders on the master are intended to send build data
+to pubsub.
+
+If set, it should point to the filename in the credentials directory on
+the bot machine (i.e., just the basename + extension, no directory
+part), that contains the [OAuth service account
+info](../master_auth.md) the bot will use to connect to pubsub.
+By convention, the value is "service-account-\<project\>.json".
+The <project> field is usually "luci-milo" for most masters.  If not
+set, it defaults to None.
+
 ### service_account_file
 
 This is an *optional* field but must be present if the builders on the
@@ -181,19 +185,22 @@ info](../master_auth.md) the bot will use to connect to buildbucket.
 By convention, the value is "service-account-\<project\>.json". If not
 set, it defaults to None.
 
-### pubsub_service_account_file
+### builder_defaults
 
-Similar to service_account_file, this is also an *optional* field but
-must be present if the builders on the master are intended to send build data
-to pubsub.
+This is an *optional* field and may be set to a dict of keys and values.
+The values in this dict will be treated as a mixin (see below) that is
+applied to every builder, prior to any other mixins.
 
-If set, it should point to the filename in the credentials directory on
-the bot machine (i.e., just the basename + extension, no directory
-part), that contains the [OAuth service account
-info](../master_auth.md) the bot will use to connect to pubsub.
-By convention, the value is "service-account-\<project\>.json".
-The <project> field is usually "luci-milo" for most masters.  If not
-set, it defaults to None.
+### mixins
+
+This is an *optional* field and may be set to a dict of keys and values;
+each value must itself be a dictionary of keys and values. These dicts
+may then be referenced in the builder dicts, in which case the values
+from each mixin will be applied in left-to-right order as if they had
+been specified directly in the builder dict. If the dict contains a
+'mixins' key itself, the evaluation process will recursively apply the
+sub-mixins specified before applying the values listed in the mixin
+directly.
 
 ### builders
 
@@ -211,12 +218,15 @@ but it must be present even in that case.
 
 ### bot_pools
 
-This is a *required* field and must be a dict of pool names and
-properties, as described below.
+This is a *optional* field and must be a dict of pool names and
+properties, as described below. If this field is missing, every builder
+must specify bots directly inline in their definitions.
 
 ## Per-builder configurations
 
-Each builder is described by a dict that contains three or four fields:
+Each builder is described by a dict that may contain multiple fields, as
+follows. Most of these fields may also be specified in the builder_defaults
+and mixins keys, so that they may be applied to multiple builders.
 
 ### recipe
 
@@ -238,10 +248,44 @@ A builder that has a scheduler specified may also potentially be
 scheduled via buildbucket, but that doing so would be unusual (builders
 should normally only have one purpose).
 
+### os
+
+This is an *optional* field that may be used alongside `bot` or `bots` to
+configure a builder inline instead of via a `bot_pool`. See the per-pool
+`os` entry for additional restrictions.
+
+### version
+
+This is an *optional* field that may be used alongside `bot` or `bots` to
+configure a builder inline instead of via a `bot_pool`. See the per-pool
+`version` entry for additional restrictions.
+
+### bot
+
+This is an *optional* field that can be used to specify a single bot.
+It is equivalent to `bots` except that it cannot be a list, it must be a
+single string, and it cannot use hostname expansion wildcards.
+
+### bots
+
+This is an *optional* field that can be used to specify bots for the
+builder directly, rather than specifying a bot_pool. The value may be
+a single string representing either a single bot, or a wildcarded list
+of bots, or a list of either of those two things.
+
+### bot_pool
+
+This is an *optional* field. If specified, it must be a string that
+is a key into the top-level bot_pools dict.
+
 ### bot_pools
 
-This is a *required* field that specifies one or more pools of bots
-that can be builders.
+This is an *optional* field that specifies a list of one or more pools of bots
+that can be builders; Each entry in the list must be a key in the top-level
+bot_pools dict.
+
+Either this field, or `bot_pool`, or the triple of either `os`, `version`,
+and either `bot` or `bots` keys must be present in the builder entry.
 
 ### mergeRequests
 
@@ -253,6 +297,12 @@ You might want to merge builds if you have a waterfall builder that is polling
 a repository, because you want to always test the most current revision.
 You would not want to merge builds for tryservers because you want to test each
 revision in isolation.
+
+### mixins
+
+This is an *optional* list of mixins to be applied to the builder. Any
+additional fields specified in the builder will override the values specified
+in the mixins.
 
 ### auto_reboot
 
@@ -377,12 +427,7 @@ This matches the syntax used for the `Nightly` scheduler in buildbot.
 
 Each pool (or group) of bots consists of a set of machines that all
 have the same characteristics. The pool is described by a dict that
-contains two fields
-
-### bot_data
-
-This is a *required* field that contains a dict describing the
-configuration of every bot in the pool, as described below.
+contains the following fields.
 
 ### bots
 
@@ -392,16 +437,10 @@ string that can specify a range of hostnames, expanded as the bash shell
 would expand them. So, for example, `vm{1..3}-m1` would expand to `vm1-m1`,
 `vm2-m1`, `vm3-m1`.
 
-## Per-bot configurations
-
-The bot-data dict provides a bare description of the physical
-characteristics of each machine: operating system name, version, and
-architecture, with the following keys:
-
 ### bits
 
-This is a *required* field and must have either the value 32 or 64 (as
-numbers, not strings).
+This is an *optional* field and must have either the value 32 or 64 (as
+numbers, not strings). If not specified, this defaults to 64.
 
 ### os
 
@@ -410,13 +449,14 @@ This is a *required* field that must have one of the following values:
 
 ### version
 
-This is a *required* field and must have one of the following values:
+This is an *optional* field and may have one of the following values (other
+values may also be valid depending on what chrome-infra is supporting):
 
 os       | Valid values
 ---------|-------------
-`"mac"`  | `"10.6"`, `"10.7"`, `"10.8"`, `"10.9"`, `"10.10"`, `"10.11"`
-`"linux"`| `"precise"`, `"trusty"`, `"xenial"`
-`"win"`  | `"xp"`, `"vista"`, `"win7"`, `"win8"`, `"win10"`, `"2008"`
+`"mac"`  | `"10.9"`, `"10.10"`, `"10.11"`, `"10.12"`
+`"linux"`| `"trusty"`, `"xenial"`
+`"win"`  | `"win7"`, `"win10"`, `"2008"`
 
 ## Feedback
 
