@@ -8,13 +8,11 @@ import httplib
 import httplib2
 import json
 import os
-import shutil
-import subprocess
 import sys
 
-import infra_libs
-
 from oauth2client import gce
+
+from .util import call, rmtree
 
 
 IS_WINDOWS = sys.platform.startswith('win')
@@ -53,27 +51,12 @@ else:
   TEMP_DEPOT_TOOLS = '/tmp/depot_tools'
 
 
-def call(args, **kwargs):
-  print 'Running %s' % ' '.join(args)
-  if kwargs.get('cwd'):
-    print '  In %s' % kwargs.get('cwd')
-  kwargs.setdefault('stdout', subprocess.PIPE)
-  kwargs.setdefault('stderr', subprocess.STDOUT)
-  proc = subprocess.Popen(args, **kwargs)
-  while True:
-    buf = proc.stdout.read(1)
-    if not buf:
-      break
-    sys.stdout.write(buf)
-  return proc.wait()
-
-
 def ensure_depot_tools():
   """Fetches depot_tools to temp dir to use it to fetch the gclient solution."""
   # We don't really want to trust that the existing version of depot_tools
   # is pristine and uncorrupted.  So delete it and re-clone.
   print 'Setting up depot_tools in %s' % TEMP_DEPOT_TOOLS
-  infra_libs.rmtree(TEMP_DEPOT_TOOLS)
+  rmtree(TEMP_DEPOT_TOOLS)
   parent = os.path.dirname(TEMP_DEPOT_TOOLS)
   if not os.path.exists(parent):
     os.makedirs(parent)
@@ -95,7 +78,7 @@ def maybe_clean_rootdir(root_dir):
   for dirname in os.listdir(root_dir):
     fullname = os.path.join(root_dir, dirname)
     print 'Deleting %s' % fullname
-    infra_libs.rmtree(fullname)
+    rmtree(fullname)
 
 
 def inject_path_in_environ(env, path):
@@ -126,11 +109,8 @@ def ensure_checkout(root_dir, depot_tools, internal):
     for filename in os.listdir(root_dir):
       full_path = os.path.join(root_dir, filename)
       print 'Deleting %s...' % full_path
-      if os.path.isdir(full_path):
-        # shutil.rmtree doesn't work on Windows, but ours works.
-        infra_libs.rmtree(full_path)
-      else:
-        os.remove(full_path)
+      # shutil.rmtree doesn't work on Windows, but ours works.
+      rmtree(full_path)
     write_gclient_file(root_dir, internal)
     rc = call([gclient_bin, 'sync'], cwd=root_dir, env=env)
     if rc:

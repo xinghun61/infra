@@ -6,10 +6,11 @@
 
 import os
 import re
-import shutil
 import sys
 
 import requests
+
+from .util import rmtree
 
 
 def is_staging(hostname):
@@ -31,7 +32,7 @@ def start(hostname, root_dir):
 
   # Kill previous known bot location.
   if sys.platform != 'win32' and os.path.isdir('/b/swarm_slave'):
-    shutil.rmtree('/b/swarm_slave', ignore_errors=True)
+    rmtree('/b/swarm_slave', ignore_errors=True)
 
   bot_root = os.path.join(root_dir, 'swarming')
   if not os.path.isdir(bot_root):
