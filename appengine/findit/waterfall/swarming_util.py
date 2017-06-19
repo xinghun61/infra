@@ -5,9 +5,11 @@
 import base64
 import copy
 from collections import defaultdict
+from datetime import timedelta
 import hashlib
 import json
 import logging
+import random
 import time
 import urllib
 from urlparse import urlparse
@@ -22,6 +24,7 @@ from common.waterfall import buildbucket_client
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http import auth_util
 from infra_api_clients import logdog_util
+from libs import time_util
 from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_step import WfStep
@@ -815,3 +818,39 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
 
     tryjob.dimensions.append('id:' + bots_with_rev[0]['bot_id'])
     return
+
+
+def GetETAToStartAnalysis(manually_triggered):
+  """Returns an ETA as of a UTC datetime.datetime to start the analysis.
+
+  If not urgent, Swarming tasks should be run off PST peak hours from 11am to
+  6pm on workdays.
+
+  Args:
+    manually_triggered (bool): True if the analysis is from manual request, like
+        by a Chromium sheriff.
+
+  Returns:
+    The ETA as of a UTC datetime.datetime to start the analysis.
+  """
+  if manually_triggered:
+    # If the analysis is manually triggered, run it right away.
+    return time_util.GetUTCNow()
+
+  now_at_pst = time_util.GetPSTNow()
+  if now_at_pst.weekday() >= 5:  # PST Saturday or Sunday.
+    return time_util.GetUTCNow()
+
+  if now_at_pst.hour < 11 or now_at_pst.hour >= 18:  # Before 11am or after 6pm.
+    return time_util.GetUTCNow()
+
+  # Set ETA time to 6pm, and also with a random latency within 30 minutes to
+  # avoid sudden burst traffic to Swarming.
+  diff = timedelta(hours=18 - now_at_pst.hour,
+                   minutes=-now_at_pst.minute,
+                   seconds=-now_at_pst.second + random.randint(0, 30 * 60),
+                   microseconds=-now_at_pst.microsecond)
+  eta = now_at_pst + diff
+
+  # Convert back to UTC.
+  return time_util.ConvertPSTToUTC(eta)

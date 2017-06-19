@@ -75,46 +75,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     flake_swarming_task.error = error
     flake_swarming_task.put()
 
-  def testGetETAToStartAnalysisWhenManuallyTriggered(self):
-    mocked_utcnow = datetime.utcnow()
-    self.MockUTCNow(mocked_utcnow)
-    self.assertEqual(mocked_utcnow,
-                     recursive_flake_pipeline._GetETAToStartAnalysis(True))
-
-  def testGetETAToStartAnalysisWhenTriggeredOnPSTWeekend(self):
-    # Sunday 1pm in PST, and Sunday 8pm in UTC.
-    mocked_pst_now = datetime(2016, 9, 04, 13, 0, 0, 0)
-    mocked_utc_now = datetime(2016, 9, 04, 20, 0, 0, 0)
-    self.MockUTCNow(mocked_utc_now)
-    with mock.patch('libs.time_util.GetPSTNow') as timezone_func:
-      timezone_func.side_effect = [mocked_pst_now, None]
-      self.assertEqual(mocked_utc_now,
-                       recursive_flake_pipeline._GetETAToStartAnalysis(False))
-
-  def testGetETAToStartAnalysisWhenTriggeredOffPeakHoursOnPSTWeekday(self):
-    # Tuesday 1am in PST, and Tuesday 8am in UTC.
-    mocked_pst_now = datetime(2016, 9, 20, 1, 0, 0, 0)
-    mocked_utc_now = datetime(2016, 9, 20, 8, 0, 0, 0)
-    self.MockUTCNow(mocked_utc_now)
-    with mock.patch('libs.time_util.GetPSTNow') as timezone_func:
-      timezone_func.side_effect = [mocked_pst_now, None]
-      self.assertEqual(mocked_utc_now,
-                       recursive_flake_pipeline._GetETAToStartAnalysis(False))
-
-  def testGetETAToStartAnalysisWhenTriggeredInPeakHoursOnPSTWeekday(self):
-    # Tuesday 12pm in PST, and Tuesday 8pm in UTC.
-    seconds_delay = 10
-    mocked_utc_now = datetime(2016, 9, 21, 20, 0, 0, 0)
-    mocked_pst_now = datetime(2016, 9, 21, 12, 0, 0, 0)
-    mocked_utc_eta = datetime(2016, 9, 22, 2, 0, seconds_delay)
-    self.MockUTCNow(mocked_utc_now)
-    with mock.patch('libs.time_util.GetPSTNow') as (
-        timezone_func), mock.patch('random.randint') as random_func:
-      timezone_func.side_effect = [mocked_pst_now, mocked_utc_eta]
-      random_func.side_effect = [seconds_delay, None]
-      self.assertEqual(mocked_utc_eta,
-                       recursive_flake_pipeline._GetETAToStartAnalysis(False))
-
   @mock.patch.object(RecursiveFlakePipeline, '_BotsAvailableForTask',
                      return_value=True)
   def testRecursiveFlakePipeline(self, _):
@@ -1036,7 +996,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       '',
                       expected_args=[analysis.key.urlsafe(), 9, 'r2', 8, 10,
                                      None, _DEFAULT_CACHE_NAME, None],
-                      expected_kwargs={})
+                      expected_kwargs={'retries': 0, 'rerun': False})
 
     pipeline = NextBuildNumberPipeline(
         analysis.key.urlsafe(), build_number, None, None, None)
@@ -1136,7 +1096,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
             None)._BotsAvailableForTask(step_metadata))
 
   @mock.patch.object(
-      recursive_flake_pipeline, '_GetETAToStartAnalysis',
+      swarming_util, 'GetETAToStartAnalysis',
       return_value=None)
   @mock.patch.object(RecursiveFlakePipeline, '_BotsAvailableForTask',
                      return_value=False)
@@ -1321,7 +1281,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       '',
                       expected_args=[analysis.key.urlsafe(), 9, 'r9', 7, 10,
                                      None, _DEFAULT_CACHE_NAME, None],
-                      expected_kwargs={})
+                      expected_kwargs={'retries': 0, 'rerun': False})
 
     pipeline = NextBuildNumberPipeline(
         analysis.key.urlsafe(), build_number, None, None, None)
@@ -1378,7 +1338,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                       '',
                       expected_args=[analysis.key.urlsafe(), 5, 'r5', 5, 6,
                                      None, _DEFAULT_CACHE_NAME, None],
-                      expected_kwargs={})
+                      expected_kwargs={'retries': 0, 'rerun': False})
 
     pipeline = NextBuildNumberPipeline(
         analysis.key.urlsafe(), build_number, None, None, None)

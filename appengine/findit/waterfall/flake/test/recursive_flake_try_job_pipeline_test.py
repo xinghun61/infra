@@ -11,6 +11,7 @@ from common import constants
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
+from libs import time_util
 from model import result_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
@@ -277,7 +278,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         '',
         expected_args=[analysis.key.urlsafe(), 97, 'r97', 90, 100, None,
                        _DEFAULT_CACHE_NAME, None],
-        expected_kwargs={})
+        expected_kwargs={'retries': 0, 'rerun': False})
 
     pipeline_job = NextCommitPositionPipeline(
         analysis.key.urlsafe(), try_job.key.urlsafe(), 90, 100, None,
@@ -781,3 +782,202 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         2,
         recursive_flake_try_job_pipeline._GetIterationsToRerun(2, analysis))
+
+  def testCanStartTryJob(self):
+    master_name = 'm'
+    builder_name = 'b'
+    step_name = 's'
+    test_name = 't'
+    revision = 'rev'
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, revision)
+    # Buildbot.
+    with mock.patch('waterfall.waterfall_config.GetWaterfallTrybot',
+                    return_value= ('tryserver.chromium.linux', 'b_variable')):
+      # Continue if the job is not to be run on swarmbucket.
+      self.assertTrue(recursive_flake_try_job_pipeline._CanStartTryJob(
+          try_job, False, 0))
+
+    # LUCI.
+    with mock.patch('waterfall.waterfall_config.GetWaterfallTrybot',
+                    return_value=('luci.chromium.try', 'b_variable')):
+      # Continue if re-run.
+      self.assertTrue(recursive_flake_try_job_pipeline._CanStartTryJob(
+          try_job, True, 0))
+      # Continue if retry limit exceeded.
+      self.assertTrue(recursive_flake_try_job_pipeline._CanStartTryJob(
+          try_job, False, 100))
+      with mock.patch('waterfall.swarming_util.GetSwarmingBotCounts',
+                      return_value= {'count': 10, 'available': 10}):
+        # Continue if enough bots are available.
+        self.assertTrue(recursive_flake_try_job_pipeline._CanStartTryJob(
+            try_job, False, 0))
+      with mock.patch('waterfall.swarming_util.GetSwarmingBotCounts',
+                      return_value= {'count': 10, 'available': 4}):
+        # Delay the job if not enough bots are available.
+        self.assertFalse(recursive_flake_try_job_pipeline._CanStartTryJob(
+            try_job, False, 0))
+
+  @mock.patch.object(recursive_flake_try_job_pipeline,
+                     '_BASE_COUNT_DOWN_SECONDS', 0)
+  @mock.patch.object(recursive_flake_try_job_pipeline, '_CanStartTryJob')
+  def testTryLaterIfNoAvailableBots(self, mock_fn):
+    mock_fn.side_effect = [False, True]
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    upper_bound_commit_position = 1000
+    start_commit_position = 999
+    revision = 'r999'
+    try_job_id = 'try_job_id'
+    lower_bound_commit_position = 998
+    user_specified_iterations = None
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    analysis.status = analysis_status.COMPLETED
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.Save()
+
+    iterations_to_rerun = analysis.algorithm_parameters.get(
+        'try_job_rerun', {}).get('iterations_to_rerun')
+
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, revision)
+
+    try_job_result = {
+        revision: {
+            step_name: {
+                'status': 'failed',
+                'failures': [test_name],
+                'valid': True,
+                'pass_fail_counts': {
+                    'test_name': {
+                        'pass_count': 28,
+                        'fail_count': 72
+                    }
+                }
+            }
+        }
+    }
+
+    self.MockPipeline(
+        recursive_flake_try_job_pipeline.ScheduleFlakeTryJobPipeline,
+        try_job_id,
+        expected_args=[master_name, builder_name, step_name, test_name,
+                       revision, analysis.key.urlsafe(), _DEFAULT_CACHE_NAME,
+                       None, iterations_to_rerun])
+    self.MockPipeline(
+        recursive_flake_try_job_pipeline.MonitorTryJobPipeline,
+        try_job_result,
+        expected_args=[try_job.key.urlsafe(), failure_type.FLAKY_TEST,
+                       try_job_id])
+    self.MockPipeline(
+        recursive_flake_try_job_pipeline.ProcessFlakeTryJobResultPipeline,
+        None,
+        expected_args=[revision, start_commit_position, try_job_result,
+                       try_job.key.urlsafe(), analysis.key.urlsafe()])
+    self.MockPipeline(
+        recursive_flake_try_job_pipeline.NextCommitPositionPipeline,
+        '',
+        expected_args=[
+            analysis.key.urlsafe(), try_job.key.urlsafe(),
+            lower_bound_commit_position, upper_bound_commit_position,
+            user_specified_iterations, _DEFAULT_CACHE_NAME, None])
+
+    pipeline_job = RecursiveFlakeTryJobPipeline(
+        analysis.key.urlsafe(), start_commit_position, revision,
+        lower_bound_commit_position, upper_bound_commit_position, None,
+        _DEFAULT_CACHE_NAME, None)
+    pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+    self.assertIsNotNone(
+        FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
+                        revision))
+    self.assertEqual(analysis.last_attempted_revision, revision)
+    self.assertIsNone(analysis.last_attempted_swarming_task_id)
+
+  @mock.patch.object(recursive_flake_try_job_pipeline,
+                     '_BASE_COUNT_DOWN_SECONDS', 0)
+  @mock.patch.object(recursive_flake_try_job_pipeline, '_CanStartTryJob')
+  def testOffPeakHours(self, mock_fn):
+    mock_fn.side_effect = [False, True]
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    upper_bound_commit_position = 1000
+    start_commit_position = 999
+    revision = 'r999'
+    try_job_id = 'try_job_id'
+    lower_bound_commit_position = 998
+    user_specified_iterations = None
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    analysis.status = analysis_status.COMPLETED
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.Save()
+
+    iterations_to_rerun = analysis.algorithm_parameters.get(
+        'try_job_rerun', {}).get('iterations_to_rerun')
+
+    try_job = FlakeTryJob.Create(
+        master_name, builder_name, step_name, test_name, revision)
+
+    try_job_result = {
+        revision: {
+            step_name: {
+                'status': 'failed',
+                'failures': [test_name],
+                'valid': True,
+                'pass_fail_counts': {
+                    'test_name': {
+                        'pass_count': 28,
+                        'fail_count': 72
+                    }
+                }
+            }
+        }
+    }
+
+    self.MockPipeline(
+        recursive_flake_try_job_pipeline.ScheduleFlakeTryJobPipeline,
+        try_job_id,
+        expected_args=[master_name, builder_name, step_name, test_name,
+                       revision, analysis.key.urlsafe(), _DEFAULT_CACHE_NAME,
+                       None, iterations_to_rerun])
+    self.MockPipeline(
+        recursive_flake_try_job_pipeline.MonitorTryJobPipeline,
+        try_job_result,
+        expected_args=[try_job.key.urlsafe(), failure_type.FLAKY_TEST,
+                       try_job_id])
+    self.MockPipeline(
+        recursive_flake_try_job_pipeline.ProcessFlakeTryJobResultPipeline,
+        None,
+        expected_args=[revision, start_commit_position, try_job_result,
+                       try_job.key.urlsafe(), analysis.key.urlsafe()])
+    self.MockPipeline(
+        recursive_flake_try_job_pipeline.NextCommitPositionPipeline,
+        '',
+        expected_args=[
+            analysis.key.urlsafe(), try_job.key.urlsafe(),
+            lower_bound_commit_position, upper_bound_commit_position,
+            user_specified_iterations, _DEFAULT_CACHE_NAME, None])
+
+    pipeline_job = RecursiveFlakeTryJobPipeline(
+        analysis.key.urlsafe(), start_commit_position, revision,
+        lower_bound_commit_position, upper_bound_commit_position, None,
+        _DEFAULT_CACHE_NAME, None, rerun=False, retries=100)
+    pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+    self.assertIsNotNone(
+        FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
+                        revision))
+    self.assertEqual(analysis.last_attempted_revision, revision)
+    self.assertIsNone(analysis.last_attempted_swarming_task_id)

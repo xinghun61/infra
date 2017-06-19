@@ -2,9 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import timedelta
 import logging
-import random
 
 from google.appengine.ext import ndb
 
@@ -139,40 +137,6 @@ def _UpdateAnalysisStatusAndStartTime(analysis):
     analysis.put()
 
 
-def _GetETAToStartAnalysis(manually_triggered):
-  """Returns an ETA as of a UTC datetime.datetime to start the analysis.
-
-  If not urgent, Swarming tasks should be run off PST peak hours from 11am to
-  6pm on workdays.
-
-  Args:
-    manually_triggered (bool): True if the analysis is from manual request, like
-        by a Chromium sheriff.
-
-  Returns:
-    The ETA as of a UTC datetime.datetime to start the analysis.
-  """
-  if manually_triggered:
-    # If the analysis is manually triggered, run it right away.
-    return time_util.GetUTCNow()
-
-  now_at_pst = time_util.GetPSTNow()
-  if now_at_pst.weekday() >= 5:  # PST Saturday or Sunday.
-    return time_util.GetUTCNow()
-
-  if now_at_pst.hour < 11 or now_at_pst.hour >= 18:  # Before 11am or after 6pm.
-    return time_util.GetUTCNow()
-
-  # Set ETA time to 6pm, and also with a random latency within 30 minutes to
-  # avoid sudden burst traffic to Swarming.
-  diff = timedelta(hours=18 - now_at_pst.hour,
-                   minutes=-now_at_pst.minute,
-                   seconds=-now_at_pst.second + random.randint(0, 30 * 60),
-                   microseconds=-now_at_pst.microsecond)
-  eta = now_at_pst + diff
-
-  # Convert back to UTC.
-  return time_util.ConvertPSTToUTC(eta)
 
 
 def _IsSwarmingTaskSufficientForCacheHit(
@@ -410,7 +374,7 @@ class RecursiveFlakePipeline(BasePipeline):
 
   def _StartOffPSTPeakHours(self, *args, **kwargs):
     """Starts the pipeline off PST peak hours if not triggered manually."""
-    kwargs['eta'] = _GetETAToStartAnalysis(self.manually_triggered)
+    kwargs['eta'] = swarming_util.GetETAToStartAnalysis(self.manually_triggered)
     self.start(*args, **kwargs)
 
   def _RetryWithDelay(self, *args, **kwargs):

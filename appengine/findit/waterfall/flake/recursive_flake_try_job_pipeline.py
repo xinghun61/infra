@@ -28,12 +28,17 @@ from waterfall.flake.schedule_flake_try_job_pipeline import (
     ScheduleFlakeTryJobPipeline)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
+from waterfall import swarming_util
+from waterfall import waterfall_config
 
 
 _GIT_REPO = CachedGitilesRepository(
     HttpClientAppengine(),
     'https://chromium.googlesource.com/chromium/src.git')
 _DEFAULT_ITERATIONS_TO_RERUN = 100
+
+_MAX_RETRY_TIMES = 5
+_BASE_COUNT_DOWN_SECONDS = 2 * 60
 
 
 def CreateCulprit(revision, commit_position, confidence_score,
@@ -162,23 +167,45 @@ def _SetAnalysisTryJobStatus(analysis, desired_status):
     analysis.try_job_status = desired_status
 
 
+def _CanStartTryJob(try_job, rerun, retries):
+  try_master, try_builder = waterfall_config.GetWaterfallTrybot(
+      try_job.master_name, try_job.builder_name)
+  if (try_master.startswith('luci.')
+      and not rerun
+      and retries < _MAX_RETRY_TIMES):
+    dimensions = waterfall_config.GetTrybotDimensions(try_master, try_builder)
+    bot_counts = swarming_util.GetSwarmingBotCounts(
+        dimensions, HttpClientAppengine())
+    waterfall_reserved_rate = waterfall_config.GetTryJobSettings().get(
+        'waterfall_reserved_rate', .5)
+    total_count = bot_counts.get('count') or -1
+    available_count = bot_counts.get('available', 0)
+    available_rate = float(available_count) / total_count
+    return available_rate >= waterfall_reserved_rate
+  return True
+
+
 class RecursiveFlakeTryJobPipeline(BasePipeline):
   """Starts a series of flake try jobs to identify the exact culprit."""
 
   def __init__(
       self, urlsafe_flake_analysis_key, commit_position, revision,
       lower_bound_commit_position, upper_bound_commit_position,
-      user_specified_iterations, cache_name, dimensions):
+      user_specified_iterations, cache_name, dimensions, rerun=False,
+      retries=0):
     super(RecursiveFlakeTryJobPipeline, self).__init__(
         urlsafe_flake_analysis_key, commit_position, revision,
         lower_bound_commit_position, upper_bound_commit_position,
-        user_specified_iterations, cache_name, dimensions)
+        user_specified_iterations, cache_name, dimensions, rerun=rerun,
+        retries=retries)
     self.urlsafe_flake_analysis_key = urlsafe_flake_analysis_key
     self.commit_position = commit_position
     self.revision = revision
     self.lower_bound_commit_position = lower_bound_commit_position
     self.upper_bound_commit_position = upper_bound_commit_position
     self.user_specified_iterations = user_specified_iterations
+    self.rerun = rerun
+    self.retries = retries
 
   def _LogUnexpectedAbort(self):
     if not self.was_aborted:
@@ -218,10 +245,12 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
   def finalized(self):
     self._LogUnexpectedAbort()
 
+
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, urlsafe_flake_analysis_key, commit_position, revision,
           lower_bound_commit_position, upper_bound_commit_position,
-          user_specified_iterations, cache_name, dimensions, rerun=False):
+          user_specified_iterations, cache_name, dimensions, rerun=False,
+          retries=0):
     """Runs a try job at a revision to determine its flakiness.
 
     Args:
@@ -256,34 +285,79 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
         analysis.canonical_step_name, analysis.test_name, revision)
 
     if _NeedANewTryJob(analysis, try_job, user_specified_iterations, rerun):
-      _SetAnalysisTryJobStatus(analysis, analysis_status.RUNNING)
-      analysis.last_attempted_revision = revision
-      analysis.put()
+      if _CanStartTryJob(try_job, rerun, retries):
+        _SetAnalysisTryJobStatus(analysis, analysis_status.RUNNING)
+        analysis.last_attempted_revision = revision
+        analysis.put()
 
-      iterations = _GetIterationsToRerun(user_specified_iterations, analysis)
+        iterations = _GetIterationsToRerun(user_specified_iterations, analysis)
 
-      with pipeline.InOrder():
-        try_job_id = yield ScheduleFlakeTryJobPipeline(
-            analysis.master_name, analysis.builder_name,
-            analysis.canonical_step_name, analysis.test_name, revision,
-            analysis.key.urlsafe(), cache_name, dimensions, iterations)
+        with pipeline.InOrder():
+          try_job_id = yield ScheduleFlakeTryJobPipeline(
+              analysis.master_name, analysis.builder_name,
+              analysis.canonical_step_name, analysis.test_name, revision,
+              analysis.key.urlsafe(), cache_name, dimensions, iterations)
 
-        try_job_result = yield MonitorTryJobPipeline(
-            try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
+          try_job_result = yield MonitorTryJobPipeline(
+              try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
 
-        yield ProcessFlakeTryJobResultPipeline(
-            revision, commit_position, try_job_result, try_job.key.urlsafe(),
-            urlsafe_flake_analysis_key)
+          yield ProcessFlakeTryJobResultPipeline(
+              revision, commit_position, try_job_result, try_job.key.urlsafe(),
+              urlsafe_flake_analysis_key)
 
-        yield NextCommitPositionPipeline(
-            urlsafe_flake_analysis_key, try_job.key.urlsafe(),
+          yield NextCommitPositionPipeline(
+              urlsafe_flake_analysis_key, try_job.key.urlsafe(),
+              lower_bound_commit_position, upper_bound_commit_position,
+              user_specified_iterations, cache_name, dimensions)
+      else:
+        retries += 1
+
+        pipeline_job = RecursiveFlakeTryJobPipeline(
+            urlsafe_flake_analysis_key, commit_position, revision,
             lower_bound_commit_position, upper_bound_commit_position,
-            user_specified_iterations, cache_name, dimensions)
+            user_specified_iterations, cache_name, dimensions, rerun=rerun,
+            retries=retries)
+
+        # Disable attribute 'target' defined outside __init__ pylint warning,
+        # because pipeline generates its own __init__ based on run function.
+        pipeline_job.target = (  # pylint: disable=W0201
+            appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
+
+        # Delay or start off peak.
+        if retries > _MAX_RETRY_TIMES:
+          pipeline_job._StartOffPSTPeakHours(
+              queue_name=self.queue_name or constants.DEFAULT_QUEUE)
+          logging.info('Retries exceed max count, RecursiveFlakeTryJobPipeline '
+                       'on MasterFlakeAnalysis %s/%s/%s/%s/%s will start off '
+                       'peak hours', analysis.master_name,
+                        analysis.builder_name, analysis.build_number,
+                        analysis.step_name, analysis.test_name)
+        else:
+          pipeline_job._RetryWithDelay(
+              queue_name=self.queue_name or constants.DEFAULT_QUEUE)
+          countdown = retries * _BASE_COUNT_DOWN_SECONDS
+          logging.info('No available swarming bots, '
+                       'RecursiveFlakeTryJobPipeline on MasterFlakeAnalysis '
+                       '%s/%s/%s/%s/%s will be tried after %d seconds',
+                       analysis.master_name, analysis.builder_name,
+                       analysis.build_number, analysis.step_name,
+                       analysis.test_name, countdown)
+
     else:
       yield NextCommitPositionPipeline(
           urlsafe_flake_analysis_key, try_job.key.urlsafe(),
           lower_bound_commit_position, upper_bound_commit_position,
           user_specified_iterations, cache_name, dimensions)
+
+  def _StartOffPSTPeakHours(self, *args, **kwargs):
+    """Starts the pipeline off PST peak hours if not triggered manually."""
+    kwargs['eta'] = swarming_util.GetETAToStartAnalysis(False)
+    self.start(*args, **kwargs)
+
+  def _RetryWithDelay(self, *args, **kwargs):
+    """Trys to start the pipeline later."""
+    kwargs['countdown'] = kwargs.get('retries', 1) * _BASE_COUNT_DOWN_SECONDS
+    self.start(*args, **kwargs)
 
 
 def _NormalizeDataPoints(data_points):
