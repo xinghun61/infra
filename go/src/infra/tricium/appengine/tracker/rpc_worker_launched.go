@@ -95,8 +95,8 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 	if err := ds.Get(c, request); err != nil {
 		return fmt.Errorf("failed to get AnalyzeRequest entity (run ID: %d): %v", req.RunId, err)
 	}
-	switch request.Reporter {
-	case tricium.Reporter_GERRIT:
+	switch request.Consumer {
+	case tricium.Consumer_GERRIT:
 		// TODO(emso): push notification to the Gerrit reporter
 	default:
 		// Do nothing.

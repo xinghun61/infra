@@ -49,7 +49,7 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	if len(req.Paths) == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
-	if req.Reporter == tricium.Reporter_GERRIT {
+	if req.Consumer == tricium.Consumer_GERRIT {
 		if req.GerritChange == "" {
 			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit change")
 		}
@@ -87,9 +87,9 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		Paths:    req.Paths,
 		GitRepo:  repo,
 		GitRef:   req.GitRef,
-		Reporter: req.Reporter,
+		Consumer: req.Consumer,
 	}
-	if req.Reporter == tricium.Reporter_GERRIT {
+	if req.Consumer == tricium.Consumer_GERRIT {
 		request.GerritChange = req.GerritChange
 		request.GerritRevision = req.GerritRevision
 	}

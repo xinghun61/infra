@@ -42,19 +42,19 @@ message AnalyzeRequest {
   // TODO(emso): document path separators or add listing of path segments.
   repeated string paths = 3;
 
-  // Reporter to use for progress updates and results.
+  // Consumer to send progress updates and results to.
   //
   // This field is optional. If included it will push progress and result
-  // updates to the selected reporter. The selected reporter must be
+  // updates to the provided consumer. The selected consumer must be
   // configured for the project of the request.
   //
   // Note that progress and results can be accessed via the Tricium
-  // API regardless of whether a reporter has been included in the request.
-  Reporter reporter = 4;
+  // API regardless of whether a consumer has been included in the request.
+  Consumer consumer = 4;
 
-  // Gerrit details for the Gerrit reporter; change and revision.
+  // Gerrit details for a Gerrit consumer; change and revision.
   //
-  // These fields are required if the Gerrit reporter is selected.
+  // These fields are required if Gerrit is selected as consumer.
   string gerrit_change = 5;
   string gerrit_revision = 6;
 }
@@ -189,16 +189,16 @@ enum State {
   TIMED_OUT = 5;
 }
 
-enum Reporter {
-  // No reporter means progress and results can be pulled from the Tricium service API.
+enum Consumer {
+  // No consumer means progress and results can be pulled from the Tricium service API.
   //
-  // This is the default reporter used when no reporter is configured for a project.
+  // This is the default value used when no consumer is configured for a project.
   NONE = 0;
 
-  // A Gerrit reporter means the Tricium service polls Gerrit for changes and reports
+  // A Gerrit consumer means the Tricium service polls Gerrit for changes and reports
   // progress updates and results to Gerrit.
   //
-  // Gerrit details need to be configured for a project before the Gerrit reporter
+  // Gerrit details need to be configured for a project before the Gerrit consumer
   // option is enabled.
   GERRIT = 1;
 }

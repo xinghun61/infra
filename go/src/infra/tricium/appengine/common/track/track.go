@@ -74,8 +74,8 @@ type AnalyzeRequest struct {
 	GitRepo string `gae:",noindex"`
 	// Git ref to use in the Git repo.
 	GitRef string `gae:",noindex"`
-	// Reporter to use for progress updates and results.
-	Reporter tricium.Reporter
+	// Consumer of progress updates and results.
+	Consumer tricium.Consumer
 	// Gerrit details for when the Gerrit reporter is selected.
 	GerritChange   string `gae:",noindex"`
 	GerritRevision string `gae:",noindex"`
