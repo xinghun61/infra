@@ -12,6 +12,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strconv"
+	"time"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/golang/protobuf/proto"
@@ -53,7 +55,17 @@ func tableDef(s string) *pb.TableDef {
 func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) error {
 	_, err := ts.getTableMetadata(ctx, td.DatasetId, td.TableId)
 	if errNotFound(err) {
-		err = ts.createTable(ctx, td.DatasetId, td.TableId)
+		var options []bigquery.CreateTableOption
+		if td.PartitionTable {
+			i := int(td.PartitionExpirationSeconds)
+			d, err := time.ParseDuration(strconv.Itoa(i) + "s")
+			if err != nil {
+				return err
+			}
+			tp := bigquery.TimePartitioning{Expiration: d}
+			options = append(options, tp)
+		}
+		err = ts.createTable(ctx, td.DatasetId, td.TableId, options...)
 		if err != nil {
 			return err
 		}

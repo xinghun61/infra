@@ -8,6 +8,11 @@ message TableDef {
   string name = 3;
   string description = 4;
   repeated FieldSchema fields = 5;
+  // Whether to partition the table by day.
+  bool partition_table = 6;
+  // The lifetime for each partition. If zero, partitions do not expire.
+  // Ignored if partition_table is false.
+  int64 partition_expiration_seconds = 7;
 }
 
 enum Type {
