@@ -88,6 +88,7 @@ def parse_args(args):  # pragma: no cover
   outer_loop.add_argparse_options(parser)
 
   parser.set_defaults(
+      log_level=logging.DEBUG,
       ts_mon_target_type='task',
       ts_mon_task_service_name='bugdroid',
       ts_mon_task_job_name='bugdroid_job'

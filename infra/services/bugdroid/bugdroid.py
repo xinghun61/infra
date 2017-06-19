@@ -23,26 +23,26 @@ from infra.services.bugdroid import monorail_client
 from infra.services.bugdroid import poller_handlers
 from infra.services.bugdroid import scm_helper
 
+import infra_libs.logs
+
 loggers = {}
 
 
 def GetLogger(logger_id):
   """Logging setup for pollers."""
-  # pylint: disable=global-variable-not-assigned
-  global loggers
-  if loggers.get(logger_id):
-    return loggers.get(logger_id)
-  else:
-    logger = logging.getLogger(logger_id)
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.DEBUG)
-    sh.setFormatter(formatter)
-    logger.addHandler(sh)
-    loggers[logger_id] = logger
-    return logger
+
+  if logger_id in loggers:
+    return loggers[logger_id]
+
+  logger = logging.getLogger(logger_id)
+  infra_libs.logs.add_handler(logger)
+
+  # We need to include the logger ID (i.e. "%(name)s") in the formatter string.
+  logger.handlers[0].setFormatter(logging.Formatter(
+      '[%(severity)s%(iso8601)s %(process)d %(thread)d '
+      '%(fullModuleName)s:%(lineno)s] %(name)s - %(message)s'))
+  loggers[logger_id] = logger
+  return logger
 
 
 class BugdroidPollerHandler(poller_handlers.BasePollerHandler):
