@@ -547,10 +547,10 @@ def _NormalizeDataPoints(data_points):
   Returns:
     A list of NormalizedDataPoint objects based on data_points.
   """
-  normalized_data_points = [
-      (lambda data_point: NormalizedDataPoint(
-          data_point.build_number, data_point.pass_rate,
-          data_point.has_valid_artifact))(d) for d in data_points]
+  normalized_data_points = [(NormalizedDataPoint(data_point.build_number,
+                                                 data_point.pass_rate,
+                                                 data_point.has_valid_artifact))
+                            for data_point in data_points]
   return sorted(
       normalized_data_points, key=lambda k: k.run_point_number, reverse=True)
 

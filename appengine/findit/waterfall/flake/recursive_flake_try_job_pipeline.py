@@ -361,10 +361,9 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 
 
 def _NormalizeDataPoints(data_points):
-  normalized_data_points = [
-      (lambda data_point: NormalizedDataPoint(
-          data_point.commit_position,
-          data_point.pass_rate))(d) for d in data_points]
+  normalized_data_points = [(NormalizedDataPoint(data_point.commit_position,
+                                                 data_point.pass_rate))
+                            for data_point in data_points]
 
   return sorted(normalized_data_points, key=lambda k: k.run_point_number,
                 reverse=True)

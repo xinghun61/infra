@@ -22,7 +22,9 @@ class _DummyCache(cache.Cache):
     self.cached_data[key] = data
 
 
-def _DummyKeyGenerator(func, args, kwargs,  # pylint: disable=W0613
+def _DummyKeyGenerator(func,
+                       _args,
+                       _kwargs,
                        namespace=None):
   namespace = namespace or '%s.%s' % (func.__module__, func.__name__)
   return namespace + '-' + func.__name__

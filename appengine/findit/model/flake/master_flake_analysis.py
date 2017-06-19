@@ -281,11 +281,12 @@ class MasterFlakeAnalysis(
     upper_bound = self.GetCommitPositionOfBuild(
         upper_bound_build_number) or float('inf')
 
-    return filter(
-        lambda x: (x.commit_position is not None and
-                   x.commit_position >= lower_bound and
-                   x.commit_position <= upper_bound),
-        self.data_points)
+    def position_in_bounds(x):
+      return (x.commit_position is not None and
+              x.commit_position >= lower_bound and
+              x.commit_position <= upper_bound)
+
+    return filter(position_in_bounds, self.data_points)
 
   def RemoveDataPointWithBuildNumber(self, build_number):
     self.data_points = filter(
