@@ -233,7 +233,8 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
       tests (list): A list of test cases, eg: ['suite1.test1', 'suite2.testw2']
       iterations_to_rerun (int): Number of iterations to run a test.
       hard_timeout_seconds (int): How many seconds the overall task has to run.
-      force (bool): If this is a forced rerun.
+      force (bool): If this is a forced rerun from scratch. A rerun by an admin
+          will trigger this.
 
     Returns:
       task_id (str): The new Swarming task that re-run the given tests.

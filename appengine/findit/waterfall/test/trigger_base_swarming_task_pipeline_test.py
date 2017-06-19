@@ -42,6 +42,23 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name, tests)
     self.assertEqual('task_id', task_id)
 
+  def testNeedSwarmingTaskWhenOneExistsButForceSpecified(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    step_name = 's'
+
+    swarming_task = WfSwarmingTask.Create(
+        master_name, builder_name, build_number, step_name)
+    swarming_task.status = analysis_status.RUNNING
+    swarming_task.task_id = 'task_id'
+    swarming_task.put()
+
+    pipeline = TriggerSwarmingTaskPipeline()
+    with mock.patch.object(pipeline, '_GetSwarmingTask',
+                           return_value=swarming_task):
+      self.assertTrue(pipeline._NeedANewSwarmingTask(force=True))
+
   def testWaitingForTheTaskId(self):
     master_name = 'm'
     builder_name = 'b'
@@ -174,6 +191,72 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual('new_task_id', new_task_id)
     self.assertEqual(expected_new_request_json, new_request_json)
+
+    swarming_task = WfSwarmingTask.Get(
+        master_name, builder_name, build_number, step_name)
+    self.assertIsNotNone(swarming_task)
+    self.assertEqual('new_task_id', swarming_task.task_id)
+    self.assertEqual(tests, swarming_task.parameters['tests'])
+    self.assertEqual(
+        waterfall_config.GetSwarmingSettings()['iterations_to_rerun'],
+        swarming_task.parameters['iterations_to_rerun'])
+
+  @mock.patch.object(pubsub_callback, 'GetVerificationToken',
+                     return_value='blah')
+  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags',
+                     return_value=[{'task_id': '1'}, {'task_id': '2'}])
+  @mock.patch.object(swarming_util, 'TriggerSwarmingTask',
+                     return_value=('new_task_id', None))
+  @mock.patch.object(TriggerBaseSwarmingTaskPipeline, '_GetSwarmingTaskName',
+                     return_value='new_task_name')
+  @mock.patch.object(swarming_util, 'GetSwarmingTaskRequest')
+  def testNoNewSwarmingTaskIsNeededButForceSpecified(self, task_fn, *_):
+    request_json = {
+                      'expiration_secs': 3600,
+                      'name': 'ref_task_request',
+                      'parent_task_id': 'pti',
+                      'priority': 25,
+                      'properties': {
+                          'command': 'cmd',
+                          'dimensions': [{'key': 'k', 'value': 'v'}],
+                          'env': [
+                              {'key': 'a', 'value': '1'},
+                              {'key': 'GTEST_SHARD_INDEX', 'value': '1'},
+                              {'key': 'GTEST_TOTAL_SHARDS', 'value': '5'},
+                          ],
+                          'execution_timeout_secs': 3600,
+                          'extra_args': [
+                              '--flag=value',
+                              '--gtest_filter=d.f',
+                              '--test-launcher-filter-file=path/to/filter/file',
+                          ],
+                          'grace_period_secs': 30,
+                          'idempotent': True,
+                          'inputs_ref': {'a': 1},
+                          'io_timeout_secs': 1200,
+                      },
+                      'tags': ['master:a', 'buildername:b', 'name:a_tests'],
+                      'user': 'user',
+                  }
+    request = SwarmingTaskRequest.Deserialize(request_json)
+    task_fn.return_value = request
+
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    step_name = 's'
+    tests = ['a.b']
+
+    swarming_task = WfSwarmingTask.Create(
+        master_name, builder_name, build_number, step_name)
+    swarming_task.status = analysis_status.RUNNING
+    swarming_task.task_id = 'task_id'
+    swarming_task.put()
+
+    pipeline = TriggerSwarmingTaskPipeline()
+    task_id = pipeline.run(
+        master_name, builder_name, build_number, step_name, tests, force=True)
+    self.assertNotEqual('task_id', task_id)
 
     swarming_task = WfSwarmingTask.Get(
         master_name, builder_name, build_number, step_name)
