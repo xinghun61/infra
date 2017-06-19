@@ -313,13 +313,15 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	}
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
-	testLocs := f.TestLocations
-	f.TestLocations = nil // remove test locations to reduce NDB storage costs
-	go func() {
-		defer wg.Done()
-		uploadTestLocations(c, testLocs)
-	}()
+	if f.TestLocations != nil {
+		testLocs := f.TestLocations
+		f.TestLocations = nil // remove test locations to reduce NDB storage costs
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			uploadTestLocations(c, testLocs)
+		}()
+	}
 
 	if f.Builder != p.Builder {
 		err := errors.New("Builder in query params does not match uploaded JSON")
