@@ -88,6 +88,10 @@ func main() {
 		os.Exit(-1)
 	}
 
+	http.HandleFunc("/wct-monkeypatch.js", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./monkeypatch.js")
+	})
+
 	http.HandleFunc("/result", func(w http.ResponseWriter, r *http.Request) {
 		req := &ResultRequest{}
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {

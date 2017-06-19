@@ -1,7 +1,6 @@
 .PHONY: test
 WCT_PATH = ./node_modules/web-component-tester/bin/wct
 VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
-
 default: help
 
 help:
@@ -27,3 +26,5 @@ clean:
 test: deps
 	xvfb-run -a $(WCT_PATH)
 
+wct: deps
+	xvfb-run go run ../../../tools/wct/wct.go -base=.
