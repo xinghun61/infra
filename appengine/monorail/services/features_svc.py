@@ -52,11 +52,11 @@ HOTLIST2USER_COLS = ['hotlist_id', 'user_id', 'role_name']
 
 # Regex for parsing one action in the filter rule consequence storage syntax.
 CONSEQUENCE_RE = re.compile(
-    r'(default_status:(?P<default_status>\w+))|'
+    r'(default_status:(?P<default_status>[-.\w]+))|'
     r'(default_owner_id:(?P<default_owner_id>\d+))|'
     r'(add_cc_id:(?P<add_cc_id>\d+))|'
-    r'(add_label:(?P<add_label>\w+))|'
-    r'(add_notify:(?P<add_notify>\w+))|'
+    r'(add_label:(?P<add_label>[-.\w]+))|'
+    r'(add_notify:(?P<add_notify>[-.@\w]+))|'
     r'(warning:(?P<warning>.+))|'  # Warnings consume the rest of the string.
     r'(error:(?P<error>.+))'  # Errors consume the rest of the string.
     )

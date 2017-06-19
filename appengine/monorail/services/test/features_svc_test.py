@@ -331,7 +331,8 @@ class FeaturesServiceTest(unittest.TestCase):
 
   def testDeserializeRuleConsequence_Multiple(self):
     consequence = ('default_status:New default_owner_id:1 add_cc_id:2'
-                   ' add_label:label1 add_label:label2 add_notify:admin')
+                   ' add_label:label-1 add_label:label.2'
+                   ' add_notify:admin@example.com')
     (default_status, default_owner_id, add_cc_ids, add_labels,
      add_notify, warning, error
      ) = self.features_service._DeserializeRuleConsequence(
@@ -339,8 +340,8 @@ class FeaturesServiceTest(unittest.TestCase):
     self.assertEqual('New', default_status)
     self.assertEqual(1, default_owner_id)
     self.assertEqual([2], add_cc_ids)
-    self.assertEqual(['label1', 'label2'], add_labels)
-    self.assertEqual(['admin'], add_notify)
+    self.assertEqual(['label-1', 'label.2'], add_labels)
+    self.assertEqual(['admin@example.com'], add_notify)
     self.assertEqual(None, warning)
     self.assertEqual(None, error)
 
