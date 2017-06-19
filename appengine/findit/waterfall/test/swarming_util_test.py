@@ -1186,6 +1186,61 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         bots, cache_name, 121, False)
     self.assertEqual({'bot_id':'bot4'}, sorted_bots[0])
 
+  def testLeastCrowded(self):
+    bots = [
+        {
+            'bot_id': 'slave1',
+            'dimensions': [{
+                'key': 'caches',
+                'value': ['builder_123456']
+            }],
+            'state': json.dumps({
+                'disks': {'c:\\': {'free_mb': 1000}}
+            })
+        },
+        {
+            'bot_id': 'slave2',
+            'dimensions': [{
+                'key': 'caches',
+                'value': [
+                    'builder_123456',
+                    'builder_abcdef'
+                ]
+            }],
+            'state': json.dumps({
+                'disks': {'c:\\': {'free_mb': 1000}}
+            })
+        },
+        {
+            'bot_id': 'slave3',
+            'dimensions': [{
+                'key': 'caches',
+                'value': [
+                    'builder_123456',
+                    'builder_abcdef'
+                ]
+            }],
+            'state': json.dumps({
+                'disks': {'c:\\': {'free_mb': 2000}}
+            })
+        },
+        {
+            'bot_id': 'slave4'
+        }
+    ]
+    # The one with fewer caches is preferred.
+    self.assertEqual('slave1', swarming_util._GetBotWithFewestNamedCaches(
+        bots)['bot_id'])
+    # If there is a tie, the one with more free space is preferred.
+    self.assertEqual('slave3', swarming_util._GetBotWithFewestNamedCaches(
+        bots[1:])['bot_id'])
+    self.assertEqual('slave3', swarming_util._GetBotWithFewestNamedCaches(
+        bots[2:])['bot_id'])
+    # If a bot does not have the caches dimension or the free space data, it is
+    # only selected as a last resort.
+    self.assertEqual('slave4', swarming_util._GetBotWithFewestNamedCaches(
+        bots[3:])['bot_id'])
+
 
   @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
               return_value=ALL_BOTS)
@@ -1240,6 +1295,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
     self.assertEqual('id:bot0', tryjob.dimensions[2])
 
+  @mock.patch('waterfall.swarming_util._GetBotWithFewestNamedCaches',
+              lambda x: x[0])
   @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
               return_value=ALL_BOTS)
   @mock.patch('waterfall.swarming_util.OnlyAvailable',
@@ -1257,6 +1314,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
     self.assertEqual('id:bot0', tryjob.dimensions[2])
 
+  @mock.patch('waterfall.swarming_util._GetBotWithFewestNamedCaches',
+              lambda x: x[0])
   @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
               return_value=ALL_BOTS)
   @mock.patch('waterfall.swarming_util.OnlyAvailable',
@@ -1270,16 +1329,29 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
     self.assertEqual('id:bot0', tryjob.dimensions[2])
 
-  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
-              return_value=[])
-  @mock.patch('waterfall.swarming_util.OnlyAvailable',
-              return_value=[])
+  @mock.patch('waterfall.swarming_util.GetBotsByDimension', return_value=[])
+  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache', return_value=[])
+  @mock.patch('waterfall.swarming_util.OnlyAvailable', return_value=[])
   @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
-  def testAssignWarmCacheHostBrandNewCache(self, *_):
+  def testAssignWarmCacheNoIdleBots(self, *_):
     cache_name = 'cache_name'
     tryjob = MockTryJob()
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
     self.assertEqual(2, len(tryjob.dimensions))
+
+  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
+              return_value=[])
+  @mock.patch('waterfall.swarming_util.GetBotsByDimension',
+              return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util.OnlyAvailable', lambda x: x)
+  @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
+  @mock.patch('waterfall.swarming_util._GetBotWithFewestNamedCaches',
+              lambda x: x[0])
+  def testAssignWarmCacheOnlyIdleBots(self, *_):
+    cache_name = 'cache_name'
+    tryjob = MockTryJob()
+    swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
+    self.assertEqual('id:bot0', tryjob.dimensions[2])
 
   def testDimensionsToQueryString(self):
     self.assertEqual(

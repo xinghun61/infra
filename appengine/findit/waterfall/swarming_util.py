@@ -765,6 +765,43 @@ def _ClosestLater(bots, cache_name, commit_position):
   return result[0] if result else None
 
 
+def _GetBotWithFewestNamedCaches(bots):
+  """Selects the bot that has the fewest named caches.
+
+  To break ties, the bot with the most available disk space is selected.
+
+  Args:
+    bots(list): A list of bot dicts as returned by the swarming.bots.list api
+      with a minimum length of 1.
+
+  Returns:
+    One bot from the list.
+  """
+  # This list will contain a triplet (cache_count, -free_space, bot) for each
+  # bot.
+  candidates = []
+  for b in bots:
+    try:
+      caches_dimension = [d['value'] for d in b['dimensions']
+                          if d['key'] == 'caches'][0]
+      # We only care about caches whose name starts with 'builder_' as that is
+      # the convention that we use in GetCacheName.
+      cache_count = len([
+          cache for cache in caches_dimension if cache.startswith('builder_')])
+      bot_state = json.loads(b['state'])
+      free_space = sum(
+          [disk['free_mb'] for _, disk in bot_state['disks'].iteritems()])
+    except (KeyError, TypeError, ValueError):
+      # If we can't determine the values, we add the bot to the end of the list.
+      candidates.append((1000, 0, b))
+    else:
+      # We use negative free space in this triplet so that a single sort will
+      # put the one with the most free space first if there is a tie in cache
+      # count with a single sort.
+      candidates.append((cache_count, -free_space, b))
+  return sorted(candidates)[0][2]
+
+
 def AssignWarmCacheHost(tryjob, cache_name, http_client):
   """Selects the best possible slave for a given tryjob.
 
@@ -799,7 +836,8 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
     bots_with_rev = _HaveCommitPositionInLocalGitCache(
         bots_with_cache, target_commit_position)
     if not bots_with_rev:
-      tryjob.dimensions.append('id:' + bots_with_cache[0]['bot_id'])
+      selected_bot = _GetBotWithFewestNamedCaches(bots_with_cache)['bot_id']
+      tryjob.dimensions.append('id:' + selected_bot)
       return
 
     bots_with_latest_earlier_rev_checked_out = _ClosestEarlier(
@@ -816,8 +854,16 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
           'id:' + bots_with_earliest_later_rev_checked_out['bot_id'])
       return
 
-    tryjob.dimensions.append('id:' + bots_with_rev[0]['bot_id'])
+    selected_bot = _GetBotWithFewestNamedCaches(bots_with_rev)['bot_id']
+    tryjob.dimensions.append('id:' + selected_bot)
     return
+
+  else:
+    idle_bots = OnlyAvailable(GetBotsByDimension(request_dimensions,
+                                                 http_client))
+    if idle_bots:
+      selected_bot = _GetBotWithFewestNamedCaches(idle_bots)['bot_id']
+      tryjob.dimensions.append('id:' + selected_bot)
 
 
 def GetETAToStartAnalysis(manually_triggered):
