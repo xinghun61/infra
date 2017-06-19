@@ -79,3 +79,26 @@ class FlakeUpdateSingleton(ndb.Model):
 
 class FlakeUpdate(ndb.Model):
   time_updated = ndb.DateTimeProperty(auto_now_add=True)
+
+
+class FlakeType(ndb.Model):
+  project = ndb.StringProperty(required=True)
+  step_name = ndb.StringProperty(required=True)
+  test_name = ndb.StringProperty()
+  config = ndb.StringProperty()
+  last_updated = ndb.DateTimeProperty(required=True)
+
+
+class Issue(ndb.Model):
+  project = ndb.StringProperty(required=True)
+  issue_id = ndb.IntegerProperty(required=True)
+  flake_type_keys = ndb.KeyProperty(kind=FlakeType, repeated=True)
+
+
+class CacheAncestor(ndb.Model):
+  pass
+
+
+class Cache(ndb.Model):
+  idx = ndb.IntegerProperty(required=True)
+  data = ndb.BlobProperty()

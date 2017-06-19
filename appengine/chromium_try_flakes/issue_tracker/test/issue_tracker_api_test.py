@@ -126,6 +126,20 @@ class IssueTrackerAPITestCase(unittest.TestCase):
       'updates': {},
     })
 
+  def test_post_comment(self):
+    api = issue_tracker.IssueTrackerAPI('my-project')
+    issue_id = '123'
+    insert_method = self.client.issues.return_value.comments.return_value.insert
+    insert_method.return_value.execute.return_value = {'id': '345'}
+    api.postComment(issue_id, comment='TestComment', send_email=False)
+    self.assertEquals(insert_method.call_count, 1)
+    self.assertEquals(insert_method.call_args[1]['projectId'], 'my-project')
+    self.assertEquals(insert_method.call_args[1]['issueId'], issue_id)
+    self.assertEquals(insert_method.call_args[1]['sendEmail'], False)
+    self.assertDictEqual(insert_method.call_args[1]['body'], {
+        'content': 'TestComment'
+    })
+
   def test_get_comment_count(self):
     api = issue_tracker.IssueTrackerAPI('my-project')
     list_method = self.client.issues.return_value.comments.return_value.list
@@ -197,6 +211,16 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     self.assertEquals(issue.id, '123')
     self.assertEquals(get_method.call_count, 1)
     self.assertEquals(get_method.call_args[1]['projectId'], 'my-project')
+    self.assertEquals(get_method.call_args[1]['issueId'], '123')
+
+  def test_get_issue_on_another_project(self):
+    api = issue_tracker.IssueTrackerAPI('my-project')
+    get_method = self.client.issues.return_value.get
+    get_method.return_value.execute.return_value = {'id': '123'}
+    issue = api.getIssue('123', project_id='webrtc')
+    self.assertEquals(issue.id, '123')
+    self.assertEquals(get_method.call_count, 1)
+    self.assertEquals(get_method.call_args[1]['projectId'], 'webrtc')
     self.assertEquals(get_method.call_args[1]['issueId'], '123')
 
   @mock.patch('google.appengine.api.app_identity.get_application_id',

@@ -118,9 +118,16 @@ class IssueTrackerAPI(object):
 
     return rtn
 
-  def getIssue(self, issue_id):
+  def postComment(self, issue_id, comment, send_email=True):
+    request = self.client.issues().comments().insert(
+      projectId=self.project_name, issueId=issue_id, sendEmail=send_email,
+      body={'content': comment})
+    endpoints.retry_request(request)
+
+  def getIssue(self, issue_id, project_id=None):
     """Retrieve a set of issues in a project."""
-    request = self.client.issues().get(
-        projectId=self.project_name, issueId=issue_id)
+    if project_id is None:
+      project_id = self.project_name
+    request = self.client.issues().get(projectId=project_id, issueId=issue_id)
     entry = endpoints.retry_request(request)
     return Issue(entry)

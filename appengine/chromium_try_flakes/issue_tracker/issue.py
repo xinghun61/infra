@@ -24,6 +24,8 @@ class Issue(object):
     self.blocking = ChangeTrackingList(
         e['issueId'] for e in issue_entry.get('blocking', []))
     self.merged_into = issue_entry.get('mergedInto', {}).get('issueId')
+    self.merged_into_project = (
+        issue_entry.get('mergedInto', {}).get('projectId'))
     self.created = parseDateTime(issue_entry.get('published'))
     self.updated = parseDateTime(issue_entry.get('updated'))
     self.closed = parseDateTime(issue_entry.get('closed'))
@@ -37,6 +39,7 @@ class Issue(object):
     self.labels = ChangeTrackingList(issue_entry.get('labels', []))
     self.components = ChangeTrackingList(issue_entry.get('components', []))
     self.cc = ChangeTrackingList([e['name'] for e in issue_entry.get('cc', [])])
+    self.project_id = issue_entry.get('projectId')
 
     self.setClean()
 

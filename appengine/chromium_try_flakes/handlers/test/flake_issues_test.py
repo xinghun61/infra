@@ -12,6 +12,7 @@ from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import ndb
 
 from apiclient.errors import HttpError
+from common.test.mocks import MockComment, MockIssue, MockIssueTrackerAPI
 import gae_ts_mon
 from handlers.flake_issues import (
     ProcessIssue, CreateFlakyRun, CTF_CAN_FILE_BUGS_FOR_TESTS)
@@ -110,55 +111,6 @@ EXPECTED_FLAKES = set([
     ('foo8 xx (with patch)', 'foo8 (with patch)'),
     ('Patch failure', 'Patch'),
 ])
-
-
-class MockComment(object):
-  def __init__(self, created, author, comment=None, labels=None, cc=None):
-    self.created = created
-    self.author = author
-    self.comment = comment
-    self.labels = labels or []
-    self.cc = cc or []
-
-class MockIssue(object):
-  def __init__(self, issue_entry):
-    self.created = issue_entry.get('created')
-    self.summary = issue_entry.get('summary')
-    self.description = issue_entry.get('description')
-    self.status = issue_entry.get('status')
-    self.labels = issue_entry.get('labels', [])
-    self.components = issue_entry.get('components', [])
-    self.owner = issue_entry.get('owner', {}).get('name')
-    self.open = True
-    self.updated = datetime.datetime.utcnow()
-    self.comments = []
-    self.cc = []
-    self.merged_into = None
-
-
-class MockIssueTrackerAPI(object):
-  def __init__(self):
-    self.issues = {}
-    self.next_issue_id = 100000
-
-  def create(self, issue):
-    issue.id = self.next_issue_id
-    self.next_issue_id += 1
-    self.issues[issue.id] = issue
-    return issue
-
-  def getIssue(self, issue_id):
-    if issue_id not in self.issues:
-      raise HttpError(mock.Mock(status=404), '')
-    return self.issues[issue_id]
-
-  def getComments(self, issue_id):
-    return self.issues[issue_id].comments
-
-  def update(self, issue, comment):
-    self.issues[issue.id] = issue
-    issue.comments.append(
-        MockComment(datetime.datetime.utcnow(), 'app@ae.org', comment))
 
 
 class FlakeIssuesTestCase(testing.AppengineTestCase):
@@ -604,8 +556,9 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
     issue.labels = ['Sheriff-Chromium']
     issue.comments = [
-        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1), 'app@ae.org',
-                    '"foo.bar" is flaky\n\nmore text...'),
+        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1),
+                          'app@ae.org',
+                          '"foo.bar" is flaky\n\nmore text...'),
     ]
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertIn('stale-flakes-reports@google.com', issue.cc)
@@ -622,16 +575,21 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue.created = datetime.datetime(2015, 12, 3, 11, 0, 0)
     issue.labels = ['Sheriff-Chromium']
     issue.comments = [
-        MockComment(datetime.datetime(2015, 12, 3, 11, 0, 1), 'app@ae.org',
-                    '"foo.bar" is flaky\n\n...', labels=['Sheriff-Chromium']),
-        MockComment(datetime.datetime(2015, 12, 4, 11, 0, 1), 'app@ae.org',
-                    'more flakes...', labels=['Sheriff-Chromium']),
-        MockComment(datetime.datetime(2015, 12, 5, 11, 0, 1), 'app@ae.org',
-                    'more flakes...', labels=['Sheriff-Chromium']),
-        MockComment(datetime.datetime(2015, 12, 6, 11, 0, 1), 'app@ae.org',
-                    'more flakes...', labels=['Sheriff-Chromium']),
-        MockComment(datetime.datetime(2015, 12, 7, 11, 0, 1), 'app@ae.org',
-                    'more flakes...', labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 3, 11, 0, 1),
+                    'app@ae.org', '"foo.bar" is flaky\n\n...',
+                    labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 4, 11, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 5, 11, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 6, 11, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 7, 11, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    labels=['Sheriff-Chromium']),
     ]
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertIn('stale-flakes-reports@google.com', issue.cc)
@@ -647,31 +605,42 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue.created = datetime.datetime(2015, 12, 3, 11, 0, 0)
     issue.labels = ['Sheriff-Chromium']
     issue.comments = [
-        MockComment(datetime.datetime(2015, 12, 3, 11, 0, 1), 'app@ae.org',
-                    '"foo.bar" is flaky\n\n...', labels=['Sheriff-Chromium']),
-        MockComment(datetime.datetime(2015, 12, 4, 11, 0, 1), 'app@ae.org',
-                    'more flakes...', labels=['Sheriff-Chromium']),
-        MockComment(datetime.datetime(2015, 12, 5, 11, 0, 1), 'app@ae.org',
-                    'more flakes...', labels=['Sheriff-Chromium']),
-        MockComment(datetime.datetime(2015, 12, 6, 11, 0, 1), 'app@ae.org',
-                    'more flakes...', labels=['Sheriff-Chromium']),
-        MockComment(datetime.datetime(2015, 12, 7, 11, 0, 1), 'app@ae.org',
-                    'more flakes...', labels=['Sheriff-Chromium']),
-
-        MockComment(datetime.datetime(2015, 12, 7, 12, 0, 1), 'app@ae.org',
-                    'more flakes...', cc=['stale-flakes-reports@google.com']),
-        MockComment(datetime.datetime(2015, 12, 7, 15, 0, 1), 'someone@xyz.org',
-                    'more flakes...', cc=['-stale-flakes-reports@google.com']),
-        MockComment(datetime.datetime(2015, 12, 8, 11, 0, 1), 'app@ae.org',
-                    'more flakes...', labels=['Sheriff-Chromium']),
-        MockComment(datetime.datetime(2015, 12, 9, 11, 0, 1), 'app@ae.org',
-                    'more flakes...', labels=['Sheriff-Chromium']),
-
-        MockComment(datetime.datetime(2015, 12, 7, 15, 0, 1), 'someone@xyz.org',
-                    'more flakes...', cc=['-stale-flakes-reports@google.com'],
+        MockComment(datetime.datetime(2015, 12, 3, 11, 0, 1),
+                    'app@ae.org', '"foo.bar" is flaky\n\n...',
                     labels=['Sheriff-Chromium']),
-        MockComment(datetime.datetime(2015, 12, 8, 11, 0, 1), 'app@ae.org',
-                    'more flakes...', labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 4, 11, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 5, 11, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 6, 11, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 7, 11, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    labels=['Sheriff-Chromium']),
+
+        MockComment(datetime.datetime(2015, 12, 7, 12, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    cc=['stale-flakes-reports@google.com']),
+        MockComment(datetime.datetime(2015, 12, 7, 15, 0, 1),
+                    'someone@xyz.org', 'more flakes...',
+                    cc=['-stale-flakes-reports@google.com']),
+        MockComment(datetime.datetime(2015, 12, 8, 11, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 9, 11, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    labels=['Sheriff-Chromium']),
+
+        MockComment(datetime.datetime(2015, 12, 7, 15, 0, 1),
+                    'someone@xyz.org', 'more flakes...',
+                    cc=['-stale-flakes-reports@google.com'],
+                    labels=['Sheriff-Chromium']),
+        MockComment(datetime.datetime(2015, 12, 8, 11, 0, 1),
+                    'app@ae.org', 'more flakes...',
+                    labels=['Sheriff-Chromium']),
     ]
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertNotIn('stale-flakes-reports@google.com', issue.cc)
@@ -682,9 +651,10 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
     issue.labels = ['Sheriff-Chromium']
     issue.comments = [
-        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1), 'app@ae.org',
-                    '"foo.bar" is flaky\n\nmore text...'),
-        MockComment(datetime.datetime(2015, 12, 7, 0, 0, 1), 'foo@bar.org'),
+        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1),
+                    'app@ae.org', '"foo.bar" is flaky\n\nmore text...'),
+        MockComment(datetime.datetime(2015, 12, 7, 0, 0, 1),
+                    'foo@bar.org'),
     ]
     self.test_app.post('/issues/update-if-stale/%s' % issue.id)
     self.assertNotIn('stale-flakes-reports@google.com', issue.cc)
@@ -694,8 +664,8 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue = self.mock_api.create(MockIssue({}))
     issue.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
     issue.comments = [
-        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1), 'app@ae.org',
-                    '"foo.bar" is flaky\n\nmore text...'),
+        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1),
+                    'app@ae.org', '"foo.bar" is flaky\n\nmore text...'),
     ]
     issue.labels = ['Sheriff-Chromium']
     issue.open = False
@@ -711,8 +681,8 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue2 = self.mock_api.create(MockIssue({}))
     issue2.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
     issue2.comments = [
-        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1), 'app@ae.org',
-                    '"foo.bar" is flaky\n\nmore text...'),
+        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1),
+                    'app@ae.org', '"foo.bar" is flaky\n\nmore text...'),
     ]
     issue2.labels = ['Sheriff-Chromium']
 
@@ -731,8 +701,8 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     issue2 = self.mock_api.create(MockIssue({}))
     issue2.created = datetime.datetime(2015, 12, 1, 11, 0, 0)
     issue2.comments = [
-        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1), 'app@ae.org',
-                    '"foo.bar" is flaky\n\nmore text...'),
+        MockComment(datetime.datetime(2015, 12, 1, 11, 0, 1),
+                    'app@ae.org', '"foo.bar" is flaky\n\nmore text...'),
     ]
 
     issue1.merged_into = issue2.id

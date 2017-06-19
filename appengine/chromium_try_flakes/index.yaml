@@ -73,3 +73,11 @@ indexes:
   ancestor: yes
   properties:
   - name: time_updated
+
+- kind: Issue
+  properties:
+  - name: flake_types.normalized_step_name
+  - name: flake_types.project
+  - name: flake_types.test_name
+  - name: is_closed
+  - name: last_updated
