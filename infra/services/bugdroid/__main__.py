@@ -19,8 +19,9 @@ from infra.libs.service_utils import outer_loop
 from infra_libs import logs
 from infra_libs import ts_mon
 from infra.services.bugdroid import bugdroid
-from oauth2client.client import OAuth2Credentials
-import  oauth2client.client
+
+import infra_libs
+import oauth2client.client
 
 
 DEFAULT_LOGGER = logging.getLogger(__name__)
@@ -41,33 +42,16 @@ DATA_URL = 'https://bugdroid-data.appspot.com/_ah/api/bugdroid/v1/data'
 
 def get_data(http):
   DEFAULT_LOGGER.info('Getting data files from gcs...')
-  retry_count = 5
-  success = False
-  for i in xrange(retry_count):
-    DEFAULT_LOGGER.debug('Sending get request %d...', i)
-    resp, content = http.request(DATA_URL,
-                                 headers={'Content-Type':'application/json'})
-    if resp.status >= 400:
-      DEFAULT_LOGGER.warning('Failed to get data in retry %d. Status: %d.',
-                      i, resp.status)
-      time.sleep(i)
-      continue
-    data_json = json.loads(content)
-    data_files = json.loads(data_json['data_files'])
-    for data_file in data_files:
-      content = base64.b64decode(data_file['file_content'])
-      file_path = os.path.join(DATADIR, data_file['file_name'])
-
-      # Bit map for gerrit
-      if data_file['file_name'].endswith('.seen'):
-        with open(file_path, "wb") as binary_file:
-          binary_file.write(content)
-      else:
-        with open(file_path, "w") as text_file:
-          text_file.write(content)
-    success = True
-    break
-  return success
+  _, content = http.request(DATA_URL,
+                            headers={'Content-Type': 'application/json'})
+  data_json = json.loads(content)
+  data_files = json.loads(data_json['data_files'])
+  DEFAULT_LOGGER.info('Writing %d data files to %s', len(data_files), DATADIR)
+  for data_file in data_files:
+    content = base64.b64decode(data_file['file_content'])
+    file_path = os.path.join(DATADIR, data_file['file_name'])
+    with open(file_path, 'w') as fh:
+      fh.write(content)
 
 
 def update_data(http):
@@ -76,34 +60,17 @@ def update_data(http):
   for data_file in os.listdir(DATADIR):
     if os.path.isdir(data_file):
       continue
-    file_dict = {}
-    file_dict['file_name'] = data_file
     file_path = os.path.join(DATADIR, data_file)
-    # binary
-    if data_file.endswith('.seen'):
-      with open(file_path, "rb") as binary_file:
-        file_dict['file_content'] = base64.b64encode(binary_file.read())
-    else:
-      with open(file_path, "r") as text_file:
-        file_dict['file_content'] = base64.b64encode(text_file.read())
-    result.append(file_dict)
+    with open(file_path) as fh:
+      result.append({
+          'file_name': data_file,
+          'file_content': base64.b64encode(fh.read()),
+      })
 
   data_files = json.dumps(result)
-  retry_count = 5
-  success = False
-  for i in xrange(retry_count):
-    DEFAULT_LOGGER.debug('Sending post request %d...', i)
-    resp, _ = http.request(
-        DATA_URL, "POST", body=json.dumps({'data_files': data_files}),
-        headers={'Content-Type': 'application/json'})
-    if resp.status >= 400:
-      DEFAULT_LOGGER.warning('Failed to update data in retry %d. Status: %d.',
-                      i, resp.status)
-      time.sleep(i)
-      continue
-    success = True
-    break
-  return success
+  http.request(
+      DATA_URL, 'POST', body=json.dumps({'data_files': data_files}),
+      headers={'Content-Type': 'application/json'})
 
 
 def parse_args(args):  # pragma: no cover
@@ -133,15 +100,17 @@ def parse_args(args):  # pragma: no cover
 
   return opts, loop_opts
 
+
 def _create_http(creds_data):
-  credentials = OAuth2Credentials(
+  credentials = oauth2client.client.OAuth2Credentials(
       None, creds_data['client_id'], creds_data['client_secret'],
       creds_data['refresh_token'],
       datetime.datetime.now() + datetime.timedelta(minutes=15),
       'https://accounts.google.com/o/oauth2/token',
       'bugdroid')
 
-  http = httplib2.Http()
+  http = infra_libs.InstrumentedHttp('gcs')
+  http = infra_libs.RetriableHttp(http, retrying_statuses_fn=lambda x: x >= 400)
   http = credentials.authorize(http)
   return http
 
@@ -158,9 +127,7 @@ def main(args):  # pragma: no cover
 
   # Use local json file
   if not opts.configfile:
-    if not get_data(_create_http(creds_data)):
-      DEFAULT_LOGGER.error('Failed to get data files.')
-      return 1
+    get_data(_create_http(creds_data))
 
   def outer_loop_iteration():
     return bugdroid.inner_loop(opts)
@@ -172,9 +139,7 @@ def main(args):  # pragma: no cover
 
   # In case local json file is used, do not upload
   if not opts.configfile:
-    if not update_data(_create_http(creds_data)):
-      DEFAULT_LOGGER.error('Failed to update data files.')
-      return 1
+    update_data(_create_http(creds_data))
 
   DEFAULT_LOGGER.info('Outer loop finished with result %r',
                       loop_results.success)
