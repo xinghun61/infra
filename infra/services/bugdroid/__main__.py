@@ -16,9 +16,9 @@ import urlparse
 
 from infra.libs import git2
 from infra.libs.service_utils import outer_loop
+from infra.services.bugdroid import bugdroid
 from infra_libs import logs
 from infra_libs import ts_mon
-from infra.services.bugdroid import bugdroid
 
 import infra_libs
 import oauth2client.client

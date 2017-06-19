@@ -23,22 +23,6 @@ from infra.services.bugdroid import monorail_client
 from infra.services.bugdroid import poller_handlers
 from infra.services.bugdroid import scm_helper
 
-
-# pylint: disable=C0301
-URL_TEMPLATES = {
-    'cr': 'http://src.chromium.org/viewvc/chrome?view=rev&revision=%d',
-    'cr_int': ('http://goto.ext.google.com/viewvc/'
-               'chrome-internal?view=rev&revision=%d'),
-    'nacl': 'http://src.chromium.org/viewvc/native_client?view=rev&revision=%d'
-    }
-
-PATH_URL_TEMPLATES = {
-    'viewvc': 'http://src.chromium.org/viewvc/%s%s?r1=%d&r2=%d&pathrev=%d',
-    'viewvc_int': 'http://goto.google.com/viewvc/%s%s?r1=%d&r2=%d&pathrev=%d'
-    }
-# pylint: enable=C0301
-
-
 loggers = {}
 
 
