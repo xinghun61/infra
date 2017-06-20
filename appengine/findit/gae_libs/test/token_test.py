@@ -65,15 +65,17 @@ class TokenTest(testing.AppengineTestCase):
   def testGeneratedXSRFTokenIsInvalidForSameUserButDifferentAction(self):
     xsrf_token = token.GenerateAuthToken('key', 'email', 'action1')
     self.assertFalse(token.ValidateAuthToken(
-        'key', 'email', xsrf_token, 'action2'))
+        'key', xsrf_token, 'email', 'action2'))
 
   def testGeneratedXSRFTokenIsInvalidForDifferentUserButSameAction(self):
-    xsrf_token = token.GenerateAuthToken('email1', 'action')
-    self.assertFalse(token.ValidateAuthToken('email2', xsrf_token, 'action'))
+    xsrf_token = token.GenerateAuthToken('key', 'email1', 'action')
+    self.assertFalse(token.ValidateAuthToken('key', xsrf_token, 'email2',
+                                             'action'))
 
   def testGeneratedXSRFTokenIsInvalidForDifferentUserAndAction(self):
-    xsrf_token = token.GenerateAuthToken('email1', 'action1')
-    self.assertFalse(token.ValidateAuthToken('email2', xsrf_token, 'action2'))
+    xsrf_token = token.GenerateAuthToken('key', 'email1', 'action1')
+    self.assertFalse(token.ValidateAuthToken('key', xsrf_token, 'email2',
+                                             'action2'))
 
   @mock.patch('gae_libs.token.GenerateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: None)
@@ -108,7 +110,7 @@ class TokenTest(testing.AppengineTestCase):
     self.test_app.post(
         '/test-token?format=json', {'xsrf_token': 'token'}, status=403)
     mocked_ValidateAuthToken.assert_called_once_with(
-        'site', 'test@google.com', 'token', 'test')
+        'site', 'token', 'test@google.com', 'test')
 
   @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: 'test@google.com')
@@ -117,7 +119,7 @@ class TokenTest(testing.AppengineTestCase):
     response = self.test_app.post(
         '/test-token?format=json', {'xsrf_token': 'token'}, status=200)
     mocked_ValidateAuthToken.assert_called_once_with(
-        'site', 'test@google.com', 'token', 'test')
+        'site', 'token', 'test@google.com', 'test')
     self.assertEqual({'key': 'value'}, response.json_body)
 
 

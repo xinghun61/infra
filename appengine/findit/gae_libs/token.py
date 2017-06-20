@@ -145,7 +145,7 @@ class VerifyXSRFToken(object):
       xsrf_token = str(handler.request.get('xsrf_token'))
       if (not user_email or
           not ValidateAuthToken(
-              'site', user_email, xsrf_token, self._action_id)):
+              'site', xsrf_token, user_email, self._action_id)):
         return handler.CreateError(
             'Invalid XSRF token. Please log in or refresh the page first.',
             return_code=403)
