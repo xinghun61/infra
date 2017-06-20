@@ -7,8 +7,11 @@ import hashlib
 import json
 import os
 import pickle
+import re
 import subprocess
 import zlib
+
+from google.appengine.ext import ndb
 
 from scripts import crash_iterator
 from scripts.delta_test import delta_util
@@ -16,6 +19,8 @@ from scripts.run_predator import GetCulpritsOnRevision
 from libs.cache_decorator import Cached
 from local_libs.local_cache import LocalCache  # pylint: disable=W
 
+
+_CRASH_URL_PATTERN = re.compile(r'.*/result-feedback\?key=(.*)')
 # TODO(crbug.com/662540): Add unittests.
 
 
@@ -159,6 +164,33 @@ def GetTriageResultsFromCrashes(crashes):  # pragma: no cover.
   return triage_results
 
 
+def ReadCrashesFromTsvTestset(testset_path):  # pragma: no cover.
+  """Reads crashes from tsv testset file.
+
+  Args:
+    testset_path (str): file path to read the tsv testset file.
+
+  Returns:
+    A dict mapping crash_id(urlsafe encoding of a CrashAnalysis model) to
+    its *CrashAnalysis model.
+  """
+  crashes = {}
+  with open(testset_path) as f:
+    for line in f.readlines():
+      if not line:
+        continue
+
+      line_parts = line.split('\t')
+      match = _CRASH_URL_PATTERN.match(line_parts[0])
+      if match:
+        crash_id = match.group(1)
+        crash = ndb.Key(urlsafe=crash_id).get()
+        if crash:
+          crashes[crash_id] = crash
+
+  return crashes
+
+
 def DeltaKeyGenerator(func, args, kwargs, namespace=None):  # pragma: no cover.
   kwargs_copy = copy.deepcopy(kwargs)
   if 'verbose' in kwargs_copy:
@@ -238,7 +270,7 @@ def EvaluateDeltaOnTestSet(git_hash1, git_hash2,
   Args:
     git_hash1 (str): A git hash of predator repository.
     git_hash2 (str): A git hash of predator repository.
-    testset_path (str): A local path to read testset from.
+    crashes (list): A list of crashes to run delta test on.
     verbose (bool): If True, print all the predator results.
 
   Return:
@@ -247,9 +279,7 @@ def EvaluateDeltaOnTestSet(git_hash1, git_hash2,
     triage_results (dict): Dict mapping crash_id to its triaged results.
     crash_count (int): Total count of all the crashes.
   """
-  with open(testset_path) as f:
-    crashes = pickle.loads(zlib.decompress(f.read()))
-
+  crashes = ReadCrashesFromTsvTestset(testset_path)
   delta = GetDeltaForCrashes(crashes, git_hash1, git_hash2,
                              client_id, app_id, verbose=verbose)
 

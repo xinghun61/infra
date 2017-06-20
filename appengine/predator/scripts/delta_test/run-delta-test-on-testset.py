@@ -13,13 +13,14 @@ import os
 import pickle
 import sys
 
-_ROOT_DIR = os.path.join(os.path.dirname(
-    os.path.realpath(__file__)), os.path.pardir)
+_ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__),
+                                          os.path.pardir, os.path.pardir))
 _FIRST_PARTY_DIR = os.path.join(_ROOT_DIR, 'first_party')
 sys.path.insert(1, _FIRST_PARTY_DIR)
 
 from local_libs import script_util
 script_util.SetUpSystemPaths(_ROOT_DIR)
+from local_libs import remote_api
 
 from scripts.delta_test import delta_util
 from scripts.delta_test.delta_test import EvaluateDeltaOnTestSet
@@ -76,7 +77,7 @@ def RunDeltaTest():
   argparser.add_argument(
       '--app',
       '-a',
-      default=os.getenv('APP_ID', 'predator-for-me-staging'),
+      default=os.getenv('APP_ID', 'predator-for-me'),
       help=('App id of the App engine app that query needs to access. '
             'Defualts to predator-for-me-staging. You can also set enviroment '
             'variable by \'export APP_ID=your-app-id\' to replace '
@@ -106,6 +107,8 @@ def RunDeltaTest():
   # If only one revision provided, default the rev2 to HEAD.
   if len(args.revisions) == 1:
     args.revisions.append('HEAD')
+
+  remote_api.EnableRemoteApi(args.app)
 
   git_hash1 = delta_util.ParseGitHash(args.revisions[0])
   git_hash2 = delta_util.ParseGitHash(args.revisions[1])
