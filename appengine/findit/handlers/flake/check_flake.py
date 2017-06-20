@@ -240,10 +240,9 @@ class CheckFlake(BaseHandler):
     request = FlakeAnalysisRequest.Create(test_name, False, bug_id)
     request.AddBuildStep(master_name, builder_name, build_number, step_name,
                          time_util.GetUTCNow())
-    # TODO(wylieb): Give rerun parameter to scheduler and
-    # handle rerun from there.
     scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
-        request, user_email, is_admin, triggering_sources.FINDIT_UI)
+        request, user_email, is_admin, triggering_sources.FINDIT_UI,
+        rerun=rerun)
 
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
@@ -287,7 +286,7 @@ class CheckFlake(BaseHandler):
       test_name = analysis.original_test_name
       bug_id = analysis.bug_id
       analysis.Reset()
-      analysis.Save();
+      analysis.Save()
     else:
       # If the key hasn't been specified, then we get the information from
       # other URL parameters.
