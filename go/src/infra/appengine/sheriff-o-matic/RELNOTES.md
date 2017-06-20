@@ -1,3 +1,26 @@
+# Release Notes sheriff-o-matic 2017-06-20
+
+- 7 commits, 3 bugs affected since 41148d3 (2017-06-13T23:18:55Z)
+- 2 Authors:
+  - renjietang@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Fix checkbox styling on CrOS](https://chromium-review.googlesource.com/541539) (seanmccullough@chromium.org)
+- [[infra frontend testing] move wct.go runner into infra/tools/wct](https://chromium-review.googlesource.com/540068) (seanmccullough@chromium.org)
+- [[som] For CrOS, don't append .milo for GETs to /api/v1/alerts/gardener](https://chromium-review.googlesource.com/538981) (seanmccullough@chromium.org)
+- [[som] Add server-side handler for updating layout test expectations.](https://chromium-review.googlesource.com/538039) (seanmccullough@chromium.org)
+- [[som]add diff intepretation representated by color and +/- sign](https://chromium-review.googlesource.com/531624) (renjietang@google.com)
+- [[som] test expectation edit form changes](https://chromium-review.googlesource.com/537142) (seanmccullough@chromium.org)
+- [[som] add -persist flag to keep wct.go running after tests complete.](https://chromium-review.googlesource.com/537145) (seanmccullough@chromium.org)
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/413053](https://crbug.com/413053)
+  -  [https://crbug.com/603982](https://crbug.com/603982)
+  -  [https://crbug.com/732624](https://crbug.com/732624)
+
 # Release Notes sheriff-o-matic 2017-06-13
 
 - 18 commits, 10 bugs affected since 5cb2ae6 (2017-06-06T22:22:23Z)
