@@ -35,8 +35,6 @@ from appengine_module.test_results.handlers import monitoring
 routes = [
     ('/internal/monitoring/test_res/upload', monitoring.TestResMonUploader),
     ('/internal/monitoring/test_loc/upload', monitoring.TestLocMonUploader),
-    # TODO(sergiyb): Remove after http://crrev.com/c/539396 lands and deployed.
-    ('/internal/monitoring/upload', monitoring.TestResMonUploader),
 ]
 
 app = webapp2.WSGIApplication(routes, debug=True)
