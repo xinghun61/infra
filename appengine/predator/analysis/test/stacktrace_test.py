@@ -53,7 +53,6 @@ class ProfilerStackFrameTest(AnalysisTestCase):
         'function_start_line': 484,
         'callee_lines': [{'line': 490, 'sample_fraction': 0.9},
                          {'line': 511, 'sample_fraction': 0.1}]
-
     }
     deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
     frame, language_type = ProfilerStackFrame.Parse(frame_dict, 1, deps)

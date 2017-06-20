@@ -3,12 +3,11 @@
 # found in the LICENSE file.
 
 import logging
-from collections import namedtuple
 
 from analysis import detect_regression_range
-from analysis.crash_data import CrashData
 from analysis.chromecrash_parser import ChromeCrashParser
-from analysis.stacktrace import Stacktrace
+from analysis.crash_data import CrashData
+from analysis.dependency_analyzer import DependencyAnalyzer
 
 
 class ChromeCrashData(CrashData):
@@ -99,28 +98,13 @@ class ChromeCrashData(CrashData):
     # gets called.
     self._top_n_frames = top_n_frames
     self._stacktrace = None
-
-    self._dep_fetcher = dep_fetcher
-    self._crashed_version_deps = None
-
     self._regression_range = None
-
-    self._dependencies = {}
-    self._dependency_rolls = {}
-
-  def _CrashedVersionDeps(self):
-    """Gets all dependencies related to crashed_version.
-
-    N.B. All dependencies will be returned, no matter whether they appeared in
-    stacktrace or are related to the crash or not.
-    """
-    if self._crashed_version_deps:
-      return self._crashed_version_deps
-
-    self._crashed_version_deps = self._dep_fetcher.GetDependency(
-        self.crashed_version, self.platform) if self._dep_fetcher else {}
-
-    return self._crashed_version_deps
+    self._dependencies = None
+    self._dependency_rolls = None
+    self._dependency_analyzer = DependencyAnalyzer(self._platform,
+                                                   self._crashed_version,
+                                                   self.regression_range,
+                                                   dep_fetcher)
 
   @property
   def channel(self):
@@ -137,7 +121,8 @@ class ChromeCrashData(CrashData):
       return self._stacktrace
 
     self._stacktrace = ChromeCrashParser().Parse(
-        self._stacktrace_str, self._CrashedVersionDeps(),
+        self._stacktrace_str,
+        self._dependency_analyzer.regression_version_deps,
         signature=self.signature, top_n_frames=self._top_n_frames)
     if not self._stacktrace:
       logging.warning('Failed to parse the stacktrace %s',
@@ -165,15 +150,8 @@ class ChromeCrashData(CrashData):
     if self._dependencies:
       return self._dependencies
 
-    if not self.stacktrace:
-      logging.warning('Cannot get depenencies without stacktrace.')
-      return {}
-
-    self._dependencies = {
-        frame.dep_path: self._CrashedVersionDeps()[frame.dep_path]
-        for frame in self.stacktrace.crash_stack.frames
-        if frame.dep_path and frame.dep_path in self._CrashedVersionDeps()
-    }
+    self._dependencies = self._dependency_analyzer.GetDependencies(
+        [self.stacktrace.crash_stack] if self.stacktrace else [])
     return self._dependencies
 
   @property
@@ -182,38 +160,8 @@ class ChromeCrashData(CrashData):
     if self._dependency_rolls:
       return self._dependency_rolls
 
-    # Short-circuit when we know the deprolls must be empty.
-    if not self.regression_range or not self.stacktrace:
-      logging.warning('Cannot get deps and dep rolls for report without '
-                      'regression range or stacktrace.')
-      return {}
-
-    # Get ``DependencyRoll` objects for all dependencies in the regression
-    # range (for the particular platform that crashed).
-    regression_range_dep_rolls = self._dep_fetcher.GetDependencyRollsDict(
-        self.regression_range[0], self.regression_range[1], self.platform)
-    # Filter out the ones which add or delete a dependency, because we
-    # can't really be sure whether to blame them or not. This rarely
-    # happens, so our inability to decide shouldn't be too much of a problem.
-    def HasBothRevisions(dep_path, dep_roll):
-      has_both_revisions = bool(dep_roll.old_revision) and bool(
-          dep_roll.new_revision)
-      if not has_both_revisions:
-        logging.info(
-            'Skip %s dependency %s',
-            'added' if dep_roll.new_revision else 'deleted',
-            dep_path)
-      return has_both_revisions
-
-    # Apply the above filter, and also filter to only retain those
-    # which occur in ``crashed_stack_deps``.
-    self._dependency_rolls = {
-        dep_path: dep_roll
-        for dep_path, dep_roll in regression_range_dep_rolls.iteritems()
-        if HasBothRevisions(dep_path, dep_roll) and dep_path
-        in self.dependencies
-    }
-
+    self._dependency_rolls = self._dependency_analyzer.GetDependencyRolls(
+        [self.stacktrace.crash_stack] if self.stacktrace else [])
     return self._dependency_rolls
 
   @property

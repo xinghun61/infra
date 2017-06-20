@@ -21,7 +21,6 @@ class UMASamplingProfilerParserTest(AnalysisTestCase):
     deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
     self.assertIsNone(parser.Parse(stacks, deps))
 
-
   def testParseStacktrace(self):
     """Tests successfully parsing a stacktrace with two stacks."""
     parser = UMASamplingProfilerParser()
@@ -72,7 +71,6 @@ class UMASamplingProfilerParserTest(AnalysisTestCase):
         "log_change_factor": -8.1,
         "responsible": False,
         "filename": "chrome/app/chrome_exe_main_win.java",
-
     }]}]
     deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
     stacktrace = parser.Parse(stacks, deps)

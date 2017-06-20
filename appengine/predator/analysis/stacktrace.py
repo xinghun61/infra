@@ -95,6 +95,7 @@ class ProfilerStackFrame(namedtuple('ProfilerStackFrame',
       raise TypeError('The index must be an int')
 
     callee_lines = tuple(callee_lines) if callee_lines else None
+
     return super(cls, ProfilerStackFrame).__new__(
         cls, int(index), difference, log_change_factor, responsible, dep_path,
         function, file_path, raw_file_path, repo_url, function_start_line,
