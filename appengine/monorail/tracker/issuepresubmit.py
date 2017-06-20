@@ -12,6 +12,7 @@ from framework import framework_views
 from framework import jsonfeed
 from framework import permissions
 from proto import tracker_pb2
+from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from services import issue_svc
@@ -76,12 +77,10 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
       component_ids = tracker_helpers.LookupComponentIDs(
           parsed.components.paths, config, mr.errors)
 
+    with self.profiler.Phase('initializing proposed_issue'):
+      proposed_issue = self.MakeProposedIssue(mr, parsed, config, component_ids)
+
     with self.profiler.Phase('applying rules'):
-      proposed_issue = tracker_pb2.Issue(
-          project_id=mr.project_id, local_id=mr.local_id,
-          summary=parsed.summary, status=parsed.status,
-          owner_id=parsed.users.owner_id, labels=parsed.labels,
-          component_ids=component_ids, project_name=mr.project_name)
       traces = filterrules_helpers.ApplyFilterRules(
           mr.cnxn, self.services, proposed_issue, config)
       logging.info('proposed_issue is now: %r', proposed_issue)
@@ -107,6 +106,21 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
         'warnings': warnings_and_why,
         'errors': errors_and_why,
         }
+
+  def MakeProposedIssue(self, mr, parsed, config, component_ids):
+    """Create an Issue in RAM as input to the filter rules."""
+    field_helpers.ShiftEnumFieldsIntoLabels(
+      parsed.labels, parsed.labels_remove,
+      parsed.fields.vals, parsed.fields.vals_remove, config)
+    field_values = field_helpers.ParseFieldValues(
+      mr.cnxn, self.services.user, parsed.fields.vals, config)
+    proposed_issue = tracker_pb2.Issue(
+      project_id=mr.project_id, local_id=mr.local_id,
+      summary=parsed.summary, status=parsed.status,
+      owner_id=parsed.users.owner_id, labels=parsed.labels,
+      component_ids=component_ids, project_name=mr.project_name,
+      field_values=field_values)
+    return proposed_issue
 
 
 def PairDerivedValuesWithRuleExplanations(

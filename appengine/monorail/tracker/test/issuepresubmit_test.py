@@ -13,6 +13,8 @@ from services import service_manager
 from testing import fake
 from testing import testing_helpers
 from tracker import issuepresubmit
+from tracker import tracker_bizobj
+from tracker import tracker_helpers
 
 
 class IssuePresubmitTest(unittest.TestCase):
@@ -54,6 +56,48 @@ class IssuePresubmitTest(unittest.TestCase):
     mr.local_id = self.local_id_1
     self.assertRaises(permissions.PermissionException,
                       self.servlet.AssertBasePermission, mr)
+
+  def testMakeProposedIssue_NoCustomFields(self):
+    parsed_users = tracker_helpers.ParsedUsers('', 0, [], [], [], [])
+    parsed_fields = tracker_helpers.ParsedFields({}, {}, [])
+    parsed = tracker_helpers.ParsedIssue(
+        'sum', 'comment', False, 'New', parsed_users, ['a', 'b'],
+        [], [], parsed_fields, 'template', [], [],[], [], [])
+    mr = testing_helpers.MakeMonorailRequest(
+        project=self.proj,
+        perms=permissions.USER_PERMISSIONSET)
+    mr.local_id = self.local_id_1
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    component_ids = []
+    proposed_issue = self.servlet.MakeProposedIssue(
+        mr, parsed, config, component_ids)
+    self.assertEqual(['a', 'b'], proposed_issue.labels)
+
+  def testMakeProposedIssue_SomeCustomFields(self):
+    fd = tracker_pb2.FieldDef(
+        field_id=123, project_id=self.proj.project_id,
+        field_name='Size', field_type=tracker_pb2.FieldTypes.ENUM_TYPE)
+    parsed_users = tracker_helpers.ParsedUsers('', 0, [], [], [], [])
+    parsed_fields = tracker_helpers.ParsedFields(
+      {123: ['Small']}, {}, [])
+    parsed = tracker_helpers.ParsedIssue(
+        'sum', 'comment', False, 'New', parsed_users, ['a', 'b'],
+        [], [], parsed_fields, 'template', [], [],[], [], [])
+    mr = testing_helpers.MakeMonorailRequest(
+        project=self.proj,
+        perms=permissions.USER_PERMISSIONSET)
+    mr.local_id = self.local_id_1
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.field_defs = [fd]
+    config.well_known_labels = [
+      tracker_pb2.LabelDef(label='Size-Small'),
+      tracker_pb2.LabelDef(label='Size-Medium'),
+      tracker_pb2.LabelDef(label='Size-Large'),
+      ]
+    component_ids = []
+    proposed_issue = self.servlet.MakeProposedIssue(
+        mr, parsed, config, component_ids)
+    self.assertEqual(['a', 'b', 'Size-Small'], proposed_issue.labels)
 
   def testPairDerivedValuesWithRuleExplanations_Nothing(self):
     proposed_issue = tracker_pb2.Issue()  # No derived values.
