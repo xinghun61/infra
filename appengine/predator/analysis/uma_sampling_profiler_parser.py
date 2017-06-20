@@ -5,12 +5,11 @@
 from analysis.stacktrace import CallStackBuffer
 from analysis.stacktrace import ProfilerStackFrame
 from analysis.stacktrace import StacktraceBuffer
-from analysis.stacktrace_parser import StacktraceParser
 
 
-class UMASamplingProfilerParser(StacktraceParser):
+class UMASamplingProfilerParser(object):
 
-  def Parse(self, stacks, deps):  # pylint: disable=W0221
+  def Parse(self, stacks, deps):
     """Parse the list of stacks provided by UMA into a ``Stacktrace`` object.
 
     Args:

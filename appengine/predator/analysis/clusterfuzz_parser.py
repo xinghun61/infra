@@ -17,7 +17,6 @@ from analysis.flag_manager import FlagManager
 from analysis.stacktrace import CallStackBuffer
 from analysis.stacktrace import StackFrame
 from analysis.stacktrace import StacktraceBuffer
-from analysis.stacktrace_parser import StacktraceParser
 from analysis.type_enums import CallStackFormatType
 from analysis.type_enums import LanguageType
 from analysis.type_enums import SanitizerType
@@ -53,7 +52,7 @@ def GetCallStackDetector(job_type, sanitizer):
     return None
 
 
-class ClusterfuzzParser(StacktraceParser):
+class ClusterfuzzParser(object):
 
   def __init__(self):
     self.flag_manager = FlagManager()
@@ -78,7 +77,7 @@ class ClusterfuzzParser(StacktraceParser):
       stack_buffer.metadata[flag.name] = flag.value
     return stack_buffer
 
-  def Parse(self, stacktrace_string, deps, job_type, # pylint: disable=W0221
+  def Parse(self, stacktrace_string, deps, job_type,
             sanitizer, signature=None, top_n_frames=None, crash_address=None):
     """Parse clusterfuzz stacktrace string into Stacktrace instance."""
     filters = [FilterJavaJreSdkFrames(),

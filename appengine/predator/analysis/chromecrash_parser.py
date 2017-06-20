@@ -11,14 +11,13 @@ from analysis.stacktrace import CallStackBuffer
 from analysis.stacktrace import StacktraceBuffer
 from analysis.stacktrace import StackFrame
 from analysis.stacktrace import Stacktrace
-from analysis.stacktrace_parser import StacktraceParser
 from analysis.type_enums import CallStackFormatType
 from analysis.type_enums import LanguageType
 
 DEFAULT_TOP_N_FRAMES = 7
 
 
-class ChromeCrashParser(StacktraceParser):
+class ChromeCrashParser(object):
 
   def Parse(self, stacktrace_string, deps, signature=None, top_n_frames=None):
     """Parse fracas stacktrace string into Stacktrace instance."""
