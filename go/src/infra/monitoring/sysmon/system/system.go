@@ -105,6 +105,17 @@ var (
 		nil,
 		field.Int("minutes"))
 
+	tempAmbient = metric.NewFloat("dev/temperature/ambient",
+		"Ambient temperature as reported by the machine.",
+		&types.MetricMetadata{Units: types.DegreeCelsiusUnit})
+	tempBattery = metric.NewFloat("dev/temperature/battery",
+		"Temperature of the machine's battery (if it has one).",
+		&types.MetricMetadata{Units: types.DegreeCelsiusUnit})
+	tempCPU = metric.NewFloat("dev/temperature/cpu",
+		"Temperature of each CPU core.",
+		&types.MetricMetadata{Units: types.DegreeCelsiusUnit},
+		field.String("core"))
+
 	// tsmon pipeline uses backend clocks when assigning timestamps to metric
 	// points. By comparing point timestamp to the point value (i.e. time by
 	// machine's local clock), we can potentially detect some anomalies (clock
@@ -177,6 +188,9 @@ func Register() {
 		}
 		if err := updateOSInfoMetrics(c); err != nil {
 			logging.Warningf(c, "Failed to update OS info metrics: %v", err)
+		}
+		if err := updateSystemTemps(c); err != nil {
+			logging.Warningf(c, "Failed to update system temperatures: %v", err)
 		}
 
 		// Should be done last.
@@ -333,4 +347,25 @@ func updateOSInfoMetrics(c context.Context) error {
 	osVersion.Set(c, version, "")
 	osArch.Set(c, runtime.GOARCH)
 	return err
+}
+
+func updateSystemTemps(c context.Context) error {
+	model, err := model(c)
+	if err != nil {
+		return err
+	}
+	t, err := getTemps(c, model)
+	if err != nil {
+		return err
+	}
+	if t.Ambient != nil {
+		tempAmbient.Set(c, *t.Ambient)
+	}
+	if t.Battery != nil {
+		tempBattery.Set(c, *t.Battery)
+	}
+	for _, cpu := range t.CPUs {
+		tempCPU.Set(c, cpu.Temperature, cpu.Core)
+	}
+	return nil
 }

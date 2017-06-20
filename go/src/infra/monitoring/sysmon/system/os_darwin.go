@@ -7,7 +7,10 @@ package system
 import (
 	"fmt"
 	"io/ioutil"
+	"os/exec"
+	"strings"
 
+	"golang.org/x/net/context"
 	"howett.net/plist"
 )
 
@@ -27,4 +30,14 @@ func osInformation() (string, string, error) {
 		return "mac", "unknown", fmt.Errorf("SystemVersion.plist is missing ProductVersion")
 	}
 	return "mac", version.(string), nil
+}
+
+func model(c context.Context) (string, error) {
+	cmd := exec.CommandContext(c, "sysctl", "hw.model")
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	s := string(out)
+	return strings.TrimSpace(strings.TrimPrefix(s, "hw.model:")), nil
 }

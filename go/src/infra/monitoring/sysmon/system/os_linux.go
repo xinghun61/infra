@@ -5,7 +5,10 @@
 package system
 
 import (
+	"io/ioutil"
+
 	"github.com/shirou/gopsutil/host"
+	"golang.org/x/net/context"
 )
 
 func osInformation() (string, string, error) {
@@ -15,4 +18,12 @@ func osInformation() (string, string, error) {
 	}
 
 	return platform, version, nil
+}
+
+func model(c context.Context) (string, error) {
+	out, err := ioutil.ReadFile("/sys/devices/virtual/dmi/id/product_name")
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/StackExchange/wmi"
+	"golang.org/x/net/context"
 )
 
 // Win32_OperatingSystem contains fields from the WMI class with the same name:
@@ -18,7 +19,14 @@ type Win32_OperatingSystem struct {
 	ProductType uint32
 }
 
+// Win32_ComputerSystem contains fields from the WMI class with the same name:
+// https://msdn.microsoft.com/en-us/library/aa394102(v=vs.85).aspx
+type Win32_ComputerSystem struct {
+	Model string
+}
+
 var cachedOSInfo *Win32_OperatingSystem
+var cachedSystemInfo *Win32_ComputerSystem
 
 const workstationType uint32 = 1
 
@@ -85,4 +93,19 @@ func getOSVersion(major, minor string, productType uint32) string {
 		return "2016Server"
 	}
 	return "post2016Server"
+}
+
+func model(c context.Context) (string, error) {
+	if cachedSystemInfo == nil {
+		var dst []Win32_ComputerSystem
+		q := wmi.CreateQuery(&dst, "")
+		err := wmi.Query(q, &dst)
+		if err != nil {
+			return "unknown", err
+		}
+
+		cachedSystemInfo = &dst[0]
+	}
+
+	return cachedSystemInfo.Model, nil
 }
