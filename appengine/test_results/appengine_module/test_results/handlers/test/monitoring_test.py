@@ -26,6 +26,12 @@ TEST_JSON = {
         }
       }
     },
+    'test_locations': {
+      'web-animations-api': {
+        'file': 'web/animations_api.cc',
+        'line': 123,
+      },
+    },
     'interrupted': False,
     'version': 3,
     'seconds_since_epoch': 1457612314.123,
@@ -66,7 +72,8 @@ class EventMonUploaderTest(testing.AppengineTestCase):
     TestFile.add_file(
         'master', 'builder', 'ui_tests', 123, 'full_results.json',
         json.dumps(TEST_JSON))
-    response = self.test_app.post('/internal/monitoring/upload', REQ_PAYLOAD)
+    response = self.test_app.post(
+        '/internal/monitoring/test_res/upload', REQ_PAYLOAD)
 
     self.assertEqual(200, response.status_int)
     events = self.read_event_mon_file()
@@ -95,25 +102,28 @@ class EventMonUploaderTest(testing.AppengineTestCase):
         [event_mon.protos.chrome_infra_log_pb2.TestResultsEvent.PASS])
 
   def test_returns_400_on_missing_request_payload(self):
-    self.test_app.post('/internal/monitoring/upload', status=400)
+    self.test_app.post('/internal/monitoring/test_res/upload', status=400)
     self.assertEqual(0, len(self.read_event_mon_file()))
 
   def test_returns_400_on_non_json_request_payload(self):
-    self.test_app.post('/internal/monitoring/upload', 'foobar', status=400)
+    self.test_app.post(
+        '/internal/monitoring/test_res/upload', 'foobar', status=400)
     self.assertEqual(0, len(self.read_event_mon_file()))
 
   def test_returns_400_on_missing_request_params(self):
-    self.test_app.post('/internal/monitoring/upload', '{}', status=400)
+    self.test_app.post('/internal/monitoring/test_res/upload', '{}', status=400)
     self.assertEqual(0, len(self.read_event_mon_file()))
 
-  def test_returns_404_on_missing_file(self):
-    self.test_app.post('/internal/monitoring/upload', REQ_PAYLOAD, status=404)
+  def test_returns_400_on_missing_file(self):
+    self.test_app.post(
+        '/internal/monitoring/test_res/upload', REQ_PAYLOAD, status=400)
     self.assertEqual(0, len(self.read_event_mon_file()))
 
   def test_does_not_crash_on_missing_required_fields_in_json(self):
     TestFile.add_file(
         'master', 'builder', 'ui_tests', 123, 'full_results.json', '{}')
-    response = self.test_app.post('/internal/monitoring/upload', REQ_PAYLOAD)
+    response = self.test_app.post(
+        '/internal/monitoring/test_res/upload', REQ_PAYLOAD)
     self.assertEqual(200, response.status_int)
     events = self.read_event_mon_file()
     self.assertEqual(1, len(events))
@@ -121,3 +131,42 @@ class EventMonUploaderTest(testing.AppengineTestCase):
     self.assertFalse(events[0].test_results.HasField('version'))
     self.assertFalse(events[0].test_results.HasField('usec_since_epoch'))
     self.assertEqual(0, len(events[0].test_results.tests))
+
+  def test_uploads_test_locations_correctly(self):
+    TestFile.add_file(
+        'master', 'builder', 'ui_tests', 123, 'full_results.json',
+        json.dumps(TEST_JSON))
+    response = self.test_app.post(
+        '/internal/monitoring/test_loc/upload', REQ_PAYLOAD)
+
+    self.assertEqual(200, response.status_int)
+    events = self.read_event_mon_file()
+    self.assertEqual(1, len(events))
+    self.assertEqual(events[0].test_locations_event.bucket_name, 'master')
+    self.assertEqual(events[0].test_locations_event.builder_name, 'builder')
+    self.assertEqual(events[0].test_locations_event.build_number, 123)
+    self.assertEqual(
+        events[0].test_locations_event.step_name, 'ui_tests 12s pending')
+    self.assertEqual(
+        events[0].test_locations_event.usec_since_epoch, 1457612314123000)
+    self.assertEqual(1, len(events[0].test_locations_event.locations))
+    self.assertEqual(events[0].test_locations_event.locations[0].file,
+                     'web/animations_api.cc')
+    self.assertEqual(events[0].test_locations_event.locations[0].line, 123)
+
+  def test_does_not_crash_on_missing_fields_when_uploading_test_locations(self):
+    TestFile.add_file(
+        'master', 'builder', 'ui_tests', 123, 'full_results.json', '{}')
+    response = self.test_app.post(
+        '/internal/monitoring/test_loc/upload', REQ_PAYLOAD)
+    self.assertEqual(200, response.status_int)
+    events = self.read_event_mon_file()
+    self.assertEqual(1, len(events))
+    self.assertFalse(
+        events[0].test_locations_event.HasField('usec_since_epoch'))
+    self.assertEqual(0, len(events[0].test_locations_event.locations))
+
+  def test_handles_invalid_requests_for_uploading_test_locations(self):
+    self.test_app.post(
+        '/internal/monitoring/test_loc/upload', REQ_PAYLOAD, status=400)
+    self.assertEqual(0, len(self.read_event_mon_file()))
