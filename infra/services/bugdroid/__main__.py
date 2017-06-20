@@ -16,12 +16,11 @@ import urlparse
 
 from infra.libs import git2
 from infra.libs.service_utils import outer_loop
-from infra.services.bugdroid import bugdroid
 from infra_libs import logs
 from infra_libs import ts_mon
-
-import infra_libs
-import oauth2client.client
+from infra.services.bugdroid import bugdroid
+from oauth2client.client import OAuth2Credentials
+import  oauth2client.client
 
 
 DEFAULT_LOGGER = logging.getLogger(__name__)
@@ -42,16 +41,33 @@ DATA_URL = 'https://bugdroid-data.appspot.com/_ah/api/bugdroid/v1/data'
 
 def get_data(http):
   DEFAULT_LOGGER.info('Getting data files from gcs...')
-  _, content = http.request(DATA_URL,
-                            headers={'Content-Type': 'application/json'})
-  data_json = json.loads(content)
-  data_files = json.loads(data_json['data_files'])
-  DEFAULT_LOGGER.info('Writing %d data files to %s', len(data_files), DATADIR)
-  for data_file in data_files:
-    content = base64.b64decode(data_file['file_content'])
-    file_path = os.path.join(DATADIR, data_file['file_name'])
-    with open(file_path, 'w') as fh:
-      fh.write(content)
+  retry_count = 5
+  success = False
+  for i in xrange(retry_count):
+    DEFAULT_LOGGER.debug('Sending get request %d...', i)
+    resp, content = http.request(DATA_URL,
+                                 headers={'Content-Type':'application/json'})
+    if resp.status >= 400:
+      DEFAULT_LOGGER.warning('Failed to get data in retry %d. Status: %d.',
+                      i, resp.status)
+      time.sleep(i)
+      continue
+    data_json = json.loads(content)
+    data_files = json.loads(data_json['data_files'])
+    for data_file in data_files:
+      content = base64.b64decode(data_file['file_content'])
+      file_path = os.path.join(DATADIR, data_file['file_name'])
+
+      # Bit map for gerrit
+      if data_file['file_name'].endswith('.seen'):
+        with open(file_path, "wb") as binary_file:
+          binary_file.write(content)
+      else:
+        with open(file_path, "w") as text_file:
+          text_file.write(content)
+    success = True
+    break
+  return success
 
 
 def update_data(http):
@@ -60,35 +76,51 @@ def update_data(http):
   for data_file in os.listdir(DATADIR):
     if os.path.isdir(data_file):
       continue
+    file_dict = {}
+    file_dict['file_name'] = data_file
     file_path = os.path.join(DATADIR, data_file)
-    with open(file_path) as fh:
-      result.append({
-          'file_name': data_file,
-          'file_content': base64.b64encode(fh.read()),
-      })
+    # binary
+    if data_file.endswith('.seen'):
+      with open(file_path, "rb") as binary_file:
+        file_dict['file_content'] = base64.b64encode(binary_file.read())
+    else:
+      with open(file_path, "r") as text_file:
+        file_dict['file_content'] = base64.b64encode(text_file.read())
+    result.append(file_dict)
 
   data_files = json.dumps(result)
-  http.request(
-      DATA_URL, 'POST', body=json.dumps({'data_files': data_files}),
-      headers={'Content-Type': 'application/json'})
+  retry_count = 5
+  success = False
+  for i in xrange(retry_count):
+    DEFAULT_LOGGER.debug('Sending post request %d...', i)
+    resp, _ = http.request(
+        DATA_URL, "POST", body=json.dumps({'data_files': data_files}),
+        headers={'Content-Type': 'application/json'})
+    if resp.status >= 400:
+      DEFAULT_LOGGER.warning('Failed to update data in retry %d. Status: %d.',
+                      i, resp.status)
+      time.sleep(i)
+      continue
+    success = True
+    break
+  return success
 
 
 def parse_args(args):  # pragma: no cover
   parser = argparse.ArgumentParser('./run.py %s' % __package__)
   parser.add_argument('-c', '--configfile',
-      help='Local JSON poller configuration file to override '
-           'config file from luci-config.')
-  parser.add_argument('-d', '--credentials_db', required=True,
-      help='File to use for Monorail OAuth2 credentials storage.')
+                 help='Local JSON poller configuration file to override '
+                      'confilg file from luci-config.')
+  parser.add_argument('-d', '--credentials_db',
+                 help='File to use for Codesite OAuth2 credentials storage.')
   parser.add_argument('--datadir', default=DATADIR,
-      help='Directory where persistent app data should be stored.')
+                 help='Directory where persistent app data should be stored.')
 
   logs.add_argparse_options(parser)
   ts_mon.add_argparse_options(parser)
   outer_loop.add_argparse_options(parser)
 
   parser.set_defaults(
-      log_level=logging.DEBUG,
       ts_mon_target_type='task',
       ts_mon_task_service_name='bugdroid',
       ts_mon_task_job_name='bugdroid_job'
@@ -101,17 +133,15 @@ def parse_args(args):  # pragma: no cover
 
   return opts, loop_opts
 
-
 def _create_http(creds_data):
-  credentials = oauth2client.client.OAuth2Credentials(
+  credentials = OAuth2Credentials(
       None, creds_data['client_id'], creds_data['client_secret'],
       creds_data['refresh_token'],
       datetime.datetime.now() + datetime.timedelta(minutes=15),
       'https://accounts.google.com/o/oauth2/token',
       'bugdroid')
 
-  http = infra_libs.InstrumentedHttp('gcs')
-  http = infra_libs.RetriableHttp(http, retrying_statuses_fn=lambda x: x >= 400)
+  http = httplib2.Http()
   http = credentials.authorize(http)
   return http
 
@@ -123,12 +153,14 @@ def main(args):  # pragma: no cover
     DEFAULT_LOGGER.info('Creating data directory.')
     os.makedirs(opts.datadir)
 
-  with open(opts.credentials_db) as data_file:
+  with open(opts.credentials_db) as data_file:    
     creds_data = json.load(data_file)
 
   # Use local json file
   if not opts.configfile:
-    get_data(_create_http(creds_data))
+    if not get_data(_create_http(creds_data)):
+      DEFAULT_LOGGER.error('Failed to get data files.')
+      return 1
 
   def outer_loop_iteration():
     return bugdroid.inner_loop(opts)
@@ -137,10 +169,12 @@ def main(args):  # pragma: no cover
       task=outer_loop_iteration,
       sleep_timeout=lambda: 60.0,
       **loop_opts)
-
+ 
   # In case local json file is used, do not upload
   if not opts.configfile:
-    update_data(_create_http(creds_data))
+    if not update_data(_create_http(creds_data)):
+      DEFAULT_LOGGER.error('Failed to update data files.')
+      return 1
 
   DEFAULT_LOGGER.info('Outer loop finished with result %r',
                       loop_results.success)

@@ -166,6 +166,10 @@ class GitilesPoller(Poller):
         new_refs[key] = refs[key]
     return new_refs
 
+  def _WarmUpHandlers(self):
+    for handler in self.handlers:
+      handler.WarmUp()
+
   def _ProcessGitLogEntry(self, log_entry):
     self.logger.debug('Received git log entry\n%s' % log_entry.msg)
     if log_entry.ignored:
@@ -249,6 +253,8 @@ class GitilesPoller(Poller):
                         self.__class__.__name__, type(handler))
 
   def execute(self):
+    self._WarmUpHandlers()
+
     # Pocess remaining initialization commits. Most likely these are just older,
     # baseline commits, and the poller has already processed well past them, but
     # it's possible that someone updated the baseline to something after what
