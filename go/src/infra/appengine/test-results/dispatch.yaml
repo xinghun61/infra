@@ -1,5 +1,5 @@
 dispatch:
-  - url: "*/internal/monitoring/upload"
+  - url: "*/internal/monitoring/*"
     module: python
   - url: "*/appengine_module/components/*"
     module: python

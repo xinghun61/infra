@@ -28,9 +28,9 @@ const (
 
 	deleteKeysPath = "/internal/delete-keys"
 
-	// monitoringPath is the tsmon and event_mon monitoring path.
-	// It should be kept in sync with the Python implementation.
-	monitoringPath = "/internal/monitoring/upload"
+	// testResultMonPath is the event_mon monitoring endpoint path. It should be
+	// kept in sync with the Python implementation.
+	testResultMonPath = "/internal/monitoring/test_res/upload"
 )
 
 func init() {
