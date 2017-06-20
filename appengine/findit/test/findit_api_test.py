@@ -43,6 +43,7 @@ class FinditApiTest(testing.EndpointsTestCase):
               MockMasterIsSupported)
 
   def testUnrecognizedMasterUrl(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     builds = {
         'builds': [
             {
@@ -61,6 +62,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(expected_results, response.json_body.get('results', []))
 
   def testMasterIsNotSupported(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     builds = {
         'builds': [
             {
@@ -79,6 +81,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(expected_results, response.json_body.get('results', []))
 
   def testNothingIsReturnedWhenNoAnalysisWasRun(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -103,6 +106,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(expected_result, response.json_body.get('results', []))
 
   def testFailedAnalysisIsNotReturnedEvenWhenItHasResults(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -148,6 +152,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(expected_result, response.json_body.get('results', []))
 
   def testResultIsReturnedWhenNoAnalysisIsCompleted(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -177,6 +182,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(expected_result, response.json_body.get('results', []))
 
   def testPreviousAnalysisResultIsReturnedWhileANewAnalysisIsRunning(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -260,6 +266,7 @@ class FinditApiTest(testing.EndpointsTestCase):
                      sorted(response.json_body['results']))
 
   def testAnalysisFindingNoSuspectedCLsIsNotReturned(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -315,6 +322,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(expected_result, response.json_body.get('results', []))
 
   def testAnalysisFindingSuspectedCLsIsReturned(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -406,6 +414,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(expected_results, response.json_body.get('results'))
 
   def testTryJobResultReturnedForCompileFailure(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -500,6 +509,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(expected_results, response.json_body.get('results'))
 
   def testTryJobIsRunning(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -582,6 +592,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(expected_results, response.json_body.get('results'))
 
   def testTestIsFlaky(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -690,6 +701,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   @mock.patch.object(
       suspected_cl_util, 'GetSuspectedCLConfidenceScoreAndApproach')
   def testTestLevelResultIsReturned(self, mock_fn):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -1023,6 +1035,8 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertItemsEqual(expected_results, response.json_body.get('results'))
 
   def testAnalysisRequestQueuedAsExpected(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
@@ -1165,6 +1179,7 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertIsNone(culprit)
 
   def testAnalysisIsStillRunning(self):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -1206,3 +1221,29 @@ class FinditApiTest(testing.EndpointsTestCase):
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_results, response.json_body['results'])
+
+  @mock.patch.object(findit_api, '_AsyncProcessFailureAnalysisRequests')
+  def testUserNotAuthorized(self, mocked_func):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=False)
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+
+    master_url = 'https://build.chromium.org/p/%s' % master_name
+    builds = {
+        'builds': [
+            {
+                'master_url': master_url,
+                'builder_name': builder_name,
+                'build_number': build_number,
+                'failed_steps': ['a']
+            }
+        ]
+    }
+
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('.*401 Unauthorized.*',
+                   re.MULTILINE | re.DOTALL),
+        self.call_api, 'AnalyzeBuildFailures', body=builds)
+    mocked_func.assert_not_called()

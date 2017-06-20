@@ -33,6 +33,7 @@ COMPILE_STEP_NAME = 'compile'
 WHITELISTED_APP_ACCOUNTS = [
     'chromium-try-flakes@appspot.gserviceaccount.com',
     'findit-for-me@appspot.gserviceaccount.com',
+    'sheriff-o-matic@appspot.gserviceaccount.com'
 ]
 
 

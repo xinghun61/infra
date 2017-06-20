@@ -22,6 +22,7 @@ from protorpc import remote
 
 import gae_ts_mon
 
+from common import acl
 from common import constants
 from common.waterfall import failure_type
 from gae_libs import appengine_util
@@ -41,7 +42,6 @@ from waterfall import buildbot
 from waterfall import build_util
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
-from waterfall.flake import flake_analysis_service
 
 
 # This is used by the underlying ProtoRpc when creating names for the ProtoRPC
@@ -531,6 +531,13 @@ class FindItApi(remote.Service):
       _BuildFailureAnalysisResultCollection
       A list of analysis results for the given build failures.
     """
+    user_email = auth_util.GetUserEmail()
+    is_admin = auth_util.IsCurrentUserAdmin()
+
+    if not acl.CanTriggerNewAnalysis(user_email, is_admin):
+      raise endpoints.UnauthorizedException(
+          'No permission to run a new analysis! User is %s' % user_email)
+
     results = []
     supported_builds = []
     confidences = SuspectedCLConfidence.Get()
@@ -581,7 +588,7 @@ class FindItApi(remote.Service):
     user_email = auth_util.GetUserEmail()
     is_admin = auth_util.IsCurrentUserAdmin()
 
-    if not flake_analysis_service.IsAuthorizedUser(user_email, is_admin):
+    if not acl.CanTriggerNewAnalysis(user_email, is_admin):
       raise endpoints.UnauthorizedException(
           'No permission to run a new analysis! User is %s' % user_email)
 
