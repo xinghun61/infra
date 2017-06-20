@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/luci/luci-go/common/tsmon"
+
 	"cloud.google.com/go/bigquery"
 )
 
@@ -21,6 +23,12 @@ type mockUploader struct {
 	uploaded []interface{}
 }
 
+func testContext() context.Context {
+	ctx := context.Background()
+	ctx = tsmon.WithState(ctx, tsmon.NewState())
+	return ctx
+}
+
 func (u *mockUploader) Put(ctx context.Context, src interface{}) error {
 	u.uploaded = append(u.uploaded, src)
 	return nil
@@ -29,18 +37,32 @@ func (u *mockUploader) Put(ctx context.Context, src interface{}) error {
 type fakeEvent struct{}
 
 func TestClose(t *testing.T) {
-	ctx := context.Background()
+	t.Parallel()
+
+	ctx := testContext()
 	u := mockUploader{}
 	bu, err := NewBatchUploader(ctx, &u)
-	bu.TickC = make(chan time.Time)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	closed := false
+	defer func() {
+		if !closed {
+			bu.Close()
+		}
+	}()
+
+	bu.TickC = make(chan time.Time)
+
 	bu.Stage(fakeEvent{})
 	if got, want := len(bu.pending), 1; got != want {
 		t.Errorf("got: %d; want: %d", got, want)
 	}
+
 	bu.Close()
+	closed = true
+
 	if got, want := len(bu.pending), 0; got != want {
 		t.Errorf("got: %d; want: %d", got, want)
 	}
@@ -50,25 +72,34 @@ func TestClose(t *testing.T) {
 }
 
 func TestUpload(t *testing.T) {
-	ctx := context.Background()
+	t.Parallel()
+
+	ctx := testContext()
 	u := mockUploader{}
 	bu, err := NewBatchUploader(ctx, &u)
-	tickc := make(chan time.Time)
-	bu.TickC = tickc
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer bu.Close()
+
+	bu.testUploadConfirmC = make(chan struct{})
+	tickc := make(chan time.Time)
+	bu.TickC = tickc
+
 	bu.Stage(fakeEvent{})
 	if got, want := len(u.uploaded), 0; got != want {
 		t.Errorf("got: %d; want: %d", got, want)
 	}
 	tickc <- time.Time{}
+	<-bu.testUploadConfirmC // Synchronize with upload.
 	if got, want := len(u.uploaded), 1; got != want {
 		t.Errorf("got: %d; want: %d", got, want)
 	}
 }
 
 func TestPrepareSrc(t *testing.T) {
+	t.Parallel()
+
 	type testCase struct {
 		src     interface{}
 		wantLen int
@@ -96,20 +127,27 @@ func TestPrepareSrc(t *testing.T) {
 }
 
 func TestCounterMetric(t *testing.T) {
-	ctx := context.Background()
+	t.Parallel()
+
+	ctx := testContext()
 	u := mockUploader{}
 	bu, err := NewBatchUploader(ctx, &u)
-	bu.UploadMetricName = "fakeCounter"
-	bu.start() // To actually create the metric
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer bu.Close()
+
+	bu.UploadMetricName = "fakeCounter"
+
+	bu.start() // To actually create the metric
 	if got, want := bu.uploads.Info().Name, "fakeCounter"; got != want {
 		t.Errorf("got: %s; want: %s", got, want)
 	}
 }
 
 func TestStage(t *testing.T) {
+	t.Parallel()
+
 	type testCase struct {
 		src     interface{}
 		wantLen int
@@ -125,12 +163,14 @@ func TestStage(t *testing.T) {
 		},
 	}
 	for _, tc := range tcs {
-		ctx := context.Background()
+		ctx := testContext()
 		u := mockUploader{}
 		bu, err := NewBatchUploader(ctx, &u)
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer bu.Close()
+
 		bu.Stage(tc.src)
 		if got, want := len(bu.pending), tc.wantLen; got != want {
 			t.Errorf("got: %d; want: %d", got, want)
