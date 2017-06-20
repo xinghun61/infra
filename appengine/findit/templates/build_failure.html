@@ -197,7 +197,17 @@
     </div>
     {% endif %}
 
-    {% if show_triage_help_button %}
+    {% if show_admin_controls %}
+      <br><br>
+      <div id="rerun-analysis">
+          <form id="rerun-form" action="/waterfall/failure" method="post">
+              <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
+              <input type="hidden" name="force" value="1"/>
+              <input type="hidden" name="url" value="https://luci-milo.appspot.com/buildbot/{{master_name}}/{{builder_name}}/{{build_number}}" />
+              <input type="submit" value="Force Rerun Analysis" />
+          </form>
+      </div>
+
       <br><br>
       <div id="triage-help">
         <button id="triage-help-button">Triage help</button>
