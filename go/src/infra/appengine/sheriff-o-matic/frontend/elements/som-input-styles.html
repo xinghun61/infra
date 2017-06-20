@@ -52,9 +52,9 @@
       }
       input[type="checkbox"]::before {
         box-sizing: border-box;
-        content: "\2714";
         visibility: visible;
         position: relative;
+        content: "";
         display: flex;
         align-items: center;
         justify-content: center;
@@ -69,6 +69,7 @@
       input[type="checkbox"]:checked::before {
         background: #3f51b5;
         border-color: #3f51b5;
+        content: "\2714";
       }
     </style>
   </template>
