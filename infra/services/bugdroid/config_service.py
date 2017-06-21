@@ -87,4 +87,4 @@ def decode_path_url_template(enum_val):
 
 
 def decode_repo_type(enum_val):
-  return _decode_enum(repo_config_pb2.RepoTye, enum_val)
+  return _decode_enum(repo_config_pb2.RepoType, enum_val)
