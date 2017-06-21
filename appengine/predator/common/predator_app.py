@@ -243,6 +243,7 @@ class PredatorApp(object):
     result = self.ProcessResultForPublishing(result, analysis)
     logging.info('Publish result:\n%s',
                  json.dumps(result, indent=4, sort_keys=True))
+
     return {
         'crash_identifiers': crash_identifiers,
         'client_id': self.client_id,

@@ -19,8 +19,10 @@ from common import predator_app
 from common import predator_for_chromecrash
 from common.appengine_testcase import AppengineTestCase
 from common.predator_for_chromecrash import PredatorForChromeCrash
+from common.predator_for_chromecrash import PredatorForCracas
 from common.predator_for_chromecrash import PredatorForFracas
 from common.model import crash_analysis
+from common.model.cracas_crash_analysis import CracasCrashAnalysis
 from common.model.crash_config import CrashConfig
 from common.model.fracas_crash_analysis import FracasCrashAnalysis
 from gae_libs.http.http_client_appengine import HttpClientAppengine
@@ -147,3 +149,47 @@ class PredatorForFracasTest(AppengineTestCase):
     self.assertDictEqual(self._client.GetPublishableResult(crash_identifiers,
                                                            analysis),
                          expected_processed_suspect)
+
+
+class PredatorForCracasTest(AppengineTestCase):
+  """Tests ``PredatorForCracas`` class."""
+
+  def setUp(self):
+    super(PredatorForCracasTest, self).setUp()
+    self.predator = PredatorForCracas(MOCK_GET_REPOSITORY, CrashConfig.Get())
+
+  def testClientID(self):
+    """Tests ``_ClientID`` method."""
+    self.assertEqual(self.predator.client_id, CrashClient.CRACAS)
+
+  def testCreateAnalysis(self):
+    """Tests ``CreateAnalysis`` creates ``CracasCrashAnalysis`` entity."""
+    analysis = self.predator.CreateAnalysis({'id': 2})
+    self.assertEqual(type(analysis), CracasCrashAnalysis)
+
+  def testGetAnalysis(self):
+    """Tests ``GetAnalysis`` get entity by key."""
+    ids = {'id': 2}
+    analysis = self.predator.CreateAnalysis(ids)
+    analysis.put()
+    self.assertEqual(analysis, self.predator.GetAnalysis(ids))
+
+  @mock.patch('common.predator_app.PredatorApp.GetPublishableResult')
+  def testGetPublishableResultIfRegressionRangIsNone(self, mock_super_method):
+    """Tests ``GetPublishableResult`` method when regression range is None."""
+    mock_super_method.side_effect = lambda *args: args
+    crash_identifiers = {'regression_range': None}
+
+    modified_crash_identifiers, _ = self.predator.GetPublishableResult(
+        crash_identifiers, None)
+    self.assertEqual(modified_crash_identifiers['regression_range'], [])
+
+  @mock.patch('common.predator_app.PredatorApp.GetPublishableResult')
+  def testGetPublishableResult(self, mock_super_method):
+    """Tests ``GetPublishableResult`` when regression range is not None."""
+    mock_super_method.side_effect = lambda *args: args
+    crash_identifiers = {'regression_range': ['2', '3']}
+
+    modified_crash_identifiers, _ = self.predator.GetPublishableResult(
+        crash_identifiers, None)
+    self.assertEqual(modified_crash_identifiers, crash_identifiers)

@@ -104,9 +104,7 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
                            top_n_frames=self.client_config['top_n'])
 
 
-# TODO(http://crbug.com/659346): we misplaced the coverage tests; find them!
-class PredatorForCracas(  # pylint: disable=W0223
-    PredatorForChromeCrash): # pragma: no cover
+class PredatorForCracas(PredatorForChromeCrash):
 
   @classmethod
   def _ClientID(cls):
@@ -119,6 +117,30 @@ class PredatorForCracas(  # pylint: disable=W0223
   def GetAnalysis(self, crash_identifiers):
     # TODO: inline CracasCrashAnalysis.Get stuff here.
     return CracasCrashAnalysis.Get(crash_identifiers)
+
+  def GetPublishableResult(self, crash_identifiers, analysis):
+    """Converts a culprit result into a publishable result for client.
+
+    Note, this function must be called by a concrete subclass of CrashAnalysis
+    which implements the ProcessResultForPublishing method.
+
+    Args:
+      crash_identifiers (dict): Dict containing identifiers that can uniquely
+        identify CrashAnalysis entity.
+      analysis (CrashAnalysis model): Model containing culprit result and other
+        analysis information.
+
+    Returns:
+      A dict of the given ``crash_identifiers``, this model's
+      ``client_id``, and a publishable version of this model's ``result``.
+    """
+    # According to b/62866274, Cracas cannot parse ``null`` in the json, so
+    # change it to an empty list.
+    if crash_identifiers['regression_range'] is None:
+      crash_identifiers['regression_range'] = []
+
+    return super(PredatorForCracas, self).GetPublishableResult(
+        crash_identifiers, analysis)
 
 
 class PredatorForFracas(PredatorForChromeCrash):  # pylint: disable=W0223
