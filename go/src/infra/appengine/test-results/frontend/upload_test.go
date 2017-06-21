@@ -39,6 +39,40 @@ func (db AlwaysInWhitelistAuthDB) IsInWhitelist(c context.Context, ip net.IP, wh
 	return true, nil
 }
 
+func createTestUploadRequest(serverURL string, master string) *http.Request {
+	var buf bytes.Buffer
+	multi := multipart.NewWriter(&buf)
+	// Form files.
+	f, err := os.Open(filepath.Join("testdata", "full_results_0.json"))
+	So(err, ShouldBeNil)
+	defer f.Close()
+	multiFile, err := multi.CreateFormFile("file", "full_results.json")
+	So(err, ShouldBeNil)
+	_, err = io.Copy(multiFile, f)
+	So(err, ShouldBeNil)
+
+	// Form fieldatastore.
+	fields := []struct {
+		key, val string
+	}{
+		{"master", master},
+		{"builder", "test-builder"},
+		{"testtype", "test-type"},
+	}
+	for _, field := range fields {
+		f, err := multi.CreateFormField(field.key)
+		So(err, ShouldBeNil)
+		_, err = f.Write([]byte(field.val))
+		So(err, ShouldBeNil)
+	}
+	multi.Close()
+
+	req, err := http.NewRequest("POST", serverURL+"/testfile/upload", &buf)
+	So(err, ShouldBeNil)
+	req.Header.Set("Content-Type", multi.FormDataContentType())
+	return req
+}
+
 func TestUploadAndGetHandlers(t *testing.T) {
 	t.Parallel()
 
@@ -74,113 +108,95 @@ func TestUploadAndGetHandlers(t *testing.T) {
 
 	Convey("Upload and Get handlers", t, func() {
 		Convey("upload full_results.json", func() {
-			var buf bytes.Buffer
-			multi := multipart.NewWriter(&buf)
-			// Form files.
-			f, err := os.Open(filepath.Join("testdata", "full_results_0.json"))
-			So(err, ShouldBeNil)
-			defer f.Close()
-			multiFile, err := multi.CreateFormFile("file", "full_results.json")
-			So(err, ShouldBeNil)
-			_, err = io.Copy(multiFile, f)
-			So(err, ShouldBeNil)
-			// Form fieldatastore.
-			fields := []struct {
-				key, val string
-			}{
-				{"master", "chromium.chromiumos"},
-				{"builder", "test-builder"},
-				{"testtype", "test-type"},
-			}
-			for _, field := range fields {
-				f, err := multi.CreateFormField(field.key)
+			Convey("with whitelisted master", func() {
+				req := createTestUploadRequest(srv.URL, "chromium.chromiumos")
+				resp, err := client.Do(req)
 				So(err, ShouldBeNil)
-				_, err = f.Write([]byte(field.val))
+				defer resp.Body.Close()
+				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+
+				b, err := ioutil.ReadAll(resp.Body)
 				So(err, ShouldBeNil)
-			}
-			multi.Close()
+				So(string(b), ShouldEqual, "OK")
 
-			req, err := http.NewRequest("POST", srv.URL+"/testfile/upload", &buf)
-			So(err, ShouldBeNil)
-			req.Header.Set("Content-Type", multi.FormDataContentType())
-			resp, err := client.Do(req)
-			So(err, ShouldBeNil)
-			defer resp.Body.Close()
-			So(resp.StatusCode, ShouldEqual, http.StatusOK)
+				// Get results.json for uploaded full_results.json
+				req, err = http.NewRequest("GET", srv.URL+"/testfile?"+url.Values{
+					"master":   {"chromium.chromiumos"},
+					"builder":  {"test-builder"},
+					"testtype": {"test-type"},
+					"name":     {"results.json"},
+				}.Encode(), nil)
+				So(err, ShouldBeNil)
+				resp, err = client.Do(req)
+				So(err, ShouldBeNil)
+				defer resp.Body.Close()
+				So(resp.StatusCode, ShouldEqual, http.StatusOK)
 
-			b, err := ioutil.ReadAll(resp.Body)
-			So(err, ShouldBeNil)
-			So(string(b), ShouldEqual, "OK")
-
-			// Get results.json for uploaded full_results.json
-			req, err = http.NewRequest("GET", srv.URL+"/testfile?"+url.Values{
-				"master":   {"chromium.chromiumos"},
-				"builder":  {"test-builder"},
-				"testtype": {"test-type"},
-				"name":     {"results.json"},
-			}.Encode(), nil)
-			So(err, ShouldBeNil)
-			resp, err = client.Do(req)
-			So(err, ShouldBeNil)
-			defer resp.Body.Close()
-			So(resp.StatusCode, ShouldEqual, http.StatusOK)
-
-			var aggr model.AggregateResult
-			So(json.NewDecoder(resp.Body).Decode(&aggr), ShouldBeNil)
-			So(aggr, ShouldResemble, model.AggregateResult{
-				Version: model.ResultsVersion,
-				Builder: "test-builder",
-				BuilderInfo: &model.BuilderInfo{
-					SecondsEpoch: []float64{1406123456},
-					BuildNumbers: []model.Number{123},
-					ChromeRevs:   []string{"67890"},
-					Tests: model.AggregateTest{
-						"Test1.testproc1": &model.AggregateTestLeaf{
-							Results:  []model.ResultSummary{{Count: 1, Type: "Q"}},
-							Runtimes: []model.RuntimeSummary{{Count: 1, Runtime: 1}},
+				var aggr model.AggregateResult
+				So(json.NewDecoder(resp.Body).Decode(&aggr), ShouldBeNil)
+				So(aggr, ShouldResemble, model.AggregateResult{
+					Version: model.ResultsVersion,
+					Builder: "test-builder",
+					BuilderInfo: &model.BuilderInfo{
+						SecondsEpoch: []float64{1406123456},
+						BuildNumbers: []model.Number{123},
+						ChromeRevs:   []string{"67890"},
+						Tests: model.AggregateTest{
+							"Test1.testproc1": &model.AggregateTestLeaf{
+								Results:  []model.ResultSummary{{Count: 1, Type: "Q"}},
+								Runtimes: []model.RuntimeSummary{{Count: 1, Runtime: 1}},
+							},
 						},
+						FailuresByType: map[string][]int{
+							"FAIL": {0},
+							"PASS": {1},
+							"SKIP": {0},
+						},
+						FailureMap: model.FailureLongNames,
 					},
-					FailuresByType: map[string][]int{
-						"FAIL": {0},
-						"PASS": {1},
-						"SKIP": {0},
-					},
-					FailureMap: model.FailureLongNames,
-				},
+				})
+
+				// Get test list JSON for uploaded full_results.json
+				req, err = http.NewRequest("GET", srv.URL+"/testfile?"+url.Values{
+					"master":       {"chromium.chromiumos"},
+					"builder":      {"test-builder"},
+					"testtype":     {"test-type"},
+					"name":         {"results.json"},
+					"testlistjson": {"1"},
+				}.Encode(), nil)
+				So(err, ShouldBeNil)
+				resp, err = client.Do(req)
+				So(err, ShouldBeNil)
+				defer resp.Body.Close()
+				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+
+				b, err = ioutil.ReadAll(resp.Body)
+				So(err, ShouldBeNil)
+				So(resp.Header.Get("Content-Type"), ShouldContainSubstring, "application/json")
+				So(bytes.TrimSpace(b), ShouldResemble, []byte(`{"test-builder":{"tests":{"Test1.testproc1":{}}}}`))
+
+				// HTML response
+				req, err = http.NewRequest("GET", srv.URL+"/testfile?"+url.Values{
+					"master":   {"chromium.chromiumos"},
+					"builder":  {"test-builder"},
+					"testtype": {"test-type"},
+					"name":     {"full_results.json"},
+				}.Encode(), nil)
+				So(err, ShouldBeNil)
+				resp, err = client.Do(req)
+				So(err, ShouldBeNil)
+				defer resp.Body.Close()
+				So(resp.StatusCode, ShouldEqual, http.StatusOK)
+				So(resp.Header.Get("Content-Type"), ShouldContainSubstring, "text/html")
 			})
 
-			// Get test list JSON for uploaded full_results.json
-			req, err = http.NewRequest("GET", srv.URL+"/testfile?"+url.Values{
-				"master":       {"chromium.chromiumos"},
-				"builder":      {"test-builder"},
-				"testtype":     {"test-type"},
-				"name":         {"results.json"},
-				"testlistjson": {"1"},
-			}.Encode(), nil)
-			So(err, ShouldBeNil)
-			resp, err = client.Do(req)
-			So(err, ShouldBeNil)
-			defer resp.Body.Close()
-			So(resp.StatusCode, ShouldEqual, http.StatusOK)
-
-			b, err = ioutil.ReadAll(resp.Body)
-			So(err, ShouldBeNil)
-			So(resp.Header.Get("Content-Type"), ShouldContainSubstring, "application/json")
-			So(bytes.TrimSpace(b), ShouldResemble, []byte(`{"test-builder":{"tests":{"Test1.testproc1":{}}}}`))
-
-			// HTML response
-			req, err = http.NewRequest("GET", srv.URL+"/testfile?"+url.Values{
-				"master":   {"chromium.chromiumos"},
-				"builder":  {"test-builder"},
-				"testtype": {"test-type"},
-				"name":     {"full_results.json"},
-			}.Encode(), nil)
-			So(err, ShouldBeNil)
-			resp, err = client.Do(req)
-			So(err, ShouldBeNil)
-			defer resp.Body.Close()
-			So(resp.StatusCode, ShouldEqual, http.StatusOK)
-			So(resp.Header.Get("Content-Type"), ShouldContainSubstring, "text/html")
+			Convey("with non-whitelisted master", func() {
+				req := createTestUploadRequest(srv.URL, "non.whitelisted.master")
+				resp, err := client.Do(req)
+				So(err, ShouldBeNil)
+				defer resp.Body.Close()
+				So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
+			})
 		})
 	})
 }

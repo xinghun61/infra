@@ -20,7 +20,6 @@ func TestMasters(t *testing.T) {
 					So(ByName("TryServerChromiumMac"), ShouldResemble, &Master{
 						Name:       "TryServerChromiumMac",
 						Identifier: "tryserver.chromium.mac",
-						Groups:     []string{"Unused"},
 					})
 				})
 
@@ -35,7 +34,6 @@ func TestMasters(t *testing.T) {
 					So(ByIdentifier("tryserver.chromium.linux"), ShouldResemble, &Master{
 						Name:       "TryServerChromiumLinux",
 						Identifier: "tryserver.chromium.linux",
-						Groups:     []string{"Unused"},
 					})
 				})
 

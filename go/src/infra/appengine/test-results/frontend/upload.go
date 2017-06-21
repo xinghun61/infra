@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -102,8 +103,14 @@ func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 		if m := masters.ByName(v[0]); m != nil {
 			u.Master = m.Identifier
 			u.DeprecatedMaster = v[0]
+		} else if m := masters.ByIdentifier(v[0]); m != nil {
+			u.Master = m.Identifier
 		} else {
-			u.Master = v[0]
+			errMsg := fmt.Sprintf(
+				"master %s is not whitelisted, see https://goo.gl/RHx4hS", v[0])
+			logging.Errorf(c, errMsg)
+			http.Error(w, errMsg, http.StatusBadRequest)
+			return
 		}
 	}
 
