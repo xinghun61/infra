@@ -17,18 +17,16 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	ds "github.com/luci/gae/service/datastore"
+	tq "github.com/luci/gae/service/taskqueue"
+	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 
 	"golang.org/x/build/gerrit"
 	"golang.org/x/net/context"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 
 	"google.golang.org/appengine"
-	"google.golang.org/appengine/datastore"
-	"google.golang.org/appengine/log"
-	"google.golang.org/appengine/taskqueue"
-	"google.golang.org/appengine/urlfetch"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
@@ -43,22 +41,25 @@ const (
 // The timestamp format used by Gerrit (using the reference date). All timestamps are in UTC.
 const timeStampLayout = "2006-01-02 15:04:05.000000000"
 
-// GerritProject represents the pollers view of a Gerrit project.
-// This includes data about the last poll; timestamp and last seen change ID of the previous poll.
-// Timestamp of last successful poll.
-// Datastore key used: instance:project
+// GerritProject tracks the last poll of a Gerrit project.
+//
+// Mutable entity.
+// LUCI datastore ID (=string on the form instance:project) field.
 type GerritProject struct {
-	ID       string `datastore:"-"`
-	Instance string `datastore:"-"`
-	Project  string `datastore:"-"`
+	ID       string `gae:"$id"`
+	Instance string
+	Project  string
+	// Timestamp of last successful poll.
 	LastPoll time.Time
 }
 
-// GerritChange represents the last seen revision for a change in Gerrit and is stored
-// as a child of GerritProject.
-// Datastore key used: changeID
+// GerritChange tracks the last seen revision for a Gerrit change.
+//
+// Mutable entity.
+// LUCI datastore ID (=changeID) and parent (=key to GerritProject entity) fields.
 type GerritChange struct {
-	ChangeID     string
+	ID           string  `gae:"$id"`
+	Parent       *ds.Key `gae:"$parent"`
 	LastRevision string
 }
 
@@ -96,16 +97,19 @@ func (c byUpdatedTime) Len() int           { return len(c) }
 func (c byUpdatedTime) Swap(i, j int)      { c[i], c[j] = c[j], c[i] }
 func (c byUpdatedTime) Less(i, j int) bool { return c[i].Updated.Time().Before(c[i].Updated.Time()) }
 
-func init() {
-	r := router.New()
-	base := common.MiddlewareForInternal()
-
-	r.GET("/gerrit-poller/internal/poll", base, pollHandler)
-
-	http.DefaultServeMux.Handle("/", r)
+func pollHandler(ctx *router.Context) {
+	c, w := ctx.Context, ctx.Writer
+	if err := poll(c); err != nil {
+		logging.WithError(err).Errorf(c, "failed to poll: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	logging.Debugf(c, "[gerrit-poller] Successfully completed poll")
+	w.WriteHeader(http.StatusOK)
 }
 
-// pollHandler queries Gerrit for changes since the last poll.
+// poll queries Gerrit for changes since the last poll.
+//
 // Each poll to a Gerrit instance and project is logged with a timestamp and
 // last seen revisions (within the same second).
 // The timestamp of the most recent change in the last poll is used in the next poll,
@@ -116,31 +120,34 @@ func init() {
 // using the same last poll. This scenario would lead to duplicate tasks in the
 // service queue. This is OK because the service queue handler will check for exisiting
 // active runs for a change before moving tasks further along the pipeline.
-func pollHandler(c *router.Context) {
-	ctx := common.NewGAEContext(c)
-
+func poll(c context.Context) error {
 	// TODO(emso): Get project/instance from luci-config
-
 	// Get last poll data for the given instance/project.
-	p, err := readProjectData(ctx, instance, project)
-	if err != nil {
-		common.ReportServerError(c, err)
-		return
+	p := &GerritProject{ID: gerritProjectID(instance, project)}
+	if err := ds.Get(c, p); err != nil {
+		if err != ds.ErrNoSuchEntity {
+			return err
+		}
+		logging.Infof(c, "Found no previous entry for id:%s", p.ID)
+		err = nil
+		p.Instance = instance
+		p.Project = project
 	}
 	// If no previous poll, store current time and return.
 	if p.LastPoll.IsZero() {
-		log.Infof(ctx, "No previous poll for %s/%s. Storing current timestamp and stopping.",
+		logging.Infof(c, "No previous poll for %s/%s. Storing current timestamp and stopping.",
 			instance, project)
 		p.ID = gerritProjectID(instance, project)
 		p.Instance = instance
 		p.Project = project
 		p.LastPoll = time.Now()
-		if err := storeProjectData(ctx, p); err != nil {
-			common.ReportServerError(c, err)
+		logging.Debugf(c, "Storing project data: %+v", p)
+		if err := ds.Put(c, p); err != nil {
+			return err
 		}
-		return
+		return nil
 	}
-	log.Infof(ctx, "Last poll: %+v", p)
+	logging.Infof(c, "Last poll: %+v", p)
 
 	// TODO(emso): Add a limit for how many entries that will be processed in a poll.
 	// If, for instance, the service is restarted after some down time all changes since the
@@ -157,10 +164,9 @@ func pollHandler(c *router.Context) {
 	// of results is requested.
 	s := 0
 	for {
-		chgs, more, err := queryChanges(ctx, p, s)
+		chgs, more, err := queryChanges(c, p, s)
 		if err != nil {
-			common.ReportServerError(c, err)
-			return
+			return fmt.Errorf("failed to query for change: %v", err)
 		}
 		s += len(chgs)
 		changes = append(changes, chgs...)
@@ -171,10 +177,10 @@ func pollHandler(c *router.Context) {
 		}
 	}
 
+	// No changes found.
 	if len(changes) == 0 {
-		// No changes found.
-		log.Infof(ctx, "Poll done. No changes found.")
-		return
+		logging.Infof(c, "Poll done. No changes found.")
+		return nil
 	}
 
 	// Make sure changes are sorted (most recent change first).
@@ -188,49 +194,47 @@ func pollHandler(c *router.Context) {
 	// These operations should happen in a transaction because by storing the
 	// project data we assume that all new changes have been enqueued as analysis
 	// tasks.
-	if err := datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+	if err := ds.RunInTransaction(c, func(c context.Context) error {
 		// Update tracking of changes, getting back updated changes.
-		uc, err := updateTracking(ctx, p, changes)
+		uc, err := updateTracking(c, p, changes)
 		if err != nil {
 			return err
 		}
 		// Update tracking of last poll.
 		p.LastPoll = changes[0].Updated.Time()
-		if err := storeProjectData(ctx, p); err != nil {
+		if err := ds.Put(c, p); err != nil {
 			return err
 		}
 		// Convert to analysis tasks and enqueue.
 		changeDetails := convertToChangeDetails(p, uc)
-		return enqueueServiceRequests(ctx, changeDetails)
+		return enqueueServiceRequests(c, changeDetails)
 	}, nil); err != nil {
-		common.ReportServerError(c, err)
-		return
+		return err
 	}
-	log.Infof(ctx, "Poll done. Processed %d change(s).", len(changes))
+	logging.Infof(c, "Poll done. Processed %d change(s).", len(changes))
+	return nil
 }
 
 // updateTracking updates the tracking of the given Gerrit project based on the list of
 // updated changes. Returns a list of changes where the tracked revision and the current
 // revision differ.
-func updateTracking(ctx context.Context, p *GerritProject, changes []gerrit.ChangeInfo) ([]gerrit.ChangeInfo, error) {
+func updateTracking(c context.Context, p *GerritProject, changes []gerrit.ChangeInfo) ([]gerrit.ChangeInfo, error) {
 	var diff []gerrit.ChangeInfo
-	// Create list of datastore keys.
-	pkey := datastore.NewKey(ctx, "GerritProject", p.ID, 0, nil)
-	keys := make([]*datastore.Key, len(changes))
-	for i, change := range changes {
-		keys[i] = datastore.NewKey(ctx, "GerritChange", change.ChangeID, 0, pkey)
-	}
 	// Get list of tracked changes.
-	tc := make([]*GerritChange, len(keys))
-	if err := datastore.GetMulti(ctx, keys, tc); err != nil {
+	pkey := ds.NewKey(c, "GerritProject", p.ID, 0, nil)
+	var trackedChanges []*GerritChange
+	for _, change := range changes {
+		trackedChanges = append(trackedChanges, &GerritChange{ID: change.ChangeID, Parent: pkey})
+	}
+	if err := ds.Get(c, trackedChanges); err != nil {
 		if me, ok := err.(appengine.MultiError); ok {
 			for _, merr := range me {
-				if merr != nil && merr != datastore.ErrNoSuchEntity {
+				if merr != nil && merr != ds.ErrNoSuchEntity {
 					return diff, err
 				}
 			}
 		} else {
-			log.Infof(ctx, "Getting tracked changes failed: %v", err)
+			logging.Errorf(c, "Getting tracked changes failed: %v", err)
 			return diff, err
 		}
 	}
@@ -238,68 +242,71 @@ func updateTracking(ctx context.Context, p *GerritProject, changes []gerrit.Chan
 	// on keys and values being in the same order from GetMulti.
 	// Create map of tracked changes.
 	t := map[string]GerritChange{}
-	for _, c := range tc {
-		if c != nil {
-			t[c.ChangeID] = *c
+	for _, change := range trackedChanges {
+		if change != nil {
+			t[change.ID] = *change
 		}
 	}
-	log.Infof(ctx, "Found the following tracked changes: %v", t)
+	logging.Debugf(c, "Found the following tracked changes: %v", t)
 	// Compare polled changes to tracked changes, update tracking and add to the
 	// diff list when there is an updated revision change.
 	var uchanges []*GerritChange
-	var ukeys []*datastore.Key
-	var dkeys []*datastore.Key
+	var dchanges []*GerritChange
 	for _, change := range changes {
-		c, ok := t[change.ChangeID]
-		key := datastore.NewKey(ctx, "GerritChange", change.ChangeID, 0, pkey)
+		tc, ok := t[change.ChangeID]
 		switch {
 		// For untracked and new/draft, start tracking.
 		case !ok && (change.Status == "NEW" || change.Status == "DRAFT"):
-			log.Infof(ctx, "Found untracked %s change (%s); tracking.", change.Status, change.ChangeID)
-			c.ChangeID = change.ChangeID
-			c.LastRevision = change.CurrentRevision
-			// The ukeys and uchanges slices must be mutated together.
-			ukeys = append(ukeys, key)
-			uchanges = append(uchanges, &c)
+			logging.Debugf(c, "Found untracked %s change (%s); tracking.", change.Status, change.ChangeID)
+			tc.ID = change.ChangeID
+			tc.LastRevision = change.CurrentRevision
+			uchanges = append(uchanges, &tc)
 			diff = append(diff, change)
 		// Untracked and not new/draft, move on to the next change.
 		case !ok:
-			log.Infof(ctx, "Found untracked %s change (%s); leaving untracked.", change.Status, change.ChangeID)
+			logging.Debugf(c, "Found untracked %s change (%s); leaving untracked.", change.Status, change.ChangeID)
 		// For tracked and merged/abandoned, stop tracking (clean up).
 		case change.Status == "MERGED" || change.Status == "ABANDONED":
-			log.Infof(ctx, "Found tracked %s change (%s); removing.",
-				change.Status, change.ChangeID)
+			logging.Debugf(c, "Found tracked %s change (%s); removing.", change.Status, change.ChangeID)
 			// Note that we are only adding keys for entries already present in the
 			// datastore to the delete list. That is, we should not get any NoSuchEntity
 			// errors.
-			dkeys = append(dkeys, key)
+			dchanges = append(dchanges, &tc)
 		// For tracked and unseen revision, update tracking and to diff list.
-		case c.LastRevision != change.CurrentRevision:
-			log.Infof(ctx, "Found tracked %s change (%s) with new revision; updating.", change.Status, change.ChangeID)
-			c.LastRevision = change.CurrentRevision
-			// The ukeys and uchanges slices must be mutated together.
-			ukeys = append(ukeys, key)
-			uchanges = append(uchanges, &c)
+		case tc.LastRevision != change.CurrentRevision:
+			logging.Debugf(c, "Found tracked %s change (%s) with new revision; updating.", change.Status, change.ChangeID)
+			tc.LastRevision = change.CurrentRevision
+			uchanges = append(uchanges, &tc)
 			diff = append(diff, change)
 		default:
-			log.Infof(ctx, "Found tracked %s change (%s) with no update; leaving as is.", change.Status, change.ChangeID)
+			logging.Debugf(c, "Found tracked %s change (%s) with no update; leaving as is.", change.Status, change.ChangeID)
 		}
 	}
 	// Update stored data.
-	if _, err := datastore.PutMulti(ctx, ukeys, uchanges); err != nil {
-		return diff, err
-	}
-	if err := datastore.DeleteMulti(ctx, dkeys); err != nil {
-		if me, ok := err.(appengine.MultiError); ok {
-			for _, merr := range me {
-				if merr != datastore.ErrNoSuchEntity {
-					// Some error other than entity not found, report.
-					return diff, err
+	ops := []func() error{
+		// Update exisiting changes and add new ones.
+		func() error {
+			return ds.Put(c, uchanges)
+		},
+		// Delete removed changes.
+		func() error {
+			if err := ds.Delete(c, dchanges); err != nil {
+				if me, ok := err.(appengine.MultiError); ok {
+					for _, merr := range me {
+						if merr != ds.ErrNoSuchEntity {
+							// Some error other than entity not found, report.
+							return err
+						}
+					}
+				} else {
+					return err
 				}
 			}
-		} else {
-			return diff, err
-		}
+			return nil
+		},
+	}
+	if err := common.RunInParallel(ops); err != nil {
+		return diff, err
 	}
 	return diff, nil
 }
@@ -341,24 +348,23 @@ func convertToChangeDetails(p *GerritProject, changes []gerrit.ChangeInfo) []*Ge
 // The result tuple includes a boolean value to indicate of the result was truncated and
 // more queries should be sent to get the full list of changes. For new queries within the same
 // poll, this function should be called again with an increased offset.
-func queryChanges(ctx context.Context, p *GerritProject, offset int) ([]gerrit.ChangeInfo, bool, error) {
+func queryChanges(c context.Context, p *GerritProject, offset int) ([]gerrit.ChangeInfo, bool, error) {
 	var changes []gerrit.ChangeInfo
 	// Compose, connect and send.
 	url := composeChangesQueryURL(p, offset)
-	log.Infof(ctx, "Using URL: %s", url)
+	logging.Infof(c, "Using URL: %s", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return changes, false, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	c := &http.Client{
-		Transport: &oauth2.Transport{
-			Source: google.AppEngineTokenSource(ctx, scope),
-			Base:   &urlfetch.Transport{Context: ctx},
-		},
+	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(scope))
+	if err != nil {
+		return changes, false, err
 	}
-	resp, err := c.Do(req)
+	client := http.Client{Transport: transport}
+	resp, err := client.Do(req)
 	if err != nil {
 		return changes, false, err
 	}
@@ -382,13 +388,13 @@ func queryChanges(ctx context.Context, p *GerritProject, offset int) ([]gerrit.C
 }
 
 // enqueueServiceRequests enqueues service requests for the given change details.
-func enqueueServiceRequests(ctx context.Context, changes []*GerritChangeDetails) error {
-	for _, c := range changes {
+func enqueueServiceRequests(c context.Context, changes []*GerritChangeDetails) error {
+	for _, change := range changes {
 		req := &tricium.AnalyzeRequest{
-			Project: c.Project,
-			GitRef:  c.GitRef,
+			Project: change.Project,
+			GitRef:  change.GitRef,
 		}
-		for _, file := range c.FileChanges {
+		for _, file := range change.FileChanges {
 			if file.Status != "Delete" {
 				req.Paths = append(req.Paths, file.Path)
 			}
@@ -397,30 +403,14 @@ func enqueueServiceRequests(ctx context.Context, changes []*GerritChangeDetails)
 		if err != nil {
 			return fmt.Errorf("failed to marshal Tricium request: %v", err)
 		}
-		t := taskqueue.NewPOSTTask("internal/analyze", nil)
+		t := tq.NewPOSTTask("internal/analyze", nil)
 		t.Payload = b
-		if _, err := taskqueue.Add(ctx, t, common.AnalyzeQueue); err != nil {
-			return fmt.Errorf("failed to enqueue Tricium request: %v", err)
+		if err := tq.Add(c, common.AnalyzeQueue, t); err != nil {
+			return fmt.Errorf("failed to enqueue Analyze request: %v", err)
 		}
-		log.Infof(ctx, "Converted change details (%v) to Tricium request (%v)", c, req)
+		logging.Debugf(c, "Converted change details (%v) to Tricium request (%v)", change, req)
 	}
 	return nil
-}
-
-// readProjectData reads stored data for a given Gerrit instance and project.
-func readProjectData(ctx context.Context, instance, project string) (*GerritProject, error) {
-	id := gerritProjectID(instance, project)
-	key := datastore.NewKey(ctx, "GerritProject", id, 0, nil)
-	e := new(GerritProject)
-	err := datastore.Get(ctx, key, e)
-	if err == datastore.ErrNoSuchEntity {
-		log.Infof(ctx, "Found no previous entry for id:%s", id)
-		err = nil
-	}
-	e.ID = id
-	e.Instance = instance
-	e.Project = project
-	return e, err
 }
 
 // composeChangesQueryURL composes the URL used to query Gerrit for updated
@@ -433,15 +423,7 @@ func composeChangesQueryURL(p *GerritProject, offset int) string {
 	v.Add("o", "CURRENT_FILES")
 	v.Add("q", fmt.Sprintf("project:%s after:\"%s\"", p.Project,
 		p.LastPoll.Format(timeStampLayout)))
-	return fmt.Sprintf("%s/changes/?%s", p.Instance, v.Encode())
-}
-
-// storeProjectData stores data for the given Gerrit instance and project.
-func storeProjectData(ctx context.Context, p *GerritProject) error {
-	log.Infof(ctx, "Storing project data: %+v", p)
-	key := datastore.NewKey(ctx, "GerritProject", p.ID, 0, nil)
-	_, err := datastore.Put(ctx, key, p)
-	return err
+	return fmt.Sprintf("%s/a/changes/?%s", p.Instance, v.Encode())
 }
 
 // gerritProjectID constructs the ID used to store information about

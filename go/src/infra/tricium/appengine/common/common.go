@@ -11,8 +11,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"google.golang.org/appengine"
-
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
@@ -122,15 +120,6 @@ func NewRPCServer() *prpc.Server {
 	// TODO(vadimsh): Enable monitoring interceptor.
 	// UnaryServerInterceptor: grpcmon.NewUnaryServerInterceptor(nil),
 	return &prpc.Server{}
-}
-
-// NewGAEContext constructs a context compatible with standard appengine lib.
-//
-// The returned context is compatible with both LUCI libs and GAE std lib.
-//
-// TODO(emso): Get rid of it once everything is converted to use luci/gae.
-func NewGAEContext(c *router.Context) context.Context {
-	return appengine.WithContext(c.Context, c.Request)
 }
 
 // prepareTemplates returns templates.Bundle used by all UI handlers.
