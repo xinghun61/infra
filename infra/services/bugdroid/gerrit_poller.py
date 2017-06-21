@@ -27,10 +27,6 @@ DEFAULT_LOGGER = logging.getLogger(__name__)
 DEFAULT_LOGGER.addHandler(logging.NullHandler())
 
 
-class HaltProcessing(Exception):
-  pass
-
-
 class FileBitmap(object):
   """File-backed bitmap (automatically flushes each change)."""
 
@@ -154,9 +150,6 @@ class GerritPoller(Poller):
     for handler in self.handlers:
       try:
         handler.ProcessLogEntry(log_entry)
-      except HaltProcessing as e:
-        self.logger.exception('Halting in %s', handler)
-        raise e
       except Exception as e:
         # Log it here so that we see where it's breaking.
         self.logger.exception('Uncaught Exception in %s', handler)
@@ -214,9 +207,6 @@ class GerritPoller(Poller):
         continue
       try:
         self._ProcessGitLogEntry(entry)
-      except HaltProcessing:
-        self.logger.error('HaltProcessing caught - Terminating program')
-        sys.exit(1)
       except Exception:
         self.logger.error('Aborting processing of commits.')
         break
