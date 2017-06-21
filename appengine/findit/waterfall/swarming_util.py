@@ -830,8 +830,13 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
     git_repo = CachedGitilesRepository(
          http_client,
         'https://chromium.googlesource.com/chromium/src.git')
-    target_commit_position = git_repo.GetChangeLog(
-        tryjob.revision).commit_position
+    # The bad revision in a tryjob is the later one, use that, unless the tryjob
+    # specifies a specific one
+    revision = tryjob.revision or tryjob.properties.get('bad_revision')
+    if not revision:
+      logging.error('Tryjob %s does not have a specified revision.' % tryjob)
+      return
+    target_commit_position = git_repo.GetChangeLog(revision).commit_position
 
     bots_with_rev = _HaveCommitPositionInLocalGitCache(
         bots_with_cache, target_commit_position)

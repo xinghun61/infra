@@ -45,8 +45,8 @@ class MockTryJob(object):
   def __init__(self):
     self.is_swarmbucket_build = True
     self.dimensions = ['os:OS', 'cpu:CPU']
-    self.revision = 'a1b2c3d4'
-
+    self.properties = {'bad_revision': 'a1b2c3d4'}
+    self.revision = None
 
 class SwarmingHttpClient(RetryHttpClient):
 
@@ -1241,6 +1241,36 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('slave4', swarming_util._GetBotWithFewestNamedCaches(
         bots[3:])['bot_id'])
 
+  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
+              return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util.OnlyAvailable',
+              return_value=SOME_BOTS)
+  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+              return_value=SOME_BOTS)
+  @mock.patch('waterfall.swarming_util._ClosestEarlier',
+              return_value=ONE_BOT[0])
+  @mock.patch('waterfall.swarming_util._ClosestLater',
+              return_value=ONE_BOT[0])
+  @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
+  def testAssignWarmCacheHostSpecificRevision(self, mock_changelog, *_):
+    cache_name = 'cache_name'
+    tryjob = MockTryJob()
+    tryjob.revision = 'def01234'
+    swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
+    mock_changelog.assert_called_once_with('def01234')
+
+  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
+              return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util.logging.error')
+  def testAssignWarmCacheHostWithNoRevision(self, mock_error, *_):
+    cache_name = 'cache_name'
+    tryjob = MockTryJob()
+    del tryjob.properties['bad_revision']
+    swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
+    # Make sure that no bot was selected.
+    self.assertEqual(2, len(tryjob.dimensions))
+    # Make sure that an error was logged.
+    mock_error.assert_called()
 
   @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
               return_value=ALL_BOTS)
