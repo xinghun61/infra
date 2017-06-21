@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"time"
 
@@ -11,11 +12,16 @@ import (
 
 	te "infra/libs/testexpectations"
 
+	"github.com/luci/gae/service/taskqueue"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 
 	gerrit "github.com/andygrunwald/go-gerrit"
+)
+
+const (
+	changeQueue = "changetestexpectations"
 )
 
 type shortExp struct {
@@ -73,12 +79,13 @@ func GetLayoutTestsHandler(ctx *router.Context) {
 	fmt.Fprintf(w, "%v\n", string(b))
 }
 
-// PostLayoutExpectationHandler generates a Gerrit changelist to change
-// test expectations based on the fields POSTed to it.
-func PostLayoutExpectationHandler(ctx *router.Context) {
+// LayoutTestExpectationChangeWorker generates a Gerrit changelist to change
+// test expectations based on the fields POSTed to it. It should be registered
+// as a GAE task queue worker.
+func LayoutTestExpectationChangeWorker(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 
-	c, cancelFunc := context.WithTimeout(c, 60*time.Second)
+	c, cancelFunc := context.WithTimeout(c, 600*time.Second)
 	defer cancelFunc()
 
 	fs, err := te.LoadAll(c)
@@ -88,7 +95,7 @@ func PostLayoutExpectationHandler(ctx *router.Context) {
 	}
 
 	newExp := &shortExp{}
-	if err := json.NewDecoder(r.Body).Decode(newExp); err != nil {
+	if err := json.Unmarshal([]byte(r.FormValue("change")), newExp); err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -107,7 +114,7 @@ func PostLayoutExpectationHandler(ctx *router.Context) {
 		return
 	}
 
-	client, err := getGerritClient(c, "https://chromium-review.googlesource.com")
+	client, err := getGerritClient(c)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
@@ -122,10 +129,7 @@ func PostLayoutExpectationHandler(ctx *router.Context) {
 
 	logging.Infof(c, "created CL: %s editing %d files", changeID, len(fs.ToCL()))
 
-	user := auth.CurrentIdentity(c)
-
-	// TODO(seanmccullough): better reviewer-choosing logic.
-	reviewer := user.Email()
+	reviewer := r.FormValue("requester")
 
 	if _, _, err := client.Changes.AddReviewer(changeID, &gerrit.ReviewerInput{
 		Reviewer: reviewer,
@@ -139,4 +143,39 @@ func PostLayoutExpectationHandler(ctx *router.Context) {
 	}
 
 	w.Write([]byte(changeID))
+}
+
+// PostLayoutTestExpectationChangeHandler enqueues an asynchronous task to
+// create a Gerrit changelist to change test expectations based on the fields
+// POSTed to it.
+func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
+	c, w, r := ctx.Context, ctx.Writer, ctx.Request
+
+	c, cancelFunc := context.WithTimeout(c, 60*time.Second)
+	defer cancelFunc()
+
+	newExp := &shortExp{}
+	if err := json.NewDecoder(r.Body).Decode(newExp); err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	user := auth.CurrentIdentity(c)
+	params := url.Values{}
+	params.Set("requester", user.Email())
+	body, err := json.Marshal(newExp)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	params.Set("change", string(body))
+	task := taskqueue.NewPOSTTask("/_ah/queue/changetestexpectations", params)
+
+	if err := taskqueue.Add(c, changeQueue, task); err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Write([]byte("ok"))
 }

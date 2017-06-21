@@ -202,7 +202,7 @@ func init() {
 	r.GET("/api/v1/bugqueue/:label/uncached/", protected, som.GetUncachedBugsHandler)
 	r.GET("/api/v1/revrange/:start/:end", basemw, som.GetRevRangeHandler)
 	r.GET("/api/v1/testexpectations", protected, som.GetLayoutTestsHandler)
-	r.POST("/api/v1/testexpectation", protected, som.PostLayoutExpectationHandler)
+	r.POST("/api/v1/testexpectation", protected, som.PostLayoutTestExpectationChangeHandler)
 	r.GET("/logos/:tree", protected, som.GetTreeLogoHandler)
 	r.GET("/alertdiff/:tree", protected, som.GetMiloDiffHandler)
 	r.GET("/api/v1/logdiff/:tree", protected, som.LogDiffHandler)
@@ -213,6 +213,9 @@ func init() {
 	r.GET("/_cron/annotations/flush_old/", basemw, som.FlushOldAnnotationsHandler)
 	r.GET("/_cron/annotations/refresh/", basemw, som.RefreshAnnotationsHandler)
 	r.POST("/_/clientmon", basemw, som.PostClientMonHandler)
+
+	// TODO(seanmccullough): figure out how to move this handler to the analyzer backend.
+	r.POST("/_ah/queue/changetestexpectations", basemw, som.LayoutTestExpectationChangeWorker)
 
 	// Ingore reqeuests from builder-alerts rather than 404.
 	r.GET("/alerts", gaemiddleware.BaseProd(), noopHandler)

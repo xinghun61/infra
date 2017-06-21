@@ -29,8 +29,8 @@ func TestGerritClient(t *testing.T) {
 			Identity: "user:user@example.com",
 		}
 		c = auth.WithState(c, authState)
-
-		client, err := getGerritClient(c, testServer.URL)
+		c = withGerritInstance(c, testServer.URL)
+		client, err := getGerritClient(c)
 		So(err, ShouldBeNil)
 		So(client, ShouldNotBeNil)
 	})
@@ -75,7 +75,8 @@ func TestGerritClient(t *testing.T) {
 			}
 		})
 
-		client, err := getGerritClient(c, testServer.URL)
+		c = withGerritInstance(c, testServer.URL)
+		client, err := getGerritClient(c)
 		So(err, ShouldBeNil)
 
 		fileContents := map[string]string{

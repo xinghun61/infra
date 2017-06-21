@@ -5,12 +5,30 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/auth"
 
 	gerrit "github.com/andygrunwald/go-gerrit"
 )
 
-func getGerritClient(c context.Context, instanceURL string) (*gerrit.Client, error) {
+type gerritContextKeyType string
+
+const (
+	gerritContextKey = gerritContextKeyType("gerritInstance")
+)
+
+func withGerritInstance(c context.Context, instanceURL string) context.Context {
+	return context.WithValue(c, gerritContextKey, instanceURL)
+}
+
+func getGerritClient(c context.Context) (*gerrit.Client, error) {
+	instanceURL, ok := c.Value(gerritContextKey).(string)
+	if !ok {
+		// Use the default.
+		instanceURL = "https://chromium-review.googlesource.com"
+	}
+	logging.Infof(c, "using gerrit instance %q", instanceURL)
+
 	tr, err := auth.GetRPCTransport(c, auth.AsSelf,
 		auth.WithScopes("https://www.googleapis.com/auth/gerritcodereview"))
 	if err != nil {
