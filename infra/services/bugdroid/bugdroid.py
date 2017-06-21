@@ -14,64 +14,45 @@ import threading
 import time
 import urlparse
 
-import infra.services.bugdroid.branch_utils as branch_utils
-import infra.services.bugdroid.config_service as config_service
-import infra.services.bugdroid.gerrit_poller as gerrit_poller
-import infra.services.bugdroid.gitiles_poller as gitiles_poller
-import infra.services.bugdroid.IssueTrackerManager as IssueTrackerManager
-import infra.services.bugdroid.log_parser as log_parser
-import infra.services.bugdroid.poller_handlers as poller_handlers
-import infra.services.bugdroid.scm_helper as scm_helper
+from infra.services.bugdroid import branch_utils
+from infra.services.bugdroid import config_service
+from infra.services.bugdroid import gerrit_poller
+from infra.services.bugdroid import gitiles_poller
+from infra.services.bugdroid import log_parser
+from infra.services.bugdroid import monorail_client
+from infra.services.bugdroid import poller_handlers
+from infra.services.bugdroid import scm_helper
 
-
-# pylint: disable=C0301
-URL_TEMPLATES = {
-    'cr': 'http://src.chromium.org/viewvc/chrome?view=rev&revision=%d',
-    'cr_int': ('http://goto.ext.google.com/viewvc/'
-               'chrome-internal?view=rev&revision=%d'),
-    'nacl': 'http://src.chromium.org/viewvc/native_client?view=rev&revision=%d'
-    }
-
-PATH_URL_TEMPLATES = {
-    'viewvc': 'http://src.chromium.org/viewvc/%s%s?r1=%d&r2=%d&pathrev=%d',
-    'viewvc_int': 'http://goto.google.com/viewvc/%s%s?r1=%d&r2=%d&pathrev=%d'
-    }
-# pylint: enable=C0301
-
-CODESITE_PROJECTS = [
-    'brillo', 'chrome-os-partner',
-]
-
+import infra_libs.logs
 
 loggers = {}
 
 
 def GetLogger(logger_id):
   """Logging setup for pollers."""
-  # pylint: disable=global-variable-not-assigned
-  global loggers
-  if loggers.get(logger_id):
-    return loggers.get(logger_id)
-  else:
-    logger = logging.getLogger(logger_id)
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    sh = logging.StreamHandler()
-    sh.setLevel(logging.DEBUG)
-    sh.setFormatter(formatter)
-    logger.addHandler(sh)
-    loggers[logger_id] = logger
-    return logger
+
+  if logger_id in loggers:
+    return loggers[logger_id]
+
+  logger = logging.getLogger(logger_id)
+  infra_libs.logs.add_handler(logger)
+
+  # We need to include the logger ID (i.e. "%(name)s") in the formatter string.
+  logger.handlers[0].setFormatter(logging.Formatter(
+      '[%(severity)s%(iso8601)s %(process)d %(thread)d '
+      '%(fullModuleName)s:%(lineno)s] %(name)s - %(message)s'))
+  loggers[logger_id] = logger
+  return logger
 
 
-class BugdroidPollerHandler(poller_handlers.BasePollerHandler):
+class BugdroidGitPollerHandler(poller_handlers.BasePollerHandler):
   """Handler for updating bugs with information from commits."""
 
-  def __init__(self, bugdroid, default_project,
+  def __init__(self, monorail, logger, default_project,
                no_merge=None, public_bugs=True, test_mode=False,
                issues_labels=None, *args, **kwargs):
-    self.bugdroid = bugdroid
+    self.monorail_client = monorail
+    self.logger = logger
     self.default_project = default_project
     self.no_merge = no_merge or []
     self.public_bugs = public_bugs
@@ -80,39 +61,32 @@ class BugdroidPollerHandler(poller_handlers.BasePollerHandler):
       self.issues_labels = dict((p.key, p.value) for p in issues_labels)
     else:
       self.issues_labels = {}
-    super(BugdroidPollerHandler, self).__init__(*args, **kwargs)
-
-  def WarmUp(self):
-    try:
-      self.bugdroid.Reset(self.default_project)
-    except Exception:  # pylint: disable=W0703
-      self.logger.exception('Unhandled Exception')
+    super(BugdroidGitPollerHandler, self).__init__(*args, **kwargs)
 
   def _ApplyMergeMergedLabel(self, issue, branch):
     if not branch or not issue:
       return
 
     label = '%s-%s' % (self.issues_labels.get('merge', 'merge-merged'), branch)
-    issue.addLabel(label)
+    issue.add_label(label)
     if self.logger:
       self.logger.debug('Adding %s', label)
 
     label = self.issues_labels.get('approved', 'merge-approved')
-    if issue.hasLabel(label):
-      issue.removeLabel(label)
+    if issue.has_label(label):
+      issue.remove_label(label)
       if self.logger:
         self.logger.debug('Removing %s', label)
 
     mstone = branch_utils.get_mstone(branch, False)
     if mstone:
       label = 'merge-approved-%s' % mstone
-      if issue.hasLabel(label):
-        issue.removeLabel(label)
+      if issue.has_label(label):
+        issue.remove_label(label)
         if self.logger:
           self.logger.debug('Removing %s' % label)
 
   def ProcessLogEntry(self, log_entry):
-
     project_bugs = log_parser.get_issues(
         log_entry, default_project=self.default_project)
     if self.logger:
@@ -124,10 +98,9 @@ class BugdroidPollerHandler(poller_handlers.BasePollerHandler):
         self.logger.debug(comment)
 
       for project, bugs in project_bugs.iteritems():
-        itm = self.bugdroid.GetItm(project)
         for bug in bugs:
-          issue = itm.getIssue(bug)
-          issue.comment = comment[:24 * 1024]
+          issue = self.monorail_client.get_issue(project, bug)
+          issue.set_comment(comment[:24 * 1024])
           branch = scm_helper.GetBranch(log_entry)
           # Apply merge labels if this commit landed on a branch.
           if branch and not (log_entry.scm in ['git', 'gerrit'] and
@@ -137,14 +110,8 @@ class BugdroidPollerHandler(poller_handlers.BasePollerHandler):
           if self.logger:
             self.logger.debug('Attempting to save issue: %d' % issue.id)
           if not self.test_mode:
-            issue.save(log_parser.should_send_email(log_entry.msg))
-
-  def _CreateMessage(self, log_entry):  # pylint: disable=W0613,R0201
-    raise NotImplementedError
-
-
-class BugdroidGitPollerHandler(BugdroidPollerHandler):
-  """Handler for updating bugs with information from git commits."""
+            self.monorail_client.update_issue(
+                project, issue, log_parser.should_send_email(log_entry.msg))
 
   def _CreateMessage(self, log_entry):
     msg = ''
@@ -179,7 +146,6 @@ class Bugdroid(object):
 
   def __init__(self, configfile, credentials_db, run_once, datadir):
     self.pollers = []
-    self.trackers = {}
     self.credentials_db = credentials_db
     self.run_once = run_once
 
@@ -224,6 +190,7 @@ class Bugdroid(object):
       self.pollers.append(poller)
 
     logging.info('Git projects %s', git_projects)
+
     # 2. Generate gerrit pollers
     for config in configs.repos:
       t = config_service.decode_repo_type(config.repo_type)
@@ -232,27 +199,8 @@ class Bugdroid(object):
       poller = self.InitPoller(config.repo_name, config, git_projects)
       self.pollers.append(poller)
 
-  def Reset(self, project_name=None):
-    if project_name:
-      if project_name in self.trackers:
-        del self.trackers[project_name]
-    else:
-      self.trackers.clear()
-
-  def GetItm(self, project, use_cache=True):
-    """Get (or create) the IssueTrackerManager for the given project."""
-    # Lazy load all of the trackers (so nothing gets specified up front)
-    if not use_cache or project not in self.trackers:
-      if project in CODESITE_PROJECTS:
-        itm = IssueTrackerManager.IssueTrackerManager(
-            client_id=None, client_secret=None,
-            project_name=project, credential_store=self.credentials_db)
-      else:
-        itm = IssueTrackerManager.MonorailIssueTrackerManager(
-            client_id=None, client_secret=None,
-            project_name=project, credential_store=self.credentials_db)
-      self.trackers[project] = itm
-    return self.trackers[project]
+    # 3. Create Monorail client.
+    self.monorail_client = monorail_client.MonorailClient(self.credentials_db)
 
   def InitPoller(self, name, config, git_projects=None):
     """Create a repository poller based on the given config."""
@@ -262,6 +210,7 @@ class Bugdroid(object):
     interval_minutes = 1
     default_project = config.default_project
     logger = GetLogger(name)
+
     if t == 'git':
       poller = gitiles_poller.GitilesPoller(
           config.repo_url,
@@ -273,15 +222,6 @@ class Bugdroid(object):
           logger=logger,
           run_once=self.run_once,
           datadir=self.datadir)
-
-      h = BugdroidGitPollerHandler(
-          bugdroid=self,
-          default_project=default_project,
-          public_bugs=config.public_bugs,
-          test_mode=config.test_mode,
-          issues_labels=config.issues_labels,
-          no_merge=config.no_merge_refs)
-      poller.add_handler(h)
     elif t == 'gerrit':
       poller = gerrit_poller.GerritPoller(
           config.repo_url,
@@ -291,22 +231,20 @@ class Bugdroid(object):
           run_once=self.run_once,
           datadir=self.datadir,
           git_projects=git_projects)
-
-      h = BugdroidGitPollerHandler(
-          bugdroid=self,
-          default_project=default_project,
-          public_bugs=config.public_bugs,
-          test_mode=config.test_mode,
-          issues_labels=config.issues_labels,
-          no_merge=config.no_merge_refs)
-      poller.add_handler(h)
-
     else:
       logging.error('Unknown poller type: %s', t)
+      return None
 
-    if poller:
-      poller.saved_config = config
-      poller.daemon = True
+    poller.add_handler(BugdroidGitPollerHandler(
+        monorail=self.monorail_client,
+        logger=logger,
+        default_project=default_project,
+        public_bugs=config.public_bugs,
+        test_mode=config.test_mode,
+        issues_labels=config.issues_labels,
+        no_merge=config.no_merge_refs))
+    poller.saved_config = config
+    poller.daemon = True
     return poller
 
   def Execute(self):

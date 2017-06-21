@@ -29,10 +29,10 @@ def get_repos(credentials_db, configfile=None):
       logging.info('Read repo configs from local file %s', configfile)
       with open(configfile, 'r') as f:
         content_text = f.read()
-      
+
     else:
       logging.info('Read repo configs from luci-config.')
-      with open(credentials_db) as data_file:    
+      with open(credentials_db) as data_file:
         creds_data = json.load(data_file)
       credentials = OAuth2Credentials(
           None, creds_data['client_id'], creds_data['client_secret'],

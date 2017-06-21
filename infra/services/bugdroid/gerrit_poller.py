@@ -147,10 +147,6 @@ class GerritPoller(Poller):
       f.write(self.gerrit.GenerateTimeStamp(timestamp))
     self.__last_seen = timestamp
 
-  def _WarmUpHandlers(self):
-    for handler in self.handlers:
-      handler.WarmUp()
-
   def _ProcessGitLogEntry(self, log_entry):
     if log_entry.ignored:
       self.logger.debug('Not processing ignored commit %s.', log_entry.commit)
@@ -172,16 +168,12 @@ class GerritPoller(Poller):
         continue
 
   def add_handler(self, handler):
-    if isinstance(handler, poller_handlers.BasePollerHandler):
-      self.handlers.append(handler)
-      handler.logger = self.logger
-    else:
-      self.logger.error('%s doesn\'t accept handlers of type %s',
-                        self.__class__.__name__, type(handler))
+    if not isinstance(handler, poller_handlers.BasePollerHandler):
+      raise TypeError('%s doesn\'t accept handlers of type %s' %
+                      self.__class__.__name__, type(handler))
+    self.handlers.append(handler)
 
   def execute(self):
-    self._WarmUpHandlers()
-
     extra_fields = ['CURRENT_COMMIT', 'CURRENT_REVISION']
     if self.with_paths:
       extra_fields.append('CURRENT_FILES')
