@@ -12,6 +12,7 @@ from analysis.uma_sampling_profiler_data import UMASamplingProfilerData
 from common.findit import Findit
 from common.model.uma_sampling_profiler_analysis import (
     UMASamplingProfilerAnalysis)
+from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
 
 
 # TODO(cweakliam): This is currently just a skeleton. Implementation will come
@@ -55,4 +56,5 @@ class PredatorForUMASamplingProfiler(Findit):
 
   def GetCrashData(self, raw_regression_data):
     """Gets ``UMASamplingProfilerData`` from ``raw_regression_data``."""
-    return UMASamplingProfilerData(raw_regression_data)
+    return UMASamplingProfilerData(
+        raw_regression_data, ChromeDependencyFetcher(self._get_repository))
