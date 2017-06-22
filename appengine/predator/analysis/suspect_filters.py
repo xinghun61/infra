@@ -2,7 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import math
+
+from decorators import cached_property
+
+_CHROMIUM_REPO = 'https://chromium.googlesource.com/chromium/src/'
+_HYPER_BLAME_IGNORE_REVISIONS_PATH = '.git-blame-ignore-revs'
 
 
 class SuspectFilter(object):
@@ -57,3 +63,41 @@ class FilterLessLikelySuspects(SuspectFilter):
       filtered_suspects.append(suspect)
 
     return filtered_suspects
+
+
+class FilterIgnoredRevisions(SuspectFilter):
+  """Filters revisions in an ignore revision list.
+
+  If there is no ignore list provided, defaults the list to git-hyper-blame
+  ignore list.
+  """
+  def __init__(self, git_repository,
+               repo_url=_CHROMIUM_REPO,
+               ignore_list_path=_HYPER_BLAME_IGNORE_REVISIONS_PATH):
+    self._repository = git_repository(repo_url)
+    self._ignore_list_path = ignore_list_path
+
+  @cached_property
+  def ignore_revisions(self):
+    """Gets a set of ignored revisions."""
+    # Get the latest ignore list in master branch.
+    content = self._repository.GetSource(self._ignore_list_path, 'master')
+    if not content:
+      logging.warning('Failed to download ignore list %s from %s',
+                      self._ignore_list_path, self._repository.repo_url)
+      return None
+
+    # Skip comment lines and empty lines.
+    revisions = set()
+    for line in content.splitlines():
+      if not line or line.startswith('#'):
+        continue
+
+      revisions.add(line.strip())
+
+    return revisions
+
+  def __call__(self, suspects):
+    """Filters all suspects that are in ignored revisions"""
+    return [suspect for suspect in suspects if suspect.changelog.revision
+            not in (self.ignore_revisions or set())]

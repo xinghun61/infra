@@ -1,4 +1,4 @@
-# Copyright 2016 The Chromium Authors. All rights reserved.
+# Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -7,8 +7,23 @@ from analysis.analysis_testcase import AnalysisTestCase
 from analysis.suspect import Suspect
 
 
-class SuspectFiltersTest(AnalysisTestCase):
-  """Tests ``SuspectFilters`` classes."""
+def _MockGitRepository(ignore_revisions=None, ignore_text=None):
+
+  class GitRepository(object):
+    def __init__(self, repo_url):
+      self.repo_url = repo_url
+
+    def GetSource(self, *_):
+      if ignore_text:
+        return ignore_text
+
+      return '\n'.join(ignore_revisions) if ignore_revisions else ''
+
+  return GitRepository
+
+
+class FilterLessLikelySuspectsTest(AnalysisTestCase):
+  """Tests ``FilterLessLikelySuspects`` class."""
 
   def testFilterLessLikelySuspectsRaiseValueError(self):
     """Tests ``FilterLessLikelySuspects`` raise ValueError if negative ratio."""
@@ -16,7 +31,7 @@ class SuspectFiltersTest(AnalysisTestCase):
       suspect_filters.FilterLessLikelySuspects(-3)
 
   def testFilterLessLikelySuspects(self):
-    """Tests ``FilterLessLikelySuspects`` method."""
+    """Tests ``FilterLessLikelySuspects`` filter."""
     suspect1 = Suspect(self.GetDummyChangeLog(), 'src/')
     suspect2 = Suspect(self.GetDummyChangeLog(), 'src/')
     suspect3 = Suspect(self.GetDummyChangeLog(), 'src/')
@@ -33,3 +48,47 @@ class SuspectFiltersTest(AnalysisTestCase):
         suspect_filters.FilterLessLikelySuspects(0.5)([suspect1, suspect2,
                                                        suspect3]),
         [suspect1, suspect2])
+
+
+class FilterIgnoredRevisionsTest(AnalysisTestCase):
+  """Tests ``FilterIgnoredRevisions`` class."""
+
+  def testIgnoredRevisionsProperty(self):
+    """Tests ``ignore_revisions`` property."""
+    ignore_revisions = set(['rev1', 'rev2', 'rev3'])
+    suspect_filter = suspect_filters.FilterIgnoredRevisions(
+        _MockGitRepository(ignore_revisions=ignore_revisions))
+
+    self.assertSetEqual(suspect_filter.ignore_revisions, ignore_revisions)
+
+  def testIgnoredRevisionsPropertySkipCommentLines(self):
+    """Tests that ``ignore_revisions`` property skips commend lines."""
+    ignore_text = '# comment1\nrev1\n# comment2\nrev2'
+    suspect_filter = suspect_filters.FilterIgnoredRevisions(
+        _MockGitRepository(ignore_text=ignore_text))
+
+    self.assertSetEqual(suspect_filter.ignore_revisions, set(['rev1', 'rev2']))
+
+  def testIgnoredRevisionsPropertyReturnsNoneIfThereIsNoIgnoreList(self):
+    """Tests ``ignore_revisions`` property returns None if no ignore list."""
+    suspect_filter = suspect_filters.FilterIgnoredRevisions(
+        _MockGitRepository(ignore_revisions=None))
+
+    self.assertIsNone(suspect_filter.ignore_revisions)
+
+  def testCall(self):
+    """Tests ``__call__`` of the filter."""
+    suspect1 = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect2 = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect3 = Suspect(self.GetDummyChangeLog(), 'src/')
+
+    suspect1.changelog = suspect1.changelog._replace(revision='rev1')
+    suspect2.changelog = suspect2.changelog._replace(revision='rev2')
+    suspect3.changelog = suspect3.changelog._replace(revision='rev3')
+
+    ignore_revisions = set(['rev1', 'rev2'])
+    suspect_filter = suspect_filters.FilterIgnoredRevisions(
+        _MockGitRepository(ignore_revisions=ignore_revisions))
+
+    self.assertSetEqual(set(suspect_filter([suspect1, suspect2, suspect3])),
+                        set([suspect3]))
