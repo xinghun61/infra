@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
+
 from libs.base_testcase import BaseTestCase
 from libs.gitiles.change_log import ChangeLog
 
@@ -58,7 +60,7 @@ class AnalysisTestCase(BaseTestCase):  #pragma: no cover.
     map(self._VerifyTwoCallStacksEqual, trace1.stacks, trace2.stacks)
 
   def GetDummyChangeLog(self):
-    return DUMMY_CHANGELOG
+    return copy.deepcopy(DUMMY_CHANGELOG)
 
   def GetDummyClusterfuzzData(
       self, client_id='mock_client', version='1', signature='signature',

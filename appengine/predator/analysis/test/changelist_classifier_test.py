@@ -217,25 +217,19 @@ class ChangelistClassifierTest(AppengineTestCase):
                                                        [suspect])
     self.assertEqual(suspects[0].ToDict(), suspect.ToDict())
 
-  def testSortAndFilterSuspects(self):
+  def testFilterSuspects(self):
     """Tests ``SortAndFilterSuspects`` method."""
     suspect1 = Suspect(DUMMY_CHANGELOG1, 'src/')
     suspect2 = Suspect(DUMMY_CHANGELOG1, 'src/')
-    suspect3 = Suspect(DUMMY_CHANGELOG1, 'src/')
 
-    suspect1.confidence = 2
+    def MockFilter(suspects):
+      return suspects[:1]
+
     self.assertListEqual(
-        self.changelist_classifier.SortAndFilterSuspects([suspect1]),
+        self.changelist_classifier._FilterSuspects([suspect1], [MockFilter]),
         [suspect1])
 
-    suspect2.confidence = 2
     self.assertListEqual(
-        self.changelist_classifier.SortAndFilterSuspects([suspect1, suspect2]),
-        [])
-
-    suspect2.confidence = 1.8
-    suspect3.confidence = 1.0
-    self.assertListEqual(
-        self.changelist_classifier.SortAndFilterSuspects([suspect1, suspect2,
-                                                          suspect3]),
-        [suspect1, suspect2])
+        self.changelist_classifier._FilterSuspects([suspect1, suspect2],
+                                                   [MockFilter]),
+        [suspect1])

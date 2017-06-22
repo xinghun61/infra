@@ -2,27 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from collections import defaultdict
 import logging
-import math
 
-from analysis.crash_report import CrashReport
 from analysis.linear.model import UnnormalizedLogLinearModel
 from analysis.suspect import Suspect
-from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
+from analysis.suspect_filters import FilterLessLikelySuspects
 
-# The ratio of the probabilities of 2 suspects equal to
-# exp(suspect1.confidence)/exp(suspect2.confidence), so
-# suspect1.confidence - suspect2.confidence <= log(0.5) means the
-# suspect1 is half likely than suspect2.
-_THRESHOLD_RATIO = math.log(0.5)
+# The ratio of the probabilities of 2 suspects.
+_PROBABILITY_RATIO = 0.5
 
 
 class ChangelistClassifier(object):
   """A ``LogLinearModel``-based implementation of CL classification."""
 
-  def __init__(self, get_repository, meta_feature, meta_weight,
-               top_n_frames=7, top_n_suspects=3):
+  def __init__(self, get_repository, meta_feature, meta_weight):
     """
     Args:
       get_repository (callable): a function from DEP urls to ``Repository``
@@ -37,14 +30,20 @@ class ChangelistClassifier(object):
         The keys of the dictionary are the names of the feature that weight is
         for. We take this argument as a dict rather than as a list so that
         callers needn't worry about what order to provide the weights in.
-      top_n_frames (int): how many frames of each callstack to look at.
-      top_n_suspects (int): maximum number of suspects to return.
     """
-    self._dependency_fetcher = ChromeDependencyFetcher(get_repository)
     self._get_repository = get_repository
-    self._top_n_frames = top_n_frames
-    self._top_n_suspects = top_n_suspects
     self._model = UnnormalizedLogLinearModel(meta_feature, meta_weight)
+    # Filters that apply to suspects before computing features and ranking
+    # scores.
+    self._before_ranking_filters = []
+    # Filters that apply to suspects after computing features and ranking
+    # scores, which need to use information got from features like
+    # ``confidence``.
+    #
+    # ``FilterLessLikelySuspects`` filters all suspects which has less
+    # probability than _PROBABILITY_RATIO times probability of the most likely
+    # suspect.
+    self._after_ranking_filters = [FilterLessLikelySuspects(_PROBABILITY_RATIO)]
 
   def __call__(self, report):
     """Finds changelists suspected of being responsible for the crash report.
@@ -64,7 +63,7 @@ class ChangelistClassifier(object):
     if len(suspects) == 1:
       return suspects
 
-    return self.RankSuspects(report, suspects)
+    return self.FindSuspects(report, suspects)
 
   def GenerateSuspects(self, report):
     """Generate all possible suspects for the reported crash.
@@ -107,8 +106,8 @@ class ChangelistClassifier(object):
   def RankSuspects(self, report, suspects):
     """Returns a lineup of the suspects in order of likelihood.
 
-    Suspects with a discardable score or lower ranking than top_n_suspects
-    will be filtered.
+    Computes features, so as to get confidence and reasons for each suspect and
+    returns a sorted list of suspects ranked by likelihood.
 
     Args:
       report (CrashReport): the crash we seek to explain.
@@ -143,29 +142,22 @@ class ChangelistClassifier(object):
                                for changed_file in features.changed_files]
       scored_suspects.append(suspect)
 
-    return self.SortAndFilterSuspects(scored_suspects)
+    scored_suspects.sort(key=lambda suspect: -suspect.confidence)
+    return scored_suspects
 
-  def SortAndFilterSuspects(self, suspects):
-    """Sorts and Filter suspects by probability ratio."""
-    if not suspects or len(suspects) == 1:
+  @staticmethod
+  def _FilterSuspects(suspects, suspect_filters):
+    """Filters suspects using ``suspect_filters``."""
+    if not suspects or len(suspects) == 1 or not suspect_filters:
       return suspects
 
-    suspects.sort(key=lambda suspect: -suspect.confidence)
-    max_score = suspects[0].confidence
-    min_score = max(suspects[-1].confidence, 0.0)
-    if max_score == min_score:
-      return []
+    for suspect_filter in suspect_filters:
+      suspects = suspect_filter(suspects)
 
-    filtered_suspects = []
-    for suspect in suspects:  # pragma: no cover
-      # The ratio of the probabilities of 2 suspects equal to
-      # exp(suspect1.confidence)/exp(suspect2.confidence), so
-      # suspect1.confidence - suspect2.confidence <= log(0.5) means the
-      # suspect1 is half likely than suspect2.
-      if (suspect.confidence <= min_score or
-          suspect.confidence - max_score <= _THRESHOLD_RATIO):
-        break
+    return suspects
 
-      filtered_suspects.append(suspect)
-
-    return filtered_suspects
+  def FindSuspects(self, report, suspects):
+    """Finds a list of ``Suspect``s for potential suspects."""
+    suspects = self._FilterSuspects(suspects, self._before_ranking_filters)
+    suspects = self.RankSuspects(report, suspects)
+    return self._FilterSuspects(suspects, self._after_ranking_filters)
