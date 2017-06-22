@@ -146,6 +146,8 @@ class GerritPoller(Poller):
   def _ProcessGitLogEntry(self, log_entry):
     if log_entry.ignored:
       self.logger.debug('Not processing ignored commit %s.', log_entry.commit)
+      self.commits_metric.increment(
+          {'poller': 'gerrit', 'project': self.poller_id, 'status': 'ignored'})
       return
     for handler in self.handlers:
       try:
@@ -153,12 +155,18 @@ class GerritPoller(Poller):
       except Exception as e:
         # Log it here so that we see where it's breaking.
         self.logger.exception('Uncaught Exception in %s', handler)
+        self.commits_metric.increment(
+            {'poller': 'gerrit', 'project': self.poller_id, 'status': 'error'})
         # Some handlers aren't that important, but other ones should always
         # succeed, and should abort processing if they don't.
         if handler.must_succeed:
           raise e
         self.logger.info('Handler is not fatal. Continuing.')
         continue
+      else:
+        self.commits_metric.increment(
+            {'poller': 'gerrit', 'project': self.poller_id,
+             'status': 'success'})
 
   def add_handler(self, handler):
     if not isinstance(handler, poller_handlers.BasePollerHandler):
@@ -181,8 +189,8 @@ class GerritPoller(Poller):
     # TODO(mmoss): Does this need with_diffs handling?
     # Find commits since the last_seen time.
     entries, more = self.gerrit.GetLogEntries(since=start_since,
-                                                limit=max_changes,
-                                                fields=extra_fields)
+                                              limit=max_changes,
+                                              fields=extra_fields)
     self.logger.debug('Found %s commits since %s.', len(entries), start_since)
     if more:
       self.logger.warning('Not processing all commits since %s '
@@ -195,6 +203,8 @@ class GerritPoller(Poller):
       if self.seen_bitmap.CheckBit(entry.number):
         self.logger.debug('Rejecting %s (%s), which was previously seen.',
                           entry.commit, entry.number)
+        self.commits_metric.increment(
+            {'poller': 'gerrit', 'project': self.poller_id, 'status': 'seen'})
         continue
       # There seems to be some bug in gerrit's "since" param handling, where it
       # sometimes returns changes older than "since" (.5 seconds or more too
@@ -204,6 +214,8 @@ class GerritPoller(Poller):
         self.logger.debug('Rejecting %s, not newer than requested "since". '
                           '(%s < %s)' % (entry.commit, entry.update_datetime,
                                          start_since))
+        self.commits_metric.increment(
+            {'poller': 'gerrit', 'project': self.poller_id, 'status': 'old'})
         continue
       try:
         self._ProcessGitLogEntry(entry)

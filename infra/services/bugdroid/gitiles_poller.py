@@ -25,8 +25,8 @@ import logging
 import os
 import sys
 
-import infra.services.bugdroid.gob_helper as gob_helper
-import infra.services.bugdroid.poller_handlers as poller_handlers
+from infra.services.bugdroid import gob_helper
+from infra.services.bugdroid import poller_handlers
 from infra.services.bugdroid.poll import Poller
 
 
@@ -166,6 +166,8 @@ class GitilesPoller(Poller):
     self.logger.debug('Received git log entry\n%s' % log_entry.msg)
     if log_entry.ignored:
       self.logger.debug('Not processing ignored commit %s.', log_entry.commit)
+      self.commits_metric.increment(
+          {'poller': 'gitiles', 'project': self.poller_id, 'status': 'ignored'})
       return
     for handler in self.handlers:
       try:
@@ -173,12 +175,18 @@ class GitilesPoller(Poller):
       except Exception as e:
         # Log it here so that we see where it's breaking.
         self.logger.exception('Uncaught Exception in %s', handler)
+        self.commits_metric.increment(
+            {'poller': 'gitiles', 'project': self.poller_id, 'status': 'error'})
         # Some handlers aren't that important, but other ones should always
         # succeed, and should abort processing if they don't.
         if handler.must_succeed:
           raise e
         self.logger.info('Handler is not fatal. Continuing.')
         continue
+      else:
+        self.commits_metric.increment(
+            {'poller': 'gitiles', 'project': self.poller_id,
+             'status': 'success'})
 
   def _ProcessRefs(self, refs, filter_refs=None, store_only=False):
     """Detect changes to watched branches and process new commits.

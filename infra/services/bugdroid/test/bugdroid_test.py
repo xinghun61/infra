@@ -10,6 +10,7 @@ from infra.services.bugdroid import bugdroid
 from infra.services.bugdroid import gob_helper
 from infra.services.bugdroid import monorail_client
 from infra.services.bugdroid.proto import repo_config_pb2
+from infra_libs import ts_mon
 
 
 class BugdroidGitPollerHandlerTest(unittest.TestCase):
@@ -18,6 +19,7 @@ class BugdroidGitPollerHandlerTest(unittest.TestCase):
         monorail_client.MonorailClient, spec_set=True, instance=True)
     self.logger = mock.create_autospec(
         logging.Logger, spec_set=True, instance=True)
+    ts_mon.reset_for_unittest()
 
   def _make_handler(self, **kwargs):
     kwargs.setdefault('monorail', self.monorail_client)
@@ -74,6 +76,26 @@ class BugdroidGitPollerHandlerTest(unittest.TestCase):
         '[modify] https://crrev.com/abcdef/modified/file\n'
         '[add] https://crrev.com/abcdef/added/file\n'
         '[delete] https://crrev.com/123456/deleted/file\n', issue.comment)
+    self.assertEqual(1,
+        bugdroid.BugdroidGitPollerHandler.bug_comments_metric.get(
+            {'project': 'foo', 'status': 'success'}))
+
+  def test_process_log_entry_update_failure(self):
+    handler = self._make_handler()
+
+    class MyException(Exception):
+      pass
+
+    issue = monorail_client.Issue(1234, [])
+    self.monorail_client.get_issue.return_value = issue
+    self.monorail_client.update_issue.side_effect = MyException
+
+    with self.assertRaises(MyException):
+      handler.ProcessLogEntry(self._make_commit('Message\nBug: 1234'))
+
+    self.assertEqual(1,
+        bugdroid.BugdroidGitPollerHandler.bug_comments_metric.get(
+            {'project': 'foo', 'status': 'failure'}))
 
   def test_process_log_entry_specified_project(self):
     handler = self._make_handler()

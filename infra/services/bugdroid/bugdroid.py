@@ -24,6 +24,7 @@ from infra.services.bugdroid import poller_handlers
 from infra.services.bugdroid import scm_helper
 
 import infra_libs.logs
+from infra_libs import ts_mon
 
 loggers = {}
 
@@ -47,6 +48,12 @@ def GetLogger(logger_id):
 
 class BugdroidGitPollerHandler(poller_handlers.BasePollerHandler):
   """Handler for updating bugs with information from commits."""
+
+  bug_comments_metric = ts_mon.CounterMetric(
+      'bugdroid/bug_comments',
+      'Counter of comments added to bugs',
+      [ts_mon.StringField('project'),
+       ts_mon.StringField('status')])
 
   def __init__(self, monorail, logger, default_project,
                no_merge=None, public_bugs=True, test_mode=False,
@@ -99,19 +106,27 @@ class BugdroidGitPollerHandler(poller_handlers.BasePollerHandler):
 
       for project, bugs in project_bugs.iteritems():
         for bug in bugs:
-          issue = self.monorail_client.get_issue(project, bug)
-          issue.set_comment(comment[:24 * 1024])
-          branch = scm_helper.GetBranch(log_entry)
-          # Apply merge labels if this commit landed on a branch.
-          if branch and not (log_entry.scm in ['git', 'gerrit'] and
-                             scm_helper.GetBranch(log_entry, full=True) in
-                             self.no_merge):
-            self._ApplyMergeMergedLabel(issue, branch)
-          if self.logger:
-            self.logger.debug('Attempting to save issue: %d' % issue.id)
-          if not self.test_mode:
-            self.monorail_client.update_issue(
-                project, issue, log_parser.should_send_email(log_entry.msg))
+          try:
+            issue = self.monorail_client.get_issue(project, bug)
+            issue.set_comment(comment[:24 * 1024])
+            branch = scm_helper.GetBranch(log_entry)
+            # Apply merge labels if this commit landed on a branch.
+            if branch and not (log_entry.scm in ['git', 'gerrit'] and
+                               scm_helper.GetBranch(log_entry, full=True) in
+                               self.no_merge):
+              self._ApplyMergeMergedLabel(issue, branch)
+            if self.logger:
+              self.logger.debug('Attempting to save issue: %d' % issue.id)
+            if not self.test_mode:
+              self.monorail_client.update_issue(
+                  project, issue, log_parser.should_send_email(log_entry.msg))
+          except Exception:
+            self.bug_comments_metric.increment(
+                {'project': project, 'status': 'failure'})
+            raise
+          else:
+            self.bug_comments_metric.increment(
+                {'project': project, 'status': 'success'})
 
   def _CreateMessage(self, log_entry):
     msg = ''

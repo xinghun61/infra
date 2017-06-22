@@ -2,4 +2,4 @@
 include = ./infra/services/bugdroid/*
 
 [expect_tests]
-expected_coverage_min = 38
+expected_coverage_min = 60
