@@ -1,0 +1,105 @@
+<link rel="import" href="/../bower_components/polymer/polymer.html">
+<link rel="import" href="/../bower_components/iron-ajax/iron-ajax.html">
+
+<dom-module id="tree-status">
+  <template>
+    <style>
+      .closed {
+        background-color: #E98080;
+      }
+      .open {
+        background-color: #8FDF5F;
+      }
+      .tree-banner {
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+        color: #222;
+        margin: 0.5em auto;
+        padding: 0.5em 8px;
+        width: 100%;
+      }
+    </style>
+    <iron-ajax
+        id="treeStatusAjax"
+        url="https://infra-status.appspot.com/current?format=json"
+        method="GET"
+        handle-as="json"
+        last-error="{{_statusErrorJson}}"
+        last-response="{{_statusJson}}"
+        debounce-duration="300"></iron-ajax>
+    <div class="tree-banner" hidden$="[[!_hasError]]">
+      Error fetching tree status
+    </div>
+    <div class$="tree-banner [[_status]]" hidden$="[[_hasError]]">
+      [[_statusInfo]]: <a href="https://infra-status.appspot.com">[[_message]]</a>
+    </div>
+  </template>
+  <script>
+    (function() {
+      'use strict';
+
+      class TreeStatus extends Polymer.Element {
+        static get is() { return 'tree-status'; }
+
+        ready() {
+          super.ready();
+          this.$.treeStatusAjax.generateRequest();
+        }
+        static get properties() {
+          return {
+            _message: {
+              type: String,
+              computed: '_computeMessage(_statusJson)',
+            },
+
+            _status: {
+              type: String,
+              computed: '_computeStatus(_statusJson)',
+            },
+
+            _statusInfo: {
+              type: String,
+              computed: '_computeStatusInfo(_statusJson)',
+            },
+
+            _hasError: {
+              type: Boolean,
+              computed: '_computeHasError(_statusErrorJson)',
+              value: false,
+            },
+
+            _statusErrorJson: {
+              type: Object,
+            },
+
+            _statusJson: {
+              type: Object,
+            },
+          }
+        }
+        _computeMessage(json) {
+          return json.message ? json.message : 'Unknown';
+        }
+
+        _computeStatusInfo(json) {
+          if (!json) {
+            return 'No json'
+          }
+          let state = json.general_state ? json.general_state : 'Unknown';
+          let username = json.username ? json.username : 'Unknown';
+          let date = json.date ? json.date : 'Unknown';
+          return `Tree is ${state}. ${date} ${username}`;
+        }
+
+        _computeStatus(json) {
+          return (json && json.general_state) ? json.general_state : 'Unknown';
+        }
+
+        _computeHasError(json) {
+          return !!json;
+        }
+      }
+      customElements.define(TreeStatus.is, TreeStatus);
+    })();
+  </script>
+</dom-module>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<title>treeStatusTest</title>
+<meta charset="utf-8">
+<link rel="import" href="/../bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/../elements/tree-status.html">
+<script src="/../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/../bower_components/web-component-tester/browser.js"></script>
+
+<test-fixture id="status">
+  <template>
+    <tree-status></tree-status>
+  </template>
+</test-fixture>
+
+<script>
+  (function() {
+    'use strict';
+
+    suite('tree-status', function() {
+      let element;
+      let server;
+      const responseHeaders = {
+          json: {'Content-Type': 'application/json'}
+      };
+      setup(function() {
+        element = fixture('status');
+        server = sinon.fakeServer.create();
+      });
+      teardown(function() {
+        server.restore();
+      });
+
+      test('test open', function(done) {
+        server.respondWith(
+          'GET',
+          'https://infra-status.appspot.com/current?format=json', [
+            200,
+            responseHeaders.json,
+           '{"general_state": "open", "username": "test@gmail.com", ' +
+               '"message": "test open", "date": "day"}',
+          ]
+        );
+
+        element.$.treeStatusAjax.generateRequest();
+        server.respond();
+
+        flush(function () {
+          assert.equal("test open", element._message);
+          assert.equal("open", element._status);
+          assert.equal(
+              "Tree is open. day test@gmail.com", element._statusInfo);
+          assert.equal(false, element._hasError);
+          done();
+        });
+      });
+
+      test('test closed', function(done) {
+        server.respondWith(
+          'GET',
+          'https://infra-status.appspot.com/current?format=json', [
+            200,
+            responseHeaders.json,
+            '{"general_state": "closed", ' +
+                '"message": "test closed", "date": "day"}',
+          ]
+        );
+
+        element.$.treeStatusAjax.generateRequest();
+        server.respond();
+
+        flush(function () {
+          assert.equal("test closed", element._message);
+          assert.equal("closed", element._status);
+          assert.equal("Tree is closed. day Unknown", element._statusInfo);
+          assert.equal(false, element._hasError);
+          done();
+        });
+      });
+    });
+  })();
+</script>
