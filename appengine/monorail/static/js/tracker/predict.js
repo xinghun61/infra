@@ -59,6 +59,10 @@
     if (!componentsEl) {
       componentsEl = document.getElementById('componentedit');
     }
+    // No permission to edit or specify components, nothing to suggest.
+    if (!componentsEl) {
+      return;
+    }
 
     if (!suggestionsEl) {
       suggestionsEl = document.createElement('div');
