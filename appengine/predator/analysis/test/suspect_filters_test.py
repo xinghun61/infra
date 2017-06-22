@@ -92,3 +92,37 @@ class FilterIgnoredRevisionsTest(AnalysisTestCase):
 
     self.assertSetEqual(set(suspect_filter([suspect1, suspect2, suspect3])),
                         set([suspect3]))
+
+
+class FilterSuspectFromRobotAuthorTest(AnalysisTestCase):
+  """Tests ``FilterSuspectFromRobotAuthor`` class."""
+
+  def testIsSuspectFromRobotAuthorReturnFalse(self):
+    """Tests that ``_IsSuspectFromRobotAuthor`` method returns False."""
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect_filter = suspect_filters.FilterSuspectFromRobotAuthor()
+    self.assertFalse(suspect_filter._IsSuspectFromRobotAuthor(suspect))
+
+  def testIsSuspectFromRobotAuthor(self):
+    """Tests that ``_IsSuspectFromRobotAuthor`` method returns True."""
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
+    robot_author = suspect.changelog.author._replace(
+        email='v8-deps-roller@chromium.org')
+    robot_cl = suspect.changelog._replace(author=robot_author)
+    suspect.changelog = robot_cl
+
+    suspect_filter = suspect_filters.FilterSuspectFromRobotAuthor()
+    self.assertTrue(suspect_filter._IsSuspectFromRobotAuthor(suspect))
+
+  def testCall(self):
+    """Tests ``__call__`` method."""
+    suspect1 = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect2 = Suspect(self.GetDummyChangeLog(), 'src/')
+    robot_author = suspect2.changelog.author._replace(
+        email='v8-deps-roller@chromium.org')
+    robot_cl = suspect2.changelog._replace(author=robot_author)
+    suspect2.changelog = robot_cl
+
+    suspect_filter = suspect_filters.FilterSuspectFromRobotAuthor()
+    self.assertListEqual(suspect_filter([suspect1, suspect2]),
+                         [suspect1])

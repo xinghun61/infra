@@ -4,11 +4,15 @@
 
 import logging
 import math
+import re
 
 from decorators import cached_property
 
 _CHROMIUM_REPO = 'https://chromium.googlesource.com/chromium/src/'
 _HYPER_BLAME_IGNORE_REVISIONS_PATH = '.git-blame-ignore-revs'
+
+_ROBOT_AUTHOR_REGEXS = [re.compile(r'.*-deps-roller@chromium.org'),
+                        re.compile(r'blink-reformat@chromium.org')]
 
 
 class SuspectFilter(object):
@@ -101,3 +105,28 @@ class FilterIgnoredRevisions(SuspectFilter):
     """Filters all suspects that are in ignored revisions"""
     return [suspect for suspect in suspects if suspect.changelog.revision
             not in (self.ignore_revisions or set())]
+
+
+class FilterSuspectFromRobotAuthor(SuspectFilter):
+  """Filters those generated cls from robot author.
+
+  For example, dep rolls change from .*-deps-roller@chromium.org or blink
+  reformat cls.
+  """
+
+  def __init__(self, robot_author_regexs=None):
+    self._robot_author_regexs = robot_author_regexs or _ROBOT_AUTHOR_REGEXS
+
+  def _IsSuspectFromRobotAuthor(self, suspect):
+    """Checks if the suspect comes from robot author."""
+    author = suspect.changelog.author
+    for robot_author_regex in self._robot_author_regexs:
+      if robot_author_regex.match(author.email):
+        return True
+
+    return False
+
+  def __call__(self, suspects):
+    """Filters all suspects that are from robot authors."""
+    return [suspect for suspect in suspects
+            if not self._IsSuspectFromRobotAuthor(suspect)]

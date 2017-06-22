@@ -8,6 +8,7 @@ from analysis.linear.model import UnnormalizedLogLinearModel
 from analysis.suspect import Suspect
 from analysis.suspect_filters import FilterIgnoredRevisions
 from analysis.suspect_filters import FilterLessLikelySuspects
+from analysis.suspect_filters import FilterSuspectFromRobotAuthor
 
 # The ratio of the probabilities of 2 suspects.
 _PROBABILITY_RATIO = 0.5
@@ -36,7 +37,8 @@ class ChangelistClassifier(object):
     self._model = UnnormalizedLogLinearModel(meta_feature, meta_weight)
     # Filters that apply to suspects before computing features and ranking
     # scores.
-    self._before_ranking_filters = [FilterIgnoredRevisions(get_repository)]
+    self._before_ranking_filters = [FilterIgnoredRevisions(get_repository),
+                                    FilterSuspectFromRobotAuthor()]
     # Filters that apply to suspects after computing features and ranking
     # scores, which need to use information got from features like
     # ``confidence``.
