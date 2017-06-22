@@ -203,6 +203,7 @@ func init() {
 	r.GET("/api/v1/revrange/:start/:end", basemw, som.GetRevRangeHandler)
 	r.GET("/api/v1/testexpectations", protected, som.GetLayoutTestsHandler)
 	r.POST("/api/v1/testexpectation", protected, som.PostLayoutTestExpectationChangeHandler)
+	r.GET("/api/v1/testexpectation/:id", protected, som.GetTestExpectationCLStatusHandler)
 	r.GET("/logos/:tree", protected, som.GetTreeLogoHandler)
 	r.GET("/alertdiff/:tree", protected, som.GetMiloDiffHandler)
 	r.GET("/api/v1/logdiff/:tree", protected, som.LogDiffHandler)

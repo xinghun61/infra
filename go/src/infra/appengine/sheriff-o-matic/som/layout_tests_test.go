@@ -15,6 +15,7 @@ import (
 	testhelper "infra/monitoring/client/test"
 
 	"github.com/luci/gae/impl/dummy"
+	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/info"
 	tq "github.com/luci/gae/service/taskqueue"
 	"github.com/luci/gae/service/urlfetch"
@@ -124,7 +125,11 @@ func TestLayoutTestExpectationChangeWorker(t *testing.T) {
 		testServer := httptest.NewServer(testMux)
 		c = withGerritInstance(c, testServer.URL)
 
+		ta := datastore.GetTestable(c)
+		ta.Consistent(true)
+
 		testMux.HandleFunc("/a/changes/", func(w http.ResponseWriter, r *http.Request) {
+			logging.Debugf(c, "gerrit req: %+v", r)
 			switch r.Method {
 			case "POST":
 				marshalled, _ := json.Marshal(&gerrit.ChangeInfo{
@@ -162,7 +167,7 @@ func TestLayoutTestExpectationChangeWorker(t *testing.T) {
 			So(w.Code, ShouldEqual, http.StatusInternalServerError)
 		})
 
-		Convey("valid body", func() {
+		Convey("valid body, no queued update entity", func() {
 			w := httptest.NewRecorder()
 			expJSON, err := json.Marshal(&shortExp{
 				TestName: "test_test/test.html",
@@ -171,10 +176,48 @@ func TestLayoutTestExpectationChangeWorker(t *testing.T) {
 			values := url.Values{}
 			values.Set("change", string(expJSON))
 			values.Set("requester", "me@domain.com")
+			values.Set("updateID", "\u0001")
 			r := makePostRequest(values.Encode())
 
 			r.PostForm = values
 			ctx := &router.Context{
+				Context: c,
+				Writer:  w,
+				Request: r,
+			}
+			logging.Errorf(c, "values: %+v", values.Encode())
+			LayoutTestExpectationChangeWorker(ctx)
+			So(w.Code, ShouldEqual, http.StatusInternalServerError)
+		})
+
+		Convey("valid body, valid queued update entity", func() {
+			w := httptest.NewRecorder()
+			expJSON, err := json.Marshal(&shortExp{
+				TestName: "test_test/test.html",
+			})
+			So(err, ShouldBeNil)
+
+			body, err := json.Marshal(&shortExp{
+				TestName: "test_test/test.html",
+			})
+			So(err, ShouldBeNil)
+			ctx := &router.Context{
+				Context: c,
+				Writer:  w,
+				Request: makePostRequest(string(body)),
+			}
+
+			PostLayoutTestExpectationChangeHandler(ctx)
+			So(w.Code, ShouldNotEqual, http.StatusInternalServerError)
+
+			values := url.Values{}
+			values.Set("change", string(expJSON))
+			values.Set("requester", "me@domain.com")
+			values.Set("updateID", "\u0001")
+			r := makePostRequest(values.Encode())
+
+			r.PostForm = values
+			ctx = &router.Context{
 				Context: c,
 				Writer:  w,
 				Request: r,

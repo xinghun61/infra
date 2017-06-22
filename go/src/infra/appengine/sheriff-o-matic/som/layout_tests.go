@@ -12,6 +12,7 @@ import (
 
 	te "infra/libs/testexpectations"
 
+	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/taskqueue"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/auth"
@@ -38,6 +39,19 @@ type byTestName []*shortExp
 func (a byTestName) Len() int           { return len(a) }
 func (a byTestName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byTestName) Less(i, j int) bool { return a[i].TestName < a[j].TestName }
+
+// QueuedUpdate represents a CL in progress, as requested by a user to change
+// test expectations.
+type QueuedUpdate struct {
+	// ID is an opaque identifier assigned by datastore.
+	ID string `gae:"$id"`
+	// Requester is the email address of the user who originally requested the
+	// change via SoM UI.
+	Requester string
+	// ChangeID is blank until the CL has been created by the worker task, at
+	// which point it gets assigned to the Gerrit change ID created.
+	ChangeID string
+}
 
 // GetLayoutTestsHandler returns a JSON summary of webkit layout tests and
 // their expected results.
@@ -134,10 +148,32 @@ func LayoutTestExpectationChangeWorker(ctx *router.Context) {
 	if _, _, err := client.Changes.AddReviewer(changeID, &gerrit.ReviewerInput{
 		Reviewer: reviewer,
 	}); err != nil {
+		logging.Errorf(c, "creating CL: %v", err.Error())
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 	}
 
 	if _, err := client.Changes.PublishDraftChange(changeID, "NONE"); err != nil {
+		logging.Errorf(c, "publishing change: %v", err.Error())
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	updateID := r.FormValue("updateID")
+	queuedUpdate := &QueuedUpdate{
+		ID: updateID,
+	}
+
+	if err := datastore.RunInTransaction(c, func(c context.Context) error {
+		if err := datastore.Get(c, queuedUpdate); err != nil {
+			logging.Errorf(c, "getting from datastore: %v", err.Error())
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+			return err
+		}
+
+		queuedUpdate.ChangeID = changeID
+		return datastore.Put(c, queuedUpdate)
+	}, nil); err != nil {
+		logging.Errorf(c, "updating datastore: %v", err.Error())
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -161,8 +197,25 @@ func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
 	}
 
 	user := auth.CurrentIdentity(c)
+
+	queuedUpdate := &QueuedUpdate{
+		Requester: user.Email(),
+	}
+
+	if err := datastore.RunInTransaction(c, func(c context.Context) error {
+		if err := datastore.AllocateIDs(c, queuedUpdate); err != nil {
+			logging.Errorf(c, "allocating id: %v", err)
+			return err
+		}
+		return datastore.Put(c, queuedUpdate)
+	}, nil); err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	params := url.Values{}
 	params.Set("requester", user.Email())
+	params.Set("updateID", queuedUpdate.ID)
 	body, err := json.Marshal(newExp)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
@@ -177,5 +230,47 @@ func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
 		return
 	}
 
-	w.Write([]byte("ok"))
+	resp := map[string]interface{}{
+		"QueuedRequestID": queuedUpdate.ID,
+	}
+
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Write(respBytes)
+}
+
+// GetTestExpectationCLStatusHandler gets the status of a queued change request.
+func GetTestExpectationCLStatusHandler(ctx *router.Context) {
+	c, w, p := ctx.Context, ctx.Writer, ctx.Params
+
+	c, cancelFunc := context.WithTimeout(c, 60*time.Second)
+	defer cancelFunc()
+
+	updateID := p.ByName("id")
+	logging.Debugf(c, "fetching update ID %v", updateID)
+
+	queuedUpdate := &QueuedUpdate{
+		ID: updateID,
+	}
+
+	if err := datastore.Get(c, queuedUpdate); err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	resp := map[string]interface{}{
+		"ChangeID": queuedUpdate.ChangeID,
+	}
+
+	respBytes, err := json.Marshal(resp)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	w.Write(respBytes)
 }
