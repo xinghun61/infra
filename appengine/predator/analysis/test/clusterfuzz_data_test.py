@@ -54,14 +54,6 @@ class CusterfuzzDataTest(AnalysisTestCase):
       mock_parse.return_value = stacktrace
       self._VerifyTwoStacktracesEqual(crash_data.stacktrace, stacktrace)
 
-  def testParseStacktraceReturnsCache(self):
-    """Tests that ``stacktrace`` returns cached ``_stacktrace`` value."""
-    crash_data = ClusterfuzzData(self.GetDummyClusterfuzzData())
-    stack = CallStack(1)
-    stacktrace = Stacktrace([stack], stack)
-    crash_data._stacktrace = stacktrace
-    self._VerifyTwoStacktracesEqual(crash_data.stacktrace, stacktrace)
-
   def testDependencies(self):
     """Tests ``dependencies`` property."""
     dep = Dependency('src/', 'https://repo', 'rev1')
@@ -75,20 +67,6 @@ class CusterfuzzDataTest(AnalysisTestCase):
     self.assertEqual(crash_data.dependencies[dep.path].path, dep.path)
     self.assertEqual(crash_data.dependencies[dep.path].repo_url, dep.repo_url)
     self.assertEqual(crash_data.dependencies[dep.path].revision, dep.revision)
-
-  def testDependenciesReturnsCache(self):
-    """Tests that ``dependencies`` returns cached ``_dependencies`` value."""
-    crash_data = ClusterfuzzData(self.GetDummyClusterfuzzData())
-    deps = {'src/': Dependency('src/', 'https://repo', 'rev')}
-    crash_data._dependencies = deps
-    self.assertEqual(crash_data.dependencies, deps)
-
-  def testDependencyRollsReturnsCache(self):
-    """Tests that ``dependency_rolls`` returns cached ``_dependency_rolls``."""
-    crash_data = ClusterfuzzData(self.GetDummyClusterfuzzData())
-    dep_roll = {'src/': DependencyRoll('src/', 'https://repo', 'rev0', 'rev3')}
-    crash_data._dependency_rolls = dep_roll
-    self.assertEqual(crash_data.dependency_rolls, dep_roll)
 
   def testDependencyRolls(self):
     """Tests ``regression_rolls`` property."""

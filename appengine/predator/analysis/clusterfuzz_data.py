@@ -11,6 +11,7 @@ from analysis.clusterfuzz_parser import ClusterfuzzParser
 from analysis.crash_data import CrashData
 from analysis.stacktrace import Stacktrace
 from analysis.type_enums import SanitizerType
+from decorators import cached_property
 from libs.deps.dependency import Dependency
 from libs.deps.dependency import DependencyRoll
 
@@ -96,16 +97,10 @@ class ClusterfuzzData(CrashData):
     customized_data = crash_data['customized_data']
     self._regression_range = customized_data['regression_range']
 
-    self._dependencies = {}
-    self._dependency_rolls = {}
     self._raw_dependencies = customized_data['dependencies']
     self._raw_dependency_rolls = customized_data['dependency_rolls']
 
-    # Delay the stacktrace parsing to the first time when stacktrace property
-    # gets called.
     self._top_n_frames = top_n_frames
-    self._stacktrace = None
-    self._stacktrace_parsed = False
 
     self._crashed_type = customized_data['crashed_type']
     self._crashed_address = customized_data['crashed_address']
@@ -134,52 +129,39 @@ class ClusterfuzzData(CrashData):
   def testcase(self):
     return self._testcase
 
-  @property
+  @cached_property
   def stacktrace(self):
     """Parses stacktrace and returns parsed ``Stacktrace`` object."""
-    if self._stacktrace or self._stacktrace_parsed:
-      return self._stacktrace
-
-    self._stacktrace = ClusterfuzzParser().Parse(
+    stacktrace = ClusterfuzzParser().Parse(
         self._stacktrace_str, self.dependencies, self.job_type,
         self.sanitizer, signature=self.signature,
         top_n_frames=self._top_n_frames, crash_address=self.crashed_address)
-    if not self._stacktrace:
+    if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s',
                       self._stacktrace_str)
 
-    # Only parse stacktrace string once.
-    self._stacktrace_parsed = True
-    return self._stacktrace
+    return stacktrace
 
   @property
   def regression_range(self):
     return self._regression_range
 
-  @property
+  @cached_property
   def dependencies(self):
-    if self._dependencies:
-      return self._dependencies
-
-    self._dependencies = {
+    return {
         dep['dep_path']:
         Dependency(dep['dep_path'], dep['repo_url'], dep['revision'])
         for dep in self._raw_dependencies
     }
-    return self._dependencies
 
-  @property
+  @cached_property
   def dependency_rolls(self):
-    if self._dependency_rolls:
-      return self._dependency_rolls
-
-    self._dependency_rolls = {
+    return {
         roll['dep_path']:
         DependencyRoll(roll['dep_path'], roll['repo_url'],
                        roll['old_revision'], roll['new_revision'])
         for roll in self._raw_dependency_rolls
     }
-    return self._dependency_rolls
 
   @property
   def identifiers(self):
