@@ -12,10 +12,15 @@ from analysis.chromecrash_parser import ChromeCrashParser
 from analysis.chrome_crash_data import ChromeCrashData
 from analysis.linear.changelist_features.number_of_touched_files import (
     NumberOfTouchedFilesFeature)
+from analysis.linear.changelist_features.min_distance import MinDistanceFeature
+from analysis.linear.changelist_features.top_frame_index import (
+    TopFrameIndexFeature)
 from analysis.linear.changelist_features.touch_crashed_component import (
     TouchCrashedComponentFeature)
 from analysis.linear.changelist_features.touch_crashed_directory import (
     TouchCrashedDirectoryFeature)
+from analysis.linear.changelist_features.touch_crashed_file import (
+    TouchCrashedFileFeature)
 from analysis.linear.changelist_features.touch_crashed_file_meta import (
     TouchCrashedFileMetaFeature)
 from analysis.linear.feature import WrapperMetaFeature
@@ -23,9 +28,10 @@ from analysis.linear.weight import MetaWeight
 from analysis.linear.weight import Weight
 from analysis.predator import Predator
 from analysis.type_enums import CrashClient
-from common.predator_app import PredatorApp
 from common.model.cracas_crash_analysis import CracasCrashAnalysis
 from common.model.fracas_crash_analysis import FracasCrashAnalysis
+from common.model.inverted_index import ChromeCrashInvertedIndex
+from common.predator_app import PredatorApp
 from gae_libs import appengine_util
 from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
 
@@ -56,8 +62,14 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
         'TouchCrashedComponent': Weight(0.),
         'NumberOfTouchedFiles': Weight(0.5)
     })
+
+    min_distance_feature = MinDistanceFeature(get_repository)
+    top_frame_index_feature = TopFrameIndexFeature()
+    touch_crashed_file_feature = TouchCrashedFileFeature()
     meta_feature = WrapperMetaFeature(
-        [TouchCrashedFileMetaFeature(get_repository),
+        [TouchCrashedFileMetaFeature([min_distance_feature,
+                                      top_frame_index_feature,
+                                      touch_crashed_file_feature]),
          TouchCrashedDirectoryFeature(),
          TouchCrashedComponentFeature(self._component_classifier),
          NumberOfTouchedFilesFeature()])

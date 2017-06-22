@@ -8,7 +8,7 @@ import logging
 import math
 
 from analysis import crash_util
-from analysis.crash_match import CrashedGroup
+from analysis.crash_match import CrashedFile
 from analysis.linear.changelist_features.min_distance import MinDistanceFeature
 from analysis.linear.changelist_features.top_frame_index import (
     TopFrameIndexFeature)
@@ -20,16 +20,6 @@ from analysis.linear.feature import MetaFeatureValue
 from analysis.linear.feature import LogLinearlyScaled
 import libs.math.logarithms as lmath
 
-# N.B., this must not be infinity, else we'll start getting NaN values
-# from LinearMinDistanceFeature (and SquaredMinDistanceFeature).
-DEFAULT_MAX_LINE_DISTANCE = 100
-DEFAULT_MAX_FRAME_INDEX = 7
-
-
-class CrashedFile(CrashedGroup):
-  """Represents a crashed file in stacktrace."""
-  pass
-
 
 class TouchCrashedFileMetaFeature(MetaFeature):
   """MetaFeature that wraps three ``Feature``s.
@@ -39,9 +29,7 @@ class TouchCrashedFileMetaFeature(MetaFeature):
   ``TouchCrashedFileFeature``.
   """
 
-  def __init__(self, get_repository,
-               max_line_distance=DEFAULT_MAX_LINE_DISTANCE,
-               max_frame_index=DEFAULT_MAX_FRAME_INDEX):
+  def __init__(self, features):
     """
     Args:
       get_repository (callable): a function from DEP urls to ``Repository``
@@ -60,15 +48,8 @@ class TouchCrashedFileMetaFeature(MetaFeature):
         to consider. This argument is optional and defaults to
         ``DEFAULT_MAX_FRAME_INDEX``.
     """
-    min_distance_feature = MinDistanceFeature(get_repository, max_line_distance)
-    top_frame_index_feature = TopFrameIndexFeature(max_frame_index)
-    touch_crashed_file_feature = TouchCrashedFileFeature()
-
     super(TouchCrashedFileMetaFeature, self).__init__({
-        min_distance_feature.name: min_distance_feature,
-        top_frame_index_feature.name: top_frame_index_feature,
-        touch_crashed_file_feature.name: touch_crashed_file_feature
-    })
+        feature.name: feature for feature in features})
 
   def CrashedGroupFactory(self, frame):
     """Factory function to create ``CrashedFile``."""

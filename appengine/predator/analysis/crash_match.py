@@ -25,6 +25,21 @@ class CrashedGroup(namedtuple('CrashedGroup', ['value'])):
     return self.__class__.__name__
 
 
+class CrashedFile(CrashedGroup):
+  """Represents a crashed file in stacktrace."""
+  pass
+
+
+class CrashedDirectory(CrashedGroup):
+  """Represents a crashed directory, which has crashed files in stacktrace."""
+  pass
+
+
+class CrashedComponent(CrashedGroup):
+  """Represents a crashed component, for example, 'Blink>DOM'."""
+  pass
+
+
 # TODO(wrengr): it's not clear why the ``priority`` is stored at all,
 # given that every use in this file discards it. ``Result.file_to_stack_infos``
 # should just store pointers directly to the frames themselves rather

@@ -9,6 +9,11 @@ import mock
 
 from analysis.crash_report import CrashReport
 from analysis.changelist_classifier import ChangelistClassifier
+from analysis.linear.changelist_features.min_distance import MinDistanceFeature
+from analysis.linear.changelist_features.top_frame_index import (
+    TopFrameIndexFeature)
+from analysis.linear.changelist_features.touch_crashed_file import (
+    TouchCrashedFileFeature)
 from analysis.linear.changelist_features.touch_crashed_file_meta import (
     TouchCrashedFileMetaFeature)
 from analysis.linear.feature import MetaFeatureValue
@@ -132,8 +137,14 @@ class ChangelistClassifierTest(AppengineTestCase):
         })
     })
     get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
-    meta_feature = WrapperMetaFeature(
-        [TouchCrashedFileMetaFeature(get_repository)])
+    min_distance_feature = MinDistanceFeature(get_repository)
+    top_frame_index_feature = TopFrameIndexFeature()
+    touch_crashed_file_feature = TouchCrashedFileFeature()
+
+    meta_feature = WrapperMetaFeature([TouchCrashedFileMetaFeature(
+        [min_distance_feature,
+         top_frame_index_feature,
+         touch_crashed_file_feature])])
 
     self.changelist_classifier = ChangelistClassifier(
         get_repository, meta_feature, meta_weight)

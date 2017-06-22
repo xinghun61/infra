@@ -13,6 +13,9 @@ from analysis.linear.feature import FeatureValue
 from analysis.linear.feature import LinearlyScaled
 
 _MINIMUM_FEATURE_VALUE = 0
+# N.B., this must not be infinity, else we'll start getting NaN values
+# from LinearMinDistanceFeature (and SquaredMinDistanceFeature).
+_DEFAULT_MAX_LINE_DISTANCE = 100
 
 
 class Distance(object):
@@ -95,7 +98,7 @@ class MinDistanceFeature(Feature):
   between we scale the normal-domain values linearly, which means the
   log-domain values are scaled exponentially.
   """
-  def __init__(self, get_repository, maximum):
+  def __init__(self, get_repository, maximum=_DEFAULT_MAX_LINE_DISTANCE):
     """
     Args:
       maximum (float): An upper bound on the min_distance to consider.

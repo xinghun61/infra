@@ -11,6 +11,7 @@ from analysis.linear.feature import FeatureValue
 from analysis.linear.feature import LinearlyScaled
 
 _MINIMUM_FEATURE_VALUE = 0
+_DEFAULT_MAX_FRAME_INDEX = 7
 
 
 class TopFrameIndexFeature(Feature):
@@ -31,7 +32,7 @@ class TopFrameIndexFeature(Feature):
   between we scale the normal-domain values linearly, which means the
   log-domain values are scaled exponentially.
   """
-  def __init__(self, max_frame_index):
+  def __init__(self, max_frame_index=_DEFAULT_MAX_FRAME_INDEX):
     """
     Args:
       max_frame_index (int): An upper bound on the minimum frame index

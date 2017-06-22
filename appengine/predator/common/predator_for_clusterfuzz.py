@@ -9,10 +9,17 @@ from google.appengine.ext import ndb
 from analysis.changelist_classifier import ChangelistClassifier
 from analysis.clusterfuzz_data import ClusterfuzzData
 from analysis.clusterfuzz_parser import ClusterfuzzParser
+from analysis.linear.changelist_features.number_of_touched_files import (
+    NumberOfTouchedFilesFeature)
+from analysis.linear.changelist_features.min_distance import MinDistanceFeature
+from analysis.linear.changelist_features.top_frame_index import (
+    TopFrameIndexFeature)
 from analysis.linear.changelist_features.touch_crashed_component import (
     TouchCrashedComponentFeature)
 from analysis.linear.changelist_features.touch_crashed_directory import (
     TouchCrashedDirectoryFeature)
+from analysis.linear.changelist_features.touch_crashed_file import (
+    TouchCrashedFileFeature)
 from analysis.linear.changelist_features.touch_crashed_file_meta import (
     TouchCrashedFileMetaFeature)
 from analysis.linear.feature import WrapperMetaFeature
@@ -40,8 +47,15 @@ class PredatorForClusterfuzz(PredatorApp):
         'TouchCrashedDirectory': Weight(1.),
         'TouchCrashedComponent': Weight(1.)
     })
+
+    min_distance_feature = MinDistanceFeature(get_repository)
+    top_frame_index_feature = TopFrameIndexFeature()
+    touch_crashed_file_feature = TouchCrashedFileFeature()
+
     meta_feature = WrapperMetaFeature(
-        [TouchCrashedFileMetaFeature(get_repository),
+        [TouchCrashedFileMetaFeature([min_distance_feature,
+                                      top_frame_index_feature,
+                                      touch_crashed_file_feature]),
          TouchCrashedDirectoryFeature(),
          TouchCrashedComponentFeature(self._component_classifier)])
 

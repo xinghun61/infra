@@ -7,10 +7,14 @@ import unittest
 
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.crash_report import CrashReport
-from analysis.linear.changelist_features.touch_crashed_file_meta import (
-    TouchCrashedFileMetaFeature)
 from analysis.linear.changelist_features.min_distance import Distance
 from analysis.linear.changelist_features.min_distance import MinDistanceFeature
+from analysis.linear.changelist_features.top_frame_index import (
+    TopFrameIndexFeature)
+from analysis.linear.changelist_features.touch_crashed_file import (
+    TouchCrashedFileFeature)
+from analysis.linear.changelist_features.touch_crashed_file_meta import (
+    TouchCrashedFileMetaFeature)
 from analysis.linear.feature import ChangedFile
 from analysis.suspect import Suspect
 from analysis.stacktrace import CallStack
@@ -32,7 +36,13 @@ class TouchCrashedFileMetaFeatureTest(AnalysisTestCase):
   def setUp(self):
     super(TouchCrashedFileMetaFeatureTest, self).setUp()
     get_repository = GitilesRepository.Factory(self.GetMockHttpClient())
-    self._feature = TouchCrashedFileMetaFeature(get_repository)
+    min_distance_feature = MinDistanceFeature(get_repository)
+    top_frame_index_feature = TopFrameIndexFeature()
+    touch_crashed_file_feature = TouchCrashedFileFeature()
+    self._feature = TouchCrashedFileMetaFeature(
+        [min_distance_feature,
+         top_frame_index_feature,
+         touch_crashed_file_feature])
 
   def _GetDummyReport(self, deps=None, dep_rolls=None):
     crash_stack = CallStack(0, [StackFrame(0, 'src/', 'func', 'a.cc',

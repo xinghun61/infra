@@ -9,14 +9,9 @@ import math
 import os
 
 from analysis import crash_util
-from analysis.crash_match import CrashedGroup
+from analysis.crash_match import CrashedComponent
 from analysis.linear.feature import Feature
 from analysis.linear.feature import FeatureValue
-
-
-class CrashedComponent(CrashedGroup):
-  """Represents a crashed component, for example, 'Blink>DOM'."""
-  pass
 
 
 class TouchCrashedComponentFeature(Feature):

@@ -9,14 +9,9 @@ import math
 import os
 
 from analysis import crash_util
-from analysis.crash_match import CrashedGroup
+from analysis.crash_match import CrashedDirectory
 from analysis.linear.feature import Feature
 from analysis.linear.feature import FeatureValue
-
-
-class CrashedDirectory(CrashedGroup):
-  """Represents a crashed directory, which has crashed files in stacktrace."""
-  pass
 
 
 class TouchCrashedDirectoryFeature(Feature):
