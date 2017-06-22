@@ -9,14 +9,14 @@ package main
 
 import (
 	"flag"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strconv"
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/jsonpb"
 	"golang.org/x/net/context"
 	pb "infra/tools/bqschemaupdater/tabledef"
 )
@@ -43,9 +43,9 @@ func bqField(f *pb.FieldSchema) *bigquery.FieldSchema {
 	return fs
 }
 
-func tableDef(s string) *pb.TableDef {
+func tableDef(r io.Reader) *pb.TableDef {
 	td := &pb.TableDef{}
-	err := proto.UnmarshalText(s, td)
+	err := jsonpb.Unmarshal(r, td)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -86,11 +86,11 @@ func main() {
 	if file == "" {
 		log.Fatal("Missing arg: file path for schema to add/update")
 	}
-	in, err := ioutil.ReadFile(file)
+	r, err := os.Open(file)
 	if err != nil {
 		log.Fatal(err)
 	}
-	td := tableDef(string(in))
+	td := tableDef(r)
 
 	ctx := context.Background()
 	c, err := bigquery.NewClient(ctx, "chrome-infra-events")

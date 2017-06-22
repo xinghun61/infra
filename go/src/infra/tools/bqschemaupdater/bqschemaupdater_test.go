@@ -5,11 +5,12 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"reflect"
 	"testing"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 	pb "infra/tools/bqschemaupdater/tabledef"
 )
@@ -96,7 +97,11 @@ func TestTableDef(t *testing.T) {
 			},
 		},
 	}
-	got := tableDef(proto.MarshalTextString(want))
+	buf, err := json.Marshal(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := tableDef(bytes.NewReader(buf))
 	if !(reflect.DeepEqual(got, want)) {
 		t.Errorf("got: %v; want: %v", got, want)
 	}
