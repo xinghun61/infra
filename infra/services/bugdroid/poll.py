@@ -7,21 +7,12 @@ import logging
 import threading
 import time
 
-from infra_libs import ts_mon
-
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.NullHandler())
 
 
 class Poller(threading.Thread):
-
-  commits_metric = ts_mon.CounterMetric(
-      'bugdroid/commits',
-      'Counter of commits processed by bugdroid',
-      [ts_mon.StringField('poller'),
-       ts_mon.StringField('project'),
-       ts_mon.StringField('status')])
 
   def __init__(self, interval_in_minutes=15, setup_refresh_interval_minutes=0,
                run_once=False):
