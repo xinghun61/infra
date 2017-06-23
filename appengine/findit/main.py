@@ -13,6 +13,7 @@ from gae_libs.pipeline_wrapper import pipeline_status_ui
 from handlers import auto_revert_metrics
 from handlers import build_failure
 from handlers import calculate_confidence_scores
+from handlers import change_auto_revert_setting
 from handlers import check_duplicate_failures
 from handlers import check_reverted_cls
 from handlers import check_trybot_mapping
@@ -81,6 +82,8 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/build-failure', build_failure.BuildFailure),
     ('/waterfall/calculate-confidence-scores',
      calculate_confidence_scores.CalculateConfidenceScores),
+    ('/waterfall/change-auto-revert-setting',
+     change_auto_revert_setting.ChangeAutoRevertSetting),
     ('/waterfall/check-duplicate-failures',
      check_duplicate_failures.CheckDuplicateFailures),
     ('/waterfall/check-flake', check_flake.CheckFlake),

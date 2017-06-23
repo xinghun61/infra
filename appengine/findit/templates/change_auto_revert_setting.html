@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<head>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Change Auto Revert Setting</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+</head>
+  <script>
+    $(function() {
+      var auto_revert_enabled = '{{ auto_revert_on }}';
+      if (auto_revert_enabled != 'True') {
+        // auto_revert is disabled.
+        $('#submit_button').attr('value', 'true');
+        $('#submit_button').text("Enable Auto Revert");
+      }
+    });
+  </script>
+<body>
+  {% if auto_revert_on %}
+    <h1>Auto Revert is On.</h1>
+  {% else %}
+    <h1>Auto Revert is Off.</h1>
+  {% endif %}
+  <br><br>
+  <form id="change-auto-revert-setting-form" action="/waterfall/change-auto-revert-setting" method="post">
+    <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
+    <button type="submit" id="submit_button" name="revert_compile_culprit" value="false">Disable Auto Revert</button>
+  </form>
+
+</body>
