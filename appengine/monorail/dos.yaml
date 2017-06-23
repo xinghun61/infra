@@ -113,3 +113,5 @@ blacklist:
     description: someone trying to fuzz our server 2017-05-08
   - subnet: 203.205.144.172
     description: someone crawling our issues 2017-05-08
+  - subnet: 129.21.128.147
+    description: flooded with requests to issue.get without issue_id, many 404s
