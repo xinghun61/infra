@@ -195,7 +195,7 @@ class CrashAnalysis(ndb.Model):
 
     # Set progress properties.
     self.status = analysis_status.PENDING
-    self.started_time = time_util.GetUTCNow()
+    self.requested_time = time_util.GetUTCNow()
 
   def ToCrashReport(self):
     """Converts this model to ``CrashReport`` to give to Predator library."""
